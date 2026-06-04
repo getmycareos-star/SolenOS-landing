@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SolenOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:          #ffffff;
+  --bg-warm:     #faf9f7;
+  --text:        #1a1918;
+  --text-sec:    #4a4744;
+  --text-muted:  #8a8580;
+  --accent:      #5a9189;
+  --border:      #e8e4df;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.8;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 24px 40px;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s ease;
+}
+
+nav.scrolled {
+  border-bottom-color: var(--border);
+}
+
+.logo {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.logo em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+/* ── SHARED ── */
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+section {
+  padding: 100px 0;
+}
+
+/* labels — used only where spec calls for them */
+.label {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 36px;
+}
+
+/* ── SECTION 1 — HERO ── */
+#s1 {
+  padding-top: 160px;
+  padding-bottom: 110px;
+  background: var(--bg-warm);
+}
+
+#s1 h1 {
+  font-family: 'Crimson Pro', serif;
+  font-weight: 300;
+  font-size: clamp(42px, 6vw, 64px);
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: 44px;
+  max-width: 640px;
+}
+
+#s1 .opening {
+  color: var(--text-sec);
+  font-size: 1.05rem;
+  line-height: 2;
+  margin-bottom: 56px;
+  max-width: 560px;
+}
+
+#s1 .opening br {
+  display: block;
+  content: '';
+  margin-top: 4px;
+}
+
+.cta-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--accent);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 2px;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+/* ── SECTION 2 — THINGS THAT FOLLOW ── */
+#s2 {
+  background: var(--bg);
+}
+
+#s2 .opening {
+  font-size: 1.1rem;
+  color: var(--text-sec);
+  margin-bottom: 48px;
+  line-height: 1.85;
+}
+
+.breath-list {
+  list-style: none;
+  margin-bottom: 48px;
+}
+
+.breath-list li {
+  font-size: 1.05rem;
+  color: var(--text-sec);
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.breath-list li:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.but-you-are {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.55rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text);
+  padding-top: 8px;
+}
+
+/* ── SECTION 3 — THE PART NOBODY SEES ── */
+#s3 {
+  padding: 140px 0;
+  background: #f5f3f0;
+  text-align: center;
+}
+
+#s3 .wrap {
+  max-width: 620px;
+}
+
+.unseen-lines {
+  list-style: none;
+  margin-bottom: 52px;
+}
+
+.unseen-lines li {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.45rem;
+  font-weight: 300;
+  color: var(--text-sec);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+}
+
+.unseen-bridge {
+  font-size: 1.15rem;
+  color: var(--text-sec);
+  margin-bottom: 52px;
+  line-height: 1.85;
+}
+
+.unseen-divider {
+  width: 40px;
+  height: 1px;
+  background: var(--border);
+  margin: 0 auto 48px;
+}
+
+.unseen-anchor-1 {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.35rem;
+  font-weight: 300;
+  color: var(--text-sec);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.unseen-anchor-2 {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* ── SECTION 4 — WHAT PEOPLE DON'T SEE ── */
+#s4 {
+  background: var(--bg);
+}
+
+#s4 .lead {
+  font-size: 1.1rem;
+  color: var(--text-sec);
+  margin-bottom: 44px;
+  line-height: 1.85;
+}
+
+#s4 .constant-lines {
+  list-style: none;
+}
+
+#s4 .constant-lines li {
+  font-size: 1.05rem;
+  color: var(--text-sec);
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+#s4 .constant-lines li:first-child {
+  border-top: 1px solid var(--border);
+}
+
+/* ── SECTION 5 — WHEN EVERYTHING COMPETES ── */
+#s5 {
+  background: var(--bg-warm);
+}
+
+#s5 .weight-text p {
+  font-size: 1.1rem;
+  color: var(--text-sec);
+  line-height: 1.9;
+  margin-bottom: 28px;
+}
+
+#s5 .weight-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── SECTION 6 — RELIEF ── */
+#s6 {
+  background: var(--bg);
+}
+
+.relief-body {
+  font-size: 1.1rem;
+  color: var(--text-sec);
+  line-height: 2;
+}
+
+.relief-body p {
+  margin-bottom: 28px;
+}
+
+.relief-body p:last-child {
+  margin-bottom: 0;
+}
+
+.relief-knowing {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.35rem;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 2;
+  margin: 0 0 28px;
+}
+
+.relief-close {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.4rem;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+  margin-top: 36px;
+}
+
+/* ── SECTION 7 — SOLEN-OS ── */
+#s7 {
+  background: var(--bg-warm);
+}
+
+#s7 .intro {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 48px;
+  line-height: 1.25;
+}
+
+.three-things {
+  list-style: none;
+  margin-bottom: 48px;
+}
+
+.three-things li {
+  font-size: 1.15rem;
+  color: var(--text-sec);
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+.three-things li:first-child {
+  border-top: 1px solid var(--border);
+}
+
+#s7 .follow {
+  font-size: 1.05rem;
+  color: var(--text-sec);
+  margin-bottom: 28px;
+  line-height: 1.85;
+}
+
+#s7 .solen-close {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.35rem;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+}
+
+/* ── SECTION 8 — BUILT FROM REALITY ── */
+#s8 {
+  background: var(--bg);
+}
+
+#s8 .lead {
+  font-size: 1.1rem;
+  color: var(--text-sec);
+  line-height: 1.9;
+  margin-bottom: 44px;
+}
+
+.word-row {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 2;
+  letter-spacing: 0.01em;
+}
+
+/* ── SECTION 9 — TRUST ── */
+#s9 {
+  background: var(--bg-warm);
+  padding: 80px 0;
+  text-align: center;
+}
+
+#s9 p {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-sec);
+  line-height: 1.5;
+}
+
+/* ── SECTION 10 — INVITATION ── */
+#s10 {
+  background: var(--bg);
+  padding-bottom: 140px;
+}
+
+#s10 h2 {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(32px, 4.5vw, 48px);
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 24px;
+  line-height: 1.2;
+}
+
+#s10 .sub {
+  font-size: 1.05rem;
+  color: var(--text-sec);
+  margin-bottom: 56px;
+  line-height: 1.85;
+  max-width: 560px;
+}
+
+.form-field {
+  margin-bottom: 24px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.form-field input {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+  width: 100%;
+  max-width: 400px;
+  outline: none;
+}
+
+.form-field input:focus {
+  border-bottom-color: var(--accent);
+}
+
+.form-field input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-error {
+  display: none;
+  font-size: 0.82rem;
+  color: #b05a42;
+  margin-top: 8px;
+}
+
+.form-field.has-error input {
+  border-bottom-color: #b05a42;
+}
+
+.form-field.has-error .form-error {
+  display: block;
+}
+
+.submit-btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 3px;
+  padding: 14px 28px;
+  cursor: pointer;
+  margin-top: 16px;
+  letter-spacing: 0.01em;
+}
+
+/* ── REFLECTION STATE ── */
+#reflection-state {
+  display: none;
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 120px 0 140px;
+}
+
+.reflection-top {
+  margin-bottom: 64px;
+  padding-bottom: 56px;
+  border-bottom: 1px solid var(--border);
+}
+
+.reflection-top h2 {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 24px;
+  line-height: 1.25;
+}
+
+.reflection-top p {
+  font-size: 1.05rem;
+  color: var(--text-sec);
+  line-height: 1.85;
+}
+
+.why-block {
+  margin-bottom: 64px;
+}
+
+.why-block .label {
+  margin-bottom: 20px;
+}
+
+.why-block p {
+  font-size: 1rem;
+  color: var(--text-sec);
+  line-height: 1.85;
+}
+
+.main-prompt {
+  margin-bottom: 48px;
+}
+
+.main-prompt label {
+  display: block;
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.45rem;
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 24px;
+  line-height: 1.4;
+}
+
+.main-prompt textarea {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text);
+  background: var(--bg-warm);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  outline: none;
+  line-height: 1.8;
+}
+
+.main-prompt textarea:focus {
+  border-color: var(--accent);
+}
+
+.main-prompt textarea::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.optional-block {
+  margin-bottom: 48px;
+}
+
+.optional-block .label {
+  margin-bottom: 20px;
+}
+
+.optional-prompts {
+  list-style: none;
+}
+
+.optional-prompts li {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.15rem;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text-sec);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.optional-prompts li:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.optional-prompts li:hover {
+  color: var(--text);
+}
+
+.privacy-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 36px;
+}
+
+/* ── SUCCESS STATE ── */
+#success-state {
+  display: none;
+  min-height: 100vh;
+  background: var(--bg-warm);
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#success-state .wrap {
+  padding-top: 160px;
+  padding-bottom: 160px;
+  text-align: center;
+}
+
+#success-state h2 {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 36px;
+  line-height: 1.3;
+}
+
+#success-state p {
+  font-size: 1.05rem;
+  color: var(--text-sec);
+  line-height: 1.85;
+  margin-bottom: 20px;
+}
+
+#success-state p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  nav { padding: 20px 24px; }
+  .wrap { padding: 0 22px; }
+  section { padding: 80px 0; }
+  #s1 { padding-top: 130px; padding-bottom: 88px; }
+  #s3 { padding: 110px 0; }
+  #s9 { padding: 64px 0; }
+  #s10 { padding-bottom: 100px; }
+  .form-field input { max-width: 100%; }
+  .submit-btn { width: 100%; text-align: center; }
+}
+
+@media (max-width: 400px) {
+  .wrap { padding: 0 18px; }
+  body { font-size: 17px; }
+}
+
+@media (max-width: 320px) {
+  body { font-size: 16px; }
+  .wrap { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <div class="logo">Solen<em>OS</em></div>
+</nav>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- LANDING STATE                              -->
+<!-- ══════════════════════════════════════════ -->
+<div id="landing-state">
+
+  <!-- S1 — HERO -->
+  <section id="s1">
+    <div class="wrap">
+      <h1>Caring for everyone shouldn't mean losing yourself.</h1>
+      <p class="opening">
+        There is a kind of responsibility that never fully leaves your mind.<br>
+        Even when the day is quiet.<br>
+        Even when nothing is happening.<br>
+        Part of you is still listening. Still remembering. Still carrying.
+      </p>
+      <button class="cta-link" onclick="scrollToInvitation()">Tell us what you're carrying</button>
+    </div>
+  </section>
+
+  <!-- S2 — THE THINGS THAT FOLLOW YOU -->
+  <section id="s2">
+    <div class="wrap">
+      <p class="opening">Some responsibilities don't stay where they belong.<br>They follow you. Into conversations. Into meals. Into evenings. Into sleep.</p>
+      <ul class="breath-list">
+        <li>A prescription renewal.</li>
+        <li>An insurance question.</li>
+        <li>A form that still needs attention.</li>
+        <li>A call that hasn't been returned.</li>
+        <li>A bill you need to remember.</li>
+        <li>A transportation arrangement that isn't confirmed.</li>
+        <li>A detail that nobody else is thinking about.</li>
+      </ul>
+      <p class="but-you-are">But you are.</p>
+    </div>
+  </section>
+
+  <!-- S3 — THE PART NOBODY SEES -->
+  <section id="s3">
+    <div class="wrap">
+      <ul class="unseen-lines">
+        <li>The phone calls.</li>
+        <li>The waiting.</li>
+        <li>The remembering.</li>
+        <li>The planning.</li>
+        <li>The worrying.</li>
+        <li>The checking.</li>
+      </ul>
+      <p class="unseen-bridge">The things that stay in your head long after everyone else has moved on.</p>
+      <div class="unseen-divider"></div>
+      <p class="unseen-anchor-1">Some responsibilities never fully leave your mind.</p>
+      <p class="unseen-anchor-2">That weight is real.</p>
+    </div>
+  </section>
+
+  <!-- S4 — WHAT PEOPLE DON'T SEE -->
+  <section id="s4">
+    <div class="wrap">
+      <p class="lead">People see appointments. People see paperwork. People see phone calls.<br><br>What they don't see is carrying all of it in your head at once.</p>
+      <ul class="constant-lines">
+        <li>The constant monitoring.</li>
+        <li>The constant remembering.</li>
+        <li>The constant fear of letting something important slip.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S5 — WHEN EVERYTHING COMPETES -->
+  <section id="s5">
+    <div class="wrap">
+      <div class="weight-text">
+        <p>Everything feels important. Everything feels urgent. Everything competes for space.</p>
+        <p>Small problems become bigger than they needed to be.<br>Not because you're careless.<br>Because you're carrying too much simultaneously.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- S6 — RELIEF -->
+  <section id="s6">
+    <div class="wrap">
+      <div class="relief-body">
+        <p>Imagine if you didn't have to hold everything equally.</p>
+        <p>Imagine if the noise became quieter.<br>Imagine if responsibilities stopped competing for attention.</p>
+      </div>
+      <p class="relief-knowing">
+        Imagine knowing:<br>
+        What matters now.<br>
+        What can wait.<br>
+        What may become serious.
+      </p>
+      <p class="relief-close">Not more information.<br>Just more clarity.</p>
+    </div>
+  </section>
+
+  <!-- S7 — SOLEN-OS -->
+  <section id="s7">
+    <div class="wrap">
+      <span class="label">SolenOS</span>
+      <p class="intro">SolenOS surfaces only three things.</p>
+      <ul class="three-things">
+        <li>What matters now.</li>
+        <li>What can wait.</li>
+        <li>What may become serious.</li>
+      </ul>
+      <p class="follow">That's it.<br>No systems to manage. No complexity to learn. No additional burden.</p>
+      <p class="solen-close">SolenOS does not track. It relieves.</p>
+    </div>
+  </section>
+
+  <!-- S8 — BUILT FROM REALITY -->
+  <section id="s8">
+    <div class="wrap">
+      <span class="label">Built from reality</span>
+      <p class="lead">SolenOS is being built around lived experience.<br>Not features. Not workflows. Not services.<br>Real experiences. The responsibilities that rarely arrive one at a time.</p>
+      <p class="word-row">Medical forms&nbsp;&middot;&nbsp;Prescriptions&nbsp;&middot;&nbsp;Bills&nbsp;&middot;&nbsp;Phone calls&nbsp;&middot;&nbsp;Family coordination&nbsp;&middot;&nbsp;Unexpected problems</p>
+    </div>
+  </section>
+
+  <!-- S9 — TRUST -->
+  <section id="s9">
+    <div class="wrap">
+      <p>Built for real caregivers living real lives.</p>
+    </div>
+  </section>
+
+  <!-- S10 — INVITATION + CAPTURE -->
+  <section id="s10">
+    <div class="wrap">
+      <h2>Tell us what you're carrying.</h2>
+      <p class="sub">Before deciding what to build, we want to understand what people are actually carrying every day.</p>
+
+      <div class="form-field" id="field-name">
+        <label for="first-name">First name <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;color:var(--text-muted);">(optional)</span></label>
+        <input type="text" id="first-name" placeholder="Your name" autocomplete="given-name" />
+      </div>
+
+      <div class="form-field" id="field-email">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="your@email.com" autocomplete="email" />
+        <span class="form-error">A valid email address is needed.</span>
+      </div>
+
+      <button class="submit-btn" onclick="handleCapture()">Tell us what you're carrying</button>
+    </div>
+  </section>
+
+</div>
+<!-- END LANDING -->
+
+
+<!-- ══════════════════════════════════════════ -->
+<!-- REFLECTION STATE                           -->
+<!-- ══════════════════════════════════════════ -->
+<div id="reflection-state">
+  <div class="wrap">
+
+    <div class="reflection-top">
+      <h2>Thank you for sharing this with us.</h2>
+      <p>SolenOS is being built carefully for adults carrying invisible responsibility every day. Before we continue building, we want to understand what life actually feels like when you're holding everything together.</p>
+    </div>
+
+    <div class="why-block">
+      <span class="label">Why we're asking</span>
+      <p>Most systems are designed around services, features, or programs. SolenOS is being designed around lived experience. Before deciding what to build, we want to understand what people are actually carrying every day. Your response helps us identify where pressure accumulates so SolenOS can reduce mental burden where it matters most.</p>
+    </div>
+
+    <div class="main-prompt">
+      <label for="main-response">What feels hardest to keep up with right now?</label>
+      <textarea id="main-response" placeholder="Trying to remember appointments, paperwork, medications, and family responsibilities all at once."></textarea>
+    </div>
+
+    <div class="optional-block">
+      <span class="label">Optional reflections</span>
+      <ul class="optional-prompts">
+        <li onclick="appendToResponse('What takes up the most mental space?')">What takes up the most mental space?</li>
+        <li onclick="appendToResponse('What are you most afraid of forgetting?')">What are you most afraid of forgetting?</li>
+        <li onclick="appendToResponse('What becomes overwhelming first?')">What becomes overwhelming first?</li>
+      </ul>
+    </div>
+
+    <p class="privacy-note">Your response will be reviewed only to help shape the design and priorities of SolenOS. It will not be shared publicly. It will not be sold. It will not be used for marketing.</p>
+
+    <button class="submit-btn" onclick="handleReflectionSubmit()">Share this with us</button>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SUCCESS STATE                              -->
+<!-- ══════════════════════════════════════════ -->
+<div id="success-state">
+  <div class="wrap">
+    <h2>Thank you for sharing this with us.</h2>
+    <p>A lot of adults are carrying far more than people around them realize.</p>
+    <p>Your response helps us build SolenOS more thoughtfully, carefully, and responsibly.</p>
+  </div>
+</div>
+
+
+<script>
+  // ── NAV SCROLL BORDER ──
+  window.addEventListener('scroll', function () {
+    document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // ── SCROLL TO INVITATION ──
+  function scrollToInvitation() {
+    document.getElementById('s10').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── STATE CONTROL ──
+  function showState(state) {
+    document.getElementById('landing-state').style.display   = state === 'landing'    ? 'block' : 'none';
+    document.getElementById('reflection-state').style.display = state === 'reflection' ? 'block' : 'none';
+
+    var ss = document.getElementById('success-state');
+    if (state === 'success') {
+      ss.style.display = 'flex';
+    } else {
+      ss.style.display = 'none';
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── CAPTURE SUBMIT ──
+  function handleCapture() {
+    var emailField = document.getElementById('field-email');
+    var emailInput = document.getElementById('email');
+    var val = emailInput.value.trim();
+
+    emailField.classList.remove('has-error');
+
+    if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      emailField.classList.add('has-error');
+      emailInput.focus();
+      return;
+    }
+
+    saveToStorage({
+      firstName: document.getElementById('first-name').value.trim(),
+      email: val,
+      capturedAt: new Date().toISOString(),
+      stage: 'capture'
+    });
+
+    showState('reflection');
+  }
+
+  // ── REFLECTION SUBMIT ──
+  function handleReflectionSubmit() {
+    var response = document.getElementById('main-response').value.trim();
+    var existing = getLastRecord();
+
+    saveToStorage(Object.assign({}, existing, {
+      reflection: response,
+      stage: 'complete',
+      completedAt: new Date().toISOString()
+    }));
+
+    showState('success');
+  }
+
+  // ── OPTIONAL PROMPT CLICK ──
+  function appendToResponse(prompt) {
+    var ta = document.getElementById('main-response');
+    var cur = ta.value.trim();
+    ta.value = cur.length ? cur + '\n\n' + prompt + '\n' : prompt + '\n';
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+
+  // ── LOCALSTORAGE ──
+  var STORAGE_KEY = 'solenos_submissions';
+
+  function saveToStorage(record) {
+    try {
+      var all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      var idx = record.email ? all.findIndex(function(r){ return r.email === record.email; }) : -1;
+      if (idx > -1) {
+        all[idx] = Object.assign({}, all[idx], record);
+      } else {
+        all.push(record);
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch(e) {}
+  }
+
+  function getLastRecord() {
+    try {
+      var all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return all.length ? all[all.length - 1] : {};
+    } catch(e) { return {}; }
+  }
+
+  // ── EMAIL FIELD RESET ON INPUT ──
+  document.getElementById('email').addEventListener('input', function() {
+    document.getElementById('field-email').classList.remove('has-error');
+  });
+
+  // ── INIT ──
+  showState('landing');
+</script>
+
+</body>
+</html>
