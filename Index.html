@@ -864,4 +864,115 @@ section {
   <div class="wrap">
     <h2>Thank you for sharing this with us.</h2>
     <p>A lot of adults are carrying far more than people around them realize.</p>
-    <p>Your response helps us build SolenOS more thoughtfully
+        <p>Your response helps us build SolenOS more thoughtfully, carefully, and responsibly.</p>
+  </div>
+</div>
+
+
+<script>
+  // ── NAV SCROLL BORDER ──
+  window.addEventListener('scroll', function () {
+    document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // ── SCROLL TO INVITATION ──
+  function scrollToInvitation() {
+    document.getElementById('s10').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── STATE CONTROL ──
+  function showState(state) {
+    document.getElementById('landing-state').style.display   = state === 'landing'    ? 'block' : 'none';
+    document.getElementById('reflection-state').style.display = state === 'reflection' ? 'block' : 'none';
+
+    var ss = document.getElementById('success-state');
+    if (state === 'success') {
+      ss.style.display = 'flex';
+    } else {
+      ss.style.display = 'none';
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── CAPTURE SUBMIT ──
+  function handleCapture() {
+    var emailField = document.getElementById('field-email');
+    var emailInput = document.getElementById('email');
+    var val = emailInput.value.trim();
+
+    emailField.classList.remove('has-error');
+
+    if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      emailField.classList.add('has-error');
+      emailInput.focus();
+      return;
+    }
+
+    saveToStorage({
+      firstName: document.getElementById('first-name').value.trim(),
+      email: val,
+      capturedAt: new Date().toISOString(),
+      stage: 'capture'
+    });
+
+    showState('reflection');
+  }
+
+  // ── REFLECTION SUBMIT ──
+  function handleReflectionSubmit() {
+    var response = document.getElementById('main-response').value.trim();
+    var existing = getLastRecord();
+
+    saveToStorage(Object.assign({}, existing, {
+      reflection: response,
+      stage: 'complete',
+      completedAt: new Date().toISOString()
+    }));
+
+    showState('success');
+  }
+
+  // ── OPTIONAL PROMPT CLICK ──
+  function appendToResponse(prompt) {
+    var ta = document.getElementById('main-response');
+    var cur = ta.value.trim();
+    ta.value = cur.length ? cur + '\n\n' + prompt + '\n' : prompt + '\n';
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+
+  // ── LOCALSTORAGE ──
+  var STORAGE_KEY = 'solenos_submissions';
+
+  function saveToStorage(record) {
+    try {
+      var all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      var idx = record.email ? all.findIndex(function(r){ return r.email === record.email; }) : -1;
+      if (idx > -1) {
+        all[idx] = Object.assign({}, all[idx], record);
+      } else {
+        all.push(record);
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch(e) {}
+  }
+
+  function getLastRecord() {
+    try {
+      var all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return all.length ? all[all.length - 1] : {};
+    } catch(e) { return {}; }
+  }
+
+  // ── EMAIL FIELD RESET ON INPUT ──
+  document.getElementById('email').addEventListener('input', function() {
+    document.getElementById('field-email').classList.remove('has-error');
+  });
+
+  // ── INIT ──
+  showState('landing');
+</script>
+
+</body>
+</html>
