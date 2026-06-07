@@ -364,8 +364,12 @@
         
         // ============ SUPABASE INSERT ============
         const { data, error } = await supabaseClient
-          .from("waitlist")
-          .insert([payload]);
+  .from("waitlist")
+  .insert([payload])
+  .select();
+
+logDebug("DATA:", data);
+logDebug("ERROR:", error);
 
         logDebug("📬 Supabase response received");
         
