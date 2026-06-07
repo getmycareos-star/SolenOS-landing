@@ -870,109 +870,50 @@ section {
 
 
 <script>
-  // ── NAV SCROLL BORDER ──
-  window.addEventListener('scroll', function () {
-    document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 10);
-  });
+ 
+   // ── CAPTURE SUBMIT (SUPABASE VERSION) ──
+async function handleCapture() {
+  var emailField = document.getElementById('field-email');
+  var emailInput = document.getElementById('email');
+  var val = emailInput.value.trim();
 
-  // ── SCROLL TO INVITATION ──
-  function scrollToInvitation() {
-    document.getElementById('s10').scrollIntoView({ behavior: 'smooth' });
+  emailField.classList.remove('has-error');
+
+  // email validation
+  if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+    emailField.classList.add('has-error');
+    emailInput.focus();
+    return;
   }
 
-  // ── STATE CONTROL ──
-  function showState(state) {
-    document.getElementById('landing-state').style.display   = state === 'landing'    ? 'block' : 'none';
-    document.getElementById('reflection-state').style.display = state === 'reflection' ? 'block' : 'none';
+  const payload = {
+    email: val,
+    first_name: document.getElementById('first-name').value.trim(),
+    stage: 'capture',
+    captured_at: new Date().toISOString()
+  };
 
-    var ss = document.getElementById('success-state');
-    if (state === 'success') {
-      ss.style.display = 'flex';
-    } else {
-      ss.style.display = 'none';
-    }
+  console.log("📦 Sending to Supabase:", payload);
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  try {
+    const { data, error } = await supabaseClient
+      .from('waitlist')
+      .insert([payload])
+      .select();
 
-  // ── CAPTURE SUBMIT ──
-  function handleCapture() {
-    var emailField = document.getElementById('field-email');
-    var emailInput = document.getElementById('email');
-    var val = emailInput.value.trim();
-
-    emailField.classList.remove('has-error');
-
-    if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-      emailField.classList.add('has-error');
-      emailInput.focus();
+    if (error) {
+      console.error("Supabase error:", error);
+      alert("Something went wrong. Try again.");
       return;
     }
 
-    saveToStorage({
-      firstName: document.getElementById('first-name').value.trim(),
-      email: val,
-      capturedAt: new Date().toISOString(),
-      stage: 'capture'
-    });
+    console.log("✅ Saved to Supabase:", data);
 
+    // move to next UI state
     showState('reflection');
+
+  } catch (err) {
+    console.error("Network error:", err);
+    alert("Network error. Check console.");
   }
-
-  // ── REFLECTION SUBMIT ──
-  function handleReflectionSubmit() {
-    var response = document.getElementById('main-response').value.trim();
-    var existing = getLastRecord();
-
-    saveToStorage(Object.assign({}, existing, {
-      reflection: response,
-      stage: 'complete',
-      completedAt: new Date().toISOString()
-    }));
-
-    showState('success');
-  }
-
-  // ── OPTIONAL PROMPT CLICK ──
-  function appendToResponse(prompt) {
-    var ta = document.getElementById('main-response');
-    var cur = ta.value.trim();
-    ta.value = cur.length ? cur + '\n\n' + prompt + '\n' : prompt + '\n';
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
-  }
-
-  // ── LOCALSTORAGE ──
-  var STORAGE_KEY = 'solenos_submissions';
-
-  function saveToStorage(record) {
-    try {
-      var all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      var idx = record.email ? all.findIndex(function(r){ return r.email === record.email; }) : -1;
-      if (idx > -1) {
-        all[idx] = Object.assign({}, all[idx], record);
-      } else {
-        all.push(record);
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    } catch(e) {}
-  }
-
-  function getLastRecord() {
-    try {
-      var all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return all.length ? all[all.length - 1] : {};
-    } catch(e) { return {}; }
-  }
-
-  // ── EMAIL FIELD RESET ON INPUT ──
-  document.getElementById('email').addEventListener('input', function() {
-    document.getElementById('field-email').classList.remove('has-error');
-  });
-
-  // ── INIT ──
-  showState('landing');
-</script>
-
-</body>
-</html>
+}
