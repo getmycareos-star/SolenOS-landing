@@ -155,6 +155,29 @@
       margin-top: 32px;
     }
 
+    .debug-box {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin-top: 20px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: monospace;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .debug-box.show {
+      display: block;
+    }
+
+    .debug-box p {
+      margin: 4px 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
     /* Success state */
     #success-state {
       display: none;
@@ -242,6 +265,7 @@
 
         <button type="submit" id="submit-btn">Submit your response</button>
         <div class="loading" id="loading">Saving your response...</div>
+        <div class="debug-box" id="debug-box"></div>
       </form>
 
       <p class="privacy-note">
@@ -260,7 +284,25 @@
   </div>
 
   <script>
-    // Supabase configuration
+    // ============ DEBUG LOGGING SYSTEM ============
+    const debugBox = document.getElementById("debug-box");
+    const logs = [];
+
+    function logDebug(msg) {
+      const timestamp = new Date().toLocaleTimeString();
+      const fullMsg = `[${timestamp}] ${msg}`;
+      logs.push(fullMsg);
+      console.log(fullMsg);
+      
+      // Update debug box
+      debugBox.innerHTML = logs.map(l => `<p>${l}</p>`).join('');
+      debugBox.classList.add("show");
+      debugBox.scrollTop = debugBox.scrollHeight;
+    }
+
+    logDebug("🔧 Initializing form...");
+
+    // ============ SUPABASE CONFIGURATION ============
     const SUPABASE_URL = "https://yijsemeiyxfaeygsqzkth.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpanNlbWVpeGZhZXlnc3F6a3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTMzMzAsImV4cCI6MjA5NjA4OTMzMH0.KQ_YIKDENACPPcYIwKeYzM8AgGJn_xKoSNfuZM5MrHI";
     
@@ -269,12 +311,13 @@
     // Initialize Supabase when script loads
     if (typeof supabase !== 'undefined') {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      console.log('✓ Supabase client initialized');
+      logDebug("✓ Supabase client initialized successfully");
+      logDebug(`📍 URL: ${SUPABASE_URL}`);
     } else {
-      console.error('✗ Supabase library not loaded');
+      logDebug("✗ ERROR: Supabase library not loaded - check CDN link");
     }
 
-    // Form handling
+    // ============ FORM ELEMENTS ============
     const form = document.getElementById("intake-form");
     const formState = document.getElementById("form-state");
     const successState = document.getElementById("success-state");
@@ -283,37 +326,65 @@
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      logDebug("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      logDebug("📝 FORM SUBMITTED - Starting validation...");
 
-      // Validate all fields
+      // ============ VALIDATION ============
       const q1 = document.getElementById("q1").value.trim();
       const q2 = document.getElementById("q2").value.trim();
       const q3 = document.getElementById("q3").value.trim();
       const q4 = document.getElementById("q4").value.trim();
       const email = document.getElementById("email").value.trim();
 
+      logDebug(`Field lengths: q1=${q1.length}, q2=${q2.length}, q3=${q3.length}, q4=${q4.length}, email=${email.length}`);
+
       if (!validateForm(q1, q2, q3, q4, email)) {
+        logDebug("✗ Validation failed - form not submitted");
         return;
       }
+
+      logDebug("✓ All fields validated successfully");
+
+      // ============ BUILD PAYLOAD ============
+      const payload = { email, q1, q2, q3, q4 };
+      logDebug("📦 Payload to send:");
+      logDebug(JSON.stringify(payload, null, 2));
 
       // Show loading state
       loadingSpinner.classList.add("show");
       submitBtn.disabled = true;
+      logDebug("⏳ Showing loading state...");
 
       try {
         if (!supabaseClient) {
           throw new Error('Supabase client not initialized');
         }
 
-        // Insert into Supabase
+        logDebug("🚀 Attempting insert to 'waitlist' table...");
+        
+        // ============ SUPABASE INSERT ============
         const { data, error } = await supabaseClient
           .from("waitlist")
-          .insert([{ email, q1, q2, q3, q4 }]);
+          .insert([payload]);
 
+        logDebug("📬 Supabase response received");
+        
         if (error) {
+          logDebug(`✗ SUPABASE ERROR: ${error.message}`);
+          logDebug(`Error code: ${error.code}`);
+          logDebug(`Full error: ${JSON.stringify(error, null, 2)}`);
           throw error;
         }
 
-        console.log('✓ Response saved successfully');
+        if (data) {
+          logDebug(`✓ Insert successful!`);
+          logDebug(`Response data: ${JSON.stringify(data)}`);
+        } else {
+          logDebug(`✓ Insert successful (no data returned - this is normal for inserts)`);
+        }
+        
+        logDebug("✓ SUCCESS - Response saved to Supabase");
+        logDebug("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         
         // Success
         formState.style.display = "none";
@@ -324,12 +395,13 @@
         loadingSpinner.classList.remove("show");
         submitBtn.disabled = false;
         
-        console.error('✗ Error:', error);
+        logDebug(`✗ FATAL ERROR: ${error.message}`);
+        logDebug("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         
         if (error.message && error.message.includes("duplicate")) {
           alert("This email has already been submitted. Thank you for your initial response.");
         } else {
-          alert("There was an error saving your response. Please try again.");
+          alert("There was an error saving your response. Please check the browser console for details.");
         }
       }
     });
@@ -341,6 +413,7 @@
       // Validate Q1
       if (!q1) {
         addError("q1");
+        logDebug("✗ Q1 is empty");
         isValid = false;
       } else {
         removeError("q1");
@@ -349,6 +422,7 @@
       // Validate Q2
       if (!q2) {
         addError("q2");
+        logDebug("✗ Q2 is empty");
         isValid = false;
       } else {
         removeError("q2");
@@ -357,6 +431,7 @@
       // Validate Q3
       if (!q3) {
         addError("q3");
+        logDebug("✗ Q3 is empty");
         isValid = false;
       } else {
         removeError("q3");
@@ -365,6 +440,7 @@
       // Validate Q4
       if (!q4) {
         addError("q4");
+        logDebug("✗ Q4 is empty");
         isValid = false;
       } else {
         removeError("q4");
@@ -373,9 +449,11 @@
       // Validate email
       if (!email || !emailPattern.test(email)) {
         addError("email");
+        logDebug(`✗ Email is invalid: "${email}"`);
         isValid = false;
       } else {
         removeError("email");
+        logDebug(`✓ Email valid: ${email}`);
       }
 
       return isValid;
