@@ -795,9 +795,111 @@ section {
   </section>
 
   <!-- S10 — INVITATION + CAPTURE -->
-  <section id="s10">
-    <div class="wrap">
-      <h2>Tell us what you're carrying.</h2>
+  <!-- ─────────────────────────────── -->
+<!-- CAPTURE BUTTON -->
+<!-- ─────────────────────────────── -->
+<button class="submit-btn" id="capture-btn" type="button">
+  Tell us what you're carrying
+</button>
+
+<!-- ─────────────────────────────── -->
+<!-- SCRIPT (SUPABASE + UI SAFE) -->
+<!-- ─────────────────────────────── -->
+<script>
+console.log("🔥 SolenOS script loaded");
+
+// ── INIT ──
+let supabaseClient;
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  // ── INIT SUPABASE ──
+  if (typeof supabase !== 'undefined') {
+    supabaseClient = supabase.createClient(
+          const SUPABASE_URL = "https://yijsemeiyxfaeygsqzkth.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpanNlbWVpeGZhZXlnc3F6a3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTMzMzAsImV4cCI6MjA5NjA4OTMzMH0.KQ_YIKDENACPPcYIwKeYzM8AgGJn_xKoSNfuZM5MrHI";
+    );
+    console.log("✅ Supabase initialized");
+  } else {
+    console.error("❌ Supabase library not loaded");
+  }
+
+  // ── BIND BUTTON ──
+  const btn = document.getElementById("capture-btn");
+
+  if (!btn) {
+    console.error("❌ Capture button not found");
+    return;
+  }
+
+  btn.addEventListener("click", handleCapture);
+
+});
+
+// ── CAPTURE SUBMIT ──
+async function handleCapture() {
+  console.log("🔥 handleCapture triggered");
+
+  const emailField = document.getElementById('field-email');
+  const emailInput = document.getElementById('email');
+  const firstNameInput = document.getElementById('first-name');
+
+  if (!emailInput || !emailField) {
+    console.error("❌ Missing form elements");
+    return;
+  }
+
+  const val = emailInput.value.trim();
+  emailField.classList.remove('has-error');
+
+  // email validation
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!val || !emailPattern.test(val)) {
+    emailField.classList.add('has-error');
+    emailInput.focus();
+    return;
+  }
+
+  const payload = {
+    email: val,
+    first_name: firstNameInput ? firstNameInput.value.trim() : "",
+    stage: "capture",
+    captured_at: new Date().toISOString()
+  };
+
+  console.log("📦 Sending payload:", payload);
+
+  try {
+
+    if (!supabaseClient) {
+      throw new Error("Supabase client not initialized");
+    }
+
+    const { data, error } = await supabaseClient
+      .from("waitlist")
+      .insert([payload])
+      .select();
+
+    if (error) {
+      console.error("❌ Supabase error:", error);
+      alert("Something went wrong. Try again.");
+      return;
+    }
+
+    console.log("✅ Saved to Supabase:", data);
+
+    if (typeof showState === "function") {
+      showState("reflection");
+    }
+
+  } catch (err) {
+    console.error("❌ Runtime error:", err);
+    alert("Network error. Check console.");
+  }
+}
+</script>
+</h2>
       <p class="sub">Before deciding what to build, we want to understand what people are actually carrying every day.</p>
 
       <div class="form-field" id="field-name">
@@ -811,9 +913,9 @@ section {
         <span class="form-error">A valid email address is needed.</span>
       </div>
 
-      <button class="submit-btn" onclick="handleCapture()">Tell us what you're carrying</button>
-    </div>
-  </section>
+      <button class="submit-btn" id="capture-btn" type="button">
+  Tell us what you're carrying
+</button>
 
 </div>
 <!-- END LANDING -->
