@@ -802,12 +802,12 @@ section {
 
 <div class="form-field" id="field-name">
   <label for="first-name">First name <span style="font-weight:280;letter-spacing:0;text-transform:none;font-size:9px;color:var(--text-muted);">(optional)</span></label>
-  <input type="text" id="first-name" placeholder="Your name" autocomplete="given-name" />
+  <input type="text" id="first-name" name="first_name" placeholder="Your name" autocomplete="given-name" />
 </div>
 
 <div class="form-field" id="field-email">
   <label for="email">Email</label>
-  <input type="email" id="email" placeholder="your@email.com" autocomplete="email" />
+  <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" />
   <span class="form-error">A valid email address is needed.</span>
 </div>
 
@@ -819,99 +819,61 @@ section {
 </button>
 
 <!-- ─────────────────────────────── -->
-<!-- SCRIPT (SUPABASE + UI SAFE) -->
+<!-- SCRIPT (FORMSPREE) -->
 <!-- ─────────────────────────────── -->
 <script>
-  console.log("🔥 SolenOS script loaded");
-
-  // ── INIT ──
-  let supabaseClient;
+  const FORMSPREE_URL = "https://formspree.io/f/xaqzdeoz";
 
   document.addEventListener("DOMContentLoaded", function () {
-
-    // ── INIT SUPABASE ──
-    if (typeof supabase !== 'undefined') {
-      const SUPABASE_URL = "https://yijsemeiyxfaeygsqzkth.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpanNlbWVpeGZhZXlnc3F6a3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTMzMzAsImV4cCI6MjA5NjA4OTMzMH0.KQ_YIKDENACPPcYIwKeYzM8AgGJn_xKoSNfuZM5MrHI";
-      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      console.log("✅ Supabase initialized");
-    } else {
-      console.error("❌ Supabase library not loaded");
-    }
-
-    // ── BIND BUTTON ──
     const btn = document.getElementById("capture-btn");
-
-    if (!btn) {
-      console.error("❌ Capture button not found");
-      return;
-    }
-
+    if (!btn) return;
     btn.addEventListener("click", handleCapture);
-
   });
 
-  // ── CAPTURE SUBMIT ──
-  async function handleCapture() {
-    console.log("🔥 handleCapture triggered");
+  function handleCapture() {
+    const emailInput = document.getElementById("email");
+    const firstNameInput = document.getElementById("first-name");
+    const emailField = document.getElementById("field-email");
 
-    const emailField = document.getElementById('field-email');
-    const emailInput = document.getElementById('email');
-    const firstNameInput = document.getElementById('first-name');
-
-    if (!emailInput || !emailField) {
-      console.error("❌ Missing form elements");
-      return;
-    }
-
-    const val = emailInput.value.trim();
-    emailField.classList.remove('has-error');
-
-    // email validation
+    const email = emailInput.value.trim();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!val || !emailPattern.test(val)) {
-      emailField.classList.add('has-error');
+    if (!email || !emailPattern.test(email)) {
+      emailField.classList.add("has-error");
       emailInput.focus();
       return;
     }
 
-    const payload = {
-      email: val,
-      first_name: firstNameInput ? firstNameInput.value.trim() : "",
-      stage: "capture",
-      captured_at: new Date().toISOString()
-    };
+    emailField.classList.remove("has-error");
 
-    console.log("📦 Sending payload:", payload);
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = FORMSPREE_URL;
+    form.style.display = "none";
 
-    try {
+    const emailFieldInput = document.createElement("input");
+    emailFieldInput.name = "email";
+    emailFieldInput.value = email;
 
-      if (!supabaseClient) {
-        throw new Error("Supabase client not initialized");
-      }
+    const nameFieldInput = document.createElement("input");
+    nameFieldInput.name = "first_name";
+    nameFieldInput.value = firstNameInput ? firstNameInput.value.trim() : "";
 
-      const { data, error } = await supabaseClient
-        .from("waitlist")
-        .insert([payload])
-        .select();
+    const stageInput = document.createElement("input");
+    stageInput.name = "stage";
+    stageInput.value = "capture";
 
-      if (error) {
-        console.error("❌ Supabase error:", error);
-        alert("Something went wrong. Try again.");
-        return;
-      }
+    const timeInput = document.createElement("input");
+    timeInput.name = "captured_at";
+    timeInput.value = new Date().toISOString();
 
-      console.log("✅ Saved to Supabase:", data);
+    form.appendChild(emailFieldInput);
+    form.appendChild(nameFieldInput);
+    form.appendChild(stageInput);
+    form.appendChild(timeInput);
+    document.body.appendChild(form);
 
-      if (typeof showState === "function") {
-        showState("reflection");
-      }
-
-    } catch (err) {
-      console.error("❌ Runtime error:", err);
-      alert("Network error. Check console.");
-    }
+    form.submit();
   }
 </script>
 
