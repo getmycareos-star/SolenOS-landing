@@ -377,11 +377,6 @@ section {
   letter-spacing: 0.01em;
 }
 
-.product-explainer {
-  font-size: 24px;
-  line-height: 1.5;
-}
-
 /* ── SECTION 9 — TRUST ── */
 #s9 {
   background: var(--bg-warm);
@@ -644,6 +639,48 @@ section {
   margin-bottom: 0;
 }
 
+/* ── S7B — PRODUCT EXPLAINER ── */
+#s7b {
+  background: var(--bg);
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+}
+
+.explainer-lead {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(26px, 3.5vw, 36px);
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 44px;
+}
+
+.explainer-list {
+  list-style: none;
+  margin-bottom: 44px;
+}
+
+.explainer-list li {
+  font-size: 1.15rem;
+  color: var(--text-sec);
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.explainer-list li:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.explainer-note {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.35rem;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 /* ── SECTION 9 — CAREGIVER QUOTE ── */
 #s9 {
   background: var(--bg-warm);
@@ -777,7 +814,7 @@ section {
     </div>
   </section>
 
-  <!-- S3 — THE PART NOBODY SEES -->
+<!-- S3 — THE PART NOBODY SEES -->
   <section id="s3">
     <div class="wrap">
       <ul class="unseen-lines">
@@ -834,7 +871,7 @@ section {
     </div>
   </section>
 
-<!-- S7 — SOLEN-OS -->
+  <!-- S7 — SOLEN-OS -->
   <section id="s7">
     <div class="wrap">
       <span class="label">SolenOS</span>
@@ -845,7 +882,20 @@ section {
         <li>What may become serious.</li>
       </ul>
       <p class="follow">That's it.<br>No systems to manage. No complexity to learn. No additional burden.</p>
-      <p class="solen-close">SolenOS does not track. It relieves.it's a place where you dump everything you’re trying to remember, and it immediately shows what you should deal with first.</p>
+      <p class="solen-close">SolenOS does not track. It relieves.</p>
+    </div>
+  </section>
+
+  <!-- S7B — PRODUCT EXPLAINER -->
+  <section id="s7b">
+    <div class="wrap">
+      <p class="explainer-lead">When everything is in your head at once, SolenOS helps you see what to deal with first.</p>
+      <ul class="explainer-list">
+        <li>You type messy care thoughts — anything you're handling right now</li>
+        <li>It groups and sorts them based on urgency and real-world risk</li>
+        <li>It shows you a simple next-action order — not a task list</li>
+      </ul>
+      <p class="explainer-note">Not reminders. Not planning. Just clarity when things feel overwhelming.</p>
     </div>
   </section>
 
@@ -858,22 +908,6 @@ section {
     </div>
   </section>
 
-<div class="product-explainer" style="font-size:24px; line-height:1.5;">
-  <p class="strong-line">
-    When everything is in your head at once, SolenOS helps you see what to deal with first.
-  </p>
-
-  <ul class="simple-list">
-    <li>You type messy care thoughts (anything you’re handling right now)</li>
-    <li>It groups and sorts them based on urgency + real-world risk</li>
-    <li>It shows you a simple “next action” order — not a task list</li>
-  </ul>
-
-  <p class="micro-note">
-    Not reminders. Not planning. Just clarity when things feel overwhelming.
-  </p>
-</div>
-
   <!-- S9 — TRUST -->
   <section id="s9">
     <div class="wrap">
@@ -885,7 +919,7 @@ section {
     </div>
   </section>
 
-  <!-- S10 — INVITATION + CAPTURE -->
+<!-- S10 — INVITATION + CAPTURE -->
   <section id="s10">
     <div class="wrap">
       <h2>Tell us what you're carrying.</h2>
@@ -950,6 +984,7 @@ section {
   </div>
 </div>
 
+
 <!-- ══════════════════════════════════════════ -->
 <!-- SUCCESS STATE                              -->
 <!-- ══════════════════════════════════════════ -->
@@ -1009,39 +1044,7 @@ section {
 
     saveToStorage(payload);
 
-    // Advance immediately — Formspree posts in background
-    showState('reflection');
-
-    fetch(FORMSPREE_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body:    JSON.stringify(payload)
-    }).catch(function(err) {
-      console.warn('Capture POST failed (data saved locally):', err);
-    });
-  }
-
-  // ── REFLECTION SUBMIT ──
-  function handleReflectionSubmit() {
-    var ta  = document.getElementById('main-response');
-    var btn = document.getElementById('reflection-btn');
-
-    if (!ta.value.trim()) {
-      ta.focus();
-      return;
-    }
-
-    var stored  = getLastRecord();
-    var payload = {
-      email:        stored.email || 'anonymous',
-      reflection:   ta.value.trim(),
-      stage:        'reflection',
-      submitted_at: new Date().toISOString()
-    };
-
-    saveToStorage(Object.assign({}, stored, payload));
-
-    // Advance immediately — Formspree posts in background
+// Advance immediately — Formspree posts in background
     showState('success');
 
     fetch(FORMSPREE_URL, {
