@@ -802,12 +802,12 @@ section {
 
 <div class="form-field" id="field-name">
   <label for="first-name">First name <span style="font-weight:280;letter-spacing:0;text-transform:none;font-size:9px;color:var(--text-muted);">(optional)</span></label>
-  <input type="text" id="first-name" name="first_name" placeholder="Your name" autocomplete="given-name" />
+  <input type="text" id="first-name" placeholder="Your name" autocomplete="given-name" />
 </div>
 
 <div class="form-field" id="field-email">
   <label for="email">Email</label>
-  <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" />
+  <input type="email" id="email" placeholder="your@email.com" autocomplete="email" />
   <span class="form-error">A valid email address is needed.</span>
 </div>
 
@@ -819,18 +819,17 @@ section {
 </button>
 
 <!-- ─────────────────────────────── -->
-<!-- SCRIPT (FORMSPREE) -->
+<!-- SCRIPT (FORMSPREE FETCH) -->
 <!-- ─────────────────────────────── -->
 <script>
   const FORMSPREE_URL = "https://formspree.io/f/xaqzdeoz";
 
   document.addEventListener("DOMContentLoaded", function () {
     const btn = document.getElementById("capture-btn");
-    if (!btn) return;
-    btn.addEventListener("click", handleCapture);
+    if (btn) btn.addEventListener("click", handleCapture);
   });
 
-  function handleCapture() {
+  async function handleCapture() {
     const emailInput = document.getElementById("email");
     const firstNameInput = document.getElementById("first-name");
     const emailField = document.getElementById("field-email");
@@ -846,34 +845,76 @@ section {
 
     emailField.classList.remove("has-error");
 
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = FORMSPREE_URL;
-    form.style.display = "none";
+    const payload = {
+      email: email,
+      first_name: firstNameInput ? firstNameInput.value.trim() : "",
+      stage: "capture",
+      captured_at: new Date().toISOString()
+    };
 
-    const emailFieldInput = document.createElement("input");
-    emailFieldInput.name = "email";
-    emailFieldInput.value = email;
+    try {
+      const res = await fetch(FORMSPREE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
 
-    const nameFieldInput = document.createElement("input");
-    nameFieldInput.name = "first_name";
-    nameFieldInput.value = firstNameInput ? firstNameInput.value.trim() : "";
+      if (res.ok) {
+        if (typeof showState === "function") showState("reflection");
+      } else {
+        throw new Error("Formspree error " + res.status);
+      }
+    } catch (err) {
+      console.error("❌ Capture failed:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  }
 
-    const stageInput = document.createElement("input");
-    stageInput.name = "stage";
-    stageInput.value = "capture";
+  function appendToResponse(text) {
+    const textarea = document.getElementById("main-response");
+    if (!textarea) return;
+    const current = textarea.value.trim();
+    textarea.value = current ? current + "\n\n" + text : text;
+  }
 
-    const timeInput = document.createElement("input");
-    timeInput.name = "captured_at";
-    timeInput.value = new Date().toISOString();
+  async function handleReflectionSubmit() {
+    const response = document.getElementById("main-response");
+    const emailInput = document.getElementById("email");
 
-    form.appendChild(emailFieldInput);
-    form.appendChild(nameFieldInput);
-    form.appendChild(stageInput);
-    form.appendChild(timeInput);
-    document.body.appendChild(form);
+    if (!response || !response.value.trim()) {
+      response.focus();
+      return;
+    }
 
-    form.submit();
+    const payload = {
+      email: emailInput ? emailInput.value.trim() : "anonymous",
+      reflection: response.value.trim(),
+      stage: "reflection",
+      submitted_at: new Date().toISOString()
+    };
+
+    try {
+      const res = await fetch(FORMSPREE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        if (typeof showState === "function") showState("success");
+      } else {
+        throw new Error("Formspree error " + res.status);
+      }
+    } catch (err) {
+      console.error("❌ Reflection failed:", err);
+      alert("Something went wrong. Please try again.");
+    }
   }
 </script>
 
