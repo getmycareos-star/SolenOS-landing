@@ -1043,6 +1043,43 @@ section {
 <!-- ══════════════════════════════════════════ -->
 <div id="reflection-state">
   <div class="wrap">
+
+    <div class="reflection-top">
+      <h2>Thank you for sharing this with us.</h2>
+      <p>SolenOS is being built carefully for adults carrying invisible responsibility every day. Before we continue building, we want to understand what life actually feels like when you're holding everything together.</p>
+    </div>
+
+    <div class="why-block">
+      <span class="label">Why we're asking</span>
+      <p>Most systems are designed around services, features, or programs. SolenOS is being designed around lived experience. Before deciding what to build, we want to understand what people are actually carrying every day. Your response helps us identify where pressure accumulates so SolenOS can reduce mental burden where it matters most.</p>
+    </div>
+
+    <div class="main-prompt">
+      <label for="main-response">What feels hardest to keep up with right now?</label>
+      <textarea id="main-response" placeholder="Trying to remember appointments, paperwork, medications, and family responsibilities all at once."></textarea>
+    </div>
+
+    <div class="optional-block">
+      <span class="label">Optional reflections</span>
+      <ul class="optional-prompts">
+        <li onclick="appendToResponse('What takes up the most mental space?')">What takes up the most mental space?</li>
+        <li onclick="appendToResponse('What are you most afraid of forgetting?')">What are you most afraid of forgetting?</li>
+        <li onclick="appendToResponse('What becomes overwhelming first?')">What becomes overwhelming first?</li>
+      </ul>
+    </div>
+
+    <p class="privacy-note">Your response will be reviewed only to help shape the design and priorities of SolenOS. It will not be shared publicly. It will not be sold. It will not be used for marketing.</p>
+
+    <button class="submit-btn" onclick="handleReflectionSubmit()">Share this with us</button>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- REFLECTION STATE                           -->
+<!-- ══════════════════════════════════════════ -->
+<div id="reflection-state">
+  <div class="wrap">
     <div class="step-indicator">Step 2 of 2</div>
     <div class="reflection-top">
       <h2>Thank you for sharing this with us.</h2>
