@@ -1,0 +1,31 @@
+---
+description: Never hardcode examples as keywords — infer care reality from messy context; never symptom classifier
+alwaysApply: true
+---
+
+# Do Not Hardcode Examples (Intelligence Layer)
+
+**SoT:** [`docs/02-product/solenos-intelligence-no-hardcode.md`](../../docs/02-product/solenos-intelligence-no-hardcode.md)
+
+## Core
+
+Doc examples are **categories of care reality change**, not phrases to detect.  
+Infer meaning from messy context — never fixed word/symptom lists.
+
+## Always reason
+
+Current understanding · What changed · Important context · Still unclear · One question that helps  
+
+**Never:** “Detected keywords: …”
+
+## Ranking (engine-only)
+
+Condition change → safety events → care decisions → functional → unknowns → emotions/family (context, not primary unless they affect care)
+
+## Ask
+
+What is happening, what changed, what decisions happened, what remains uncertain?  
+**Never:** What words appeared in the message?
+
+**Verify:** `verify:intelligence-no-hardcode`
+---

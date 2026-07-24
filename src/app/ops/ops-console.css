@@ -1,0 +1,179 @@
+/* SolenOS Ops / Metrics — clinical monospace, dense, no charts */
+
+.ops-console {
+  --ops-bg: #0a0a0a;
+  --ops-fg: #e8e8e8;
+  --ops-muted: #8a8a8a;
+  --ops-line: #2a2a2a;
+  --ops-ok: #9db89a;
+  --ops-warn: #c4a574;
+  --ops-panel: #111111;
+  min-height: 100vh;
+  background: var(--ops-bg);
+  color: var(--ops-fg);
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 1rem 1.25rem 3rem;
+}
+
+.ops-console * {
+  box-sizing: border-box;
+}
+
+.ops-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--ops-line);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ops-header h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ops-header .ops-meta {
+  color: var(--ops-muted);
+}
+
+.ops-snapshot {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  background: var(--ops-panel);
+  border: 1px solid var(--ops-line);
+}
+
+.ops-stat {
+  padding: 0.35rem 0;
+}
+
+.ops-stat .label {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ops-stat .value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ops-section {
+  margin-bottom: 1.5rem;
+}
+
+.ops-section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ops-muted);
+  border-bottom: 1px solid var(--ops-line);
+  padding-bottom: 0.35rem;
+}
+
+.ops-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ops-line);
+}
+
+.ops-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ops-table th,
+.ops-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--ops-line);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.ops-table th {
+  color: var(--ops-muted);
+  font-weight: 500;
+  font-size: 10px;
+  text-transform: uppercase;
+  background: var(--ops-panel);
+}
+
+.ops-table td.meta {
+  white-space: pre-wrap;
+  max-width: 420px;
+  word-break: break-word;
+  color: var(--ops-muted);
+}
+
+.ops-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.ops-panel {
+  border: 1px solid var(--ops-line);
+  background: var(--ops-panel);
+  padding: 0.6rem 0.75rem;
+}
+
+.ops-status-ok {
+  color: var(--ops-ok);
+}
+
+.ops-status-warn {
+  color: var(--ops-warn);
+}
+
+.ops-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ops-filters input,
+.ops-filters select,
+.ops-filters button {
+  font-family: inherit;
+  font-size: 12px;
+  background: #000;
+  color: var(--ops-fg);
+  border: 1px solid var(--ops-line);
+  padding: 0.3rem 0.45rem;
+}
+
+.ops-filters button {
+  cursor: pointer;
+}
+
+.ops-pager {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  color: var(--ops-muted);
+}
+
+.ops-pager a {
+  color: var(--ops-fg);
+}
+
+.metrics-note {
+  color: var(--ops-muted);
+  margin: 0 0 1rem;
+  max-width: 40rem;
+}

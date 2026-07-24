@@ -1,0 +1,53 @@
+---
+description: Permanent Product Identity — SolenOS only; forbid CareOS and auto-generated product renames
+alwaysApply: true
+---
+
+# Permanent Product Identity Directive (SolenOS)
+
+**Highest priority.** Applies to source, docs, UI, comments, prompts, README, package metadata, architecture, constants, env descriptions, and user copy.
+
+## Only valid product name
+
+**SolenOS** = company, product, platform, application, repository.
+
+## Category (not a product rename)
+
+**Care Reality Intelligence** — category SolenOS is creating. Keep as category phrase only.
+
+## Foundation
+
+**The Living Care Record** — evolving intelligence over a person's changing care reality.
+
+## What SolenOS is
+
+> An evolving intelligence layer that understands a person's changing care reality over time and helps families recognize change, coordinate action, and make decisions with confidence.
+
+## Philosophy chain
+
+Input → Event → Change → Context → Meaning → Attention
+
+## Forbidden product names (purge everywhere)
+
+Never introduce, keep, or generate these as product/company/platform names:
+
+- CareOS / Care OS / Careos
+- Care Reality OS / Care Reality Operating System
+- Care Intelligence OS / Living Care OS / Memory OS / Health OS / Care Platform
+- Any auto-generated replacement product names
+
+**Do not** replace legitimate English words: care, caregiver, caregiving, care record, care event, care graph, care load, etc. Only product-name placeholders.
+
+## Validation step (before finishing any change)
+
+1. Search with ripgrep for: `CareOS`, `Care OS`, `Careos`, `Care Reality OS`, `Living Care OS`, `Memory OS`, `Health OS` (as product names)
+2. Goal: **zero** product-name hits
+3. Code identifiers formerly branded `CareOS*` → `SolenOS*` (or semantic names without a forbidden product prefix)
+4. Do **not** describe SolenOS as: task manager, document app, healthcare chatbot, reminder app, or generic care coordination tool
+
+## Do not describe SolenOS as
+
+- Task manager / reminder app
+- Document app
+- Healthcare chatbot
+- Generic care coordination tool

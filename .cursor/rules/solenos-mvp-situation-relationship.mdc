@@ -1,0 +1,40 @@
+---
+description: MVP — Situation Relationship intelligence now; graph viz later; not phrase logic
+alwaysApply: true
+---
+
+# MVP Situation Relationship Architecture
+
+**SoT:** [`docs/02-product/solenos-mvp-situation-relationship-architecture.md`](../../docs/02-product/solenos-mvp-situation-relationship-architecture.md)
+
+## Decision
+
+**C:** Relationship decisions now · graph visualization later.  
+Do **not** build full Situation Graph infra/UI in MVP.  
+Do **not** ship shallow Input→Classification→Response (notes-app failure).
+
+## Pipeline
+
+Input → Care Reality Understanding → **Situation Relationship Engine** → **Decision Memory** → Evidence-backed Care Context → ACS → Living Care Record → Timeline
+
+**Reject:** Input → Document summary → Generic answer.
+
+Before new Care Event: update existing? answer uncertainty? strengthen pattern? related event? new unrelated? decision / outcome link? uncertain?
+
+## MVP types
+
+Update existing · Add related event · Answer uncertainty · New unrelated
+
+## Storage
+
+Relational (situations / events / relationships) — not a graph DB. Persist CareContext + ACS. Confidence/relationship_type = engine-only.
+
+## UI
+
+Continuity in plain language only. Never expose edges, enums, or classifications.
+
+## Priority
+
+1 CareContext · 2 Persistent ACS · 3 Relationship Engine · 4 Evidence linking · 5 CRS · 6 Full graph later
+
+Examples in docs are patterns — **never** hardcode phrase-specific product logic. Any text/doc enters the same system.

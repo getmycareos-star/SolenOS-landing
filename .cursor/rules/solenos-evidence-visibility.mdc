@@ -1,0 +1,30 @@
+---
+description: Evidence visibility grows with consequence — trust layer, not dashboard
+alwaysApply: true
+---
+
+# Evidence Visibility Directive
+
+**SoT:** [`docs/02-product/solenos-evidence-visibility-directive.md`](../../docs/02-product/solenos-evidence-visibility-directive.md)
+
+## Rule
+
+Evidence visibility increases with the **consequence of understanding**, not data volume.
+
+Do **not** ship evidence as a UI block everywhere. Attach evidence to understanding; UI reveals by maturity.
+
+## Ladder
+
+| Level | Show | Answers |
+|-------|------|---------|
+| 1 Capture | Source + what recorded (minimal); why-asks optional/quiet | Where did this come from? |
+| 2 Related | Light dated supporting observations | What contributed? |
+| 3 Pattern | Moderate evidence + unknowns; no diagnosis | Why meaningful? |
+| 5 Decision | High — source, date, context, reason/outcome when held; unknown reason OK | Why was this taken? |
+| 10 Major change | Full evolution timeline + uncertainty; Person spine not Documents→Summaries | How did we get here? |
+
+## Feel
+
+*"SolenOS remembers why it thinks this."* — never *"showing me everything it processed."*
+
+CRS stores understanding + supporting_evidence + uncertainty; Decision Memory (`src/lib/decision-memory`) holds why paths existed. Panel discloses by level. No confidence %, graphs, or engine jargon.

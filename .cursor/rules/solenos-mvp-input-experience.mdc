@@ -1,0 +1,29 @@
+# MVP Input Experience (SolenOS)
+
+**SoT:** [`docs/02-product/solenos-mvp-input-experience.md`](../../docs/02-product/solenos-mvp-input-experience.md)
+
+## Feel
+
+Handing over the care situation — not using software.
+
+## Entry
+
+**Snap · Scan · Upload · Share** = same pipeline. Not separate features.
+
+Starting feel: *What is happening with the person you care for?*
+
+## Auth
+
+No signup/login/profile **before** first understanding.  
+Anonymous care workspace OK. Auth when care memory is valuable enough to lose.
+
+## Success
+
+Caregiver understands better — not upload counts or account counts.
+
+## Never
+
+Onboarding homework · organize-before-upload · document summary as product · channel-specific product forks · example keyword templates
+
+**Module:** `src/lib/mvp-input-experience` · **Verify:** `verify:mvp-input-experience`  
+**Mechanics:** Input Entry Contract · First-time caregiver (B)

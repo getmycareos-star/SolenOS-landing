@@ -1,0 +1,28 @@
+---
+description: Initial Care Reality Assessment — no comparable prior means no change theater; build first understanding then baseline
+alwaysApply: true
+---
+
+# Initial Care Reality Assessment (2B)
+
+**SoT:** [`docs/02-product/solenos-initial-care-reality-assessment.md`](../../docs/02-product/solenos-initial-care-reality-assessment.md)
+
+## Rule
+
+No durable baseline **and** no same-turn stated usual/used-to **and** no held ACS observations from earlier turns → **Initial Assessment Mode**.
+
+Do **not** say: different from before · decline · new behavior · getting worse.
+
+When ACS already holds prior observations → graduate out of Initial Assessment (continuing story / related update). Still never invent decline without usual-pattern evidence.
+
+## Paths
+
+| Mode | Goal |
+|------|------|
+| Initial assessment | Current situation → known / unknown → seed baseline |
+| Change detection / continuing | Comparable prior exists (baseline discourse, durable familiarity, or held care memory) |
+
+New user = **situation**. Returning / comparable prior = **change or continuation**.
+
+**Module:** `src/lib/care-reality-intelligence/baseline-comparison-engine.ts` · `initial-care-reality-assessment.ts` · **Verify:** `verify:initial-care-reality-assessment`
+---

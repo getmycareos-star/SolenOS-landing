@@ -1,0 +1,28 @@
+---
+description: MVP FAQ — home excerpt + full Help; expectations without onboarding wall
+alwaysApply: true
+---
+
+# SolenOS MVP FAQ
+
+**SoT:** [`docs/02-product/solenos-mvp-faq.md`](../../docs/02-product/solenos-mvp-faq.md)  
+**Module:** `src/lib/mvp-faq` · **Verify:** `verify:mvp-faq`
+
+## Placement
+
+- **Home `/welcome`:** 5–7 trust FAQs only (`HOME_FAQ_IDS`)  
+- **Help `/support`:** full FAQ  
+- **`/capabilities`:** works well / still improving  
+
+Never a mandatory FAQ wall before care value.
+
+## Feel
+
+*"I understand what I am using."* — early collaborator, not finished ChatGPT.
+
+Philosophy: *SolenOS is not trying to know everything. It is trying to preserve what matters.*
+
+## Related
+
+Greetings → Care Record (`entry-behavior-protocol`), not companion chat.  
+Internal retention behavior: `docs/02-product/solenos-mvp-retention-behavior.md`

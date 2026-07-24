@@ -1,0 +1,19 @@
+---
+description: MVP — one care recipient per Care Reality; caregiver is contributor not subject
+alwaysApply: true
+---
+
+# MVP Identity Model
+
+**SoT:** [`docs/02-product/solenos-mvp-identity-model.md`](../../docs/02-product/solenos-mvp-identity-model.md)
+
+## Locked: A
+
+Living Care Record subject = **care recipient** only.  
+Caregiver = contributor / observer / attribution — not the center.
+
+Not MVP: household records, family workspace, caregiver social network.
+
+Store caregiver identity from day one for “who said / decided / confirmed.” Story belongs to the person receiving care.
+
+One person → one Care Reality → one Living Care Record.

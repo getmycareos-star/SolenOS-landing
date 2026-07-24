@@ -1,0 +1,49 @@
+---
+description: SolenOS Product North Star — mandatory scope gate for every feature
+alwaysApply: true
+---
+
+# Product North Star (Non-Negotiable)
+
+**North Star:** A caregiver should never need to reconstruct the care journey from memory.
+
+**Identity:** SolenOS is not an assistant. It is the memory system for caregiving reality.
+
+## Mandatory filter
+
+Before building any feature, engine, UI, or data structure, answer:
+
+> Does this reduce the caregiver's need to reconstruct the care journey from memory?
+
+- **YES** → may belong in MVP/roadmap  
+- **NO** → out of scope  
+- **UNCLEAR** → reject by default  
+
+One-line gate: If it does not reduce memory reconstruction of the care journey, it does not belong in SolenOS MVP.
+
+## Eliminate
+
+Chat-first design · dashboards · static reports · generic Q&A · “ask me anything” · answer-engine optimization · AI doctor/therapist personas
+
+## Enable
+
+CareEvent store · CareContext · Timeline · Diff · Contradiction · State of Care · Trust/evidence · Return value loop
+
+## Questions are symptoms
+
+Caregiver questions evidence **missing continuity**. Build the engine that makes the question unnecessary — never a longer AI answer.
+
+Prefer **Continuity Demand** (“what changed?”, “am I forgetting?”) over **Search Demand** (Medicare/cost FAQ).
+
+## Research validation (MVP)
+
+Hidden burden = cognitive load. SolenOS = **external memory** for care reality — never a productivity tool.
+
+Every capture must create: what happened · changed · connected · unknown.  
+Retention hypothesis to prove: understand better · less fear of forgetting · can explain to others · would return when something changes.
+
+**SoT:** `docs/02-product/solenos-mvp-research-validation.md` · module `src/lib/mvp-research-validation`
+
+## Module
+
+`src/lib/product-north-star` — `evaluateFeatureAgainstNorthStar`, `classifyCaregiverDemand`, `processProductNorthStar`

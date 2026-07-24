@@ -1,0 +1,35 @@
+---
+description: Situation Relationship Engine — not keyword same/new; Situation Graph
+alwaysApply: true
+---
+
+# Situation Relationship Directive
+
+**SoT:** [`docs/02-product/solenos-situation-relationship-directive.md`](../../docs/02-product/solenos-situation-relationship-directive.md)
+
+## Principle
+
+Do **not** decide same vs new situation by keywords alone. Evaluate whether new input **changes understanding of an existing care reality**.
+
+Job = relationships between life changes — **not** grouping notes into piles.
+
+## Pipeline
+
+Capture → Context Analysis → **Situation Relationship Engine** → UPDATE / NEW_RELATED / NEW_UNRELATED / ADDITIONAL_CONTEXT / UNCERTAIN → Living Care Record
+
+## Signals (ordered)
+
+1. Time relationship  
+2. Same care recipient  
+3. Topic/underlying issue (not keywords)  
+4. Answers an open uncertainty → update same  
+5. Strengthens a pattern → same thread  
+6. New decision → **NEW_RELATED_EVENT** linked, not merged  
+
+## Caregiver
+
+Never make them manage architecture. Do **not** ask “Is this a new situation?” every turn — only on meaningful `UNCERTAIN_NEEDS_REVIEW`.
+
+## Situation Graph
+
+ACS = current focus. Full reality = graph (situations + linked events). Engine confidence labels are internal only — never % or enums in caregiver UI.

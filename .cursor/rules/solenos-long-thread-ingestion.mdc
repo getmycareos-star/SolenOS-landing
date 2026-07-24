@@ -1,0 +1,18 @@
+---
+description: Long chats/emails = multiple linked events; preserve source; never one summary
+alwaysApply: true
+---
+
+# Long Threads / Emails / Chats
+
+**SoT:** [`docs/02-product/solenos-long-thread-ingestion.md`](../../docs/02-product/solenos-long-thread-ingestion.md)
+
+## Locked: B
+
+Not one Care Event. Not “highlight what matters first.”
+
+Extract multiple observations/decisions/actions/outcomes → Relationship Engine links → update CRS/LCR.
+
+**Preserve original source thread** as evidence; Care Reality is interpretation.
+
+Never expose extraction/classifications/edges. Never ship “chat summary” as the product.

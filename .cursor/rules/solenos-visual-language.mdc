@@ -1,0 +1,28 @@
+---
+description: Visual language — Care Reality cards, not chatbot bubbles; mobile-first
+alwaysApply: true
+---
+
+# Visual Language: Care Reality, Not Chat
+
+**SoT:** [`docs/02-product/solenos-visual-language.md`](../../docs/02-product/solenos-visual-language.md)
+
+## Principle
+
+Not ChatGPT / WhatsApp. Caregiver contributes care reality; SolenOS structures understanding.
+
+## Colors
+
+- Caregiver note: `#F3EFE7` / `#1F2937` / border `#E5DDD0`  
+- Understanding: white + accent `#52796F`  
+- Unknowns: `#F3EFE7` — never red alarm  
+
+## Never
+
+Chat bubbles · AI avatar · typing indicators · “ask me anything” · blue/gray message threads
+
+## Build
+
+Care cards · Current understanding · What changed · Still unclear · FAB “+ Tell us what happened”
+
+Mobile-first. Product test: without AI labels, still a living care record.

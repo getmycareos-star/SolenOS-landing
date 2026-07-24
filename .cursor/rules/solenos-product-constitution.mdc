@@ -1,0 +1,42 @@
+---
+description: SolenOS Product Constitution — worldview for every engineering decision
+alwaysApply: true
+---
+
+# Product Constitution (Worldview)
+
+**Belief:** Care should never depend on someone's ability to remember everything.
+
+**Category:** Living Care Record — continuously evolving understanding of one person's care journey.
+
+**Identity:** SolenOS is the reasoning layer between fragmented healthcare outputs and the caregiver's next decision. Not an EHR, portal, document app, reminder app, or chatbot.
+
+**Feeling:** Relief — "For the first time, I don't have to carry every detail by myself."
+
+**Metric:** Did the caregiver leave more certain than when they entered?
+
+**Motto:** Preserve continuity. Build trust. Reduce burden.  
+**Tagline:** The care journey, remembered.  
+**Legacy:** Prefer trustworthiness in ten years over clicks next month.
+
+## Decision filter
+
+Before building: improves Care State understanding? reduces uncertainty? identifies change? exposes blind spots? reduces burden? strengthens Living Care Record? builds trust? still matters in five years?
+
+If no → do not build.
+
+## State before UI
+
+First technical artifact is the CareRecord spine:
+
+Person Profile · Events · Observations · Medications · Decisions · Tasks · Risks · Unknowns · Confidence Scores
+
+Documents / voice / WhatsApp are inputs into that model — never the product.
+
+## Never
+
+Chatbot personality · social feed · complex dashboards · endless notifications · manual tracking · fighting-healthcare narrative · false certainty · diagnosis claims · another app to maintain.
+
+## Module
+
+`src/lib/product-constitution` — layers on Product North Star (`product-north-star`).

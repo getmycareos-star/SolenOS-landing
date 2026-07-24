@@ -1,0 +1,30 @@
+# Learning-First Release (SolenOS)
+
+**SoT:** [`docs/02-product/solenos-learning-first-release.md`](../../docs/02-product/solenos-learning-first-release.md)
+
+## Optimize for
+
+Learning from real caregivers — not visual polish.
+
+## Hypothesis
+
+Messy care input → clearer understanding than before?
+
+## Before deploy
+
+Crashes · data loss · broken flows · LCR/timeline · Response Contract · new vs returning records.
+
+**Not:** animations, spacing, typography, cosmetic redesign.
+
+## Required
+
+1. Post-response: Did this help you understand? Yes/No (+ No follow-ups) — **store it**  
+2. Research preview transparency  
+3. Non-negotiables: no invented facts · no data loss · no assumption-as-fact · no unsafe certainty  
+
+## Loop
+
+Release → Observe → Feedback → Fix → Repeat
+
+**Modules:** `src/lib/learning-first-release` · `src/lib/research-feedback`  
+**Verify:** `verify:learning-first-release`

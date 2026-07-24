@@ -1,0 +1,30 @@
+---
+description: Care Reality Model before language — baseline change reasoning; fix pipeline not UI copy
+alwaysApply: true
+---
+
+# Care Reality Model Before Language
+
+**SoT:** [`docs/02-product/solenos-care-reality-situation-model.md`](../../docs/02-product/solenos-care-reality-situation-model.md)
+
+## Critical
+
+Not a keyword system. Infer change from messy context: *what appears different from this person's normal state?*
+
+## Always ask internally
+
+What was normal before? · What appears different now? · What event may explain it? · What remains uncertain?
+
+## Before any caregiver response
+
+Build the Care Reality Model (person · baseline · changes · timeline · events · decisions · outcomes · unknowns · engine confidence).  
+Then generate orientation — not advice or summary theater.
+
+## Pipeline
+
+Ingestion → Extraction → Prioritization → Situation modeling → Response generation → UI  
+
+**Before changing UI:** inspect this pipeline. Do not patch examples. Fix reasoning architecture.
+
+**Module:** `src/lib/care-reality-intelligence/situation-model.ts` · **Verify:** `verify:care-reality-situation-model`
+---

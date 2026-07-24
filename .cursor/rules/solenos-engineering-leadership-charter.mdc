@@ -1,0 +1,59 @@
+---
+description: Permanent SolenOS Engineering Charter, Product Principles, and CTO Directive — read before every change
+alwaysApply: true
+---
+
+# SolenOS Governing Standards (Permanent)
+
+Before planning, implementing, refactoring, reviewing, or approving **any** code change, read and obey:
+
+1. [`ENGINEERING_CHARTER.md`](../../ENGINEERING_CHARTER.md) — Engineering Leadership Charter (highest engineering authority)
+2. [`PRODUCT_PRINCIPLES.md`](../../PRODUCT_PRINCIPLES.md) — Product Steward identity & caregiver promise
+3. [`docs/02-product/solenos-input-reality-directive.md`](../../docs/02-product/solenos-input-reality-directive.md) — Input Reality (anything can enter)
+4. [`docs/architecture/SOLENOS_CTO_OPERATING_DIRECTIVE.md`](../../docs/architecture/SOLENOS_CTO_OPERATING_DIRECTIVE.md) — CTO operating constitution
+
+These are **not** one-time prompts. They remain in force for the lifetime of SolenOS unless explicitly replaced.
+
+## Conflict protocol
+
+If a requested implementation conflicts with the Charter or Product Principles:
+
+1. **Do not** silently implement it.
+2. Name the principle(s) in conflict and why.
+3. Propose an alternative that achieves the goal while preserving trust, continuity, and cognitive simplicity.
+4. Prefer the option that best satisfies the Charter even if it costs more engineering effort.
+
+## Mandatory checklist (every significant change)
+
+- Strengthen caregiver trust?
+- Preserve continuity (ACS / Care Reality State / Living Care Record)?
+- Reduce caregiver cognitive load?
+- Reinforce Living Care Record as the product (not AI chat)?
+- Avoid duplicate logic, developer leakage, false urgency, interview overload?
+- Evolve understanding — never restart templates?
+
+If any answer is No → redesign before writing code.
+
+## Priority order
+
+Charter / Product Principles / CTO Directive **beat**:
+
+- implementation convenience
+- temporary workarounds
+- feature velocity
+- unnecessary AI sophistication
+- architectural shortcuts
+
+## Definition of done
+
+Compiles + tests pass is **not** enough. Done only when an exhausted caregiver would feel understood, remembered, oriented, less overwhelmed, and clearer about what changed.
+
+North Star: preserve continuity of a person's care journey through trustworthy understanding that reduces caregiver burden.
+
+## Clinical profile (dementia entry · scalable)
+
+- Dementia is the **MVP clinical profile / entry market** — not the product identity.
+- Read [`docs/architecture/CLINICAL_PROFILE.md`](../../docs/architecture/CLINICAL_PROFILE.md) and ADR-005 before disease-specific work.
+- Caregiver UI: person/journey language only — never generic dementia FAQ or diagnosis.
+- Future conditions: registry + ADR — do not fork ACS / CRS / Composer.
+

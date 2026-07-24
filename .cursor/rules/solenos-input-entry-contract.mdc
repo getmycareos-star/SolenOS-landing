@@ -1,0 +1,27 @@
+---
+description: Input Entry Contract — Scan/Snap/Upload/Share; same pipeline after evidence
+alwaysApply: true
+---
+
+# Input Entry Contract (MVP)
+
+**SoT:** [`docs/02-product/solenos-input-entry-contract.md`](../../docs/02-product/solenos-input-entry-contract.md)
+
+## Single responsibility
+
+| Action | Opens | Never |
+|--------|-------|-------|
+| **Scan** | Document scanner (or document-oriented capture) | File picker; photo-mode-first camera |
+| **Snap** | Live camera (moment happening now) | Document scanner |
+| **Upload** | System file picker | Camera; scanner |
+| **Share** | OS Share Target into SolenOS | Separate product path |
+
+## Pipeline (non-negotiable)
+
+All origins → Evidence Understanding → Care Reality → Situation Relationship Engine → Response Contract.
+
+Origin must never change reasoning. `entry_method` = attribution only.
+
+## Caregiver feel
+
+They choose the easiest way to provide evidence. SolenOS builds understanding — never format homework.

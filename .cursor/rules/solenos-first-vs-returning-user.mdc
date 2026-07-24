@@ -1,0 +1,26 @@
+---
+description: First vs returning — no fake continuity; compare when memory exists
+alwaysApply: true
+---
+
+# First User vs Returning User Intelligence
+
+**SoT:** [`docs/02-product/solenos-first-vs-returning-user.md`](../../docs/02-product/solenos-first-vs-returning-user.md)
+
+## Principle
+
+New Care Reality → **begin** the story (capture + organize).  
+Existing Care Reality → **continue** the story (compare + change).
+
+Never fake continuity. Never restart when memory exists. Not a per-message chatbot.
+
+## Must
+
+- Classify from held observation/CRS depth — not session UI alone  
+- New: first memory anchor; known vs unclear; no “already held” theater  
+- Returning: already known / new / changed / still unclear  
+- High-value asks only; no onboarding forms before value  
+
+## Never
+
+Diagnose · false certainty · empty dashboards · long questionnaires · hardcoded scenario templates

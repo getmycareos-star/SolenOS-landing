@@ -1,0 +1,27 @@
+---
+description: Relationship extraction — fourth layer; connections over time; never keyword-only, UI enums, or causation theater
+alwaysApply: true
+---
+
+# Relationship Extraction
+
+**SoT:** [`docs/02-product/solenos-relationship-extraction.md`](../../docs/02-product/solenos-relationship-extraction.md)
+
+## Full stack
+
+Observation → Event → Decision → **Relationship** → Response Contract
+
+**Ask:** what changed, what connects to it, and what evidence supports that connection?  
+**Never ask:** what information exists?
+
+## Rules
+
+- Connections, not summaries  
+- Never keyword-only links  
+- Temporal / contextual / explicit evidence only  
+- Preserve uncertainty — never invent “X caused Y”  
+- Never expose relationship types / edges / % in caregiver UI  
+- Doc examples = illustrations only — never product if-branches
+
+**Module:** `src/lib/care-reality-extraction/relationships.ts` · **Verify:** `verify:care-reality-extraction`
+---

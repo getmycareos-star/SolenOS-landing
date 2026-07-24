@@ -1,0 +1,29 @@
+---
+description: Care Reality Memory — store events/observations/decisions/unknowns, never sentences or conversation frequency
+alwaysApply: true
+---
+
+# Care Reality Memory Objects
+
+**SoT:** [`docs/02-product/solenos-care-reality-memory.md`](../../docs/02-product/solenos-care-reality-memory.md)
+
+## Rule
+
+Store **care reality**, not text. The sentence is evidence; the journey object is memory.
+
+## Never
+
+Full sentences as memories · phrase frequency · family opinions as facts · chat history as primary memory
+
+## Always
+
+Events · Observations · Decisions · Changes · Outcomes · Unknowns · Relationships · engine confidence
+
+## Recurrence
+
+Track “has this **situation** happened before?” — never “has this **sentence** been typed before?”
+
+Family disagreement = contributor context. Care recipient change = primary memory.
+
+**Module:** `src/lib/care-reality-intelligence/care-reality-memory.ts` · **Verify:** `verify:care-reality-memory`
+---

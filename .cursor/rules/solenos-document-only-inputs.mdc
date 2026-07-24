@@ -1,0 +1,18 @@
+---
+description: Documents use the same Care Reality loop — never a document-analyzer UX
+alwaysApply: true
+---
+
+# Document-Only Inputs
+
+**SoT:** [`docs/02-product/solenos-document-only-inputs.md`](../../docs/02-product/solenos-document-only-inputs.md)
+
+## Locked: A
+
+Documents = same pipeline as text. No separate document workflow. No “what should I know about this?” gate before interpreting.
+
+Preserve → extract → LCR → what changed → ≤1–3 mapped asks if needed. Evidence maturity drives depth.
+
+**First response = person's care reality**, never “I extracted N things from your PDF.”
+
+Never expose OCR, confidence, parser, schema, or analyzer framing.

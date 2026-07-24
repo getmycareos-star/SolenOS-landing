@@ -1,0 +1,27 @@
+---
+description: Situation Generator — transform observations into Active Situation understanding; never fact-list summaries or diagnosis
+alwaysApply: true
+---
+
+# Situation Generator
+
+**SoT:** [`docs/02-product/solenos-situation-generator.md`](../../docs/02-product/solenos-situation-generator.md)
+
+## Ask
+
+**What situation is this caregiver living through?** — not “what information is in this message?”
+
+## Pipeline
+
+Extraction → **Situation generation** → Relationship mapping → Uncertainty → Human response
+
+## Every input produces (internal)
+
+Care recipient · current concern · observed changes · related events/decisions · possible links · unknowns · engine confidence
+
+## Never
+
+Fact-list summaries · “You mentioned…” · task lists · diagnosis / dementia progression / invented causation
+
+**Module:** `src/lib/care-reality-intelligence/situation-generator.ts` · **Verify:** `verify:situation-generator`
+---

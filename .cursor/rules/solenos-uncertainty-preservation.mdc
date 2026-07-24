@@ -1,0 +1,29 @@
+---
+description: Preserve uncertainty — never convert observation to diagnosis or correlation to cause
+alwaysApply: true
+---
+
+# Uncertainty Preservation Engine
+
+**SoT:** [`docs/02-product/solenos-uncertainty-preservation.md`](../../docs/02-product/solenos-uncertainty-preservation.md)
+
+## Principle
+
+Separate **what happened** from **why**.  
+Never: Observation → Diagnosis · Correlation → Cause.
+
+## Store
+
+Facts + possible relationships + unknowns — **never** conclusions as facts.
+
+## Caregiver sees
+
+What we know · What may be connected · What remains unclear  
+Never confidence % · never “medication caused…” · never disease-progression theater
+
+## Acceptance
+
+“Confused after medication changed” → timing held, cause unclear — **not** “medication caused confusion.”
+
+**Module:** `src/lib/care-reality-intelligence/uncertainty-preservation.ts` · **Verify:** `verify:uncertainty-preservation`
+---

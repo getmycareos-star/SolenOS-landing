@@ -1,0 +1,32 @@
+---
+description: Internal clinical situation categories — reasoning only; never caregiver labels, scores, or diagnosis
+alwaysApply: true
+---
+
+# Internal Clinical Situation Classification
+
+**SoT:** [`docs/02-product/solenos-clinical-situation-classification.md`](../../docs/02-product/solenos-clinical-situation-classification.md)
+
+## What this is
+
+Internal reasoning: **what kind of care reality is changing?**  
+Not a feature, UI label, score, dashboard, or diagnosis system.
+
+## Categories (engine-only)
+
+Cognitive · Behavioral · Safety · Medication transition · Functional · Nutrition/hydration · Sleep · Caregiver strain · Family coordination · Administrative  
+
+Caregiver strain / family = **context** — never replace the care recipient story.
+
+## Priority
+
+Safety → Functional → Cognitive/Behavioral → Medication → Nutrition/Sleep → Admin → Family → Caregiver context
+
+## Never in caregiver UI
+
+“Clinical category detected” · risk % · “patient declining” · category enums
+
+Translate to human situation language only.
+
+**Module:** `src/lib/care-reality-intelligence/clinical-situation-classification.ts` · **Verify:** `verify:clinical-situation-classification`
+---

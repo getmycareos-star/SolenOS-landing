@@ -1,0 +1,28 @@
+---
+description: Intelligence Validation — hard-reject summaries/tasks/generic safety/family distraction/interview overload; require care-reality understanding
+alwaysApply: true
+---
+
+# Hard Rejection & Intelligence Validation
+
+**SoT:** [`docs/02-product/solenos-intelligence-validation.md`](../../docs/02-product/solenos-intelligence-validation.md)
+
+## Gate question
+
+Does this help the caregiver understand the **changing care reality** better?  
+If no → reject (do not show).
+
+## Hard failures
+
+1. Sentence summary / echo  
+2. Task / monitor checklists  
+3. Generic safety without context  
+4. Family disagreement as center  
+5. Interview-style questioning  
+
+## Pass
+
+Situation understanding · what changed · connections · unknowns · one next step · no invented cause
+
+**Module:** `src/lib/care-reality-intelligence/intelligence-validation.ts` · **Verify:** `verify:intelligence-validation`
+---

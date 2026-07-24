@@ -1,0 +1,26 @@
+---
+description: Output quality — recognition, human language, connections, decision why
+alwaysApply: true
+---
+
+# Output Quality Improvement (MVP)
+
+**SoT:** [`docs/02-product/solenos-output-quality.md`](../../docs/02-product/solenos-output-quality.md)
+
+## Goal
+
+Communicate Care Reality understanding — not AI message analysis.  
+Events → Relationships → Understanding → Confidence.
+
+## Must
+
+- Recognition first (situation-grounded — never therapy empathy)  
+- Human language only (ban care signal / memory anchor / care state / engine jargon in caregiver UI)  
+- Make connections to prior care story visible for returning users  
+- Surface decision **why** when decisions are held  
+- Separate known / unclear / what would improve understanding  
+- What matters now = most important next understanding (not echo / checklist)  
+
+## Never
+
+Chatbot empathy · false certainty · diagnosis · summarizing as the product · hardcoded scenarios

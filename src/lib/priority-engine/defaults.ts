@@ -1,0 +1,12 @@
+import { DEFAULT_PRIORITY_WEIGHTS, DEFAULT_TOP_N } from "./contract-constants";
+import type { PriorityWeights } from "./types";
+
+export const DEFAULT_PRIORITY_ENGINE_WEIGHTS: PriorityWeights = {
+  Wt: DEFAULT_PRIORITY_WEIGHTS.Wt,
+  We: DEFAULT_PRIORITY_WEIGHTS.We,
+  Wm: DEFAULT_PRIORITY_WEIGHTS.Wm,
+  Wd: DEFAULT_PRIORITY_WEIGHTS.Wd,
+  Wr: DEFAULT_PRIORITY_WEIGHTS.Wr,
+};
+
+export const DEFAULT_PRIORITY_TOP_N = DEFAULT_TOP_N;

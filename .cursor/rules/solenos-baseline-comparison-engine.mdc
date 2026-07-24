@@ -1,0 +1,34 @@
+---
+description: Baseline Comparison Engine — understand change from previous reality; never summarize without baseline; never invent dementia causation
+alwaysApply: true
+---
+
+# Baseline Comparison Engine
+
+**SoT:** [`docs/02-product/solenos-baseline-comparison-engine.md`](../../docs/02-product/solenos-baseline-comparison-engine.md)
+
+## Core question
+
+**What is different from before?** — not “what information do we have?”
+
+## Pipeline
+
+Care Recipient Anchor → **Baseline Comparison** → Situation Model → Response
+
+```
+Previous Reality → New Observation → Difference → Possible Meaning → Attention
+```
+
+## MVP
+
+- Reconstruct living baseline from usual / used-to / every-X discourse (and durable familiarity)
+- Compare every new input (same-turn or later)
+- Surface meaningful changes only
+- Preserve timing/cause unknowns — **never** invent dementia progression as cause
+
+## Never
+
+Profile forms · flat event summaries as the product · diagnosis causation · scenario noun if-branches
+
+**Module:** `src/lib/care-reality-intelligence/baseline-comparison-engine.ts` · **Verify:** `verify:baseline-comparison-engine`
+---

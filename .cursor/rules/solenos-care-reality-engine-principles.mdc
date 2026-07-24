@@ -1,0 +1,30 @@
+# Care Reality Engine Principles (Frozen MVP)
+
+**SoT:** [`docs/02-product/solenos-care-reality-engine-principles.md`](../../docs/02-product/solenos-care-reality-engine-principles.md)
+
+## Behavioral contract (not UI)
+
+1. Did this **change care reality**?  
+2. **Preserve uncertainty** — never invent certainty  
+3. **Never overwrite history** — append  
+4. Understanding must be **explainable** (evidence)  
+5. Separate **observations** from **conclusions**  
+6. **Confidence** engine-only (no % UI)  
+7. Events have a **lifecycle**  
+8. **No chatbot** personality  
+9. **Timeline / LCR** is the product  
+10. Questions only **reduce uncertainty**  
+11. **New vs existing Care Record** (person record — not user account)
+
+## Pipeline
+
+Input → extract → compare to Care Reality → update LCR → Current Understanding → response
+
+## Filter
+
+> Does this improve Care Reality understanding over time?
+
+If no → not MVP.
+
+**Module:** `src/lib/care-reality-engine-principles` · **Verify:** `verify:care-reality-engine-principles`  
+Examples in docs = illustrations only — never keyword templates.

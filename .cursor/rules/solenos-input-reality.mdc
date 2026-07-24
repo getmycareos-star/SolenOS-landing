@@ -1,0 +1,41 @@
+---
+description: SolenOS Input Reality — anything can enter the same Care Reality layer
+alwaysApply: true
+---
+
+# Input Reality Directive (Product Steward)
+
+**SoT:** [`docs/02-product/solenos-input-reality-directive.md`](../../docs/02-product/solenos-input-reality-directive.md)
+
+## Core
+
+Caregiver reality is messy. Notes, questions, emotions, documents, photos, screenshots, discharge summaries, med lists, memories, incomplete fragments — **all valid** into the **same** Care Reality / ACS / Living Care Record / Timeline / Decision Memory layer.
+
+**Do not** build separate product experiences per channel. Caregiver provides reality; SolenOS creates structure.
+
+MVP shipping channels remain text + documents via **Scan / Snap / Upload / Share** (ADR-018 + Input Entry Contract). Voice plugs into this same layer later — not a new product.
+
+## Evidence / Why
+
+- Transparency always available; **explanation depth grows** with understanding (Level 1 new → Level 2 emerging → Level 3 decisions).
+- Caregivers need **evidence behind this**, not chain-of-thought or engine jargon.
+- Never show confidence %, extraction labels, reasoning traces, system states.
+
+## Evidence chain (always preserve)
+
+Original input → Source → Extracted info → Care Event / Observation / Decision → Current understanding → Supporting evidence
+
+Never store interpretation alone.
+
+## Source priority
+
+Hospital discharge / clinical artifacts ≠ caregiver memory notes. Rank sources; on conflict: **prefer higher-priority for current fact**, **keep both** (never remove), flag conflict as uncertainty. Never invent document claims from memory.
+
+## Continuity (before → after)
+
+Connect baseline life → event → clinical input → life change afterward. Documents are evidence into Decision Memory + LCR — never the product. Care Transition Mode UI remains FUTURE.
+
+## Product test
+
+Feel: *"I gave the system my reality, and it helped me understand it."*  
+Never: *"I have to format information for the AI."* · *"Here is your document summary."*

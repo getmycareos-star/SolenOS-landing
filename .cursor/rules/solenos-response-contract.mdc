@@ -1,0 +1,35 @@
+---
+description: Response Contract — orientation fields; no chatbot; no hardcoded examples
+alwaysApply: true
+---
+
+# Response Contract (MVP)
+
+**SoT:** [`docs/02-product/solenos-response-contract.md`](../../docs/02-product/solenos-response-contract.md)
+
+## Principle
+
+Not a chatbot, summarizer, or medical advice engine. Optimize for caregiver orientation — never “good AI conversation.”
+
+## Pipeline (all inputs)
+
+Evidence Understanding → Care Reality → Situation Relationship Engine → **Response Contract**
+
+Source changes. Philosophy does not. Voice = FUTURE (same contract later).
+
+## Fields (order)
+
+1. What is happening (Care Reality; **internal** Known/Likely/Unknown — never panel labels; see ADR-024)  
+2. What matters now (one primary priority)  
+3. What to ask next (usually 1; max 1–3; no interview)  
+4. Risk level (Low/Medium/High — evidence only)  
+5. What can wait  
+6. Follow-up items (continuity memory — not tasks)
+
+## Never
+
+Hardcoded scenario templates · fabricated context · therapy empathy · AI product language · advice/diagnosis · fake certainty
+
+## Success
+
+*“I understand this situation better.”* — not *“The AI summarized my note.”*

@@ -1,0 +1,29 @@
+---
+description: Final intelligence — baseline→change; structure not echo; no UI-first polish
+alwaysApply: true
+---
+
+# Final Intelligence Refinement (MVP)
+
+**SoT:** [`docs/02-product/solenos-final-intelligence-refinement.md`](../../docs/02-product/solenos-final-intelligence-refinement.md)
+
+## Priority
+
+Improve Care Reality **understanding** before UI. Moat = baseline → change → context → decision → outcome — not timeline screens.
+
+## Target feel
+
+*Organized care reality* — never *AI summarized my note* / reflective echo.
+
+## Must
+
+- Prefer baseline change over isolated events  
+- Separate Observed · Interpretation · Concern  
+- Preserve multiple perspectives (no winner)  
+- Specific What matters now (ban empty “Stay with what is already held” when facts exist)  
+- Unknowns as care reality; never false confidence / diagnosis  
+- Examples in docs = illustrations only — never templates  
+
+## Never
+
+Chatbot empathy · generic healthcare articles · task-ifying caregiver load · hardcoding scenario nouns

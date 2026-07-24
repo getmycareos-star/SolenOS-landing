@@ -1,0 +1,54 @@
+---
+description: Future capabilities Phase 2/3 — NOT MVP. Communication and clarity extend Care Reality Engine; never generic assistants or gamified scores.
+alwaysApply: true
+---
+
+# Future Capabilities (SolenOS)
+
+These are **architecture contracts**, not features to build now.
+
+## MVP first
+
+Prove trusted care reality understanding before shipping:
+- Care Moment / I Need Clarity UI
+- Help Me Communicate This
+- Care Understanding Confidence screens
+
+## Phase 2 — When confidence disappears
+
+- **Care Moment:** "Something is happening" — extends `moment-of-need-engine`
+- **I Need Clarity:** NOT ask-anything chat — reconstruct context from Care Reality Engine
+- **Care Understanding Confidence:** Show what is known + gaps — **never** percentages or scores
+- **Confidence collapse:** Medical uncertainty · behavior change · family disagreement · "is this important?"
+
+North star: *Can SolenOS help regain understanding when confidence starts to disappear?*
+
+## Phase 3 — Communication from shared reality
+
+- **Care Communication Support** extends Care Reality Engine — **NOT** a generic communication assistant
+- **Help Me Communicate This:** Understand situation first → evidence → conversation prep → drafts last
+- Ground in: care history, changes, decisions, outcomes, unanswered questions
+- Never: take sides · persuade · write messages without care context
+
+## Care Understanding Confidence
+
+Forbidden forever:
+- Caregiving confidence %
+- Health scores · performance ratings · gamification
+
+Build: "What do we currently understand?" with evidence + missing context per area.
+
+## Human context
+
+Profile must preserve **who this person is** — not reduce to diagnosis.  
+Module: `future-capabilities/human-context.ts` → bridges `care-reality-profile-engine`.
+
+## Chaos-first (already MVP)
+
+`adoption-wedge-engine` — no setup homework before value.
+
+## Build filter
+
+Use `assertFutureCapabilityNotMvp()` from `src/lib/future-capabilities` before implementing UI for these capabilities.
+
+Docs: `docs/FUTURE_CAPABILITIES.md`

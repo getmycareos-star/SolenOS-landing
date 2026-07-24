@@ -1,0 +1,37 @@
+---
+description: Doc examples are illustrations only — never product data, UI defaults, schema, or hardcoded scenarios
+alwaysApply: true
+---
+
+# Illustration vs Implementation Separation
+
+**SoT:** [`docs/02-product/solenos-illustration-vs-implementation.md`](../../docs/02-product/solenos-illustration-vs-implementation.md)
+
+## Critical
+
+Architecture examples / scenarios / caregiver stories = **illustrations only**.  
+Never convert into code branches, DB fields, UI defaults, or fixed scenarios.
+
+## Interpret
+
+*"Mom tried leaving the house"* → Care Recipient · Observation · Baseline change · Possible safety · Unknown cause · Relationships  
+
+**Structure, not the sentence.**
+
+## Never
+
+Hardcoded Mom/Brother product paths · example-specific workflows · `mom_confusion_event` schema · sample stories as production defaults · fake timelines
+
+## Always
+
+Universal objects: Care Recipient → Observation → Change → Related Event → Decision → Outcome → Unknown  
+
+Works for any person, family, condition, situation.
+
+## Gate
+
+> Intelligence behind the example — or the example itself?  
+> If the second → do not build.
+
+**Module:** `src/lib/care-reality-intelligence/illustration-vs-implementation.ts` · **Verify:** `verify:illustration-vs-implementation`
+---

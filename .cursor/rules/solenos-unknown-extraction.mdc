@@ -1,0 +1,28 @@
+---
+description: Unknown extraction — preserve missing/uncertain/confirmation needs; never invent facts or close gaps
+alwaysApply: true
+---
+
+# Unknown Extraction
+
+**SoT:** [`docs/02-product/solenos-unknown-extraction.md`](../../docs/02-product/solenos-unknown-extraction.md)
+
+**Ask:** what important information is missing, uncertain, or requires confirmation?  
+**Never:** convert uncertainty into facts · guess · remove unknowns to look complete
+
+## Core
+
+**Do not remove uncertainty. Uncertainty is part of the care reality.**
+
+## Required (engine)
+
+Question · related object · source · importance · status (`open` / `answered` / `declined` / `no_longer_relevant`)
+
+## Caregiver UI
+
+Plain language only — never status enums or engine ids.
+
+Doc examples are illustrations only — never product if-branches.
+
+**Module:** `src/lib/care-reality-extraction/unknowns.ts` · **Verify:** `verify:care-reality-extraction`
+---

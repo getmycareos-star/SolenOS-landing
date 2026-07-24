@@ -1,0 +1,51 @@
+---
+description: MVP research validation — cognitive load, retention hypothesis, external memory not productivity
+alwaysApply: true
+---
+
+# MVP Research Validation Directive
+
+**SoT:** [`docs/02-product/solenos-mvp-research-validation.md`](../../docs/02-product/solenos-mvp-research-validation.md)
+
+**Module:** `src/lib/mvp-research-validation`
+
+## Core
+
+Hidden burden = **cognitive load** (remember · connect · prioritize · track change · retell the story).  
+SolenOS = **external memory** for care reality — never a productivity / task / document-analyzer app.
+
+Feel: *"I can put this somewhere and trust it will make sense later."*  
+Never: *"Another system to maintain."*
+
+## Every capture must create
+
+What happened · what changed · what is connected · what is unknown  
+Never “note created” as the product.
+
+## What matters now
+
+Prioritization through understanding — not task lists or checklists.  
+Competing concerns → situation status lanes, not three todos.
+
+## Retention hypothesis (MVP must test)
+
+1. Understand better?  
+2. Less fear of forgetting?  
+3. Can explain to someone else?  
+4. Would return when something changes?  
+
+Pain is validated. **Retention is not.** Find the weekly return moment via continuity value — not engagement hacks.
+
+## Boundary
+
+**Build:** timeline · SRE · Decision Memory · evidence · sources · change · unknowns · documents→Care Reality  
+
+**Not now:** marketplace · training · financial aid · medical advice · coordinator replacement · resource DB
+
+## Engineering order
+
+Persistence → SRE → Decision Memory → Evidence → Current state → Doc→Reality → Response → Mobile
+
+## Emotional
+
+Acknowledge + invite care context — never therapy chatbot (see emotional-language-safety).

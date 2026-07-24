@@ -1,0 +1,30 @@
+---
+description: Care Recipient Anchor — person receiving care is center; contributors are context; process recipient first
+alwaysApply: true
+---
+
+# Care Recipient Anchor
+
+**SoT:** [`docs/02-product/solenos-care-recipient-anchor.md`](../../docs/02-product/solenos-care-recipient-anchor.md)
+
+## First question
+
+Who is this care story about?  
+Care recipient = subject. Caregiver / family = contributors (context).
+
+## Processing order
+
+Care Recipient → State changes → Events → Decisions → Outcomes → Unknowns → Caregiver context  
+
+Never let disagreement/emotion become the primary situation.
+
+## If unknown
+
+Do not guess. Ask: “Who is this situation about?”
+
+## Pipeline
+
+Fix reasoning (anchor → situation model → response). Do not patch UI examples.
+
+**Module:** `src/lib/care-reality-intelligence/care-recipient-anchor.ts` · **Verify:** `verify:care-recipient-anchor`
+---
