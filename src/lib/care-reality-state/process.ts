@@ -59,6 +59,7 @@ function normalizeCareRealityState(state: CareRealityState): CareRealityState {
     open_uncertainties: state.open_uncertainties ?? [],
     resolved_uncertainties: state.resolved_uncertainties ?? [],
     current_understanding: state.current_understanding ?? [],
+    continuity_hooks: state.continuity_hooks ?? [],
   };
 }
 
@@ -378,6 +379,10 @@ export function updateCareRealityState(
     primary_screen_question: primaryScreenQuestionFor(disclosure_stage),
     observation_count: crsObservationCount,
     revision: crsRevision,
+    continuity_hooks:
+      preserveContinuity && (prior?.continuity_hooks ?? []).length > 0
+        ? [...new Set([...(prior!.continuity_hooks ?? []), ...(turn.continuity_hooks ?? [])])]
+        : turn.continuity_hooks ?? [],
     understanding_revisions: crsRevisions,
   };
 

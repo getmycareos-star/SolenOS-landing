@@ -51,6 +51,11 @@ export const CAREGIVER_SITUATION_KEYS = [
   "mvp_surface_area_layer",
   "adoption_wedge_layer",
   "entry_behavior_layer",
+  /**
+   * Server-composed caregiver response — primary source for UI rendering.
+   * Client falls back to client composition only when this is absent (offline/dev).
+   */
+  "composed_response",
 ] as const;
 
 export type CaregiverSituationKey = (typeof CAREGIVER_SITUATION_KEYS)[number];

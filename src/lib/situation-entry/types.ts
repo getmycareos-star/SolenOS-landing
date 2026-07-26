@@ -206,9 +206,14 @@ export type SituationResponse = {
   care_reality_engine_layer?: import("../care-reality-engine").CareRealityEngineFoundationResult;
   /** Care Signal Understanding — input→signals→care state→priority→unknowns (never task lists). */
   care_signal_understanding_layer?: import("../care-signal-understanding").CareSignalUnderstandingResult;
-  /** Generalized care understanding — 10 rules; Observed/Derived/Unknown; open loops. */
+/** Generalized care understanding — 10 rules; Observed/Derived/Unknown; open loops. */
   generalized_care_understanding_layer?: import("../generalized-care-understanding").GeneralizedCareUnderstandingResult;
-  architectural_boundaries_layer?: import("../architectural-boundaries/types").ArchitecturalBoundariesResult;
+
+  /**
+   * Server-composed caregiver response — moves understanding to the server path.
+   * Client uses this as primary source; falls back to client composition offline.
+   */
+  composed_response?: import("../caregiver-response-composer").ComposedCaregiverResponse;
   /**
    * Durable care key (= caregiver_id / care_session_id). Used for TrackedSituation + sidebar.
    */

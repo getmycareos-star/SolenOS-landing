@@ -6,6 +6,17 @@ import type { DecisionSnapshot, RankedIssue, RiskLevel } from "./types";
 
 /**
  * STEP 5 — Compress into fixed 6-field schema.
+ *
+ * OPS/ENGINE INTERNAL ONLY. This compressor produces the same 6-field shape as the
+ * caregiver-facing Response Contract, but it is NOT understanding — it is keyword-score
+ * compression. It must NEVER feed the caregiver response pipeline.
+ *
+ * Caregiver response is sourced from:
+ *   CareSituationUnderstanding → prioritizeFromUnderstanding → projectCareSituationToResponseContract.
+ *
+ * This compressor exists only for /api/analyze (ops/engine path) where internal
+ * DecisionSnapshot reasoning is needed for telemetry, case memory, and human trust layers.
+ *
  * Trust via transparency: weave why-direction into text fields — no extra JSON keys.
  * Never emit DO_FIRST / SAFE_TO_DELAY / WATCH_CLOSELY (or spaced variants).
  * Never claim medical/finance/legal authority — user is final decision maker.

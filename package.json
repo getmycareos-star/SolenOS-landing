@@ -135,6 +135,7 @@
     "verify:baseline-comparison-engine": "tsx scripts/verify-baseline-comparison-engine.mts",
     "verify:initial-care-reality-assessment": "tsx scripts/verify-initial-care-reality-assessment.mts",
     "verify:caregiver-paste-behavior": "tsx scripts/verify-caregiver-paste-behavior.mts",
+"verify:understanding-validation": "tsx scripts/verify-understanding-validation.mts",
   "verify:care-situation-understanding": "tsx scripts/verify-care-situation-understanding.mts",
     "verify:situation-generator": "tsx scripts/verify-situation-generator.mts",
     "verify:care-reality-memory": "tsx scripts/verify-care-reality-memory.mts",

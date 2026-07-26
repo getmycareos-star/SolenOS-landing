@@ -100,6 +100,8 @@ export type ActiveSituationTurn = {
   crs_revision: number;
   /** SRE identity_mismatch — incoming note may refer to a different care recipient (G17). */
   identity_mismatch?: boolean;
+/** Continuity hooks for future captures to reconnect to this care reality. */
+  continuity_hooks?: string[];
   /** Raw note held for clarification when identity_mismatch — not yet on ACS timeline. */
   identity_mismatch_input?: string | null;
   /** Caregiver explicitly corrected prior held understanding (Phase 12). */

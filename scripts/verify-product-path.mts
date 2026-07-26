@@ -44,7 +44,8 @@ const SCRIPTS = [
   "verify:care-reality-language",
   "verify:output-quality",
   "verify:caregiver-paste-behavior",
-  "verify:care-situation-understanding",
+"verify:care-situation-understanding",
+  "verify:understanding-validation",
 ] as const;
 
 console.log("=== SolenOS caregiver product-path (Path A integrity) ===\n");

@@ -58,6 +58,8 @@ export type CareRealityState = {
   primary_screen_question: string;
   observation_count: number;
   revision: number;
+/** Hooks for future captures to reconnect to this care reality. */
+  continuity_hooks: string[];
   /** History of how understanding evolved (lifecycle). */
   understanding_revisions: Array<{
     at: string;

@@ -72,9 +72,13 @@ import {
   orientationFromSituationModel,
 } from "../care-reality-intelligence/situation-model";
 import {
-  buildCareSituationUnderstanding,
+  buildCareSituationUnderstandingFromExtraction,
   projectCareSituationOrientation,
 } from "../care-situation-understanding";
+import {
+  projectCareSituationToResponseContract,
+  assertProjectionGrounded,
+} from "../caregiver-response-composer/project-to-response-contract";
 import {
   centersContributorConflictOverRecipient,
 } from "../care-reality-intelligence/care-recipient-anchor";
@@ -620,19 +624,33 @@ export function composeCaregiverResponse(params: {
   });
   const modelOrientation = orientationFromSituationModel(situationModel);
 
-  // Care Situation Understanding — instant orientation from typed care reality (not summary).
-  const careUnderstanding = buildCareSituationUnderstanding({
+// Care Situation Understanding — instant orientation from typed care reality (not summary).
+  // Uses synchronous deterministic extraction path (no LLM dependency).
+// Phase 5: Inject prior CRS continuity hooks and open unknowns so second-turn
+  // reasoning reconnects to prior care reality (fall, mobility, medication thread)
+  // rather than creating a new unrelated interpretation.
+  const careUnderstanding = buildCareSituationUnderstandingFromExtraction({
     rawText: latestRawText,
     contributorId: situation.caregiver_id,
     careKey: crsKey,
     situation,
     personDisplayName: situation.subject_label || situationModel.person,
+    priorContinuityHooks: crs?.continuity_hooks ?? [],
+    priorUnknowns: crs?.open_uncertainties ?? [],
   });
   const careOrientation = careUnderstanding.can_orient
     ? projectCareSituationOrientation(careUnderstanding)
     : null;
 
-  // Prefer situation-model extraction (already partitioned). Fall back to fresh extract for short captures.
+// Phase 4: Response = Projection of Understanding.
+  // The Response Contract is projected from the structured understanding model,
+  // NOT from raw caregiver text, keyword-ladder clarity pillars, or /api/analyze compression.
+  // Projection runs once here and feeds contract_output as the authoritative source.
+  const careProjection = careUnderstanding.can_orient
+    ? projectCareSituationToResponseContract(careUnderstanding)
+    : null;
+
+  // Prefer situation-model extraction
   let extraction: CareRealityExtractionResult | null =
     situationModel.extraction ?? null;
   if (!extraction && latestRawText.trim().length >= 12 && latestIsCareWorthy) {
@@ -1224,12 +1242,20 @@ export function composeCaregiverResponse(params: {
         currentTurnAsks: turn.what_needs_context,
       }).slice(0, capacity.overload_likely ? capacity.max_asks : facets.max_asks);
     }
-  }
+}
 
   const show_clarity = facets.show_clarity;
   let what_matters_now: string | null = null;
   let what_can_wait: string | null = null;
   let what_may_become_serious: string | null = null;
+
+  // Phase 3: PRIMARY = CareSituationUnderstanding projection (impact-driven).
+  // Keyword ladder pillars are degraded fallback when understanding confidence is low.
+  const understandingCanPrioritize =
+    careUnderstanding.can_orient &&
+    careUnderstanding.confidence !== "low" &&
+    !pushback &&
+    !improvement;
 
   if (show_clarity) {
     if (pushback) {
@@ -1237,55 +1263,32 @@ export function composeCaregiverResponse(params: {
         "Staying with what you already shared — nothing more is needed right now.";
       what_can_wait = "Filling every missing detail tonight.";
       what_may_become_serious = null;
-    } else {
-      what_matters_now =
-        scrub(pillars.what_matters_now) ??
-        buildMattersNowOrientation({
-          subjectLabel: named,
-          heldFocus: heldFocusLines(situation, 1)[0] ?? null,
-          baselineChange: baselineChangeNote,
-          topUnknown: null,
-          patternContinues: situation.observations.length >= 3,
-        });
-      what_can_wait =
-        scrub(pillars.what_can_wait) ??
-        "Explaining every detail or answering questions you do not know yet.";
-      what_may_become_serious = improvement
-        ? null
-        : scrub(pillars.what_may_become_serious);
-      if (what_matters_now && containsWeakOrientation(what_matters_now)) {
-        what_matters_now = buildMattersNowOrientation({
-          subjectLabel: named,
-          heldFocus: heldFocusLines(situation, 1)[0] ?? null,
-          baselineChange: baselineChangeNote,
-          topUnknown: null,
-          patternContinues: situation.observations.length >= 3,
-        });
-      }
-      // Dementia-entry profile gaps (nutrition/sleep/safety) bias matters — never disease tips.
+} else if (careProjection && understandingCanPrioritize) {
+      what_matters_now = scrub(careProjection.what_matters_now);
+      what_can_wait = scrub(careProjection.what_can_wait);
+      what_may_become_serious = null;
+    }
+    // Fallback to dementia-profile hints only when understandingCanPrioritize is false
+    if (!understandingCanPrioritize) {
       const profileMatters = caregiverMattersHintFromClinicalProfile({
         openCategories: profileOpenCategories,
         heldFocus: heldFocusLines(situation, 1)[0] ?? null,
         latestRawText,
       });
-      if (
-        profileMatters &&
-        (!what_matters_now ||
-          containsWeakOrientation(what_matters_now) ||
-          /how (?:this|these concerns) sit/i.test(what_matters_now))
-      ) {
+      if (profileMatters && (!what_matters_now || containsWeakOrientation(what_matters_now) || /how (?:this|these concerns) sit/i.test(what_matters_now))) {
         what_matters_now = profileMatters;
       }
     }
   }
 
-  if (improvement) {
+if (improvement) {
     what_may_become_serious = null;
     still_unclear = [];
   }
 
-  // Prefer Care Situation Understanding projection when it can orient (instant value).
-  // Never override pushback / record_question / improvement paths.
+// CareOrientation projection as secondary gap-fill ONLY for what_we_know / recognition / what_is_happening.
+  // matters_now, can_wait, and questions are SOLELY from careProjection (primary projection path above).
+  // This block never overrides projection-derived values — only fills gaps the projection left empty.
   if (
     careOrientation &&
     careUnderstanding.can_orient &&
@@ -1294,18 +1297,6 @@ export function composeCaregiverResponse(params: {
     turnClass !== "record_question" &&
     turnClass !== "empty_or_thin"
   ) {
-    if (careOrientation.what_matters_now) {
-      what_matters_now = scrub(careOrientation.what_matters_now) ?? what_matters_now;
-    }
-    if (careOrientation.what_can_wait) {
-      what_can_wait = scrub(careOrientation.what_can_wait) ?? what_can_wait;
-    }
-    if (careOrientation.still_unclear.length > 0) {
-      still_unclear = careOrientation.still_unclear
-        .map((q) => scrub(q) ?? q)
-        .filter(Boolean)
-        .slice(0, facets.max_asks);
-    }
     if (careOrientation.what_we_know.length > 0) {
       what_we_know = preferCareSituationFacts(
         careOrientation.what_we_know.map((l) => scrub(l) ?? l).filter(Boolean),
@@ -1335,14 +1326,15 @@ export function composeCaregiverResponse(params: {
       what_we_know = preferCareSituationFacts(
         [...new Set([...laneLines, ...what_we_know])],
       ).slice(0, 3);
-    }
+}
     if (competing.orientation) {
       situation_summary = competing.orientation;
     }
-    // Only fill Clarity pillars when the facet allows — specific held threads, not chrome.
-    if (show_clarity) {
+    // Only fill Clarity pillars when understanding projection has not already filled them.
+    // Never override projection-derived what_matters_now (understanding is primary source).
+    if (show_clarity && !understandingCanPrioritize) {
       const focus = laneLines[0]?.replace(/^Still unclear:\s*/i, "") ?? null;
-      what_matters_now = buildMattersNowOrientation({
+what_matters_now = buildMattersNowOrientation({
         subjectLabel: named,
         heldFocus: focus,
         baselineChange: baselineChangeNote,
@@ -1723,7 +1715,7 @@ export function composeCaregiverResponse(params: {
   const show_connection =
     Boolean(connection_note?.trim()) && connection_note !== what_changed;
 
-  // What matters now = most important next understanding — never echo the ask field.
+
   if (show_clarity && !pushback && what_matters_now) {
     what_matters_now = buildMattersNowOrientation({
       subjectLabel: named,
@@ -1921,17 +1913,17 @@ export function composeCaregiverResponse(params: {
     what_matters_now =
       heldFocusLines(situation, 1)[0]?.replace(/\.$/, "") ??
       "Understanding what is changing for the person receiving care.";
-  }
+}
 
-  // Improvement updates (Locked B): related outcome — never quiz or scare.
+// Improvement updates (Locked B): related outcome — never quiz or scare.
   // Later model/rich-situation asks must not re-open still_unclear.
   if (improvement) {
     what_may_become_serious = null;
     still_unclear = [];
   }
 
-  // Response Contract risk — held evidence only; event kind is UI attribution, not proof.
-  const heldEvidenceTexts = situation.observations
+  // Phase 4: Response Contract = Projection of Understanding (PRIMARY).
+const heldEvidenceTexts = situation.observations
     .map((o) =>
       observationCareFact({ human_fact: o.human_fact, raw_text: o.raw_text }),
     )
@@ -1940,17 +1932,29 @@ export function composeCaregiverResponse(params: {
     heldTexts: heldEvidenceTexts,
     latestRawText,
   });
-  const intelligence = buildResponseIntelligenceOutput({
-    what_is_happening: situation_summary ?? what_we_know[0] ?? null,
-    what_matters_now: show_clarity ? what_matters_now : null,
-    what_to_ask_next: still_unclear,
-    what_can_wait: show_clarity ? what_can_wait : null,
-    follow_up_items,
-    risk_level: riskFromEvidence,
-    observation_count: situation.observations.length,
-    has_open_unknowns: still_unclear.length > 0,
-    has_meaningful_change: Boolean(what_changed) && situation.observations.length > 1,
-  });
+  const intelligence = careProjection && !pushback && !improvement && turnClass !== "record_question"
+    ? buildResponseIntelligenceOutput({
+        what_is_happening: careProjection.what_is_happening,
+        what_matters_now: show_clarity ? careProjection.what_matters_now : null,
+        what_to_ask_next: careProjection.what_to_ask_next,
+        what_can_wait: show_clarity ? careProjection.what_can_wait : null,
+        follow_up_items: careProjection.follow_up_items,
+        risk_level: careProjection.risk_level,
+        observation_count: situation.observations.length,
+        has_open_unknowns: still_unclear.length > 0,
+        has_meaningful_change: Boolean(what_changed) && situation.observations.length > 1,
+      })
+    : buildResponseIntelligenceOutput({
+        what_is_happening: situation_summary ?? what_we_know[0] ?? null,
+        what_matters_now: show_clarity ? what_matters_now : null,
+        what_to_ask_next: still_unclear,
+what_can_wait: show_clarity ? what_can_wait : null,
+        follow_up_items,
+        risk_level: riskFromEvidence,
+        observation_count: situation.observations.length,
+        has_open_unknowns: still_unclear.length > 0,
+        has_meaningful_change: Boolean(what_changed) && situation.observations.length > 1,
+      });
 
   const decisionCareKeyForStory =
     situation.care_recipient_id ?? situation.caregiver_id;
@@ -2011,33 +2015,23 @@ export function composeCaregiverResponse(params: {
     if (/notice whether\s*[“"'][^“"']{20,}[”"']/i.test(text)) {
       return "Notice whether this continues and what else connects";
     }
-    return text;
+return text;
   };
+
+  // Scrub each field — never dump raw notes into caregiver-facing fields.
   connection_note = scrubPasteField(connection_note);
   evidence_line = scrubPasteField(evidence_line);
   what_changed = scrubPasteField(what_changed);
   recognition_line = scrubPasteField(recognition_line);
   what_matters_now = scrubPasteField(what_matters_now);
-  // Keep dementia-entry nutrition/sleep matters bias after later overwrites.
-  if (!improvement && show_clarity && !pushback) {
-    const profileMattersFinal = caregiverMattersHintFromClinicalProfile({
-      openCategories: profileOpenCategories,
-      heldFocus: heldFocusLines(situation, 1)[0] ?? null,
-      latestRawText,
-    });
-    if (
-      profileMattersFinal &&
-      (!what_matters_now ||
-        containsWeakOrientation(what_matters_now) ||
-        /how (?:this|these concerns) sit/i.test(what_matters_now))
-    ) {
-      what_matters_now = profileMattersFinal;
-    }
-  }
-  // Profile matters hint can be wiped by later orientation — restore when gaps still open.
+
+  // Profile matters hint applies only when understanding projection did NOT fill what_matters_now.
+  // Dementia-entry nutrition/sleep safety gaps are secondary biases, never primary.
   if (
     !improvement &&
     show_clarity &&
+    !pushback &&
+    !understandingCanPrioritize &&
     profileOpenCategories.length > 0 &&
     (!what_matters_now ||
       containsWeakOrientation(what_matters_now) ||

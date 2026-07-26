@@ -13,7 +13,10 @@ export {
   type CareSituationFactKind,
 } from "./types";
 
-export { buildCareSituationUnderstanding } from "./build";
+export {
+  buildCareSituationUnderstanding,
+  buildCareSituationUnderstandingFromExtraction,
+} from "./build";
 export { prioritizeCareSituation, looksLikeFragmentationOrAdmin } from "./prioritize";
 export {
   projectCareSituationOrientation,
@@ -24,3 +27,7 @@ export {
   type UnderstandingAcceptanceResult,
   type UnderstandingAcceptanceFailure,
 } from "./acceptance";
+export {
+  llmStructuredUnderstanding,
+  deterministicUnderstanding,
+} from "./llm-understanding";
