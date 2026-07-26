@@ -29,7 +29,7 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
     try {
       const key = careKey?.trim() || "anonymous_feedback";
       const helped = option === "Response was helpful";
-      await fetch("/api/research-feedback", {
+      await fetch(apiUrl("/api/research-feedback"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

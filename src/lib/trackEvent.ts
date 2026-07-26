@@ -8,6 +8,7 @@ import {
   OPS_USER_STORAGE_KEY,
   type OpsEventName,
 } from "./ops-console/event-names";
+import { apiUrl } from "./api-url";
 
 function newSessionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -53,7 +54,7 @@ export function track(
       metadata,
     };
 
-    void fetch("/api/track", {
+    void fetch(apiUrl("/api/track"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

@@ -35,7 +35,7 @@ export async function extractAttachedDocument(
   try {
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch("/api/extract", { method: "POST", body: form });
+    const res = await fetch(apiUrl("/api/extract"), { method: "POST", body: form });
     const data = (await res.json()) as {
       ok?: boolean;
       text?: string;

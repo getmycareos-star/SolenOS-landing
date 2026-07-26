@@ -15,7 +15,7 @@ export function PatternIntelligencePanel({ className }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/pattern-intelligence");
+      const res = await fetch(apiUrl("/api/pattern-intelligence"));
       const data = (await res.json()) as { result?: PatternIntelligenceResult };
       setResult(data.result ?? null);
     } catch {

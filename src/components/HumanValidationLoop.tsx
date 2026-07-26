@@ -20,7 +20,7 @@ async function submitFeedback(payload: {
   care_key?: string;
 }): Promise<void> {
 
-  await fetch("/api/feedback", {
+  await fetch(apiUrl("/api/feedback"), {
 
     method: "POST",
 

@@ -17,7 +17,7 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/policy/consent?user_id=${encodeURIComponent(caregiverId)}`);
+      const res = await fetch(apiUrl(`/api/policy/consent?user_id=${encodeURIComponent(caregiverId)}`));
       const data = (await res.json()) as {
         verified?: boolean;
         profile?: { data_improvement_consent?: boolean; limited_mode?: boolean };
@@ -38,7 +38,7 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/policy/consent", {
+      const res = await fetch(apiUrl("/api/policy/consent"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -61,7 +61,7 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/policy/consent", {
+      const res = await fetch(apiUrl("/api/policy/consent"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: caregiverId, action: "revoke" }),

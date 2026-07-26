@@ -50,7 +50,7 @@ export function DementiaCareRecordPanel({ className }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/care-contexts/dementia");
+      const res = await fetch(apiUrl("/api/care-contexts/dementia"));
       const data = (await res.json()) as { care_profile?: DementiaProfileView; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Failed to load care record");
       setProfile(data.care_profile ?? null);
@@ -74,7 +74,7 @@ export function DementiaCareRecordPanel({ className }: Props) {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/care-contexts/dementia", {
+      const res = await fetch(apiUrl("/api/care-contexts/dementia"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -93,7 +93,7 @@ export function DementiaCareRecordPanel({ className }: Props) {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/care-contexts/dementia", {
+      const res = await fetch(apiUrl("/api/care-contexts/dementia"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

@@ -37,7 +37,7 @@ const DEFAULT_ANALYZE: VoiceConversationAnalyzeFn = async ({
   priorInputRaw,
 }) => {
   // Care Reality path — never ops /api/analyze as primary voice product (CRI).
-  const res = await fetch("/api/situation", {
+  const res = await fetch(apiUrl("/api/situation"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

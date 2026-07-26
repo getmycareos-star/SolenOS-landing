@@ -62,7 +62,7 @@ export function ContinuityGraphPanel({ className }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/continuity-graph");
+      const res = await fetch(apiUrl("/api/continuity-graph"));
       if (!res.ok) throw new Error("Could not load continuity graph");
       const json = (await res.json()) as GraphResponse;
       setData(json);

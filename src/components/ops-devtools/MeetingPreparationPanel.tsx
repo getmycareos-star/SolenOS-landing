@@ -119,7 +119,7 @@ export function MeetingPreparationPanel({ className }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/meetings?trigger=1");
+      const res = await fetch(apiUrl("/api/meetings?trigger=1"));
       const data = (await res.json()) as { meetings?: CaregivingMeeting[] };
       setMeetings(data.meetings ?? []);
     } catch {
@@ -138,7 +138,7 @@ export function MeetingPreparationPanel({ className }: Props) {
     if (!title.trim() || !datetime) return;
     setCreating(true);
     try {
-      await fetch("/api/meetings", {
+      await fetch(apiUrl("/api/meetings"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: title.trim(), datetime: new Date(datetime).toISOString() }),
@@ -152,7 +152,7 @@ export function MeetingPreparationPanel({ className }: Props) {
   }
 
   async function confirmProposed(meetingId: string) {
-    await fetch("/api/meetings/prepare", {
+    await fetch(apiUrl("/api/meetings/prepare"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ meeting_id: meetingId }),

@@ -34,7 +34,7 @@ export function CareRecipientNameGate({
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/situation", {
+      const res = await fetch(apiUrl("/api/situation"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

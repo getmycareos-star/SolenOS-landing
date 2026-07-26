@@ -85,7 +85,7 @@ export function useTtsPlayback(languageHint?: string) {
       setLastMessage(null);
 
       try {
-        const res = await fetch("/api/tts/synthesize", {
+        const res = await fetch(apiUrl("/api/tts/synthesize"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

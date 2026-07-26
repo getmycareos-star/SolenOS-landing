@@ -34,7 +34,7 @@ export function UnderstandingFeedbackPrompt({
       if (!careKey.trim() || saving) return;
       setSaving(true);
       try {
-        await fetch("/api/research-feedback", {
+        await fetch(apiUrl("/api/research-feedback"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

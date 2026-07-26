@@ -1,6 +1,7 @@
 /** Client-side activation helpers — localStorage only, no reasoning. */
 
 import type { ContextualPromptType } from "./types";
+import { apiUrl } from "@/lib/api-url";
 
 export const ACTIVATION_DISMISSED_PROMPTS_KEY = "solenos_activation_dismissed_prompts";
 export const ACTIVATION_PRIOR_FOLLOW_UP_KEY = "solenos_activation_prior_follow_up_count";
@@ -36,7 +37,7 @@ export async function trackClientActivationEvent(params: {
   payload?: Record<string, unknown>;
 }): Promise<void> {
   try {
-    await fetch("/api/activation/events", {
+    await fetch(apiUrl("/api/activation/events"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -63,7 +64,7 @@ export async function fetchActivationSession(params: {
     }
     if (dismissed.length > 0) qs.set("dismissed_prompt_ids", dismissed.join(","));
 
-    const res = await fetch(`/api/activation/session?${qs.toString()}`);
+    const res = await fetch(apiUrl(`/api/activation/session?${qs.toString()}`));
     if (!res.ok) return null;
     const data = (await res.json()) as { session?: import("./types").ActivationSessionContext };
     return data.session ?? null;

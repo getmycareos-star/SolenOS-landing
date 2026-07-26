@@ -34,7 +34,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
   const loadStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/policy/consent?user_id=${encodeURIComponent(caregiverId)}`);
+      const res = await fetch(apiUrl(`/api/policy/consent?user_id=${encodeURIComponent(caregiverId)}`));
       const data = (await res.json()) as ConsentStatus;
       setStatus(data);
     } catch {
@@ -54,7 +54,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
     setError(null);
 
     try {
-      const res = await fetch("/api/policy/consent", {
+      const res = await fetch(apiUrl("/api/policy/consent"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

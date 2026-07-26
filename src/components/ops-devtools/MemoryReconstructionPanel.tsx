@@ -19,7 +19,7 @@ export function MemoryReconstructionPanel({ className }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/memory/reconstruct", {
+      const res = await fetch(apiUrl("/api/memory/reconstruct"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: q.trim() }),

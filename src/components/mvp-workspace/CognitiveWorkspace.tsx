@@ -30,6 +30,7 @@ import { CareRecipientNameGate } from "./CareRecipientNameGate";
 import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
+import { apiUrl } from "@/lib/api-url";
 import {
   IN_APP_IMPROVING_NOTICE,
   EMERGENCY_BOUNDARY,
@@ -178,7 +179,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
 
     // Mount hydrate must not consume soft invite — Done path offers once (Locked B).
     void fetch(
-      `/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`,
+      apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
     )
       .then((r) => r.json())
       .then(
@@ -300,7 +301,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         payload: { entry: "add_situation", has_documents: readyDocs.length > 0 },
       });
 
-      const situationRes = await fetch("/api/situation", {
+      const situationRes = await fetch(apiUrl("/api/situation"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -434,7 +435,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     };
 
     try {
-      const res = await fetch("/api/situation", {
+      const res = await fetch(apiUrl("/api/situation"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -474,7 +475,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         if (durable) {
           try {
             const inviteRes = await fetch(
-              `/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=1`,
+              apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=1`),
             );
             if (inviteRes.ok) {
               const inviteData = (await inviteRes.json()) as {

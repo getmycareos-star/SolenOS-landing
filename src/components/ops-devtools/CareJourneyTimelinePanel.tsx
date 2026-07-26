@@ -138,9 +138,9 @@ export function CareJourneyTimelinePanel({ className }: Props) {
 
       const [timelineRes, graphRes] = await Promise.all([
 
-        fetch(`/api/care-journey/timeline${qs}`),
+        fetch(apiUrl(`/api/care-journey/timeline${qs}`)),
 
-        fetch("/api/care-journey/graph"),
+        fetch(apiUrl("/api/care-journey/graph")),
 
       ]);
 
