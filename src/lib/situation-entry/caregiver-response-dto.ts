@@ -42,6 +42,8 @@ export const CAREGIVER_SITUATION_KEYS = [
   "document_events_count",
   "timeline_views",
   "care_key",
+  "care_identity_summary",
+  "continuity_decision",
   "active_care_situation",
   "active_care_situation_turn",
   "active_situations",

@@ -245,7 +245,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
               },
               care_key: careKey,
               care_recipient_id: data.care_recipient_id ?? null,
-            } as SituationResponse;
+            } as unknown as SituationResponse;
             setSituationResponse(restored);
             setHasContextRoot(true);
             setSessionHasNote(true);

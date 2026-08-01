@@ -114,6 +114,24 @@ body {
   font-family: var(--font-solenos-sans);
 }
 
+.shell-website-link {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-solenos-sans);
+  font-size: 0.75rem;
+  text-decoration: none;
+  padding: 0.3rem 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.shell-website-link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
 .shell-prefs {
   display: flex;
   gap: 0.75rem;
@@ -241,6 +259,34 @@ body {
 .sidebar-count {
   font-size: 0.7rem;
   opacity: 0.7;
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--hairline);
+  padding: 0.5rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sidebar-footer-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-solenos-sans);
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.sidebar-footer-link:hover {
+  color: var(--ink);
+  background: transparent;
 }
 
 .sidebar-panel {

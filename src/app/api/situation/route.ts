@@ -6,7 +6,7 @@ import {
   SITUATION_ENTRY_IDENTITY,
   getCareContextRoot,
   getSituationTimeline,
-  processSituationInput,
+  processSituationInputWithIntelligence,
 } from "@/lib/situation-entry";
 import {
   FINAL_OUTPUT_CONTRACT_IDENTITY,
@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
         })
       : undefined;
 
-  const result = await processSituationInput({
+  const result = await processSituationInputWithIntelligence({
     raw_input: rawInputStr,
     caregiver_id: caregiverId,
     contributor_id: contributorId,

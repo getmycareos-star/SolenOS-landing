@@ -623,6 +623,11 @@ export function ingestActiveCareObservation(params: {
   identityMismatch?: boolean;
   /** SRE improvement outcome link — not a care decision for Decision Memory. */
   isImprovementOutcome?: boolean;
+  /**
+   * Continuity decision from Care Identity engine.
+   * Enables the composer to branch behavior for new vs returning caregivers.
+   */
+  continuityDecision?: import("../care-identity").ContinuityDecision;
 }): ActiveSituationTurn {
   const nowIso = params.nowIso ?? new Date().toISOString();
   const careRecipientId = realityKey(params.caregiverId);
@@ -1224,11 +1229,14 @@ export function ingestActiveCareObservation(params: {
     relation: finalRelation,
     nowIso,
   });
+  const continuityDecision = params.continuityDecision;
+
   return {
     ...turnFromProgressive(situation, finalRelation, progressiveOriented, crs),
     what_changed_in_understanding: what_changed,
     pattern_label,
     resolved_uncertainties: mergedResolved,
     relation: finalRelation,
+    continuity_decision: continuityDecision,
   };
 }

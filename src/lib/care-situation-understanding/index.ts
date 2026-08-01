@@ -26,6 +26,7 @@ export {
   acceptCareSituationUnderstanding,
   type UnderstandingAcceptanceResult,
   type UnderstandingAcceptanceFailure,
+  assertUnderstandingValid,
 } from "./acceptance";
 export {
   llmStructuredUnderstanding,

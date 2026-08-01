@@ -1,5 +1,6 @@
 "use client";
 
+import { apiUrl } from "@/lib/api-url";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toSpeechRecognitionLang } from "@/lib/voice-observation/speech-language";
 

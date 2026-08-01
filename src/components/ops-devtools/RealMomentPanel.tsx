@@ -6,6 +6,7 @@
  */
 "use client";
 
+import { apiUrl } from "@/lib/api-url";
 import { useCallback, useState } from "react";
 import { Mic, MicOff, FileText, Camera, Loader2 } from "lucide-react";
 

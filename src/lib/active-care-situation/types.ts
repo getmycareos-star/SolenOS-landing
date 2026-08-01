@@ -106,6 +106,11 @@ export type ActiveSituationTurn = {
   identity_mismatch_input?: string | null;
   /** Caregiver explicitly corrected prior held understanding (Phase 12). */
   memory_correction_applied?: boolean;
+  /**
+   * Continuity decision from Care Identity engine — how this input relates to
+   * prior care reality. Enables the composer to branch for new vs returning.
+   */
+  continuity_decision?: import("../care-identity").ContinuityDecision;
   disclosure_stage: CareRealityDisclosureStage;
   disclosure_plan: DisclosurePlan;
   response_evolution: ResponseEvolutionEvaluation;

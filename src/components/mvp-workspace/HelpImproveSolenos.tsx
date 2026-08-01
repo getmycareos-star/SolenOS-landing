@@ -1,5 +1,6 @@
 "use client";
 
+import { apiUrl } from "@/lib/api-url";
 import { useCallback, useState } from "react";
 import {
   GLOBAL_FEEDBACK_LABEL,

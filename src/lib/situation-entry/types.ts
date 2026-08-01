@@ -210,6 +210,17 @@ export type SituationResponse = {
   generalized_care_understanding_layer?: import("../generalized-care-understanding").GeneralizedCareUnderstandingResult;
 
   /**
+   * Care Identity summary — lifecycle state, session count, active care recipient.
+   * Enables the pipeline to distinguish new caregivers from returning ones.
+   */
+  care_identity_summary?: import("../care-identity").CareIdentitySummary;
+  /**
+   * Continuity decision — how this input relates to prior care reality.
+   * Used by the response composer to branch: new user orientation vs returning continuity.
+   */
+  continuity_decision?: import("../care-identity").ContinuityDecision;
+
+  /**
    * Server-composed caregiver response — moves understanding to the server path.
    * Client uses this as primary source; falls back to client composition offline.
    */
@@ -237,6 +248,7 @@ export type SituationResponse = {
     root_event_id: string | null;
     event_ids: string[];
   }[];
+  architectural_boundaries_layer?: import("../architectural-boundaries/types").ArchitecturalBoundariesResult;
 };
 
 export type ProcessSituationInput = {

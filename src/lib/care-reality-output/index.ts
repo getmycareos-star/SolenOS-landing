@@ -79,7 +79,7 @@ export function separateEpistemicOutputLayers(params: {
       interpretations.push(
         /held as your experience|you described/i.test(t)
           ? t
-          : `Held as your experience — not a settled fact: “${t.replace(/\.$/, "")}”.`,
+          : `Held as your experience — not a settled fact: "${t.replace(/\.$/, "")}".`,
       );
       continue;
     }
@@ -95,7 +95,7 @@ export function separateEpistemicOutputLayers(params: {
   ) {
     const clipped = params.latestRawText.trim().slice(0, 140);
     interpretations.push(
-      `Held as your experience — not a settled fact: “${clipped}${clipped.length >= 140 ? "…" : ""}”`,
+      `Held as your experience — not a settled fact: "${clipped}${clipped.length >= 140 ? "…" : ""}"`,
     );
   }
 
@@ -104,7 +104,7 @@ export function separateEpistemicOutputLayers(params: {
 
 /**
  * Build what-matters-now from held focus + optional baseline deviation.
- * Never returns empty “Stay with what is already held” when focus exists.
+ * Never returns empty "Stay with what is already held" when focus exists.
  */
 export function buildMattersNowFromReality(params: {
   subjectLabel: string | null;
@@ -137,7 +137,7 @@ export function buildMattersNowFromReality(params: {
 }
 
 /**
- * Monitoring language — evidence-based, not alarm, not “hard days.”
+ * Monitoring language — evidence-based, not alarm, not "hard days."
  */
 export function buildMayBecomeSeriousLine(params: {
   subjectLabel: string | null;
@@ -158,6 +158,11 @@ export function buildMayBecomeSeriousLine(params: {
 /**
  * Situation summary from held care reality — Known / change / unclear layers.
  * Response Contract "what is happening" — never note echo or soft storage filler.
+ *
+ * PROFESSIONAL DOES NOT MEAN ROBOTIC:
+ * The internal structure exists underneath. The caregiver experiences natural
+ * clarity, not schema labels like "Changed:" or "Still unclear:".
+ * Build natural prose that orients without exposing the internal layers.
  */
 export function buildSituationUnderstandingSummary(params: {
   heldFacts: readonly string[];
@@ -186,13 +191,21 @@ export function buildSituationUnderstandingSummary(params: {
   }
 
   const known = facts.join("; ");
-  // ADR-024 — never expose Known/Likely/Unknown as caregiver panel labels.
+  // Build natural prose — not labeled sections like "Changed:" or "Still unclear:".
+  // Internal: Known / Changed / Unclear layers exist underneath.
+  // External: flowing prose that orients without exposing the schema.
   const parts: string[] = [`${known}.`];
   if (change && !containsWeakOrientation(change) && !facts.some((f) => change.toLowerCase().includes(f.toLowerCase().slice(0, 24)))) {
-    parts.push(`Changed: ${change}.`);
+    parts.push(`${change}.`);
   }
   if (unknown) {
-    parts.push(`Still unclear: ${unknown}.`);
+    const unknownLower = unknown.toLowerCase();
+    // Use natural language instead of "Still unclear:" label
+    if (/^(whether|if|how|when|what|who|where)\b/.test(unknownLower)) {
+      parts.push(`It is not clear yet ${unknownLower}.`);
+    } else {
+      parts.push(`It is not clear yet whether ${unknownLower}.`);
+    }
   }
   // Single-fact first capture: keep lean — bare fact when no layers.
   if (parts.length === 1 && facts.length === 1 && !change && !unknown) {
@@ -203,7 +216,7 @@ export function buildSituationUnderstandingSummary(params: {
 
 /**
  * Continuity follow-ups from held focus / decision gaps — never restate the ask, never a task list.
- * Never quote near-raw caregiver facets in “Notice whether …”.
+ * Never quote near-raw caregiver facets in "Notice whether …".
  */
 export function composeReliefFollowUps(params: {
   heldFocus: string | null;
@@ -221,7 +234,7 @@ export function composeReliefFollowUps(params: {
     focus.length <= 48
   ) {
     const short = focus.replace(/\.$/, "");
-    items.push(`Notice whether “${short}” continues and what surrounds it`);
+    items.push(`Notice whether "${short}" continues and what surrounds it`);
   } else {
     items.push("Notice whether this continues and what else connects");
   }

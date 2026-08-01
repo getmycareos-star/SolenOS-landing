@@ -114,12 +114,24 @@ export {
   memoryPriorityForType,
   resetCareRealityMemoryStore,
   TEXT_MEMORY_THEATER_PATTERNS,
+  validateMemoryObjectDescription,
+  validateMemoryIngestion,
+  mapToAllowedType,
+  isAllowedMemoryType,
+  FORBIDDEN_CAUSAL_PATTERNS,
+  FORBIDDEN_DIAGNOSIS_PATTERNS,
+  FORBIDDEN_CONCLUSION_PATTERNS,
+  FORBIDDEN_RISK_PATTERNS,
+  ALLOWED_MEMORY_TYPES,
 } from "./care-reality-memory";
 export type {
   CareRealityMemoryObject,
   CareRealityMemoryType,
   CareRealityMemoryStatus,
   MemoryConfidenceBand,
+  MemoryObjectValidationResult,
+  MemoryIngestionValidationResult,
+  AllowedMemoryType,
 } from "./care-reality-memory";
 export {
   INTELLIGENCE_VALIDATION_PURPOSE,

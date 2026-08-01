@@ -1,3 +1,4 @@
+import { apiUrl } from "@/lib/api-url";
 import type { ISpeechInput } from "../interfaces/speech-input";
 import type { ISpeechOutput } from "../interfaces/speech-output";
 import type {

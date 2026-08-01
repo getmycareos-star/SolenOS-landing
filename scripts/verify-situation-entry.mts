@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { resetCareContextRootStore, processSituationInput, getCareContextRoot, computeWhatChanged } from "../src/lib/situation-entry";
+import { resetCareContextRootStore, processSituationInput, processSituationInputWithIntelligence, getCareContextRoot, computeWhatChanged } from "../src/lib/situation-entry";
 import {
   CAREGIVER_RESPONSE_BANNED_TOKENS,
   caregiverLineContainsBannedToken,
@@ -22,6 +22,8 @@ import {
 import { resetPolicyEngineStore, seedVerifyConsent } from "../src/lib/policy-engine";
 import { resetNormalizationStore } from "../src/lib/event-normalization/event-normalizer";
 import { resetMvpSurfaceStore } from "../src/lib/mvp-surface-area";
+import { resetActiveCareSituationStore } from "../src/lib/active-care-situation";
+import { resetMemoryLayerStore } from "../src/lib/care-memory-layers";
 
 const root = process.cwd();
 
@@ -37,6 +39,8 @@ resetDareStore();
 resetPolicyEngineStore();
 resetNormalizationStore();
 resetMvpSurfaceStore();
+resetActiveCareSituationStore();
+resetMemoryLayerStore();
 seedVerifyConsent("cg_situation");
 
 assert(CARE_CONTEXT_ROOT_ID === "CareContextRoot", "CareContextRoot id constant");
@@ -140,6 +144,32 @@ console.log("✓ document → CareEvent pipeline");
 const changes = computeWhatChanged(ctx!, second.events_created);
 assert(changes.some((c) => c.includes("New event")), "diff detects new events");
 console.log("✓ continuity diff engine");
+
+// === Intelligence Pipeline Test ===
+{
+  resetCareContextRootStore();
+  resetCareEventStore();
+  resetDareStore();
+  resetActiveCareSituationStore();
+  resetMemoryLayerStore();
+  seedVerifyConsent("cg_intel");
+
+  const intelResult = await processSituationInputWithIntelligence({
+    raw_input: "Mom fell yesterday and hasn't been eating properly",
+    caregiver_id: "cg_intel",
+  });
+
+  assert(intelResult.what_i_understood.length >= 1, "intel: what_i_understood");
+  assert(intelResult.what_is_uncertain.length >= 1, "intel: uncertainty surfaced");
+  assert(intelResult.what_needs_clarification.length >= 1, "intel: clarification");
+  assert(intelResult.final_output !== undefined, "intel: final_output present");
+  assert(intelResult.final_output.what_is_happening.length > 0, "intel: what_is_happening");
+  assert(intelResult.final_output.what_matters_now.length > 0, "intel: what_matters_now");
+  assert(intelResult.context.events.length >= 1, "intel: events created");
+  assert(intelResult.care_key !== undefined, "intel: care_key set");
+  assertNoBannedCaregiverDto(intelResult, "intel response");
+  console.log("✓ intelligence pipeline — processSituationInputWithIntelligence");
+}
 
 const required = [
   "src/lib/situation-entry/caregiver-facing-uncertainty.ts",

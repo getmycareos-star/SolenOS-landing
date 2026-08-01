@@ -53,6 +53,17 @@ export const RESPONSE_CONTRACT_NEVER_SAY = [
   "it appears diagnosed",
   "as an ai",
   "chatgpt",
+  // Professional does not mean robotic — never sound like a machine
+  "input received",
+  "processing completed",
+  "query detected",
+  "please provide additional information",
+  "data has been recorded",
+  "according to the data",
+  "based on the information provided",
+  "the analysis indicates",
+  "the model suggests",
+  "the system has determined",
 ] as const;
 
 export const RESPONSE_CONTRACT_SUCCESS =

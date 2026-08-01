@@ -23,10 +23,26 @@ function personPhrase(person: string | null): string {
 
 /**
  * Project understanding into Response Contract–aligned orientation.
+ * Uses natural human language — never robotic or machine-like phrasing.
  */
 export function projectCareSituationOrientation(
   u: CareSituationUnderstanding,
 ): CareSituationOrientationProjection {
+  if (!u.can_orient) {
+    return {
+      recognition_line: null,
+      what_is_happening: u.care_recipient
+        ? `A care situation is being held for ${u.care_recipient}.`
+        : "A care situation is being held.",
+      what_matters_now: null,
+      what_can_wait: null,
+      still_unclear: [],
+      what_we_know: [],
+      follow_up_items: [],
+      connection_note: null,
+    };
+  }
+
   const who = personPhrase(u.care_recipient);
 
   const factLines = u.facts
@@ -75,7 +91,7 @@ export function projectCareSituationOrientation(
       : null);
 
   const follow_up_items = [
-    ...u.continuity_hooks.slice(0, 2).map((h) => `Keep connected: ${h.slice(0, 120)}`),
+    ...u.continuity_hooks.slice(0, 2).map((h) => `Keep tracking: ${h.slice(0, 120)}`),
     ...(u.possible_links.length > 0
       ? ["Track whether changes and the recent care decision continue to move together."]
       : []),

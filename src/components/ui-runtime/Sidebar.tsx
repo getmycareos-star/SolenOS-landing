@@ -157,6 +157,11 @@ export function Sidebar({
         )}
         {activeSection === "about_solenos" && <AboutPanel about={data.about} />}
       </div>
+
+      <div className="sidebar-footer">
+        <Link href="/settings" className="sidebar-footer-link">Settings</Link>
+        <Link href="/" className="sidebar-footer-link">Visit website</Link>
+      </div>
     </aside>
   );
 }

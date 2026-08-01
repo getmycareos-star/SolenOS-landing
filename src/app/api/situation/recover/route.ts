@@ -8,7 +8,7 @@ import {
   getRetryablePending,
   markRetryAttempt,
 } from "@/lib/failure-resilience";
-import { processSituationInput } from "@/lib/situation-entry";
+import { processSituationInputWithIntelligence } from "@/lib/situation-entry";
 
 const DEFAULT_CAREGIVER_ID = "default_caregiver";
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     const rawContent =
       typeof record.raw_input === "string" ? record.raw_input : attempt.content_preview;
 
-    const result = await processSituationInput({
+    const result = await processSituationInputWithIntelligence({
       raw_input: rawContent,
       caregiver_id: caregiverId,
     });

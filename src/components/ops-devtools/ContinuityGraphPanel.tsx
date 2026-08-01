@@ -1,5 +1,6 @@
 "use client";
 
+import { apiUrl } from "@/lib/api-url";
 import { useCallback, useEffect, useState } from "react";
 
 import type {

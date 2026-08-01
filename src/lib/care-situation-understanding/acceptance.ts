@@ -139,3 +139,54 @@ export function acceptCareSituationUnderstanding(
     reasons,
   };
 }
+
+/** Structural validation: confirm understanding is safe to use downstream. */
+export function assertUnderstandingValid(u: CareSituationUnderstanding): {
+  ok: boolean;
+  failures: string[];
+} {
+  const failures: string[] = [];
+
+  if (u.instant_path !== true) {
+    failures.push("instant_path must be true");
+  }
+  if (!["low", "medium", "high"].includes(u.confidence)) {
+    failures.push("confidence must be low|medium|high");
+  }
+
+  for (const link of u.possible_links) {
+    if (link.causation_claimed !== false) {
+      failures.push("possible_links must set causation_claimed: false");
+    }
+  }
+
+  const blob = [
+    ...u.facts.map((f) => f.text),
+    ...u.interpretations.map((i) => i.text),
+    ...u.unknowns,
+    ...u.possible_links.map((l) => l.text),
+    ...u.follow_up_questions,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const engineLeakage = [
+    /\bobservation\b.{0,30}\bextracted\b/i,
+    /\bconfidence.{0,10}score\b/i,
+    /\bdetected\b/i,
+    /\blayer\s*:\s*(?:observation|event|decision|outcome|unknown)\b/i,
+    /\bstatus\s*:\s*(?:open|active|completed)\b/i,
+    /\bepistemic\b/i,
+    /\bcare.?signal\b/i,
+    /\bsituation.?model\b/i,
+    /\bunderstanding.?layer\b/i,
+  ];
+
+  for (const pattern of engineLeakage) {
+    if (pattern.test(blob)) {
+      failures.push(`Engine leakage in understanding: ${pattern.source}`);
+    }
+  }
+
+  return { ok: failures.length === 0, failures };
+}

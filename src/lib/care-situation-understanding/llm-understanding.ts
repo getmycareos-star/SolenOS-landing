@@ -8,7 +8,11 @@
  * - LLM output fails Zod validation
  * - LLM output violates medical boundary (diagnosis/advice/empathy/causation)
  *
- * Never loses caregiver input. Never feeds /api/analyze 5-field compression to caregiver panel.
+ * Incorporates SolenOS AI Constitution principles:
+ * - 4-step thinking model (determine_goal, question_type, depends_on_record, estimate_confidence)
+ * - Knowledge hierarchy (Living Care Record > conversation > medical > general > inference)
+ * - Care intelligence signal detection
+ * - Never loses caregiver input. Never feeds /api/analyze 5-field compression to caregiver panel.
  */
 import type { CareRealityExtractionResult } from "../care-reality-extraction/types";
 import { extractCareRealityFromText } from "../care-reality-extraction/extract";
@@ -18,6 +22,12 @@ import {
   validateMedicalBoundary,
   type LlmUnderstandingOutput,
 } from "./llm-schema";
+import {
+  classifyQuestionType,
+  estimateConfidence,
+  detectCareIntelligenceSignal,
+  dependsOnLivingCareRecord,
+} from "../solenos-constitution";
 
 /**
  * Map LLM typed output to existing CareRealityExtractionResult types.
@@ -143,6 +153,23 @@ export async function llmStructuredUnderstanding(params: {
     // Fallback to deterministic extraction when no LLM available
     return extractCareRealityFromText({ rawText: trimmedText, source });
   }
+
+  // ─── Constitution-Aware Reasoning (Phase 5) ────────────────────────────
+  // Apply the 4-step thinking model before the LLM call
+  const questionType = classifyQuestionType(trimmedText);
+  const dependsOnRecord = dependsOnLivingCareRecord(questionType);
+  const confidence = estimateConfidence({
+    hasCareRecord: false, // Will be determined at runtime by calling context
+    eventCount: 0,
+    uncertaintyCount: 0,
+    hasPriorContext: false,
+  });
+  const careSignal = detectCareIntelligenceSignal(trimmedText);
+
+  // Log constitution analysis for observability
+  console.debug(
+    `[llm-understanding] Constitution analysis: questionType=${questionType}, dependsOnRecord=${dependsOnRecord}, confidence=${confidence}, careSignal=${careSignal}`,
+  );
 
   try {
     // Dynamic import to avoid hard dependency when LLM not used

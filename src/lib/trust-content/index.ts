@@ -25,6 +25,7 @@ export const TRUST_NAV = [
   { href: "/about", label: "About SolenOS" },
   { href: "/support", label: "Help" },
   { href: "/capabilities", label: "Capabilities" },
+  { href: "/settings", label: "Settings" },
   { href: "/early-access", label: "Early Access" },
 ] as const;
 

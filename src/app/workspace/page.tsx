@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { CareProfileLayerPayload } from "@/lib/care-profile/types";
 import type { CareContextLayerPayload } from "@/lib/care-context/situational/types";
 import type { MemoryInfluenceLayerPayload } from "@/lib/memory-influence/types";
@@ -414,6 +415,9 @@ export default function WorkspacePage() {
           </span>
           <p className="tagline">{BRAND_TAGLINE}</p>
         </div>
+        <Link href="/" className="shell-website-link">
+          Visit website
+        </Link>
       </header>
 
       <div className={`shell-body${!sidebarOpen ? " sidebar-collapsed" : ""}`}>

@@ -25,6 +25,7 @@ import type {
   CareSituationUnderstanding,
 } from "./types";
 import { llmStructuredUnderstanding } from "./llm-understanding";
+import type { ContinuityDecision } from "../care-identity/continuity-detection";
 
 function emptySituationStub(careKey: string): ActiveCareSituation {
   const now = new Date().toISOString();
@@ -51,6 +52,63 @@ function emptySituationStub(careKey: string): ActiveCareSituation {
   };
 }
 
+function createFallbackUnderstanding(params: {
+  rawText: string;
+  careKey: string;
+  personDisplayName?: string | null;
+  situation: ActiveCareSituation;
+}): CareSituationUnderstanding {
+  const raw = params.rawText.trim();
+  const person =
+    params.personDisplayName?.trim() ||
+    params.situation.subject_label ||
+    null;
+
+  const facts: CareSituationFact[] = [];
+  const unknowns: string[] = [];
+  const follow_up_questions: string[] = [];
+
+  if (raw.length >= 12) {
+    facts.push({
+      kind: "observation",
+      text: raw.slice(0, 240),
+      source_fragment: raw,
+    });
+    unknowns.push(
+      `What is happening with ${person || "the person you care for"}?`,
+    );
+    follow_up_questions.push("What changed, or what is on your mind?");
+  }
+
+  return {
+    care_recipient: person,
+    facts,
+    interpretations: [],
+    unknowns: [...new Set(unknowns)].slice(0, 6),
+    possible_links: [],
+    changes_from_baseline: [],
+    matters_now: [],
+    can_wait: [],
+    follow_up_questions: [...new Set(follow_up_questions)].slice(0, 3),
+    context_only: [],
+    continuity_hooks: [],
+    can_orient: false,
+    instant_path: true,
+    confidence: "low",
+  };
+}
+
+function isUnderstandingEmpty(
+  u: CareSituationUnderstanding,
+): boolean {
+  return (
+    u.facts.length === 0 &&
+    u.interpretations.length === 0 &&
+    u.unknowns.length === 0 &&
+    u.context_only.length === 0
+  );
+}
+
 function looksLikeRecipientSelfReportUncertain(text: string): boolean {
   return (
     /\b(?:says?|said|telling me)\b/i.test(text) &&
@@ -72,7 +130,12 @@ function looksLikePossibleTimingLink(text: string): boolean {
  * Does NOT attempt LLM; uses deterministic/regex extraction only.
  * Used by composeCaregiverResponse which must remain synchronous.
  *
- * When priorContinuityHooks or priorUnknowns are provided, they are merged
+ * When ContinuityDecision is provided, it drives:
+ * - can_orient: returning users with prior context can orient
+ * - changes_from_baseline: populated from care_reality_diff
+ * - priorContinuityHooks / priorUnknowns: sourced from continuity context
+ *
+ * When priorContinuityHooks or priorUnknowns are provided directly, they are merged
  * into the current turn's understanding for second-turn continuity.
  */
 export function buildCareSituationUnderstandingFromExtraction(params: {
@@ -85,6 +148,8 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
   priorContinuityHooks?: string[];
   /** Open unknowns from prior CRS turn — carries forward unresolved uncertainty. */
   priorUnknowns?: string[];
+  /** ContinuityDecision from Care Identity — drives new vs returning branching. */
+  continuityDecision?: ContinuityDecision | null;
 }): CareSituationUnderstanding {
   const raw = (params.rawText ?? "").trim();
   const careKey =
@@ -97,11 +162,22 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
     careKey,
   });
 
-  // Deterministic/regex extraction only (synchronous)
-  const extraction = anchor.extraction ?? extractCareRealityFromText({
-    rawText: raw,
-    source: params.contributorId ?? careKey,
-  });
+  let extraction: import("../care-reality-extraction").CareRealityExtractionResult;
+  try {
+    extraction =
+      anchor.extraction ??
+      extractCareRealityFromText({
+        rawText: raw,
+        source: params.contributorId ?? careKey,
+      });
+  } catch {
+    return createFallbackUnderstanding({
+      rawText: raw,
+      careKey,
+      personDisplayName: params.personDisplayName,
+      situation,
+    });
+  }
 
   const facts: CareSituationFact[] = [];
   const interpretations: CareSituationInterpretation[] = [];
@@ -176,6 +252,37 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
     situation.subject_label ||
     null;
 
+  // --- Continuity Decision Integration ---
+  // When ContinuityDecision indicates an existing user with prior context,
+  // we can orient even if the current input is thin. New users need more
+  // evidence to orient.
+  const continuityDecision = params.continuityDecision;
+  const isReturningOrContinuation =
+    continuityDecision?.continuity_type === "returning" ||
+    continuityDecision?.continuity_type === "continuation";
+  const isNewUser =
+    continuityDecision?.continuity_type === "new_caregiver" ||
+    continuityDecision?.continuity_type === "new_care_recipient";
+
+  // For returning users, populate changes_from_baseline from care_reality_diff
+  if (isReturningOrContinuation && continuityDecision?.care_reality_diff) {
+    const diff = continuityDecision.care_reality_diff;
+    if (diff.changed.length > 0) {
+      changes_from_baseline.push(...diff.changed);
+    }
+    if (diff.added.length > 0) {
+      changes_from_baseline.push(...diff.added);
+    }
+  }
+
+  // Source prior hooks and unknowns from continuity context when available
+  const effectivePriorHooks =
+    params.priorContinuityHooks ??
+    (isReturningOrContinuation ? continuityDecision?.context.continuity_hooks : undefined);
+  const effectivePriorUnknowns =
+    params.priorUnknowns ??
+    (isReturningOrContinuation ? continuityDecision?.context.open_uncertainties : undefined);
+
   // Use impact-driven prioritization from the understanding object
   // Pass prior continuity hooks and unknowns for second-turn reconnection
   const prioritized = prioritizeFromUnderstanding({
@@ -193,18 +300,23 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
     can_orient: false,
     instant_path: true,
     confidence: "low",
-  }, params.priorContinuityHooks, params.priorUnknowns);
+  }, effectivePriorHooks, effectivePriorUnknowns);
 
   const evidenceCount = facts.length + prioritized.follow_up_questions.length;
   const confidence: CareSituationUnderstanding["confidence"] =
     evidenceCount >= 4 ? "high" : evidenceCount >= 2 ? "medium" : "low";
 
+  // can_orient: returning/continuation users can orient with less evidence.
+  // New users need stronger evidence or a clear care signal.
+  const canOrientFromContinuity =
+    isReturningOrContinuation && continuityDecision?.can_orient;
   const can_orient =
+    canOrientFromContinuity ||
     prioritized.matters_now.length > 0 ||
     facts.length > 0 ||
     (context_only.length > 0 && raw.length < 200);
 
-  return {
+  const understanding: CareSituationUnderstanding = {
     care_recipient: person,
     facts,
     interpretations,
@@ -220,6 +332,17 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
     instant_path: true,
     confidence,
   };
+
+  if (isUnderstandingEmpty(understanding)) {
+    return createFallbackUnderstanding({
+      rawText: raw,
+      careKey,
+      personDisplayName: params.personDisplayName,
+      situation,
+    });
+  }
+
+  return understanding;
 }
 
 /**
@@ -239,10 +362,14 @@ async function getBestExtraction(params: {
       signal: params.signal,
     });
   } catch {
-    return extractCareRealityFromText({
-      rawText: params.rawText,
-      source: params.contributorId,
-    });
+    try {
+      return extractCareRealityFromText({
+        rawText: params.rawText,
+        source: params.contributorId,
+      });
+    } catch {
+      throw new Error("Deterministic extraction failed");
+    }
   }
 }
 
@@ -260,6 +387,8 @@ export async function buildCareSituationUnderstanding(params: {
   priorContinuityHooks?: string[];
   priorUnknowns?: string[];
   signal?: AbortSignal;
+  /** ContinuityDecision from Care Identity — drives new vs returning branching. */
+  continuityDecision?: ContinuityDecision | null;
 }): Promise<CareSituationUnderstanding> {
   const raw = (params.rawText ?? "").trim();
   const careKey =
@@ -272,12 +401,23 @@ export async function buildCareSituationUnderstanding(params: {
     careKey,
   });
 
-  // Try LLM extraction first; fallback to deterministic/regex on failure
-  const extraction = anchor.extraction ?? (await getBestExtraction({
-    rawText: raw,
-    contributorId: params.contributorId ?? careKey,
-    signal: params.signal,
-  }));
+  let extraction: import("../care-reality-extraction").CareRealityExtractionResult;
+  try {
+    extraction =
+      anchor.extraction ??
+      (await getBestExtraction({
+        rawText: raw,
+        contributorId: params.contributorId ?? careKey,
+        signal: params.signal,
+      }));
+  } catch {
+    return createFallbackUnderstanding({
+      rawText: raw,
+      careKey,
+      personDisplayName: params.personDisplayName,
+      situation,
+    });
+  }
 
   const facts: CareSituationFact[] = [];
   const interpretations: CareSituationInterpretation[] = [];
@@ -381,7 +521,7 @@ export async function buildCareSituationUnderstanding(params: {
     facts.length > 0 ||
     (context_only.length > 0 && raw.length < 200);
 
-  return {
+  const understanding: CareSituationUnderstanding = {
     ...understandingDraft,
     unknowns: understandingDraft.unknowns.slice(0, 6),
     changes_from_baseline: understandingDraft.changes_from_baseline.slice(0, 4),
@@ -393,4 +533,15 @@ export async function buildCareSituationUnderstanding(params: {
     can_orient,
     confidence,
   };
+
+  if (isUnderstandingEmpty(understanding)) {
+    return createFallbackUnderstanding({
+      rawText: raw,
+      careKey,
+      personDisplayName: params.personDisplayName,
+      situation,
+    });
+  }
+
+  return understanding;
 }

@@ -1,10 +1,7 @@
 "use client";
 
-
-
+import { apiUrl } from "@/lib/api-url";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-
 
 import { CATEGORY_LABELS, type CareJourneyTimelineEntry } from "@/lib/care-journey";
 

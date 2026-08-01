@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 /**
  * Public landing (/) — discover SolenOS.
- * CTA enters /start (Entry Home), not a waitlist wall.
+ * CTA enters /workspace directly (not a waitlist wall).
  * Thin surface: do not duplicate Entry Home trust stack here.
  */
 export default function LandingPage() {
@@ -30,7 +30,7 @@ export default function LandingPage() {
           and keep important parts of someone&apos;s care journey in one place.
         </p>
         <div className="public-cta-group">
-          <Link href="/start" className="public-cta-primary">
+          <Link href="/workspace?enter=1" className="public-cta-primary">
             Enter SolenOS
           </Link>
           <Link href="/how-it-works" className="public-cta-secondary">
@@ -44,22 +44,6 @@ export default function LandingPage() {
         <p className="public-prose">
           A Living Care Record for one person you are caring for — events, decisions, outcomes, and
           what remains unclear — so continuity does not depend on memory alone.
-        </p>
-      </section>
-
-      <section className="public-section">
-        <h2 className="public-section-title">What SolenOS is not</h2>
-        <ul className="public-quiet-list">
-          <li>A medical advice engine or AI doctor</li>
-          <li>A replacement for healthcare professionals or emergency services</li>
-          <li>A chatbot companion or task manager</li>
-        </ul>
-      </section>
-
-      <section className="public-section">
-        <p className="public-prose">
-          Prefer email updates first?{" "}
-          <Link href="/early-access">Join Early Access</Link>
         </p>
       </section>
     </PublicShell>

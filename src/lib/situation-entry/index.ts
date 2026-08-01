@@ -15,7 +15,17 @@ export type {
   UnderstoodItem,
   SituationResponse,
   ProcessSituationInput,
+  SituationDareSummary,
 } from "./types";
+
+export type {
+  ActiveCareSituation,
+  ActiveSituationTurn,
+} from "../active-care-situation/types";
+
+export type { CareRealityState } from "../care-reality-state/types";
+
+export type { ContinuityDecision } from "../care-identity/continuity-detection";
 
 export {
   classifyExtractedType,
@@ -50,6 +60,7 @@ export {
 } from "./caregiver-facing-uncertainty";
 export {
   processSituationInput,
+  processSituationInputWithIntelligence,
   processSituationRecompile,
   processSessionReentry,
   getSituationTimeline,

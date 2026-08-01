@@ -37,6 +37,8 @@ export {
   resetDareStore,
 } from "./pipeline";
 
+export { ingestRawInput as intakeRawInput } from "./pipeline";
+
 export type { IngestRawInputParams } from "./pipeline";
 
 export {

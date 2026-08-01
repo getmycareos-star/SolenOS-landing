@@ -1,3 +1,4 @@
+import { apiUrl } from "@/lib/api-url";
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputEntryMethod } from "@/lib/input-entry-contract";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";

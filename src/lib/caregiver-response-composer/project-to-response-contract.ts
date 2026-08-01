@@ -16,6 +16,7 @@
  * - Internal engine concepts never exposed (enums, confidence %, "detected", "extracted")
  * - Clinical reality and care context always take precedence over emotional language
  * - Never summarize, paraphrase, concatenate input clauses, or mirror caregiver wording
+ * - Professional does not mean robotic: always prefer natural human language
  */
 
 import type { CareSituationUnderstanding } from "../care-situation-understanding/types";
@@ -39,6 +40,19 @@ function personPhrase(person: string | null): string {
 export function projectCareSituationToResponseContract(
   understanding: CareSituationUnderstanding,
 ): ResponseIntelligenceOutput {
+  if (!understanding.can_orient) {
+    return {
+      what_is_happening: understanding.care_recipient
+        ? `A care situation is being held for ${understanding.care_recipient}.`
+        : "A care situation is being held.",
+      what_matters_now: "",
+      what_to_ask_next: [],
+      risk_level: "low",
+      what_can_wait: "",
+      follow_up_items: [],
+    };
+  }
+
   const who = personPhrase(understanding.care_recipient);
 
   // 1. Deterministic prioritization from understanding (impact, not word count)
@@ -83,6 +97,7 @@ export function projectCareSituationToResponseContract(
       : [];
 
   // 5. What can wait — from can_wait priorities and context_only (admin/load)
+  // Use natural language — never robotic phrases.
   const waitItems = prioritized.can_wait.filter(
     (w) => !what_matters_now.toLowerCase().includes(w.toLowerCase().slice(0, 40)),
   );

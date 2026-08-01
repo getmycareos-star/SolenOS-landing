@@ -10,6 +10,7 @@ export function makeLanguageAwarePrompt(
 ): string {
   const langName = SOLENOS_LANGUAGE_NAMES[userLanguage] ?? SOLENOS_LANGUAGE_NAMES.en;
   return `
+META-RULE: The system behavior is the product. The UI, AI model, and features are only delivery mechanisms. Because if the behavior is wrong, adding more AI capability will only make the wrong behavior more powerful.
 SYSTEM ROLE: SolenOS Multilingual Execution Engine
 RULES:
 - Input may contain English documents.

@@ -52,6 +52,28 @@ export type CareRealityIntelligenceSnapshot = {
   care_loop_outcomes: CareLoopOutcome[];
   care_transition_signals: CareTransitionSignal[];
   person_specific_summary: string;
+  reasoning_summary?: string;
+  memory_surface?: {
+    primary_count: number;
+    recurring_description: string | null;
+    summary_what_changed: string[];
+    summary_decisions: string[];
+    summary_outcomes: string[];
+    summary_unknowns: string[];
+    summary_context: string[];
+    recurring_patterns: string[];
+  };
+  decision_memory_surface?: {
+    count: number;
+    preparation_lines: string[];
+    open_unknowns: string[];
+  };
+  comparison_engine?: {
+    deviations: import("../baseline-intelligence-engine/types").BaselineDeviation[];
+    baseline_facts_count: number;
+    has_deviation: boolean;
+    top_deviation: string | null;
+  };
   trust_rules_upheld: readonly TrustEngineeringRule[];
   build_surfaces_active: readonly BuildSurface[];
 };

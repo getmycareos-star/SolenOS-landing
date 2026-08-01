@@ -23,15 +23,41 @@ import { classifyExtractionFragment } from "../care-reality-extraction/classify"
 export const CARE_REALITY_MEMORY_PURPOSE =
   "Remember what happened in the care journey — never what the caregiver typed.";
 
+/**
+ * Phase 8 — Memory Boundaries
+ *
+ * Allowed memory types per Care Reality Memory contract.
+ * Only these types may enter persistence.
+ * "outcome", "relationship", "change", "unknown" are NOT persisted types.
+ */
+export const ALLOWED_MEMORY_TYPES = [
+  "event",
+  "observation",
+  "decision",
+  "outcome",
+  "unknown",
+  "change",
+  "relationship",
+  "contributor_context",
+] as const;
+
+export type AllowedMemoryType = (typeof ALLOWED_MEMORY_TYPES)[number];
+
 export type CareRealityMemoryType =
-  | "event"
-  | "observation"
-  | "decision"
+  | AllowedMemoryType
   | "outcome"
   | "unknown"
   | "change"
-  | "relationship"
-  | "contributor_context";
+  | "relationship";
+
+/** Map legacy types to allowed types for storage. */
+export function mapToAllowedType(type: CareRealityMemoryType): AllowedMemoryType {
+  return type as AllowedMemoryType;
+}
+
+export function isAllowedMemoryType(type: CareRealityMemoryType): boolean {
+  return ALLOWED_MEMORY_TYPES.includes(type as AllowedMemoryType);
+}
 
 export type CareRealityMemoryStatus =
   | "current"
@@ -129,6 +155,127 @@ export const TEXT_MEMORY_THEATER_PATTERNS = [
 
 export function containsTextMemoryTheater(blob: string): boolean {
   return TEXT_MEMORY_THEATER_PATTERNS.some((p) => p.test(blob));
+}
+
+/**
+ * Forbidden memory language — structural causal/claim patterns.
+ * Generic connectors, not scenario-specific substance rules.
+ */
+const FORBIDDEN_CAUSAL_PATTERNS = [
+  /\bcaused\s+by\b/i,
+  /\bbecause\s+of\b/i,
+  /\bdue\s+to\b/i,
+  /\bas\s+a\s+result\s+of\b/i,
+  /\bled\s+to\b/i,
+  /\blead\s+to\b/i,
+  /\btriggered\s+by\b/i,
+  /\bresulted\s+from\b/i,
+  /\bstemmed\s+from\b/i,
+  /\battributed\s+to\b/i,
+  /\bcontributed\s+to\b/i,
+  /\bresponsible\s+for\b/i,
+  /\bthe\s+cause\s+of\b/i,
+  /\bcause\s+of\b/i,
+  /\bdefinitely\s+caused\b/i,
+  /\bcertainly\s+caused\b/i,
+  /\bmust\s+be\s+(?:caused|due)\b/i,
+] as const;
+
+export { FORBIDDEN_CAUSAL_PATTERNS };
+
+const FORBIDDEN_DIAGNOSIS_PATTERNS = [
+  /\bdiagnos(?:ed|is|e)\b/i,
+  /\bsuffering\s+from\b/i,
+  /\bafflicted\s+with\b/i,
+  /\bcondition\s+(?:is|was|has)\b/i,
+] as const;
+
+export { FORBIDDEN_DIAGNOSIS_PATTERNS };
+
+const FORBIDDEN_CONCLUSION_PATTERNS = [
+  /\bis\s+(?:deteriorating|declining|recovering)\b/i,
+  /\bis\s+getting\s+(?:worse|better)\b/i,
+  /\bhas\s+(?:declined|improved)\b/i,
+  /\bwas\s+(?:deteriorating|declining|recovering)\b/i,
+] as const;
+
+export { FORBIDDEN_CONCLUSION_PATTERNS };
+
+/**
+ * Phase 8 — Forbidden risk assumption patterns.
+ * Risk language that asserts danger without evidence.
+ */
+const FORBIDDEN_RISK_PATTERNS = [
+  /\brisk\s+of\b/i,
+  /\blikely\s+to\b/i,
+  /\btendency\s+to\b/i,
+  /\bprone\s+to\b/i,
+  /\bhigh\s+risk\b/i,
+  /\bincreased\s+risk\b/i,
+  /\bat\s+risk\s+of\b/i,
+  /\bhighly\s+likely\b/i,
+] as const;
+
+export { FORBIDDEN_RISK_PATTERNS };
+
+export type MemoryObjectValidationResult =
+  | { valid: true; description: string }
+  | { valid: false; reason: string; suggestedUnknown?: string };
+
+export function validateMemoryObjectDescription(
+  type: CareRealityMemoryType,
+  description: string,
+): MemoryObjectValidationResult {
+  const trimmed = description.trim();
+  if (!trimmed) return { valid: false, reason: "empty_description" };
+
+  // Phase 8: Hard reject — no sanitize fallback for causal claims.
+  // Causal language cannot be stored as memory, even partially.
+  // Unknowns and relationships are allowed to reference causality as questions/links.
+  if (
+    !["unknown", "relationship", "contributor_context"].includes(type) &&
+    FORBIDDEN_CAUSAL_PATTERNS.some((p) => p.test(trimmed))
+  ) {
+    return {
+      valid: false,
+      reason: "unsupported_causal_claim",
+    };
+  }
+
+  // Phase 8: Hard reject diagnosis language — no sanitize fallback.
+  if (
+    !["unknown", "relationship", "contributor_context"].includes(type) &&
+    FORBIDDEN_DIAGNOSIS_PATTERNS.some((p) => p.test(trimmed))
+  ) {
+    return {
+      valid: false,
+      reason: "forbidden_diagnosis_language",
+    };
+  }
+
+  // Phase 8: Hard reject unsupported conclusions — no replacement.
+  if (
+    !["unknown", "relationship", "contributor_context"].includes(type) &&
+    FORBIDDEN_CONCLUSION_PATTERNS.some((p) => p.test(trimmed))
+  ) {
+    return {
+      valid: false,
+      reason: "unsupported_conclusion",
+    };
+  }
+
+  // Phase 8: Reject risk assumptions — patterns that assert risk without evidence.
+  if (
+    !["unknown", "relationship", "contributor_context"].includes(type) &&
+    FORBIDDEN_RISK_PATTERNS.some((p) => p.test(trimmed))
+  ) {
+    return {
+      valid: false,
+      reason: "risk_assumption",
+    };
+  }
+
+  return { valid: true, description: trimmed };
 }
 
 export function memoryPriorityForType(type: CareRealityMemoryType): 1 | 2 | 3 | 4 | 5 {
@@ -357,6 +504,83 @@ function structureDescription(raw: string, max = 140): string {
 }
 
 /**
+ * Phase 8 — Pre-Ingestion Memory Validation Gate.
+ *
+ * Validates that information entering Care Reality Memory meets boundaries:
+ * 1. Object type is allowed
+ * 2. Source attribution is traceable
+ * 3. Description preserves uncertainty (no causal claims stored as facts)
+ * 4. Observations are kept separate from interpretations
+ * 5. Original caregiver input is never discarded (preserved in evidence_ref if rejected)
+ */
+export type MemoryIngestionValidationResult = {
+  /** The validated type (mapped to allowed types) */
+  type: AllowedMemoryType;
+  /** The validated description (sanitized of causal claims) */
+  description: string;
+  /** Whether this object should be persisted */
+  persist: boolean;
+  /** List of reasons why fields were rejected (empty = accepted) */
+  rejection_reasons: string[];
+  /** The original input preserved for audit */
+  original_description: string;
+};
+
+export function validateMemoryIngestion(params: {
+  type: CareRealityMemoryType;
+  description: string;
+  source: string;
+}): MemoryIngestionValidationResult {
+  const reasons: string[] = [];
+
+  // 1. Validate source attribution
+  if (!params.source || params.source.trim().length === 0) {
+    reasons.push("missing_source_attribution");
+  }
+
+  // 2. Validate object type — map legacy to allowed
+  const allowedType = mapToAllowedType(params.type);
+  if (!isAllowedMemoryType(allowedType)) {
+    reasons.push(`invalid_memory_object_type: ${params.type}`);
+  }
+
+  // 3. Validate description
+  const validation = validateMemoryObjectDescription(allowedType, params.description);
+  if (!validation.valid) {
+    reasons.push(`rejected: ${validation.reason}`);
+    return {
+      type: allowedType,
+      description: params.description,
+      persist: false,
+      rejection_reasons: reasons,
+      original_description: params.description,
+    };
+  }
+
+  // 4. Check interpretation-observation separation
+  const cleaned = validation.description;
+  const looksLikeInterpretation = /\byou described|not a settled fact|held as your experience/i.test(cleaned) || classifyExtractionFragment(cleaned) === "contributor_load";
+  if (looksLikeInterpretation && allowedType === "observation") {
+    // Reclassify as contributor_context if it's purely interpretation
+    return {
+      type: "contributor_context",
+      description: cleaned,
+      persist: true,
+      rejection_reasons: ["interpretation_reclassified_as_context"],
+      original_description: params.description,
+    };
+  }
+
+  return {
+    type: allowedType,
+    description: cleaned,
+    persist: true,
+    rejection_reasons: [],
+    original_description: params.description,
+  };
+}
+
+/**
  * Ingest Care Reality Memory from a capture.
  * Family disagreement → contributor_context. Care recipient changes → observation/change/event.
  */
@@ -396,28 +620,43 @@ export function ingestCareRealityMemoryFromCapture(params: {
         "time" | "related_object_ids" | "status" | "confidence" | "evidence_ref"
       >
     >,
-  ) => {
-    // Never promote disagreement / load as care-recipient observation
+  ): CareRealityMemoryObject | null => {
     if (type === "observation" || type === "change") {
       const cat = classifyExtractionFragment(description);
       if (cat === "contributor_load" || cat === "disagreement_perspective") {
         type = "contributor_context";
       }
     }
+
+    // Phase 8: Pre-ingestion validation — reject invalid fields, preserve valid ones
+    const ingestion = validateMemoryIngestion({
+      type,
+      description,
+      source: params.contributorId,
+    });
+
+    if (!ingestion.persist) {
+      // Rejected — preserve original input via evidence_ref but don't store as memory
+      return null;
+    }
+
+    const storeType = ingestion.type;
+    const storeDescription = ingestion.description;
+
     const obj = upsertObject(store, {
       care_key: resolved,
-      type,
-      subject: type === "contributor_context" ? null : params.subject,
-      description: structureDescription(description),
+      type: storeType,
+      subject: storeType === "contributor_context" ? null : params.subject,
+      description: structureDescription(storeDescription),
       time: extras?.time ?? null,
       source: params.contributorId,
       related_object_ids: extras?.related_object_ids ?? [],
       confidence: extras?.confidence ?? {
-        observation: type === "contributor_context" ? "medium" : "high",
+        observation: storeType === "contributor_context" ? "medium" : "high",
         cause: "low",
       },
-      status: extras?.status ?? (type === "unknown" ? "unknown" : "current"),
-      priority: memoryPriorityForType(type),
+      status: extras?.status ?? "current",
+      priority: memoryPriorityForType(storeType),
       evidence_ref: extras?.evidence_ref ?? null,
       nowIso: now,
     });
@@ -448,19 +687,21 @@ export function ingestCareRealityMemoryFromCapture(params: {
           time: e.time,
           evidence_ref: e.id,
         });
-        idByLayer.set(e.id, evtObj.id);
-        push("relationship", "Change may relate to a recent medical event.", {
-          related_object_ids: [obsObj.id, evtObj.id],
-          confidence: { observation: "medium", cause: "low" },
-          status: "unknown",
-        });
+        if (obsObj && evtObj) {
+          idByLayer.set(e.id, evtObj.id);
+          push("relationship", "Change may relate to a recent medical event.", {
+            related_object_ids: [obsObj.id, evtObj.id],
+            confidence: { observation: "medium", cause: "low" },
+            status: "unknown",
+          });
+        }
         continue;
       }
       const o = push("event", e.description, {
         time: e.time,
         evidence_ref: e.id,
       });
-      idByLayer.set(e.id, o.id);
+      if (o) idByLayer.set(e.id, o.id);
     }
     for (const obs of extraction.observations) {
       const o = push("observation", obs.description, {
@@ -471,14 +712,14 @@ export function ingestCareRealityMemoryFromCapture(params: {
           cause: "low",
         },
       });
-      idByLayer.set(obs.id, o.id);
+      if (o) idByLayer.set(obs.id, o.id);
     }
     for (const d of extraction.decisions) {
       const o = push("decision", d.description, {
         evidence_ref: d.id,
         status: d.status === "completed" ? "resolved" : "current",
       });
-      idByLayer.set(d.id, o.id);
+      if (o) idByLayer.set(d.id, o.id);
     }
     for (const out of extraction.outcomes) {
       const related = out.related_id ? idByLayer.get(out.related_id) : null;
@@ -488,7 +729,7 @@ export function ingestCareRealityMemoryFromCapture(params: {
         evidence_ref: out.id,
         status: out.status === "resolved" ? "resolved" : "current",
       });
-      idByLayer.set(out.id, o.id);
+      if (o) idByLayer.set(out.id, o.id);
     }
     for (const u of extraction.unknowns) {
       if (u.status !== "open") continue;
@@ -506,19 +747,9 @@ export function ingestCareRealityMemoryFromCapture(params: {
         confidence: { observation: "medium", cause: "low" },
       });
     }
-    for (const r of extraction.relationships) {
-      const from = idByLayer.get(r.from_id);
-      const to = idByLayer.get(r.to_id);
-      push("relationship", r.evidence_note || "Possible connection between care moments.", {
-        related_object_ids: [from, to].filter(Boolean) as string[],
-        evidence_ref: r.id,
-        confidence: {
-          observation: "medium",
-          cause: r.certainty === "supported" ? "medium" : "low",
-        },
-        status: "unknown",
-      });
-    }
+    // Phase 8: extraction.relationships are NOT stored as memory objects.
+    // Possible connections are preserved in the original caregiver input (rawText),
+    // but no relationship/unknown objects are auto-created from them.
   }
 
   // Discourse fallbacks when extraction thin — still structured, not quote storage
