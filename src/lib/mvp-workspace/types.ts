@@ -36,6 +36,8 @@ export type AttachedDocument = {
   errorNote?: string;
   /** Input Entry Contract method — attribution only; never changes reasoning. */
   entryMethod?: import("@/lib/input-entry-contract").InputEntryMethod;
+  /** Original File reference for retry without re-picking the file. */
+  sourceFile?: File;
 };
 
 export type ThemeLayout = "black_input" | "white_input";

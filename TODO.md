@@ -1,32 +1,25 @@
-# SolenOS-landing Cleanup & Deployment Fix
+# SolenOS Frontend↔Backend Audit & Repair — TODO
 
-## Step 1: Remove misplaced backend directories
-- [x] Remove `backend/` directory (Dockerfile, railway.toml, middleware — Railway backend)
-- [x] Remove `SolenOS_backend/` directory (duplicate backend repo copy)
-- [x] Remove `solenos-backup/` directory (deprecated backup repo)
-- [x] Remove `frontend/` directory (empty)
-- [x] Remove `frontend2/` directory (empty)
+## Goal
+Fix Share button, unblock Scan/Snap/Upload workflow, add 5-stage status feedback.
 
-## Step 2: Fix git submodule issue
-- [x] Remove gitlink for `backend/` from git index
-- [x] Update `.gitignore` to exclude removed directories
+## Frontend (SolenOS-landing → `C:\Users\me\solenos`)
+- [x] 1. `src/components/mvp-workspace/capture/extract-attached.ts` — add AbortController timeout + human-readable timeout failure
+- [x] 2. `src/components/mvp-workspace/AddSituationPanel.tsx` — functional Share flow (navigator.share + fallback + disclaimer), retry button for failed docs, stage feedback
+- [ ] 3. `src/components/mvp-workspace/CognitiveWorkspace.tsx` — 5-stage submit flow (uploading→reading→extracting→creating→completed)
+- [ ] 4. `src/components/mvp-workspace/ActivationOutputPanel.tsx` — render 5-stage status with progress
 
-## Step 3: Clean up build artifacts
-- [x] Add `build_output*.txt` and `tsconfig.tsbuildinfo` to `.gitignore`
+## Backend (SolenOS_backend → `C:\Users\me\_solenos_backend_cleanup`)
+- [ ] 5. `src/lib/tika-extractor/index.ts` — bounded timeout, fail-fast when Tika not configured, reliable Tesseract config
+- [ ] 6. `src/app/api/extract/route.ts` — bounded timeout + always-return human-readable note
 
-## Step 4: Create `netlify.toml`
-- [x] Create `netlify.toml` with Next.js build configuration
+## Verification
+- [ ] 7. Frontend `npm run build` passes
+- [ ] 8. Backend `npx tsc --noEmit` — only pre-existing errors (none from changes)
+- [ ] 9. Report findings
 
-## Step 5: Update `next.config.ts`
-- [x] Add proper Netlify deployment configuration (images, webpack)
+## Rules
+- No SolenOS_backup usage. Only SolenOS-landing + SolenOS_backend.
+- No frontend↔backend file mixing. No new repos.
+- No push until user approves.
 
-## Step 6: Update `.gitignore`
-- [x] Add entries for removed directories and build artifacts
-
-## Step 7: Test build
-- [x] Run `npm install`
-- [x] Run `npm run build` (succeeds — 24 pages generated)
-
-## Step 8: Commit and push
-- [ ] Commit changes
-- [ ] Push to origin (SolenOS-landing)

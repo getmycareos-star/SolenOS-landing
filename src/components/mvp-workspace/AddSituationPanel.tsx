@@ -54,7 +54,10 @@ export function AddSituationPanel({
   const [snapOpen, setSnapOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [lastEntryMethod, setLastEntryMethod] = useState<InputEntryMethod | null>(null);
-  const [shareHint, setShareHint] = useState(false);
+  const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
+  const [shareFallback, setShareFallback] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
 
   const hasReadyDocs = documents.some((d) => d.status === "ready" && d.extractedText.trim());
   const canSubmit = (value.trim().length > 0 || hasReadyDocs) && !loading && !extracting;
@@ -163,7 +166,76 @@ export function AddSituationPanel({
 
   const isFirstCapture = mode === "initial" && !hasContextRoot;
 
+  const handleShare = useCallback(async () => {
+    setShareConfirmOpen(false);
+    setShareFallback(null);
+    setShareError(null);
+    setSharing(true);
+    try {
+      const shareData: ShareData = {
+        title: "SolenOS",
+        text: "I am using SolenOS to keep care information organized.",
+        url: typeof window !== "undefined" ? window.location.origin : undefined,
+      };
+      const canNative = typeof navigator !== "undefined" && typeof navigator.share === "function";
+      if (canNative) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (e) {
+          if (e instanceof DOMException && e.name === "AbortError") return; // user cancelled
+          // Fall through to fallback on any other failure.
+        }
+      }
+      // Fallback: copy the link so the user can paste it into any app.
+      const link = shareData.url ?? "https://solenosai.netlify.app/";
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(link);
+        copied = true;
+      } catch {
+        /* clipboard may be unavailable on non-secure contexts */
+      }
+      setShareFallback(
+        copied
+          ? "SolenOS link copied. Paste it into any app to share. You can also add the details directly below."
+          : `Open ${link} to share SolenOS with someone.`,
+      );
+    } catch {
+      setShareError("Sharing is not available right now. You can type the details below instead.");
+    } finally {
+      setSharing(false);
+    }
+  }, []);
+
+  const handleRetryDoc = useCallback(
+    async (doc: AttachedDocument) => {
+      setLocalHint(null);
+      setExtracting(true);
+      try {
+        const file = doc.sourceFile;
+        if (!file) {
+          setLocalHint("That file is no longer available — try attaching it again.");
+          return;
+        }
+        const next = await extractAttachedDocument(file, doc.entryMethod ?? "upload");
+        onDocumentsChange(
+          documents.map((d) => (d.id === doc.id ? { ...next, id: doc.id } : d)),
+        );
+        if (next.status === "failed") {
+          setLocalHint(next.errorNote ?? "Could not read that file. Type the key details instead.");
+        } else {
+          setLocalHint(null);
+        }
+      } finally {
+        setExtracting(false);
+      }
+    },
+    [documents, onDocumentsChange],
+  );
+
   return (
+
     <div className="workspace-panel-inner add-situation">
       <h2 className="workspace-headline">
         {mode === "update" ? "What changed?" : "What is happening right now?"}
@@ -224,7 +296,11 @@ export function AddSituationPanel({
               className="composer-action"
               disabled={busy}
               aria-label="Share into SolenOS from other apps"
-              onClick={() => setShareHint((v) => !v)}
+              onClick={() => {
+                setShareConfirmOpen(true);
+                setShareFallback(null);
+                setShareError(null);
+              }}
             >
               <Share2 size={20} aria-hidden />
               <span>Share</span>
@@ -252,10 +328,52 @@ export function AddSituationPanel({
           </button>
         </div>
 
-        {shareHint && (
+        {shareConfirmOpen && (
+          <div className="share-confirm" role="dialog" aria-label="Share SolenOS">
+            <p className="panel-muted share-entry-hint">
+              Shared information may be added to the care record. Only share information you have
+              permission to manage.
+            </p>
+            <div className="share-confirm-actions">
+              <button
+                type="button"
+                className="composer-action"
+                disabled={sharing}
+                onClick={() => void handleShare()}
+              >
+                {sharing ? (
+                  <>
+                    <Loader2 className="spin" size={18} aria-hidden />
+                    Sharing…
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={18} aria-hidden />
+                    Continue to share
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                className="link-button"
+                disabled={sharing}
+                onClick={() => setShareConfirmOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {shareFallback && (
           <p className="panel-muted share-entry-hint" role="status">
-            From WhatsApp, Email, Photos, or Files — use Share → SolenOS (when installed as an app).
-            Shared content enters the same care record as Scan, Snap, and Upload.
+            {shareFallback}
+          </p>
+        )}
+
+        {shareError && (
+          <p className="workspace-error" role="alert">
+            {shareError}
           </p>
         )}
 
@@ -290,29 +408,39 @@ export function AddSituationPanel({
         <p className="workspace-error" role="alert">
           {displayError ?? localHint}
         </p>
-      )}
+        )}
 
-      {documents.length > 0 && (
-        <ul className="attached-list" aria-label="Attached documents">
-          {documents.map((doc) => (
-            <li key={doc.id}>
-              {doc.name}
-              {doc.status === "pending" && " · Reading…"}
-              {doc.status === "failed" &&
-                ` · ${sanitizeCaregiverErrorMessage(doc.errorNote ?? "Could not read this document.")}`}
-              {doc.status === "ready" && " · Attached"}
-              <button
-                type="button"
-                className="link-button"
-                onClick={() => onDocumentsChange(documents.filter((d) => d.id !== doc.id))}
-                disabled={loading}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        {documents.length > 0 && (
+          <ul>
+            {documents.map((doc) => (
+              <li key={doc.id}>
+                {doc.name}
+                {doc.status === "pending" && " · Reading…"}
+                {doc.status === "failed" &&
+                  ` · ${sanitizeCaregiverErrorMessage(doc.errorNote ?? "Could not read this document.")}`}
+                {doc.status === "ready" && " · Attached"}
+                {doc.status === "failed" && (
+                  <button
+                    type="button"
+                    className="link-button"
+                    disabled={loading}
+                    onClick={() => void handleRetryDoc(doc)}
+                  >
+                    Retry
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="link-button"
+                  disabled={loading}
+                  onClick={() => onDocumentsChange(documents.filter((d) => d.id !== doc.id))}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
       {hasContextRoot && (
         <p className="panel-muted">Ctrl+Enter (⌘+Enter) to add. Documents alone are enough.</p>

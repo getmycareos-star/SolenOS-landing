@@ -20,6 +20,7 @@ export async function extractAttachedDocument(
     extractedText: "",
     status: "pending",
     entryMethod,
+    sourceFile: file,
   };
 
   if (file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name)) {
@@ -36,14 +37,32 @@ export async function extractAttachedDocument(
   try {
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch(apiUrl("/api/extract"), { method: "POST", body: form });
-    const data = (await res.json()) as {
+    // Bound the request so a slow/cold extractor never leaves the UI on "Reading…" forever.
+    const controller = new AbortController();
+    const timeoutMs = 40_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let res: Response;
+    try {
+      res = await fetch(apiUrl("/api/extract"), {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    let data: {
       ok?: boolean;
       text?: string;
       note?: string;
       message?: string;
       error?: string;
-    };
+    } = {};
+    try {
+      data = (await res.json()) as typeof data;
+    } catch {
+      // Non-JSON response — treat as extraction failure with a human message below.
+    }
 
     if (!res.ok || !data.ok || !data.text?.trim()) {
       const isImage = file.type.startsWith("image/");
@@ -62,11 +81,16 @@ export async function extractAttachedDocument(
     }
 
     return { ...base, extractedText: data.text.trim(), status: "ready" };
-  } catch {
+  } catch (e) {
+    const aborted = e instanceof DOMException && e.name === "AbortError";
     return {
       ...base,
       status: "failed",
-      errorNote: "Could not reach the document reader. You can still type what the document says.",
+      errorNote: sanitizeCaregiverErrorMessage(
+        aborted
+          ? "Reading this document is taking too long. You can try again, or type the key details."
+          : "Could not reach the document reader. You can still type what the document says.",
+      ),
     };
   }
 }
