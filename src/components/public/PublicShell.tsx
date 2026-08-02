@@ -4,26 +4,34 @@ import { TRUST_NAV, TRUST_FOOTER_LINKS } from "@/lib/trust-content";
 import { BRAND_TAGLINE } from "@/lib/brand";
 import { EMERGENCY_BOUNDARY } from "@/lib/early-access-trust";
 
-export function PublicNav({ activeHref }: { activeHref?: string }) {
+export function PublicNav({
+  activeHref,
+  hideNavLinks,
+}: {
+  activeHref?: string;
+  hideNavLinks?: boolean;
+}) {
   return (
     <header className="public-nav">
       <div className="public-nav-inner">
         <Link href="/" className="public-nav-brand" aria-label="solenos home">
           <SolenosWordmark size="md" as="span" />
         </Link>
-        <nav className="public-nav-links" aria-label="Primary">
-          {TRUST_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={
-                activeHref === item.href ? "public-nav-link is-active" : "public-nav-link"
-              }
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        {!hideNavLinks && (
+          <nav className="public-nav-links" aria-label="Primary">
+            {TRUST_NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={
+                  activeHref === item.href ? "public-nav-link is-active" : "public-nav-link"
+                }
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
         <Link href="/workspace?enter=1" className="public-nav-product">
           Living Care Record
         </Link>
@@ -60,13 +68,15 @@ export function PublicFooter() {
 export function PublicShell({
   children,
   activeHref,
+  hideNavLinks,
 }: {
   children: React.ReactNode;
   activeHref?: string;
+  hideNavLinks?: boolean;
 }) {
   return (
     <div className="public-shell">
-      <PublicNav activeHref={activeHref} />
+      <PublicNav activeHref={activeHref} hideNavLinks={hideNavLinks} />
       <main className="public-main">{children}</main>
       <PublicFooter />
     </div>

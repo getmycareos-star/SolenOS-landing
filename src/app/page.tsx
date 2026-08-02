@@ -18,7 +18,7 @@ export const metadata: Metadata = {
  */
 export default function LandingPage() {
   return (
-    <PublicShell activeHref="/">
+    <PublicShell activeHref="/" hideNavLinks>
       <OpsPageView page="/" />
       <section className="public-hero">
         <SolenosWordmark size="lg" className="public-hero-brand" />

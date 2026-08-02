@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicShell } from "@/components/public/PublicShell";
 import { OpsPageView } from "@/components/ops/OpsPageView";
+import { SettingsManager } from "@/components/settings/SettingsManager";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 
 export const metadata: Metadata = {
@@ -69,6 +70,14 @@ export default function SettingsPage() {
           <li>Email preferences — product updates and research feedback are sent sparingly</li>
           <li>Product updates — you receive updates as SolenOS evolves during early access</li>
         </ul>
+      </section>
+
+      <section className="public-section" id="preferences">
+        <h2 className="public-section-title">Live preferences</h2>
+        <p className="public-prose">
+          These controls connect to your SolenOS care record and save changes to your account.
+        </p>
+        <SettingsManager />
       </section>
 
       <section className="public-section public-legal" id="legal">
