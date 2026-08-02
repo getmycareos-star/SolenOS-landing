@@ -31,7 +31,7 @@
 # The frontend repo no longer ships Next.js API route handlers.
 [[redirects]]
   from = "/api/*"
-  to = "https://solenos-backend.up.railway.app/api/:splat"
+  to = "https://solenosbackend-production-8773.up.railway.app/api/:splat"
   status = 200
   force = false
 
