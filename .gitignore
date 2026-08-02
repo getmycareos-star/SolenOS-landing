@@ -6,3 +6,19 @@ dist
 .env
 .env.local
 .data/
+
+# Removed misplaced directories (backend files in frontend repo)
+backend/
+SolenOS_backend/
+solenos-backup/
+frontend/
+frontend2/
+
+# Build artifacts
+build_output*.txt
+tsconfig.tsbuildinfo
+
+# Scratch / investigation files (never commit)
+_*.ps1
+_*.txt
+netlify*.local
