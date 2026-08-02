@@ -1,14 +1,24 @@
 # SolenOS-landing — Netlify configuration for Next.js App Router
 # Build must run `next build` and Netlify must serve the Next.js server output.
-# We do NOT use `publish = ".next"` (raw `.next` has no index.html → blank page).
-# The official @netlify/plugin-nextjs runtime builds and serves the app correctly.
+# The @netlify/plugin-nextjs runtime REQUIRES publish = ".next"
+# (the plugin transforms .next output into Netlify-compatible functions + rewrites).
+# publish must be distinct from base (repo root) or the plugin errors out.
 
 [build]
   command = "npm run build"
-  # Next.js on Netlify: plugin handles publish dir; do not set publish to ".next"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Build caching — persist the Next.js build cache and node_modules between deploys
+[[build.cache]]
+  path = ".next/cache"
+  ttl = "7"
+
+[[build.cache]]
+  path = "node_modules"
+  ttl = "7"
 
 [dev]
   command = "npm run dev"
