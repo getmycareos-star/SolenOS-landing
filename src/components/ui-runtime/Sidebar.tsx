@@ -159,8 +159,7 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        <Link href="/settings" className="sidebar-footer-link">Settings</Link>
-        <Link href="/" className="sidebar-footer-link">Visit website</Link>
+        <Link href="/workspace/settings" className="sidebar-footer-link">Settings</Link>
       </div>
     </aside>
   );

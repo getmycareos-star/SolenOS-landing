@@ -17,17 +17,7 @@ export {
   type EarlyAccessConsentState,
 } from "./early-access-consent";
 
-export const TRUST_NAV = [
-  { href: "/", label: "Home" },
-  { href: "/start", label: "Start" },
-  { href: "/how-it-works", label: "How It Works" },
-  { href: "/why-solenos", label: "Why SolenOS" },
-  { href: "/about", label: "About SolenOS" },
-  { href: "/support", label: "Help" },
-  { href: "/capabilities", label: "Capabilities" },
-  { href: "/settings", label: "Settings" },
-  { href: "/early-access", label: "Early Access" },
-] as const;
+export const TRUST_NAV: { href: string; label: string }[] = [];
 
 /** Footer legal + support — always visible on public pages. */
 export const TRUST_FOOTER_LINKS = [
@@ -35,6 +25,7 @@ export const TRUST_FOOTER_LINKS = [
   { href: "/about", label: "About" },
   { href: "/support", label: "Help" },
   { href: "/capabilities", label: "Capabilities" },
+  { href: "/why-solenos", label: "Why SolenOS" },
   { href: "/terms", label: "Terms of Service" },
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/contact", label: "Contact" },
