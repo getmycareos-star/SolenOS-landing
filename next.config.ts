@@ -5,11 +5,10 @@ const nextConfig: NextConfig = {
   // No static export needed; Netlify detects Next.js automatically
 
   images: {
-    // Allow images from backend if needed
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "solenos-backend.up.railway.app",
+        hostname: "solenosbackend-production-8773.up.railway.app",
       },
     ],
   },
