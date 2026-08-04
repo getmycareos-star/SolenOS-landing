@@ -25,6 +25,7 @@ import {
   hasEnteredCareRecord,
   markEnteredCareRecord,
 } from "@/lib/care-entry";
+import { hasCompletedOnboarding } from "@/lib/onboarding";
 
 const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 const CARE_SESSION_STORAGE_KEY = "solenos_care_session_id";
@@ -175,7 +176,12 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           }
         }
 
+        // First-time users who have not completed onboarding are handled by the
+        // OnboardingGate (welcome → consent → app shell). Do not bounce them to
+        // /start — the gate owns the first-run flow.
+        const onboardingPending = !hasCompletedOnboarding();
         const entered =
+          onboardingPending ||
           hasEnteredCareRecord() ||
           fromServer.length > 0 ||
           hasDurableServerReality ||

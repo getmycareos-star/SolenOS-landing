@@ -14,9 +14,12 @@ const CONSENT_STORAGE_KEY = "solenos_early_access_consent_v1";
 export function EarlyAccessConsentForm({
   continueHref = "/workspace?enter=1",
   continueLabel = "Begin your Living Care Record",
+  onConsentDone,
 }: {
   continueHref?: string;
   continueLabel?: string;
+  /** Optional — called after consent is recorded (used by the onboarding gate). */
+  onConsentDone?: () => void;
 }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
@@ -38,10 +41,15 @@ export function EarlyAccessConsentForm({
           at: new Date().toISOString(),
         }),
       );
-    } catch {
+} catch {
       /* sessionStorage may be unavailable — consent UI still recorded by checkboxes */
     }
-    window.location.assign(continueHref);
+// If an onboarding gate is present, let it complete the flow locally.
+    // Otherwise fall back to navigating to the continue destination.
+    onConsentDone?.();
+    if (continueHref) {
+      window.location.assign(continueHref);
+    }
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/app-shell";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import type { ReactNode } from "react";
 
@@ -49,13 +50,15 @@ function CareContextBar() {
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
     <WorkspaceProvider>
-      <AppShell
-        navItems={WORKSPACE_NAV}
-        brandHref="/workspace"
-        careContext={<CareContextBar />}
-      >
-        {children}
-      </AppShell>
+      <OnboardingGate>
+        <AppShell
+          navItems={WORKSPACE_NAV}
+          brandHref="/workspace"
+          careContext={<CareContextBar />}
+        >
+          {children}
+        </AppShell>
+      </OnboardingGate>
     </WorkspaceProvider>
   );
 }

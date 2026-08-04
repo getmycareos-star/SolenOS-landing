@@ -1,7 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, Plus, Clock } from "lucide-react";
+
+import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import { TIMELINE_ENTRY_TYPES, type TimelineEntry } from "@/lib/ui-runtime";
 
@@ -20,7 +23,6 @@ function formatTime(iso: string): string {
     return d.toLocaleString(undefined, {
       month: "short",
       day: "numeric",
-      year: "numeric",
       hour: "numeric",
       minute: "2-digit",
     });
@@ -30,57 +32,83 @@ function formatTime(iso: string): string {
 }
 
 export default function TimelinePage() {
+  const router = useRouter();
   const { runtime } = useWorkspace();
-  const entries = useMemo(() => runtime.timeline.entries, [runtime.timeline]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const entries = useMemo(() => [...runtime.timeline.entries].reverse(), [runtime.timeline]);
 
   if (entries.length === 0) {
     return (
-      <div className="timeline-page">
-        <h1 className="page-title">Care Timeline</h1>
-        <p className="page-lede">
-          A chronological view of every care event, observation, and decision in the Living Care Record.
-        </p>
-        <div className="empty-state">
-          <div className="empty-state-icon">◷</div>
-          <h2 className="empty-state-title">No timeline yet</h2>
-          <p className="empty-state-body">
-            Your care timeline will appear here as you add situations and observations.
+      <div className="mobile-screen">
+        <div className="mobile-page-head">
+          <h1>Timeline</h1>
+          <p>Every care event, observation, and decision in the record.</p>
+        </div>
+        <div className="mobile-empty">
+          <div className="mobile-empty-icon" aria-hidden="true">
+            <Clock size={40} />
+          </div>
+          <h2 className="mobile-empty-title">No timeline yet</h2>
+          <p className="mobile-empty-body">
+            Your care timeline will appear here as you add notes and observations.
           </p>
-          <Link href="/workspace" className="settings-button settings-button--primary">
-            Add your first care note
-          </Link>
+          <div className="mobile-empty-actions">
+            <Button variant="primary" onClick={() => router.push("/workspace?compose=1")}>
+              <Plus size={18} aria-hidden />
+              Add a care note
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="timeline-page">
-      <h1 className="page-title">Care Timeline</h1>
-      <p className="page-lede">
-        A chronological view of every care event, observation, and decision in the Living Care Record.
-      </p>
-      <div className="page-actions">
-        <Link href="/workspace" className="settings-button settings-button--primary">
-          Add record
-        </Link>
+    <div className="mobile-screen">
+      <div className="mobile-page-head">
+        <h1>Timeline</h1>
+        <p>Every care event, observation, and decision in the record.</p>
       </div>
-      <div className="timeline-list">
-        {entries.map((entry: TimelineEntry) => (
-          <div key={entry.id} className="timeline-entry">
-            <div className="timeline-entry-marker" aria-hidden="true" />
-            <div className="timeline-entry-body">
-              <div className="timeline-entry-time">
-                {formatTime(entry.timestamp)}
+      <div className="mobile-timeline">
+        <div className="mobile-timeline-rail">
+          {entries.map((entry: TimelineEntry) => {
+            const isExpanded = expandedId === entry.id;
+            return (
+              <div
+                key={entry.id}
+                className={`mobile-timeline-item${isExpanded ? " is-expanded" : ""}`}
+              >
+                <span className="mobile-timeline-dot" aria-hidden="true" />
+                <button
+                  type="button"
+                  className="mobile-timeline-card"
+                  aria-expanded={isExpanded}
+                  onClick={() => setExpandedId(isExpanded ? null : entry.id)}
+                >
+                  <span className="mobile-timeline-card-header">
+                    <span className="mobile-timeline-icon" aria-hidden="true">
+                      <Clock size={16} />
+                    </span>
+                    <span className="mobile-timeline-label">
+                      {TYPE_LABELS[entry.type] ?? entry.type}
+                    </span>
+                    <span className="mobile-timeline-time">
+                      {formatTime(entry.timestamp)}
+                    </span>
+                    <ChevronDown size={16} className="mobile-timeline-chevron" aria-hidden />
+                  </span>
+                  <span className="mobile-timeline-summary-wrap">
+                    <span className="mobile-timeline-summary-inner">
+                      <span className="mobile-timeline-summary">{entry.summary}</span>
+                    </span>
+                  </span>
+                </button>
               </div>
-              <h3 className="timeline-entry-title">
-                {TYPE_LABELS[entry.type] ?? entry.type}
-              </h3>
-              <p className="timeline-entry-summary">{entry.summary}</p>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
+

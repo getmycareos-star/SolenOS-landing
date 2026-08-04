@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Libre_Baskerville } from "next/font/google";
 import "./globals.css";
+import "./mobile-app.css";
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_PROMISE } from "@/lib/brand";
 
 const dmSans = DM_Sans({
