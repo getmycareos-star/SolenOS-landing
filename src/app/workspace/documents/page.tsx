@@ -21,6 +21,8 @@ const SOURCE_LABELS: Record<string, string> = {
   extracted: "Extracted",
 };
 
+type DocumentWithSituation = SituationDocument & { situationTitle: string };
+
 const FILE_ICONS: Record<string, LucideIcon> = {
   jpg: Image,
   jpeg: Image,
@@ -66,7 +68,6 @@ function ChevronRight({
 export default function DocumentsPage() {
   const router = useRouter();
   const { runtime } = useWorkspace();
-type DocumentWithSituation = SituationDocument & { situationTitle: string };
   const [preview, setPreview] = useState<DocumentWithSituation | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 

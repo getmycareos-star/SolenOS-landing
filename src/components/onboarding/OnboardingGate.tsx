@@ -55,7 +55,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mobile-app-shell onboarding-shell">
-      <main className="mobile-app-main onboarding-main">
+      <div className="mobile-app-main onboarding-main">
         {phase === "welcome" ? (
           <section className="onboarding-welcome">
             <SolenosWordmark size="lg" className="onboarding-brand" />
@@ -72,7 +72,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
             </Button>
           </section>
         ) : (
-<section className="onboarding-consent">
+          <section className="onboarding-consent">
             <h2 className="onboarding-title">One quick confirmation</h2>
             <EarlyAccessConsentForm
               continueHref=""
@@ -84,7 +84,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
             </p>
           </section>
         )}
-      </main>
+      </div>
     </div>
   );
 }

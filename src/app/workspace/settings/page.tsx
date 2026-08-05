@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
-  ChevronRight,
   FileText,
   Info,
   Lock,
@@ -140,7 +139,7 @@ function ProfileCard() {
     } finally {
       setSaving(false);
     }
-  }, [name, relationship, show]);
+  }, [name, relationship, condition, show]);
 
   return (
     <section className="mobile-settings-card">
@@ -193,45 +192,17 @@ function ProfileCard() {
   );
 }
 
-/** Security — account actions, no session/care-key rows. */
+/** Security — honest account status. No fake account controls. */
 function SecurityCard() {
-  const { show, render } = useToast();
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
   return (
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title">
         <Lock size={16} aria-hidden /> Security
       </h2>
       <p className="mobile-settings-hint">
-        SolenOS uses email and password to restore your care record across devices.
+        Your SolenOS data is stored on this device. Account sign-in and
+        cross-device sync are not yet available.
       </p>
-      <div className="mobile-settings-buttons">
-        <Button variant="secondary" onClick={() => show("Account setup coming soon", "info")}>
-          Create account
-        </Button>
-        <Button variant="secondary" onClick={() => show("Password change coming soon", "info")}>
-          Change password
-        </Button>
-        <Button variant="secondary" onClick={() => show("Add email coming soon", "info")}>
-          Add email
-        </Button>
-        {confirmDelete ? (
-          <div className="mobile-settings-actions">
-            <Button variant="destructive" loading={false} onClick={() => show("Deletion request sent", "success")}>
-              Confirm delete
-            </Button>
-            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
-            Delete account
-          </Button>
-        )}
-      </div>
-      {render()}
     </section>
   );
 }
@@ -264,6 +235,7 @@ function PrivacyCard() {
   const { show, render } = useToast();
   const [confirmClear, setConfirmClear] = useState(false);
   const [dataTraining, setDataTraining] = useState(false);
+  const [consentDate, setConsentDate] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -272,29 +244,52 @@ function PrivacyCard() {
     } catch {
       /* ignore */
     }
+    // Read consent date only after mount — prevents server/client mismatch.
+    try {
+      const consentAt = getOnboardingCompletedAt();
+      setConsentDate(
+        consentAt
+          ? new Date(consentAt).toLocaleDateString(undefined, {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })
+          : null,
+      );
+    } catch {
+      setConsentDate(null);
+    }
   }, []);
-
-  const consentAt = getOnboardingCompletedAt();
-  const consentDate = consentAt
-    ? new Date(consentAt).toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
 
   const clearLocalData = () => {
     const keys = [
+      // identity
       "solenos_durable_care_key",
       "solenos_care_session_id",
       "solenos_telemetry_user_id",
+      // record
       "solenos_situations",
       "solenos_timeline",
       "solenos_active_situation_id",
       "solenos_care_recipient_display_name",
       "solenos_care_profile",
+      "solenos_care_recipient_id",
+      "solenos_last_input_raw",
+      // preferences
+      "solenos_notif_prefs",
+      "solenos_data_training",
+      "solenos_language_preference",
+      "solenos_early_access_consent_v1",
+      "onboarding_complete",
+      "onboarding_complete_at",
     ];
-    keys.forEach((k) => window.localStorage.removeItem(k));
+    keys.forEach((k) => {
+      try {
+        window.localStorage.removeItem(k);
+      } catch {
+        /* ignore */
+      }
+    });
     show("Local data cleared", "success");
     setConfirmClear(false);
     setTimeout(() => {
@@ -354,11 +349,11 @@ function PrivacyCard() {
             Clear local data
           </Button>
         )}
-        <Button variant="destructive" onClick={() => show("Deletion request sent", "success")}>
-          Delete my data
+<Button variant="secondary" disabled title="Account deletion is not available yet because there is no account system.">
+          Delete account data — unavailable
         </Button>
-        <Button variant="secondary" onClick={() => show("Support contact ready", "info")}>
-          Contact support
+        <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
+          <a href={`mailto:${SUPPORT_EMAIL}`}>Contact support</a>
         </Button>
         <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
           <Link href="/privacy">Read Privacy Policy</Link>
@@ -369,15 +364,12 @@ function PrivacyCard() {
   );
 }
 
-/** Product — routes to existing public content. */
+/** Product — real product info (version, build, environment). Not navigation. */
 function ProductCard() {
-  const items: { label: string; href: string }[] = [
-    { label: "How It Works", href: "/how-it-works" },
-    { label: "About", href: "/about" },
-    { label: "Help", href: "/help" },
-    { label: "Capabilities", href: "/capabilities" },
-    { label: "Founder's Story", href: "/our-story" },
-    { label: "Our Mission", href: "/mission" },
+  const items: { label: string; value: string }[] = [
+    { label: "App version", value: "0.1.0" },
+    { label: "Release channel", value: "Early access" },
+    { label: "Environment", value: "Web (Netlify + Railway)" },
   ];
 
   return (
@@ -385,14 +377,12 @@ function ProductCard() {
       <h2 className="mobile-settings-card-title">
         <Info size={16} aria-hidden /> Product
       </h2>
-      <div className="mobile-settings-buttons">
+      <div className="mobile-settings-buttons" style={{ display: "block" }}>
         {items.map((item) => (
-          <Button key={item.href} variant="secondary" className="mobile-fab-sheet-item" asChild>
-            <Link href={item.href}>
-              {item.label}
-              <ChevronRight size={16} aria-hidden />
-            </Link>
-          </Button>
+          <div key={item.label} className="mobile-settings-row">
+            <span className="mobile-settings-label">{item.label}</span>
+            <span className="mobile-settings-value">{item.value}</span>
+          </div>
         ))}
       </div>
     </section>

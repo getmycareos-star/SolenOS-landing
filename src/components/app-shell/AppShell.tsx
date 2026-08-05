@@ -43,11 +43,16 @@ const FALLBACK_TABS: NavItem[] = [
 
 type FABActionId = "record" | "upload" | "capture" | "share";
 
-const FAB_ACTIONS: { id: FABActionId; label: string; icon: LucideIcon }[] = [
-  { id: "record", label: "Add Record", icon: PlusCircle },
-  { id: "upload", label: "Upload", icon: Upload },
-  { id: "capture", label: "Capture", icon: Camera },
-  { id: "share", label: "Share", icon: Share2 },
+const FAB_ACTIONS: {
+  id: FABActionId;
+  label: string;
+  icon: LucideIcon;
+  href: string;
+}[] = [
+{ id: "record", label: "Add Record", icon: PlusCircle, href: "/workspace?compose=1" },
+  { id: "upload", label: "Upload", icon: Upload, href: "/workspace?compose=1" },
+  { id: "capture", label: "Capture", icon: Camera, href: "/workspace?compose=1" },
+  { id: "share", label: "Share", icon: Share2, href: "/workspace?compose=1" },
 ];
 
 /**
@@ -106,7 +111,7 @@ export function AppShell({
                   key={action.id}
                   variant="secondary"
                   className="mobile-fab-sheet-item"
-                  onClick={() => handleFabAction("/workspace")}
+                  onClick={() => handleFabAction(action.href)}
                 >
                   <Icon size={18} aria-hidden />
                   {action.label}

@@ -4,8 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { canSubmitEarlyAccessConsent } from "@/lib/trust-content/early-access-consent";
 
-const CONSENT_STORAGE_KEY = "solenos_early_access_consent_v1";
-
 /**
  * Early-access join: awareness + consent, not a legal wall.
  * Submit stays disabled until Terms + Privacy are checked.
@@ -32,20 +30,8 @@ export function EarlyAccessConsentForm({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!ready) return;
-    try {
-      sessionStorage.setItem(
-        CONSENT_STORAGE_KEY,
-        JSON.stringify({
-          termsAccepted: true,
-          privacyAccepted: true,
-          at: new Date().toISOString(),
-        }),
-      );
-} catch {
-      /* sessionStorage may be unavailable — consent UI still recorded by checkboxes */
-    }
-// If an onboarding gate is present, let it complete the flow locally.
-    // Otherwise fall back to navigating to the continue destination.
+    // Consent is persisted via the single onboarding_complete flag (localStorage),
+    // owned by the OnboardingGate. No second consent state is written here.
     onConsentDone?.();
     if (continueHref) {
       window.location.assign(continueHref);

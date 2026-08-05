@@ -3,7 +3,7 @@
 import { AppShell } from "@/components/app-shell";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const WORKSPACE_NAV = [
   { href: "/workspace", label: "Living Care Record", icon: "◉" },
@@ -12,10 +12,28 @@ const WORKSPACE_NAV = [
   { href: "/workspace/settings", label: "Settings", icon: "⚙" },
 ] as const;
 
+function formatUpdatedDate(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString();
+  } catch {
+    return "";
+  }
+}
+
 function CareContextBar() {
   const { runtime, careKey } = useWorkspace();
   const active = runtime.situations.find((s) => s.status === "active");
   const hasSituations = runtime.situations.length > 0;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updatedLabel = mounted && active ? formatUpdatedDate(active.updatedAt) : "";
 
   return (
     <div className="care-context-bar">
@@ -27,9 +45,9 @@ function CareContextBar() {
               <span className={`care-context-status care-context-status--${active.status}`}>
                 {active.status}
               </span>
-              <span className="care-context-meta">
-                Updated {new Date(active.updatedAt).toLocaleDateString()}
-              </span>
+              {updatedLabel && (
+                <span className="care-context-meta">Updated {updatedLabel}</span>
+              )}
             </>
           ) : hasSituations ? (
             <>

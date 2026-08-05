@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Activity, ArrowLeft, FileText, Plus, Upload } from "lucide-react";
 
@@ -44,21 +44,21 @@ const STATUS_LABELS: Record<string, string> = {
   resolved: "Resolved",
 };
 
-export default function WorkspacePage() {
+function WorkspacePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { runtime, hydrated, entryReady } = useWorkspace();
-  const [nameDraft] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const compose = searchParams.get("compose") === "1";
 
-  const displayName = useMemo(() => {
-    if (typeof window === "undefined") return "";
+  // Read localStorage only after mount — prevents server/client hydration mismatch.
+  useEffect(() => {
     try {
-      return (
-        window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE)?.trim() ?? ""
+      setDisplayName(
+        window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE)?.trim() ?? "",
       );
     } catch {
-      return "";
+      setDisplayName("");
     }
   }, []);
 
@@ -170,13 +170,21 @@ export default function WorkspacePage() {
                     {STATUS_LABELS[s.status] ?? s.status} · Updated{" "}
                     {formatLastUpdated(s.updatedAt)}
                   </p>
-                </div>
+</div>
               </article>
             ))}
           </section>
         )}
       </div>
     </div>
+  );
+}
+
+export default function WorkspacePage() {
+  return (
+    <Suspense fallback={<BrandLoading message="Loading your care context…" />}>
+      <WorkspacePageInner />
+    </Suspense>
   );
 }
 
