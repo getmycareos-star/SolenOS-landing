@@ -11,7 +11,7 @@ import {
   User,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/Button";
+import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
@@ -194,6 +194,34 @@ function ProfileCard() {
 
 /** Security — honest account status. No fake account controls. */
 function SecurityCard() {
+  const { show, render } = useToast();
+  const accountControls: {
+    label: string;
+    variant: ButtonVariant;
+    note: string;
+  }[] = [
+    {
+      label: "Create account",
+      variant: "primary",
+      note: "Account sign-in is not available yet.",
+    },
+    {
+      label: "Change password",
+      variant: "secondary",
+      note: "Requires an account, which is not available yet.",
+    },
+    {
+      label: "Add email",
+      variant: "secondary",
+      note: "Requires an account, which is not available yet.",
+    },
+    {
+      label: "Delete account",
+      variant: "destructive",
+      note: "Requires an account, which is not available yet.",
+    },
+  ];
+
   return (
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title">
@@ -203,6 +231,25 @@ function SecurityCard() {
         Your SolenOS data is stored on this device. Account sign-in and
         cross-device sync are not yet available.
       </p>
+      <div className="mobile-settings-buttons">
+        {accountControls.map((control) => (
+          <Button
+            key={control.label}
+            variant={control.variant}
+            className="mobile-fab-sheet-item"
+            disabled
+            title={control.note}
+            onClick={() => show(control.note, "info")}
+          >
+            {control.label}
+          </Button>
+        ))}
+      </div>
+      <p className="mobile-settings-hint">
+        When accounts are introduced, SolenOS will use email and password to
+        secure your care record.
+      </p>
+      {render()}
     </section>
   );
 }
@@ -349,8 +396,12 @@ function PrivacyCard() {
             Clear local data
           </Button>
         )}
-<Button variant="secondary" disabled title="Account deletion is not available yet because there is no account system.">
-          Delete account data — unavailable
+        <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
+          <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+            "SolenOS data deletion request",
+          )}`}>
+            Request data deletion
+          </a>
         </Button>
         <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
           <a href={`mailto:${SUPPORT_EMAIL}`}>Contact support</a>
@@ -364,7 +415,7 @@ function PrivacyCard() {
   );
 }
 
-/** Product — real product info (version, build, environment). Not navigation. */
+/** Product — real product info + content links (How It Works, About, Help, etc.). */
 function ProductCard() {
   const items: { label: string; value: string }[] = [
     { label: "App version", value: "0.1.0" },
@@ -372,11 +423,32 @@ function ProductCard() {
     { label: "Environment", value: "Web (Netlify + Railway)" },
   ];
 
+  const contentLinks: { label: string; href: string }[] = [
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "About", href: "/about" },
+    { label: "Help", href: "/help" },
+    { label: "Capabilities", href: "/capabilities" },
+    { label: "Founder's Story", href: "/our-story" },
+    { label: "Our Mission", href: "/mission" },
+  ];
+
   return (
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title">
         <Info size={16} aria-hidden /> Product
       </h2>
+      <div className="mobile-settings-buttons">
+        {contentLinks.map((link) => (
+          <Button
+            key={link.href}
+            variant="secondary"
+            className="mobile-fab-sheet-item"
+            asChild
+          >
+            <Link href={link.href}>{link.label}</Link>
+          </Button>
+        ))}
+      </div>
       <div className="mobile-settings-buttons" style={{ display: "block" }}>
         {items.map((item) => (
           <div key={item.label} className="mobile-settings-row">
