@@ -1,0 +1,13 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+.venv/
+dist/
+build/
+*.db
+*.sqlite
+*.sqlite3
+.kilo/
+.kilocode/
+.opencode/
