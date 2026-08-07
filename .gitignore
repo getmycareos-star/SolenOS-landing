@@ -16,6 +16,7 @@ frontend2/
 
 # Build artifacts
 build_output*.txt
+build_log*.txt
 tsconfig.tsbuildinfo
 
 # Scratch / investigation files (never commit)

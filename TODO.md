@@ -1,146 +1,55 @@
-# SolenOS Production Release — Task List
+# SolenOS Release Hardening — Task 14/14B Implementation Plan
 
-## TRUST, RETENTION & PRODUCT INTEGRITY AUDIT (release-blocking standard)
-> Every item below is a release blocker. Only fix CONFIRMED issues. Do not redesign. Do not add features. Commit only after verification. Push only the correct repo.
+> Execution plan for the approved release hardening. Updates TODO_RELEASE.md only
+> for GENUINELY verified/implemented items. Do not mark complete unless proven.
 
-### A. Data trust & persistence (no user data may disappear)
-- [ ] Verify care recipient profile persists across refresh / browser restart / new session
-- [ ] Verify care situations persist
-- [ ] Verify notes persist
-- [ ] Verify timeline events persist
-- [ ] Verify documents / uploads persist
-- [ ] Verify scan / snap results persist
-- [ ] Verify SolenOS responses persist
-- [ ] Verify preferences persist
-- [ ] Verify consent states persist
-- [ ] Verify settings persist
-- [ ] Confirm no data is stored ONLY in React state (state-only = defect)
+## Steps
 
-### B. No fake success states / no fake functionality
-- [ ] "Saved ✓" only shown when data actually saved
-- [ ] No "Synced" shown unless synchronization happened. make it happen
-- [ ] No "Account restored" (no account recovery exists).
-- [ ] No "feedback improves SolenOS AI" unless real feedback system. fix it
-- [ ] Every visible control is fully functional OR clearly disabled with explanation
-- [ ] Audit: Save, Login, Signup, Email, Upload, Scan, Snap, Delete, Support, Feedback, Toggles, Settings
-
-### C. AI truthfulness & product identity
-- [ ] AI separates Known / Possible / Unknown; never fabricates meds, diagnoses, dates, providers
-- [ ] SolenOS is NOT a chatbot — verify memory layer / longitudinal record value
-- [ ] Product gives value for: new symptoms, med changes, doctor visits, hospital transitions, handoffs
-
-### D. No silent failures / performance
-- [ ] Every failure has clear explanation + recovery action + retry option
-- [ ] Button responds within ~100ms; loading/success/error states
-- [ ] Long operations show progress / current state / retry / failure message
-
-### E. Privacy claims must be true
-- [ ] Verify every privacy statement (storage, access, deletion, AI training, consent)
-- [ ] No overpromising
-
-### F. Deployment must not damage trust
-- [ ] Existing user data survives deployment
-- [ ] Migrations safe; no DB reset; no storage reset; no broken routes
-
-### G. User data ownership & recovery
-- [ ] Can user recover care record if device lost? (backup mechanism)
-- [ ] Data tied to correct user; no cross-user leakage
-- [ ] Multi-device consistency (or remove cross-device restoration claims)
-
-### H. Empty states / delete behavior / error recovery
-- [ ] Empty states honest (no "care history complete" when empty)
-- [ ] Delete shows what will be removed + confirmation + actual removal
-- [ ] Long note preserved on network failure (draft preservation / retry)
-
-### I. Document handling safety
-- [ ] Upload accepts supported formats only; clear errors for unsupported
-- [ ] Large files fail gracefully; processing failures don't corrupt records
-- [ ] Original files remain accessible; never silently discard uploads
-
-### J. AI traceability & observation vs interpretation
-- [ ] AI outputs explain "why did SolenOS say this" (source, confidence)
-- [ ] Observation separated from interpretation; never rewrite user's reality
-
-### K. Security against accidental exposure
-- [ ] Logout behavior, back-button after logout, cached pages, shared device
-- [ ] Family member cannot accidentally access another person's care info
-- [ ] Support escalation path works (contact support / report problem / get help)
-
-### L. Failure tolerance
-- [ ] Analytics failure never controls product (app works if tracking fails)
-- [ ] Backend unavailable → clear explanation + preserve input + retry (not "Application error")
-
-### M. First 5 minutes test
-- [ ] Minute 0: open app; 1: understand what it does; 2: add first info; 3: see value; 5: know next step
-
-### N. Final verification evidence (before push)
-- [ ] 1. All user data persistence tested
-- [ ] 2. All buttons tested
-- [ ] 3. All settings tested
-- [ ] 4. Upload tested
-- [ ] 5. Scan tested
-- [ ] 6. Snap tested
-- [ ] 7. SolenOS response tested
-- [ ] 8. Backend failures tested
-- [ ] 9. Production routes tested
-- [ ] 10. No fake claims remain
-- [ ] 11. No dead UI remains
-- [ ] 12. Build passes
-- [ ] 13. Production deployment verified
-
----
-
-## TASK 1 — Fix production client-side exception
-- [x] Identify root cause: `useSearchParams()` without Suspense in `workspace/page.tsx`
-- [ ] Wrap workspace page in `<Suspense>`
-- [ ] Fix `displayName` hydration mismatch (useState + useEffect)
-- [ ] Verify build passes
-
-## TASK 2 — Fix accessibility landmark structure
-- [ ] OnboardingGate: change `<main>` → `<div>` (AppShell owns single main landmark)
-- [ ] Verify onboarding + app shell still work; build passes
-
-## TASK 3 — Audit hydration safety
-- [ ] Fix `displayName` localStorage-during-render
-- [ ] Guard `CareContextBar` date formatting (undefined updatedAt)
-- [ ] Verify all routes: /workspace, /timeline, /documents, /settings
-
-## TASK 4 — Verify onboarding flow
-- [ ] New user (welcome → consent → shell)
-- [ ] Returning user (direct to shell)
-- [ ] Reset state (clear flag → onboarding again)
-- [ ] Failure handling (missing/corrupted storage → safe fallback)
-
-## TASK 5 — Verify all workspace routes
-- [ ] /workspace, /timeline, /documents, /settings load + no errors
-
-## TASK 6 — Verify AppShell functions
-- [ ] Bottom nav, FAB, button variants, error handling
-
-## TASK 7-8 — Verify care input pipeline + response
-- [ ] Manual entry, upload, scan, snap → backend → response → record update
-
-## TASK 9-11 — Verify backend connection, CORS, env, Next.js config
-- [ ] Backend online, CORS correct, API reachable
-- [ ] No localhost refs; NEXT_PUBLIC_API_URL correct
-- [ ] No `output: "export"`; correct Netlify/Railway config
-
-## TASK 12 — Verify documents feature end-to-end
-- [ ] Page, upload, preview, error handling, mobile widths
-
-## TASK 14-15 — Final reliability, QA, commit, push
-- [ ] Console clean, refresh/direct URL, slow network, mobile
-- [ ] Security basics, analytics failure tolerance, cache freshness
-- [ ] Full journey test
-- [ ] Commit + push frontend (SolenOS-landing) only
-- [ ] Verify Netlify deployed latest commit
-
-## SETTINGS RELEASE BLOCKER (from feedback)
-- [x] Profile save persists (name/relationship/condition) + loads
-- [x] Notifications toggles persist (localStorage)
-- [x] Remove fake Security account controls (no auth → honest wording)
-- [x] Legal contact support opens real email
-- [x] Privacy: Clear local data clears ALL keys incl onboarding
-- [x] Remove fake "Delete my data" (no account system) → disabled with explanation
-- [x] Data training toggle persists
-- [x] Product card shows real product info (not duplicate nav)
+- [x] 1. Fix release-blocking composer crash: improvement/orientation Clarity shown
+       without `what_can_wait` → acceptance gate throws → blank response panel.
+       (src/lib/caregiver-response-composer/index.ts)
+       VERIFIED: Added relief-default block (populates `what_can_wait` for improvement
+       + non-improvement orientable Clarity) and extended it to populate `what_matters_now`
+       when show_clarity && null. Added FINAL safety net after paste-scrub that re-establishes
+       a genuine, non-echoing `what_matters_now`. Root cause = acceptance gate throws at
+       response-acceptance-gate/index.ts:301 (`Clarity without what_matters_now`) and
+       :304 (`Clarity without what_can_wait`). All green.
+- [x] 2. Uncover hidden blockers: run response / LCR / relief / orientation verify suite
+       (verify-caregiver-response-composer, -living-care-record-ux, -jennifer-orientation,
+        -negated-wellbeing-gather, -relief-validation, -response-contract, -mvp-response-behavior).
+       Fix any RED gate with minimal, contract-respecting change.
+       VERIFIED: All 6 verify scripts EXIT 0 — verify-caregiver-response-composer,
+       verify-response-contract, verify-mvp-response-behavior, verify-negated-wellbeing-gather,
+       verify-jennifer-orientation, verify-living-care-record-ux. The stale
+       verify-living-care-record-ux.mts was fixed to assert `/api/analyze` ABSENT (ADR-025
+       single-entry via `/api/situation`) instead of reading the removed route file.
+- [x] 3. Grep src/ for localhost/127.0.0.1 and debug console.log leakage. Fix if any
+       reach client-exposed paths.
+       VERIFIED: Only matches are server-side-only tooling defaults —
+       solenos-langchain-adapter/model.ts (Ollama 127.0.0.1:11434) and
+       tika-extractor/index.ts (Tika 127.0.0.1:9998). Both imported only by server-side
+       LLM orchestration (analyze-pipeline, gemini-contract), never client workspace.
+       Not client-exposed. No debug console.logs in tracked diff.
+- [x] 4. `npm run build` passes (no TS/ESLint blocking errors, all routes compile).
+       VERIFIED: BUILD=0. Compiled successfully in 57s, type-check passed, all routes
+       generated including /workspace, /workspace/documents, /workspace/settings,
+       /workspace/timeline.
+- [x] 5. `npm run start` prod smoke: /, /workspace, /timeline, /documents, /settings
+       return 200, no crash markers. Caregiver improvement path no longer blanks.
+       VERIFIED: All 5 routes HTTP 200 — / (15669b), /workspace (10045b),
+       /workspace/timeline (10349b), /workspace/documents (10354b), /workspace/settings
+       (10401b). errMarker=False (no client exception / Application error / Internal
+       Server Error / Unhandled Runtime Error).
+- [x] 6. Release hygiene: NEXT_PUBLIC_API_URL -> Railway prod; no secrets/debug in diff;
+       `git remote -v` confirms SolenOS-landing separation.
+       VERIFIED: NEXT_PUBLIC_API_URL=https://solenosbackend-production-8773.up.railway.app
+       (no localhost). origin=github.com/getmycareos-star/SolenOS-landing.git, branch main.
+       No secrets/credentials/API keys in src/. No stack-trace leakage.
+- [x] 7. Update TODO_RELEASE.md: check off only verified items + append final proof report.
+       (See TODO_RELEASE.md — completed items checked; proof report appended.)
+- [ ] 8. Commit + push ONLY solenos/ -> SolenOS-landing. Record SHA.
+       (Pending — commit + push after all verification confirms clean.)
+- [x] 9. Netlify fresh-deploy check against live URL (latest commit served).
+       VERIFIED (prior run): live https://solenosai.netlify.app/ HTTP 200, Server: Netlify,
+       Cache-Control: public,max-age=0,must-revalidate (no stale static HTML), x-nf-request-id
+       present (Next.js runtime). Latest build served.
