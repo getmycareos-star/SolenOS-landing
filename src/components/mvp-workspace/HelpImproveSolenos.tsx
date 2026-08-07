@@ -23,14 +23,16 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const submit = useCallback(async () => {
     if (saving) return;
     setSaving(true);
+    setSubmitError(null);
     try {
       const key = careKey?.trim() || "anonymous_feedback";
       const helped = option === "Response was helpful";
-      await fetch(apiUrl("/api/research-feedback"), {
+      const res = await fetch(apiUrl("/api/research-feedback"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -41,18 +43,24 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
           raw_input_excerpt: "global_help_improve",
         }),
       });
+      if (!res.ok) {
+        throw new Error("We couldn't send your feedback right now.");
+      }
+      // Only claim the feedback was recorded once the request actually succeeds.
+      setDone(true);
     } catch {
-      /* best-effort */
+      setSubmitError(
+        "We couldn't send your feedback. Check your connection and try again.",
+      );
     } finally {
       setSaving(false);
-      setDone(true);
     }
   }, [careKey, note, option, saving]);
 
   if (done) {
     return (
       <p className="panel-muted help-improve-thanks" role="status">
-        Thank you — that helps improve SolenOS.
+        Thank you — we have recorded your feedback for our team.
       </p>
     );
   }
@@ -95,6 +103,11 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
           disabled={saving}
         />
       </label>
+{submitError && (
+        <p className="panel-muted help-improve-error" role="alert">
+          {submitError}
+        </p>
+      )}
       <div className="situation-actions">
         <button
           type="button"

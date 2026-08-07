@@ -29,13 +29,15 @@ export function UnderstandingFeedbackPrompt({
   const [option, setOption] = useState<string>("");
   const [expected, setExpected] = useState("");
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const submit = useCallback(
     async (helped: boolean, details?: { option?: string; expected?: string }) => {
       if (!careKey.trim() || saving) return;
       setSaving(true);
+      setSubmitError(null);
       try {
-        await fetch(apiUrl("/api/research-feedback"), {
+        const res = await fetch(apiUrl("/api/research-feedback"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -47,11 +49,16 @@ export function UnderstandingFeedbackPrompt({
             raw_input_excerpt: rawInputExcerpt ?? undefined,
           }),
         });
+        if (!res.ok) {
+          throw new Error(`Server returned ${res.status}`);
+        }
+        setStep("thanks");
       } catch {
-        /* best-effort */
+        setSubmitError(
+          "We couldn't send your feedback. Check your connection and try again.",
+        );
       } finally {
         setSaving(false);
-        setStep("thanks");
       }
     },
     [careKey, rawInputExcerpt, saving, situationId],
@@ -121,7 +128,7 @@ export function UnderstandingFeedbackPrompt({
           Or email{" "}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
         </p>
-      </div>
+</div>
     );
   }
 
@@ -148,6 +155,11 @@ export function UnderstandingFeedbackPrompt({
           Needs improvement
         </button>
       </div>
+      {submitError && (
+        <p className="workspace-error" role="alert">
+          {submitError}
+        </p>
+      )}
       <p className="panel-muted">
         <Link href="/support">Help</Link>
         {" · "}
