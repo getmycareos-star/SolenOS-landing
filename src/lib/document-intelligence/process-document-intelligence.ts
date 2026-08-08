@@ -5,12 +5,18 @@ import {
   classifySolenOSDocumentType,
   detectSolenOSDocumentTypeFromText,
 } from "./classify-document-type";
+import { extractCareJourneyUnderstanding } from "./care-journey-extraction";
+import { buildCaregiverSummary, buildCaregiverTranslation } from "./caregiver-translation";
+import { changesToWhatChanged, detectCareChanges } from "./change-detection";
 import { runDocumentIntelligenceSystemGuarantee } from "./guarantee";
 import { separateInference } from "./inference-separation";
 import { mergeMemoryLinks, proposeMemoryLinks } from "./memory-proposals";
 import { derivePrioritySignals, generateDocumentSignals } from "./signals";
+import { buildCaregiverPrioritization } from "./prioritization";
 import { structureExtractedDocument, validateExtractedDocumentStructure } from "./structuring";
+import { buildDocumentTimelineEvents } from "./timeline-events";
 import type {
+  CareJourneyUnderstanding,
   DocumentIntelligenceLayerPayload,
   DocumentIntelligenceLayerResult,
   DocumentNode,
@@ -33,7 +39,66 @@ function splitDocumentSegments(text: string, documentCount: number): string[] {
   return segments;
 }
 
-function buildDocumentNode(rawText: string, sourceType: SolenOSDocument): DocumentNode {
+function buildCareJourneyUnderstanding(
+  rawText: string,
+  sourceType: SolenOSDocument,
+  node: DocumentNode,
+  prior: CareJourneyUnderstanding | null,
+): CareJourneyUnderstanding {
+  const extractedJourney = extractCareJourneyUnderstanding(rawText, sourceType);
+
+  // Uncertainties — never auto-resolved. Conflicts/missing surfaced for confirmation.
+  const uncertainties: string[] = [];
+  if (
+    extractedJourney.medications.length > 0 &&
+    sourceType !== "medical_document" &&
+    sourceType !== "care_plan"
+  ) {
+    uncertainties.push("Medication information found in a non-medical document type — confirm before acting.");
+  }
+
+const changes = detectCareChanges(
+    {
+      ...extractedJourney,
+      whatChanged: [],
+      uncertainties,
+      caregiverTranslation: [],
+      timelineEvents: [],
+    },
+    prior,
+  );
+  const whatChanged = changesToWhatChanged(changes);
+  const caregiverTranslation = buildCaregiverTranslation({
+    ...extractedJourney,
+    whatChanged,
+    uncertainties,
+    caregiverTranslation: [],
+    timelineEvents: [],
+  });
+  const timelineEvents = buildDocumentTimelineEvents(extractedJourney, `Document node ${node.id}`);
+  const prioritization = buildCaregiverPrioritization({
+    ...extractedJourney,
+    whatChanged,
+    uncertainties,
+    caregiverTranslation,
+    timelineEvents,
+  });
+
+  return {
+    ...extractedJourney,
+    whatChanged,
+    uncertainties,
+    caregiverTranslation,
+    timelineEvents,
+    prioritization,
+  };
+}
+
+function buildDocumentNode(
+  rawText: string,
+  sourceType: SolenOSDocument,
+  prior: CareJourneyUnderstanding | null,
+): DocumentNode {
   const extracted = structureExtractedDocument(rawText, sourceType);
   const structureValid = validateExtractedDocumentStructure(extracted);
   const inference = separateInference(extracted, sourceType);
@@ -49,8 +114,21 @@ function buildDocumentNode(rawText: string, sourceType: SolenOSDocument): Docume
     linkedCareContextIds: [],
     prioritySignals: derivePrioritySignals(signals),
     confidence,
+    careJourney: {
+      medicalEvents: [],
+      medications: [],
+      appointments: [],
+      careInstructions: [],
+      people: [],
+      whatChanged: [],
+      uncertainties: [],
+caregiverTranslation: [],
+      timelineEvents: [],
+      prioritization: { immediateAttention: [], importantToTrack: [], canWait: [] },
+    },
   };
 
+  node.careJourney = buildCareJourneyUnderstanding(rawText, sourceType, node, prior);
   const memoryLinks = proposeMemoryLinks(node);
   node.linkedMemoryIds = memoryLinks.pendingWrites.map((p) => p.id);
 
@@ -86,13 +164,15 @@ export function processDocumentIntelligenceLayer(
       ? classifySolenOSDocumentType(params.documentIntake.document_type_tags)
       : detectSolenOSDocumentTypeFromText(params.rawInput);
 
-  const segments = splitDocumentSegments(params.rawInput, params.documentIntake.document_count);
+const segments = splitDocumentSegments(params.rawInput, params.documentIntake.document_count);
   const nodes: DocumentNode[] = segments.map((segment) => {
     const segmentType =
       params.documentIntake.document_type_tags.length > 0
         ? classifySolenOSDocumentType(params.documentIntake.document_type_tags)
         : detectSolenOSDocumentTypeFromText(segment);
-    const node = buildDocumentNode(segment, segmentType || baseType);
+    // First document seen → no prior understanding. Future documents can pass a
+    // prior CareJourneyUnderstanding to surface New / Changed / Missing / Unclear.
+    const node = buildDocumentNode(segment, segmentType || baseType, null);
     if (params.careContextIds?.length) {
       node.linkedCareContextIds = [...params.careContextIds];
     }

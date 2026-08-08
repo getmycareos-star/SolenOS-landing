@@ -217,8 +217,8 @@ function resolveActiveSituationTurn(params: {
     return {
       relation: "opens_new" as const,
       situation,
-      confirmation_title: "Held in the Living Care Record",
-      confirmation_body: "This is preserved in the Living Care Record.",
+      confirmation_title: "Saved to your care record",
+      confirmation_body: "This information is saved in your care record.",
       understanding_heading: "What is understood about this situation",
       understanding_stage: situation.understanding_stage,
       current_understanding: situation.observations
@@ -245,6 +245,7 @@ function resolveActiveSituationTurn(params: {
       disclosure_plan,
       response_evolution: EMPTY_RESPONSE_EVOLUTION,
       primary_screen_question: primaryScreenQuestionFor(disclosure_stage),
+      mental_load_signal: null,
     };
   }
 
@@ -466,7 +467,7 @@ export function buildLivingCareRecordResponse(params: {
       date,
       event: softSituation ? "Today's observation" : eventTypeLabel(kind),
       related_care: related,
-      status: "Held in the Living Care Record",
+      status: "Saved to your care record",
       source: hasDocuments ? "document" : "text",
     },
     understanding_heading: "What is understood about this situation",
@@ -568,5 +569,7 @@ export function buildLivingCareRecordResponse(params: {
     evidence_line: composed.evidence_line,
     evidence_maturity: composed.evidence_maturity,
     follow_up_items: composed.follow_up_items,
+    mental_load_signal: composed.mental_load_signal,
   };
 }
+

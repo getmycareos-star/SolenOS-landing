@@ -9,6 +9,24 @@ export {
   DOCUMENT_EXTRACTION_FIELD_KEYS,
 } from "./contract-constants";
 
+export {
+  extractCareJourneyUnderstanding,
+} from "./care-journey-extraction";
+export {
+  detectCareChanges,
+  changesToWhatChanged,
+} from "./change-detection";
+export {
+  buildCaregiverTranslation,
+  buildCaregiverSummary,
+} from "./caregiver-translation";
+export {
+  buildDocumentTimelineEvents,
+} from "./timeline-events";
+export {
+  buildCaregiverPrioritization,
+} from "./prioritization";
+
 export type {
   SolenOSDocument,
   DocumentSignalUrgency,
@@ -26,6 +44,15 @@ export type {
   DocumentIntelligenceLayerResult,
   DocumentIntelligenceLayerPayload,
   DocumentReasoningOutput,
+  MedicalEvent,
+  MedicationInfo,
+  AppointmentInfo,
+  CareInstruction,
+  CarePerson,
+  CareJourneyUnderstanding,
+  CareTimelineEvent,
+  CareChangeKind,
+  CareChange,
 } from "./types";
 
 export {

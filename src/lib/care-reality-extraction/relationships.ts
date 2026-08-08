@@ -301,19 +301,19 @@ export function composeCaregiverConnectionFromRelationships(params: {
       line =
         decOut.certainty === "possible"
           ? `What happened after a care choice stays connected — link possible, cause not assumed.`
-          : `What happened after a care choice stays with that choice in the care story.`;
+          : `What happened after a care choice stays connected — link possible, cause not assumed.`;
     }
   }
 
   if (!line) {
     const obsObs = rels.find((r) => r.kind === "observation_to_observation");
     if (obsObs) {
-      line = `Related things noticed stay connected as the care story begins.`;
+      line = `Related observations stay connected as the care record builds.`;
     }
   }
 
   if (!line && !params.isNewCareReality) {
-    line = `Connected pieces stay in the care story so change is easier to see later.`;
+    line = `Connected pieces stay in the care record so change is easier to see later.`;
   }
 
   if (!line) return null;

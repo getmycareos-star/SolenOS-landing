@@ -120,7 +120,7 @@ function defaultImportance(question: string, relatedType: UnknownRelatedObjectTy
     return "Without why this path was chosen, later outcomes are harder to interpret.";
   }
   if (relatedType === "event") {
-    return "Confirmation would clarify how this journey moment fits the care story.";
+    return "Confirmation would clarify how this moment fits into the care record.";
   }
   if (relatedType === "observation") {
     return "Confirmation would clarify what is currently true about the person receiving care.";

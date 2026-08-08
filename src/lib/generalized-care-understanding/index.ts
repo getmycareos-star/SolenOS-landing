@@ -203,8 +203,8 @@ export function processGeneralizedCareUnderstanding(params: {
   const prior = params.prior_held ?? [];
   const longitudinalHint =
     prior.length > 0
-      ? "This input is evaluated against what is already held in the care story."
-      : "This input begins or extends the care story for this person.";
+      ? "This input is evaluated against what is already noted in the care record."
+      : "This input begins or extends the care record for this person.";
 
   const open_loops: OpenCareLoop[] = [];
   for (const q of unknown.slice(0, 5)) {

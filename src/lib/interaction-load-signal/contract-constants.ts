@@ -54,7 +54,7 @@ export const SLEEP_PROTECTION_MAX_ACTIONS = 2;
 export const SLEEP_PROTECTION_MAX_LOW_COGNITIVE_SUGGESTIONS = 2;
 
 export const INTERACTION_SURVIVABILITY_NORMALIZATION =
-  "Repeated interactions without closure are part of what is held. When ready, share what is happening in care.";
+  "Repeated interactions without closure are part of the care record. When ready, share what is happening in care.";
 
 export const INTERACTION_SURVIVABILITY_CONTAINMENT =
   "Right now the priority is protecting rest and closing loops you can — not adding more care tasks.";

@@ -364,6 +364,8 @@ export type ComposedCaregiverResponse = {
   follow_up_items: string[];
   /** Structured contract trace — engine schema aligned to caregiver copy. */
   contract_output: ResponseIntelligenceOutput;
+  /** Caregiver mental load signal — brief, non-judgmental. */
+  mental_load_signal: string | null;
 };
 
 function containsBanned(text: string): boolean {
@@ -523,6 +525,19 @@ function composeIdentityMismatchTurn(params: {
     evidence_maturity: 1,
     follow_up_items: [],
     contract_output: intelligence,
+    mental_load_signal: (() => {
+      const openGaps = still_unclear.length;
+      if (openGaps >= 3) {
+        return "Several things need attention at once — nothing has to be solved tonight.";
+      }
+      if (openGaps >= 2) {
+        return "A few pieces are still missing — the most important one is enough for now.";
+      }
+      if (openGaps === 1) {
+        return "One question is still open — it can wait until you have the answer.";
+      }
+      return null;
+    })(),
   };
   assertComposedResponseProfessional(composed);
   assertResponseAcceptanceGate({
@@ -843,7 +858,7 @@ export function composeCaregiverResponse(params: {
   ) {
     if (improvement && turn.pattern_label !== "day-to-day fluctuation") {
       what_changed =
-        "The latest update changes what we understand. Earlier understanding stays in the care story.";
+        "The latest update changes what we understand. Earlier understanding stays in the care record.";
       } else if (continuitySymptom) {
       what_changed =
         "Oriented from held care reality — preparation for your next conversation, not advice.";
@@ -2137,6 +2152,21 @@ connection_note = scrubPasteField(connection_note);
     evidence_maturity: facets.evidence_maturity,
     follow_up_items,
     contract_output: intelligence,
+    mental_load_signal: (() => {
+      const openGaps = still_unclear.length;
+      const caregiverLoad =
+        /a lot is unsettled|weight of keeping/i.test(recognition_line ?? "");
+      if (caregiverLoad || openGaps >= 3) {
+        return "Several things need attention at once — nothing has to be solved tonight.";
+      }
+      if (openGaps >= 2) {
+        return "A few pieces are still missing — the most important one is enough for now.";
+      }
+      if (openGaps === 1) {
+        return "One question is still open — it can wait until you have the answer.";
+      }
+      return null;
+    })(),
   };
 
   assertComposedResponseProfessional(composed);

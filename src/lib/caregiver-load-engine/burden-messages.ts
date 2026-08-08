@@ -23,13 +23,13 @@ export function buildBurdenMessages(params: BuildBurdenMessagesParams): string[]
     statements.push(
       params.scores.sleepRiskScore >= 65
         ? "Sleep disruption is showing up in what you shared."
-        : "Sleep notes are part of what is held.",
+        : "Sleep notes are part of the care record.",
     );
   }
 
   if (params.scores.uncertaintyIndex >= 0.35) {
     statements.push(
-      "Open uncertainties in the care record are part of what is being held.",
+      "Open uncertainties in the care record are being tracked.",
     );
   }
 

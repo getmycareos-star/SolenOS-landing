@@ -229,7 +229,9 @@
     "verify:voice-conversation": "tsx scripts/verify-voice-conversation.mts",
     "verify:voice-input-layer": "tsx scripts/verify-voice-input-layer.mts",
     "verify:family-intelligence": "tsx scripts/verify-family-intelligence.mts",
-    "verify:case-memory": "tsx scripts/verify-case-memory.mts"
+    "verify:case-memory": "tsx scripts/verify-case-memory.mts",
+    "verify:document-intelligence-care": "tsx scripts/verify-document-intelligence-care.mts",
+    "verify:document-intelligence-quality": "tsx scripts/verify-document-intelligence-quality.mts"
   },
   "dependencies": {
     "@aws-sdk/client-polly": "^3.1100.0",

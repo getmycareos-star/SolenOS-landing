@@ -211,10 +211,10 @@ export function processCareSignalUnderstanding(params: {
   const care_state_understanding =
     clinical.human_orientation?.trim() ||
     (known.length > 0
-      ? "This input adds to the current understanding of the person's care situation."
-      : trimmed.length > 0
-        ? "This input is held as part of the care story; more context would sharpen understanding."
-        : null);
+        ? "This input adds to the current understanding of the person's care situation."
+        : trimmed.length > 0
+          ? "This information is saved — more context would sharpen understanding."
+          : null);
 
   const what_matters_now = humanPriorityFocus(clinical);
 

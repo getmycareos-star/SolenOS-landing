@@ -75,4 +75,6 @@ export type LivingCareRecordResponseView = {
   /** Consequence tier for evidence visibility (1|2|3|5|10). */
   evidence_maturity: 1 | 2 | 3 | 5 | 10;
   follow_up_items: string[];
+  /** Caregiver mental load signal — brief, non-judgmental. */
+  mental_load_signal: string | null;
 };

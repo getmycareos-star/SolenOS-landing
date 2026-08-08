@@ -6,9 +6,9 @@ import type { ResponseRiskLevel } from "./types";
  * SoT: docs/02-product/solenos-response-contract.md § Risk level
  */
 export const ATTENTION_LABELS_BY_RISK = {
-  low: "Can wait — not the main focus from what is held",
-  medium: "Worth attention from what is held",
-  high: "Needs attention now from what is held",
+  low: "Can wait — not the main focus right now",
+  medium: "Worth keeping an eye on",
+  high: "Needs attention soon",
 } as const satisfies Record<ResponseRiskLevel, string>;
 
 export function humanAttentionLabelFor(risk: ResponseRiskLevel): string {

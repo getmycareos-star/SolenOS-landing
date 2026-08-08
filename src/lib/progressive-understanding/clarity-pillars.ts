@@ -300,8 +300,8 @@ export function buildCareClarityPillars(params: {
         baselineChange:
           baselineChange ||
           (who === "they"
-            ? "What is held today may differ from what was usual"
-            : `What is held today may differ from ${who}'s usual`),
+            ? "What is known today may differ from what was usual"
+            : `What is known today may differ from ${who}'s usual`),
         topUnknown: null,
       }),
       what_can_wait: "Explaining every moment tonight.",

@@ -48,6 +48,7 @@ export function LivingCareRecordPanel({
       ? (view.expandable.evidence ?? []).slice(0, 4)
       : [];
   const renderEvidenceMeta = view.has_documents && Boolean(event.event);
+  const showMentalLoad = Boolean(view.mental_load_signal);
 
   return (
     <section className="living-care-record-panel" aria-label="Living Care Record update">
@@ -64,8 +65,14 @@ export function LivingCareRecordPanel({
         <p className="panel-muted lcr-evidence-line">{view.evidence_line}</p>
       )}
       {view.disclosure_plan.show_attention_level && view.attention_label && (
-        <p className="panel-muted lcr-attention" aria-label="Attention from what is held">
+        <p className="panel-muted lcr-attention" aria-label="Attention level">
           {view.attention_label}
+        </p>
+      )}
+
+      {showMentalLoad && (
+        <p className="panel-muted lcr-mental-load" aria-label="Caregiver load note">
+          {view.mental_load_signal}
         </p>
       )}
 
@@ -77,13 +84,15 @@ export function LivingCareRecordPanel({
           <h3 id="lcr-know-heading" className="section-kicker">
             {view.show_attention_sections
               ? "What is happening"
-              : "What is understood about this situation"}
+              : "What is known"}
           </h3>
           {plan.show_situation_summary && view.what_seems_happening && (
-            <p>{view.what_seems_happening}</p>
+            <p className="panel-muted" aria-label="Observation layer">
+              Observation: {view.what_seems_happening}
+            </p>
           )}
           {facts.length > 0 && (
-            <ul>
+            <ul aria-label="Caregiver observations">
               {facts.map((item) => (
                 <li key={item}>{item}</li>
               ))}
@@ -103,6 +112,7 @@ export function LivingCareRecordPanel({
           <h3 id="lcr-delta-heading" className="section-kicker">
             What changed
           </h3>
+          <p className="panel-muted">System interpretation — confirm if this matches your understanding.</p>
           <p>{view.what_changed_in_understanding}</p>
         </section>
       )}
@@ -110,8 +120,9 @@ export function LivingCareRecordPanel({
       {plan.show_connection && view.connection_note && (
         <section className="care-card-changed" aria-labelledby="lcr-connect-heading">
           <h3 id="lcr-connect-heading" className="section-kicker">
-            How this connects
+            What may matter
           </h3>
+          <p className="panel-muted">Possible connection — may need confirmation.</p>
           <p>{view.connection_note}</p>
         </section>
       )}
@@ -119,24 +130,24 @@ export function LivingCareRecordPanel({
       {showMatters && (
         <section className="care-card-matters" aria-labelledby="lcr-matters-heading">
           <h3 id="lcr-matters-heading" className="section-kicker">
-            What matters
+            What to watch
           </h3>
           <dl className="lcr-pillars">
             {view.what_matters_now && (
               <div>
-                <dt>What matters now</dt>
+                <dt>Most important now</dt>
                 <dd>{view.what_matters_now}</dd>
               </div>
             )}
             {view.what_can_wait && (
               <div>
-                <dt>What can wait</dt>
+                <dt>Can wait</dt>
                 <dd>{view.what_can_wait}</dd>
               </div>
             )}
             {view.what_may_become_serious && (
               <div>
-                <dt>What may become serious</dt>
+                <dt>May need attention later</dt>
                 <dd>{view.what_may_become_serious}</dd>
               </div>
             )}
@@ -147,9 +158,9 @@ export function LivingCareRecordPanel({
       {stillUnclear.length > 0 && (
         <section className="care-card-unknowns" aria-labelledby="lcr-unclear-heading">
           <h3 id="lcr-unclear-heading" className="section-kicker">
-            Still unclear
+            Questions to resolve
           </h3>
-          <p className="panel-muted">Optional — skip if you do not know.</p>
+          <p className="panel-muted">Missing information — optional, skip if you do not know.</p>
           <ul>
             {stillUnclear.map((item) => (
               <li key={item}>{item}</li>
@@ -183,7 +194,7 @@ export function LivingCareRecordPanel({
       {supportingEvidence.length > 0 && (
         <details className="lcr-expandable">
           <summary className="panel-muted">What supports this understanding</summary>
-          <ul>
+          <ul aria-label="Source evidence">
             {supportingEvidence.map((item) => (
               <li key={item}>{item}</li>
             ))}
@@ -192,9 +203,17 @@ export function LivingCareRecordPanel({
       )}
 
       {view.follow_up_items.length > 0 && (
-        <p className="panel-muted lcr-follow-hint">
-          Also worth adding when you can: {view.follow_up_items.slice(0, 2).join(" · ")}
-        </p>
+        <section className="care-card-actions" aria-labelledby="lcr-actions-heading">
+          <h3 id="lcr-actions-heading" className="section-kicker">
+            Next actions
+          </h3>
+          <p className="panel-muted">Suggested next steps — your choice how to proceed.</p>
+          <ul>
+            {view.follow_up_items.slice(0, 2).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {view.care_story_update && (

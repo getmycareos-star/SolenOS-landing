@@ -249,7 +249,7 @@ export function processAdditionalIntelligenceBehaviors(params: {
     (base.epistemic.unknown[0]
       ? "Reduces uncertainty in the care situation."
       : prior.length > 0
-        ? "Connects to what is already held in the care story."
+        ? "Connects to what is already noted in the care record."
         : "Helps form the current care understanding.");
 
   const observed_band: InferenceConfidence =
@@ -353,7 +353,7 @@ export function processAdditionalIntelligenceBehaviors(params: {
           ? "Held lightly unless it connects to change, decision, or pattern."
           : importance === "long_term"
             ? "Belongs with established care history."
-            : "Meaningful change or decision — keep in the care story.",
+            : "Meaningful change or decision — keep in the care record.",
     },
     personalization: {
       uses_prior_history: prior.length > 0,

@@ -293,9 +293,9 @@ export function caregiverNoteMetaLabel(params: {
     return "Waiting for care to share";
   }
   if (params.latestIsCareWorthy) {
-    return "Added to the care story";
+    return "Added to the care record";
   }
-  return "About SolenOS — what you shared stays in the care story";
+  return "About SolenOS — what you shared stays in the care record";
 }
 
 /**
@@ -305,9 +305,9 @@ export function composeMemoryAwareSoftSummary(params: {
   state: CareMemoryState;
 }): string {
   if (params.state === "new_care_reality") {
-    return "Beginning to understand this care situation — held so you do not have to reconstruct it alone later.";
+    return "Beginning to understand this care situation — saved so you do not have to reconstruct it alone later.";
   }
-  return "This stays connected to what is already held — clarity grows as more of the care story arrives.";
+  return "This stays connected to what is already noted — clarity grows as more of the care record builds.";
 }
 
 /**

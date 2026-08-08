@@ -69,7 +69,7 @@ export function UnderstandingFeedbackPrompt({
   if (step === "thanks") {
     return (
       <p className="panel-muted research-feedback-thanks" role="status">
-        Thank you — that helps improve SolenOS.
+        Thank you — your feedback helps our team improve future versions of SolenOS.
         <button type="button" className="link-button" onClick={() => setStep("hidden")}>
           Dismiss
         </button>

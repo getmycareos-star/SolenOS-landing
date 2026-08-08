@@ -43,7 +43,7 @@ export const WHY_SOLENOS_EXISTS_SHORT = {
   body: [
     "Caregiving often involves scattered information, changing situations, and difficult decisions.",
     "Important details can get lost between conversations, documents, appointments, and everyday responsibilities.",
-    "SolenOS is being built to help caregivers organize the care story over time — what happened, what changed, what is known, and what still needs attention.",
+    "SolenOS is being built to help caregivers organize care information over time — what happened, what changed, what is known, and what still needs attention.",
   ],
 } as const;
 

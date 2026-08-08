@@ -108,6 +108,10 @@ export type DocumentNode = {
 
   confidence: DocumentConfidence;
 
+  /** Care-journey understanding — how this document changes the person's care journey. */
+
+  careJourney: CareJourneyUnderstanding;
+
 };
 
 
@@ -217,6 +221,260 @@ export type DocumentReasoningOutput = {
   confidenceScores: DocumentConfidence[];
 
   uncertaintyFlags: string[];
+
+};
+
+
+
+// ─── DOCUMENT INTELLIGENCE — CARE JOURNEY UNDERSTANDING ──────────────────────
+
+// Documents are treated as care events, not just files. SolenOS answers:
+
+// "How does this document change the person's care journey?" — never
+
+// "Read this PDF and summarize it."
+
+
+
+/** Medical events named/shown in a document (hospital care, diagnoses, procedures). */
+
+export type MedicalEvent = {
+
+  kind: "hospital_visit" | "diagnosis" | "procedure" | "discharge" | "provider_instruction";
+
+  /** Raw verbatim text this insight came from — evidence traceability. */
+
+  sourceText: string;
+
+  /** When known — e.g. "March 15, 2026"; empty when the document does not state it. */
+
+  date?: string;
+
+};
+
+
+
+/** Medication information in a document. */
+
+export type MedicationInfo = {
+
+  name: string;
+
+  status: "new" | "continuing" | "discontinued" | "dosage_changed" | "unknown";
+
+  dose?: string;
+
+  frequency?: string;
+
+  instructions?: string[];
+
+refill?: string;
+
+  concern?: string;
+
+  /** High-priority medication safety signals — surfaced for care coordination. */
+
+  duplicateDose?: boolean;
+
+  missedDose?: boolean;
+
+  refillProblem?: boolean;
+
+  unclearInstructions?: boolean;
+
+  /** Uncertainty about the current medication (name, dose, purpose, or list). */
+
+  uncertainty?: boolean;
+
+  /** Verbatim source sentences. */
+
+  sourceText: string[];
+
+};
+
+
+
+/** Appointments and follow-ups in a document. */
+
+export type AppointmentInfo = {
+
+  kind:
+
+    | "upcoming_visit"
+
+    | "specialist_referral"
+
+    | "recommended_follow_up"
+
+    | "deadline"
+
+    | "family_discussion"
+
+    | "planned_care_decision";
+
+  description: string;
+
+  /** What is happening (structured). */
+
+  what: string;
+
+  /** Who is involved — doctor, specialist, family member, organization. */
+
+  who?: string;
+
+  /** When known — e.g. "within 4 weeks" / "March 20, 2026". */
+
+  timeframe?: string;
+
+  /** What preparation may be needed before the event. */
+
+  preparation?: string;
+
+  sourceText: string;
+
+};
+
+
+
+/** Care instructions in a document. */
+
+export type CareInstruction = {
+
+  kind:
+
+    | "restriction"
+
+    | "monitoring_requirement"
+
+    | "warning_sign"
+
+    | "recommended_action"
+
+    | "provider_instruction";
+
+  description: string;
+
+  sourceText: string;
+
+};
+
+
+
+/** People / organizations named in a document. */
+
+export type CarePerson = {
+
+  name: string;
+
+  role: "doctor" | "specialist" | "hospital" | "pharmacy" | "caregiver" | "other";
+
+  sourceText: string;
+
+};
+
+
+
+/** Aggregate care-journey understanding extracted from a document. */
+
+export type CareJourneyUnderstanding = {
+
+  medicalEvents: MedicalEvent[];
+
+  medications: MedicationInfo[];
+
+  appointments: AppointmentInfo[];
+
+  careInstructions: CareInstruction[];
+
+  people: CarePerson[];
+
+  /** "What changed in the care journey because of this document?" */
+
+  whatChanged: string[];
+
+  /** Conflicts / missing / uncertain — never resolved automatically. */
+
+  uncertainties: string[];
+
+/** Human-language answer to "what does this mean for managing care?". */
+
+  caregiverTranslation: string[];
+
+  /** Caregiver-impact prioritization — what needs action soon vs can wait. */
+
+  prioritization: {
+
+    /** Things that may require action soon. */
+
+    immediateAttention: string[];
+
+    /** Changes or patterns that may become significant. */
+
+    importantToTrack: string[];
+
+    /** Useful information that does not require immediate focus. */
+
+    canWait: string[];
+
+  };
+
+  /** Timeline events this document should create/update. */
+
+  timelineEvents: CareTimelineEvent[];
+
+};
+
+
+
+export type CareTimelineEvent = {
+
+  date: string;
+
+  event: string;
+
+  source: string;
+
+  whatChanged: string;
+
+  whatMattersNext: string;
+
+};
+
+
+
+/** Change classification when comparing a new document to existing understanding. */
+
+export type CareChangeKind = "new" | "changed" | "missing" | "unclear";
+
+
+
+export type CareChange = {
+
+  kind: CareChangeKind;
+
+  category:
+
+    | "medication"
+
+    | "diagnosis"
+
+    | "provider"
+
+    | "appointment"
+
+    | "care_instruction"
+
+    | "medical_event"
+
+    | "other";
+
+  label: string;
+
+  detail: string;
+
+  /** Field in the prior understanding that changed, when known. */
+
+  field?: string;
 
 };
 

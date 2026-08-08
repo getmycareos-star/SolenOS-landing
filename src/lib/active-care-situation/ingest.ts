@@ -472,7 +472,7 @@ function ingestIdentityMismatchHold(params: {
     what_needs_context: [ask],
     confirmation_title: "Need a quick clarification",
     confirmation_body:
-      "This update is held for now — it will not be linked to the care story until it is clear who it is about.",
+      "This update is saved — it will be linked to the care record once we confirm who it is about.",
     what_changed_in_understanding: null,
   };
 }

@@ -30,6 +30,14 @@ export const INTERNAL_LANGUAGE_BANS = [
   "lower attention items",
   "detected keywords",
   "symptom classifier",
+  "care story already underway",
+  "what is held",
+  "held from what you shared",
+  "held with",
+  "thread source",
+  "care story",
+  "held in the living care record",
+  "living care record",
 ] as const;
 
 export function containsInternalLanguage(text: string): boolean {
@@ -172,9 +180,9 @@ export function composeRecognitionLine(params: {
     }
   }
   if (who) {
-    return `What you shared about ${who} connects to the care story already underway.`;
+    return `What you shared about ${who} connects to what was already noted â€” part of the same care record.`;
   }
-  return "What you shared connects to the care story already underway.";
+  return "What you shared connects to what was already noted â€” part of the same care record.";
 }
 
 /**
@@ -198,10 +206,10 @@ export function composeConnectionLine(params: {
     prior.toLowerCase() !== latest.toLowerCase() &&
     !isNearRawCaregiverFacet(prior)
   ) {
-    return "This connects to what was already held — not a separate story.";
+    return "This connects to what was already noted — part of the same care situation.";
   }
   if (params.observationCount >= 2 || Boolean(prior)) {
-    return "This stays with the care story already underway — related to what was held before.";
+    return "This stays with what was already noted — related to the same care situation.";
   }
   return null;
 }
@@ -317,15 +325,15 @@ export function composeCareStoryUpdate(params: {
         ? `${decision.slice(0, 87).replace(/\s+\S*$/, "")}…`
         : decision;
     return named
-      ? `Decision preserved in ${named}'s care story: ${shortDecision} — including why when it becomes clear.`
-      : `Decision preserved in the care story: ${shortDecision} — including why when it becomes clear.`;
+      ? `Decision saved in ${named}'s care record: ${shortDecision} — the reason will be added when it becomes clear.`
+      : `Decision saved in the care record: ${shortDecision} — the reason will be added when it becomes clear.`;
   }
 
   const change = params.whatChanged?.trim().replace(/\.$/, "");
   if (!params.isNewCareReality && change && change.length <= 140) {
     return named
-      ? `Added to ${named}'s care story already underway: ${change}.`
-      : `Added to the care story already underway: ${change}.`;
+      ? `Added to ${named}'s care record: ${change}.`
+      : `Added to the care record: ${change}.`;
   }
 
   const focus = params.heldFocus?.trim().replace(/\.$/, "") ?? "";
@@ -334,15 +342,15 @@ export function composeCareStoryUpdate(params: {
     const unknownNote =
       (params.openUnknownCount ?? 0) > 0 ? " — unknowns stay open." : ".";
     return named
-      ? `First care story entries for ${named} are held from what you shared${unknownNote}`
-      : `First care story entries are held from what you shared${unknownNote}`;
+      ? `First entries for ${named} are saved in the care record${unknownNote}`
+      : `First entries are saved in the care record${unknownNote}`;
   }
   if (focus && focus.length <= 72 && !looksLikeRawNoteDump(focus)) {
     return named
-      ? `Added to ${named}'s care story already underway: ${focus}.`
-      : `Added to the care story already underway: ${focus}.`;
+      ? `Added to ${named}'s care record: ${focus}.`
+      : `Added to the care record: ${focus}.`;
   }
   return named
-    ? `Added to ${named}'s care story already underway — changes, decisions, and unknowns stay connected over time.`
-    : "Added to the care story already underway — changes, decisions, and unknowns stay connected over time.";
+    ? `Added to ${named}'s care record — changes, decisions, and unknowns stay connected over time.`
+    : "Added to the care record — changes, decisions, and unknowns stay connected over time.";
 }

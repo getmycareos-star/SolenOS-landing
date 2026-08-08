@@ -95,7 +95,7 @@ export function detectSessionKinshipCue(text: string): string | null {
  * Prefer this over blank "Who is this?" when the note already anchors the person.
  */
 export function composeSessionKinshipConfirmAsk(kinshipLabel: string): string {
-  return `Is ${kinshipLabel} the name you use for the person this care story is about?`;
+  return `Is ${kinshipLabel} the name you use for the person this care record is about?`;
 }
 
 /**
