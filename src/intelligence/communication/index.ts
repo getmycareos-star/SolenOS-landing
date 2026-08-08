@@ -288,7 +288,7 @@ export async function communicateFromReasoning(
     show_clarity: understanding.can_orient,
     show_questions: mergedClarification.length > 0,
     why_asking: null,
-    evidence_line: null,
+evidence_line: null,
     evidence_maturity: (understanding.facts.length > 0 ? 3 : 1) as 1 | 2 | 3 | 5 | 10,
     follow_up_items: outputWithTransparency.follow_up_items,
     contract_output: {
@@ -301,6 +301,19 @@ export async function communicateFromReasoning(
       what_can_wait: outputWithTransparency.what_can_wait,
       follow_up_items: outputWithTransparency.follow_up_items,
     },
+    mental_load_signal: (() => {
+      const openGaps = mergedUncertain.length;
+      if (openGaps >= 3) {
+        return "Several things need attention at once — nothing has to be solved tonight.";
+      }
+      if (openGaps >= 2) {
+        return "A few pieces are still missing — the most important one is enough for now.";
+      }
+      if (openGaps === 1) {
+        return "One question is still open — it can wait until you have the answer.";
+      }
+      return null;
+    })(),
   };
 
   return {

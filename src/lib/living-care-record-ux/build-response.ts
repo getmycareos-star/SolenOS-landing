@@ -245,7 +245,6 @@ function resolveActiveSituationTurn(params: {
       disclosure_plan,
       response_evolution: EMPTY_RESPONSE_EVOLUTION,
       primary_screen_question: primaryScreenQuestionFor(disclosure_stage),
-      mental_load_signal: null,
     };
   }
 

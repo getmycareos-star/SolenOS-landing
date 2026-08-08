@@ -7,6 +7,7 @@ import type {
   MedicationInfo,
   SolenOSDocument,
 } from "./types";
+import { buildCaregiverPrioritization } from "./prioritization";
 
 /**
  * CARE JOURNEY EXTRACTION — Extract the *care implications* in a document so the
@@ -316,7 +317,7 @@ export function extractCareJourneyUnderstanding(
   text: string,
   sourceType: SolenOSDocument,
 ): CareJourneyUnderstanding {
-  return {
+  const understanding = {
     medicalEvents: extractMedicalEvents(text, sourceType),
     medications: extractMedications(text, sourceType),
     appointments: extractAppointments(text, sourceType),
@@ -326,6 +327,10 @@ export function extractCareJourneyUnderstanding(
     uncertainties: [],
     caregiverTranslation: [],
     timelineEvents: [],
+  };
+return {
+    ...understanding,
+    prioritization: buildCaregiverPrioritization(understanding as unknown as CareJourneyUnderstanding),
   };
 }
 
