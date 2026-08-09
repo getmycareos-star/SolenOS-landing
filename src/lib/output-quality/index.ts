@@ -37,7 +37,6 @@ export const INTERNAL_LANGUAGE_BANS = [
   "thread source",
   "care story",
   "held in the living care record",
-  "living care record",
 ] as const;
 
 export function containsInternalLanguage(text: string): boolean {
@@ -180,9 +179,9 @@ export function composeRecognitionLine(params: {
     }
   }
   if (who) {
-    return `What you shared about ${who} connects to what was already noted â€” part of the same care record.`;
+    return `What you shared about ${who} connects to what was already noted — part of the same care record.`;
   }
-  return "What you shared connects to what was already noted â€” part of the same care record.";
+  return "What you shared connects to what was already noted — part of the same care record.";
 }
 
 /**

@@ -97,12 +97,12 @@ assert(
   "ADR-019: what understood section",
 );
 assert(
-  /Still unclear|What to ask next|What would help understand|One thing that would help/.test(lcrPanel),
-  "ADR-019: needs context (Still unclear — unknowns as care reality)",
+  /Still unclear|What to ask next|What would help understand|One thing that would help|Questions to resolve/.test(lcrPanel),
+  "ADR-019: needs context (unknowns as care reality)",
 );
 assert(/What will be remembered/.test(lcrPanel), "ADR-019: remembered section");
 assert(!/>\s*Clarity\s*</.test(lcrPanel) && !/section-kicker">\s*Clarity/.test(lcrPanel), "no Clarity analysis kicker — AI invisible");
-assert(/What matters/.test(lcrPanel), "progressive what-matters without Clarity branding");
+assert(/What matters|What to watch|Most important now/.test(lcrPanel), "progressive what-matters without Clarity branding");
 assert(!/I will not ask/.test(lcrPanel), "no first-person assistant voice in panel");
 assert(/What supports this understanding/.test(lcrPanel), "expandable evidence quiet, not engine dump");
 

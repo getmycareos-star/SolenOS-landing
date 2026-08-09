@@ -137,12 +137,13 @@ import {
   composeConnectionLine,
   composeRecognitionLine,
   containsInternalLanguage,
-  containsRawNoteEchoInCopy,
+containsRawNoteEchoInCopy,
   formatDecisionMemoryForCaregiver,
   isNearRawCaregiverFacet,
   looksLikeCaregiverLoadLanguage,
   scrubInternalLanguage,
   composeCareStoryUpdate,
+  INTERNAL_LANGUAGE_BANS,
 } from "../output-quality";
 import { assertResponseAcceptanceGate } from "../response-acceptance-gate";
 import { applyRealCaregiverTestComposeGate } from "../real-caregiver-test";
@@ -2313,8 +2314,13 @@ export function assertComposedResponseProfessional(
       throw new Error(`Caregiver response banned phrase: ${phrase}`);
     }
   }
-  if (containsInternalLanguage(blob)) {
-    throw new Error("Caregiver response contains internal architecture language");
+if (containsInternalLanguage(blob)) {
+    const diagMatch = INTERNAL_LANGUAGE_BANS.filter((p) =>
+      blob.toLowerCase().includes(p.toLowerCase()),
+    );
+    throw new Error(
+      `Caregiver response contains internal architecture language: ${JSON.stringify(diagMatch)} :: ${blob.slice(0, 400)}`,
+    );
   }
   assertNoAiProductLanguage(
     [
