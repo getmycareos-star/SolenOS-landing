@@ -19,6 +19,7 @@ const libreBaskerville = Libre_Baskerville({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://solenosai.netlify.app"),
   title: BRAND_NAME,
   description: `${BRAND_TAGLINE} — ${BRAND_PROMISE}`,
   manifest: "/manifest.webmanifest",
