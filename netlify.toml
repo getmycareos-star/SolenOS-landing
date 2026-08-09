@@ -33,7 +33,7 @@
   from = "/api/*"
   to = "https://solenosbackend-production-8773.up.railway.app/api/:splat"
   status = 200
-  force = false
+  force = true
 
 # Security headers
 [[headers]]
