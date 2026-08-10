@@ -16,6 +16,7 @@ import {
   buildUnparsedRawEvent,
 } from "../../lib/care-event-integrity";
 import { recordDocumentSourceEvidence } from "../../lib/document-evidence";
+import { runConsistencyGate } from "../../lib/claim-consistency";
 import type { ExtractionInput, ExtractionResult } from "../types";
 
 function mergeDareResults(results: DareIngestResult[]): DareIngestResult {
@@ -51,7 +52,7 @@ function caregiverLineFromUnreadableSection(reason: string): string | null {
  * Uses DARE for extraction with deterministic fallback.
  */
 export async function extractFromInput(input: ExtractionInput): Promise<ExtractionResult> {
-  const { raw_input, documents, caregiverId, timestamp } = input;
+  const { raw_input, documents, caregiverId, timestamp, enableConsistencyGate } = input;
   const dareResults: DareIngestResult[] = [];
 
   // Process raw text input
@@ -174,11 +175,42 @@ export async function extractFromInput(input: ExtractionInput): Promise<Extracti
       ].filter((line): line is string => typeof line === "string")
     : [];
 
+  // Run confirmation gate if enabled
+  let consistencyGateResult: ExtractionResult["consistencyGate"] = undefined;
+  if (enableConsistencyGate && raw_input.trim()) {
+    try {
+      const gateResult = await runConsistencyGate({
+        evidence_id: `ev_${Date.now().toString(36)}`,
+        raw_text: raw_input,
+        raw_input_id: `ri_${Date.now().toString(36)}`,
+        caregiver_id: caregiverId,
+        timestamp: timestamp ?? new Date().toISOString(),
+      });
+
+      consistencyGateResult = {
+        success: gateResult.success,
+        reconciledClaims: gateResult.reconciliation.reconciled_claims,
+        runAId: gateResult.run_a.run_id,
+        runBId: gateResult.run_b.run_id,
+        error: gateResult.error,
+      };
+    } catch (err) {
+      consistencyGateResult = {
+        success: false,
+        reconciledClaims: [],
+        runAId: "",
+        runBId: "",
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
   return {
     events,
     dare,
     documentEventsCount,
     provisionalFromDare,
+    consistencyGate: consistencyGateResult,
   };
 }
 

@@ -25,6 +25,7 @@ export type ExtractionInput = {
   documents?: ProcessSituationInput["documents"];
   caregiverId: string;
   timestamp?: string;
+  enableConsistencyGate?: boolean;
 };
 
 export type ExtractionResult = {
@@ -32,6 +33,13 @@ export type ExtractionResult = {
   dare: DareIngestResult | null;
   documentEventsCount: number;
   provisionalFromDare: string[];
+  consistencyGate?: {
+    success: boolean;
+    reconciledClaims: import("../lib/claim-consistency").ReconciliationResult["reconciled_claims"];
+    runAId: string;
+    runBId: string;
+    error?: string;
+  };
 };
 
 // ============================================================
