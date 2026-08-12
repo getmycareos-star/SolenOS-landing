@@ -275,6 +275,7 @@ export type ProcessSituationInput = {
     extracted_text: string;
     mime_type?: string | null;
     ocr_confidence?: number | null;
+    extraction_source?: string | null;
   }[];
 };
 

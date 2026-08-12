@@ -25,6 +25,12 @@ const IMAGE_TYPES = new Set([
   "image/bmp",
 ]);
 
+export type ExtractionResult = {
+  text: string;
+  ocr_confidence: number | null;
+  source: "ocr" | "tika" | "text";
+};
+
 const TIKA_TYPES = new Set([
   "application/pdf",
   "application/msword",
@@ -42,6 +48,12 @@ function tikaServerUrl(): string {
 
 function ocrEnabled(): boolean {
   return process.env.TESSERACT_OCR !== "0";
+}
+
+function normalizeOcrConfidence(confidence: number | null): number | null {
+  if (confidence == null || Number.isNaN(confidence)) return null;
+  const normalized = confidence > 1 ? confidence / 100 : confidence;
+  return Math.min(1, Math.max(0, normalized));
 }
 
 async function extractPlainText(buffer: Buffer): Promise<string> {
@@ -94,13 +106,19 @@ async function extractViaTikaJar(
   }
 }
 
-async function extractViaTesseract(buffer: Buffer): Promise<string | null> {
+async function extractViaTesseract(buffer: Buffer): Promise<ExtractionResult | null> {
   if (!ocrEnabled()) return null;
   try {
     const result = await Tesseract.recognize(buffer, "eng", {
       logger: () => {},
     });
-    return result.data.text;
+    const text = result.data.text?.trim() ?? "";
+    if (!text) return null;
+    return {
+      text,
+      ocr_confidence: normalizeOcrConfidence(result.data.confidence ?? null),
+      source: "ocr",
+    };
   } catch {
     return null;
   }
@@ -124,35 +142,43 @@ async function extractFromBuffer(
   buffer: Buffer,
   contentType: string,
   filename: string,
-): Promise<string | null> {
+): Promise<ExtractionResult | null> {
   const mime = guessContentType(filename, contentType);
 
   if (mime === "text/plain" || filename.toLowerCase().endsWith(".txt")) {
-    return extractPlainText(buffer);
+    return { text: await extractPlainText(buffer), ocr_confidence: null, source: "text" };
   }
 
   if (TIKA_TYPES.has(mime) || mime === "application/octet-stream") {
     const fromServer = await extractViaTikaServer(buffer, mime);
-    if (fromServer !== null && fromServer.trim().length > 0) return fromServer;
+    if (fromServer !== null && fromServer.trim().length > 0) {
+      return { text: fromServer, ocr_confidence: null, source: "tika" };
+    }
 
     const fromJar = await extractViaTikaJar(buffer, filename);
-    if (fromJar !== null && fromJar.trim().length > 0) return fromJar;
+    if (fromJar !== null && fromJar.trim().length > 0) {
+      return { text: fromJar, ocr_confidence: null, source: "tika" };
+    }
   }
 
   if (IMAGE_TYPES.has(mime) || /\.(png|jpe?g|gif|webp|tiff?|bmp)$/i.test(filename)) {
     const fromOcr = await extractViaTesseract(buffer);
-    if (fromOcr !== null && fromOcr.trim().length > 0) return fromOcr;
+    if (fromOcr !== null && fromOcr.text.trim().length > 0) return fromOcr;
 
     const fromTika = await extractViaTikaServer(buffer, mime);
-    if (fromTika !== null && fromTika.trim().length > 0) return fromTika;
+    if (fromTika !== null && fromTika.trim().length > 0) {
+      return { text: fromTika, ocr_confidence: null, source: "tika" };
+    }
   }
 
   if (mime.startsWith("text/")) {
-    return extractPlainText(buffer);
+    return { text: await extractPlainText(buffer), ocr_confidence: null, source: "text" };
   }
 
   const lastResort = await extractViaTikaServer(buffer, mime);
-  if (lastResort !== null && lastResort.trim().length > 0) return lastResort;
+  if (lastResort !== null && lastResort.trim().length > 0) {
+    return { text: lastResort, ocr_confidence: null, source: "tika" };
+  }
 
   return null;
 }
@@ -168,17 +194,17 @@ export async function extractText(file: File): Promise<string> {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const text = await extractFromBuffer(
+    const result = await extractFromBuffer(
       buffer,
       file.type || "",
       file.name || "upload",
     );
 
-    if (text === null || text.trim().length === 0) {
+    if (result === null || result.text.trim().length === 0) {
       return EXTRACTION_FAILED;
     }
 
-    return text;
+    return result.text;
   } catch {
     return EXTRACTION_FAILED;
   }
@@ -195,12 +221,24 @@ export async function extractTextFromBuffer(
   }
 
   try {
-    const text = await extractFromBuffer(buffer, contentType, filename);
-    if (text === null || text.trim().length === 0) {
+    const result = await extractFromBuffer(buffer, contentType, filename);
+    if (result === null || result.text.trim().length === 0) {
       return EXTRACTION_FAILED;
     }
-    return text;
+    return result.text;
   } catch {
     return EXTRACTION_FAILED;
   }
+}
+
+export async function extractTextWithMetadataFromBuffer(
+  buffer: Buffer,
+  contentType: string,
+  filename: string,
+): Promise<ExtractionResult> {
+  const result = await extractFromBuffer(buffer, contentType, filename);
+  if (result === null || result.text.trim().length === 0) {
+    return { text: EXTRACTION_FAILED, ocr_confidence: null, source: "tika" };
+  }
+  return result;
 }

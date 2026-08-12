@@ -34,6 +34,14 @@ export type AttachedDocument = {
   status: "pending" | "ready" | "failed";
   /** Human-readable note when extraction failed. */
   errorNote?: string;
+  /** Optional preview of extracted text for quick UI display. */
+  extractedTextPreview?: string;
+  /** Number of characters extracted. */
+  extractedCharCount?: number;
+  /** OCR confidence if available (0-1) or null when unknown. */
+  ocrConfidence?: number | null;
+  /** Extraction source for diagnostics: ocr, tika, or text. */
+  extractionSource?: string;
   /** Input Entry Contract method — attribution only; never changes reasoning. */
   entryMethod?: import("@/lib/input-entry-contract").InputEntryMethod;
   /** Original File reference for retry without re-picking the file. */

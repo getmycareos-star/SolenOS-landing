@@ -58,6 +58,7 @@ function parseClaimsFromOutput(
   runId: string,
   evidenceId: string,
   rawInputId: string,
+  originalText: string,
 ): ExtractedClaim[] {
   const jsonMatch = output.match(/\{[\s\S]*\}/);
   if (!jsonMatch) return [];
@@ -82,8 +83,8 @@ function parseClaimsFromOutput(
       created_at: new Date().toISOString(),
     };
 
-    const verified = verifySourcePointer(rawClaim);
-    const enforced = enforceSourcePointer(rawClaim);
+    const verified = verifySourcePointer(rawClaim, originalText);
+    const enforced = enforceSourcePointer(rawClaim, originalText);
 
     claims.push({
       ...enforced,
@@ -116,7 +117,7 @@ export async function runSingleExtraction(
       };
     }
 
-    const claims = parseClaimsFromOutput(output, runId, evidenceId, rawInputId);
+    const claims = parseClaimsFromOutput(output, runId, evidenceId, rawInputId, input.raw_text);
 
     return {
       run_id: runId,

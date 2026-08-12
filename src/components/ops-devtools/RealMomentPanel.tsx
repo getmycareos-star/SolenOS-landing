@@ -59,13 +59,23 @@ async function extractDocument(file: File): Promise<AttachedDocument> {
     const res = await fetch(apiUrl("/api/extract"), { method: "POST", body: form });
     const data = (await res.json()) as {
       ok?: boolean;
-      text?: string;
+      document?: {
+        id: string;
+        name: string;
+        mime_type: string | null;
+        extracted_text: string;
+        extracted_text_preview: string;
+        extracted_char_count: number;
+        ocr_confidence?: number | null;
+        extraction_source?: string;
+      };
       note?: string;
       message?: string;
       error?: string;
     };
+    const doc = data.document;
 
-    if (!res.ok || !data.ok || !data.text?.trim()) {
+    if (!res.ok || !data.ok || !doc?.extracted_text?.trim()) {
       return {
         ...base,
         status: "failed",
@@ -77,7 +87,18 @@ async function extractDocument(file: File): Promise<AttachedDocument> {
       };
     }
 
-    return { ...base, extractedText: data.text.trim(), status: "ready" };
+    return {
+      ...base,
+      id: doc.id,
+      name: doc.name,
+      mimeType: doc.mime_type ?? base.mimeType,
+      extractedText: doc.extracted_text.trim(),
+      extractedTextPreview: doc.extracted_text_preview,
+      extractedCharCount: doc.extracted_char_count,
+      status: "ready",
+      ocrConfidence: doc.ocr_confidence ?? null,
+      extractionSource: doc.extraction_source,
+    };
   } catch {
     return {
       ...base,

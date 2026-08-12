@@ -53,7 +53,16 @@ export async function extractAttachedDocument(
     }
     let data: {
       ok?: boolean;
-      text?: string;
+      document?: {
+        id: string;
+        name: string;
+        mime_type: string | null;
+        extracted_text: string;
+        extracted_text_preview: string;
+        extracted_char_count: number;
+        ocr_confidence?: number | null;
+        extraction_source?: string;
+      };
       note?: string;
       message?: string;
       error?: string;
@@ -64,7 +73,8 @@ export async function extractAttachedDocument(
       // Non-JSON response — treat as extraction failure with a human message below.
     }
 
-    if (!res.ok || !data.ok || !data.text?.trim()) {
+    const doc = data.document;
+    if (!res.ok || !data.ok || !doc?.extracted_text?.trim()) {
       const isImage = file.type.startsWith("image/");
       return {
         ...base,
@@ -80,7 +90,17 @@ export async function extractAttachedDocument(
       };
     }
 
-    return { ...base, extractedText: data.text.trim(), status: "ready" };
+    return {
+      ...base,
+      id: doc.id,
+      name: doc.name,
+      mimeType: doc.mime_type ?? base.mimeType,
+      extractedText: doc.extracted_text.trim(),
+      extractedTextPreview: doc.extracted_text_preview,
+      extractedCharCount: doc.extracted_char_count,
+      status: "ready",
+      ocrConfidence: doc.ocr_confidence ?? null,
+    };
   } catch (e) {
     const aborted = e instanceof DOMException && e.name === "AbortError";
     return {

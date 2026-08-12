@@ -185,7 +185,7 @@ async function runUnitTests(): Promise<void> {
   // Test 10: No source pointer
   console.log("\nTest 10 — No source pointer");
   const claimNoPointer = makeClaim({ source_span: null, confidence_tag: "confirmed" });
-  const enforced = enforceSourcePointer(claimNoPointer);
+  const enforced = enforceSourcePointer(claimNoPointer, "anything");
   assert(enforced.confidence_tag === "unknown", "Null source pointer downgrades confirmed to unknown");
 
   // Test 11: Invalid source pointer
@@ -194,10 +194,71 @@ async function runUnitTests(): Promise<void> {
     source_span: { start_offset: 10, end_offset: 5, text: "bad" },
     confidence_tag: "confirmed",
   });
-  const verified = verifySourcePointer(claimBadPointer);
+  const verified = verifySourcePointer(claimBadPointer, "bad");
   assert(verified === false, "Invalid source pointer fails verification");
-  const enforcedBad = enforceSourcePointer(claimBadPointer);
+  const enforcedBad = enforceSourcePointer(claimBadPointer, "bad");
   assert(enforcedBad.confidence_tag === "unknown", "Invalid source pointer downgrades to unknown");
+  assert(enforcedBad.source_span === null, "Invalid source span nulled after enforcement");
+
+  // Test 11b: Mismatched source pointer text (text doesn't match original at offsets)
+  console.log("\nTest 11b — Mismatched source pointer text");
+  const claimMismatchedText = makeClaim({
+    claim_text: "She fell down",
+    entity_type: "symptom",
+    event_type: "fall_observed",
+    confidence_tag: "confirmed",
+    source_span: { start_offset: 0, end_offset: 11, text: "completely unrelated text" },
+  });
+  const originalText11b = "She fell down";
+  const verifiedMismatched = verifySourcePointer(claimMismatchedText, originalText11b);
+  assert(verifiedMismatched === false, "Mismatched source text fails verification");
+  const enforcedMismatched = enforceSourcePointer(claimMismatchedText, originalText11b);
+  assert(enforcedMismatched.confidence_tag === "unknown", "Mismatched text downgrades to unknown");
+  assert(enforcedMismatched.source_span === null, "Mismatched source span nulled after enforcement");
+
+  // Test 11c: Valid source pointer text (exact match)
+  console.log("\nTest 11c — Valid exact source pointer");
+  const claimValidSpan = makeClaim({
+    claim_text: "She fell",
+    entity_type: "symptom",
+    event_type: "fall_observed",
+    confidence_tag: "reported",
+    source_span: { start_offset: 0, end_offset: 8, text: "She fell" },
+  });
+  const originalText11c = "She fell";
+  const verifiedValid = verifySourcePointer(claimValidSpan, originalText11c);
+  assert(verifiedValid === true, "Exact source pointer passes verification");
+  const enforcedValid = enforceSourcePointer(claimValidSpan, originalText11c);
+  assert(enforcedValid.confidence_tag === "reported", "Valid source pointer preserves reported confidence");
+  assert(enforcedValid.source_span !== null, "Valid source span preserved after enforcement");
+
+  // Test 11d: Partial offset match (offset into a larger original text)
+  console.log("\nTest 11d — Source pointer with correct offsets into larger text");
+  const claimPartial = makeClaim({
+    claim_text: "yesterday",
+    entity_type: "symptom",
+    event_type: "timing",
+    confidence_tag: "confirmed",
+    source_span: { start_offset: 14, end_offset: 23, text: "yesterday" },
+  });
+  const originalText11d = "She fell down yesterday morning";
+  const verifiedPartial = verifySourcePointer(claimPartial, originalText11d);
+  assert(verifiedPartial === true, "Correct offset into larger text passes verification");
+
+  // Test 11e: Wrong offset into larger text
+  console.log("\nTest 11e — Wrong offset into larger text");
+  const claimWrongOffset = makeClaim({
+    claim_text: "yesterday",
+    entity_type: "symptom",
+    event_type: "timing",
+    confidence_tag: "confirmed",
+    source_span: { start_offset: 14, end_offset: 23, text: "morning yest" },
+  });
+  const originalText11e = "She fell down yesterday morning";
+  const verifiedWrong = verifySourcePointer(claimWrongOffset, originalText11e);
+  assert(verifiedWrong === false, "Wrong offset text fails verification");
+  const enforcedWrong = enforceSourcePointer(claimWrongOffset, originalText11e);
+  assert(enforcedWrong.confidence_tag === "unknown", "Wrong offset downgrades confirmed to unknown");
 
   // Test 12: Duplicate matching prevention
   console.log("\nTest 12 — Duplicate matching prevention");

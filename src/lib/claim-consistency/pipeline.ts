@@ -7,6 +7,7 @@ import type {
 import { runParallelExtractions } from "./extraction-runner";
 import { reconcileExtractionRuns } from "./reconciliation";
 import { getConsistencyLogger } from "./logging";
+import { getRawEvidenceStore } from "../raw-evidence";
 
 export async function runConsistencyGate(
   input: ConsistencyGateInput,
@@ -17,6 +18,24 @@ export async function runConsistencyGate(
 
   logger.info("starting consistency gate", { evidence_id: evidenceId });
 
+  // Spec §3: SAVE RAW EVIDENCE → CONFIRM PERSISTENCE → START EXTRACTION
+  // Raw evidence must be persisted BEFORE any AI extraction begins.
+  const evidenceStore = getRawEvidenceStore();
+  const { evidence: savedEvidence } = await evidenceStore.save({
+    id: evidenceId,
+    caregiver_id: input.caregiver_id,
+    input_type: "text",
+    content: input.raw_text,
+    captured_at: input.timestamp,
+    metadata: { raw_input_id: input.raw_input_id },
+  });
+
+  logger.info("raw evidence persisted", {
+    evidence_id: evidenceId,
+    persisted: !!savedEvidence,
+  });
+
+  // Extraction only begins AFTER raw evidence is confirmed persisted.
   const { runA, runB } = await runParallelExtractions(input, signal);
 
   logger.logExtractionRun(runA.run_id, runA.success, runA.claims.length, runA.error);
