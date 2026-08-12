@@ -86,3 +86,14 @@ export function buildEvidencedConclusion(input: {
     },
   };
 }
+
+// Export builder functions
+export { 
+  buildEvidenceForPriority,
+  buildEvidenceForUncertainty,
+  collectEvidenceFromInterpretation,
+  ratifyPriorityWithEvidence,
+  buildTransparencyAuditTrail,
+  type EvidenceContext,
+  type EvidenceTraceContext,
+} from "./evidence-builder";
