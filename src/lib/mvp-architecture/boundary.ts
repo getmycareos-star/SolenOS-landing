@@ -17,13 +17,15 @@ export const CAREGIVER_MVP_API_ROUTES = ["/api/situation"] as const;
  * Legacy analyze-surface allowlist used by verify-mvp-architecture (ops compression path).
  * Not the caregiver product entry.
  */
-export const MVP_ALLOWED_API_ROUTES = ["/api/analyze", "/api/feedback"] as const;
+export const MVP_ALLOWED_API_ROUTES = ["/api/extract", "/api/share-intake", "/api/situation"] as const;
 
 export const MVP_ALLOWED_FRONTEND_PAGES = ["src/app/page.tsx"] as const;
 
 export const MVP_ALLOWED_FRONTEND_SHELL = [
   "src/app/layout.tsx",
   "src/app/globals.css",
+  "src/app/icon.tsx",
+  "src/app/opengraph-image.tsx",
 ] as const;
 
 export const MVP_LLM = "gemini-1.5-pro" as const;

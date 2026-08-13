@@ -157,17 +157,17 @@ export function composeRecognitionLine(params: {
     return "A lot is unsettled at once. What follows organizes what is already clear from what you shared.";
   }
   if (params.isCompeting) {
-    return "More than one care concern is present at once — held so nothing has to be carried only in memory.";
+    return "More than one care concern is present at once — kept so nothing has to be carried only in memory.";
   }
   if (params.hasCaregiverLoad) {
-    return "The weight of keeping this straight is part of the care reality — held with the situation, not set aside.";
+    return "The weight of keeping this straight is part of the care reality — kept with this, not set aside.";
   }
   const focus = params.heldFocus?.trim() ?? "";
   // New Care Reality: never paste a capture facet into "What stands out" — that reads as note echo.
   if (params.isNewCareReality) {
     return who
-      ? `Several care concerns about ${who} are held from what you shared — organized so they stay connected.`
-      : "Several care concerns are held from what you shared — organized so they stay connected.";
+      ? `Several care concerns about ${who} are gathered from what you shared — organized so they stay connected.`
+      : "Several care concerns are gathered from what you shared — organized so they stay connected.";
   }
   if (focus && !looksLikeRawNoteDump(focus, params.latestRawText)) {
     const short = focus.replace(/\.$/, "");

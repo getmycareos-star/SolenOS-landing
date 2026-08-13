@@ -505,7 +505,6 @@ export function buildLivingCareRecordResponse(params: {
     observation_count: careRealityObservations(turn.situation).length,
     expandable: (() => {
       const maturity = composed.evidence_maturity;
-      // Evidence Visibility: reveal by consequence, not data volume.
       const evidenceCap =
         maturity <= 1
           ? 0
@@ -569,6 +568,31 @@ export function buildLivingCareRecordResponse(params: {
     evidence_maturity: composed.evidence_maturity,
     follow_up_items: composed.follow_up_items,
     mental_load_signal: composed.mental_load_signal,
+    trajectory: (() => {
+      const soc = response.state_of_care_summary_layer?.summary;
+      if (!soc?.sections?.what_is_happening_now?.length) return null;
+      const changed = soc.sections.what_changed_recently.join(" ").toLowerCase();
+      const stable = soc.sections.what_is_stable.join(" ").toLowerCase();
+      const needsAttention = soc.sections.what_needs_attention.join(" ").toLowerCase();
+      if (/worsening|worse|declin|new symptom|fell/.test(changed) && !/improving|better/.test(changed)) {
+        return "deteriorating";
+      }
+      if (/improving|better|recovering|stable/.test(changed) && !/worsening|worse/.test(changed)) {
+        return "improving";
+      }
+      if (stable.length > 0 && needsAttention.length === 0) {
+        return "stable";
+      }
+      return "insufficient_data";
+    })(),
+    contradictions: response.contradiction_detection_layer?.open_contradictions
+      .slice(0, 2)
+      .map((c) => c.shared_message)
+      .filter(Boolean) ?? [],
+    baseline_summary: response.baseline_intelligence_layer?.baseline_facts
+      .slice(0, 2)
+      .map((f) => f.label)
+      .join("; ") ?? null,
   };
 }
 

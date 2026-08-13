@@ -160,19 +160,3 @@ export function projectPresentation(
   }
 
   // standard (default)
-  return {
-    mode: "standard",
-    sections: {
-      what_changed: truth.what_changed.slice(0, 4),
-      what_matters_now: truth.what_is_happening.slice(0, 3),
-      what_is_unknown: highUnknowns.slice(0, 3).map((u) => u.missing_information),
-      next_considerations: truth.what_needs_attention.slice(0, 3),
-      reasoning_summary: truth.inferred.slice(0, 2),
-    },
-    invariants: {
-      single_care_context: true,
-      presentation_only: true,
-      does_not_mutate_truth: true,
-    },
-  };
-}

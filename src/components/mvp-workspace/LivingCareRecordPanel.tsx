@@ -151,7 +151,37 @@ export function LivingCareRecordPanel({
                 <dd>{view.what_may_become_serious}</dd>
               </div>
             )}
+            {view.trajectory && (
+              <div>
+                <dt>Current direction</dt>
+                <dd>{view.trajectory}</dd>
+              </div>
+            )}
           </dl>
+        </section>
+      )}
+
+      {view.baseline_summary && (
+        <section className="care-card-baseline" aria-labelledby="lcr-baseline-heading">
+          <h3 id="lcr-baseline-heading" className="section-kicker">
+            What is usual
+          </h3>
+          <p className="panel-muted">Established baseline from prior observations.</p>
+          <p>{view.baseline_summary}</p>
+        </section>
+      )}
+
+      {view.contradictions.length > 0 && (
+        <section className="care-card-contradictions" aria-labelledby="lcr-conflict-heading">
+          <h3 id="lcr-conflict-heading" className="section-kicker">
+            Conflicting reports
+          </h3>
+          <p className="panel-muted">Both records are preserved — not resolved.</p>
+          <ul>
+            {view.contradictions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </section>
       )}
 

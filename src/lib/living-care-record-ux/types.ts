@@ -77,4 +77,10 @@ export type LivingCareRecordResponseView = {
   follow_up_items: string[];
   /** Caregiver mental load signal — brief, non-judgmental. */
   mental_load_signal: string | null;
+  /** Care trajectory from structured state — improving / stable / deteriorating / insufficient_data. */
+  trajectory: string | null;
+  /** Open contradictions preserved in structured state — never silently resolved. */
+  contradictions: string[];
+  /** Baseline facts from structured state — what is usual for this person. */
+  baseline_summary: string | null;
 };

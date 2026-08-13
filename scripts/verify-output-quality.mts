@@ -131,7 +131,7 @@ console.log("✓ internal language bans");
     topUnknown: null,
     decisionWhyUnknown: false,
   });
-  assert.ok(clean.some((i) => /Notice whether “Morning confusion”/i.test(i)));
+  assert.ok(clean.some((i) => /Notice whether "Morning confusion"/i.test(i)));
 
   const rawFocus = composeReliefFollowUps({
     heldFocus:
@@ -151,7 +151,7 @@ console.log("✓ internal language bans");
   );
   assert.ok(
     containsRawNoteEchoInCopy({
-      blob: 'Notice whether “mom wasnt feeling good and I took her to the doctor” continues',
+      blob: 'Notice whether "mom wasnt feeling good and I took her to the doctor" continues',
       latestRawText:
         "Mom wasnt feeling good and I took her to the doctor she refused to eat nor sleep after.",
     }),
@@ -317,7 +317,7 @@ console.log("✓ internal language bans");
     path.join(root, "src/components/mvp-workspace/LivingCareRecordPanel.tsx"),
     "utf8",
   );
-  assert.ok(panel.includes("How this connects"));
+  assert.ok(panel.includes("What may matter"));
   const mod = fs.readFileSync(path.join(root, "src/lib/output-quality/index.ts"), "utf8");
   assert.ok(!/\bJennifer\b/.test(mod));
   console.log("✓ SoT + rule + panel connection + no hardcoding");

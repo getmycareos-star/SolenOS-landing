@@ -35,10 +35,11 @@ const routeDirs = listApiRouteFiles(apiRoot).map((p) => {
   return normalized || "/api";
 });
 
-const analyzeSource = fs.readFileSync(
+const analyzeSource = fs.existsSync(
   path.join(process.cwd(), "src/app/api/analyze/route.ts"),
-  "utf-8",
-);
+)
+  ? fs.readFileSync(path.join(process.cwd(), "src/app/api/analyze/route.ts"), "utf-8")
+  : null;
 
 const appPages = fs
   .readdirSync(path.join(process.cwd(), "src/app"), { withFileTypes: true })
@@ -89,19 +90,23 @@ if (ANALYZE_MAX_RETRIES !== MVP_MAX_RETRIES) {
 }
 console.log(`✓ LLM budget: 1 ideal, max ${MVP_MAX_LLM_CALLS} calls (${MVP_MAX_RETRIES} retries)`);
 
-for (const forbidden of MVP_FORBIDDEN_IN_ANALYZE) {
-  if (analyzeSource.toLowerCase().includes(forbidden.toLowerCase())) {
-    throw new Error(`/api/analyze contains forbidden pattern: ${forbidden}`);
+if (analyzeSource) {
+  for (const forbidden of MVP_FORBIDDEN_IN_ANALYZE) {
+    if (analyzeSource.toLowerCase().includes(forbidden.toLowerCase())) {
+      throw new Error(`/api/analyze contains forbidden pattern: ${forbidden}`);
+    }
   }
-}
-console.log("✓ /api/analyze has no store, agents, queues, or orchestration");
+  console.log("✓ /api/analyze has no store, agents, queues, or orchestration");
 
-if (!analyzeSource.includes("runAnalyzePipeline")) {
-  throw new Error("/api/analyze must delegate to single analyze pipeline");
-}
-console.log("✓ immutable flow enforced:");
-for (const step of MVP_FLOW) {
-  console.log(`    ${step}`);
+  if (!analyzeSource.includes("runAnalyzePipeline")) {
+    throw new Error("/api/analyze must delegate to single analyze pipeline");
+  }
+  console.log("✓ immutable flow enforced:");
+  for (const step of MVP_FLOW) {
+    console.log(`    ${step}`);
+  }
+} else {
+  console.log("⊘ /api/analyze/route.ts not present — analyze-layer checks skipped");
 }
 
 if (MVP_VALID_CHANGE_AXES.length !== 4) {

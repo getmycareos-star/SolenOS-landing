@@ -22,7 +22,6 @@ type CompileSource = Omit<SituationResponse, "final_output">;
 
 function buildWhatIsHappening(response: CompileSource): string {
   const caregiverWords = resolveCaregiverWords(response.events_created);
-  // First situation: caregiver words win — never bury them under engine phrasing.
   if (response.is_first_situation && caregiverWords) {
     return caregiverWords.slice(0, 240);
   }
@@ -65,7 +64,24 @@ function buildWhatIsHappening(response: CompileSource): string {
       ? `${body} · Current status: ${memorySummary.slice(0, 2).join("; ")}`
       : body;
 
-  return continuityPrefix ? `${continuityPrefix} ${withSummary}` : withSummary;
+  const happening = continuityPrefix ? `${continuityPrefix} ${withSummary}` : withSummary;
+
+  const socFallback = response.state_of_care_summary_layer?.summary?.sections
+    .what_is_happening_now?.join(" · ");
+  if (socFallback && happening.trim().length < 20) {
+    return socFallback;
+  }
+
+  const contradictions = response.contradiction_detection_layer?.open_contradictions ?? [];
+  if (contradictions.length > 0) {
+    const conflictNote = contradictions
+      .slice(0, 2)
+      .map((c) => c.shared_message)
+      .join("; ");
+    return `${happening} · Note: ${conflictNote}`;
+  }
+
+  return happening;
 }
 
 function isWeakPriorityLine(text: string): boolean {
@@ -84,12 +100,9 @@ function caregiverSnippetFromEvents(response: CompileSource): string | null {
 }
 
 function buildWhatMattersNow(response: CompileSource): string {
-  // Prefer ACS / held caregiver words — never keyword Clarity templates (eat→fluids, fall→safety).
-  if (response.is_first_situation) {
-    const snippet = caregiverSnippetFromEvents(response);
-    if (snippet) {
-      return snippet.slice(0, 160);
-    }
+  const socMatters = response.state_of_care_summary_layer?.summary?.what_matters_most;
+  if (socMatters && response.is_first_situation) {
+    return socMatters.slice(0, 160);
   }
 
   const momentKnown = response.moment_of_need_layer?.sections.what_we_know[0];
@@ -108,7 +121,6 @@ function buildWhatMattersNow(response: CompileSource): string {
       (f) => f.label.length > 0,
     );
     if (record) {
-      // Never emit confidence % in caregiver-facing strings.
       return record.label.slice(0, 160);
     }
   }
@@ -140,10 +152,20 @@ function buildWhatMattersNow(response: CompileSource): string {
     return snippet.slice(0, 160);
   }
 
+  if (socMatters) {
+    return socMatters.slice(0, 160);
+  }
+
   return "No immediate priority identified — continue building continuity.";
 }
 
 function buildWhatToAskNext(response: CompileSource): string {
+  const socAsk = response.state_of_care_summary_layer?.summary?.sections
+    .what_should_happen_next?.join(" ");
+  if (socAsk && socAsk.trim().length > 0) {
+    return socAsk.slice(0, 200);
+  }
+
   const momentQuestions =
     response.moment_of_need_layer?.sections.questions_worth_tracking.slice(0, MAX_HIGH_IMPACT_QUESTIONS) ??
     [];
@@ -178,9 +200,13 @@ function buildWhatCanWait(response: CompileSource): string {
     .filter((d) => !response.what_is_uncertain.some((u) => u.includes(d)))
     .map((d) => d.replace(/_/g, " "));
 
+  const socStable = response.state_of_care_summary_layer?.summary?.sections
+    .what_is_stable?.join(" · ");
+
   const parts: string[] = [];
   if (hidden > 0) parts.push(`${hidden} lower-priority event(s) can wait`);
   if (tracked.length > 0) parts.push(`Monitoring: ${tracked.join(", ")}`);
+  if (socStable) parts.push(`Stable: ${socStable.slice(0, 120)}`);
   if (parts.length === 0) {
     return "Non-urgent continuity signals will emerge as more context is added.";
   }
@@ -243,6 +269,16 @@ function buildDecisionTrace(response: CompileSource): FinalOutputContract["decis
     ...(response.north_star_experience_layer?.decision_trace ?? []),
   ];
 
+  const baselineFacts =
+    response.baseline_intelligence_layer?.baseline_facts
+      .map((f) => `Baseline: ${f.label}`)
+      .slice(0, 3) ?? [];
+
+  const contradictions =
+    response.contradiction_detection_layer?.open_contradictions
+      .map((c) => `Contradiction: ${c.shared_message}`)
+      .slice(0, 2) ?? [];
+
   const unknowns = [
     ...response.what_is_uncertain,
     ...(response.failure_resilience_layer?.failures.flatMap((f) => f.not_understood) ?? []),
@@ -262,7 +298,12 @@ function buildDecisionTrace(response: CompileSource): FinalOutputContract["decis
     evidence_sources.push("uploaded document");
   }
 
-  return { events, assumptions, unknowns, evidence_sources };
+  return {
+    events: [...new Set([...events, ...baselineFacts])].slice(0, 10),
+    assumptions: [...new Set(assumptions)].slice(0, 6),
+    unknowns: [...new Set([...unknowns, ...contradictions])].slice(0, 8),
+    evidence_sources: [...new Set(evidence_sources)].slice(0, 8),
+  };
 }
 
 function buildConfidenceState(response: CompileSource): FinalOutputContract["confidence_state"] {
