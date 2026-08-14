@@ -61,4 +61,11 @@ export type ProgressiveUnderstandingResult = {
   pattern_label: string | null;
   what_can_wait: string | null;
   what_may_become_serious: string | null;
+  compound_signal: string | null;
+  trajectory_by_domain: Record<string, "worsening" | "improving" | "stable" | "unknown">;
+  cross_signal_correlations: Array<{
+    signal_a: string;
+    signal_b: string;
+    correlation: "correlated" | "inverse" | "independent" | "unknown";
+  }>;
 };

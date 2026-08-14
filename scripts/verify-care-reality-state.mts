@@ -230,9 +230,9 @@ const panel = fs.readFileSync(
   path.join(process.cwd(), "src/components/mvp-workspace/LivingCareRecordPanel.tsx"),
   "utf8",
 );
-assert(panel.includes("What matters now"), "panel shows what matters");
+assert(panel.includes("What to watch"), "panel shows what to watch");
 assert(panel.includes("What can wait"), "panel shows what can wait");
-assert(panel.includes("What may become serious"), "panel shows may become serious");
+assert(panel.includes("May need attention later"), "panel shows may need attention later");
 assert(
   panel.includes("What to ask next") ||
     panel.includes("One thing that would help") ||

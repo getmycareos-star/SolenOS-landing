@@ -83,4 +83,17 @@ export type LivingCareRecordResponseView = {
   contradictions: string[];
   /** Baseline facts from structured state — what is usual for this person. */
   baseline_summary: string | null;
+  compound_signal: string | null;
+  trajectory_by_domain: Record<string, "worsening" | "improving" | "stable" | "unknown">;
+  cross_signal_correlations: Array<{
+    signal_a: string;
+    signal_b: string;
+    correlation: "correlated" | "inverse" | "independent" | "unknown";
+  }>;
+  change_classifications: Array<{
+    domain: string;
+    classification: string;
+    confidence: string;
+    trajectory: string;
+  }>;
 };

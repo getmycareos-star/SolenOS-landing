@@ -860,10 +860,10 @@ export function composeCaregiverResponse(params: {
     if (improvement && turn.pattern_label !== "day-to-day fluctuation") {
       what_changed =
         "The latest update changes what we understand. Earlier understanding stays in the care record.";
-      } else if (continuitySymptom) {
+    } else if (continuitySymptom) {
       what_changed =
         "Oriented from held care reality — preparation for your next conversation, not advice.";
-      } else {
+    } else {
       what_changed = scrub(turn.what_changed_in_understanding);
       if (
         what_changed &&
@@ -876,6 +876,10 @@ export function composeCaregiverResponse(params: {
         what_changed = null;
       }
     }
+  }
+
+  if (turn.compound_signal && !what_changed && !gatheringContext) {
+    what_changed = scrub(turn.compound_signal);
   }
 
   // Prefer Care Reality Situation Model (baseline→change) over weak echo / storage theater.
@@ -1293,6 +1297,19 @@ export function composeCaregiverResponse(params: {
       });
       if (profileMatters && (!what_matters_now || containsWeakOrientation(what_matters_now) || /how (?:this|these concerns) sit/i.test(what_matters_now))) {
         what_matters_now = profileMatters;
+      }
+    }
+
+    // Trajectory-aware what_matters_now: if domains are worsening, surface that focus.
+    if (show_clarity && what_matters_now && turn.trajectory_by_domain) {
+      const worseningDomains = Object.entries(turn.trajectory_by_domain)
+        .filter(([, t]) => t === "worsening")
+        .map(([d]) => d.replace(/_/g, " "));
+      if (worseningDomains.length > 0 && !/worsening|declin|getting worse/i.test(what_matters_now)) {
+        const trajectoryNote = `${worseningDomains[0]?.replace(/_/g, " ")} changes are showing a concerning pattern`;
+        if (!what_matters_now.includes(trajectoryNote)) {
+          what_matters_now = `${trajectoryNote}. ${what_matters_now}`;
+        }
       }
     }
   }

@@ -18,14 +18,14 @@ export const BASELINE_DOMAINS = [
 ] as const;
 
 export const BASELINE_PATTERNS: { domain: (typeof BASELINE_DOMAINS)[number]; pattern: RegExp }[] = [
-  { domain: "routine", pattern: /\b(routine|morning|evening|daily|habit|usually|normally)\b/i },
-  { domain: "communication", pattern: /\b(ask(?:ing|s)?|repeat(?:ing|s)?|question|talk|conversation|confus)\b/i },
-  { domain: "sleep", pattern: /\b(sleep|nap|night|insomnia|restless|awake)\b/i },
-  { domain: "appetite", pattern: /\b(appetite|eat(?:ing|s)?|meal|breakfast|lunch|dinner|refus(?:ed|es)?)\b/i },
-  { domain: "mobility", pattern: /\b(walk(?:ing|s)?|mobility|fall|unsteady|wheelchair|transfer)\b/i },
-  { domain: "mood", pattern: /\b(upset|agitat(?:ed|ion)?|anxious|calm|mood|irritable|happy)\b/i },
-  { domain: "medication_adherence", pattern: /\b(medication|med|pill|dose|refus(?:ed|es)?|took|taken)\b/i },
-  { domain: "social", pattern: /\b(visit|visitor|family|friend|lonely|withdrawn|social)\b/i },
+  { domain: "routine", pattern: /\b(routine|morning|evening|daily|habit|usually|normally|schedule|pattern)\b/i },
+  { domain: "communication", pattern: /\b(ask(?:ing|s)?|repeat(?:ing|s)?|question|talk|conversation|confus(?:ed|ion)?|word|name)\b/i },
+  { domain: "sleep", pattern: /\b(sleep|nap|night|insomnia|restless|awake|tired|exhausted|woke up|up all night)\b/i },
+  { domain: "appetite", pattern: /\b(appetite|eat(?:ing|s)?|meal|breakfast|lunch|dinner|refus(?:ed|es)?|hungry|not eating|skipped meal)\b/i },
+  { domain: "mobility", pattern: /\b(walk(?:ing|s)?|mobility|fall|unsteady|wheelchair|transfer|balance|fell|got up|moving around)\b/i },
+  { domain: "mood", pattern: /\b(upset|agitat(?:ed|ion)?|anxious|calm|mood|irritable|happy|sad|frustrated|angry|crying|tears|emotional)\b/i },
+  { domain: "medication_adherence", pattern: /\b(medication|med|pill|dose|refus(?:ed|es)?|took|taken|missed|forgot|adherence|refused|giving medication)\b/i },
+  { domain: "social", pattern: /\b(visit|visitor|family|friend|lonely|withdrawn|social|alone|isolated|talking to|calling)\b/i },
 ];
 
 export const BASELINE_INTELLIGENCE_RULES = [

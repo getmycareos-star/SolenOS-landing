@@ -384,6 +384,21 @@ export function updateCareRealityState(
         ? [...new Set([...(prior!.continuity_hooks ?? []), ...(turn.continuity_hooks ?? [])])]
         : turn.continuity_hooks ?? [],
     understanding_revisions: crsRevisions,
+    care_domain_trajectories: turn.trajectory_by_domain ?? prior?.care_domain_trajectories ?? {},
+    compound_signals: turn.compound_signal ? [turn.compound_signal] : prior?.compound_signals ?? [],
+    change_classifications: (() => {
+      const priorClass = preserveContinuity ? [...(prior?.change_classifications ?? [])] : [];
+      const fromTurn = turn.what_changed_in_understanding
+        ? turn.what_changed_in_understanding
+            .split(/[:\-]/)[0]?.trim()
+            .toUpperCase()
+        : null;
+      const valid = ["NEW", "WORSENED", "IMPROVED", "RECURRING", "PERSISTENT", "RESOLVED", "UNCERTAIN", "CONFLICTING", "STABLE"];
+      if (fromTurn && valid.includes(fromTurn) && !priorClass.includes(fromTurn)) {
+        return [...priorClass, fromTurn];
+      }
+      return priorClass;
+    })(),
   };
 
   crsCache().set(state.care_recipient_id ?? state.caregiver_id, state);

@@ -291,6 +291,8 @@ function turnFromProgressive(
       pattern_label: progressive.pattern_label,
       what_can_wait: progressive.what_can_wait,
       what_may_become_serious: progressive.what_may_become_serious,
+      compound_signal: progressive.compound_signal,
+      trajectory_by_domain: progressive.trajectory_by_domain,
     },
     crs,
   );

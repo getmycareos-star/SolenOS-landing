@@ -204,8 +204,9 @@ const panel = fs.readFileSync(
   path.join(process.cwd(), "src/components/mvp-workspace/LivingCareRecordPanel.tsx"),
   "utf8",
 );
-assert(panel.includes("What matters now"), "LCR panel shows clarity pillar");
+assert(panel.includes("What to watch"), "LCR panel shows clarity pillar");
 assert(panel.includes("What can wait"), "LCR panel shows what can wait");
+assert(panel.includes("May need attention later"), "LCR panel shows may need attention later");
 assert(panel.includes("what_matters_now"), "panel binds matters field");
 console.log("✓ caregiver panel surfaces clarity pillars");
 

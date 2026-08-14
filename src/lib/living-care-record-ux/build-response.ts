@@ -593,6 +593,15 @@ export function buildLivingCareRecordResponse(params: {
       .slice(0, 2)
       .map((f) => f.label)
       .join("; ") ?? null,
+    compound_signal: turn.compound_signal ?? null,
+    trajectory_by_domain: turn.trajectory_by_domain ?? {},
+    cross_signal_correlations: turn.situation.cross_signal_correlations ?? [],
+    change_classifications: response.care_state_change_report?.all_changes.slice(0, 5).map((c) => ({
+      domain: c.domain,
+      classification: c.classification,
+      confidence: c.confidence,
+      trajectory: c.trajectory,
+    })) ?? [],
   };
 }
 

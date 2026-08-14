@@ -141,3 +141,91 @@ export function patternLabelFor(
 export function isImprovementUpdate(latestSignals: readonly ObservationSignal[]): boolean {
   return latestSignals.includes("improvement");
 }
+
+export function detectCompoundSignal(
+  observations: ReadonlyArray<{ raw_text: string; kind: CareEventKind }>,
+): string | null {
+  const allSignals = collectSituationSignals(observations);
+  const nonGeneral = allSignals.filter((s) => s !== "general" && s !== "improvement");
+  const uniqueNonGeneral = [...new Set(nonGeneral)];
+
+  if (uniqueNonGeneral.length >= 3) {
+    const sorted = uniqueNonGeneral.sort();
+    return `Multiple care signals appearing together: ${sorted.join(" and ")}`;
+  }
+  if (uniqueNonGeneral.length === 2) {
+    const sorted = uniqueNonGeneral.sort();
+    return `Multiple care signals appearing together: ${sorted.join(" and ")}`;
+  }
+
+  const emotionalCount = allSignals.filter((s) => isEmotionalSignal(s)).length;
+  const domainSignals = allSignals.filter(
+    (s) => !isEmotionalSignal(s) && s !== "general" && s !== "improvement",
+  );
+
+  if (emotionalCount >= 3 && domainSignals.length >= 1) {
+    return "emotional_distress_with_care_domain_shift";
+  }
+  if (domainSignals.length >= 2) {
+    const domains = domainSignals.join(" and ");
+    return `multiple_care_domains_affected: ${domains}`;
+  }
+  if (emotionalCount >= 2 && allSignals.includes("improvement")) {
+    return "mixed_emotional_and_improvement_signals";
+  }
+  return null;
+}
+
+export function signalTrajectory(
+  observations: ReadonlyArray<{ raw_text: string; kind: CareEventKind }>,
+  signal: ObservationSignal,
+): "worsening" | "improving" | "stable" | "unknown" {
+  if (observations.length === 0) return "unknown";
+
+  const signalObs = observations.filter((o) =>
+    detectObservationSignals(o.raw_text, o.kind).includes(signal),
+  );
+  if (signalObs.length < 2) return "unknown";
+
+  const recent = signalObs.slice(-3);
+  const improvingCount = recent.filter((o) => looksLikeImprovementNote(o.raw_text)).length;
+  const worseningCount = recent.filter(
+    (o) =>
+      /\b(worse|more|increased|refus|again|every \d+ minutes)\b/i.test(o.raw_text),
+  ).length;
+
+  if (improvingCount > worseningCount && improvingCount >= 2) return "improving";
+  if (worseningCount > improvingCount && worseningCount >= 2) return "worsening";
+  if (signalObs.length >= 3) return "stable";
+  return "unknown";
+}
+
+export function computeCrossSignalCorrelation(
+  observations: ReadonlyArray<{ raw_text: string; kind: CareEventKind }>,
+  signalA: ObservationSignal,
+  signalB: ObservationSignal,
+): "correlated" | "inverse" | "independent" | "unknown" {
+  if (observations.length === 0) return "unknown";
+
+  const aObs = observations.filter((o) =>
+    detectObservationSignals(o.raw_text, o.kind).includes(signalA),
+  );
+  const bObs = observations.filter((o) =>
+    detectObservationSignals(o.raw_text, o.kind).includes(signalB),
+  );
+
+  if (aObs.length === 0 || bObs.length === 0) return "unknown";
+
+  const aTimestamps = new Set(aObs.map((o) => o.raw_text.slice(0, 50)));
+  const overlap = bObs.filter((o) => aTimestamps.has(o.raw_text.slice(0, 50))).length;
+
+  if (overlap >= 1) {
+    const aImproving = aObs.some((o) => looksLikeImprovementNote(o.raw_text));
+    const bImproving = bObs.some((o) => looksLikeImprovementNote(o.raw_text));
+    if (aImproving && !bImproving) return "inverse";
+    if (!aImproving && bImproving) return "inverse";
+    return "correlated";
+  }
+
+  return "independent";
+}

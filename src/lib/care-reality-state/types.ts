@@ -67,6 +67,10 @@ export type CareRealityState = {
     summary: string;
     effect: ProgressiveUnderstandingEffect;
   }>;
+  /** Per-domain trajectory across observations. */
+  care_domain_trajectories: Record<string, "worsening" | "improving" | "stable" | "unknown">;
+  compound_signals: string[];
+  change_classifications: string[];
 };
 
 export type UpdateCareRealityStateInput = {

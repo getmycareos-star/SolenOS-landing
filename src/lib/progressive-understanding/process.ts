@@ -5,11 +5,14 @@
 import type { ProgressiveUnderstandingInput, ProgressiveUnderstandingResult } from "./types";
 import {
   collectSituationSignals,
+  computeCrossSignalCorrelation,
+  detectCompoundSignal,
   detectObservationSignals,
   emotionalSignalCount,
   isImprovementUpdate,
   latestObservationSignals,
   patternLabelFor,
+  signalTrajectory,
 } from "./detect-signals";
 import {
   isCaregiverQuestionPushback,
@@ -84,6 +87,33 @@ export function processProgressiveUnderstanding(
   }
 
   const priorMatters = prior?.what_matters_now ?? null;
+  const compoundSignal = detectCompoundSignal(draft.observations);
+  const trajectoryByDomain = new Map<string, "worsening" | "improving" | "stable" | "unknown">();
+  const nonGeneralSignals = allSignals.filter((s) => s !== "general");
+  for (const obs of draft.observations) {
+    const obsSignals = detectObservationSignals(obs.raw_text, obs.kind).filter((s) => s !== "general");
+    for (const signal of obsSignals) {
+      const current = trajectoryByDomain.get(signal) ?? "unknown";
+      trajectoryByDomain.set(signal, signalTrajectory(draft.observations, signal));
+    }
+  }
+  const crossSignalCorrelations: Array<{ signal_a: string; signal_b: string; correlation: "correlated" | "inverse" | "independent" | "unknown" }> = [];
+  for (let i = 0; i < nonGeneralSignals.length; i++) {
+    for (let j = i + 1; j < nonGeneralSignals.length; j++) {
+      const correlation = computeCrossSignalCorrelation(
+        draft.observations,
+        nonGeneralSignals[i],
+        nonGeneralSignals[j],
+      );
+      if (correlation !== "independent") {
+        crossSignalCorrelations.push({
+          signal_a: nonGeneralSignals[i],
+          signal_b: nonGeneralSignals[j],
+          correlation,
+        });
+      }
+    }
+  }
   const claritySufficient = understandingSufficient({
     situation: { ...draft, theme, understanding_stage },
     signals: allSignals,
@@ -242,5 +272,8 @@ export function processProgressiveUnderstanding(
     effect,
     signals_present: allSignals,
     pattern_label: patternLabel,
+    compound_signal: compoundSignal,
+    trajectory_by_domain: Object.fromEntries(trajectoryByDomain),
+    cross_signal_correlations: crossSignalCorrelations,
   };
 }

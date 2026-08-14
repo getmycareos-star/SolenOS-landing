@@ -92,6 +92,7 @@ import { processForbiddenBuildZone } from "../forbidden-build-zone";
 import { processProductRealityModel } from "../product-reality-model";
 import { processTimelineReconstruction } from "../timeline-reconstruction-engine";
 import { processContradictionDetection } from "../contradiction-detection-engine";
+import { detectCareStateChanges } from "../care-state-change-detector";
 import {
   attachTransparencyToFinalOutput,
   processCareTransparency,
@@ -735,6 +736,23 @@ export async function processSituationInput(
     as_of: input.timestamp ?? new Date().toISOString(),
   });
 
+  const care_state_change_report = detectCareStateChanges({
+    priorContext: priorContext,
+    currentContext: context,
+    eventsCreated: markedEvents,
+    baselineFacts: baseline_intelligence_layer.baseline_facts,
+    baselineDeviations: baseline_intelligence_layer.deviations,
+    contradictions: {
+      open_contradictions: contradiction_detection_layer.open_contradictions.map((c) => ({
+        field: c.field,
+        event_ids: c.event_ids,
+        shared_message: c.shared_message,
+        affects_safety: c.affects_safety,
+      })),
+      change_classifications: [],
+    },
+  });
+
   const createdTimelineEvents = markedEvents
     .map(mapCanonicalToTimelineEvent)
     .filter((e): e is NonNullable<typeof e> => e !== null);
@@ -931,6 +949,7 @@ export async function processSituationInput(
       ...buildPolicyEngineLayer(caregiverId),
       ingestion: ingestionPolicy,
     },
+    care_state_change_report,
   };
 
   const arbitration = processRuntimeArbitrationLayers({
@@ -1642,6 +1661,23 @@ export async function processSituationRecompile(input: {
     as_of: new Date().toISOString(),
   });
 
+  const care_state_change_report = detectCareStateChanges({
+    priorContext: priorContext,
+    currentContext: context,
+    eventsCreated: recentEvents,
+    baselineFacts: baseline_intelligence_layer.baseline_facts,
+    baselineDeviations: baseline_intelligence_layer.deviations,
+    contradictions: {
+      open_contradictions: contradiction_detection_layer.open_contradictions.map((c) => ({
+        field: c.field,
+        event_ids: c.event_ids,
+        shared_message: c.shared_message,
+        affects_safety: c.affects_safety,
+      })),
+      change_classifications: [],
+    },
+  });
+
   const recompileTimelineCreated = recentEvents
     .map(mapCanonicalToTimelineEvent)
     .filter((e): e is NonNullable<typeof e> => e !== null);
@@ -1805,6 +1841,7 @@ export async function processSituationRecompile(input: {
     care_timeline_engine_layer,
     timeline_reconstruction_layer,
     contradiction_detection_layer,
+    care_state_change_report,
     task_extraction_layer,
     current_state_view_layer,
     adoption_wedge_layer,

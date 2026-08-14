@@ -49,10 +49,10 @@ for (const forbidden of ["chatbot", "AI assistant", "workflow platform", "person
 }
 console.log("✓ forbidden identities");
 
-if (CANONICAL_DISPLAY_SECTIONS.length !== 6) {
-  throw new Error("fixed output model must have 6 sections");
+if (CANONICAL_DISPLAY_SECTIONS.length !== 5) {
+  throw new Error("fixed output model must have 5 sections");
 }
-console.log("✓ 6-section fixed output");
+console.log("✓ 5-section fixed output");
 
 if (CANONICAL_VALIDATION_PIPELINE[0] !== "JSON schema validation") {
   throw new Error("validation pipeline must start with schema validation");
