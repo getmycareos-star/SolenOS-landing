@@ -1339,41 +1339,6 @@ acsTurn =
 }
 
 /**
- * Intelligence-boundary entry point — routes through the SolenOS Intelligence
- * Layer while preserving full engine stack compatibility for backward compatibility.
- *
- * This is the canonical caregiver path: Intent → Memory → Data Acquisition →
- * Understanding → Memory Strategy → Reasoning → Active Situation → Communication.
- */
-export async function processSituationInputWithIntelligence(
-  input: ProcessSituationInput,
-): Promise<SituationResponse> {
-  const { runIntelligencePipeline, buildMinimalFinalOutput } = await import(
-    "../solenos-intelligence"
-  );
-
-  const intelligenceResult = await runIntelligencePipeline(input);
-
-  const final_output = buildMinimalFinalOutput({
-    understanding: intelligenceResult.understanding.understanding,
-    composedResponse: intelligenceResult.composedResponse,
-    continuityDecision: intelligenceResult.memory.continuityDecision,
-    careRealityState: intelligenceResult.careRealityState,
-    events: intelligenceResult.situationResponse.events_created,
-  });
-
-  const base = intelligenceResult.situationResponse;
-
-  const situationResponse: SituationResponse = {
-    ...base,
-    final_output,
-    care_key: intelligenceResult.input.caregiverId,
-  };
-
-  return situationResponse;
-}
-
-/**
  * Re-enter the continuous execution loop after correction or idle refresh.
  * No new DARE ingest — diff and output are projections of current CareContext.
  */

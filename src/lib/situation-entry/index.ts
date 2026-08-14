@@ -60,7 +60,6 @@ export {
 } from "./caregiver-facing-uncertainty";
 export {
   processSituationInput,
-  processSituationInputWithIntelligence,
   processSituationRecompile,
   processSessionReentry,
   getSituationTimeline,
