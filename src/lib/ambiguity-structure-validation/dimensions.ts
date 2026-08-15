@@ -60,7 +60,7 @@ const SYMPTOM_SIGNALS = [
   /\b(?:symptom|worsening|decline|weakness|dizzy|shortness of breath)\b/i,
 ] as const;
 
-const GIBBERISH_PATTERN = /^[^a-zA-Z]*$|^(.)\1{4,}$|^(?:asdf|qwerty|xxx|test){1,}$/i;
+const GIBBERISH_PATTERN = /^[^a-zA-Z]*$|(.)\1{4,}|^(?:asdf|qwerty|xxx|test){1,}$/i;
 
 function matchesAny(text: string, patterns: readonly RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));

@@ -187,6 +187,7 @@ export type SituationResponse = {
   care_transparency_layer?: import("../care-transparency-layer/types").CareTransparencyResult;
   baseline_intelligence_layer?: import("../baseline-intelligence-engine/types").BaselineIntelligenceResult;
   care_state_change_report?: import("../care-state-change-detector").CareStateChangeReport;
+  input_relevance_layer?: import("../input-relevance").InputRelevanceClassification;
   care_reality_profile_layer?: import("../care-reality-profile-engine/types").CareRealityProfileResult;
   moment_of_need_layer?: import("../moment-of-need-engine/types").MomentOfNeedResult;
   retention_engine_layer?: import("../retention-engine/types").RetentionEngineResult;

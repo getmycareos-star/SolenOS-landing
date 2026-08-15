@@ -102,6 +102,7 @@ import {
   classifyEntryInput,
   isSessionReentryInput,
 } from "../entry-behavior-protocol";
+import { classifyInputRelevance, type InputRelevanceClassification } from "../input-relevance";
 import {
   compileFromAdoptionWedge,
 } from "../final-output-contract/entry-compile";
@@ -117,6 +118,7 @@ import {
 import { validateFinalOutput } from "../final-output-contract/schema";
 import { processBaselineIntelligence } from "../baseline-intelligence-engine";
 import { processCareRealityProfile } from "../care-reality-profile-engine";
+import { classifyInputSurface } from "../input-classification/classify";
 import { processMomentOfNeed } from "../moment-of-need-engine";
 import {
   processRetentionEngine,
@@ -254,12 +256,33 @@ export async function processSituationInput(
   // Capture always — consent soft-prompts after persist; never block CareEvent creation.
   void ingestionPolicy.allowed;
 
-  getOrCreateCareContextRoot(caregiverId);
+  // Phase 0 — Input Relevance Gate: classify input before expensive processing.
+  // Irrelevant/gibberish/unreadable input must never enter the Care Reality pipeline.
+  const inputMode = classifyInputSurface(input.raw_input ?? "").mode;
+
+  let inputRelevance: InputRelevanceClassification | null = null;
+  if (input.raw_input.trim()) {
+    inputRelevance = classifyInputRelevance({
+      text: input.raw_input,
+      inputMode,
+    });
+    if (inputRelevance.outcome === "IRRELEVANT_INPUT" || inputRelevance.outcome === "GIBBERISH_INPUT") {
+      // Skip DARE and event creation for irrelevant/gibberish input.
+      // Continue with empty pipeline so response layers can format the outcome.
+      inputRelevance = inputRelevance;
+    }
+  }
+
   const rootEventId = priorContext?.root_event_id ?? priorContext?.events[0]?.id ?? null;
 
   const dareResults: DareIngestResult[] = [];
 
-  if (input.raw_input.trim()) {
+  const shouldSkipDare =
+    inputRelevance?.outcome === "IRRELEVANT_INPUT" ||
+    inputRelevance?.outcome === "GIBBERISH_INPUT" ||
+    inputRelevance?.outcome === "UNREADABLE_INPUT";
+
+  if (input.raw_input.trim() && !shouldSkipDare) {
     dareResults.push(
       ingestRawInput({
         caregiver_id: caregiverId,
@@ -273,6 +296,7 @@ export async function processSituationInput(
   let documentEventsCount = 0;
   for (const doc of input.documents ?? []) {
     if (!doc.extracted_text?.trim()) continue;
+    if (shouldSkipDare) continue;
     const { recordDocumentSourceEvidence } = await import("../document-evidence");
     await recordDocumentSourceEvidence({
       careKey: caregiverId,
@@ -968,7 +992,7 @@ export async function processSituationInput(
     is_return_session: !isFirstSituation,
   });
 
-  const withMvpLayer = { ...withArbitration, mvp_surface_area_layer };
+  const withMvpLayer = { ...withArbitration, mvp_surface_area_layer, input_relevance_layer: inputRelevance ?? undefined };
 
   const { final_output, architectural_boundaries_layer } = enforceCompiledDominantOutput(
     withMvpLayer,
