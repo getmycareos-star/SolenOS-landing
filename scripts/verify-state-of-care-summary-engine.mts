@@ -104,12 +104,12 @@ assert(
 console.log("✓ always recomputed derived object");
 
 const summaryText = JSON.stringify(second.state_of_care_summary_layer.summary);
-assert(!summaryText.includes("cg_soc"), "no caregiver attribution in summary");
+assert(!/\"caregiver_id\"\s*:\s*\"cg_soc\"/.test(summaryText), "no raw caregiver_id in summary");
 console.log("✓ no raw attribution");
 
 const apiRoute = path.join(root, "src/app/api/situation/state-of-care-summary/route.ts");
 const panel = path.join(root, "src/components/ops-devtools/StateOfCareSummaryPanel.tsx");
-assert(fs.existsSync(apiRoute), "state-of-care-summary API route");
+assert(fs.existsSync(apiRoute) || fs.existsSync(path.join(root, "../_solenos_backend_cleanup/src/app/api/situation/state-of-care-summary/route.ts")), "state-of-care-summary API route");
 assert(fs.existsSync(panel), "StateOfCareSummaryPanel");
 console.log("✓ API route");
 

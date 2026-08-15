@@ -213,10 +213,17 @@ export function resolveCareTurnConfirmation(params: {
     });
   }
 
+  if (params.improvement) {
+    return named
+      ? `Updated what we understand about ${named} — the latest change is the current picture.`
+      : "Updated what we understand — the latest change is the current picture.";
+  }
+
   // Thin follow-up without a new care anchor — do not claim LCR / care-story update.
   if (
     !params.latestIsCareWorthy &&
-    !isProductSessionMetaText(params.latestRawText)
+    !isProductSessionMetaText(params.latestRawText) &&
+    !["continuity_symptom", "improvement", "answer_to_open"].includes(params.turnClass)
   ) {
     if (params.gatheringContext) {
       return named
@@ -224,8 +231,8 @@ export function resolveCareTurnConfirmation(params: {
         : "This is held. A couple of details would help before deciding what matters.";
     }
     return named
-      ? `Still held with what we understand about ${named}'s care — share what changed when you can.`
-      : "Still held with what we already understand — share what changed when you can.";
+      ? `What we understand about ${named}'s care continues — share what changed when you can.`
+      : "What we already understand continues — share what changed when you can.";
   }
 
   // careWorthyCount ≥ 1 and current turn is care-worthy — care continuity confirmations allowed.
@@ -273,12 +280,6 @@ export function resolveCareTurnConfirmation(params: {
     return named
       ? `Updated ${named}'s record — small changes over time are being held together.`
       : "Updated — small changes over time are being held together.";
-  }
-
-  if (params.improvement) {
-    return named
-      ? `Updated what we understand about ${named} — the latest change is the current picture.`
-      : "Updated what we understand — the latest change is the current picture.";
   }
 
   return composeReturningCareRealityConfirmation({ subjectLabel: named });

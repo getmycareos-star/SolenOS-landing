@@ -68,7 +68,7 @@ console.log("✓ classify new vs returning from memory depth");
   assert.ok(!containsFakeContinuity(softNew));
 
   const softRet = composeMemoryAwareSoftSummary({ state: "returning_care_reality" });
-  assert.ok(/already held|care story/i.test(softRet));
+  assert.ok(/already noted|continues|care record/i.test(softRet));
 
   const changedNew = composeMemoryAwareWhatChanged({ state: "new_care_reality" });
   assert.ok(/First care observations/i.test(changedNew));
@@ -80,7 +80,7 @@ console.log("✓ classify new vs returning from memory depth");
 
   const confRet = composeReturningCareRealityConfirmation({ subjectLabel: null });
   assert.ok(/Updated the Living Care Record/i.test(confRet));
-  assert.ok(/already held/i.test(confRet));
+  assert.ok(/connected to what is already held/i.test(confRet));
   console.log("✓ orientation copy differs by state");
 }
 
@@ -207,14 +207,14 @@ console.log("✓ classify new vs returning from memory depth");
   );
   assert.equal(
     caregiverNoteMetaLabel({ careWorthyCount: 1, latestIsCareWorthy: true }),
-    "Added to the care story",
+    "Added to the care record",
   );
   assert.equal(
     caregiverNoteMetaLabel({ careWorthyCount: 2, latestIsCareWorthy: false }),
-    "About SolenOS — what you shared stays in the care story",
+    "About SolenOS — what you shared stays in the care record",
   );
   assert.ok(
-    containsCareStoryChrome("Added to the care story already underway"),
+    containsCareStoryChrome("Updated the Living Care Record"),
     "chrome detector",
   );
   assert.ok(

@@ -205,7 +205,7 @@ const panel = fs.readFileSync(
   "utf8",
 );
 assert(panel.includes("What to watch"), "LCR panel shows clarity pillar");
-assert(panel.includes("What can wait"), "LCR panel shows what can wait");
+assert(panel.includes("Can wait"), "LCR panel shows what can wait");
 assert(panel.includes("May need attention later"), "LCR panel shows may need attention later");
 assert(panel.includes("what_matters_now"), "panel binds matters field");
 console.log("✓ caregiver panel surfaces clarity pillars");

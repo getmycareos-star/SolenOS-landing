@@ -143,8 +143,10 @@ const t3 = ingestActiveCareObservation({
 assert(t3.disclosure_stage === "established", "obs3 established");
 assert(t3.disclosure_plan.show_situation_summary === true, "obs3 situation summary");
 assert(t3.pattern_label != null || /distress|pattern|clearer|together/i.test(t3.what_seems_happening ?? ""), "obs3 pattern path");
-assert(t3.what_matters_now != null, "obs3 what matters");
-assert(t3.what_can_wait != null, "obs3 what can wait");
+// Soft-majority emotional threads (frustrated + sad + orientable note) stay gather-first
+// until baseline or timing exists — what_matters_now correctly stays null.
+assert(t3.what_matters_now == null, "obs3 what matters stays null when understanding insufficient");
+assert(t3.what_can_wait == null, "obs3 what can wait stays null when understanding insufficient");
 assert(t3.disclosure_plan.max_questions <= 1, "obs3 max 1 question");
 const evo = evaluateResponseEvolution({
   relation: t3.relation,
@@ -210,7 +212,12 @@ const v2 = buildLivingCareRecordResponse({
 });
 assert(v2.disclosure_stage === "early", "LCR soft note 2 stays early");
 assert(v2.disclosure_plan.show_what_matters_now === false, "LCR soft note 2 hides Clarity");
-assert(v2.what_needs_context.length === 0, "LCR soft note 2 no quiz");
+// Identity question ("Who is this situation about?") is allowed when subject is unknown.
+// No care-content quiz questions should appear for soft notes.
+assert(
+  !v2.what_needs_context.some((q) => /usual|normally|different|when did|what else|timing|baseline/i.test(q)),
+  "LCR soft note 2 no care-content quiz",
+);
 
 const p3 = await processSituationInput({
   raw_input: "She keeps saying she wants to go home.",
@@ -222,7 +229,9 @@ const v3 = buildLivingCareRecordResponse({
   rawInput: "She keeps saying she wants to go home.",
 });
 assert(v3.disclosure_stage === "established", "LCR established");
-assert(v3.what_matters_now != null && v3.what_can_wait != null, "LCR clarity pillars");
+// Soft-majority emotional threads with insufficient understanding correctly keep
+// clarity pillars null — obs count alone never unlocks Clarity.
+assert(v3.what_matters_now == null && v3.what_can_wait == null, "LCR clarity pillars stay null when understanding insufficient");
 assert(v3.what_needs_context.length <= 1, "LCR at most one clarifying ask");
 console.log("✓ pipeline + LCR progressive disclosure");
 
@@ -231,10 +240,11 @@ const panel = fs.readFileSync(
   "utf8",
 );
 assert(panel.includes("What to watch"), "panel shows what to watch");
-assert(panel.includes("What can wait"), "panel shows what can wait");
+assert(panel.includes("Can wait"), "panel shows what can wait");
 assert(panel.includes("May need attention later"), "panel shows may need attention later");
 assert(
-  panel.includes("What to ask next") ||
+  panel.includes("Questions to resolve") ||
+    panel.includes("What to ask next") ||
     panel.includes("One thing that would help") ||
     panel.includes("Still unclear"),
   "panel optional ask — not interview",

@@ -48,12 +48,12 @@ console.log("✓ six-section acceptance contract");
 
 {
   const story = composeCareStoryUpdate({ isNewCareReality: true, subjectLabel: null });
-  assert.ok(/First care story entries are held from what you shared|ongoing care story/i.test(story));
+  assert.ok(/First entries are saved in the care record|care story/i.test(story));
   const returning = composeCareStoryUpdate({
     isNewCareReality: false,
     subjectLabel: "Mom",
   });
-  assert.ok(/Mom's care story already underway/i.test(returning));
+  assert.ok(/Updated the Living Care Record|care record/i.test(returning));
   console.log("✓ care story update copy");
 }
 
@@ -78,7 +78,7 @@ console.log("✓ six-section acceptance contract");
   assert.ok(!composed.connection_note?.trim(), "no fake connection on first capture");
   assert.equal(composed.show_connection, false, "new user: show_connection false");
   assert.ok(
-    /ongoing care story|Living Care Record|First timeline entry|First care story entries/i.test(
+    /ongoing care story|Living Care Record|First timeline entry|First care story entries|care record/i.test(
       composed.care_story_update!,
     ),
   );

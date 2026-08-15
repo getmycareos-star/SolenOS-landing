@@ -745,8 +745,8 @@ export function orientationFromBaselineComparison(
     // Held-memory related update (no formal usual/used-to) — continue the story, never invent "decline from usual".
     if (/^Related update to what was already held/i.test(change)) {
       current_understanding = who
-        ? `${change}. This stays with ${who}'s care situation already underway — not a separate story.`
-        : `${change}. This stays with the care situation already underway — not a separate story.`;
+        ? `${change}. This connects to ${who}'s care situation already underway — not a separate story.`
+        : `${change}. This connects to the care situation already underway — not a separate story.`;
     } else {
       const prior = comparison.known_baseline[0]
         ? comparison.known_baseline[0].replace(/\.$/, "")

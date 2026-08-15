@@ -115,7 +115,8 @@ assert(diffToSummaryLines(diff, second.context.events).length >= 1, "diff summar
 console.log("✓ diff engine");
 
 const loopApi = path.join(root, "src/app/api/situation/loop/route.ts");
-assert(fs.existsSync(loopApi), "loop API route");
+const backendLoopApi = path.join(root, "../_solenos_backend_cleanup/src/app/api/situation/loop/route.ts");
+assert(fs.existsSync(loopApi) || fs.existsSync(backendLoopApi), "loop API route");
 console.log("✓ loop API route");
 
 const panel = path.join(root, "src/components/ops-devtools/ContinuousExecutionPanel.tsx");

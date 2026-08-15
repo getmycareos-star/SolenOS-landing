@@ -208,7 +208,7 @@ export function composeConnectionLine(params: {
     return "This connects to what was already noted — part of the same care situation.";
   }
   if (params.observationCount >= 2 || Boolean(prior)) {
-    return "This stays with what was already noted — related to the same care situation.";
+    return "This connects to what was already noted — part of the same care situation.";
   }
   return null;
 }

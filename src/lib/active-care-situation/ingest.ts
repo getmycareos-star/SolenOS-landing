@@ -3,6 +3,7 @@ import {
   buildCareClarityPillars,
   heldFocusLines,
 } from "../progressive-understanding/clarity-pillars";
+import { understandingSufficient } from "../progressive-understanding/questions";
 import { buildMattersNowOrientation } from "../output-quality";
 import { processProgressiveUnderstanding } from "../progressive-understanding";
 import { reconcileOpenUncertainties } from "../progressive-understanding/uncertainty-lifecycle";
@@ -357,7 +358,7 @@ function turnFromProgressive(
     what_matters_now,
     what_can_wait,
     what_may_become_serious,
-    show_attention_sections: showClarity,
+    show_attention_sections: showClarity && understandingSufficient({ situation }),
   };
 }
 

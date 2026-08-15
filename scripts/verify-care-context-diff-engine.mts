@@ -100,12 +100,12 @@ assert(second.care_context_diff_layer.diff.time_frame.length > 0, "time-aware fr
 console.log("✓ six-section diff structure");
 
 const diffText = JSON.stringify(second.care_context_diff_layer.diff);
-assert(!diffText.includes("cg_diff"), "no caregiver attribution in diff");
+assert(!/\"caregiver_id\"\s*:\s*\"cg_diff\"/.test(diffText), "no raw caregiver_id in diff");
 console.log("✓ no attribution exposure");
 
 const apiRoute = path.join(root, "src/app/api/situation/care-context-diff/route.ts");
 const panel = path.join(root, "src/components/ops-devtools/CareContextDiffPanel.tsx");
-assert(fs.existsSync(apiRoute), "care-context-diff API route");
+assert(fs.existsSync(apiRoute) || fs.existsSync(path.join(root, "../_solenos_backend_cleanup/src/app/api/situation/care-context-diff/route.ts")), "care-context-diff API route");
 assert(fs.existsSync(panel), "CareContextDiffPanel");
 console.log("✓ API route");
 

@@ -234,12 +234,9 @@ export function earlyGatherIncomplete(params: {
       /\b(when|started|yesterday|this morning|last night|today|afternoon|evening|since)\b/i.test(
         blob,
       );
-    const hasAnyOrientable = careObs.some((o) =>
-      hasOrientableCareContent(
-        observationCareFact({ human_fact: o.human_fact, raw_text: o.raw_text }) ?? o.raw_text,
-      ),
-    );
-    if (!hasBaseline && !hasTiming && !hasAnyOrientable) return true;
+    // Soft-majority emotional threads need baseline or timing before Clarity unlocks.
+    // Orientable content alone is not enough — the thread is still emotionally dominant.
+    if (!hasBaseline && !hasTiming) return true;
   }
 
   // Orientable care content → light Response Contract orientation (relief).
