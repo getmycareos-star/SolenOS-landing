@@ -1,6 +1,6 @@
 "use client";
 
-import { apiUrl } from "@/lib/api-url";
+import { apiUrl, safeJson } from "@/lib/api-url";
 import { useState } from "react";
 
 type Props = {
@@ -45,7 +45,7 @@ export function CareRecipientNameGate({
           display_name: trimmed,
         }),
       });
-      const data = (await res.json()) as {
+      const data = (await safeJson(res)) as {
         error?: string;
         care_recipient_display_name?: string;
       };

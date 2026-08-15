@@ -30,7 +30,7 @@ import { CareRecipientNameGate } from "./CareRecipientNameGate";
 import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
-import { apiUrl } from "@/lib/api-url";
+import { apiUrl, safeJson } from "@/lib/api-url";
 import {
   IN_APP_IMPROVING_NOTICE,
   EMERGENCY_BOUNDARY,
@@ -332,11 +332,11 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       });
 
       if (!situationRes.ok) {
-        const err = (await situationRes.json()) as { error?: string };
+        const err = (await safeJson(situationRes)) as { error?: string };
         throw new Error(err.error ?? "Could not structure situation");
       }
 
-      const situationData = (await situationRes.json()) as SituationResponse & {
+      const situationData = (await safeJson(situationRes)) as SituationResponse & {
         policy_engine_layer?: {
           consent_required?: boolean;
           ingestion?: { allowed?: boolean; blocked_reason?: string | null };
@@ -449,7 +449,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         }),
       });
       if (res.ok) {
-        const data = (await res.json()) as {
+        const data = (await safeJson(res)) as {
           situations?: Situation[];
           ui_situations?: Situation[];
           active_situations?: Situation[];
@@ -482,7 +482,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
               apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=1`),
             );
             if (inviteRes.ok) {
-              const inviteData = (await inviteRes.json()) as {
+              const inviteData = (await safeJson(inviteRes)) as {
                 return_continuity?: {
                   soft_invite?: { offered_now?: boolean; text?: string | null };
                 };

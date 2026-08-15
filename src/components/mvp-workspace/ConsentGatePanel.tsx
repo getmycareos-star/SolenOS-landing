@@ -1,6 +1,6 @@
 "use client";
 
-import { apiUrl } from "@/lib/api-url";
+import { apiUrl, safeJson } from "@/lib/api-url";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -69,7 +69,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
         }),
       });
 
-      const data = (await res.json()) as { error?: string };
+      const data = (await safeJson(res)) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Consent submission failed");
 
       await loadStatus();

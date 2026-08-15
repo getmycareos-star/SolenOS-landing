@@ -1,6 +1,6 @@
 "use client";
 
-import { apiUrl } from "@/lib/api-url";
+import { apiUrl, safeJson } from "@/lib/api-url";
 import { useCallback, useEffect, useState } from "react";
 
 type Props = {
@@ -19,7 +19,7 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
     setLoading(true);
     try {
       const res = await fetch(apiUrl(`/api/policy/consent?user_id=${encodeURIComponent(caregiverId)}`));
-      const data = (await res.json()) as {
+      const data = (await safeJson(res)) as {
         verified?: boolean;
         profile?: { data_improvement_consent?: boolean; limited_mode?: boolean };
       };

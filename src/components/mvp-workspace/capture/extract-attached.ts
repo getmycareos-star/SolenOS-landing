@@ -1,4 +1,4 @@
-import { apiUrl } from "@/lib/api-url";
+import { apiUrl, safeJson } from "@/lib/api-url";
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputEntryMethod } from "@/lib/input-entry-contract";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
@@ -68,9 +68,9 @@ export async function extractAttachedDocument(
       error?: string;
     } = {};
     try {
-      data = (await res.json()) as typeof data;
-    } catch {
-      // Non-JSON response — treat as extraction failure with a human message below.
+      data = (await safeJson(res)) as typeof data;
+    } catch (err) {
+      data = { error: err instanceof Error ? err.message : "Extraction failed" };
     }
 
     const doc = data.document;
