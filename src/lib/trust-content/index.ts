@@ -316,6 +316,114 @@ export const FIRST_USE = {
   notFeeling: "I have another system to maintain.",
 } as const;
 
+/** Public landing (/) — long-form story replacing the prior thin landing. */
+export const HOME_LANDING = {
+  hero: {
+    eyebrow: "Living Care Record",
+    title:
+      "When you're caring for someone, you shouldn't have to remember everything.",
+    fragments: [
+      "A hospital visit.",
+      "A new medication.",
+      "A symptom that wasn't there last week.",
+      "A doctor's instruction.",
+      "A document you can't find.",
+      "A change you can't quite explain.",
+    ],
+    pull: "SolenOS brings it together.",
+    lede: "It turns the scattered information around someone's care into a living record of what happened, what changed, what matters now, and what still needs attention.",
+  },
+  scattered: {
+    title: "Care doesn't happen in one place.",
+    lead: [
+      "It happens across hospital visits, medications, conversations, documents, appointments, notes, family members, and ordinary days.",
+      "Over time, the details pile up. And when something changes, you're left trying to answer:",
+    ],
+    questions: [
+      "What happened?",
+      "What's different now?",
+      "Does it matter?",
+      "What do we know?",
+      "What are we missing?",
+      "What needs to happen next?",
+    ],
+    pull: "SolenOS helps you keep those answers together.",
+  },
+  record: {
+    title: "A Living Care Record for one person.",
+    body: [
+      "SolenOS connects the information that matters across a person's care journey — events, documents, medications, observations, decisions, changes, follow-ups, and uncertainty.",
+      "Instead of another folder of medical documents, you get a record that helps you understand the story of the care.",
+    ],
+    answers: [
+      "What changed.",
+      "What matters now.",
+      "What we know.",
+      "What we don't know.",
+      "What needs attention.",
+    ],
+  },
+  memory: {
+    title: "Because memory is not a care system.",
+    lead: "You shouldn't have to remember:",
+    items: [
+      "which medication changed",
+      "when the symptom started",
+      "what the doctor said",
+      "what happened at the last hospital visit",
+      "which document contains the important information",
+      "what still needs to be followed up",
+    ],
+    pull: "SolenOS remembers the care journey with you.",
+  },
+  process: {
+    title: "From scattered information to a clearer picture.",
+    steps: [
+      {
+        title: "Capture",
+        body: "Type a note. Scan a document. Upload a file. Snap a photo.",
+      },
+      {
+        title: "Understand",
+        body: "SolenOS organizes the information and connects it to the person's ongoing care.",
+      },
+      {
+        title: "See change",
+        body: "Understand what has changed over time — not just what was recorded.",
+      },
+      {
+        title: "Know what matters",
+        body: "Surface important changes, missing information, uncertainty, and follow-ups.",
+      },
+      {
+        title: "Share",
+        body: "Prepare the right information for the right person — whether that's a doctor, family member, or professional caregiver.",
+      },
+    ],
+  },
+  remembered: {
+    title: "The care journey, remembered.",
+    negations: [
+      "Not another place to store medical files.",
+      "Not another reminder app.",
+      "Not another timeline you have to interpret yourself.",
+    ],
+    pull: "A living record of someone's care — built to help you understand what is happening now.",
+  },
+  builtFor: {
+    title: "Built for the people who quietly hold everything together.",
+    body: [
+      "Family caregivers are often coordinating care across people, places, documents, medications, appointments, and decisions.",
+      "SolenOS is built to reduce the cognitive burden of keeping it all together.",
+    ],
+    pull: "Because caring for someone should not require becoming their entire medical record.",
+  },
+  closing: {
+    line: "Your care. One living record.",
+    brand: "Living Care Record",
+  },
+} as const;
+
 export const WELCOME_HOME = {
   headline: "You should not have to rebuild the care journey from memory.",
   subheadline:
