@@ -10,6 +10,7 @@ import { CognitiveWorkspace } from "@/components/mvp-workspace";
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations } from "@/lib/ui-runtime";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -90,7 +91,14 @@ function WorkspacePageInner() {
           </div>
         </div>
         <ResearchPreviewAckGate>
-          <CognitiveWorkspace />
+          <ErrorBoundary name="CognitiveWorkspace" fallback={
+            <div style={{ padding: "24px", textAlign: "center" }}>
+              <p style={{ color: "#78716c" }}>The workspace encountered an error. Please try again.</p>
+              <Button variant="primary" onClick={() => window.location.reload()}>Refresh</Button>
+            </div>
+          }>
+            <CognitiveWorkspace />
+          </ErrorBoundary>
         </ResearchPreviewAckGate>
       </div>
     );

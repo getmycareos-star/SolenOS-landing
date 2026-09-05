@@ -842,6 +842,7 @@ export const CARE_REALITY_INTELLIGENCE = {
     "moment_of_need_engine",
     "evidence_preservation",
     "care_reality_engine_foundation",
+    "cross_domain_reasoning",
   ] as const,
   intelligenceChain: [
     "events",
@@ -861,6 +862,29 @@ export const CARE_REALITY_INTELLIGENCE = {
   ] as const,
   careTransitionMode: "FUTURE",
   status: "IMPLEMENTED" as const,
+} as const;
+
+/**
+ * Cross-Domain Reasoning — detect and represent relationships across care domains.
+ * Not a new pillar. Composes with Care Reality Intelligence.
+ * Module: src/lib/cross-domain-reasoning
+ */
+export const CROSS_DOMAIN_REASONING = {
+  notANewPillar: true,
+  modulePath: "src/lib/cross-domain-reasoning",
+  canonicalDoc: "docs/02-product/solenos-cross-domain-reasoning.md",
+  status: "IMPLEMENTED" as const,
+  purpose:
+    "Detect when information from different care domains forms a potentially connected care situation. Preserve evidence, uncertainty, and provenance. Never assert causation.",
+  never: [
+    "diagnosis",
+    "treatment_recommendation",
+    "causal_inference",
+    "risk_scoring",
+    "alert_generation",
+    "autonomous_care_planning",
+  ] as const,
+  extends: "care_reality_intelligence",
 } as const;
 
 /**

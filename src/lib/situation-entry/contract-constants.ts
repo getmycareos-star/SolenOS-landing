@@ -19,6 +19,7 @@ export const EXTRACTED_TYPES = [
   "unparsed_raw",
   "contact_event",
   "correction",
+  "caregiver_note",
   "unknown",
 ] as const;
 

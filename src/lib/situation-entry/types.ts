@@ -208,8 +208,10 @@ export type SituationResponse = {
   care_reality_engine_layer?: import("../care-reality-engine").CareRealityEngineFoundationResult;
   /** Care Signal Understanding — input→signals→care state→priority→unknowns (never task lists). */
   care_signal_understanding_layer?: import("../care-signal-understanding").CareSignalUnderstandingResult;
-/** Generalized care understanding — 10 rules; Observed/Derived/Unknown; open loops. */
+  /** Generalized care understanding — 10 rules; Observed/Derived/Unknown; open loops. */
   generalized_care_understanding_layer?: import("../generalized-care-understanding").GeneralizedCareUnderstandingResult;
+  /** Cross-Domain Reasoning — detect relationships across care domains without asserting causation. */
+  cross_domain_reasoning_layer?: import("../cross-domain-reasoning/types").CrossDomainReasoningResult;
 
   /**
    * Care Identity summary — lifecycle state, session count, active care recipient.

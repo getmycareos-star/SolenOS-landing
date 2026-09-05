@@ -25,6 +25,7 @@ import {
   detectRealityRecurrence,
 } from "./care-reality-memory";
 import { classifyExtractionFragment } from "../care-reality-extraction";
+import { detectCrossDomainSituations } from "../cross-domain-reasoning";
 
 const TRANSITION_PATTERNS: Array<{ type: CareTransitionSignalType; re: RegExp }> = [
   { type: "hospital_discharge", re: /\b(discharge|discharged|sent home from hospital)\b/i },
@@ -452,6 +453,12 @@ export function processCareRealityIntelligence(
 
   const decisionMemory = listDecisionMemory(input.care_recipient_id);
   const decisionPreparation = composeDecisionPreparation({ careKey: input.care_recipient_id, maxLines: 3 });
+  const crossDomainResult = detectCrossDomainSituations({
+    care_recipient_id: input.care_recipient_id,
+    events: input.all_events,
+    contradictions: input.contradictions,
+    as_of: asOf,
+  });
 
   const snapshot = {
     care_recipient_id: input.care_recipient_id,
@@ -481,7 +488,9 @@ export function processCareRealityIntelligence(
       "uncertainty_awareness",
       "evidence_preservation",
       ...(transitionSignals.length > 0 ? (["care_transition_signals"] as const) : []),
+      ...(crossDomainResult.situations.length > 0 ? (["cross_domain_reasoning"] as const) : []),
     ] as const,
+    cross_domain_situations: crossDomainResult.situations.length > 0 ? crossDomainResult.situations : undefined,
   };
 
   return {

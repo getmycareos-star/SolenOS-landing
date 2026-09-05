@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:smoke": "playwright test",
+    "test:smoke:prod": "playwright test --config=playwright.config.ts",
     "verify:boundary": "tsx scripts/verify-boundary.mts",
     "verify:state": "tsx scripts/verify-state-engine.mts",
     "verify:process": "tsx scripts/verify-process.mts",
@@ -250,6 +252,7 @@
   },
   "devDependencies": {
     "@fastify/multipart": "^10.1.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.10.0",
     "@types/pg": "^8.15.5",
     "@types/react": "^19.1.0",

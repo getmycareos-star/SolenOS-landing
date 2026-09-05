@@ -76,6 +76,7 @@ export type CareRealityIntelligenceSnapshot = {
   };
   trust_rules_upheld: readonly TrustEngineeringRule[];
   build_surfaces_active: readonly BuildSurface[];
+  cross_domain_situations?: import("../cross-domain-reasoning/types").CrossDomainSituation[];
 };
 
 export type CareRealityIntelligenceResult = {
@@ -102,5 +103,6 @@ export type ProcessCareRealityIntelligenceInput = {
   care_state?: import("../care-state-engine/types").CareStateSnapshot;
   continuity_properties?: import("../continuity-properties/types").ContinuityPropertiesResult;
   moment_of_need?: import("../moment-of-need-engine/types").MomentOfNeedResult;
+  contradictions?: import("../contradiction-detection-engine/types").OpenContradiction[];
   as_of?: string;
 };

@@ -194,6 +194,7 @@ export function understoodLabel(
     unparsed_raw: "Raw input stored — extraction incomplete",
     unprocessed_input: "Input could not be fully processed",
     correction: "User correction applied",
+    caregiver_note: "Caregiver note recorded",
     unknown: "Situation noted",
   };
 

@@ -79,6 +79,7 @@ export const BUILD_SURFACE = [
   "uncertainty_awareness",
   "evidence_preservation",
   "care_transition_signals",
+  "cross_domain_reasoning",
 ] as const;
 
 /** Architecture-level do-not-build (complements forbidden-build-zone). */
