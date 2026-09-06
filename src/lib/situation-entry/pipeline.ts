@@ -686,54 +686,6 @@ export async function processSituationInput(
     as_of: input.timestamp ?? new Date().toISOString(),
   });
 
-  const careContextDiffRaw = processCareContextDiff({
-    caregiver_id: caregiverId,
-    prior_context: priorContext,
-    context,
-    events_created: markedEvents,
-    state_diff: continuous_execution_loop_layer.diff,
-    what_changed: whatChanged,
-    behavior: behavior_interpretation_layer,
-    continuity_decay: continuity_decay_layer,
-    multi_caregiver: multi_caregiver_context_layer,
-    state_of_care: state_of_care_summary_layer.summary,
-    attention_event_ids: priorityQuery.attention_events.map((e) => e.id),
-    as_of: input.timestamp ?? new Date().toISOString(),
-  });
-  const diffPolicy = applyPolicyToDiff(caregiverId, careContextDiffRaw.diff);
-  const care_context_diff_layer = {
-    ...careContextDiffRaw,
-    diff: diffPolicy.sanitized_diff ?? careContextDiffRaw.diff,
-  };
-
-  const care_reality_profile_layer = processCareRealityProfile({
-    care_recipient_id: context.care_recipient_id,
-    all_events: context.events,
-    baseline: baseline_intelligence_layer,
-    behavior: behavior_interpretation_layer,
-    memory_strategy: memory_strategy_layer,
-    what_is_uncertain: mergedUncertain,
-    what_needs_clarification: [
-      ...new Set([
-        ...mergedClarification,
-        ...multi_caregiver_context_layer.clarification_needed,
-      ]),
-    ],
-    as_of: input.timestamp ?? new Date().toISOString(),
-  });
-
-  const moment_of_need_layer = processMomentOfNeed({
-    raw_input: input.raw_input,
-    events_created: markedEvents,
-    all_events: context.events,
-    baseline: baseline_intelligence_layer,
-    care_reality_profile: care_reality_profile_layer,
-    care_context_diff: care_context_diff_layer,
-    behavior: behavior_interpretation_layer,
-    what_is_uncertain: mergedUncertain,
-    as_of: input.timestamp ?? new Date().toISOString(),
-  });
-
   const care_timeline_engine_layer = processCareTimelineEngine({
     caregiver_id: caregiverId,
     care_recipient_id: context.care_recipient_id,
@@ -775,6 +727,55 @@ export async function processSituationInput(
       })),
       change_classifications: [],
     },
+  });
+
+  const careContextDiffRaw = processCareContextDiff({
+    caregiver_id: caregiverId,
+    prior_context: priorContext,
+    context,
+    events_created: markedEvents,
+    state_diff: continuous_execution_loop_layer.diff,
+    what_changed: whatChanged,
+    behavior: behavior_interpretation_layer,
+    continuity_decay: continuity_decay_layer,
+    multi_caregiver: multi_caregiver_context_layer,
+    state_of_care: state_of_care_summary_layer.summary,
+    attention_event_ids: priorityQuery.attention_events.map((e) => e.id),
+    as_of: input.timestamp ?? new Date().toISOString(),
+    care_state_change_report,
+  });
+  const diffPolicy = applyPolicyToDiff(caregiverId, careContextDiffRaw.diff);
+  const care_context_diff_layer = {
+    ...careContextDiffRaw,
+    diff: diffPolicy.sanitized_diff ?? careContextDiffRaw.diff,
+  };
+
+  const care_reality_profile_layer = processCareRealityProfile({
+    care_recipient_id: context.care_recipient_id,
+    all_events: context.events,
+    baseline: baseline_intelligence_layer,
+    behavior: behavior_interpretation_layer,
+    memory_strategy: memory_strategy_layer,
+    what_is_uncertain: mergedUncertain,
+    what_needs_clarification: [
+      ...new Set([
+        ...mergedClarification,
+        ...multi_caregiver_context_layer.clarification_needed,
+      ]),
+    ],
+    as_of: input.timestamp ?? new Date().toISOString(),
+  });
+
+  const moment_of_need_layer = processMomentOfNeed({
+    raw_input: input.raw_input,
+    events_created: markedEvents,
+    all_events: context.events,
+    baseline: baseline_intelligence_layer,
+    care_reality_profile: care_reality_profile_layer,
+    care_context_diff: care_context_diff_layer,
+    behavior: behavior_interpretation_layer,
+    what_is_uncertain: mergedUncertain,
+    as_of: input.timestamp ?? new Date().toISOString(),
   });
 
   const createdTimelineEvents = markedEvents
@@ -1576,54 +1577,6 @@ export async function processSituationRecompile(input: {
     as_of: new Date().toISOString(),
   });
 
-  const careContextDiffRawRecompile = processCareContextDiff({
-    caregiver_id: caregiverId,
-    prior_context: priorContext,
-    context,
-    events_created: recentEvents,
-    state_diff: continuous_execution_loop_layer.diff,
-    what_changed: continuous_execution_loop_layer.what_changed,
-    behavior: behavior_interpretation_layer,
-    continuity_decay: continuity_decay_layer,
-    multi_caregiver: multi_caregiver_context_layer,
-    state_of_care: state_of_care_summary_layer.summary,
-    attention_event_ids: priorityQuery.attention_events.map((e) => e.id),
-    as_of: new Date().toISOString(),
-  });
-  const diffPolicyRecompile = applyPolicyToDiff(caregiverId, careContextDiffRawRecompile.diff);
-  const care_context_diff_layer = {
-    ...careContextDiffRawRecompile,
-    diff: diffPolicyRecompile.sanitized_diff ?? careContextDiffRawRecompile.diff,
-  };
-
-  const care_reality_profile_layer = processCareRealityProfile({
-    care_recipient_id: context.care_recipient_id,
-    all_events: context.events,
-    baseline: baseline_intelligence_layer,
-    behavior: behavior_interpretation_layer,
-    memory_strategy: memory_strategy_layer,
-    what_is_uncertain: mergedUncertainRecompile,
-    what_needs_clarification: [
-      ...new Set([
-        ...mergedClarification,
-        ...multi_caregiver_context_layer.clarification_needed,
-      ]),
-    ],
-    as_of: new Date().toISOString(),
-  });
-
-  const moment_of_need_layer = processMomentOfNeed({
-    raw_input: "",
-    events_created: recentEvents,
-    all_events: context.events,
-    baseline: baseline_intelligence_layer,
-    care_reality_profile: care_reality_profile_layer,
-    care_context_diff: care_context_diff_layer,
-    behavior: behavior_interpretation_layer,
-    what_is_uncertain: mergedUncertainRecompile,
-    as_of: new Date().toISOString(),
-  });
-
   const care_timeline_engine_layer = processCareTimelineEngine({
     caregiver_id: caregiverId,
     care_recipient_id: context.care_recipient_id,
@@ -1665,6 +1618,55 @@ export async function processSituationRecompile(input: {
       })),
       change_classifications: [],
     },
+  });
+
+  const careContextDiffRawRecompile = processCareContextDiff({
+    caregiver_id: caregiverId,
+    prior_context: priorContext,
+    context,
+    events_created: recentEvents,
+    state_diff: continuous_execution_loop_layer.diff,
+    what_changed: continuous_execution_loop_layer.what_changed,
+    behavior: behavior_interpretation_layer,
+    continuity_decay: continuity_decay_layer,
+    multi_caregiver: multi_caregiver_context_layer,
+    state_of_care: state_of_care_summary_layer.summary,
+    attention_event_ids: priorityQuery.attention_events.map((e) => e.id),
+    as_of: new Date().toISOString(),
+    care_state_change_report,
+  });
+  const diffPolicyRecompile = applyPolicyToDiff(caregiverId, careContextDiffRawRecompile.diff);
+  const care_context_diff_layer = {
+    ...careContextDiffRawRecompile,
+    diff: diffPolicyRecompile.sanitized_diff ?? careContextDiffRawRecompile.diff,
+  };
+
+  const care_reality_profile_layer = processCareRealityProfile({
+    care_recipient_id: context.care_recipient_id,
+    all_events: context.events,
+    baseline: baseline_intelligence_layer,
+    behavior: behavior_interpretation_layer,
+    memory_strategy: memory_strategy_layer,
+    what_is_uncertain: mergedUncertainRecompile,
+    what_needs_clarification: [
+      ...new Set([
+        ...mergedClarification,
+        ...multi_caregiver_context_layer.clarification_needed,
+      ]),
+    ],
+    as_of: new Date().toISOString(),
+  });
+
+  const moment_of_need_layer = processMomentOfNeed({
+    raw_input: "",
+    events_created: recentEvents,
+    all_events: context.events,
+    baseline: baseline_intelligence_layer,
+    care_reality_profile: care_reality_profile_layer,
+    care_context_diff: care_context_diff_layer,
+    behavior: behavior_interpretation_layer,
+    what_is_uncertain: mergedUncertainRecompile,
+    as_of: new Date().toISOString(),
   });
 
   const recompileTimelineCreated = recentEvents

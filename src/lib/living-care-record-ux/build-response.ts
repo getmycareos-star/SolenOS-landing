@@ -344,6 +344,7 @@ export function buildLivingCareRecordResponse(params: {
     kind,
     hasDocuments,
     baselineChangeNote: resolveBaselineChangeNote(response),
+    stateChangeReport: response.care_state_change_report ?? null,
   });
   assertComposedResponseProfessional(composed);
 
@@ -569,6 +570,27 @@ export function buildLivingCareRecordResponse(params: {
     follow_up_items: composed.follow_up_items,
     mental_load_signal: composed.mental_load_signal,
     trajectory: (() => {
+      const stateChanges = response.care_state_change_report?.all_changes ?? [];
+      const worseningCount = stateChanges.filter(
+        (c) => c.trajectory === "worsening" && c.classification !== "NEW",
+      ).length;
+      const improvingCount = stateChanges.filter(
+        (c) => c.trajectory === "improving" && c.classification !== "RESOLVED",
+      ).length;
+      const stableCount = stateChanges.filter(
+        (c) => c.trajectory === "stable" && c.classification !== "NEW",
+      ).length;
+
+      if (worseningCount > 0 && worseningCount > improvingCount) {
+        return "deteriorating";
+      }
+      if (improvingCount > 0 && improvingCount >= worseningCount) {
+        return "improving";
+      }
+      if (stableCount > 0 && worseningCount === 0) {
+        return "stable";
+      }
+
       const soc = response.state_of_care_summary_layer?.summary;
       if (!soc?.sections?.what_is_happening_now?.length) return null;
       const changed = soc.sections.what_changed_recently.join(" ").toLowerCase();

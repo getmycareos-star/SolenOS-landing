@@ -2,6 +2,7 @@ import type { DareIngestResult } from "../data-acquisition-resilience/types";
 import type { CanonicalCareEvent, CareContextRoot } from "../situation-entry/types";
 import { MAX_DIFF_SUMMARY_LINES } from "./contract-constants";
 import type { StateDiff } from "./types";
+import { domainForEvent } from "../care-state-change-detector";
 
 function eventSnapshotKey(event: CanonicalCareEvent): string {
   return [
@@ -88,54 +89,61 @@ export function diffToSummaryLines(diff: StateDiff, events: CanonicalCareEvent[]
   const lines: string[] = [];
 
   if (diff.newly_added_events.length > 0 && events.length === diff.newly_added_events.length) {
-    lines.push("CareContextRoot created with first situation event.");
+    lines.push("Care context established with first observation.");
   }
 
   for (const id of diff.newly_added_events.slice(0, 4)) {
     const event = byId.get(id);
     if (event) {
-      lines.push(
-        `New event added (${event.extracted_type.replace(/_/g, " ")}): ${event.raw_input.slice(0, 80)}${event.raw_input.length > 80 ? "…" : ""}`,
-      );
+      const domain = domainForEvent(event);
+      const typeLabel = event.extracted_type.replace(/_/g, " ");
+      const text = domain
+        ? `New ${domain} observation recorded`
+        : `New ${typeLabel} recorded`;
+      lines.push(text);
     }
   }
 
   for (const id of diff.updated_events.slice(0, 2)) {
     const event = byId.get(id);
     if (event) {
-      lines.push(`Event updated: ${event.raw_input.slice(0, 60)}…`);
+      const domain = domainForEvent(event);
+      const text = domain
+        ? `Existing ${domain} observation updated`
+        : "Existing observation updated";
+      lines.push(text);
     }
   }
 
   for (const id of diff.superseded_events.slice(0, 2)) {
-    lines.push(`Prior interpretation superseded (event ${id}) — original preserved.`);
+    lines.push("Prior understanding was corrected — original evidence preserved.");
   }
 
   for (const id of diff.invalidated_events.slice(0, 2)) {
-    lines.push(`Event invalidated (event ${id}) — audit trail preserved.`);
+    lines.push("Prior observation was invalidated — audit trail preserved.");
   }
 
   for (const u of [...new Set(diff.new_uncertainty)].slice(0, 3)) {
-    lines.push(`New uncertainty introduced: ${u}`);
+    lines.push(`New uncertainty: ${u}`);
   }
 
-  for (const u of diff.resolved_uncertainty.slice(0, 2)) {
+  for (const u of [...new Set(diff.resolved_uncertainty)].slice(0, 2)) {
     lines.push(`Uncertainty resolved: ${u}`);
   }
 
   for (const c of diff.conflicts_detected.slice(0, 2)) {
-    lines.push(`Conflicting claims detected for ${c.replace(/_/g, " ")}`);
+    lines.push(`Conflicting reports detected for ${c.replace(/_/g, " ")}`);
   }
 
   for (const id of diff.follow_ups_created.slice(0, 2)) {
     const event = byId.get(id);
     if (event) {
-      lines.push(`New follow-up created: ${event.raw_input.slice(0, 60)}…`);
+      lines.push(`Follow-up created: ${event.raw_input.slice(0, 60)}…`);
     }
   }
 
   if (lines.length === 0 && diff.newly_added_events.length > 0) {
-    lines.push("Previous context updated with additional structured detail.");
+    lines.push("Care context updated with additional detail.");
   }
 
   return lines.slice(0, MAX_DIFF_SUMMARY_LINES);

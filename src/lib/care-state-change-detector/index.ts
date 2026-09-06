@@ -145,6 +145,7 @@ function classifyChangeForDomain(
   observations: { text: string; timestamp: string; signals: ObservationSignal[] }[],
   baselineFacts: BaselineFact[],
   priorObservations: { text: string; timestamp: string; signals: ObservationSignal[] }[],
+  newObservations?: { text: string; timestamp: string; signals: ObservationSignal[] }[],
 ): DomainChange {
   const baseline = baselineFacts.find((b) => b.domain === domain);
   const recent = observations[observations.length - 1];
@@ -203,10 +204,37 @@ function classifyChangeForDomain(
     evidence.push("Persistent pattern signal detected");
     trajectory = "stable";
   } else if (hasPriorInDomain) {
-    classification = "STABLE";
-    confidence = "low";
-    evidence.push("No directional change signal detected");
-    trajectory = "stable";
+    const currentNegativeSignals = new Set(
+      (newObservations ?? observations)
+        .flatMap((o) => signalsForText(o.text))
+        .filter((s) => s !== "improvement"),
+    );
+    const priorNegativeSignals = new Set(
+      priorObservations
+        .flatMap((o) => signalsForText(o.text))
+        .filter((s) => s !== "improvement"),
+    );
+
+    if (currentNegativeSignals.size > priorNegativeSignals.size) {
+      classification = "WORSENED";
+      confidence = "medium";
+      evidence.push(
+        "Negative signals increased compared to prior observation in this domain",
+      );
+      trajectory = "worsening";
+    } else if (currentNegativeSignals.size < priorNegativeSignals.size) {
+      classification = "IMPROVED";
+      confidence = "medium";
+      evidence.push(
+        "Negative signals decreased compared to prior observation in this domain",
+      );
+      trajectory = "improving";
+    } else {
+      classification = "STABLE";
+      confidence = "low";
+      evidence.push("No directional change signal detected");
+      trajectory = "stable";
+    }
   }
 
   if (trendDirection === "worsening" && classification !== "WORSENED") {
@@ -389,6 +417,7 @@ export function detectCareStateChanges(input: {
 
     const currentObservations = activeCurrent.map(eventToDomainObservation);
     const priorObservations = activePrior.map(eventToDomainObservation);
+    const newObservations = input.eventsCreated.map(eventToDomainObservation);
 
     const allDomains = new Set<CareDomain>([
       ...currentObservations.map((o) => o.domain),
@@ -400,12 +429,13 @@ export function detectCareStateChanges(input: {
     for (const domain of allDomains) {
       const domainCurrent = currentObservations.filter((o) => o.domain === domain);
       const domainPrior = priorObservations.filter((o) => o.domain === domain);
+      const domainNew = newObservations.filter((o) => o.domain === domain);
       const domainBaseline = (input.baselineFacts ?? []).filter((b) => b.domain === domain);
 
       if (domainCurrent.length === 0 && domainPrior.length === 0 && domainBaseline.length === 0) continue;
 
       try {
-        const change = classifyChangeForDomain(domain, domainCurrent, domainBaseline, domainPrior);
+        const change = classifyChangeForDomain(domain, domainCurrent, domainBaseline, domainPrior, domainNew);
         changes.push(change);
       } catch {
         changes.push({

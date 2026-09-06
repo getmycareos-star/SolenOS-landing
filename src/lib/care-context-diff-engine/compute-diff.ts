@@ -6,6 +6,7 @@ import {
 import type { CareContextDiffSections, ProcessCareContextDiffInput } from "./types";
 import type { CanonicalCareEvent } from "../situation-entry/types";
 import type { ChangeCategory } from "./types";
+import { domainForEvent } from "../care-state-change-detector";
 
 function classifyChange(text: string): ChangeCategory {
   for (const { category, pattern } of CATEGORY_PATTERNS) {
@@ -21,14 +22,6 @@ function formatCategoryLabel(category: ChangeCategory): string {
     .join(" ");
 }
 
-function abstractNewEvent(event: CanonicalCareEvent): string {
-  const category = classifyChange(event.raw_input);
-  if (category !== "other") {
-    return `New ${formatCategoryLabel(category).toLowerCase()} signal recorded`;
-  }
-  return `${event.extracted_type.replace(/_/g, " ")} observation added`;
-}
-
 function daysBetween(from: string, to: string): number {
   const ms = new Date(to).getTime() - new Date(from).getTime();
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
@@ -38,18 +31,64 @@ export function computeCareContextDiffSections(
   input: ProcessCareContextDiffInput,
   priorComprehendedAt: string | null,
 ): CareContextDiffSections {
-  const { state_diff, context, events_created, what_changed, behavior, continuity_decay } = input;
+  const {
+    state_diff,
+    context,
+    events_created,
+    what_changed,
+    behavior,
+    continuity_decay,
+    care_state_change_report,
+  } = input;
   const activeEvents = context.events.filter(
     (e) => e.status !== "invalidated" && e.status !== "superseded",
   );
 
   const factual_delta: string[] = [];
-  for (const event of events_created) {
-    factual_delta.push(abstractNewEvent(event));
+
+  // Primary: semantic state changes from care-state-change-detector
+  const stateChanges = care_state_change_report?.primary_changes ?? [];
+  const semanticChanges = stateChanges
+    .filter(
+      (c) =>
+        c.classification !== "STABLE" &&
+        c.classification !== "UNCERTAIN" &&
+        c.confidence !== "low",
+    )
+    .slice(0, 5);
+  for (const change of semanticChanges) {
+    const domain = change.domain.replace(/_/g, " ");
+    const classification = change.classification.toLowerCase();
+    const confidence =
+      change.confidence === "high"
+        ? ""
+        : change.confidence === "medium"
+          ? " (moderate confidence)"
+          : " (needs confirmation)";
+    factual_delta.push(`${domain} — ${classification}${confidence}`);
   }
-  for (const id of state_diff.updated_events.slice(0, 3)) {
-    factual_delta.push("Existing observation updated in care context");
-    void id;
+
+  // Fallback: structural event changes
+  if (factual_delta.length === 0) {
+    for (const event of events_created) {
+      const domain = domainForEvent(event);
+      const typeLabel = event.extracted_type.replace(/_/g, " ");
+      const text = domain
+        ? `New ${domain} observation recorded`
+        : `New ${typeLabel} recorded`;
+      factual_delta.push(text);
+    }
+  }
+
+  for (const id of state_diff.updated_events.slice(0, 2)) {
+    const event = context.events.find((e) => e.id === id);
+    if (event) {
+      const domain = domainForEvent(event);
+      const text = domain
+        ? `Existing ${domain} observation updated`
+        : "Existing observation updated";
+      factual_delta.push(text);
+    }
   }
   for (const id of state_diff.invalidated_events.slice(0, 2)) {
     factual_delta.push("Prior observation marked as no longer valid");
@@ -67,23 +106,55 @@ export function computeCareContextDiffSections(
   }
 
   const directional_change: string[] = [];
-  const recentText = activeEvents.slice(-8).map((e) => e.raw_input).join(" ");
-  const improvementCount = activeEvents.filter((e) => IMPROVEMENT_SIGNALS.test(e.raw_input)).length;
-  const deteriorationCount = activeEvents.filter((e) => DETERIORATION_SIGNALS.test(e.raw_input)).length;
 
-  if (behavior.behavioral_change_detected) {
-    directional_change.push("Behavioral pattern shift detected in recent period");
+  // Primary: semantic trajectory from state change report
+  if (stateChanges.length > 0) {
+    const worsening = stateChanges.filter(
+      (c) => c.trajectory === "worsening" && c.classification !== "NEW",
+    );
+    const improving = stateChanges.filter(
+      (c) => c.trajectory === "improving" && c.classification !== "RESOLVED",
+    );
+    const newDomains = stateChanges.filter((c) => c.classification === "NEW");
+
+    if (worsening.length >= 2) {
+      const domains = worsening.map((c) => c.domain.replace(/_/g, " ")).join(" and ");
+      directional_change.push(`Multiple areas showing concerning signals: ${domains}`);
+    } else if (worsening.length === 1) {
+      directional_change.push(
+        `${worsening[0]!.domain.replace(/_/g, " ")} showing concerning signals`,
+      );
+    }
+    if (improving.length > 0 && worsening.length === 0) {
+      const domains = improving.map((c) => c.domain.replace(/_/g, " ")).join(" and ");
+      directional_change.push(`Positive signals in: ${domains}`);
+    }
+    if (newDomains.length >= 2) {
+      const domains = newDomains.map((c) => c.domain.replace(/_/g, " ")).join(" and ");
+      directional_change.push(`New observations across: ${domains}`);
+    }
   }
-  if (deteriorationCount > improvementCount) {
-    directional_change.push("Available signals suggest deterioration or increased care needs");
-  } else if (improvementCount > deteriorationCount && deteriorationCount === 0) {
-    directional_change.push("Available signals suggest improvement or stabilization");
-  }
-  for (const pattern of input.multi_caregiver?.conflict_log.slice(-2) ?? []) {
-    directional_change.push(pattern.shared_abstract_message);
-  }
-  if (DETERIORATION_SIGNALS.test(recentText) && directional_change.length === 0) {
-    directional_change.push("Recent observations include deterioration indicators");
+
+  // Fallback: signal counting
+  if (directional_change.length === 0) {
+    const recentText = activeEvents.slice(-8).map((e) => e.raw_input).join(" ");
+    const improvementCount = activeEvents.filter((e) => IMPROVEMENT_SIGNALS.test(e.raw_input)).length;
+    const deteriorationCount = activeEvents.filter((e) => DETERIORATION_SIGNALS.test(e.raw_input)).length;
+
+    if (behavior.behavioral_change_detected) {
+      directional_change.push("Behavioral pattern shift detected in recent period");
+    }
+    if (deteriorationCount > improvementCount) {
+      directional_change.push("Available signals suggest deterioration or increased care needs");
+    } else if (improvementCount > deteriorationCount && deteriorationCount === 0) {
+      directional_change.push("Available signals suggest improvement or stabilization");
+    }
+    for (const pattern of input.multi_caregiver?.conflict_log.slice(-2) ?? []) {
+      directional_change.push(pattern.shared_abstract_message);
+    }
+    if (DETERIORATION_SIGNALS.test(recentText) && directional_change.length === 0) {
+      directional_change.push("Recent observations include deterioration indicators");
+    }
   }
 
   const newly_important: string[] = [];
@@ -137,7 +208,11 @@ export function computeCareContextDiffSections(
       `Current focus: ${input.state_of_care.what_matters_most}`,
     );
   }
-  if (deteriorationCount > improvementCount && (directional_change.length > 0 || newly_important.length > 0)) {
+
+  // Use semantic trajectory summary when available
+  if (care_state_change_report?.trajectory_summary) {
+    system_interpretation.push(care_state_change_report.trajectory_summary);
+  } else if (deteriorationCount > improvementCount && (directional_change.length > 0 || newly_important.length > 0)) {
     system_interpretation.push(
       "Overall care stability may be decreasing due to compounding recent changes",
     );

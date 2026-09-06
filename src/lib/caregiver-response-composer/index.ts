@@ -567,6 +567,16 @@ export function composeCaregiverResponse(params: {
   hasDocuments?: boolean;
   /** Baseline→change note from Care Reality / baseline engines — never scenario templates. */
   baselineChangeNote?: string | null;
+  /** Semantic state change report from care-state-change-detector. */
+  stateChangeReport?: {
+    primary_changes: Array<{
+      domain: string;
+      classification: string;
+      confidence: string;
+      evidence: string[];
+    }>;
+    trajectory_summary?: string;
+  } | null;
 }): ComposedCaregiverResponse {
   const { turn, latestRawText, kind } = params;
   const baselineChangeNote = params.baselineChangeNote?.trim() || null;
@@ -890,6 +900,33 @@ export function composeCaregiverResponse(params: {
     !pushback
   ) {
     what_changed = scrub(modelOrientation.what_changed);
+  }
+
+  // Semantic state changes from care-state-change-detector (NEW, WORSENED, IMPROVED, etc.)
+  if (!what_changed && params.stateChangeReport && !gatheringContext && !pushback) {
+    const report = params.stateChangeReport;
+    const meaningful = report.primary_changes.filter(
+      (c) =>
+        c.classification === "NEW" ||
+        c.classification === "WORSENED" ||
+        c.classification === "IMPROVED" ||
+        c.classification === "CONFLICTING" ||
+        c.classification === "RECURRING",
+    );
+    if (meaningful.length > 0) {
+      const top = meaningful[0]!;
+      const domain = top.domain.replace(/_/g, " ");
+      const classification = top.classification.toLowerCase();
+      const confidence =
+        top.confidence === "high"
+          ? ""
+          : top.confidence === "medium"
+            ? " (moderate confidence)"
+            : " (needs confirmation)";
+      what_changed = `${domain} change: ${classification}${confidence}`.slice(0, 200);
+    } else if (report.trajectory_summary && !improvement) {
+      what_changed = scrub(report.trajectory_summary.slice(0, 200));
+    }
   }
 
   let situation_summary: string | null = null;
@@ -1283,11 +1320,12 @@ export function composeCaregiverResponse(params: {
         "Staying with what you already shared — nothing more is needed right now.";
       what_can_wait = "Filling every missing detail tonight.";
       what_may_become_serious = null;
-} else if (careProjection && understandingCanPrioritize) {
+    } else if (careProjection && understandingCanPrioritize) {
       what_matters_now = scrub(careProjection.what_matters_now);
       what_can_wait = scrub(careProjection.what_can_wait);
       what_may_become_serious = null;
     }
+
     // Fallback to dementia-profile hints only when understandingCanPrioritize is false
     if (!understandingCanPrioritize) {
       const profileMatters = caregiverMattersHintFromClinicalProfile({
@@ -1367,7 +1405,7 @@ if (improvement) {
     // Never override projection-derived what_matters_now (understanding is primary source).
     if (show_clarity && !understandingCanPrioritize) {
       const focus = laneLines[0]?.replace(/^Still unclear:\s*/i, "") ?? null;
-what_matters_now = buildMattersNowOrientation({
+      what_matters_now = buildMattersNowOrientation({
         subjectLabel: named,
         heldFocus: focus,
         baselineChange: baselineChangeNote,
@@ -2148,6 +2186,31 @@ connection_note = scrubPasteField(connection_note);
   );
   follow_up_items.length = 0;
   follow_up_items.push(...cleanedFollowUps.slice(0, 2));
+
+  // Semantic state changes from care-state-change-detector — final authority for what_matters_now.
+  if (show_clarity && !pushback && !improvement && params.stateChangeReport) {
+    const report = params.stateChangeReport;
+    const meaningful = report.primary_changes.filter(
+      (c) =>
+        (c.classification === "NEW" ||
+          c.classification === "WORSENED" ||
+          c.classification === "CONFLICTING" ||
+          c.classification === "IMPROVED") &&
+        (c.classification === "NEW" || c.confidence !== "low"),
+    );
+    if (meaningful.length > 0 && (!what_matters_now || /most important next|how this sits|what was usual|understanding what is changing/i.test(what_matters_now))) {
+      const top = meaningful[0]!;
+      const domain = top.domain.replace(/_/g, " ");
+      const classification = top.classification.toLowerCase();
+      const confidence =
+        top.confidence === "high"
+          ? ""
+          : top.confidence === "medium"
+            ? " (moderate confidence)"
+            : " (needs confirmation)";
+      what_matters_now = `${domain} change: ${classification}${confidence}`.slice(0, 160);
+    }
+  }
 
   const composed: ComposedCaregiverResponse = {
     recognition_line,

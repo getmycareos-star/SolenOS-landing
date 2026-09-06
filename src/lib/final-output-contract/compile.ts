@@ -35,6 +35,35 @@ function buildWhatIsHappening(response: CompileSource): string {
     response.north_star_experience_layer?.continuity_recognition?.trim() ?? "";
   const memorySummary = response.memory_strategy_layer?.current_status_summary ?? [];
 
+  // Primary: semantic care state changes (NEW / WORSENED / IMPROVED / etc.)
+  const stateChanges = response.care_state_change_report?.primary_changes ?? [];
+  const changeLines = stateChanges
+    .map((c) => {
+      const domain = c.domain.replace(/_/g, " ");
+      const classification = c.classification.toLowerCase();
+      return `${domain} — ${classification}`;
+    })
+    .slice(0, 3);
+  if (changeLines.length > 0) {
+    const changeText = changeLines.join(" · ");
+    const withSummary =
+      memorySummary.length > 0
+        ? `${changeText} · Current status: ${memorySummary.slice(0, 2).join("; ")}`
+        : changeText;
+    return continuityPrefix ? `${continuityPrefix} ${withSummary}` : withSummary;
+  }
+
+  // Secondary: care context diff sections with meaningful change
+  const diff = response.care_context_diff_layer?.diff;
+  if (diff?.sections?.directional_change?.length > 0) {
+    const diffText = diff.sections.directional_change.slice(0, 3).join(" · ");
+    const withSummary =
+      memorySummary.length > 0
+        ? `${diffText} · Current status: ${memorySummary.slice(0, 2).join("; ")}`
+        : diffText;
+    return continuityPrefix ? `${continuityPrefix} ${withSummary}` : withSummary;
+  }
+
   if (response.what_i_understood.length === 0) {
     if (response.events_created.length > 0) {
       const body = response.events_created
@@ -103,6 +132,30 @@ function buildWhatMattersNow(response: CompileSource): string {
   const socMatters = response.state_of_care_summary_layer?.summary?.what_matters_most;
   if (socMatters && response.is_first_situation) {
     return socMatters.slice(0, 160);
+  }
+
+  // Primary: semantic state changes that are NEW, WORSENED, or CONFLICTING
+  const stateChanges = response.care_state_change_report?.all_changes ?? [];
+  const meaningfulChanges = stateChanges.filter(
+    (c) =>
+      (c.classification === "NEW" ||
+        c.classification === "WORSENED" ||
+        c.classification === "CONFLICTING" ||
+        c.classification === "IMPROVED") &&
+      (c.classification === "NEW" || c.confidence !== "low"),
+  );
+  if (meaningfulChanges.length > 0) {
+    const top = meaningfulChanges[0]!;
+    const domain = top.domain.replace(/_/g, " ");
+    const classification = top.classification.toLowerCase();
+    const confidence =
+      top.confidence === "high"
+        ? ""
+        : top.confidence === "medium"
+          ? " (moderate confidence)"
+          : " (low confidence — needs confirmation)";
+    const text = `${domain} change: ${classification}${confidence}`;
+    return text.slice(0, 160);
   }
 
   const momentKnown = response.moment_of_need_layer?.sections.what_we_know[0];

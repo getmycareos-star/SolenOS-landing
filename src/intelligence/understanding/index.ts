@@ -211,6 +211,7 @@ export async function understandFromExtraction(
     state_of_care: null as any,
     attention_event_ids: [],
     as_of: timestamp ?? new Date().toISOString(),
+    care_state_change_report: null,
   });
 
   // 13. Process care state engine

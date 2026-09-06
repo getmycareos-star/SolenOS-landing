@@ -40,4 +40,5 @@ export type ProcessCareContextDiffInput = {
   state_of_care?: import("../state-of-care-summary-engine/types").StateOfCareSummary;
   attention_event_ids: string[];
   as_of?: string;
+  care_state_change_report?: import("../care-state-change-detector").CareStateChangeReport | null;
 };
