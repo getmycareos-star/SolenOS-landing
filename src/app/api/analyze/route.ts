@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runAnalyzePipeline } from "@/lib/analyze-pipeline";
+import { isAnalyzeFailure, runAnalyzePipeline } from "@/lib/analyze-pipeline";
 import { recordReliefMeasurementEvent } from "@/lib/telemetry-persistence/server";
 import type { CaregiverDepletionSignalsResult } from "@/lib/caregiver-depletion-signals";
 
@@ -22,6 +22,10 @@ export async function POST(request: NextRequest) {
       ...context,
     });
 
+    if (isAnalyzeFailure(result)) {
+      return NextResponse.json(result, { status: 422 });
+    }
+
     // Step 10: RELIEF + SIGNAL LOGGING
     // Persist caregiver depletion signals as telemetry labels on the interaction.
     const depletionSignals = (result as any)
@@ -36,16 +40,11 @@ export async function POST(request: NextRequest) {
 
     void recordReliefMeasurementEvent({
       telemetry_user_id: context?.telemetry_user_id ?? "anonymous",
+      input_raw: input,
       prior_input_raw: input,
-      output_structured: result,
-      risk_level: result.risk_level,
+      output: result,
       latency_ms: 0,
       structure_valid: true,
-      semantic_valid: true,
-      input_category: "general",
-      relief_outcome: "none",
-      requery_detected: false,
-      helpful_feedback: null,
       care_context_state: "active_care",
       caregiver_depletion_state,
       is_single_caregiver,
