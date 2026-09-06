@@ -1,7 +1,5 @@
 import {
   CATEGORY_PATTERNS,
-  DETERIORATION_SIGNALS,
-  IMPROVEMENT_SIGNALS,
 } from "./contract-constants";
 import type { CareContextDiffSections, ProcessCareContextDiffInput } from "./types";
 import type { CanonicalCareEvent } from "../situation-entry/types";
@@ -212,13 +210,13 @@ export function computeCareContextDiffSections(
   // Use semantic trajectory summary when available
   if (care_state_change_report?.trajectory_summary) {
     system_interpretation.push(care_state_change_report.trajectory_summary);
-  } else if (deteriorationCount > improvementCount && (directional_change.length > 0 || newly_important.length > 0)) {
+  } else if (directional_change.length > 0 && newly_important.length > 0) {
     system_interpretation.push(
       "Overall care stability may be decreasing due to compounding recent changes",
     );
   } else if (what_changed.length === 0 && events_created.length === 0) {
     system_interpretation.push("Care context appears stable relative to last comprehension point");
-  } else if (improvementCount > deteriorationCount) {
+  } else if (directional_change.length > 0 && /improvement|stabilization/i.test(directional_change.join(" "))) {
     system_interpretation.push("Recent changes suggest cautious improvement or stabilization");
   } else {
     system_interpretation.push("Care context updated — review attention items and next steps");
