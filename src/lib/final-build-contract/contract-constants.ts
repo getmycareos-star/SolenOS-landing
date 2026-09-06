@@ -23,6 +23,11 @@ export const FINAL_BUILD_OUTPUT_FIELDS = [
   "what_to_ask_next",
   "risk_level",
   "what_can_wait",
+  "follow_up_items",
+  "decision_trace",
+  "confidence_state",
+  "trust_layer",
+  "transparency_panel",
 ] as const;
 
 export const FINAL_BUILD_FORBIDDEN_SYSTEM_TYPES = [

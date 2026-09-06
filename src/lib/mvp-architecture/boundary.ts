@@ -17,15 +17,43 @@ export const CAREGIVER_MVP_API_ROUTES = ["/api/situation"] as const;
  * Legacy analyze-surface allowlist used by verify-mvp-architecture (ops compression path).
  * Not the caregiver product entry.
  */
-export const MVP_ALLOWED_API_ROUTES = ["/api/extract", "/api/share-intake", "/api/situation"] as const;
+export const MVP_ALLOWED_API_ROUTES = ["/api/extract", "/api/share-intake", "/api/situation", "/api/analyze"] as const;
 
-export const MVP_ALLOWED_FRONTEND_PAGES = ["src/app/page.tsx"] as const;
+export const MVP_ALLOWED_FRONTEND_PAGES = [
+  "src/app/page.tsx",
+  "src/app/about/page.tsx",
+  "src/app/capabilities/page.tsx",
+  "src/app/contact/page.tsx",
+  "src/app/early-access/page.tsx",
+  "src/app/help/page.tsx",
+  "src/app/how-it-works/page.tsx",
+  "src/app/metrics/page.tsx",
+  "src/app/mission/page.tsx",
+  "src/app/ops/page.tsx",
+  "src/app/ops/clarity/page.tsx",
+  "src/app/ops/devtools/page.tsx",
+  "src/app/our-story/page.tsx",
+  "src/app/privacy/page.tsx",
+  "src/app/settings/page.tsx",
+  "src/app/share/page.tsx",
+  "src/app/start/page.tsx",
+  "src/app/support/page.tsx",
+  "src/app/terms/page.tsx",
+  "src/app/welcome/page.tsx",
+  "src/app/why-solenos/page.tsx",
+  "src/app/workspace/layout.tsx",
+  "src/app/workspace/page.tsx",
+  "src/app/workspace/documents/page.tsx",
+  "src/app/workspace/settings/page.tsx",
+  "src/app/workspace/timeline/page.tsx",
+] as const;
 
 export const MVP_ALLOWED_FRONTEND_SHELL = [
   "src/app/layout.tsx",
   "src/app/globals.css",
   "src/app/icon.tsx",
   "src/app/opengraph-image.tsx",
+  "src/app/global-error.tsx",
 ] as const;
 
 export const MVP_LLM = "gemini-1.5-pro" as const;

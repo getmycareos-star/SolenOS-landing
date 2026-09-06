@@ -17,6 +17,7 @@ export const REQUIRED_OUTPUT_FIELDS = [
   "decision_trace",
   "confidence_state",
   "trust_layer",
+  "transparency_panel",
 ] as const;
 
 export const DECISION_TRACE_FIELDS = [
@@ -37,4 +38,4 @@ export const MAX_FOLLOW_UP_ITEMS = 8;
 
 /** LLM / Gemini envelope — the only allowed JSON output target. */
 export const LLM_OUTPUT_SCHEMA_JSON =
-  '{ what_is_happening: string, what_matters_now: string, what_to_ask_next: string, risk_level: "low" | "medium" | "high", what_can_wait: string, follow_up_items: string[], decision_trace: { events: string[], assumptions: string[], unknowns: string[], evidence_sources: string[] }, confidence_state: { overall_confidence: "low" | "medium" | "high", completeness: number, reasoning_limits: string[] }, trust_layer: { known: object[], assumed: object[], unknown: object[], recency: { last_updated_at: string | null, freshness_score: number, interpretation: string }, confidence: number } }';
+  '{ what_is_happening: string, what_matters_now: string, what_to_ask_next: string, risk_level: "low" | "medium" | "high" | "critical", what_can_wait: string, follow_up_items: string[], decision_trace: { events: string[], assumptions: string[], unknowns: string[], evidence_sources: string[] }, confidence_state: { overall_confidence: "low" | "medium" | "high", completeness: number, reasoning_limits: string[] }, trust_layer: { known: object[], assumed: object[], unknown: object[], recency: { last_updated_at: string | null, freshness_score: number, interpretation: string }, confidence: number }, transparency_panel: { data_used: { care_events: string[], timeline_segments: string[], caregiver_inputs: string[] }, data_ignored: { conflicting: string[], low_confidence: string[], stale_or_decayed: string[] }, reason_for_output: string, evidence_breakdown: object[], confidence_scores: { overall_pct: number, tier: "low" | "medium" | "high" }, recency: { last_update_at: string | null, critical_event_ages: string[], decay_status: "fresh" | "aging" | "stale" }, observed: string[], inferred: string[] } }';

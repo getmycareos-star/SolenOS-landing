@@ -70,13 +70,14 @@ export const CANONICAL_CHAOS_PROCESSING_PIPELINE = [
   "Structured transformation",
 ] as const;
 
-/** Section 12 — fixed output model (5 fields only). */
+/** Section 12 — fixed output model (10 fields). */
 export const CANONICAL_DISPLAY_SECTIONS = [
   { field: "what_is_happening", label: "WHAT IS HAPPENING" },
   { field: "what_matters_now", label: "WHAT MATTERS NOW" },
   { field: "what_to_ask_next", label: "WHAT TO ASK NEXT" },
   { field: "risk_level", label: "RISK LEVEL" },
   { field: "what_can_wait", label: "WHAT CAN WAIT" },
+  { field: "follow_up_items", label: "FOLLOW-UP ITEMS" },
 ] as const;
 
 export const CANONICAL_OUTPUT_FIELD_ORDER = [
@@ -85,6 +86,11 @@ export const CANONICAL_OUTPUT_FIELD_ORDER = [
   "what_to_ask_next",
   "risk_level",
   "what_can_wait",
+  "follow_up_items",
+  "decision_trace",
+  "confidence_state",
+  "trust_layer",
+  "transparency_panel",
 ] as const;
 
 export const CANONICAL_RISK_LEVELS = ["low", "medium", "high", "critical"] as const;

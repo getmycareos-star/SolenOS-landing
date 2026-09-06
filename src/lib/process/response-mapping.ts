@@ -65,5 +65,68 @@ export function mapResponse(input: ResponseMappingInput): SolenOSOutput {
       input.decision.next_question || "What is the one missing fact right now?",
     risk_level: canonicalizeRiskLevel(risk_level),
     what_can_wait,
+    follow_up_items: input.signals.context_entities.slice(0, 5),
+    decision_trace: {
+      events: input.signals.medical_entities.slice(0, 5),
+      assumptions: input.signals.inferred.slice(0, 3).map((inf) => inf.signal),
+      unknowns: input.signals.uncertainty_markers.slice(0, 5),
+      evidence_sources: input.signals.medical_entities.slice(0, 3),
+    },
+    confidence_state: {
+      overall_confidence: uncertain ? "low" : "medium",
+      completeness: Math.round(input.signals.emotional_intensity * 100),
+      reasoning_limits: input.signals.uncertainty_markers.slice(0, 3),
+    },
+    trust_layer: {
+      known: input.signals.medical_entities.slice(0, 3).map((entity) => ({
+        statement: entity,
+        source: "caregiver_input",
+        source_type: "caregiver_input" as const,
+      })),
+      assumed: input.signals.context_entities.slice(0, 2).map((entity) => ({
+        statement: entity,
+        reasoning_basis: "contextual inference",
+        source_engine: "signal_extraction",
+      })),
+      unknown: input.signals.uncertainty_markers.slice(0, 3).map((m) => ({
+        statement: m,
+        drives_clarification: true,
+      })),
+      recency: {
+        last_updated_at: new Date().toISOString(),
+        freshness_score: 0.5,
+        interpretation: "recently recorded",
+      },
+      confidence: uncertain ? 0.2 : 0.5,
+    },
+    transparency_panel: {
+      data_used: {
+        care_events: input.signals.medical_entities.slice(0, 3),
+        timeline_segments: [],
+        caregiver_inputs: [input.raw.slice(0, 200)],
+      },
+      data_ignored: {
+        conflicting: [],
+        low_confidence: input.signals.uncertainty_markers.slice(0, 2),
+        stale_or_decayed: [],
+      },
+      reason_for_output: "Structured cognitive decomposition of caregiver input.",
+      evidence_breakdown: input.signals.medical_entities.slice(0, 3).map((entity) => ({
+        conclusion: entity,
+        evidence_type: "observation" as const,
+        confidence_pct: 50,
+      })),
+      confidence_scores: {
+        overall_pct: uncertain ? 20 : 50,
+        tier: uncertain ? "low" : "medium",
+      },
+      recency: {
+        last_update_at: new Date().toISOString(),
+        critical_event_ages: [],
+        decay_status: "fresh",
+      },
+      observed: input.signals.medical_entities.slice(0, 3),
+      inferred: input.signals.inferred.slice(0, 2).map((inf) => inf.signal),
+    },
   });
 }

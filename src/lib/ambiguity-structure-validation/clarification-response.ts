@@ -18,6 +18,7 @@ export function buildStructuredClarificationResponse(clarity: InputClarity): Sol
           ? questions
           : ["What is happening with care right now — in one or two sentences?"],
       unknowns: clarity.missingDimensions,
+      risk_level: "low",
     }),
   );
 }

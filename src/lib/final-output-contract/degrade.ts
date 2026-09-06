@@ -54,6 +54,7 @@ export function buildDegradedOutput(input: {
   reason: string;
   questions?: string[];
   unknowns?: string[];
+  risk_level?: "low" | "medium" | "high";
 }): FinalOutputContract {
   const questions =
     input.questions && input.questions.length > 0
@@ -66,7 +67,7 @@ export function buildDegradedOutput(input: {
       "The input does not yet have enough structure to interpret safely. Key details are still uncertain.",
     what_matters_now: "Unable to determine priority — add concrete facts before acting.",
     what_to_ask_next: questions,
-    risk_level: "medium",
+    risk_level: input.risk_level ?? "medium",
     what_can_wait:
       "Priority assessment until missing details are clarified. Absence of detail is not a signal of safety.",
     follow_up_items: [],

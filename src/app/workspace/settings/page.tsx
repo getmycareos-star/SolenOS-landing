@@ -7,6 +7,7 @@ import {
   FileText,
   Info,
   Lock,
+  Share2,
   Shield,
   User,
 } from "lucide-react";
@@ -417,6 +418,7 @@ function PrivacyCard() {
 
 /** Product — real product info + content links (How It Works, About, Help, etc.). */
 function ProductCard() {
+  const { show, render } = useToast();
   const items: { label: string; value: string }[] = [
     { label: "App version", value: "0.1.0" },
     { label: "Release channel", value: "Early access" },
@@ -431,6 +433,25 @@ function ProductCard() {
     { label: "Founder's Story", href: "/our-story" },
     { label: "Our Mission", href: "/mission" },
   ];
+
+  const handleShareSolenos = useCallback(async () => {
+    const shareData = {
+      title: "SolenOS",
+      text: "I am using SolenOS to keep care information organized.",
+      url: typeof window !== "undefined" ? window.location.origin : undefined,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        show("Shared ✓", "success");
+      } else {
+        await navigator.clipboard.writeText(shareData.url ?? "https://solenosai.netlify.app/");
+        show("SolenOS link copied", "success");
+      }
+    } catch {
+      show("Could not share", "error");
+    }
+  }, [show]);
 
   return (
     <section className="mobile-settings-card">
@@ -457,6 +478,18 @@ function ProductCard() {
           </div>
         ))}
       </div>
+      <div className="settings-product-share">
+        <p className="settings-product-share-text">
+          Share SolenOS with someone who might find it helpful.
+        </p>
+        <div className="settings-product-share-actions">
+          <Button variant="secondary" onClick={handleShareSolenos}>
+            <Share2 size={16} aria-hidden />
+            Share SolenOS
+          </Button>
+        </div>
+      </div>
+      {render()}
     </section>
   );
 }

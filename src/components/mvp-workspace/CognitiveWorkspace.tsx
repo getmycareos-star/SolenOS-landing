@@ -24,6 +24,7 @@ import {
 import type { Situation } from "@/lib/ui-runtime/types";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { AddSituationPanel } from "./AddSituationPanel";
+import type { WorkspaceAction } from "./WorkspaceMoreMenu";
 import { ActivationOutputPanel } from "./ActivationOutputPanel";
 import { SituationResponsePanel } from "./SituationResponsePanel";
 import { CareRecipientNameGate } from "./CareRecipientNameGate";
@@ -147,6 +148,15 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   /** Share Target intake id — same pipeline after claim. */
   const [pendingShareId, setPendingShareId] = useState<string | null>(null);
 
+  /** PWA install prompt — deferred until user action. */
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const [canAddToHome, setCanAddToHome] = useState(false);
+
+  /** Workspace management state. */
+  const [isPinned, setIsPinned] = useState(false);
+  const [isArchived, setIsArchived] = useState(false);
+  const [hasCareInfo, setHasCareInfo] = useState(false);
+
   const go = useCallback((next: WorkspaceState) => {
     setTransitionKey((k) => k + 1);
     setState(next);
@@ -162,6 +172,19 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", next || "/");
     }
+
+    // PWA install prompt — capture for Add to Home action.
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanAddToHome(true);
+    };
+    window.addEventListener("beforeinstallprompt", handler as EventListener);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler as EventListener);
+    };
+    // Intentionally mount-only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -363,8 +386,12 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       window.localStorage.setItem(DURABLE_CARE_KEY_STORAGE, careKey);
       window.localStorage.setItem(CARE_SESSION_STORAGE_KEY, interactionSessionId());
 
-      // Stay in update mode only while this ACS has more than one note.
+      // Update workspace info flags.
       const obsCount = situationData.active_care_situation?.observations?.length ?? 0;
+      const hasInfo = obsCount > 0 || (situationData.events_created?.length ?? 0) > 0;
+      setHasCareInfo(hasInfo);
+
+      // Stay in update mode only while this ACS has more than one note.
       setEntryMode(obsCount > 1 ? "update" : "initial");
       setSubmitPhase("done");
       setLastSharedDisplay(sharedDisplay);
@@ -412,6 +439,112 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       setLoading(false);
     }
   }
+
+  async function handleWorkspaceAction(action: WorkspaceAction) {
+    switch (action) {
+      case "pin": {
+        setIsPinned(true);
+        try {
+          window.localStorage.setItem("solenos_workspace_pinned", "1");
+        } catch {
+          /* ignore */
+        }
+        break;
+      }
+      case "archive": {
+        const confirmed = window.confirm(
+          "Archive this care record?\n\nArchived records are hidden from the active view but not deleted. You can recover them later.",
+        );
+        if (!confirmed) return;
+        setIsArchived(true);
+        try {
+          window.localStorage.setItem("solenos_workspace_archived", "1");
+        } catch {
+          /* ignore */
+        }
+        // In a full implementation, this would navigate to an archive view.
+        // For MVP, we redirect to /workspace which will show the empty state.
+        window.location.href = "/workspace";
+        break;
+      }
+      case "delete": {
+        const confirmed = window.confirm(
+          "Delete this care record?\n\nThis will permanently remove all care information from this device. This action cannot be undone.",
+        );
+        if (!confirmed) return;
+        try {
+          const keysToRemove = [
+            "solenos_durable_care_key",
+            "solenos_care_session_id",
+            "solenos_telemetry_user_id",
+            "solenos_situations",
+            "solenos_timeline",
+            "solenos_active_situation_id",
+            "solenos_care_recipient_display_name",
+            "solenos_care_profile",
+            "solenos_care_recipient_id",
+            "solenos_last_input_raw",
+            "solenos_notif_prefs",
+            "solenos_data_training",
+            "solenos_language_preference",
+            "solenos_early_access_consent_v1",
+            "onboarding_complete",
+            "onboarding_complete_at",
+            "solenos_workspace_pinned",
+            "solenos_workspace_archived",
+          ];
+          keysToRemove.forEach((k) => {
+            try {
+              window.localStorage.removeItem(k);
+            } catch {
+              /* ignore */
+            }
+          });
+        } catch {
+          /* ignore */
+        }
+        window.location.href = "/start";
+        break;
+      }
+      case "add_to_home": {
+        if (deferredPrompt) {
+          try {
+            void (deferredPrompt as any).prompt();
+            const { outcome } = await (deferredPrompt as any).userChoice;
+            if (outcome === "accepted") {
+              setCanAddToHome(false);
+            }
+          } catch {
+            /* prompt may fail if already shown */
+          }
+          setDeferredPrompt(null);
+        } else {
+          // Fallback: open browser menu instructions
+          window.alert(
+            "To add SolenOS to your home screen:\n\n" +
+              "iOS: Tap Share → Add to Home Screen\n" +
+              "Android: Tap menu → Add to Home screen\n" +
+              "Desktop: Click the install icon in the address bar.",
+          );
+        }
+        break;
+      }
+    }
+  }
+
+  // Restore pinned/archived state from localStorage on mount.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const pinned = window.localStorage.getItem("solenos_workspace_pinned");
+      if (pinned === "1") setIsPinned(true);
+      const archived = window.localStorage.getItem("solenos_workspace_archived");
+      if (archived === "1") setIsArchived(true);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only
+  }, []);
 
   async function handleDoneForNow() {
     // Pause interaction only — never resolve care reality or restart-from-zero.
@@ -644,6 +777,14 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                         ? "update"
                         : "initial"
                     }
+                    caregiverId={caregiverId}
+                    careSessionId={interactionSessionId()}
+                    careRecipientName={displayName ?? undefined}
+                    onWorkspaceAction={handleWorkspaceAction}
+                    isPinned={isPinned}
+                    isArchived={isArchived}
+                    canAddToHome={canAddToHome}
+                    hasCareInfo={hasCareInfo}
                   />
                 </>
               )}

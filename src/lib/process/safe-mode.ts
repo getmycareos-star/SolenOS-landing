@@ -62,6 +62,42 @@ export function applySafeMode(params: {
       "What is the one fact you are least certain about right now?",
     risk_level: "medium",
     what_can_wait: "Most actions wait until the missing fact above is clarified.",
+    follow_up_items: [],
+    decision_trace: {
+      events: [],
+      assumptions: [],
+      unknowns: ["AMBIGUITY", "MISSING_CONTEXT"],
+      evidence_sources: [],
+    },
+    confidence_state: {
+      overall_confidence: "low",
+      completeness: 0,
+      reasoning_limits: ["Input lacks structure for safe interpretation."],
+    },
+    trust_layer: {
+      known: [],
+      assumed: [],
+      unknown: [
+        { statement: "AMBIGUITY", drives_clarification: true },
+        { statement: "MISSING_CONTEXT", drives_clarification: true },
+      ],
+      recency: {
+        last_updated_at: null,
+        freshness_score: 0,
+        interpretation: "potentially outdated (>7–14 days)",
+      },
+      confidence: 0.2,
+    },
+    transparency_panel: {
+      data_used: { care_events: [], timeline_segments: [], caregiver_inputs: [] },
+      data_ignored: { conflicting: [], low_confidence: [], stale_or_decayed: [] },
+      reason_for_output: "Safe mode activated due to insufficient structure.",
+      evidence_breakdown: [],
+      confidence_scores: { overall_pct: 15, tier: "low" },
+      recency: { last_update_at: null, critical_event_ages: [], decay_status: "stale" },
+      observed: [],
+      inferred: [],
+    },
   });
 }
 
@@ -75,5 +111,41 @@ export function safeModeMinimalInput(
     what_to_ask_next: "What changed today that you need clarity on?",
     risk_level: "medium",
     what_can_wait: "Everything else until a clear care update is provided.",
+    follow_up_items: [],
+    decision_trace: {
+      events: [],
+      assumptions: [],
+      unknowns: ["AMBIGUITY", "MISSING_CONTEXT"],
+      evidence_sources: [],
+    },
+    confidence_state: {
+      overall_confidence: "low",
+      completeness: 0,
+      reasoning_limits: ["Input lacks structure for safe interpretation."],
+    },
+    trust_layer: {
+      known: [],
+      assumed: [],
+      unknown: [
+        { statement: "AMBIGUITY", drives_clarification: true },
+        { statement: "MISSING_CONTEXT", drives_clarification: true },
+      ],
+      recency: {
+        last_updated_at: null,
+        freshness_score: 0,
+        interpretation: "potentially outdated (>7–14 days)",
+      },
+      confidence: 0.2,
+    },
+    transparency_panel: {
+      data_used: { care_events: [], timeline_segments: [], caregiver_inputs: [] },
+      data_ignored: { conflicting: [], low_confidence: [], stale_or_decayed: [] },
+      reason_for_output: "Safe mode activated due to insufficient structure.",
+      evidence_breakdown: [],
+      confidence_scores: { overall_pct: 15, tier: "low" },
+      recency: { last_update_at: null, critical_event_ages: [], decay_status: "stale" },
+      observed: [],
+      inferred: [],
+    },
   });
 }

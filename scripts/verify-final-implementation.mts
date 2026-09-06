@@ -68,17 +68,17 @@ if (GLOBAL_EXECUTION_PIPELINE[9] !== "RELIEF + SIGNAL LOGGING") {
 }
 console.log("✓ 10-step global execution pipeline defined");
 
-if (FINAL_IMPLEMENTATION_OUTPUT_FIELDS.length !== 5) {
-  throw new Error("output must be exactly 5 fields");
+if (FINAL_IMPLEMENTATION_OUTPUT_FIELDS.length !== 10) {
+  throw new Error("output must be exactly 10 fields");
 }
 const schemaKeys = Object.keys(SolenOSResponseSchema.parse(VERIFY_VALID_SOLENOS));
-if (schemaKeys.length !== 5) {
-  throw new Error("runtime schema must remain 5 fields");
+if (schemaKeys.length !== 10) {
+  throw new Error("runtime schema must have 10 fields");
 }
 if (GEMINI_OUTPUT_SCHEMA.includes("caregiver_depletion") || GEMINI_OUTPUT_SCHEMA.includes("care_context_state")) {
   throw new Error("gemini output schema must not include observational signal fields");
 }
-console.log("✓ 5-field output schema unchanged");
+console.log("✓ 10-field output schema unchanged");
 
 const migration = fs.readFileSync("db/migrations/007_caregiver_depletion_signals.sql", "utf-8");
 if (!migration.includes("caregiver_depletion_state") || !migration.includes("is_single_caregiver")) {

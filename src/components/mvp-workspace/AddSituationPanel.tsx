@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Camera, FileText, Loader2, Plus, ScanLine, Share2 } from "lucide-react";
+import { Camera, FileText, Loader2, MoreHorizontal, Plus, ScanLine } from "lucide-react";
 
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputProvenance } from "@/lib/care-events";
@@ -16,6 +16,15 @@ import Link from "next/link";
 import { extractAttachedDocument } from "./capture/extract-attached";
 import { SnapCameraCapture } from "./capture/SnapCameraCapture";
 import { ScanDocumentCapture } from "./capture/ScanDocumentCapture";
+import { WorkspaceMoreMenu } from "./WorkspaceMoreMenu";
+import { ShareCareSummaryPanel } from "./share/ShareCareSummaryPanel";
+
+type WorkspaceAction =
+  | "share_care_summary"
+  | "pin"
+  | "archive"
+  | "delete"
+  | "add_to_home";
 
 type Props = {
   value: string;
@@ -30,11 +39,22 @@ type Props = {
   /** Pending share-target intake id from /share redirect. */
   pendingShareId?: string | null;
   onShareClaimed?: () => void;
+  /** Workspace-level metadata for the More menu. */
+  caregiverId?: string;
+  careSessionId?: string;
+  careRecipientName?: string;
+  /** Fired when a workspace-level action is selected from the More menu. */
+  onWorkspaceAction?: (action: WorkspaceAction) => void;
+  isPinned?: boolean;
+  isArchived?: boolean;
+  canAddToHome?: boolean;
+  hasCareInfo?: boolean;
 };
 
 /**
  * Care entry — Input Entry Contract + ADR-018.
- * Scan / Snap / Upload / Share collect evidence only; same Living Care Record path.
+ * Scan / Snap / Upload collect evidence only; same Living Care Record path.
+ * Product-level sharing is handled separately in Settings.
  */
 export function AddSituationPanel({
   value,
@@ -48,16 +68,21 @@ export function AddSituationPanel({
   mode = "initial",
   pendingShareId = null,
   onShareClaimed,
+  caregiverId = "",
+  careSessionId = "",
+  careRecipientName,
+  onWorkspaceAction,
+  isPinned = false,
+  isArchived = false,
+  canAddToHome = false,
+  hasCareInfo = false,
 }: Props) {
   const [extracting, setExtracting] = useState(false);
   const [localHint, setLocalHint] = useState<string | null>(null);
   const [snapOpen, setSnapOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [lastEntryMethod, setLastEntryMethod] = useState<InputEntryMethod | null>(null);
-  const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
-  const [shareFallback, setShareFallback] = useState<string | null>(null);
-  const [shareError, setShareError] = useState<string | null>(null);
-  const [sharing, setSharing] = useState(false);
+  const [sharePanelOpen, setSharePanelOpen] = useState(false);
 
   const hasReadyDocs = documents.some((d) => d.status === "ready" && d.extractedText.trim());
   const canSubmit = (value.trim().length > 0 || hasReadyDocs) && !loading && !extracting;
@@ -166,46 +191,18 @@ export function AddSituationPanel({
 
   const isFirstCapture = mode === "initial" && !hasContextRoot;
 
-  const handleShare = useCallback(async () => {
-    setShareConfirmOpen(false);
-    setShareFallback(null);
-    setShareError(null);
-    setSharing(true);
-    try {
-      const shareData: ShareData = {
-        title: "SolenOS",
-        text: "I am using SolenOS to keep care information organized.",
-        url: typeof window !== "undefined" ? window.location.origin : undefined,
-      };
-      const canNative = typeof navigator !== "undefined" && typeof navigator.share === "function";
-      if (canNative) {
-        try {
-          await navigator.share(shareData);
-          return;
-        } catch (e) {
-          if (e instanceof DOMException && e.name === "AbortError") return; // user cancelled
-          // Fall through to fallback on any other failure.
-        }
+  const handleWorkspaceAction = useCallback(
+    (action: WorkspaceAction) => {
+      if (action === "share_care_summary") {
+        setSharePanelOpen(true);
       }
-      // Fallback: copy the link so the user can paste it into any app.
-      const link = shareData.url ?? "https://solenosai.netlify.app/";
-      let copied = false;
-      try {
-        await navigator.clipboard.writeText(link);
-        copied = true;
-      } catch {
-        /* clipboard may be unavailable on non-secure contexts */
-      }
-      setShareFallback(
-        copied
-          ? "SolenOS link copied. Paste it into any app to share. You can also add the details directly below."
-          : `Open ${link} to share SolenOS with someone.`,
-      );
-    } catch {
-      setShareError("Sharing is not available right now. You can type the details below instead.");
-    } finally {
-      setSharing(false);
-    }
+      onWorkspaceAction?.(action);
+    },
+    [onWorkspaceAction],
+  );
+
+  const handleSharePanelClose = useCallback(() => {
+    setSharePanelOpen(false);
   }, []);
 
   const handleRetryDoc = useCallback(
@@ -220,7 +217,7 @@ export function AddSituationPanel({
         }
         const next = await extractAttachedDocument(file, doc.entryMethod ?? "upload");
         onDocumentsChange(
-          documents.map((d) => (d.id === doc.id ? { ...next, id: doc.id } : d)),
+          documents.map((d) => (d.id === doc.id ? { ...next, id: d.id } : d)),
         );
         if (next.status === "failed") {
           setLocalHint(next.errorNote ?? "Could not read that file. Type the key details instead.");
@@ -235,7 +232,6 @@ export function AddSituationPanel({
   );
 
   return (
-
     <div className="workspace-panel-inner add-situation">
       <h2 className="workspace-headline">
         {mode === "update" ? "What changed?" : "What is happening right now?"}
@@ -291,20 +287,13 @@ export function AddSituationPanel({
               <span>{extracting ? "Reading…" : "Upload"}</span>
             </label>
 
-            <button
-              type="button"
-              className="composer-action"
-              disabled={busy}
-              aria-label="Share into SolenOS from other apps"
-              onClick={() => {
-                setShareConfirmOpen(true);
-                setShareFallback(null);
-                setShareError(null);
-              }}
-            >
-              <Share2 size={20} aria-hidden />
-              <span>Share</span>
-            </button>
+            <WorkspaceMoreMenu
+              onAction={handleWorkspaceAction}
+              isPinned={isPinned}
+              isArchived={isArchived}
+              canAddToHome={canAddToHome}
+              hasCareInfo={hasCareInfo}
+            />
           </div>
 
           <button
@@ -327,55 +316,6 @@ export function AddSituationPanel({
             )}
           </button>
         </div>
-
-        {shareConfirmOpen && (
-          <div className="share-confirm" role="dialog" aria-label="Share SolenOS">
-            <p className="panel-muted share-entry-hint">
-              Shared information may be added to the care record. Only share information you have
-              permission to manage.
-            </p>
-            <div className="share-confirm-actions">
-              <button
-                type="button"
-                className="composer-action"
-                disabled={sharing}
-                onClick={() => void handleShare()}
-              >
-                {sharing ? (
-                  <>
-                    <Loader2 className="spin" size={18} aria-hidden />
-                    Sharing…
-                  </>
-                ) : (
-                  <>
-                    <Share2 size={18} aria-hidden />
-                    Continue to share
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                className="link-button"
-                disabled={sharing}
-                onClick={() => setShareConfirmOpen(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {shareFallback && (
-          <p className="panel-muted share-entry-hint" role="status">
-            {shareFallback}
-          </p>
-        )}
-
-        {shareError && (
-          <p className="workspace-error" role="alert">
-            {shareError}
-          </p>
-        )}
 
         <p className="panel-muted upload-privacy-notice" role="note">
           {UPLOAD_PRIVACY_NOTICE}{" "}
@@ -408,39 +348,39 @@ export function AddSituationPanel({
         <p className="workspace-error" role="alert">
           {displayError ?? localHint}
         </p>
-        )}
+      )}
 
-        {documents.length > 0 && (
-          <ul>
-            {documents.map((doc) => (
-              <li key={doc.id}>
-                {doc.name}
-                {doc.status === "pending" && " · Reading…"}
-                {doc.status === "failed" &&
-                  ` · ${sanitizeCaregiverErrorMessage(doc.errorNote ?? "Could not read this document.")}`}
-                {doc.status === "ready" && " · Attached"}
-                {doc.status === "failed" && (
-                  <button
-                    type="button"
-                    className="link-button"
-                    disabled={loading}
-                    onClick={() => void handleRetryDoc(doc)}
-                  >
-                    Retry
-                  </button>
-                )}
+      {documents.length > 0 && (
+        <ul>
+          {documents.map((doc) => (
+            <li key={doc.id}>
+              {doc.name}
+              {doc.status === "pending" && " · Reading…"}
+              {doc.status === "failed" &&
+                ` · ${sanitizeCaregiverErrorMessage(doc.errorNote ?? "Could not read this document.")}`}
+              {doc.status === "ready" && " · Attached"}
+              {doc.status === "failed" && (
                 <button
                   type="button"
                   className="link-button"
                   disabled={loading}
-                  onClick={() => onDocumentsChange(documents.filter((d) => d.id !== doc.id))}
+                  onClick={() => void handleRetryDoc(doc)}
                 >
-                  Remove
+                  Retry
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
+              )}
+              <button
+                type="button"
+                className="link-button"
+                disabled={loading}
+                onClick={() => onDocumentsChange(documents.filter((d) => d.id !== doc.id))}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {hasContextRoot && (
         <p className="panel-muted">Ctrl+Enter (⌘+Enter) to add. Documents alone are enough.</p>
@@ -460,6 +400,15 @@ export function AddSituationPanel({
           void ingestFiles(files, "scan");
         }}
       />
+
+      {sharePanelOpen && caregiverId && careSessionId && (
+        <ShareCareSummaryPanel
+          caregiverId={caregiverId}
+          careSessionId={careSessionId}
+          careRecipientName={careRecipientName}
+          onClose={handleSharePanelClose}
+        />
+      )}
     </div>
   );
 }

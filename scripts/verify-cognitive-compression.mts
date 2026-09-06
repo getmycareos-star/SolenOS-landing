@@ -78,13 +78,13 @@ if (!GEMINI_OUTPUT_SCHEMA.includes('"low"') || GEMINI_OUTPUT_SCHEMA.includes('"L
 console.log("✓ lowercase risk_level with legacy uppercase normalization");
 
 const schemaKeys = Object.keys(SolenOSResponseSchema.parse(VERIFY_VALID_SOLENOS));
-if (schemaKeys.length !== 5) {
-  throw new Error("output schema must remain exactly 5 fields");
+if (schemaKeys.length !== 10) {
+  throw new Error("output schema must remain exactly 10 fields");
 }
-if (GEMINI_OUTPUT_SCHEMA.includes("follow_up_items") || GEMINI_OUTPUT_SCHEMA.includes("_meta")) {
-  throw new Error("gemini schema must not include extra fields");
+if (GEMINI_OUTPUT_SCHEMA.includes("_meta")) {
+  throw new Error("gemini schema must not include removed _meta field");
 }
-console.log("✓ 5-field output schema with no extras");
+console.log("✓ 10-field output schema with no extras");
 
 for (const marker of SYSTEM_PROMPT_SPEC_MARKERS) {
   if (!SOLENOS_SYSTEM_PROMPT.includes(marker)) {

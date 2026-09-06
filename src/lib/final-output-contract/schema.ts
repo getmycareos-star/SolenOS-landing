@@ -8,22 +8,27 @@ import { createEmptyConfidenceState, createEmptyDecisionTrace, createEmptyTrustL
 import type { FinalOutputContract, FinalOutputValidationError } from "./types";
 
 function normalizeCanonicalRisk(value: unknown): FinalOutputContract["risk_level"] {
-  if (value === "critical" || value === "high") return "high";
-  if (value === "medium") return "medium";
-  if (value === "low") return "low";
-  return "medium";
+  if (typeof value !== "string") {
+    return "medium";
+  }
+  const lower = value.toLowerCase();
+  if (lower === "critical" || lower === "high") return "high";
+  if (lower === "medium") return "medium";
+  if (lower === "low") return "low";
+  return "invalid" as FinalOutputContract["risk_level"];
 }
 
 function ensureFinalOutputShape(input: unknown): unknown {
   if (!input || typeof input !== "object") return input;
   const obj = input as Record<string, unknown>;
   return {
+    ...obj,
     what_is_happening: obj.what_is_happening ?? "",
     what_matters_now: obj.what_matters_now ?? "",
     what_to_ask_next: obj.what_to_ask_next ?? "",
     risk_level: normalizeCanonicalRisk(obj.risk_level),
     what_can_wait: obj.what_can_wait ?? "",
-    follow_up_items: Array.isArray(obj.follow_up_items) ? obj.follow_up_items : [],
+    follow_up_items: obj.follow_up_items,
     decision_trace:
       obj.decision_trace && typeof obj.decision_trace === "object"
         ? obj.decision_trace
@@ -172,18 +177,7 @@ export function extractFinalOutputPayload(output: unknown): unknown {
   if (obj.final_output && typeof obj.final_output === "object") {
     return obj.final_output;
   }
-  return {
-    what_is_happening: obj.what_is_happening,
-    what_matters_now: obj.what_matters_now,
-    what_to_ask_next: obj.what_to_ask_next,
-    risk_level: obj.risk_level,
-    what_can_wait: obj.what_can_wait,
-    follow_up_items: obj.follow_up_items,
-    decision_trace: obj.decision_trace,
-    confidence_state: obj.confidence_state,
-    trust_layer: obj.trust_layer,
-    transparency_panel: obj.transparency_panel,
-  };
+  return obj;
 }
 
 export { ensureFinalOutputShape };

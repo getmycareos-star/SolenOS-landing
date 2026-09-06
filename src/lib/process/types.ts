@@ -126,6 +126,43 @@ export function emptyDecisionCard(): DecisionCard {
     what_to_ask_next: "What is the one missing fact right now?",
     risk_level: "low",
     what_can_wait: "Non-urgent items until situation is structured.",
+    follow_up_items: [],
+    decision_trace: {
+      events: [],
+      assumptions: [],
+      unknowns: ["TIMEFRAME", "SUCCESS_CRITERIA", "SCOPE_BOUNDARIES"],
+      evidence_sources: [],
+    },
+    confidence_state: {
+      overall_confidence: "low",
+      completeness: 0,
+      reasoning_limits: ["Input lacks structure for safe interpretation."],
+    },
+    trust_layer: {
+      known: [],
+      assumed: [],
+      unknown: [
+        { statement: "TIMEFRAME", drives_clarification: true },
+        { statement: "SUCCESS_CRITERIA", drives_clarification: true },
+        { statement: "SCOPE_BOUNDARIES", drives_clarification: true },
+      ],
+      recency: {
+        last_updated_at: null,
+        freshness_score: 0,
+        interpretation: "potentially outdated (>7–14 days)",
+      },
+      confidence: 0.2,
+    },
+    transparency_panel: {
+      data_used: { care_events: [], timeline_segments: [], caregiver_inputs: [] },
+      data_ignored: { conflicting: [], low_confidence: [], stale_or_decayed: [] },
+      reason_for_output: "Awaiting structured care input to produce traceable reasoning.",
+      evidence_breakdown: [],
+      confidence_scores: { overall_pct: 15, tier: "low" },
+      recency: { last_update_at: null, critical_event_ages: [], decay_status: "stale" },
+      observed: [],
+      inferred: [],
+    },
   });
 }
 

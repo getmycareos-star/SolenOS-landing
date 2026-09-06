@@ -35,10 +35,10 @@ if (FINAL_BUILD_PIPELINE.length !== 8) {
 }
 console.log("✓ 8-step global pipeline defined");
 
-if (FINAL_BUILD_OUTPUT_FIELDS.length !== 5) {
-  throw new Error("output must be exactly 5 fields");
+if (FINAL_BUILD_OUTPUT_FIELDS.length !== 10) {
+  throw new Error("output must be exactly 10 fields");
 }
-console.log("✓ 5-field output schema");
+console.log("✓ 10-field output schema");
 
 if (SOLENOS_RISK_LEVELS.join("|") !== "low|medium|high|critical") {
   throw new Error("risk_level must be lowercase enum");
@@ -46,13 +46,13 @@ if (SOLENOS_RISK_LEVELS.join("|") !== "low|medium|high|critical") {
 console.log("✓ lowercase risk_level enum");
 
 const schemaKeys = Object.keys(SolenOSResponseSchema.parse(VERIFY_VALID_SOLENOS));
-if (schemaKeys.length !== 5 || schemaKeys.includes("follow_up_items")) {
-  throw new Error("runtime schema must reject follow_up_items");
+if (schemaKeys.length !== 10) {
+  throw new Error("runtime schema must have 10 fields");
 }
-console.log("✓ follow_up_items removed from runtime schema");
+console.log("✓ 10-field runtime schema enforced");
 
-if (!GEMINI_OUTPUT_SCHEMA.includes('"low"') || GEMINI_OUTPUT_SCHEMA.includes("follow_up_items")) {
-  throw new Error("gemini schema must use lowercase risk and 5 fields");
+if (!GEMINI_OUTPUT_SCHEMA.includes('"low"') || !GEMINI_OUTPUT_SCHEMA.includes("follow_up_items")) {
+  throw new Error("gemini schema must use lowercase risk and 10 fields");
 }
 console.log("✓ gemini envelope schema aligned");
 

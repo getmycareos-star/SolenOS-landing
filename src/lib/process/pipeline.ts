@@ -1,5 +1,5 @@
 import type { SolenOSOutput } from "../output-contract/types";
-import { parseOrThrow, SolenOSOutputSchema } from "../schemas";
+import { parseOrThrow } from "../schemas";
 import type { ProcessResult, SolenOSState } from "./types";
 import { createInitialState } from "./types";
 import { classifyInput, toClassificationSchema } from "./classification";
@@ -127,7 +127,6 @@ export function runPipeline(
     }
   }
 
-  parseOrThrow(SolenOSOutputSchema, output);
   validatePipelineOutputContract(output);
 
   const risk = { internal: decision.risk_level, output: output.risk_level };

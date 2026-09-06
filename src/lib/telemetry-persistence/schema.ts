@@ -88,6 +88,54 @@ export const SolenOSOutputSchema = z
     what_to_ask_next: z.string(),
     risk_level: z.enum(SOLENOS_RISK_LEVELS),
     what_can_wait: z.string(),
+    follow_up_items: z.array(z.string()),
+    decision_trace: z.object({
+      events: z.array(z.string()),
+      assumptions: z.array(z.string()),
+      unknowns: z.array(z.string()),
+      evidence_sources: z.array(z.string()),
+    }),
+    confidence_state: z.object({
+      overall_confidence: z.enum(["low", "medium", "high"]),
+      completeness: z.number().min(0).max(100),
+      reasoning_limits: z.array(z.string()),
+    }),
+    trust_layer: z.object({
+      known: z.array(z.unknown()),
+      assumed: z.array(z.unknown()),
+      unknown: z.array(z.unknown()),
+      recency: z.object({
+        last_updated_at: z.string().nullable(),
+        freshness_score: z.number().min(0).max(1),
+        interpretation: z.string(),
+      }),
+      confidence: z.number().min(0).max(1),
+    }),
+    transparency_panel: z.object({
+      data_used: z.object({
+        care_events: z.array(z.string()),
+        timeline_segments: z.array(z.string()),
+        caregiver_inputs: z.array(z.string()),
+      }),
+      data_ignored: z.object({
+        conflicting: z.array(z.string()),
+        low_confidence: z.array(z.string()),
+        stale_or_decayed: z.array(z.string()),
+      }),
+      reason_for_output: z.string(),
+      evidence_breakdown: z.array(z.unknown()),
+      confidence_scores: z.object({
+        overall_pct: z.number().min(0).max(100),
+        tier: z.enum(["low", "medium", "high"]),
+      }),
+      recency: z.object({
+        last_update_at: z.string().nullable(),
+        critical_event_ages: z.array(z.string()),
+        decay_status: z.enum(["fresh", "aging", "stale"]),
+      }),
+      observed: z.array(z.string()),
+      inferred: z.array(z.string()),
+    }),
   })
   .strict();
 
