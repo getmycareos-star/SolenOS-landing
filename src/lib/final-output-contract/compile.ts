@@ -55,7 +55,7 @@ function buildWhatIsHappening(response: CompileSource): string {
 
   // Secondary: care context diff sections with meaningful change
   const diff = response.care_context_diff_layer?.diff;
-  if (diff?.sections?.directional_change?.length > 0) {
+  if (diff?.sections?.directional_change?.length) {
     const diffText = diff.sections.directional_change.slice(0, 3).join(" · ");
     const withSummary =
       memorySummary.length > 0

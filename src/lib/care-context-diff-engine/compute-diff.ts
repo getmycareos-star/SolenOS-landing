@@ -1,5 +1,7 @@
 import {
   CATEGORY_PATTERNS,
+  DETERIORATION_SIGNALS,
+  IMPROVEMENT_SIGNALS,
 } from "./contract-constants";
 import type { CareContextDiffSections, ProcessCareContextDiffInput } from "./types";
 import type { CanonicalCareEvent } from "../situation-entry/types";
