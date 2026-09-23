@@ -23,6 +23,8 @@ const URGENCY_BY_TYPE: Record<string, number> = {
   unprocessed_input: 55,
   correction: 25,
   unknown: 50,
+  appointment: 40,
+  medication_info: 45,
 };
 
 export function mapLifecycleToAttentionStatus(

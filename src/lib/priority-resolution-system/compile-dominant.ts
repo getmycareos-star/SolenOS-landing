@@ -224,8 +224,8 @@ export function enforceCompiledDominantOutput(
   edge: EdgeStateResult,
 ): {
   final_output: FinalOutputContract;
-  architectural_boundaries_layer: SituationResponse["architectural_boundaries_layer"];
+  architectural_boundaries_layer: import("../architectural-boundaries/types").ArchitecturalBoundariesResult;
 } {
   const draft = compileByDominantMode({ response, priority, edge_state: edge });
-  return enforceFinalOutputAtBoundary(draft, response as SituationResponse);
+  return enforceFinalOutputAtBoundary(draft, response as import("../situation-entry/types").SituationResponse);
 }

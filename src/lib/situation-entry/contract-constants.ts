@@ -14,12 +14,14 @@ export const EXTRACTED_TYPES = [
   "behavioral_change",
   "administrative_issue",
   "follow_up",
+  "appointment",
   "decision",
   "unprocessed_input",
   "unparsed_raw",
   "contact_event",
   "correction",
   "caregiver_note",
+  "medication_info",
   "unknown",
 ] as const;
 

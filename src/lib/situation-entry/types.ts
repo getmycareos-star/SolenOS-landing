@@ -252,6 +252,15 @@ export type SituationResponse = {
     root_event_id: string | null;
     event_ids: string[];
   }[];
+  /** Semantic extraction layer — Qwen3-coder:30b structured extraction results. */
+  semantic_extraction_layer?: {
+    success: boolean;
+    model: string;
+    provider: string;
+    duration_ms: number;
+    extraction: import("../semantic-extraction/types").SemanticExtraction | null;
+    error?: string | null;
+  } | null;
   architectural_boundaries_layer?: import("../architectural-boundaries/types").ArchitecturalBoundariesResult;
 };
 

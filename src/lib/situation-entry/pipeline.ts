@@ -1,6 +1,8 @@
 import { recordCareEvent } from "../care-events/record-care-event";
 import { ingestRawInput, validatedToCanonical } from "../data-acquisition-resilience";
 import type { DareIngestResult } from "../data-acquisition-resilience/types";
+import { createSemanticExtractor } from "../semantic-extraction";
+import type { ExtractionResult, SemanticExtraction } from "../semantic-extraction/types";
 import { appendEventsToContext, getCareContextRoot, getOrCreateCareContextRoot } from "./context-store";
 import {
   buildProvisionalEvent,
@@ -143,6 +145,11 @@ import { processCareRealityIntelligence } from "../care-reality-intelligence";
 import { processCareRealityEngineFoundation } from "../care-reality-engine";
 import { processCareSignalUnderstanding } from "../care-signal-understanding";
 import { processGeneralizedCareUnderstanding } from "../generalized-care-understanding";
+import { withDualTime } from "./dual-time";
+import { createIntegrityState } from "../care-event-integrity";
+import { createStubPriority } from "../care-event-priority";
+import { classifySourceReliability } from "../continuity-properties/source-reliability";
+import { createIngestionTime, parseEventTimeFromText, temporalSortKey } from "../time-model";
 
 function persistCanonicalEvent(
   event: CanonicalCareEvent,
@@ -178,6 +185,204 @@ function persistCanonicalEvent(
         : {}),
     },
   });
+}
+
+/**
+ * Convert semantic extraction results into CanonicalCareEvent records.
+ * Each observation, measurement, medication, etc. becomes a structured CareEvent
+ * with full attribution, uncertainty, and temporal context preserved.
+ */
+function buildExtractionCareEvents(
+  extraction: SemanticExtraction,
+  caregiverId: string,
+  input: import("./types").ProcessSituationInput,
+): CanonicalCareEvent[] {
+  const events: CanonicalCareEvent[] = [];
+  const now = new Date().toISOString();
+  const ingestionTime = input.timestamp ?? now;
+
+  // Helper to create base event
+  const createBaseEvent = (
+    rawInput: string,
+    extractedType: CanonicalCareEvent["extracted_type"],
+    rawAttributes: Record<string, unknown>,
+    uncertainty: string[],
+  ): CanonicalCareEvent => {
+    // Coerce attributes to the strict type
+    const attributes: Record<string, string | string[] | boolean | null> = {};
+    for (const [k, v] of Object.entries(rawAttributes)) {
+      if (typeof v === "string" || typeof v === "boolean" || v === null) {
+        attributes[k] = v;
+      } else if (Array.isArray(v)) {
+        attributes[k] = v.map(String);
+      } else if (typeof v === "number") {
+        attributes[k] = String(v);
+      } else if (typeof v === "object") {
+        attributes[k] = JSON.stringify(v);
+      } else {
+        attributes[k] = String(v);
+      }
+    }
+
+    const event = withDualTime(
+      {
+        id: `ce_sem_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        raw_input: rawInput,
+        extracted_type: extractedType,
+        entities: [],
+        attributes,
+        uncertainty,
+        source: "user_input",
+        root_event_id: null,
+        situation_id: null,
+        document_id: null,
+        status: "committed" as const,
+        integrity: createIntegrityState({
+          confidenceScore: extraction.extraction_confidence,
+          originalExtraction: rawInput,
+          sources: ["ai_inference"],
+        }),
+        priority: createStubPriority("active"),
+        source_reliability: classifySourceReliability({
+          source: "user_input",
+          raw_input: rawInput,
+        }),
+      },
+      rawInput,
+      ingestionTime,
+    );
+
+    return event;
+  };
+
+  // Observations
+  for (const obs of extraction.observations) {
+    const attrs: Record<string, unknown> = {
+      observation_type: obs.type,
+      description: obs.description,
+      semantic_source: "qwen3_coder_extraction",
+    };
+    if (obs.severity) attrs.severity = obs.severity;
+    if (obs.source_person) attrs.source_person = obs.source_person;
+    if (obs.source_role) attrs.source_role = obs.source_role;
+    if (obs.temporal_context) attrs.temporal_context = obs.temporal_context;
+    if (obs.uncertainty) attrs.observation_uncertainty = obs.uncertainty;
+
+    events.push(createBaseEvent(
+      obs.description,
+      "observation",
+      attrs,
+      obs.uncertainty === "suspected" ? ["suspected"] : [],
+    ));
+  }
+
+  // Measurements
+  for (const meas of extraction.measurements) {
+    const attrs: Record<string, unknown> = {
+      measurement_type: meas.type,
+      semantic_source: "qwen3_coder_extraction",
+    };
+    if (meas.unit) attrs.unit = meas.unit;
+    if (meas.systolic != null) attrs.systolic = meas.systolic;
+    if (meas.diastolic != null) attrs.diastolic = meas.diastolic;
+    if (meas.time) attrs.time = meas.time;
+    if (meas.date) attrs.date = meas.date;
+    if (meas.temporal_precision) attrs.temporal_precision = meas.temporal_precision;
+    if (meas.source_person) attrs.source_person = meas.source_person;
+    if (meas.uncertainty) attrs.measurement_uncertainty = meas.uncertainty;
+
+const desc = meas.systolic != null && meas.diastolic != null
+      ? `${meas.type}: ${meas.systolic}/${meas.diastolic} ${meas.unit ?? ""}`.trim()
+      : `${meas.type}: ${meas.value} ${meas.unit ?? ""}`.trim();
+
+    events.push(createBaseEvent(
+      desc,
+      "observation",
+      attrs,
+      meas.uncertainty ? [meas.uncertainty] : [],
+    ));
+  }
+
+  // Medications
+  for (const med of extraction.medications) {
+    const attrs: Record<string, unknown> = {
+      medication_name: med.name,
+      semantic_source: "qwen3_coder_extraction",
+    };
+    if (med.reported_action) attrs.reported_action = med.reported_action;
+    if (med.administration_status) attrs.administration_status = med.administration_status;
+    if (med.source_person) attrs.source_person = med.source_person;
+    if (med.temporal_context) attrs.temporal_context = med.temporal_context;
+    if (med.uncertainty) attrs.medication_uncertainty = med.uncertainty;
+    if (med.note) attrs.note = med.note;
+
+    events.push(createBaseEvent(
+      `Medication: ${med.name}${med.reported_action ? ` — ${med.reported_action}` : ""}`,
+      "observation",
+      attrs,
+      med.uncertainty ? [med.uncertainty] : [],
+    ));
+  }
+
+  // Contradictions
+  for (const contra of extraction.contradictions) {
+    const attrs: Record<string, unknown> = {
+      contradiction_type: "conflicting_claims",
+      claim_a: contra.claim_a,
+      claim_b: contra.claim_b,
+      unresolved: true,
+      semantic_source: "qwen3_coder_extraction",
+    };
+    if (contra.claim_a_source) attrs.claim_a_source = contra.claim_a_source;
+    if (contra.claim_b_source) attrs.claim_b_source = contra.claim_b_source;
+    if (contra.evidence) attrs.evidence = contra.evidence;
+
+    events.push(createBaseEvent(
+      `Contradiction: ${contra.claim_a} vs ${contra.claim_b}`,
+      "observation",
+      attrs,
+      ["contradiction", "unresolved"],
+    ));
+  }
+
+  // Questions
+  for (const q of extraction.questions) {
+    const attrs: Record<string, unknown> = {
+      question_type: "caregiver_question",
+      question: q.question,
+      semantic_source: "qwen3_coder_extraction",
+    };
+    if (q.topic) attrs.topic = q.topic;
+
+    events.push(createBaseEvent(
+      `Question: ${q.question}`,
+      "observation",
+      attrs,
+      [],
+    ));
+  }
+
+  // Appointments
+  for (const apt of extraction.appointments) {
+    const attrs: Record<string, unknown> = {
+      semantic_source: "qwen3_coder_extraction",
+      appointment_certainty: apt.certainty,
+    };
+    if (apt.clinician) attrs.clinician = apt.clinician;
+    if (apt.date) attrs.date = apt.date;
+    if (apt.time) attrs.time = apt.time;
+    if (apt.type) attrs.appointment_type = apt.type;
+    if (apt.source_person) attrs.source_person = apt.source_person;
+
+    events.push(createBaseEvent(
+      `Appointment: ${apt.clinician ?? "unspecified"} ${apt.date ?? ""} ${apt.time ?? ""}`.trim(),
+      "appointment",
+      attrs,
+      apt.certainty === "uncertain" ? ["uncertain_appointment"] : [],
+    ));
+  }
+
+  return events;
 }
 
 function mergeDareResults(results: DareIngestResult[]): DareIngestResult {
@@ -322,6 +527,28 @@ export async function processSituationInput(
 
   const dare = dareResults.length > 0 ? mergeDareResults(dareResults) : null;
 
+  // Semantic extraction via Qwen2.5-coder:1.5b — extracts structured evidence from caregiver language.
+  // This runs in parallel with the existing DARE pipeline; extraction failures are non-fatal.
+  let semanticExtraction: ExtractionResult | null = null;
+  if (input.raw_input.trim() && !shouldSkipDare) {
+    try {
+      const extractor = createSemanticExtractor();
+      semanticExtraction = await extractor.extract(input.raw_input.trim());
+    } catch (extractionError) {
+      console.error("[situation-entry] Semantic extraction failed:", extractionError);
+      semanticExtraction = {
+        success: false,
+        extraction: null,
+        raw_response: "",
+        parsed_content: null,
+        duration_ms: 0,
+        model: "qwen2.5-coder:1.5b",
+        provider: "ollama",
+        error: extractionError instanceof Error ? extractionError.message : String(extractionError),
+      };
+    }
+  }
+
   const events: CanonicalCareEvent[] = [];
   if (dare) {
     for (const ve of dare.validated_events) {
@@ -419,6 +646,20 @@ export async function processSituationInput(
     for (const event of events) {
       persistCanonicalEvent(event, caregiverId, input.provenance);
     }
+  }
+
+  // Persist semantic extraction as structured evidence linked to the raw Evidence record.
+  // Each extracted observation, measurement, medication, etc. becomes a CareEvent with
+  // full attribution, uncertainty, and temporal context preserved.
+  if (semanticExtraction?.success && semanticExtraction.extraction) {
+    const extraction = semanticExtraction.extraction;
+    const extractionEvents = buildExtractionCareEvents(extraction, caregiverId, input);
+    for (const event of extractionEvents) {
+      event.root_event_id = isFirstSituation && events.length === 0 ? null : rootEventId;
+      event.situation_id = null;
+      persistCanonicalEvent(event, caregiverId, input.provenance);
+    }
+    events.push(...extractionEvents);
   }
 
   const provisionalFromDare = dare
@@ -902,6 +1143,16 @@ export async function processSituationInput(
       retrieval_order: [...memory.retrieval.retrieval_order],
       context_window_chars: estimateContextWindowSize(memory.context_window),
     },
+    semantic_extraction_layer: semanticExtraction
+      ? {
+          success: semanticExtraction.success,
+          model: semanticExtraction.model,
+          provider: semanticExtraction.provider,
+          duration_ms: semanticExtraction.duration_ms,
+          extraction: semanticExtraction.extraction,
+          error: semanticExtraction.error ?? null,
+        }
+      : null,
     failure_resilience_layer: {
       failures: failureResilience.failures,
       confidence_summaries: failureResilience.confidence_summaries,

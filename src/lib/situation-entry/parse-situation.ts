@@ -189,12 +189,14 @@ export function understoodLabel(
     behavioral_change: "Behavioral change detected",
     administrative_issue: "Administrative issue detected",
     follow_up: "Follow-up obligation detected",
+    appointment: "Appointment information recorded",
     decision: "Decision recorded",
     contact_event: "Contact event detected",
     unparsed_raw: "Raw input stored — extraction incomplete",
     unprocessed_input: "Input could not be fully processed",
     correction: "User correction applied",
     caregiver_note: "Caregiver note recorded",
+    medication_info: "Medication information recorded",
     unknown: "Situation noted",
   };
 
