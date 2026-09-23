@@ -104,6 +104,10 @@ import {
   classifyEntryInput,
   isSessionReentryInput,
 } from "../entry-behavior-protocol";
+import {
+  composeCaregiverResponse,
+  composeGreetingResponse,
+} from "../caregiver-response-composer";
 import { classifyInputRelevance, type InputRelevanceClassification } from "../input-relevance";
 import {
   compileFromAdoptionWedge,
@@ -1586,6 +1590,18 @@ acsTurn =
     };
   }
 
+  let composedResponse: ReturnType<typeof composeCaregiverResponse> | undefined;
+  try {
+    composedResponse = composeCaregiverResponse({
+      turn: acsTurn,
+      latestRawText: input.raw_input ?? "",
+      kind: acsKind,
+      hasDocuments: documentEventsCount > 0,
+    });
+  } catch {
+    composedResponse = undefined;
+  }
+
   return {
     ...finalized,
     final_output: foundationOutput,
@@ -1610,8 +1626,9 @@ acsTurn =
     ui_situations: trackedSync.ui_situations.filter((s) => s.status !== "resolved"),
     active_care_situation: acsTurn.situation,
     active_care_situation_turn: acsTurn,
+    composed_response: composedResponse,
     care_situation_groups,
-};
+  };
 }
 
 /**
@@ -2161,7 +2178,10 @@ export async function processSessionReentry(input: {
 
   const context = getCareContextRoot(input.caregiver_id);
   if (!context || context.events.length === 0) {
-    return buildInitializationSituationResponse(input.caregiver_id, classification);
+    return buildInitializationSituationResponse(input.caregiver_id, classification, {
+      raw_input: input.raw_input,
+      context_exists: false,
+    });
   }
 
   const recompiled = await processSituationRecompile({
@@ -2170,7 +2190,10 @@ export async function processSessionReentry(input: {
   });
 
   if (!recompiled) {
-    return buildInitializationSituationResponse(input.caregiver_id, classification);
+    return buildInitializationSituationResponse(input.caregiver_id, classification, {
+      raw_input: input.raw_input,
+      context_exists: true,
+    });
   }
 
   const entry_behavior_layer = buildEntryBehaviorLayer({
@@ -2225,12 +2248,21 @@ export async function processSessionReentry(input: {
     context_updated_at: finalized.context.updated_at,
     visited_at: input.timestamp ?? finalized.context.updated_at,
   });
+  try {
+    finalized.composed_response = composeGreetingResponse({
+      raw_input: input.raw_input,
+      context_exists: true,
+    });
+  } catch {
+    finalized.composed_response = undefined;
+  }
   return finalized;
 }
 
 function buildInitializationSituationResponse(
   caregiverId: string,
   classification: ReturnType<typeof classifyEntryInput>,
+  options: { raw_input: string; context_exists: boolean },
 ): SituationResponse {
   const context = getOrCreateCareContextRoot(caregiverId);
   const entry_behavior_layer = buildEntryBehaviorLayer({
@@ -2306,7 +2338,16 @@ function buildInitializationSituationResponse(
     arbitration.edge_state_layer,
   );
 
-  return finalizeSituationResponse(withMvp, enforced, architectural_boundaries_layer);
+  const finalized = finalizeSituationResponse(withMvp, enforced, architectural_boundaries_layer);
+  try {
+    finalized.composed_response = composeGreetingResponse({
+      raw_input: options.raw_input,
+      context_exists: options.context_exists,
+    });
+  } catch {
+    finalized.composed_response = undefined;
+  }
+  return finalized;
 }
 
 function buildForbiddenOutputSurfaces(

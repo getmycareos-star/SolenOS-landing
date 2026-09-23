@@ -108,6 +108,7 @@ import {
   type ResponseIntelligenceOutput,
 } from "../response-intelligence";
 import { assertNoResponseContractNeverSay } from "../response-contract";
+import { GREETING_ORIENTATION } from "../entry-behavior-protocol/contract-constants";
 import { adaptForCaregiverCapacity } from "../care-reality-engine";
 import {
   buildSituationUnderstandingSummary,
@@ -2365,6 +2366,55 @@ connection_note = scrubPasteField(connection_note);
     consumeFeedbackContainment(crsKey);
   }
 
+  return composed;
+}
+
+export function composeGreetingResponse(params: {
+  raw_input: string;
+  context_exists: boolean;
+}): ComposedCaregiverResponse {
+  const text = (params.raw_input ?? "").replace(/\r\n/g, " ").trim();
+  const isHowAreYou = /^(?:how\s+are\s+you|how's?\s+it\s+going)\b/i.test(text);
+  const variant: "newUser" | "returning" | "howAreYou" = isHowAreYou
+    ? "howAreYou"
+    : params.context_exists
+      ? "returning"
+      : "newUser";
+  const orientation = GREETING_ORIENTATION[variant];
+
+  const contract_output = buildResponseIntelligenceOutput({
+    what_is_happening: orientation,
+    what_matters_now: "",
+    what_to_ask_next: [],
+    what_can_wait: "",
+    follow_up_items: [],
+    risk_level: "low",
+  });
+
+  const composed: ComposedCaregiverResponse = {
+    recognition_line: null,
+    confirmation: orientation,
+    what_matters_now: null,
+    what_can_wait: null,
+    what_may_become_serious: null,
+    what_changed: null,
+    connection_note: null,
+    show_connection: false,
+    what_we_know: [],
+    situation_summary: orientation,
+    still_unclear: [],
+    care_story_update: null,
+    is_improvement: false,
+    show_clarity: false,
+    show_questions: false,
+    why_asking: null,
+    evidence_line: null,
+    evidence_maturity: 1,
+    follow_up_items: [],
+    contract_output,
+    mental_load_signal: null,
+  };
+  assertComposedResponseProfessional(composed);
   return composed;
 }
 
