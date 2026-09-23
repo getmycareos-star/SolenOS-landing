@@ -40,6 +40,7 @@ class Prioritization(Base):
     caregiver_concern_evidence_ids = Column(JSONList, nullable=True)
     primary_reason_category = Column(SQLEnum(PriorityReasonCategory), nullable=True)
     reason_categories = Column(JSONList, nullable=False)
+    possible_context = Column(JSONList, nullable=True)
     explanation = Column(Text, nullable=True)
     attribution = Column(JSONList, nullable=True)
     temporal_scope = Column(JSONList, nullable=True)

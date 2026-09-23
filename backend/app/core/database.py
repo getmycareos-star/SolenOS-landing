@@ -21,6 +21,8 @@ import app.models.causal
 import app.models.safety
 import app.models.memory
 import app.models.time_location
+import app.models.prioritization
+import app.models.meaning
 
 Base.metadata.create_all(bind=engine)
 

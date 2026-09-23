@@ -44,7 +44,8 @@ class PrioritizationBase(BaseModel):
     is_persistent: Optional[bool] = None
     is_recurrent: Optional[bool] = None
     recurrence_count: Optional[int] = None
-    dimensions: List[PrioritizationDimensionBase] = []
+    dimensions: List[PrioritizationDimensionBase] = Field(default_factory=list)
+    possible_context: Optional[List[str]] = None
     uncertainty_factors: Optional[List[UncertaintyFactor]] = None
     contradiction_types: Optional[List[ContradictionType]] = None
     vulnerability_factors: Optional[List[VulnerabilityFactor]] = None
@@ -65,7 +66,7 @@ class PrioritizationCreate(PrioritizationBase):
 
 class Prioritization(PrioritizationBase):
     id: str
-    dimensions: List[PrioritizationDimension] = []
+    dimensions: List[PrioritizationDimensionBase] = Field(default_factory=list)
     created_at: datetime
     updated_at: Optional[datetime] = None
     superseded_by_prioritization_id: Optional[str] = None
