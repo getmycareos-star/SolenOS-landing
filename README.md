@@ -19,8 +19,9 @@ See `docs/philosophy.md` for the full product philosophy.
 ## Architecture
 
 - **Backend**: FastAPI + SQLAlchemy (Python)
-- **Frontend**: React + Vite (TypeScript)
+- **Frontend**: HTML + JavaScript (served by the backend at `/`)
 - **Database**: SQLite (default), upgradeable to PostgreSQL
+- **Document Processing**: pypdf (PDF), Pillow + pytesseract (image OCR), built-in text/zip parsing (TXT, DOCX)
 
 ## Getting Started
 
@@ -31,12 +32,20 @@ pip install -e .
 uvicorn app.main:app --reload
 ```
 
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### Usage
+1. Start the server (`uvicorn app.main:app --reload`)
+2. Open `http://localhost:8000/` in a browser
+3. Enter your Caregiver ID and Person ID
+4. Select a supported document (TXT, PDF, DOCX, PNG, JPG, GIF, BMP, TIFF)
+5. Click "Upload & Process"
+6. View extraction results, detected situations, and care state in the UI
+
+### Supported File Types
+- **Text files**: `.txt` — direct text extraction
+- **PDFs**: `.pdf` — text layer extraction via pypdf
+- **Word documents**: `.docx` — XML parsing via zipfile
+- **Images**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tiff` — OCR via Tesseract (if installed)
+- Files up to 50MB are accepted
 
 ## Principles
 

@@ -243,11 +243,16 @@ def infer_temporal_relation(db: Session, fact_a_id: str, fact_b_id: str) -> Opti
     if relation is None:
         return None
 
+    a_conf = fact_a.confidence if fact_a.confidence is not None else 1.0
+    b_conf = fact_b.confidence if fact_b.confidence is not None else 1.0
+    confidences = [c for c in (fact_a.confidence, fact_b.confidence) if c is not None]
+    confidence = min(confidences) if confidences else None
+
     return {
         "fact_a_id": fact_a_id,
         "fact_b_id": fact_b_id,
         "relation": relation.value,
-        "confidence": min(fact_a.confidence, fact_b.confidence),
+        "confidence": confidence,
         "is_derived": True,
         "derivation_method": "temporal_calculation",
     }

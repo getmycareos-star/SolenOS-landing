@@ -57,11 +57,11 @@ def get_longitudinal_event_counts(
     if subject_id:
         query = query.filter(CareEvent.id == subject_id)
     events = query.order_by(CareEvent.occurred_at.asc()).all()
-    now - timedelta(days=240)
+    timed_events = [e for e in events if e.occurred_at is not None]
     six_weeks_ago = now - timedelta(days=42)
-    current_window_count = sum(1 for e in events if _ensure_utc(e.occurred_at) >= six_weeks_ago)
-    historical_count = sum(1 for e in events if _ensure_utc(e.occurred_at) < six_weeks_ago)
-    recent_events = [e for e in events if _ensure_utc(e.occurred_at) >= six_weeks_ago]
+    current_window_count = sum(1 for e in timed_events if _ensure_utc(e.occurred_at) >= six_weeks_ago)
+    historical_count = sum(1 for e in timed_events if _ensure_utc(e.occurred_at) < six_weeks_ago)
+    recent_events = [e for e in timed_events if _ensure_utc(e.occurred_at) >= six_weeks_ago]
     return {
         "total_events": len(events),
         "current_window_count": current_window_count,
@@ -86,7 +86,8 @@ def build_baseline(
     if not events:
         return None
     six_weeks_ago = now - timedelta(days=42)
-    baseline_events = [e for e in events if _ensure_utc(e.occurred_at) < six_weeks_ago]
+    timed_events = [e for e in events if e.occurred_at is not None]
+    baseline_events = [e for e in timed_events if _ensure_utc(e.occurred_at) < six_weeks_ago]
     if baseline_events:
         window_start = baseline_events[0].occurred_at
         window_end = baseline_events[-1].occurred_at

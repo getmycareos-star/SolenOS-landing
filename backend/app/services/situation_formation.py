@@ -121,14 +121,7 @@ def _form_change_situation(
     temporal_end = max(c.created_at for c in changes)
     increasing = [c for c in changes if c.change_direction == ChangeDirection.INCREASING]
     decreasing = [c for c in changes if c.change_direction == ChangeDirection.DECREASING]
-    if len(increasing) > len(decreasing):
-        situation_type = (
-            SituationType.FUNCTIONAL_INSTABILITY
-            if any(s == "fall" for s in signal_types)
-            else SituationType.UNKNOWN
-        )
-    else:
-        situation_type = SituationType.STABLE_STATE
+    situation_type = _derive_situation_type(db, changes, increasing, decreasing)
     relevant_patterns = [p for p in patterns if p.subject_type in signal_types]
     primary = _primary_significance(db, changes[0])
     attention = any((_primary_significance(db, c) or _bool_none(c.attention_candidate)) for c in changes)
@@ -159,6 +152,82 @@ def _form_change_situation(
     db.add(situation)
     db.flush()
     return situation
+
+
+def _derive_situation_type(db: Session, changes: List[Change], increasing: List[Change], decreasing: List[Change]) -> SituationType:
+    evidence_texts = _collect_evidence_texts(db, changes)
+    functional_indicators = [
+        "fall", "fell", "fallen", "couldn't get up", "could not get up",
+        "unable to stand", "unable to walk", "needed help", "required assistance",
+        "confused", "disoriented", "unsteady", "lost balance",
+    ]
+    has_functional = any(
+        any(indicator in text.lower() for indicator in functional_indicators)
+        for text in evidence_texts
+    )
+    if has_functional and len(increasing) > len(decreasing):
+        return SituationType.FUNCTIONAL_INSTABILITY
+    if len(increasing) > len(decreasing):
+        return SituationType.FLUCTUATING_STATE
+    if len(decreasing) > len(increasing):
+        return SituationType.STABLE_STATE
+    return SituationType.UNKNOWN
+
+
+def _collect_evidence_texts(db: Session, changes: List[Change]) -> List[str]:
+    from app.models.care import Evidence
+    evidence_ids = []
+    for c in changes:
+        evidence_ids.extend(c.evidence_ids or [])
+    evidence_ids = list(set(evidence_ids))
+    if not evidence_ids:
+        return []
+    rows = db.query(Evidence).filter(Evidence.id.in_(evidence_ids)).all()
+    return [r.source_text for r in rows if r.source_text]
+
+
+def _derive_pattern_situation_type(db: Session, patterns: List[Pattern]) -> SituationType:
+    evidence_texts = _collect_evidence_texts_from_patterns(db, patterns)
+    functional_indicators = [
+        "fall", "fell", "fallen", "couldn't get up", "could not get up",
+        "unable to stand", "unable to walk", "needed help", "required assistance",
+        "confused", "disoriented", "unsteady", "lost balance",
+    ]
+    has_functional = any(
+        any(indicator in text.lower() for indicator in functional_indicators)
+        for text in evidence_texts
+    )
+    if has_functional:
+        return SituationType.FUNCTIONAL_INSTABILITY
+    return SituationType.FLUCTUATING_STATE
+
+
+def _derive_frequency_situation_type(db: Session, pattern: Pattern) -> SituationType:
+    evidence_texts = _collect_evidence_texts_from_patterns(db, [pattern])
+    functional_indicators = [
+        "fall", "fell", "fallen", "couldn't get up", "could not get up",
+        "unable to stand", "unable to walk", "needed help", "required assistance",
+        "confused", "disoriented", "unsteady", "lost balance",
+    ]
+    has_functional = any(
+        any(indicator in text.lower() for indicator in functional_indicators)
+        for text in evidence_texts
+    )
+    if has_functional:
+        return SituationType.FUNCTIONAL_INSTABILITY
+    return SituationType.FLUCTUATING_STATE
+
+
+def _collect_evidence_texts_from_patterns(db: Session, patterns: List[Pattern]) -> List[str]:
+    from app.models.care import Evidence
+    evidence_ids = []
+    for p in patterns:
+        evidence_ids.extend(p.event_ids or [])
+    evidence_ids = list(set(evidence_ids))
+    if not evidence_ids:
+        return []
+    rows = db.query(Evidence).filter(Evidence.id.in_(evidence_ids)).all()
+    return [r.source_text for r in rows if r.source_text]
 
 
 def _bool_none(v: Any) -> bool:
@@ -314,11 +383,7 @@ def _form_pattern_situation(
     context = _build_converged_context(db, person_id, active_patterns, change_sigs)
     situation = Situation(
         person_id=person_id,
-        situation_type=(
-            SituationType.FUNCTIONAL_INSTABILITY
-            if any("fall" in s for s in signal_types)
-            else SituationType.FLUCTUATING_STATE
-        ),
+        situation_type=_derive_pattern_situation_type(db, active_patterns),
         state=SituationState.ACTIVE,
         title="Converging patterns detected",
         description="Multiple patterns detected across related signals.",
@@ -410,11 +475,7 @@ def _form_frequency_situation(
     }
     situation = Situation(
         person_id=person_id,
-        situation_type=(
-            SituationType.FUNCTIONAL_INSTABILITY
-            if pattern.subject_type == "fall"
-            else SituationType.FLUCTUATING_STATE
-        ),
+        situation_type=_derive_frequency_situation_type(db, pattern),
         state=SituationState.ACTIVE,
         title=f"Increasing {pattern.subject_type} frequency",
         description=(

@@ -33,13 +33,13 @@ class SituationEvent(BaseModel):
     event_type: str
     title: str
     description: Optional[str] = None
-    occurred_at: datetime
+    occurred_at: Optional[datetime] = None
     evidence_ids: Optional[List[str]] = None
 
 
 class SituationResponse(BaseModel):
     ok: bool
-    situation_id: str
+    situation_id: Optional[str]
     care_key: str
     person_id: str
     evidence_id: str
@@ -50,3 +50,4 @@ class SituationResponse(BaseModel):
     attention_candidate: bool = False
     follow_up_candidate: bool = False
     what_changed: Optional[str] = None
+    warnings: Optional[List[str]] = None

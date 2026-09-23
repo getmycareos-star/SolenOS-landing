@@ -28,7 +28,7 @@ class EvidenceReference(BaseModel):
     currentness: CurrentnessStatus
     document_time: Optional[datetime] = None
     uploaded_at: Optional[datetime] = None
-    confidence: float = Field(ge=0.0, le=1.0)
+    confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     supports_claim: bool = True
     contradicts_claim: bool = False
     notes: Optional[str] = None

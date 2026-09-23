@@ -9,13 +9,18 @@ engine = create_engine(settings.database_url, connect_args={"check_same_thread":
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-import app.models.uncertainty  # noqa: E402, F401
-import app.models.temporal  # noqa: E402, F401
-import app.models.change  # noqa: E402, F401
-import app.models.significance  # noqa: E402, F401
-import app.models.action  # noqa: E402, F401
-import app.models.caregiver_intelligence  # noqa: E402, F401
-import app.models.causal  # noqa: E402, F401
+import app.models.care
+import app.models.document
+import app.models.uncertainty
+import app.models.temporal
+import app.models.change
+import app.models.significance
+import app.models.action
+import app.models.caregiver_intelligence
+import app.models.causal
+import app.models.safety
+import app.models.memory
+import app.models.time_location
 
 Base.metadata.create_all(bind=engine)
 
@@ -53,9 +58,21 @@ def ensure_database_schema(bind=None):
         dialect = target.dialect
     except Exception:
         return
+    
+    from sqlalchemy import text as _text
+    new_tables = [
+        (name, table) for name, table in Base.metadata.tables.items()
+        if not insp.has_table(name)
+    ]
+    if new_tables:
+        try:
+            Base.metadata.create_all(bind=target)
+        except Exception:
+            pass
+    
     for table_name, table in Base.metadata.tables.items():
         if not insp.has_table(table_name):
-            continue
+            continue  # create_all already handles table creation; this guard adds columns only
         existing = {c["name"] for c in (insp.get_columns(table_name) or [])}
         for col in table.columns:
             if col.name in existing:

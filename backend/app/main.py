@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from app.api.v1 import router as api_v1_router
 from app.api.uncertainty import router as uncertainty_router
@@ -7,6 +8,11 @@ from app.api.change import router as change_router
 from app.api.caregiver_intelligence import router as caregiver_intelligence_router
 from app.api.safety import router as safety_router
 from app.api.causal import router as causal_router
+
+try:
+    from app.api.files import router as files_router
+except ImportError:
+    files_router = None
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.schemas.situation import SituationInput, SituationResponse
@@ -29,6 +35,19 @@ app.include_router(change_router, prefix="/api/v1")
 app.include_router(caregiver_intelligence_router, prefix="/api/v1")
 app.include_router(safety_router, prefix="/api/v1")
 app.include_router(causal_router, prefix="/api/v1")
+if files_router is not None:
+    app.include_router(files_router, prefix="/api/files")
+
+import os
+static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+@app.get("/")
+async def root():
+    from fastapi.responses import HTMLResponse
+    with open(os.path.join(static_dir, "index.html")) as f:
+        return HTMLResponse(f.read())
 
 situation_router = APIRouter()
 

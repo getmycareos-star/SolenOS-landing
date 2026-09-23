@@ -371,7 +371,9 @@ class SafetyEngine:
     def _calculate_claim_confidence(self, evidence_refs: List[EvidenceReference], claim: ClaimCandidate) -> float:
         if not evidence_refs:
             return 0.0
-        confidences = [ev.confidence for ev in evidence_refs]
+        confidences = [ev.confidence for ev in evidence_refs if ev.confidence is not None]
+        if not confidences:
+            return 0.0
         return sum(confidences) / len(confidences)
 
     def _assess_claim_strength(self, claim_text: str) -> ClaimStrength:

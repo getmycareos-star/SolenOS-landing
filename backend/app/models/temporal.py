@@ -39,7 +39,7 @@ class TemporalFact(Base):
     source_assertion = Column(Text, nullable=True)
 
     evidence_ids = Column(JSONList, nullable=True)
-    confidence = Column(Float, nullable=False, default=1.0)
+    confidence = Column(Float, nullable=True)
 
     superseded_by_fact_id = Column(String, ForeignKey("temporal_facts.id"), nullable=True)
 

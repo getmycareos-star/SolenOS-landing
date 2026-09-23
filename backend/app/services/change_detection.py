@@ -144,7 +144,10 @@ def _create_change(
         explanation += (
             f" Relative change: {comparison['relative_change_percent']:.1f}%."
         )
-    evidence_ids = [e.id for e in events]
+    evidence_ids = []
+    for e in events:
+        if e.evidence_ids:
+            evidence_ids.extend(e.evidence_ids)
     if baseline_id and baseline_id not in evidence_ids:
         evidence_ids.append(baseline_id)
     magnitude = comparison.get("relative_change_percent")
