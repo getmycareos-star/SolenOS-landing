@@ -6,7 +6,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base
 from app.main import app
-from app.models.care import Person, Caregiver
+from app.models.care import Person, Caregiver, CareEvent
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
@@ -218,5 +218,49 @@ def test_post_situation_empty_input_and_no_documents():
         )
         assert response.status_code == 400
         assert "No valid evidence provided" in response.json()["detail"]
+    finally:
+        teardown_db()
+
+
+def test_post_situation_temporal_uncertainty():
+    setup_db()
+    try:
+        from app.core.database import get_db
+        app.dependency_overrides[get_db] = override_get_db
+
+        db = TestingSessionLocal()
+        person = Person(id="person-5", name="Test Person 5")
+        caregiver = Caregiver(
+            id="caregiver-5",
+            name="Test Caregiver 5",
+            email="test5@example.com",
+            relationship="Family",
+            person_id=person.id,
+            timezone="UTC",
+        )
+        db.add_all([person, caregiver])
+        db.commit()
+        db.close()
+
+        client = TestClient(app)
+        response = client.post(
+            "/api/situation",
+            json={
+                "caregiver_id": "caregiver-5",
+                "person_id": "person-5",
+                "raw_input": "The person seemed confused in the evening.",
+                "timestamp": "maybe Tuesday evening",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ok"] is True
+
+        db = TestingSessionLocal()
+        event = db.query(CareEvent).filter(CareEvent.person_id == "person-5").first()
+        assert event is not None
+        assert event.occurred_at is None
+        assert event.time_provenance == "submission_time_used:unparseable_timestamp:maybe Tuesday evening"
+        db.close()
     finally:
         teardown_db()
