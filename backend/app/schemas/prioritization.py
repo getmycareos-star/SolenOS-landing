@@ -53,7 +53,7 @@ class PrioritizationBase(BaseModel):
     caregiver_concern_expressed: bool = False
     caregiver_concern_evidence_ids: Optional[List[str]] = None
     primary_reason_category: Optional[PriorityReasonCategory] = None
-    reason_categories: List[PriorityReasonCategory] = []
+    reason_categories: List[PriorityReasonCategory] = Field(default_factory=list)
     explanation: Optional[str] = None
     attribution: Optional[List[str]] = None
     temporal_scope: Optional[Dict[str, Any]] = None
@@ -111,3 +111,25 @@ class PrioritizationSummary(BaseModel):
     no_active_priority_count: int
     top_priority: Optional[Prioritization] = None
     generated_at: datetime
+
+
+class PrioritizationDetectRequest(BaseModel):
+    person_id: str
+    subject_type: Optional[str] = None
+    subject_id: Optional[str] = None
+    reference_time: Optional[str] = None
+    include_no_active: bool = False
+
+
+class PrioritizationRankingInput(BaseModel):
+    prioritization_id: str
+    rank: int = Field(ge=1)
+    reason: Optional[str] = None
+
+
+class PrioritizationRankRequest(BaseModel):
+    person_id: Optional[str] = None
+    prioritization_ids: Optional[List[str]] = None
+    rankings: Optional[List[PrioritizationRankingInput]] = None
+    prioritizations: Optional[List[PrioritizationRankingInput]] = None
+    reference_time: Optional[str] = None

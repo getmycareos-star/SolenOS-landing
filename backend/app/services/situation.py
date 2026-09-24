@@ -6,6 +6,7 @@ from app.models.care import Caregiver, Person, Evidence, CareEvent
 from app.schemas.situation import SituationInput, SituationResponse, SituationEvent, SituationDocument
 from app.services.change_detection import detect_event_changes
 from app.services.situation_formation import detect_situations
+from app.services.prioritization import PrioritizationEngine
 from app.services.safety import SafetyEngine
 from app.services.action_extraction import ActionExtractionEngine
 from app.services.caregiver_intelligence import CaregiverIntelligenceService
@@ -362,7 +363,6 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
     except Exception as exc:
         warnings.append(f"Action extraction failed: {exc}")
 
-    safety_decision_id = None
     try:
         safety_engine = SafetyEngine(db)
         claim_extractor = ClaimExtractionEngine()
@@ -425,7 +425,6 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
         )
         db.add(safety_decision)
         db.flush()
-        safety_decision_id = safety_decision.id
     except Exception as exc:
         warnings.append(f"Safety evaluation failed: {exc}")
 
@@ -449,9 +448,8 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
     except Exception as exc:
         warnings.append(f"Caregiver observation recording failed: {exc}")
 
-    temporal_fact_id = None
     try:
-        temporal_fact = create_temporal_fact(db, TemporalFactCreate(
+        create_temporal_fact(db, TemporalFactCreate(
             person_id=payload.person_id,
             subject_type="observation",
             subject_id=care_event.id,
@@ -465,7 +463,6 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
             confidence=None,
             created_by_caregiver_id=payload.caregiver_id,
         ))
-        temporal_fact_id = temporal_fact.id
     except Exception as exc:
         warnings.append(f"Temporal fact creation failed: {exc}")
 
@@ -495,6 +492,8 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
 
     changes: List = []
     situations: List = []
+    prioritization_ids: List[str] = []
+    top_priority = None
     attention_candidate = False
     follow_up_candidate = False
     what_changed = None
@@ -521,6 +520,46 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
             if active_situations:
                 attention_candidate = attention_candidate or any(s.attention_candidate for s in active_situations)
                 follow_up_candidate = follow_up_candidate or any(s.follow_up_candidate for s in active_situations)
+
+        prioritization_engine = PrioritizationEngine(db)
+        prioritizations = prioritization_engine.detect(
+            payload.person_id,
+            changes=changes,
+            situations=situations,
+            reference_time=event_utc,
+        )
+        prioritization_ids = [item.id for item in prioritizations]
+        if prioritizations:
+            rankings = prioritization_engine.rank(
+                payload.person_id,
+                prioritizations,
+                event_utc,
+            )
+            rank_by_id = {
+                ranking.prioritization_id: ranking.rank
+                for ranking in rankings
+            }
+            top_priority = min(
+                prioritizations,
+                key=lambda item: rank_by_id.get(item.id, 10**9),
+            )
+            for situation in situations:
+                situation_change_ids = set(situation.change_ids or [])
+                related_ids = [
+                    item.id
+                    for item in prioritizations
+                    if not situation_change_ids
+                    or bool(set(item.change_ids or []) & situation_change_ids)
+                ]
+                if not related_ids:
+                    continue
+                situation_context = dict(situation.context or {})
+                situation_context["prioritization_ids"] = related_ids
+                situation_context["top_priority_id"] = top_priority.id
+                situation.context = situation_context
+            top_level = top_priority.priority_level.value if hasattr(top_priority.priority_level, "value") else str(top_priority.priority_level)
+            attention_candidate = attention_candidate or top_level in {"critical", "high"}
+            follow_up_candidate = follow_up_candidate or top_level in {"critical", "high", "moderate"}
 
         care_event.significance_verdict = sig_changes[0].significance_verdict.value if sig_changes else None
         care_event.attention_candidate = attention_candidate
@@ -556,6 +595,17 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
             "confidence": s.confidence,
             "attention_candidate": s.attention_candidate,
             "follow_up_candidate": s.follow_up_candidate,
+            "prioritization_ids": prioritization_ids or None,
+            "top_priority": {
+                "id": top_priority.id,
+                "priority_level": (
+                    top_priority.priority_level.value
+                    if hasattr(top_priority.priority_level, "value")
+                    else str(top_priority.priority_level)
+                ),
+                "overall_confidence": top_priority.overall_confidence,
+                "explanation": top_priority.explanation,
+            } if top_priority else None,
         })
 
     ok = not warnings
@@ -574,5 +624,16 @@ def process_situation_input(db: Session, payload: SituationInput) -> SituationRe
         attention_candidate=attention_candidate,
         follow_up_candidate=follow_up_candidate,
         what_changed=what_changed,
+        prioritization_ids=prioritization_ids or None,
+        top_priority={
+            "id": top_priority.id,
+            "priority_level": (
+                top_priority.priority_level.value
+                if hasattr(top_priority.priority_level, "value")
+                else str(top_priority.priority_level)
+            ),
+            "overall_confidence": top_priority.overall_confidence,
+            "explanation": top_priority.explanation,
+        } if top_priority else None,
         warnings=warnings or None,
     )

@@ -8,10 +8,6 @@ from app.core.prioritization_enums import (
     PriorityDimension,
     PriorityReasonCategory,
     TrajectoryType,
-    UncertaintyFactor,
-    ContradictionType,
-    VulnerabilityFactor,
-    ActionabilityFactor,
 )
 
 

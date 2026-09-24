@@ -50,4 +50,6 @@ class SituationResponse(BaseModel):
     attention_candidate: bool = False
     follow_up_candidate: bool = False
     what_changed: Optional[str] = None
+    prioritization_ids: Optional[List[str]] = None
+    top_priority: Optional[Dict[str, Any]] = None
     warnings: Optional[List[str]] = None

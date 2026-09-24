@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -9,6 +10,7 @@ from app.api.caregiver_intelligence import router as caregiver_intelligence_rout
 from app.api.safety import router as safety_router
 from app.api.causal import router as causal_router
 from app.api.meaning import router as meaning_router
+from app.api.prioritization import router as prioritization_router
 
 try:
     from app.api.files import router as files_router
@@ -37,10 +39,10 @@ app.include_router(caregiver_intelligence_router, prefix="/api/v1")
 app.include_router(safety_router, prefix="/api/v1")
 app.include_router(causal_router, prefix="/api/v1")
 app.include_router(meaning_router, prefix="/api/v1")
+app.include_router(prioritization_router, prefix="/api/v1")
 if files_router is not None:
     app.include_router(files_router, prefix="/api/files")
 
-import os
 static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
