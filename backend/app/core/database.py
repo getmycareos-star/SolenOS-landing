@@ -23,6 +23,7 @@ import app.models.memory
 import app.models.time_location
 import app.models.prioritization
 import app.models.meaning
+import app.models.knowledge_revision
 
 Base.metadata.create_all(bind=engine)
 
