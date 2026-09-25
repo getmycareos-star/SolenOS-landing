@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import { buildExtractionPrompt } from "./prompt";
 
-const EXTRACTION_TIMEOUT_MS = 300000;
+const EXTRACTION_TIMEOUT_MS = Number(process.env.SEMANTIC_EXTRACTION_TIMEOUT_MS ?? 30000);
 
 export class SemanticExtractor {
   private provider: LlmProvider | null = null;
