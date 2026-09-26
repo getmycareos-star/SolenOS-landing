@@ -4153,7 +4153,11 @@ button.public-cta-primary:disabled:hover {
   top: calc(100% + 0.35rem);
   right: 0;
   z-index: 50;
-  min-width: 14rem;
+  min-width: 13rem;
+  max-width: min(18rem, calc(100vw - 2rem));
+  max-height: min(70vh, 24rem);
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--solenos-paper, #f7f5f0);
   color: var(--solenos-slate, #3d4543);
   border: 1px solid var(--solenos-hairline, #e5e7eb);
@@ -4163,6 +4167,22 @@ button.public-cta-primary:disabled:hover {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+}
+
+/* Flip dropdown upward when near bottom of viewport */
+.workspace-more-menu-dropdown--flip {
+  top: auto;
+  bottom: calc(100% + 0.35rem);
+}
+
+/* Ensure dropdown doesn't overflow horizontally on small screens */
+@media (max-width: 640px) {
+  .workspace-more-menu-dropdown {
+    right: auto;
+    left: 0;
+    min-width: min(16rem, calc(100vw - 1.5rem));
+    max-width: calc(100vw - 1.5rem);
+  }
 }
 
 .workspace-more-menu-item {

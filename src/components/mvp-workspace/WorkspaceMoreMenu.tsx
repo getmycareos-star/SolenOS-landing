@@ -78,7 +78,9 @@ export function WorkspaceMoreMenu({
   hasCareInfo = false,
 }: WorkspaceMoreMenuProps) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<"top" | "bottom">("bottom");
   const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleToggle = useCallback(() => {
     setOpen((v) => !v);
@@ -92,6 +94,29 @@ export function WorkspaceMoreMenu({
     [onAction],
   );
 
+  // Compute dropdown placement based on viewport space
+  useEffect(() => {
+    if (!open) return;
+    const computePlacement = () => {
+      const dropdown = dropdownRef.current;
+      const container = menuRef.current;
+      if (!dropdown || !container) return;
+      const rect = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const dropdownHeight = dropdown.offsetHeight;
+      // If not enough space below, flip upward
+      if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+        setPlacement("top");
+      } else {
+        setPlacement("bottom");
+      }
+    };
+    // Use a small delay to let the dropdown render and measure
+    const id = requestAnimationFrame(computePlacement);
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(event: MouseEvent) {
@@ -104,11 +129,28 @@ export function WorkspaceMoreMenu({
         setOpen(false);
       }
     }
+    function handleResize() {
+      // Recompute placement on resize
+      const dropdown = dropdownRef.current;
+      const container = menuRef.current;
+      if (!dropdown || !container) return;
+      const rect = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const dropdownHeight = dropdown.offsetHeight;
+      if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+        setPlacement("top");
+      } else {
+        setPlacement("bottom");
+      }
+    }
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleResize);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleResize);
     };
   }, [open]);
 
@@ -131,7 +173,12 @@ export function WorkspaceMoreMenu({
         <MoreHorizontal size={20} aria-hidden />
       </Button>
       {open && (
-        <div className="workspace-more-menu-dropdown" role="menu" aria-label="Workspace actions">
+        <div
+          ref={dropdownRef}
+          className={`workspace-more-menu-dropdown${placement === "top" ? " workspace-more-menu-dropdown--flip" : ""}`}
+          role="menu"
+          aria-label="Workspace actions"
+        >
           {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
