@@ -28,6 +28,7 @@ import {
   orientationFromComparisonInitialMode,
   containsHallucinatedChangeLanguage,
 } from "./initial-care-reality-assessment";
+import { readBaselineLanguage } from "./baseline-language";
 import {
   generateActiveSituation,
   orientationFromGeneratedSituation,
@@ -63,28 +64,35 @@ export type CareRealitySituationModel = {
   generated_situation: GeneratedActiveSituation;
 };
 
-/** Discourse: prior normal vs now — structural, not clinical keyword banks. */
+/**
+ * Prior-usual discourse — delegated to the baseline-language engine.
+ * Reads the many ways caregivers describe "this is not like it was" (used to,
+ * normally, up until the fall, hasn't been himself since, different from last
+ * week, same as always, baseline) instead of a single cue regex.
+ */
 function extractBaselineHint(text: string): string | null {
   const t = text.trim();
   if (!t) return null;
-  // "used to X but now Y" / "normally … now" / "isn't like …"
-  const usedTo = t.match(
-    /\b(?:used to|normally|usually|always used to|before)\b[^.!?]{8,120}?\b(?:but now|now|anymore|these days)\b[^.!?]{0,80}/i,
-  );
-  if (usedTo) return usedTo[0]!.trim().slice(0, 200);
-  const notLike = t.match(/\b(?:isn'?t|not) like (?:her|him|them|usual|before)[^.!?]{0,60}/i);
-  if (notLike) return notLike[0]!.trim().slice(0, 160);
-  return null;
+  const reading = readBaselineLanguage(t);
+  const best = reading.baseline_statements
+    .map((s) => s.replace(/\s+/g, " ").trim())
+    .find((s) => s.length >= 8);
+  return best ? best.slice(0, 200) : null;
 }
 
 function extractChangeHint(text: string): string | null {
   const t = text.trim();
   if (!t) return null;
-  const nowPart = t.match(
-    /\b(?:but now|now|these days|anymore)\b[^.!?]{8,140}/i,
-  );
-  if (nowPart) return nowPart[0]!.trim().slice(0, 200);
-  return null;
+  const reading = readBaselineLanguage(t);
+  const quantity = reading.quantity_comparisons[0];
+  if (quantity) {
+    const label = quantity.label.charAt(0).toUpperCase() + quantity.label.slice(1);
+    return `${label} is ${quantity.current} ${quantity.unit}, ${quantity.difference_phrase}.`;
+  }
+  const change = reading.change_statements
+    .map((s) => s.replace(/\s+/g, " ").trim())
+    .find((s) => s.length >= 8);
+  return change ? change.slice(0, 200) : null;
 }
 
 function confidenceFromModel(m: Omit<CareRealitySituationModel, "confidence" | "can_orient" | "extraction"> & {
