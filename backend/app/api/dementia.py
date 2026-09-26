@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Body, File, Form, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -398,3 +399,39 @@ def update_onboarding_progress(
     result = engine.update_onboarding_progress(person_id, domain, progress_data)
     db.commit()
     return result
+
+
+class EvidenceIntegrityRequest(BaseModel):
+    original_text: str
+
+
+@router.post("/observations/{observation_id}/verify-evidence", response_model=Dict[str, Any])
+def verify_observation_evidence(
+    observation_id: str,
+    request: EvidenceIntegrityRequest,
+    db: Session = Depends(get_db),
+):
+    from app.services.dementia_reasoning import DementiaReasoningEngine
+    engine = DementiaReasoningEngine(db)
+    return engine.verify_evidence_integrity(observation_id, request.original_text)
+
+
+@router.post("/baselines/{baseline_id}/verify-evidence", response_model=Dict[str, Any])
+def verify_baseline_evidence(
+    baseline_id: str,
+    request: EvidenceIntegrityRequest,
+    db: Session = Depends(get_db),
+):
+    from app.services.dementia_reasoning import DementiaReasoningEngine
+    engine = DementiaReasoningEngine(db)
+    return engine.verify_baseline_evidence_integrity(baseline_id, request.original_text)
+
+
+@router.get("/people/{person_id}/unverified-evidence", response_model=List[Dict[str, Any]])
+def get_unverified_evidence(
+    person_id: str,
+    db: Session = Depends(get_db),
+):
+    from app.services.dementia_reasoning import DementiaReasoningEngine
+    engine = DementiaReasoningEngine(db)
+    return engine.get_unverified_evidence(person_id)

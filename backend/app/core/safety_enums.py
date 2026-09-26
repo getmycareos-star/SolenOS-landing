@@ -129,6 +129,10 @@ class SafetyInvariantViolation(str, Enum):
     ACUTE_ON_CHRONIC_CHANGE_MISSED = "acute_on_chronic_change_missed"
     DIALECT_OR_CAREGIVER_LANGUAGE_MISINTERPRETATION = "dialect_or_caregiver_language_misinterpretation"
 
+    UNVERIFIED_SOURCE_POINTER = "unverified_source_pointer"
+    EVIDENCE_STATUS_DOWNGRADED = "evidence_status_downgraded"
+    CONFIDENCE_WITHOUT_VERIFIED_SOURCE = "confidence_without_verified_source"
+
 
 class SafetyState(str, Enum):
     UNASSESSED = "unassessed"

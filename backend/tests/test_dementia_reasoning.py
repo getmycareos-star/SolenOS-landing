@@ -4,6 +4,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import pytest
+
 from app.core.database import Base, get_db
 from app.main import app
 from app.models.care import Person, Caregiver
@@ -25,6 +27,7 @@ from app.core.dementia_enums import (
     SafetySignificance,
     CaregiverLanguageCategory,
     DementiaBaselineType,
+    EvidenceStatus,
 )
 
 
@@ -1384,3 +1387,268 @@ class TestCaregiverOnboarding:
         assert response.status_code == 200
         data = response.json()
         assert "memory" in data
+
+
+class TestEvidenceIntegrity:
+    """Category 13 tests: Evidence Integrity & Source Trust."""
+
+    def setup_method(self):
+        setup_db()
+        db = TestingSessionLocal()
+        seed_person(db)
+        db.close()
+
+    def teardown_method(self):
+        teardown_db()
+
+    def test_source_pointer_exact_match_verified(self):
+        """Source pointer that exactly matches should be verified."""
+        db = TestingSessionLocal()
+        engine = DementiaReasoningEngine(db)
+        original = "Patient shows memory loss and forgets names daily."
+        start = original.index("memory loss")
+        end = start + len("memory loss")
+
+        obs = DementiaObservationCreate(
+            person_id="person-1",
+            domain=DementiaDomain.MEMORY,
+            change_type=DementiaChangeType.NEW_CHANGE,
+            observation_text="memory loss",
+            structured_summary="Memory concern",
+            occurred_at=datetime.now(timezone.utc),
+            evidence_ids=[],
+        )
+        observation = engine.create_observation(obs)
+
+        db.flush()
+        observation.evidence_status = EvidenceStatus.REPORTED
+        observation.source_span_start_offset = start
+        observation.source_span_end_offset = end
+        observation.source_span_text = "memory loss"
+        db.commit()
+
+        result = engine.verify_evidence_integrity(observation.id, original)
+
+        assert result["verification_result"] == "exact_match"
+        assert result["source_span_verified_after"] is True
+        assert result["downgraded"] is False
+        assert result["evidence_status_after"] == result["evidence_status_before"]
+        db.close()
+
+    def test_source_pointer_span_mismatch_downgrades(self):
+        """Mismatched source pointer should downgrade evidence status."""
+        db = TestingSessionLocal()
+        engine = DementiaReasoningEngine(db)
+        original = "Patient shows memory loss and forgets names daily."
+        start = original.index("forgets")
+        end = start + len("forgets")
+
+        obs = DementiaObservationCreate(
+            person_id="person-1",
+            domain=DementiaDomain.MEMORY,
+            change_type=DementiaChangeType.NEW_CHANGE,
+            observation_text="memory loss",
+            structured_summary="Memory concern",
+            occurred_at=datetime.now(timezone.utc),
+            evidence_ids=[],
+        )
+        observation = engine.create_observation(obs)
+
+        db.flush()
+        observation.evidence_status = EvidenceStatus.REPORTED
+        observation.source_span_start_offset = start
+        observation.source_span_end_offset = end
+        observation.source_span_text = "memory loss"
+        db.commit()
+
+        result = engine.verify_evidence_integrity(observation.id, original)
+
+        assert result["verification_result"] == "span_mismatch"
+        assert result["source_span_verified_after"] is False
+        assert result["downgraded"] is True
+        assert result["final_status"] == "unknown"
+        assert result["original_status"] == "reported"
+        db.close()
+
+    def test_inferred_status_not_downgraded_on_mismatch(self):
+        """Inferred status (no pointer required) should not be downgraded."""
+        db = TestingSessionLocal()
+        engine = DementiaReasoningEngine(db)
+        original = "Patient shows memory loss and forgets names daily."
+
+        obs = DementiaObservationCreate(
+            person_id="person-1",
+            domain=DementiaDomain.MEMORY,
+            change_type=DementiaChangeType.NEW_CHANGE,
+            observation_text="memory loss",
+            structured_summary="Memory concern",
+            occurred_at=datetime.now(timezone.utc),
+            evidence_ids=[],
+        )
+        observation = engine.create_observation(obs)
+
+        db.flush()
+        observation.evidence_status = EvidenceStatus.INFERRED
+        observation.source_span_start_offset = 0
+        observation.source_span_end_offset = 5
+        observation.source_span_text = "wrong"
+        db.commit()
+
+        result = engine.verify_evidence_integrity(observation.id, original)
+
+        assert result["downgraded"] is False
+        assert result["source_span_verified_after"] is False
+        db.close()
+
+    def test_no_source_pointer_returns_no_pointer(self):
+        """Observation without source pointer returns no_source_pointer."""
+        db = TestingSessionLocal()
+        engine = DementiaReasoningEngine(db)
+
+        obs = DementiaObservationCreate(
+            person_id="person-1",
+            domain=DementiaDomain.MEMORY,
+            change_type=DementiaChangeType.NEW_CHANGE,
+            observation_text="memory loss",
+            structured_summary="Memory concern",
+            occurred_at=datetime.now(timezone.utc),
+            evidence_ids=[],
+        )
+        observation = engine.create_observation(obs)
+
+        result = engine.verify_evidence_integrity(observation.id, "some text")
+
+        assert result["verification_result"] == "no_source_pointer"
+        assert result["downgraded"] is False
+        db.close()
+
+    def test_never_upgrade_evidence_status(self):
+        """Evidence status must never be upgraded, even with valid pointer."""
+        db = TestingSessionLocal()
+        engine = DementiaReasoningEngine(db)
+        original = "Patient shows memory loss."
+
+        obs = DementiaObservationCreate(
+            person_id="person-1",
+            domain=DementiaDomain.MEMORY,
+            change_type=DementiaChangeType.NEW_CHANGE,
+            observation_text="memory loss",
+            structured_summary="Memory concern",
+            occurred_at=datetime.now(timezone.utc),
+            evidence_ids=[],
+        )
+        observation = engine.create_observation(obs)
+
+        db.flush()
+        observation.evidence_status = EvidenceStatus.UNKNOWN
+        start = original.index("memory loss")
+        observation.source_span_start_offset = start
+        observation.source_span_end_offset = start + len("memory loss")
+        observation.source_span_text = "memory loss"
+        db.commit()
+
+        result = engine.verify_evidence_integrity(observation.id, original)
+
+        assert result["verification_result"] == "exact_match"
+        assert result["downgraded"] is False
+        assert result["source_span_verified_after"] is True
+        assert observation.evidence_status == EvidenceStatus.UNKNOWN
+        db.close()
+
+    def test_verify_baseline_evidence_integrity(self):
+        """Verify evidence integrity on baseline model."""
+        db = TestingSessionLocal()
+        engine = DementiaReasoningEngine(db)
+        original = "Forgets names daily, this is their normal baseline."
+
+        baseline_data = DementiaBaselineCreate(
+            person_id="person-1",
+            baseline_type=DementiaBaselineType.PERSONAL_HISTORICAL,
+            domain=DementiaDomain.MEMORY,
+            description="Forgets names daily",
+            established_date=datetime.now(timezone.utc),
+        )
+        baseline = engine.create_baseline(baseline_data)
+
+        db.flush()
+        baseline.evidence_status = EvidenceStatus.REPORTED
+        start = original.index("Forgets names")
+        baseline.source_span_start_offset = start
+        baseline.source_span_end_offset = start + len("Forgets names daily")
+        baseline.source_span_text = "Forgets names daily"
+        db.commit()
+
+        result = engine.verify_baseline_evidence_integrity(baseline.id, original)
+
+        assert result["verification_result"] == "exact_match"
+        assert result["source_span_verified_after"] is True
+        db.close()
+
+    def test_get_unverified_evidence(self):
+        """Get observations with confirmed/reported status but unverified source."""
+        db = TestingSessionLocal()
+        engine = DementiaReasoningEngine(db)
+
+        obs = DementiaObservationCreate(
+            person_id="person-1",
+            domain=DementiaDomain.MEMORY,
+            change_type=DementiaChangeType.NEW_CHANGE,
+            observation_text="memory issues",
+            structured_summary="Memory concern",
+            occurred_at=datetime.now(timezone.utc),
+            evidence_ids=[],
+        )
+        observation = engine.create_observation(obs)
+
+        db.flush()
+        observation.evidence_status = EvidenceStatus.REPORTED
+        observation.source_span_verified = False
+        db.commit()
+
+        result = engine.get_unverified_evidence("person-1")
+
+        assert len(result) == 1
+        assert result[0]["observation_id"] == observation.id
+        assert result[0]["evidence_status"] == "reported"
+        db.close()
+
+    def test_document_analyzer_records_evidence_status(self):
+        """Document analyzer should record evidence status on extracted observations."""
+        from app.services.dementia_document_analyzer import DementiaDocumentAnalyzer
+        db = TestingSessionLocal()
+        analyzer = DementiaDocumentAnalyzer(db)
+        text = "Patient shows memory loss and forgets names. MMSE 22/30."
+        result = analyzer.analyze_document(
+            person_id="person-1",
+            text=text,
+            document_type="clinical_note",
+            document_id="doc-1",
+            visit_date=datetime.now(timezone.utc),
+        )
+
+        assert result["observations_created"] > 0
+        found_evidence_status = False
+        for obs in result["structured_observations"]:
+            if "evidence_status" in obs:
+                found_evidence_status = True
+                assert obs["evidence_status"] in ["confirmed", "reported", "inferred"]
+        assert found_evidence_status
+        db.close()
+
+    def test_document_analyzer_source_pointer_downgrade(self):
+        """Document analyzer should downgrade when source pointer is invalid."""
+        from app.services.dementia_document_analyzer import DementiaDocumentAnalyzer
+        db = TestingSessionLocal()
+        analyzer = DementiaDocumentAnalyzer(db)
+        text = "Patient shows memory loss and forgets names."
+        result = analyzer.analyze_document(
+            person_id="person-1",
+            text=text,
+            document_type="clinical_note",
+            document_id="doc-1",
+            visit_date=datetime.now(timezone.utc),
+        )
+
+        assert result["total_downgrades"] >= 0
+        assert "downgrades" in result
+        db.close()

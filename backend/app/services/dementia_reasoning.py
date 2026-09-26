@@ -36,6 +36,7 @@ from app.core.dementia_enums import (
     SafetySignificance,
     CaregiverLanguageCategory,
     DementiaBaselineType,
+    EvidenceStatus,
 )
 
 
@@ -1084,3 +1085,148 @@ class DementiaReasoningEngine:
             caregiver_disagreements_count=disagreements,
             last_assessed_at=last_assessed.assessed_at if last_assessed else None,
         )
+
+    def verify_evidence_integrity(
+        self,
+        observation_id: str,
+        original_text: str,
+    ) -> Dict[str, Any]:
+        """Verify source-pointer integrity for a stored observation.
+
+        Implements the Source-Pointer Trust Layer:
+            originalText.slice(start_offset, end_offset) === source_span_text
+        No normalization, trimming, paraphrasing, case conversion, or fuzzy matching.
+
+        May only DOWNGRADE evidence_status — never upgrade.
+        """
+        observation = self.db.query(DementiaObservationModel).filter(
+            DementiaObservationModel.id == observation_id
+        ).first()
+
+        if not observation:
+            return {"error": "Observation not found"}
+
+        result = {
+            "observation_id": observation_id,
+            "evidence_status_before": observation.evidence_status.value if observation.evidence_status else None,
+            "source_span_verified_before": observation.source_span_verified,
+            "source_span_text": observation.source_span_text,
+            "start_offset": observation.source_span_start_offset,
+            "end_offset": observation.source_span_end_offset,
+        }
+
+        if not observation.source_span_text or observation.source_span_start_offset is None or observation.source_span_end_offset is None:
+            result["verification_result"] = "no_source_pointer"
+            result["evidence_status_after"] = result["evidence_status_before"]
+            result["source_span_verified_after"] = False
+            result["downgraded"] = False
+            return result
+
+        start = observation.source_span_start_offset
+        end = observation.source_span_end_offset
+        expected = observation.source_span_text
+
+        actual = original_text[start:end] if 0 <= start < end <= len(original_text) else None
+        verified = actual == expected
+
+        result["verification_result"] = "exact_match" if verified else "span_mismatch"
+        result["source_span_verified_after"] = verified
+
+        requires_pointer = observation.evidence_status in (
+            EvidenceStatus.CONFIRMED,
+            EvidenceStatus.REPORTED,
+        )
+
+        if requires_pointer and not verified and observation.evidence_status != EvidenceStatus.UNKNOWN:
+            original_status = observation.evidence_status
+            observation.evidence_status = EvidenceStatus.UNKNOWN
+            observation.source_span_verified = False
+            self.db.commit()
+            result["downgraded"] = True
+            result["original_status"] = original_status.value
+            result["final_status"] = EvidenceStatus.UNKNOWN.value
+            result["downgrade_reason"] = result["verification_result"]
+        else:
+            result["downgraded"] = False
+            result["evidence_status_after"] = result["evidence_status_before"]
+
+        return result
+
+    def verify_baseline_evidence_integrity(
+        self,
+        baseline_id: str,
+        original_text: str,
+    ) -> Dict[str, Any]:
+        """Verify source-pointer integrity for a stored baseline."""
+        baseline = self.db.query(DementiaBaselineModel).filter(
+            DementiaBaselineModel.id == baseline_id
+        ).first()
+
+        if not baseline:
+            return {"error": "Baseline not found"}
+
+        result = {
+            "baseline_id": baseline_id,
+            "evidence_status_before": baseline.evidence_status.value if baseline.evidence_status else None,
+            "source_span_verified_before": baseline.source_span_verified,
+            "source_span_text": baseline.source_span_text,
+            "start_offset": baseline.source_span_start_offset,
+            "end_offset": baseline.source_span_end_offset,
+        }
+
+        if not baseline.source_span_text or baseline.source_span_start_offset is None or baseline.source_span_end_offset is None:
+            result["verification_result"] = "no_source_pointer"
+            result["source_span_verified_after"] = False
+            result["downgraded"] = False
+            return result
+
+        start = baseline.source_span_start_offset
+        end = baseline.source_span_end_offset
+        expected = baseline.source_span_text
+
+        actual = original_text[start:end] if 0 <= start < end <= len(original_text) else None
+        verified = actual == expected
+
+        result["verification_result"] = "exact_match" if verified else "span_mismatch"
+        result["source_span_verified_after"] = verified
+
+        requires_pointer = baseline.evidence_status in (
+            EvidenceStatus.CONFIRMED,
+            EvidenceStatus.REPORTED,
+        )
+
+        if requires_pointer and not verified and baseline.evidence_status != EvidenceStatus.UNKNOWN:
+            original_status = baseline.evidence_status
+            baseline.evidence_status = EvidenceStatus.UNKNOWN
+            baseline.source_span_verified = False
+            self.db.commit()
+            result["downgraded"] = True
+            result["original_status"] = original_status.value
+            result["final_status"] = EvidenceStatus.UNKNOWN.value
+            result["downgrade_reason"] = result["verification_result"]
+        else:
+            result["downgraded"] = False
+            result["evidence_status_after"] = result["evidence_status_before"]
+
+        return result
+
+    def get_unverified_evidence(self, person_id: str) -> List[Dict[str, Any]]:
+        """Get observations with confirmed/reported evidence status but no verified source pointer."""
+        observations = self.db.query(DementiaObservationModel).filter(
+            DementiaObservationModel.person_id == person_id,
+            DementiaObservationModel.evidence_status.in_(
+                [EvidenceStatus.CONFIRMED, EvidenceStatus.REPORTED]
+            ),
+            DementiaObservationModel.source_span_verified == False,
+        ).all()
+
+        return [
+            {
+                "observation_id": obs.id,
+                "domain": obs.domain.value,
+                "evidence_status": obs.evidence_status.value,
+                "source_span_verified": obs.source_span_verified,
+                "evidence_ids": obs.evidence_ids,
+            }
+            for obs in observations
+        ]

@@ -20,6 +20,7 @@ from app.core.dementia_enums import (
     SafetySignificance,
     CaregiverLanguageCategory,
     DementiaBaselineType,
+    EvidenceStatus,
 )
 from app.services.dementia_reasoning import DementiaReasoningEngine
 
@@ -137,6 +138,7 @@ class DementiaDocumentAnalyzer:
     ) -> Dict[str, Any]:
         text_lower = text.lower()
         structured_observations: List[Dict[str, Any]] = []
+        downgrades: List[Dict[str, Any]] = []
 
         # Extract MMSE/MoCA scores
         scores = self._extract_scores(text)
@@ -144,13 +146,35 @@ class DementiaDocumentAnalyzer:
         # Extract clinical observations by domain
         for domain, patterns in CLINICAL_OBSERVATION_PATTERNS.items():
             for keyword, description in patterns:
-                if re.search(keyword, text_lower, re.IGNORECASE):
+                match = re.search(keyword, text_lower, re.IGNORECASE)
+                if match:
                     change_type = DementiaChangeType.NEW_CHANGE
                     baseline_comparison = self.engine.compare_to_baseline(
                         person_id, domain, text
                     )
                     if baseline_comparison.change_type == DementiaChangeType.BASELINE_CONSISTENT:
                         change_type = DementiaChangeType.BASELINE_CONSISTENT
+
+                    source_span_start = match.start()
+                    source_span_end = match.end()
+                    source_span_text = match.group(0)
+
+                    evidence_status = self._derive_evidence_status(
+                        text, text_lower, domain, document_id
+                    )
+                    verified = self.verify_source_pointer_exact(
+                        text, source_span_start, source_span_end, source_span_text
+                    )
+
+                    if evidence_status in (EvidenceStatus.CONFIRMED, EvidenceStatus.REPORTED) and not verified:
+                        original_status = evidence_status
+                        evidence_status = EvidenceStatus.UNKNOWN
+                        downgrades.append({
+                            "original_status": original_status.value,
+                            "final_status": evidence_status.value,
+                            "reason": "source_pointer_verification_failed",
+                            "source_span": source_span_text,
+                        })
 
                     observation = {
                         "domain": domain.value,
@@ -161,6 +185,11 @@ class DementiaDocumentAnalyzer:
                         "time_indicator": self._detect_time_indicator(text),
                         "safety_significance": self._assess_from_text(text, domain),
                         "document_type": document_type,
+                        "evidence_status": evidence_status.value,
+                        "source_span_verified": verified,
+                        "source_span_start_offset": source_span_start if verified else None,
+                        "source_span_end_offset": source_span_end if verified else None,
+                        "source_span_text": source_span_text if verified else None,
                     }
                     structured_observations.append(observation)
                     break  # Only record first match per domain
@@ -188,6 +217,8 @@ class DementiaDocumentAnalyzer:
             "clinical_patterns": clinical_notes,
             "timeline_event_id": timeline_event.id if timeline_event else None,
             "observations_created": len(structured_observations),
+            "downgrades": downgrades,
+            "total_downgrades": len(downgrades),
         }
 
     def _extract_scores(self, text: str) -> Dict[str, Any]:
@@ -223,6 +254,48 @@ class DementiaDocumentAnalyzer:
             if re.search(pattern, text_lower, re.IGNORECASE):
                 return label
         return None
+
+    def verify_source_pointer_exact(
+        self,
+        original_text: str,
+        start_offset: int,
+        end_offset: int,
+        expected_span: str,
+    ) -> bool:
+        """Exact source-pointer verification.
+
+        A source pointer is valid ONLY if:
+            originalText.slice(start_offset, end_offset) === expected_span
+        with NO normalization, trimming, paraphrasing, case conversion, or fuzzy matching.
+        """
+        if not expected_span:
+            return False
+        if start_offset < 0:
+            return False
+        if end_offset <= start_offset:
+            return False
+        if end_offset > len(original_text):
+            return False
+        actual = original_text[start_offset:end_offset]
+        return actual == expected_span
+
+    def _derive_evidence_status(
+        self,
+        text: str,
+        text_lower: str,
+        domain: DementiaDomain,
+        document_id: Optional[str],
+    ) -> EvidenceStatus:
+        """Derive evidence status based on source reliability and text cues."""
+        if document_id:
+            if any(kw in text_lower for kw in ["document", "note", "assessment", "clinical"]):
+                return EvidenceStatus.REPORTED
+            if any(kw in text_lower for kw in ["confirmed", "verified", "documented"]):
+                return EvidenceStatus.CONFIRMED
+            return EvidenceStatus.REPORTED
+        if any(kw in text_lower for kw in ["suddenly", "today", "now", "currently"]):
+            return EvidenceStatus.REPORTED
+        return EvidenceStatus.INFERRED
 
     def _assess_from_text(self, text: str, domain: DementiaDomain) -> str:
         text_lower = text.lower()
@@ -292,7 +365,23 @@ class DementiaDocumentAnalyzer:
             occurred_at=occurred_at or datetime.now(timezone.utc),
             evidence_ids=[document_id] if document_id else [],
         )
-        return self.engine.create_observation(observation_data)
+        observation = self.engine.create_observation(observation_data)
+
+        if observation:
+            if "evidence_status" in obs_data:
+                observation.evidence_status = EvidenceStatus(obs_data["evidence_status"])
+            if "source_span_verified" in obs_data:
+                observation.source_span_verified = obs_data["source_span_verified"]
+            if obs_data.get("source_span_start_offset") is not None:
+                observation.source_span_start_offset = obs_data["source_span_start_offset"]
+            if obs_data.get("source_span_end_offset") is not None:
+                observation.source_span_end_offset = obs_data["source_span_end_offset"]
+            if obs_data.get("source_span_text"):
+                observation.source_span_text = obs_data["source_span_text"]
+            self.db.add(observation)
+            self.db.flush()
+
+        return observation
 
     def get_timeline_analysis(self, person_id: str, days: int = 90) -> Dict[str, Any]:
         since = datetime.now(timezone.utc) - timezone.utc.utcoffset() if False else None

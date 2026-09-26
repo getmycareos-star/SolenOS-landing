@@ -8,6 +8,7 @@ from app.core.dementia_enums import (
     SafetySignificance,
     CaregiverLanguageCategory,
     DementiaBaselineType,
+    EvidenceStatus,
 )
 
 
@@ -54,6 +55,11 @@ class DementiaBaselineResponse(BaseModel):
     caregiver_reports: List[Dict[str, Any]] = []
     is_active: bool
     superseded_by: Optional[str] = None
+    evidence_status: EvidenceStatus = Field(default=EvidenceStatus.INFERRED)
+    source_span_verified: bool = Field(default=False)
+    source_span_start_offset: Optional[int] = None
+    source_span_end_offset: Optional[int] = None
+    source_span_text: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -101,6 +107,11 @@ class DementiaObservationResponse(BaseModel):
     possible_contributors: List[str] = []
     uncertainty_notes: Optional[str] = None
     evidence_ids: List[str] = []
+    evidence_status: EvidenceStatus = Field(default=EvidenceStatus.INFERRED)
+    source_span_verified: bool = Field(default=False)
+    source_span_start_offset: Optional[int] = None
+    source_span_end_offset: Optional[int] = None
+    source_span_text: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

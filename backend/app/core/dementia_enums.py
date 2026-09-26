@@ -74,3 +74,26 @@ class DementiaBaselineType(str, Enum):
     CLINICAL_ASSESSMENT = "clinical_assessment"
     FUNCTIONAL_ASSESSMENT = "functional_assessment"
     COMBINED = "combined"
+
+
+class EvidenceStatus(str, Enum):
+    """Evidentiary status — independent dimension from numeric confidence.
+
+    - confirmed / reported => REQUIRE a verified, exact source pointer.
+    - inferred / unknown / contradictory => no source pointer required.
+    The validator may only DOWNGRADE this status (never upgrade).
+    """
+    CONFIRMED = "confirmed"
+    REPORTED = "reported"
+    INFERRED = "inferred"
+    UNKNOWN = "unknown"
+    CONTRADICTORY = "contradictory"
+
+
+class EvidenceIntegrityCategory(str, Enum):
+    """Categories of evidence integrity checks (Category 13)."""
+    SOURCE_POINTER_VERIFICATION = "source_pointer_verification"
+    EVIDENCE_STATUS_DOWNGRADE = "evidence_status_downgrade"
+    CONFIDENCE_INFLATION = "confidence_inflation"
+    CONTRADICTION_DETECTION = "contradiction_detection"
+    SOURCE_RELIABILITY_ASSESSMENT = "source_reliability_assessment"

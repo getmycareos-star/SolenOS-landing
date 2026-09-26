@@ -10,6 +10,7 @@ from app.core.dementia_enums import (
     SafetySignificance,
     CaregiverLanguageCategory,
     DementiaBaselineType,
+    EvidenceStatus,
 )
 
 
@@ -36,6 +37,12 @@ class DementiaBaselineModel(Base):
 
     is_active = Column(Boolean, default=True)
     superseded_by = Column(String, nullable=True)
+
+    evidence_status = Column(SQLEnum(EvidenceStatus), nullable=False, default=EvidenceStatus.INFERRED)
+    source_span_verified = Column(Boolean, nullable=False, default=False)
+    source_span_start_offset = Column(Integer, nullable=True)
+    source_span_end_offset = Column(Integer, nullable=True)
+    source_span_text = Column(Text, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -75,6 +82,12 @@ class DementiaObservationModel(Base):
     uncertainty_notes = Column(Text, nullable=True)
 
     evidence_ids = Column(JSONList, nullable=True)
+
+    evidence_status = Column(SQLEnum(EvidenceStatus), nullable=False, default=EvidenceStatus.INFERRED)
+    source_span_verified = Column(Boolean, nullable=False, default=False)
+    source_span_start_offset = Column(Integer, nullable=True)
+    source_span_end_offset = Column(Integer, nullable=True)
+    source_span_text = Column(Text, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
