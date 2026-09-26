@@ -64,6 +64,12 @@ export function LivingCareRecordPanel({
       {view.evidence_line && view.evidence_maturity >= 1 && (
         <p className="panel-muted lcr-evidence-line">{view.evidence_line}</p>
       )}
+      {view.rationale && (
+        <details className="lcr-expandable lcr-rationale">
+          <summary className="panel-muted">How we're seeing this</summary>
+          <p className="panel-muted">{view.rationale}</p>
+        </details>
+      )}
       {view.disclosure_plan.show_attention_level && view.attention_label && (
         <p className="panel-muted lcr-attention" aria-label="Attention level">
           {view.attention_label}
