@@ -70,6 +70,8 @@ export type LivingCareRecordResponseView = {
   care_reality_state_id: string | null;
   /** Quiet why-asking (L1) — optional / collapsed in UI. */
   why_asking: string | null;
+  /** Friendly rationale — why SolenOS understands this a certain way. Never engine jargon. */
+  rationale: string | null;
   /** Source / supporting evidence line by maturity. */
   evidence_line: string | null;
   /** Consequence tier for evidence visibility (1|2|3|5|10). */

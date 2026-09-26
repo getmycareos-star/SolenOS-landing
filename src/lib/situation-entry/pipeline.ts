@@ -408,6 +408,154 @@ function mergeDareResults(results: DareIngestResult[]): DareIngestResult {
 }
 
 /**
+ * Rule-based fallback extraction when LLM extraction fails.
+ * Extracts structured observations from raw caregiver text using pattern matching.
+ * Never invents clinical labels — only extracts what was actually said.
+ */
+function buildRuleBasedExtractionEvents(
+  rawText: string,
+  caregiverId: string,
+  input: ProcessSituationInput,
+): CanonicalCareEvent[] {
+  const events: CanonicalCareEvent[] = [];
+  const now = new Date().toISOString();
+  const ingestionTime = input.timestamp ?? now;
+
+  const createBaseEvent = (
+    sentence: string,
+    extractedType: CanonicalCareEvent["extracted_type"],
+    rawAttributes: Record<string, unknown>,
+  ): CanonicalCareEvent => {
+    const attributes: Record<string, string | string[] | boolean | null> = {};
+    for (const [k, v] of Object.entries(rawAttributes)) {
+      if (typeof v === "string" || typeof v === "boolean" || v === null) {
+        attributes[k] = v;
+      } else if (Array.isArray(v)) {
+        attributes[k] = v.map(String);
+      } else if (typeof v === "number") {
+        attributes[k] = String(v);
+      } else if (typeof v === "object") {
+        attributes[k] = JSON.stringify(v);
+      } else {
+        attributes[k] = String(v);
+      }
+    }
+
+    return withDualTime(
+      {
+        id: `ce_rule_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        raw_input: sentence,
+        extracted_type: extractedType,
+        entities: [],
+        attributes,
+        uncertainty: [],
+        source: "user_input",
+        root_event_id: null,
+        situation_id: null,
+        document_id: null,
+        status: "committed" as const,
+        integrity: createIntegrityState({
+          confidenceScore: 0.7,
+          originalExtraction: sentence,
+          sources: ["user_correction"],
+        }),
+        priority: createStubPriority("active"),
+        source_reliability: classifySourceReliability({
+          source: "user_input",
+          raw_input: sentence,
+        }),
+      },
+      sentence,
+      ingestionTime,
+    );
+  };
+
+  const sentences = rawText
+    .split(/[.!?]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 8);
+
+  for (const sentence of sentences) {
+    const lower = sentence.toLowerCase();
+
+    const medMatch = sentence.match(
+      /(?:medication|medicine|pill|dose|take|taking|took|mg|mcg|tablet|capsule)\s+([^.]{3,60})/i,
+    );
+    if (medMatch) {
+      events.push(createBaseEvent(
+        sentence,
+        "observation",
+        {
+          observation_type: "medication",
+          medication_detail: medMatch[1]!.trim(),
+          extraction_source: "rule_based_fallback",
+        },
+      ));
+      continue;
+    }
+
+    const symptomPatterns = [
+      { pattern: /(?:worse|increased|escalated|gotten worse|declining|getting worse)/i, label: "worsening" },
+      { pattern: /(?:better|improved|resolved|recovering|stable|feeling better)/i, label: "improving" },
+      { pattern: /(?:new|started|began|first time|appeared|developed)/i, label: "new" },
+      { pattern: /(?:still|continues|ongoing|persistent|remains)/i, label: "ongoing" },
+    ];
+
+    for (const { pattern, label } of symptomPatterns) {
+      if (pattern.test(lower)) {
+        events.push(createBaseEvent(
+          sentence,
+          "observation",
+          {
+            observation_type: "symptom_change",
+            change_direction: label,
+            extraction_source: "rule_based_fallback",
+          },
+        ));
+        break;
+      }
+    }
+
+    if (/(?:appointment|visit|doctor|clinic|hospital|ER|emergency|nurse|therapist)/i.test(lower)) {
+      events.push(createBaseEvent(
+        sentence,
+        "appointment",
+        {
+          observation_type: "healthcare_encounter",
+          extraction_source: "rule_based_fallback",
+        },
+      ));
+      continue;
+    }
+
+    if (/(?:fell|fall|injury|hurt|injured|accident|slip|trip)/i.test(lower)) {
+      events.push(createBaseEvent(
+        sentence,
+        "observation",
+        {
+          observation_type: "fall_or_injury",
+          extraction_source: "rule_based_fallback",
+        },
+      ));
+      continue;
+    }
+
+    if (events.length === 0) {
+      events.push(createBaseEvent(
+        sentence,
+        "observation",
+        {
+          observation_type: "general_observation",
+          extraction_source: "rule_based_fallback",
+        },
+      ));
+    }
+  }
+
+  return events.slice(0, 10);
+}
+
+/**
  * Single entry pipeline — noisy input → DARE → validated CareEvents → CareContextRoot.
  * Graph is built from resolved truth only.
  */
@@ -596,6 +744,8 @@ export async function processSituationInput(
   }
 
   // Capture always succeeds: free-text care input becomes at least one CareEvent.
+  // When DARE fails AND LLM extraction fails, use rule-based fallback to extract
+  // structured observations so understanding is never empty.
   if (input.raw_input.trim() && events.length === 0) {
     const rawFromDare = dare?.raw_input;
     const fallbackRaw =
@@ -619,6 +769,22 @@ export async function processSituationInput(
     unparsed.root_event_id = isFirstSituation ? null : rootEventId;
     unparsed.situation_id = null;
     events.push(unparsed);
+
+    // Rule-based fallback: extract structured observations from raw text when LLM failed.
+    // This ensures understanding is never empty even when semantic extraction fails.
+    if (!semanticExtraction?.success || !semanticExtraction?.extraction) {
+      const fallbackEvents = buildRuleBasedExtractionEvents(
+        input.raw_input.trim(),
+        caregiverId,
+        input,
+      );
+      for (const event of fallbackEvents) {
+        event.root_event_id = isFirstSituation && events.length === 0 ? null : rootEventId;
+        event.situation_id = null;
+        persistCanonicalEvent(event, caregiverId, input.provenance);
+      }
+      events.push(...fallbackEvents);
+    }
   }
 
   if (input.raw_input.trim() && events.length > 0) {

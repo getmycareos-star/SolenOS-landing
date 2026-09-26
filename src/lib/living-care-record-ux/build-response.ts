@@ -452,8 +452,27 @@ export function buildLivingCareRecordResponse(params: {
     2,
   );
   // Understanding-first: if composer withheld facts (gather mode), do not re-inject echoes.
+  // But never show empty understanding — fall back to captured facts so caregivers see WHAT was understood.
   if (composed.what_we_know.length === 0 && composed.show_questions) {
-    what_understood = [];
+    const capturedFacts = plainHeldFacts(
+      situation.observations
+        .filter((o) => !o.disputed_by_correction_id)
+        .map((o) => observationCareFact({ human_fact: o.human_fact, raw_text: o.raw_text }))
+        .filter(Boolean) as string[],
+      3,
+    );
+    if (capturedFacts.length > 0) {
+      what_understood = dedupeCaregiverFacingLines(
+        capturedFacts.filter(
+          (line) =>
+            !isCaregiverGuidanceDemand(line) &&
+            !isNearRawCaregiverFacet(line, sourceText),
+        ),
+        3,
+      );
+    } else {
+      what_understood = [];
+    }
   }
 
   return {
@@ -504,6 +523,7 @@ export function buildLivingCareRecordResponse(params: {
     original_input: sanitizeCaregiverDisplayText(rawInput).slice(0, 800),
     has_documents: hasDocuments,
     observation_count: careRealityObservations(turn.situation).length,
+    rationale: composed.rationale,
     expandable: (() => {
       const maturity = composed.evidence_maturity;
       const evidenceCap =

@@ -485,3 +485,50 @@ export function composeEvidenceLine(params: {
 }
 
 export { understandingSufficient, earlyGatherIncomplete, careContextGapsRemain, careRealityObservations };
+
+/**
+ * Friendly rationale — why SolenOS understands this a certain way.
+ * Never engine jargon, never scores, never "the model says".
+ * Shows the reasoning path in plain caregiver language.
+ */
+export function composeRationale(params: {
+  subjectLabel: string;
+  signals: readonly string[];
+  hasDocuments?: boolean;
+  baselineChangeNote?: string | null;
+  whatChanged?: string | null;
+  whatMattersNow?: string | null;
+  whatUnderstood?: readonly string[];
+}): string | null {
+  const who =
+    params.subjectLabel === "Mom" || params.subjectLabel === "Dad"
+      ? params.subjectLabel
+      : "them";
+  const parts: string[] = [];
+  const signalList = [...params.signals];
+
+  if (params.baselineChangeNote) {
+    parts.push(`We noticed ${params.baselineChangeNote.toLowerCase()}`);
+  }
+  if (params.whatChanged) {
+    parts.push(`What changed: ${params.whatChanged}`);
+  }
+  if (params.whatMattersNow) {
+    parts.push(`What matters now: ${params.whatMattersNow}`);
+  }
+  if (signalList.length > 0) {
+    const signalText = signalList.slice(0, 3).join(", ");
+    parts.push(`Signals we picked up: ${signalText}`);
+  }
+  if (params.hasDocuments) {
+    parts.push("We read this from your document");
+  }
+  if (params.whatUnderstood && params.whatUnderstood.length > 0) {
+    parts.push(`What we understood: ${params.whatUnderstood.slice(0, 2).join("; ")}`);
+  }
+
+  if (parts.length === 0) return null;
+
+  const joined = parts.join(". ");
+  return `Here's how we're seeing this: ${joined}.`;
+}

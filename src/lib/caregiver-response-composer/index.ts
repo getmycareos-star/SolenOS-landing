@@ -41,6 +41,7 @@ import {
   classifyCaregiverTurn,
   composeEvidenceLine,
   composeWhyAsking,
+  composeRationale,
   selectResponseFacets,
 } from "../response-behavior";
 import {
@@ -368,6 +369,8 @@ export type ComposedCaregiverResponse = {
   contract_output: ResponseIntelligenceOutput;
   /** Caregiver mental load signal — brief, non-judgmental. */
   mental_load_signal: string | null;
+  /** Friendly rationale — why SolenOS understands this a certain way. Never engine jargon. */
+  rationale: string | null;
 };
 
 function containsBanned(text: string): boolean {
@@ -526,7 +529,7 @@ function composeIdentityMismatchTurn(params: {
     evidence_line: null,
     evidence_maturity: 1,
     follow_up_items: [],
-    contract_output: intelligence,
+contract_output: intelligence,
     mental_load_signal: (() => {
       const openGaps = still_unclear.length;
       if (openGaps >= 3) {
@@ -540,8 +543,8 @@ function composeIdentityMismatchTurn(params: {
       }
       return null;
     })(),
+    rationale: null,
   };
-  assertComposedResponseProfessional(composed);
   assertResponseAcceptanceGate({
     composed,
     careMemoryState,
@@ -1570,6 +1573,16 @@ if (improvement) {
         })
       : null;
 
+  const rationale = composeRationale({
+    subjectLabel: situation.subject_label,
+    signals: heldSignals,
+    hasDocuments: params.hasDocuments,
+    baselineChangeNote,
+    whatChanged: what_changed,
+    whatMattersNow: what_matters_now,
+    whatUnderstood: what_we_know,
+  });
+
   const supportingFacts = plainHeldFacts(
     [
       ...extractionSurfaceLines,
@@ -2249,6 +2262,7 @@ connection_note = scrubPasteField(connection_note);
       }
       return null;
     })(),
+    rationale,
   };
 
   assertComposedResponseProfessional(composed);
@@ -2413,6 +2427,7 @@ export function composeGreetingResponse(params: {
     follow_up_items: [],
     contract_output,
     mental_load_signal: null,
+    rationale: null,
   };
   assertComposedResponseProfessional(composed);
   return composed;

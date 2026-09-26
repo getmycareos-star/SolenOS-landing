@@ -314,6 +314,7 @@ evidence_line: null,
       }
       return null;
     })(),
+    rationale: null,
   };
 
   return {
