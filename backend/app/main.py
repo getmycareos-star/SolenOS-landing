@@ -12,6 +12,7 @@ from app.api.causal import router as causal_router
 from app.api.meaning import router as meaning_router
 from app.api.prioritization import router as prioritization_router
 from app.api.knowledge_revision import router as knowledge_revision_router
+from app.api.dementia import router as dementia_router
 
 try:
     from app.api.files import router as files_router
@@ -42,6 +43,7 @@ app.include_router(causal_router, prefix="/api/v1")
 app.include_router(meaning_router, prefix="/api/v1")
 app.include_router(prioritization_router, prefix="/api/v1")
 app.include_router(knowledge_revision_router, prefix="/api/v1")
+app.include_router(dementia_router, prefix="/api/v1")
 if files_router is not None:
     app.include_router(files_router, prefix="/api/files")
 

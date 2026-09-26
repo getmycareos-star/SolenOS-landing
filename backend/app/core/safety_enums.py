@@ -108,6 +108,27 @@ class SafetyInvariantViolation(str, Enum):
     AUTHORITY_THEATER = "authority_theater"
     INFORMATION_TO_ADVICE = "information_to_advice"
 
+    DEMENTIA_AS_EXPLANATION_FOR_NEW_CHANGE = "dementia_as_explanation_for_new_change"
+    BASELINE_ERASURE = "baseline_erasure"
+    ACUTE_CHANGE_MISSED = "acute_change_missed"
+    PROGRESSION_AS_EPISODE = "progression_as_episode"
+    EPISODE_AS_PROGRESSION = "episode_as_progression"
+    FLUCTUATION_AS_PROGRESSION = "fluctuation_as_progression"
+    RECURRENCE_AS_CONTINUOUS_DECLINE = "recurrence_as_continuous_decline"
+    COGNITIVE_DOMAIN_COLLAPSE = "cognitive_domain_collapse"
+    FUNCTIONAL_DOMAIN_COLLAPSE = "functional_domain_collapse"
+    BEHAVIOR_AS_DIAGNOSIS = "behavior_as_diagnosis"
+    CAREGIVER_LABEL_AS_CLINICAL_FACT = "caregiver_label_as_clinical_fact"
+    WANDERING_RISK_MISSED = "wandering_risk_missed"
+    SAFETY_CHANGE_MISSED = "safety_change_missed"
+    DEMENTIA_CONTEXT_IGNORED = "dementia_context_ignored"
+    DEMENTIA_CONTEXT_OVERWEIGHTED = "dementia_context_overweighted"
+    MEMORY_AS_ALL_COGNITION = "memory_as_all_cognition"
+    COGNITIVE_CHANGE_WITHOUT_BASELINE = "cognitive_change_without_baseline"
+    FUNCTIONAL_CHANGE_WITHOUT_BASELINE = "functional_change_without_baseline"
+    ACUTE_ON_CHRONIC_CHANGE_MISSED = "acute_on_chronic_change_missed"
+    DIALECT_OR_CAREGIVER_LANGUAGE_MISINTERPRETATION = "dialect_or_caregiver_language_misinterpretation"
+
 
 class SafetyState(str, Enum):
     UNASSESSED = "unassessed"
