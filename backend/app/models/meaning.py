@@ -165,6 +165,8 @@ class MeaningOutput(BaseModel):
     open_questions: list[OpenQuestion] = Field(default_factory=list)
     causal_hypotheses: list[CausalHypothesis] = Field(default_factory=list)
     caregiver_attribution: list[str] = Field(default_factory=list)
+    clinician_instructions: list[ClinicianInstruction] = Field(default_factory=list)
+    upcoming_appointments: list[CareAppointment] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -177,4 +179,40 @@ class PriorityAssessment(BaseModel):
     priority_level: PriorityLevel
     rationale: str = ""
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ClinicianInstruction(BaseModel):
+    """An authoritative instruction from a licensed clinician.
+
+    SolenOS must faithfully surface these with full attribution.
+    Never modify, extend, or override these instructions.
+    """
+
+    id: str
+    person_id: str
+    author: str  # Name or identifier of the clinician
+    author_role: str  # "physician", "nurse", "pharmacist", etc.
+    instruction_text: str  # The exact instruction as documented
+    scope: str  # What the instruction applies to
+    date_issued: datetime = Field(default_factory=datetime.utcnow)
+    expiration: datetime | None = None  # When the instruction expires (if temporary)
+    is_active: bool = True
+    evidence_ids: list[str] = Field(default_factory=list)
+    change_ids: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CareAppointment(BaseModel):
+    """A care appointment or upcoming event."""
+
+    id: str
+    person_id: str
+    title: str
+    scheduled_at: datetime
+    location: str | None = None
+    with_clinician: str | None = None
+    with_role: str | None = None
+    confirmed: bool = True
+    evidence_ids: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)

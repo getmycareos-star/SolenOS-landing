@@ -31,6 +31,7 @@
     "verify:medical-boundary": "tsx scripts/verify-medical-boundary.mts",
     "verify:final-contract": "tsx scripts/verify-final-contract.mts",
     "verify:epistemic-safety": "tsx scripts/verify-epistemic-safety.mts",
+    "verify:event-identity": "tsx scripts/verify-event-identity.mts",
     "verify:canonical-architecture": "tsx scripts/verify-canonical-architecture.mts",
     "verify:grounding": "tsx scripts/verify-grounding.mts",
     "verify:deterministic-output": "tsx scripts/verify-deterministic-output.mts",

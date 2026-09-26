@@ -34,3 +34,12 @@ export {
   resetNormalizationStore,
   createNormalizedEventId,
 } from "./event-normalizer";
+
+// Event Identity (Category 9) - Comprehensive duplicate/recurrence/update resolution
+export * from "../event-identity";
+
+// Enhanced deduplication with full identity reasoning
+export {
+  deduplicateEventsWithIdentity,
+  checkEventIdentity,
+} from "./deduplicate-enhanced";
