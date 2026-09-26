@@ -1,0 +1,28 @@
+feat: semantic ingestion foundation via Ollama LLM
+
+Wire local LLM (qwen2.5-coder:1.5b via Ollama) into POST /api/situation
+to convert messy caregiver notes into structured, validated, persisted
+evidence.
+
+- New LLM provider boundary: src/lib/llm-provider/{types,ollama-provider,index}.ts
+  - Model-agnostic interface, centralized config, timeout, error handling
+  - Default model qwen2.5-coder:1.5b (8GB RAM constraint; 7b/3b thrash)
+- New semantic extraction module: src/lib/semantic-extraction/{types,prompt,extractor,index}.ts
+  - Extraction contract with schema validation, normalization, failure handling
+  - Preserves attribution, contradictions, temporal uncertainty, explicit questions
+  - Does NOT do: clinical conclusions, baseline determination, change detection,
+    prioritization, caregiver prose
+- Wired into situation-entry/pipeline.ts:
+  - createSemanticExtractor() invoked after DARE pipeline
+  - buildExtractionCareEvents() converts extraction results into CanonicalCareEvent
+    records (observations, measurements, medications, contradictions, questions,
+    appointments)
+  - Added semantic_extraction_layer to SituationResponse
+- Extended EXTRACTED_TYPES with appointment and medication_info
+- Extended understoodLabel() and URGENCY_BY_TYPE for new types
+- TypeScript compilation passes with zero errors
+- Extraction verified end-to-end with qwen2.5-coder:1.5b on 8GB RAM
+- Hard-coding audit: no test phrases (90/55, Sarah, John, lorazepam, metoprolol)
+  in production code
+- Failure handling: Ollama unavailable, malformed Qwen response - non-fatal,
+  raw evidence survives in raw_response

@@ -45,7 +45,14 @@ import type { SituationResponse } from "../situation-entry/types";
 import {
   caregiverFacingFragmentText,
   looksLikeCareThread,
+  threadFragmentCount,
 } from "../thread-ingestion/detect";
+import {
+  buildUnderstandingTrace,
+  caregiverStandingFor,
+  shouldShowStanding,
+} from "../care-clarity-projection";
+import { detectGeneralContradictions } from "../contradiction-detection-engine/general";
 
 export { isCaregiverSafeDisplayText } from "../mvp-input-architecture";
 
@@ -125,6 +132,66 @@ function cleanCareFactDisplay(line: string): string {
     .replace(/\bherefusedto\b/gi, "refused to")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Held facts, made plain and safe to show.
+ *
+ * Guarantee (progressive understanding): when the caregiver shared something
+ * concrete, "what is understood" is never empty. This is the last safety net
+ * before the response, so it never returns empty for meaningful content and
+ * never returns a guidance-question echo, a greeting, or raw near-verbatim
+ * restatement of the input.
+ */
+function plainHeldFacts(
+  facts: readonly string[],
+  limit = 3,
+  opts?: { latestRawText?: string },
+): string[] {
+  const out: string[] = [];
+  for (const raw of facts) {
+    const cleaned = cleanCareFactDisplay(sanitizeCaregiverDisplayText(raw));
+    if (cleaned.length < 8) continue;
+    if (isGreetingNoiseFact(cleaned)) continue;
+    if (isCaregiverGuidanceDemand(cleaned)) continue;
+    if (isProductMetaFact(cleaned)) continue;
+    if (opts?.latestRawText && isNearRawCaregiverFacet(cleaned, opts.latestRawText)) continue;
+    if (!isCaregiverSafeDisplayText(cleaned)) continue;
+    const line = cleaned.endsWith(".") ? cleaned : `${cleaned}.`;
+    if (out.some((existing) => existing.toLowerCase() === line.toLowerCase())) continue;
+    out.push(line);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** Product / session meta is never a care fact ("first time here", "signed in"). */
+function isProductMetaFact(line: string): boolean {
+  return /\b(?:first time (?:i|we)(?:'|’)?ve? been|first time here|sign(?:ed)? in|log(?:ged)? in|new account|forgot my password)\b/i.test(
+    line,
+  );
+}
+
+/** Structured findings worth showing verbatim (numbers, doses, times). */
+function structuredFindingsFromEvents(
+  response: SituationResponse,
+): string[] {
+  const out: string[] = [];
+  for (const event of response.events_created ?? []) {
+    const attrs = event.attributes ?? {};
+    const kind = String(attrs.measurement_type ?? attrs.observation_type ?? "");
+    const semantic = String(attrs.semantic_source ?? "");
+    if (!semantic) continue;
+    if (kind === "blood_pressure" && attrs.systolic && attrs.diastolic) {
+      out.push(`Blood pressure ${attrs.systolic}/${attrs.diastolic} ${attrs.unit ?? ""}`.trim());
+    } else if (kind && attrs.description) {
+      out.push(String(attrs.description));
+    } else if (kind) {
+      out.push(`${kind.replace(/_/g, " ")}: ${event.raw_input}`.trim());
+    }
+    if (out.length >= 4) break;
+  }
+  return out;
 }
 
 function humanFactsFromEvents(
@@ -316,12 +383,14 @@ export function buildLivingCareRecordResponse(params: {
 
   // G6 — when ACS grew from a thread split, compose against the latest fragment
   // (not the entire paste), so orientation matches what was just linked.
+  // Robust: any multi-observation turn that came from a thread source marker counts,
+  // not only a fresh heuristic match on the current paste.
   const obs = turn.situation.observations;
   const lastObs = obs.length > 0 ? obs[obs.length - 1] : null;
+  const threadFromMarker = Boolean(lastObs?.raw_text?.includes("[thread-source]"));
+  const threadFromHeuristic = looksLikeCareThread(rawInput) || threadFragmentCount(rawInput) > 1;
   const threadLatest =
-    lastObs &&
-    obs.length > 1 &&
-    looksLikeCareThread(rawInput)
+    lastObs && obs.length > 1 && (threadFromMarker || threadFromHeuristic)
       ? caregiverFacingFragmentText(lastObs.raw_text)
       : null;
 
@@ -452,28 +521,61 @@ export function buildLivingCareRecordResponse(params: {
     2,
   );
   // Understanding-first: if composer withheld facts (gather mode), do not re-inject echoes.
-  // But never show empty understanding — fall back to captured facts so caregivers see WHAT was understood.
+  // But never show empty understanding — fall back to what was actually captured so the
+  // caregiver can always see that their words landed somewhere.
   if (composed.what_we_know.length === 0 && composed.show_questions) {
     const capturedFacts = plainHeldFacts(
-      situation.observations
+      turn.situation.observations
         .filter((o) => !o.disputed_by_correction_id)
         .map((o) => observationCareFact({ human_fact: o.human_fact, raw_text: o.raw_text }))
-        .filter(Boolean) as string[],
+        .filter((fact): fact is string => Boolean(fact)),
       3,
+      { latestRawText: sourceText },
     );
     if (capturedFacts.length > 0) {
-      what_understood = dedupeCaregiverFacingLines(
-        capturedFacts.filter(
-          (line) =>
-            !isCaregiverGuidanceDemand(line) &&
-            !isNearRawCaregiverFacet(line, sourceText),
-        ),
-        3,
-      );
+      what_understood = dedupeCaregiverFacingLines(capturedFacts, 3);
     } else {
-      what_understood = [];
+      // Last resort: the source itself, cleaned. Better a plain restatement than an
+      // empty "nothing understood" after the caregiver shared something real.
+      const fallback = plainHeldFacts([sourceText], 1);
+      what_understood = fallback.length > 0 ? fallback : [];
     }
   }
+
+  // Where things stand — the engine's own conclusion, said plainly.
+  // Gated by disclosure stage; never replaces the understanding sections.
+  const standing = caregiverStandingFor({
+    response,
+    situationObservations: turn.situation.observations,
+    composed,
+    latestRawText: sourceText,
+  });
+  const showStanding = standing.has_content &&
+    shouldShowStanding({
+      observationCount: careRealityObservations(turn.situation).length,
+      hasBaselineOrChange:
+        what_understood.length > 0 || Boolean(composed.what_changed ?? turn.what_changed_in_understanding),
+      stage: turn.disclosure_stage,
+      crisis: composed.contract_output.risk_level === "high",
+    });
+
+  // How this was understood + how to correct it — the visible "why".
+  const careObs = careRealityObservations(turn.situation);
+  const trace = buildUnderstandingTrace(
+    {
+      facts: what_understood,
+      quotes: careObs.map((o) => o.raw_text),
+      reporters: careObs.map(() => (turn.situation.subject_label ?? "they")),
+      dates: careObs.map((o) => (o.captured_at || "").slice(0, 10) || null),
+      openQuestions: composed.still_unclear,
+      structuredFindings: structuredFindingsFromEvents(response),
+      originalInput: rawInput,
+    },
+    { subjectLabel: turn.situation.subject_label },
+  );
+  const showTrace =
+    trace.has_content &&
+    (turn.disclosure_stage !== "early" || Boolean(composed.what_changed) || careObs.length >= 2);
 
   return {
     identity_line: LIVING_CARE_RECORD_UX_IDENTITY,
@@ -491,6 +593,25 @@ export function buildLivingCareRecordResponse(params: {
     },
     understanding_heading: "What is understood about this situation",
     what_understood: plan.show_current_understanding ? what_understood : [],
+    where_things_stand: showStanding
+      ? {
+          heading: standing.heading,
+          standing: standing.standing,
+          matters_now: standing.matters_now,
+          can_wait: standing.can_wait,
+          watch_for: standing.watch_for,
+          next_question: standing.next_question,
+        }
+      : null,
+    understanding_trace: showTrace
+      ? {
+          heading: trace.heading,
+          summary: trace.summary,
+          steps: trace.steps,
+          not_decided: trace.not_decided,
+          correction_prompt: trace.correction_prompt,
+        }
+      : null,
     insufficiency_note: null,
     connection_note: plan.show_connection ? composed.connection_note : null,
     what_needs_context: composed.still_unclear,
@@ -627,14 +748,30 @@ export function buildLivingCareRecordResponse(params: {
       }
       return "insufficient_data";
     })(),
-    contradictions: response.contradiction_detection_layer?.open_contradictions
-      .slice(0, 2)
-      .map((c) => c.shared_message)
-      .filter(Boolean) ?? [],
-    baseline_summary: response.baseline_intelligence_layer?.baseline_facts
-      .slice(0, 2)
-      .map((f) => f.label)
-      .join("; ") ?? null,
+    contradictions: (() => {
+      // Prefer what the pipeline already preserved; fall back to the general
+      // engine so a share or a turn never hides a disagreement it can see.
+      const fromLayer = (response.contradiction_detection_layer?.open_contradictions ?? [])
+        .map((c) => c.shared_message)
+        .filter(Boolean);
+      if (fromLayer.length > 0) return fromLayer.slice(0, 3);
+      const fromEngine = detectGeneralContradictions([
+        ...(response.context?.events ?? []),
+        ...(response.events_created ?? []),
+      ]).contradictions;
+      return fromEngine.map((c) => c.shared_message).slice(0, 3);
+    })(),
+    baseline_summary: (() => {
+      const fromLayer = response.baseline_intelligence_layer?.baseline_facts
+        .slice(0, 2)
+        .map((f) => f.label)
+        .join("; ");
+      if (fromLayer) return fromLayer;
+      // Quantity departures are the most concrete "usual" available.
+      const comparison = response.care_reality_engine_layer?.changes?.changes?.[0];
+      if (comparison?.prior) return formatBaselineChangeNote({ prior: comparison.prior });
+      return null;
+    })(),
     compound_signal: turn.compound_signal ?? null,
     trajectory_by_domain: turn.trajectory_by_domain ?? {},
     cross_signal_correlations: turn.situation.cross_signal_correlations ?? [],

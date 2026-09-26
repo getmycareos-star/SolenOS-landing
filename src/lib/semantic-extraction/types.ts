@@ -79,6 +79,55 @@ export type ExtractionAppointment = {
   source_person?: string | null;
 };
 
+/**
+ * Where the structured facts came from.
+ * `rules` never means "model unavailable" — the rule floor always runs so
+ * understanding is structured even when every LLM attempt fails.
+ */
+export type ExtractionSource = "llm" | "rules" | "llm+rules";
+
+/**
+ * What the extraction actually covered. Used to know whether understanding is
+ * thin or rich — never as confidence-score theater.
+ */
+export type ExtractionCoverage = {
+  observations: number;
+  measurements: number;
+  medications: number;
+  temporal_facts: number;
+  questions: number;
+  appointments: number;
+  uncertainties: number;
+  contradictions: number;
+  attributions: number;
+  caregiver_load_signals: number;
+  /** True when at least one concrete, checkable fact was extracted. */
+  has_structured_fact: boolean;
+};
+
+/**
+ * Caregiver-capacity signals (exhaustion, isolation, competing demands).
+ * Structurally separated from care-recipient observations so caregiver load is
+ * never reported as a change in the person receiving care.
+ */
+export type CaregiverLoadSignal = {
+  kind:
+    | "exhaustion"
+    | "overwhelmed"
+    | "time_pressure"
+    | "isolation"
+    | "guilt"
+    | "grief"
+    | "uncertainty"
+    | "competing_demands"
+    | "financial_strain"
+    | "hope";
+  /** Verbatim carrier span — evidence for the signal. */
+  evidence: string;
+  /** Phrasing strength; used for relief decisions, never shown as a score. */
+  intensity: "low" | "medium" | "high";
+};
+
 export type SemanticExtraction = {
   schema_version: string;
   observations: ExtractionObservation[];
@@ -92,6 +141,14 @@ export type SemanticExtraction = {
   appointments: ExtractionAppointment[];
   extraction_confidence: number;
   extraction_notes?: string | null;
+  /** Which engines contributed this extraction. */
+  source?: ExtractionSource;
+  /** True when the LLM path contributed nothing and the rule floor carried it. */
+  degraded?: boolean;
+  /** Field-level coverage — used to decide richness, not to grade the model. */
+  coverage?: ExtractionCoverage;
+  /** Caregiver capacity signals held alongside care facts. */
+  caregiver_load_signals?: CaregiverLoadSignal[];
 };
 
 export type ExtractionResult = {
@@ -103,4 +160,10 @@ export type ExtractionResult = {
   model: string;
   provider: string;
   error?: string | null;
+  /** Every model attempted, in order. */
+  models_attempted?: string[];
+  /** Non-fatal salvage notes (aliased fields, repaired schema_version, …). */
+  repair_notes?: string[];
+  /** How many structured facts the rule floor recovered independently. */
+  rule_floor_facts?: number;
 };

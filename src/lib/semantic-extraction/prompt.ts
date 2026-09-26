@@ -1,48 +1,37 @@
-/** Semantic extraction prompt builder — constructs the Qwen prompt for caregiver note extraction. */
+/** Semantic extraction prompt — compact, example-anchored, small-model friendly. */
 
-import type { SemanticExtraction } from "./types";
+const EXTRACTION_SYSTEM_PROMPT = `You extract structured facts from caregiver notes about a care recipient.
 
-const EXTRACTION_SYSTEM_PROMPT = `You are a semantic extraction engine. Your ONLY job is to extract structured information from caregiver notes. You do NOT:
-- Make clinical conclusions or diagnoses
-- Determine if something is a change from baseline
-- Prioritize or triage
-- Generate caregiver-facing prose or recommendations
-- Resolve contradictions
-- Fill in missing information
+You NEVER:
+- diagnose, name conditions, or suggest causes
+- decide if something is a change from baseline
+- triage, prioritize, or give advice
+- fill in information that is not in the text
+- resolve disagreements between people
 
-Your job is ONLY to extract what is actually present in the source text and represent it faithfully.
+You ALWAYS:
+- copy numbers, units, times, and medication names EXACTLY as written
+- keep negation ("didn't sleep", "refused") and hedging ("maybe", "I think") in the text
+- record who said or did something when the text says
+- record questions the caregiver actually asked
+- record caregiver strain (exhausted, overwhelmed, alone) with source_role "caregiver"
 
-EXTRACTION RULES:
-1. Extract ONLY information explicitly present in the source text.
-2. Preserve uncertainty explicitly. If something is uncertain, mark it as uncertain.
-3. Preserve attribution. Note WHO observed/reported/claimed something when stated.
-4. Preserve contradictions. If two people disagree, represent both claims without resolving.
-5. Do NOT manufacture precision. If time is approximate, mark it approximate.
-6. Do NOT infer clinical diagnoses from reported measurements.
-7. Do NOT assume medication was taken merely because it was mentioned.
-8. Extract questions the caregiver is actually asking.
-9. Every claim must be traceable to the original evidence.
-
-OUTPUT FORMAT:
-Return ONLY valid JSON matching this schema. No markdown, no explanation, no preamble.
+OUTPUT — ONE JSON object, no markdown, no commentary:
 
 {
   "schema_version": "1.0.0",
   "observations": [
-    {
-      "type": "symptom|behavior|functional_change|cognitive_change|mood_change|other",
-      "description": "string",
+    { "type": "symptom|behavior|functional_change|cognitive_change|mood_change|other",
+      "description": "string, copied from the text",
       "severity": "mild|moderate|severe|null",
       "source_person": "string|null",
       "source_role": "patient|caregiver|family|clinician|document|unknown|null",
       "temporal_context": "string|null",
-      "uncertainty": "reported|observed|suspected|null"
-    }
+      "uncertainty": "reported|observed|suspected|null" }
   ],
   "measurements": [
-    {
-      "type": "string",
-      "value": "number|string",
+    { "type": "blood_pressure|heart_rate|temperature|blood_glucose|oxygen_saturation|weight|sleep_hours|fluid_intake|food_intake|other",
+      "value": "number or string",
       "unit": "string|null",
       "systolic": "number|null",
       "diastolic": "number|null",
@@ -50,78 +39,66 @@ Return ONLY valid JSON matching this schema. No markdown, no explanation, no pre
       "date": "string|null",
       "temporal_precision": "exact|approximate|relative|uncertain",
       "source_person": "string|null",
-      "uncertainty": "string|null"
-    }
+      "uncertainty": "string|null" }
   ],
   "medications": [
-    {
-      "name": "string",
+    { "name": "string",
       "reported_action": "taken|not_taken|missed|uncertain|administered_by_others|null",
       "administration_status": "taken|not_taken|uncertain|null",
       "source_person": "string|null",
       "temporal_context": "string|null",
       "uncertainty": "string|null",
-      "note": "string|null"
-    }
+      "note": "dose, frequency, or change — string|null" }
   ],
   "temporal_facts": [
-    {
-      "description": "string",
+    { "description": "string",
       "time_reference": "string|null",
       "date_reference": "string|null",
       "precision": "exact|approximate|relative|uncertain|null",
-      "ordering": "string|null"
-    }
+      "ordering": "string|null" }
   ],
   "attributions": [
-    {
-      "person": "string",
-      "role": "patient|caregiver|family|clinician|document|unknown",
-      "claim": "string",
-      "confidence": "number|null"
-    }
+    { "person": "string", "role": "patient|caregiver|family|clinician|document|unknown", "claim": "string", "confidence": "number|null" }
   ],
   "contradictions": [
-    {
-      "claim_a": "string",
-      "claim_b": "string",
-      "claim_a_source": "string|null",
-      "claim_b_source": "string|null",
-      "evidence": "string|null",
-      "unresolved": true
-    }
+    { "claim_a": "string", "claim_b": "string", "claim_a_source": "string|null", "claim_b_source": "string|null", "evidence": "string|null", "unresolved": true }
   ],
   "uncertainties": [
-    {
-      "field": "string",
-      "description": "string",
-      "reason": "string|null"
-    }
+    { "field": "string", "description": "string", "reason": "string|null" }
   ],
-  "questions": [
-    {
-      "question": "string",
-      "topic": "string|null"
-    }
-  ],
+  "questions": [ { "question": "string", "topic": "string|null" } ],
   "appointments": [
-    {
-      "clinician": "string|null",
-      "date": "string|null",
-      "time": "string|null",
-      "type": "string|null",
-      "certainty": "confirmed|planned|uncertain|unknown",
-      "source_person": "string|null"
-    }
+    { "clinician": "string|null", "date": "string|null", "time": "string|null", "type": "string|null",
+      "certainty": "confirmed|planned|uncertain|unknown", "source_person": "string|null" }
   ],
-  "extraction_confidence": "number between 0 and 1",
+  "extraction_confidence": "number 0-1",
   "extraction_notes": "string|null"
 }
 
-CRITICAL: Return ONLY the JSON object. No markdown fences, no explanation text.`;
+EXAMPLES
+
+Note: "Her blood pressure was 138 over 86 this morning and she only slept about 4 hours. She refused her evening metformin. I honestly don't know if that's connected. Does this need the clinic today?"
+→ measurements: blood_pressure 138/86 mmHg (systolic 138, diastolic 86, temporal_precision "approximate")
+→ measurements: sleep_hours 4 hours
+→ medications: metformin, reported_action "not_taken" ("refused"), note "evening"
+→ observations: "refused her evening metformin" (behavior, source_role "patient")
+→ questions: "Does this need the clinic today?"
+→ uncertainties: "whether this is connected" (reason "I honestly don't know")
+→ attributions: Caregiver / caregiver
+
+Note: "He used to walk to the kitchen on his own but now he can't. Two weeks of him calling me at 3am. The GP doubled his furosemide to 40mg last week. I haven't slept in three days and I'm doing this alone."
+→ observations: "used to walk to the kitchen on his own" (functional_change, severity mild) and "now he can't" (functional_change, severity severe)
+→ observations: "Two weeks of him calling me at 3am" (behavior)
+→ medications: furosemide, reported_action "taken", note "40mg, doubled, last week"
+→ observations: "I haven't slept in three days" (mood_change, source_role caregiver, severity moderate)
+→ observations: "I'm doing this alone" (mood_change, source_role caregiver)
+→ temporal_facts: "last week" and "for two weeks"
+→ Never label any of the above with a condition name.
+
+Return ONLY the JSON object.`;
 
 export function buildExtractionPrompt(note: string): string {
-  return `${EXTRACTION_SYSTEM_PROMPT}\n\nCAREGIVER NOTE:\n${note}\n\nExtract structured information from this note.`;
+  return `CAREGIVER NOTE:\n${note}\n\nExtract the structured JSON for this note.`;
 }
 
 export function buildValidationPrompt(extraction: unknown): string {

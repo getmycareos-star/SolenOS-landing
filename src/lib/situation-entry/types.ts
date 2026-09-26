@@ -252,7 +252,7 @@ export type SituationResponse = {
     root_event_id: string | null;
     event_ids: string[];
   }[];
-  /** Semantic extraction layer — Qwen3-coder:30b structured extraction results. */
+  /** Semantic extraction layer — model ladder + deterministic rule floor. */
   semantic_extraction_layer?: {
     success: boolean;
     model: string;
@@ -260,6 +260,23 @@ export type SituationResponse = {
     duration_ms: number;
     extraction: import("../semantic-extraction/types").SemanticExtraction | null;
     error?: string | null;
+    /** Every model attempted, in order. */
+    models_attempted?: string[];
+    /** Non-fatal salvage notes (aliased fields, repaired schema_version, …). */
+    repair_notes?: string[];
+    /** Facts the deterministic rule floor recovered independently. */
+    rule_floor_facts?: number;
+    /** True when the LLM path contributed nothing. */
+    degraded?: boolean;
+    coverage?: import("../semantic-extraction/types").ExtractionCoverage | null;
+  } | null;
+  /** Semantic baseline enrichment — model-assisted, deterministic floor always applied. */
+  baseline_semantic_layer?: {
+    enriched: boolean;
+    model: string | null;
+    duration_ms: number;
+    error: string | null;
+    quantity_comparisons: number;
   } | null;
   architectural_boundaries_layer?: import("../architectural-boundaries/types").ArchitecturalBoundariesResult;
 };

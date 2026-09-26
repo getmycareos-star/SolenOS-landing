@@ -9,6 +9,8 @@ export interface LlmProvider {
   invoke(options: LlmRequestOptions): Promise<LlmResponse>;
   isAvailable(): Promise<boolean>;
   cancel(): void;
+  /** Model tags this provider can serve locally — used to skip absent models. */
+  listLocalModels?(): Promise<string[]>;
 }
 
 export type CreateLlmProviderOptions = {

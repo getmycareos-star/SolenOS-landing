@@ -359,6 +359,14 @@ import {
   ANALYZE_MAX_RETRIES,
   type AnalyzeFailureResponse,
 } from "./constants";
+import {
+  runEvidencePreservationPipeline,
+  createEvidencePipelineInput,
+} from "../evidence-preservation";
+import type { CanonicalCareEvent } from "../situation-entry/types";
+import type { BaselineIntelligenceResult } from "../baseline-intelligence-engine";
+import type { ContradictionDetectionResult } from "../contradiction-detection-engine";
+import type { ContinuityPropertiesResult } from "../continuity-properties";
 
 export interface AnalyzePipelineParams {
   input: string;
@@ -575,6 +583,54 @@ export interface AnalyzePipelineRun {
       attentionClass: "A" | "B" | "C";
       attentionPriority: "Now" | "Watch" | "Later";
       burnoutTier: "Low" | "Moderate" | "High" | "Critical";
+    };
+  };
+  /** Evidence Preservation — every conclusion reconstructs from CareEvents. */
+  evidence_preservation_layer?: {
+    evidence_objects: Array<{
+      event_ids: string[];
+      timeline_reference: string[];
+      observation_type: "direct" | "inferred" | "mixed";
+      confidence_score: number;
+      source_reliability_score: number;
+      recency_weight: number;
+      contradiction_links: string[];
+      evidence_chain: string[];
+      reasoning_summary: string;
+      what_would_increase_confidence: string[];
+    }>;
+    evidenced_conclusions: Array<{
+      recommendation: string;
+      implied_action: string | null;
+      evidence: {
+        event_ids: string[];
+        timeline_reference: string[];
+        observation_type: "direct" | "inferred" | "mixed";
+        confidence_score: number;
+        source_reliability_score: number;
+        recency_weight: number;
+        contradiction_links: string[];
+        evidence_chain: string[];
+        reasoning_summary: string;
+        what_would_increase_confidence: string[];
+      };
+      layers: {
+        recommendation: string;
+        evidence: string[];
+        reasoning: string;
+        confidence: string;
+      };
+    }>;
+    transparency_audit: {
+      understood_from: Record<string, string[]>;
+      decision_factors: Record<string, string[]>;
+      uncertainties_affecting_response: string[];
+      could_be_clarified_by: string[];
+    };
+    aggregated_confidence: {
+      overall: number;
+      by_area: Record<string, number>;
+      label: "high" | "moderate" | "limited" | "low";
     };
   };
   user_language: SolenOSLanguage;
@@ -2169,7 +2225,7 @@ export async function runAnalyzePipelineWithObservability(
       assumptionsUsed: refreshedAssumptionRegistry.envelope.influenceHints.slice(0, 5),
       missingInfoSnapshot: refreshedMissingInformationQueue.envelope.needsNext.slice(0, 5),
       contextWeights: contextWeighting.items.map((i) => i.weights),
-    });
+});
 
     // Canonical status check — Situation is primary (lifecycle → active|resolved|archived).
     void mapLifecycleToCanonical(
@@ -2187,6 +2243,35 @@ export async function runAnalyzePipelineWithObservability(
       candidateActionIds: priorityEngineLayer.rankedForActionGenerator.map((v) => v.actionId),
       conflictBelief,
     });
+
+    // EVIDENCE PRESERVATION PIPELINE — integrate evidence objects into reasoning output
+    // Runs after finalLayeredPriority so what_changed reflects the final priority pass.
+    const evidencePipelineInput = createEvidencePipelineInput(
+      params.telemetry_user_id ?? resolutionCareSessionId,
+      {
+        events_created: [],
+        all_events: [],
+        what_changed: [...(finalLayeredPriority.explanationLines ?? [])],
+        what_is_uncertain: [...(refreshedMissingInformationQueue.envelope.needsNext ?? [])],
+        what_needs_clarification: conflictDetection.envelope.clarification
+          ? [conflictDetection.envelope.clarification.question]
+          : [],
+        baseline_comparison: undefined,
+        contradiction_detection: undefined,
+        continuity_properties: undefined,
+        care_state_confidence: confidenceLayer.state.confidence,
+        explicit_unknowns: refreshedMissingInformationQueue.state.items
+          .filter((i) => i.importance === "HIGH")
+          .map((i) => ({
+            missing_information: i.question,
+            priority: i.importance,
+            reason_it_matters: "High priority gap",
+          })),
+        reasoning_summary: reasoningSnapshot.inputsUsed?.join("; ") ?? "Pipeline reasoning completed",
+      },
+      new Date().toISOString(),
+    );
+    const evidencePipelineOutput = runEvidencePreservationPipeline(evidencePipelineInput);
 
     // FAMILY INTELLIGENCE — compound analyze interaction into strategic stores (non-blocking).
     const familyIntelligenceSnapshot = compoundAnalyzeInteraction({
@@ -2353,6 +2438,12 @@ export async function runAnalyzePipelineWithObservability(
           attentionPriority: attentionLayer.classification.attentionPriority,
           burnoutTier: attentionLayer.burnoutTier,
         },
+      },
+      evidence_preservation_layer: {
+        evidence_objects: evidencePipelineOutput.evidence_objects,
+        evidenced_conclusions: evidencePipelineOutput.evidenced_conclusions,
+        transparency_audit: evidencePipelineOutput.transparency_audit,
+        aggregated_confidence: evidencePipelineOutput.aggregated_confidence,
       },
       failure_logs: collector.getLogs(),
       care_context_state: careContext.care_context_state,
@@ -2798,6 +2889,17 @@ export async function runAnalyzePipelineWithObservability(
       document_intelligence_layer: fallbackDocumentIntelligencePayload,
       document_intelligence: fallbackDocumentIntelligence,
       system_health_layer: toSystemHealthLayerPayload(fallbackSystemHealth),
+      evidence_preservation_layer: {
+        evidence_objects: [],
+        evidenced_conclusions: [],
+        transparency_audit: {
+          understood_from: { direct_observation: [], inferred_from_pattern: [] },
+          decision_factors: { priority: [], suggested_actions: [], follow_up: [] },
+          uncertainties_affecting_response: [],
+          could_be_clarified_by: [],
+        },
+        aggregated_confidence: { overall: 0.5, by_area: {}, label: "low" },
+      },
       failure_logs: collector.getLogs(),
       care_context_state: careContext.care_context_state,
       caregiver_depletion_signals: caregiverDepletion,

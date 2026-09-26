@@ -3,6 +3,8 @@
 export type {
   SemanticExtraction,
   ExtractionResult,
+  ExtractionCoverage,
+  ExtractionSource,
   ExtractionObservation,
   ExtractionMeasurement,
   ExtractionMedication,
@@ -12,7 +14,19 @@ export type {
   ExtractionUncertainty,
   ExtractionQuestion,
   ExtractionAppointment,
+  CaregiverLoadSignal,
 } from "./types";
 
-export { SemanticExtractor, createSemanticExtractor } from "./extractor";
+export {
+  SemanticExtractor,
+  createSemanticExtractor,
+  EXTRACTION_MODEL_LADDER,
+} from "./extractor";
 export { buildExtractionPrompt, EXTRACTION_SYSTEM_PROMPT } from "./prompt";
+export { extractWithRules, isStructurallyEmpty } from "./rule-extractor";
+export {
+  extractionCoverage,
+  mergeExtractions,
+  normalizeExtraction,
+  salvageJson,
+} from "./normalize";

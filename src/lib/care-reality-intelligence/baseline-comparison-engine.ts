@@ -20,6 +20,12 @@ import {
   looksLikeContributorLoadFragment,
   looksLikeDisagreementPerspectiveFragment,
 } from "../care-reality-extraction/classify";
+import {
+  readBaselineLanguage,
+  type BaselineReading,
+  type QuantityComparison,
+} from "./baseline-language";
+import { cachedEnrichedReading } from "./semantic-baseline";
 
 export const BASELINE_COMPARISON_PURPOSE =
   "Understand who this person was before, what is different now, and what that change means — never flat extraction.";
@@ -70,6 +76,10 @@ export type BaselineComparisonResult = {
   has_meaningful_change: boolean;
   /** True when durable familiarity, same-turn usual/used-to, or held ACS/CRS prior observations exist. */
   has_comparable_prior: boolean;
+  /** Full prior→now reading of the latest message (baseline-language engine). */
+  baseline_reading: BaselineReading;
+  /** Numeric departures from a stated usual, when the text gave numbers. */
+  quantity_comparisons: QuantityComparison[];
   /** Contract marker — orientation must not invent diagnosis causation. */
   causation_forbidden: true;
 };
@@ -350,6 +360,12 @@ export function compareAgainstBaseline(params: {
    * Same-turn-only CRS must not be passed as prior (see heldCrsCareMemoryFacts).
    */
   priorHeldFacts?: string[];
+  /**
+   * Prior→now reading from the baseline-language engine.
+   * Defaults to the deterministic reading, upgraded by any cached semantic
+   * enrichment for this exact text.
+   */
+  baselineReading?: BaselineReading;
   /** Optional CRS fields — used when priorHeldFacts is omitted. */
   crs?: {
     current_understanding?: string[] | null;
@@ -394,6 +410,15 @@ export function compareAgainstBaseline(params: {
   const baselineClauses: string[] = [];
   const changeClauses: string[] = [];
 
+  // Baseline-language reading: much broader prior→now discourse than clause cues
+  // alone (stability, onset, quantity departures, "up until the fall", etc.).
+  // When the async path already ran semantic enrichment for this exact text, that
+  // reading wins — the deterministic reading is the floor, never the ceiling.
+  const baseline_reading =
+    (params.baselineReading ??
+      cachedEnrichedReading(latest) ??
+      readBaselineLanguage(latest));
+
   for (const c of clauses) {
     if (isNonRecipientBaselineNoise(c)) continue;
     const habitual = extractHabitualSpan(c);
@@ -424,6 +449,31 @@ export function compareAgainstBaseline(params: {
       known_baseline.push(f.statement);
     }
   }
+
+  // Fold in prior/now spans the clause-cue pass would have missed.
+  for (const statement of baseline_reading.baseline_statements) {
+    if (isNonRecipientBaselineNoise(statement)) continue;
+    if (!baselineClauses.some((b) => b.toLowerCase().includes(statement.toLowerCase().slice(0, 24)))) {
+      baselineClauses.push(statement);
+    }
+    if (!known_baseline.some((b) => b.toLowerCase().includes(statement.toLowerCase().slice(0, 24)))) {
+      known_baseline.push(statement.endsWith(".") ? statement : `${statement}.`);
+    }
+  }
+  for (const statement of baseline_reading.change_statements) {
+    if (isNonRecipientBaselineNoise(statement)) continue;
+    if (!changeClauses.some((c) => c.toLowerCase().includes(statement.toLowerCase().slice(0, 24)))) {
+      changeClauses.push(statement);
+    }
+  }
+  // Explicit stability is evidence too: "nothing has changed" must survive as a state.
+  for (const statement of baseline_reading.stability_statements) {
+    if (isNonRecipientBaselineNoise(statement)) continue;
+    if (!known_facts.some((f) => f.toLowerCase().includes(statement.toLowerCase().slice(0, 24)))) {
+      known_facts.push(statement);
+    }
+  }
+  const quantity_comparisons: QuantityComparison[] = baseline_reading.quantity_comparisons;
 
   // Comparable prior =
   // - durable familiarity, OR
@@ -506,6 +556,8 @@ export function compareAgainstBaseline(params: {
       has_baseline: false,
       has_meaningful_change: false,
       has_comparable_prior: false,
+      baseline_reading,
+      quantity_comparisons,
       causation_forbidden: true,
     };
   }
@@ -673,6 +725,25 @@ export function compareAgainstBaseline(params: {
     }
   }
 
+  // Numeric departures from a stated usual are changes in their own right —
+  // "3 hours where he usually does 7" needs no cue word to be a real difference.
+  for (const q of quantity_comparisons) {
+    const line = `${q.label.charAt(0).toUpperCase()}${q.label.slice(1)} is ${q.current} ${q.unit}, ${q.difference_phrase}.`;
+    if (meaningful_changes.some((c) => c.toLowerCase().includes(q.label.toLowerCase()))) continue;
+    meaningful_changes.push(line);
+    states.push({
+      person_id,
+      domain: q.domain,
+      previous_state: `${q.label}: usually ${q.baseline} ${q.unit}`,
+      current_observation: `${q.label}: ${q.current} ${q.unit}`,
+      change_detected: true,
+      date_change_noticed: timing ?? baseline_reading.onset_statements[0]?.slice(0, 80) ?? null,
+      related_events: related_context.slice(0, 2),
+      confidence: "medium",
+      unknowns: [],
+    });
+  }
+
   const has_baseline = known_baseline.length > 0 || durableFacts.length > 0;
   const has_meaningful_change = meaningful_changes.length > 0;
 
@@ -708,6 +779,8 @@ export function compareAgainstBaseline(params: {
     has_baseline,
     has_meaningful_change,
     has_comparable_prior: true,
+    baseline_reading,
+    quantity_comparisons,
     causation_forbidden: true,
   };
 }

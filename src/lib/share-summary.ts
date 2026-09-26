@@ -8,6 +8,7 @@
  */
 
 import type { SituationResponse } from "@/lib/situation-entry";
+import { detectGeneralContradictions } from "@/lib/contradiction-detection-engine/general";
 
 /* ------------------------------------------------------------------ */
 /*  Audience                                                          */
@@ -356,40 +357,63 @@ export function selectContentForAudience(
 /* ------------------------------------------------------------------ */
 
 export interface DetectedConflict {
-  type: "medication_dose" | "diagnosis_date" | "symptom_report" | "caregiver_report" | "outcome" | "general";
+  type:
+    | "medication_dose"
+    | "medication_adherence"
+    | "measurement"
+    | "function_level"
+    | "intake"
+    | "diagnosis_date"
+    | "symptom_report"
+    | "caregiver_report"
+    | "outcome"
+    | "general";
   description: string;
   sources: string[];
 }
 
+function conflictTypeForField(field: string): DetectedConflict["type"] {
+  if (field === "medication_dose") return "medication_dose";
+  if (field === "medication_action") return "medication_adherence";
+  if (field === "function") return "function_level";
+  if (field.startsWith("intake:")) return "intake";
+  if (field.startsWith("measurement:")) return "measurement";
+  if (field === "mobility") return "symptom_report";
+  return "general";
+}
+
+/**
+ * Conflicts a shared summary must not hide.
+ *
+ * Uses the general contradiction engine (medication actions and doses,
+ * measurements, function level, intake, plus the pipeline's preserved
+ * contradictions) rather than a dose-string regex. Accounts are only compared
+ * when they are close in time, and both sides are always reported.
+ */
 export function detectConflicts(response: SituationResponse): DetectedConflict[] {
   const conflicts: DetectedConflict[] = [];
-  const events = response.events_created ?? [];
+  const events = [...(response.context?.events ?? []), ...(response.events_created ?? [])];
 
-  const medDoses = new Map<string, string[]>();
-  for (const ev of events) {
-    const raw = ev.raw_input ?? "";
-    const doseMatch = raw.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|g|ml|units)/i);
-    if (doseMatch) {
-      const medName = raw.toLowerCase().split(doseMatch[0])[0].trim().slice(-30);
-      const key = medName || "unknown_medication";
-      const existing = medDoses.get(key) ?? [];
-      existing.push(`${doseMatch[1]}${doseMatch[2]}`);
-      medDoses.set(key, existing);
-    }
+  const fromEngine = detectGeneralContradictions(events);
+  for (const c of fromEngine.contradictions) {
+    conflicts.push({
+      type: conflictTypeForField(c.field),
+      description: c.shared_message,
+      sources: c.event_ids,
+    });
   }
 
-  for (const [med, doses] of medDoses) {
-    const uniqueDoses = [...new Set(doses)];
-    if (uniqueDoses.length > 1) {
-      conflicts.push({
-        type: "medication_dose",
-        description: `Medication information is conflicting: different doses were found for ${med}: ${uniqueDoses.join(" and ")}. The current dose may need to be verified.`,
-        sources: events.filter((e) => e.raw_input?.toLowerCase().includes(med.slice(-10))).map((e) => e.id),
-      });
-    }
+  for (const c of response.contradiction_detection_layer?.open_contradictions ?? []) {
+    const description = c.shared_message;
+    if (conflicts.some((existing) => existing.description === description)) continue;
+    conflicts.push({
+      type: conflictTypeForField(c.field),
+      description,
+      sources: c.event_ids,
+    });
   }
 
-  return conflicts;
+  return conflicts.slice(0, 6);
 }
 
 /* ------------------------------------------------------------------ */

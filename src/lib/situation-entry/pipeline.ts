@@ -1,7 +1,7 @@
 import { recordCareEvent } from "../care-events/record-care-event";
 import { ingestRawInput, validatedToCanonical } from "../data-acquisition-resilience";
 import type { DareIngestResult } from "../data-acquisition-resilience/types";
-import { createSemanticExtractor } from "../semantic-extraction";
+import { createSemanticExtractor, extractWithRules } from "../semantic-extraction";
 import type { ExtractionResult, SemanticExtraction } from "../semantic-extraction/types";
 import { appendEventsToContext, getCareContextRoot, getOrCreateCareContextRoot } from "./context-store";
 import {
@@ -204,6 +204,13 @@ function buildExtractionCareEvents(
   const events: CanonicalCareEvent[] = [];
   const now = new Date().toISOString();
   const ingestionTime = input.timestamp ?? now;
+  // Provenance of the understanding itself — which engines produced these facts.
+  const semanticSource =
+    extraction.source === "rules" || extraction.degraded
+      ? "rule_extraction"
+      : extraction.source === "llm+rules"
+        ? "llm_plus_rule_extraction"
+        : "llm_extraction";
 
   // Helper to create base event
   const createBaseEvent = (
@@ -264,7 +271,7 @@ function buildExtractionCareEvents(
     const attrs: Record<string, unknown> = {
       observation_type: obs.type,
       description: obs.description,
-      semantic_source: "qwen3_coder_extraction",
+      semantic_source: semanticSource,
     };
     if (obs.severity) attrs.severity = obs.severity;
     if (obs.source_person) attrs.source_person = obs.source_person;
@@ -284,7 +291,7 @@ function buildExtractionCareEvents(
   for (const meas of extraction.measurements) {
     const attrs: Record<string, unknown> = {
       measurement_type: meas.type,
-      semantic_source: "qwen3_coder_extraction",
+      semantic_source: semanticSource,
     };
     if (meas.unit) attrs.unit = meas.unit;
     if (meas.systolic != null) attrs.systolic = meas.systolic;
@@ -311,7 +318,7 @@ const desc = meas.systolic != null && meas.diastolic != null
   for (const med of extraction.medications) {
     const attrs: Record<string, unknown> = {
       medication_name: med.name,
-      semantic_source: "qwen3_coder_extraction",
+      semantic_source: semanticSource,
     };
     if (med.reported_action) attrs.reported_action = med.reported_action;
     if (med.administration_status) attrs.administration_status = med.administration_status;
@@ -335,7 +342,7 @@ const desc = meas.systolic != null && meas.diastolic != null
       claim_a: contra.claim_a,
       claim_b: contra.claim_b,
       unresolved: true,
-      semantic_source: "qwen3_coder_extraction",
+      semantic_source: semanticSource,
     };
     if (contra.claim_a_source) attrs.claim_a_source = contra.claim_a_source;
     if (contra.claim_b_source) attrs.claim_b_source = contra.claim_b_source;
@@ -354,7 +361,7 @@ const desc = meas.systolic != null && meas.diastolic != null
     const attrs: Record<string, unknown> = {
       question_type: "caregiver_question",
       question: q.question,
-      semantic_source: "qwen3_coder_extraction",
+      semantic_source: semanticSource,
     };
     if (q.topic) attrs.topic = q.topic;
 
@@ -369,7 +376,7 @@ const desc = meas.systolic != null && meas.diastolic != null
   // Appointments
   for (const apt of extraction.appointments) {
     const attrs: Record<string, unknown> = {
-      semantic_source: "qwen3_coder_extraction",
+      semantic_source: semanticSource,
       appointment_certainty: apt.certainty,
     };
     if (apt.clinician) attrs.clinician = apt.clinician;
@@ -383,6 +390,26 @@ const desc = meas.systolic != null && meas.diastolic != null
       "appointment",
       attrs,
       apt.certainty === "uncertain" ? ["uncertain_appointment"] : [],
+    ));
+  }
+
+  // Caregiver capacity — held as contributor load, never as a change in the
+  // care recipient. Recipient anchors demote `contributor_load` out of
+  // recipient changes, so strain stays visible without hijacking the situation.
+  for (const load of extraction.caregiver_load_signals ?? []) {
+    events.push(createBaseEvent(
+      load.evidence,
+      "observation",
+      {
+        observation_type: "contributor_load",
+        load_kind: load.kind,
+        load_intensity: load.intensity,
+        source_person: "Caregiver",
+        source_role: "caregiver",
+        description: load.evidence,
+        semantic_source: semanticSource,
+      },
+      [],
     ));
   }
 
@@ -679,8 +706,9 @@ export async function processSituationInput(
 
   const dare = dareResults.length > 0 ? mergeDareResults(dareResults) : null;
 
-  // Semantic extraction via Qwen2.5-coder:1.5b — extracts structured evidence from caregiver language.
-  // This runs in parallel with the existing DARE pipeline; extraction failures are non-fatal.
+  // Semantic extraction — model ladder with a deterministic rule floor.
+  // Extraction never ends in "nothing understood": a failed or garbled LLM
+  // response still yields structured facts from the caregiver's own words.
   let semanticExtraction: ExtractionResult | null = null;
   if (input.raw_input.trim() && !shouldSkipDare) {
     try {
@@ -688,15 +716,56 @@ export async function processSituationInput(
       semanticExtraction = await extractor.extract(input.raw_input.trim());
     } catch (extractionError) {
       console.error("[situation-entry] Semantic extraction failed:", extractionError);
+      // Rule floor still applies — capture must never degrade to "held, not understood".
+      const floored = extractWithRules(input.raw_input.trim());
       semanticExtraction = {
-        success: false,
-        extraction: null,
+        success: true,
+        extraction: floored,
         raw_response: "",
         parsed_content: null,
         duration_ms: 0,
-        model: "qwen2.5-coder:1.5b",
-        provider: "ollama",
+        model: "rule-extraction-floor",
+        provider: "deterministic",
         error: extractionError instanceof Error ? extractionError.message : String(extractionError),
+        models_attempted: [],
+        repair_notes: ["extractor_threw"],
+        rule_floor_facts: 0,
+      };
+    }
+  }
+
+  // Semantic baseline enrichment — runs on the async path, cached for the
+  // synchronous baseline/situation engines. Non-fatal: the deterministic
+  // reading is always used as the floor, so baseline depth never depends on a model.
+  let baseline_semantic_layer: {
+    enriched: boolean;
+    model: string | null;
+    duration_ms: number;
+    error: string | null;
+    quantity_comparisons: number;
+  } | null = null;
+  if (input.raw_input.trim() && !shouldSkipDare) {
+    try {
+      const { enrichBaselineSemantics } = await import(
+        "../care-reality-intelligence/semantic-baseline"
+      );
+      const enrichment = await enrichBaselineSemantics(input.raw_input);
+      baseline_semantic_layer = {
+        enriched: enrichment.enriched,
+        model: enrichment.model,
+        duration_ms: enrichment.duration_ms,
+        error: enrichment.error,
+        quantity_comparisons: enrichment.reading.quantity_comparisons.length,
+      };
+    } catch (baselineError) {
+      // Rule-based baseline reading already ran; enrichment is optional depth.
+      baseline_semantic_layer = {
+        enriched: false,
+        model: null,
+        duration_ms: 0,
+        error:
+          baselineError instanceof Error ? baselineError.message : String(baselineError),
+        quantity_comparisons: 0,
       };
     }
   }
@@ -1321,8 +1390,14 @@ export async function processSituationInput(
           duration_ms: semanticExtraction.duration_ms,
           extraction: semanticExtraction.extraction,
           error: semanticExtraction.error ?? null,
+          models_attempted: semanticExtraction.models_attempted ?? [],
+          repair_notes: semanticExtraction.repair_notes ?? [],
+          rule_floor_facts: semanticExtraction.rule_floor_facts ?? 0,
+          degraded: semanticExtraction.extraction?.degraded ?? false,
+          coverage: semanticExtraction.extraction?.coverage ?? null,
         }
       : null,
+    baseline_semantic_layer,
     failure_resilience_layer: {
       failures: failureResilience.failures,
       confidence_summaries: failureResilience.confidence_summaries,

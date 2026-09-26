@@ -97,3 +97,10 @@ export {
   type EvidenceContext,
   type EvidenceTraceContext,
 } from "./evidence-builder";
+
+export {
+  runEvidencePreservationPipeline,
+  createEvidencePipelineInput,
+  type EvidencePipelineInput,
+  type EvidencePipelineOutput,
+} from "./pipeline-integration";

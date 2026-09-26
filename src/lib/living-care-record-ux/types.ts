@@ -32,6 +32,37 @@ export type LivingCareRecordResponseView = {
   care_event_added: CareEventAddedBlock;
   understanding_heading: string;
   what_understood: string[];
+  /**
+   * Where things stand — the engine's own conclusion projected into ordinary
+   * language. Charter-safe: no layer names, no scores, no engine internals.
+   * Null when there is nothing honest to show yet.
+   */
+  where_things_stand: {
+    heading: string;
+    standing: string | null;
+    matters_now: string | null;
+    can_wait: string | null;
+    watch_for: string[];
+    next_question: string | null;
+  } | null;
+  /**
+   * How this was understood, with the caregiver's own words as evidence and an
+   * explicit correction invitation. This is the visible "why".
+   */
+  understanding_trace: {
+    heading: string;
+    summary: string | null;
+    steps: Array<{
+      reading: string;
+      source_quote: string;
+      reported_by: string | null;
+      when: string | null;
+      basis: string;
+      interpretation: boolean;
+    }>;
+    not_decided: string[];
+    correction_prompt: string | null;
+  } | null;
   insufficiency_note: string | null;
   connection_note: string | null;
   what_needs_context: string[];

@@ -30,6 +30,8 @@ export type ContradictionDetectionResult = {
   clarification_triggers: string[];
   change_classifications: { event_id: string; change_type: ChangeType; label: string }[];
   events_preserved_count: number;
+  /** Claims compared by general detection — provenance for ops, never caregiver UI. */
+  claims_examined: number;
   rules_upheld: readonly (typeof CONTRADICTION_DETECTION_RULES)[number][];
   defining_principle: string;
 };

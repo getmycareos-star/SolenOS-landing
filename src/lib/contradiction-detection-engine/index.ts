@@ -13,4 +13,8 @@ export type {
   TransitionEvent,
 } from "./types";
 export { detectMobilityTransitions, mergeTimelineContradictions } from "./detect";
+export {
+  detectGeneralContradictions,
+  detectWithinMessageContradictions,
+} from "./general";
 export { processContradictionDetection } from "./pipeline";

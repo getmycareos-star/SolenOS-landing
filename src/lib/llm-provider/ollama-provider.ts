@@ -27,6 +27,20 @@ export class OllamaProvider {
     }
   }
 
+  /** Model tags installed locally (e.g. "qwen2.5-coder:7b"). */
+  async listLocalModels(): Promise<string[]> {
+    try {
+      const response = await fetch(`${this.config.baseUrl}/api/tags`);
+      if (!response.ok) return [];
+      const data = (await response.json()) as { models?: { name?: string; model?: string }[] };
+      return (data.models ?? [])
+        .map((m) => m.name ?? m.model ?? "")
+        .filter((name): name is string => Boolean(name));
+    } catch {
+      return [];
+    }
+  }
+
   async invoke(options: LlmRequestOptions): Promise<LlmResponse> {
     const model = options.model ?? this.model;
     const startTime = Date.now();

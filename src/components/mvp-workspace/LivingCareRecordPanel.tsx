@@ -177,6 +177,30 @@ export function LivingCareRecordPanel({
         </section>
       )}
 
+      {view.where_things_stand && (view.where_things_stand.standing ||
+        view.where_things_stand.matters_now ||
+        view.where_things_stand.watch_for.length > 0) && (
+        <section className="care-card-standing" aria-labelledby="lcr-standing-heading">
+          <h3 id="lcr-standing-heading" className="section-kicker">
+            {view.where_things_stand.heading}
+          </h3>
+          {view.where_things_stand.standing && <p>{view.where_things_stand.standing}</p>}
+          {view.where_things_stand.matters_now && (
+            <p className="panel-muted">Most important now: {view.where_things_stand.matters_now}</p>
+          )}
+          {view.where_things_stand.watch_for.length > 0 && (
+            <ul aria-label="Watch for">
+              {view.where_things_stand.watch_for.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
+          {view.where_things_stand.can_wait && (
+            <p className="panel-muted">Can wait: {view.where_things_stand.can_wait}</p>
+          )}
+        </section>
+      )}
+
       {view.contradictions.length > 0 && (
         <section className="care-card-contradictions" aria-labelledby="lcr-conflict-heading">
           <h3 id="lcr-conflict-heading" className="section-kicker">
@@ -225,6 +249,36 @@ export function LivingCareRecordPanel({
             ))}
           </ul>
         </section>
+      )}
+
+      {view.understanding_trace && view.understanding_trace.steps.length > 0 && (
+        <details className="lcr-expandable lcr-understanding-trace">
+          <summary className="panel-muted">{view.understanding_trace.heading}</summary>
+          <ul aria-label="How this was understood">
+            {view.understanding_trace.steps.map((step) => (
+              <li key={step.reading}>
+                <span>{step.reading}</span>
+                {step.source_quote && (
+                  <span className="panel-muted"> — from: “{step.source_quote}”</span>
+                )}
+                {step.reported_by && <span className="panel-muted"> ({step.reported_by})</span>}
+              </li>
+            ))}
+          </ul>
+          {view.understanding_trace.not_decided.length > 0 && (
+            <>
+              <p className="panel-muted">Not decided yet:</p>
+              <ul>
+                {view.understanding_trace.not_decided.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {view.understanding_trace.correction_prompt && (
+            <p className="panel-muted lcr-correction">{view.understanding_trace.correction_prompt}</p>
+          )}
+        </details>
       )}
 
       {supportingEvidence.length > 0 && (
