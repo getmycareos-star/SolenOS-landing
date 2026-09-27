@@ -23,6 +23,7 @@ import {
   MOMENT_OF_NEED_DEFINING_PRINCIPLE,
   type ProcessMomentOfNeedInput,
   type MomentOfNeedResult,
+  type MomentOfNeedSections,
 } from "../moment-of-need-engine";
 import type { CanonicalCareEvent } from "../situation-entry/types";
 
@@ -170,7 +171,7 @@ export function projectCareMomentToMomentOfNeed(
   careMoment: CareMomentEngineResult,
 ): MomentOfNeedResult {
   const map = CARE_MOMENT_TO_MOMENT_OF_NEED_MAP;
-  const sections: Record<string, string[]> = {
+  const sections: MomentOfNeedSections = {
     what_changed: careMoment.sections[map.what_changed] ?? [],
     what_we_know: careMoment.sections[map.what_do_we_know] ?? [],
     possible_context: careMoment.sections[map.why_might_this_matter] ?? [],
@@ -322,6 +323,15 @@ export function processCareMoment(
     confidence,
     rules_upheld: rulesUpheld,
   };
+}
+
+export function projectCareMoment(truth: any): CareMomentEngineResult {
+  return processCareMoment({
+    raw_input: truth.what_changed?.join("; ") ?? "",
+    events_created: [],
+    all_events: [],
+    what_is_uncertain: [],
+  });
 }
 
 export type { CareMomentBrief, CareMomentResponseSection };
