@@ -86,7 +86,7 @@ function extractMedicalEvents(
 
 // ─── Medications ────────────────────────────────────────────────────────────
 const MEDICATION_NAME_TAKE =
-  /\b(?:take|takes|taking|prescribed|prescription|start|started|increase|decrease|adjust|continue|discontinue|stop|change|reduced|increased)\s+([A-Z][a-zA-Z]{1,40}(?:\s+[a-z][a-zA-Z]{1,40})?)\b/gi;
+  /\b(?:take|takes|taking|prescribed|prescription|start|started|increase|decrease|adjust|continue|discontinue|stop|change|reduced|increased|given|dose of|instructions for|refill)\s+([A-Z][a-zA-Z]{1,40}(?:\s+[a-z][a-zA-Z]{1,40})?)\b/gi;
 const MEDICATION_LINE = /\b([A-Z][a-zA-Z]{2,40})\s+\d+(?:\.\d+)?\s*(?:mg|mcg|ml|units?|g)\b/gi;
 const DOSE_MARKER = /\b\d+(?:\.\d+)?\s*(?:mg|mcg|ml|units?|g)\b/gi;
 const FREQUENCY_MARKER =
@@ -101,9 +101,9 @@ const CONCERN_MARKER =
 const DUPLICATE_DOSE_MARKER =
   /\b(?:duplicate|taken twice|both\s+.*\s+(?:say|list)|listed\s+(?:twice|more than once)|same dose\s+twice)\b/i;
 const MISSED_DOSE_MARKER =
-  /\b(?:missed dose|missed a dose|missed the dose|forgot.to take|skipped a dose|did not take|missed taking)\b/i;
+  /\b(?:missed dose|missed a dose|missed the dose|forgot.to take|skipped a dose|did not take|missed taking|dose.*was missed|was missed)\b/i;
 const REFILL_PROBLEM_MARKER =
-  /\b(?:refill\s+(?:problem|issue|delayed|not (?:available|filled|approved))|out of\s+.*refill|refill\s+denied|unable to (?:refill|get the refill)|pharmacy\s+(?:could not|couldn'?t)\s+fill)\b/i;
+  /\b(?:refill\s+(?:problem|issue|delayed|not (?:available|filled|approved)|was denied)|out of\s+.*refill|refill\s+denied|unable to (?:refill|get the refill)|pharmacy\s+(?:could not|couldn'?t)\s+fill)\b/i;
 const UNCLEAR_INSTRUCTIONS_MARKER =
   /\b(?:unclear (?:instructions?|directions?|dosing)|instructions?\s+(?:unclear|not clear|confusing)|not sure (?:how|when|how often) to (?:take|give)|dose unclear|directions?\s+unclear)\b/i;
 const MED_UNCERTAINTY_MARKER =
