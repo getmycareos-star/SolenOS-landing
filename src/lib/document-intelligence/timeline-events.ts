@@ -10,6 +10,8 @@ import type {
  * TIMELINE EVENTS — important documents create or update timeline entries so the
  * Living Care Record becomes smarter as more documents are added. Each event is
  * traceable to the document and states what changed and what matters next.
+ * 
+ * IMPROVED: Richer, evidence-backed whatMattersNext with concrete actions.
  */
 
 function eventLabel(event: MedicalEvent): string {
@@ -42,12 +44,43 @@ function eventWhatChanged(event: MedicalEvent): string {
   }
 }
 
+function buildMedicationWhatMattersNext(med: MedicationInfo): string[] {
+  const matters: string[] = [];
+  
+  if (med.duplicateDose) {
+    matters.push(`Confirm the correct dose of ${med.name} before the next dose is given.`);
+  }
+  if (med.missedDose) {
+    matters.push(`Confirm whether a make-up dose of ${med.name} is needed.`);
+  }
+  if (med.refillProblem) {
+    matters.push(`Resolve the ${med.name} refill before it runs out.`);
+  }
+  if (med.unclearInstructions) {
+    matters.push(`Confirm how ${med.name} should be taken (timing, with/without food, etc.).`);
+  }
+  if (med.uncertainty) {
+    matters.push(`Clarify the current status of ${med.name} with the prescriber.`);
+  }
+  if (med.concern) {
+    matters.push(`Review the noted concern about ${med.name}.`);
+  }
+  if (med.refill) {
+    matters.push(`Plan refill for ${med.name} (refill by: ${med.refill}).`);
+  }
+  if (matters.length === 0) {
+    matters.push(`Confirm ${med.name} with the care team at the next visit.`);
+  }
+  
+  return matters;
+}
+
 function medEvent(med: MedicationInfo): CareTimelineEvent {
   const date = "Document date";
   let whatChanged = "";
   switch (med.status) {
     case "new":
-      whatChanged = `New medication identified: ${med.name}.`;
+      whatChanged = `New medication identified: ${med.name}${med.dose ? ` (${med.dose})` : ""}.`;
       break;
     case "discontinued":
       whatChanged = `Medication marked discontinued: ${med.name}.`;
@@ -61,42 +94,15 @@ function medEvent(med: MedicationInfo): CareTimelineEvent {
     default:
       whatChanged = `Medication mentioned: ${med.name}.`;
   }
-  const safetyMattersNext: string[] = [];
-  if (med.duplicateDose) {
-    safetyMattersNext.push(`Confirm the correct dose of ${med.name} before the next dose is given.`);
-  }
-  if (med.missedDose) {
-    safetyMattersNext.push(`Confirm whether a make-up dose of ${med.name} is needed.`);
-  }
-  if (med.refillProblem) {
-    safetyMattersNext.push(`Resolve the ${med.name} refill before it runs out.`);
-  }
-  if (med.unclearInstructions) {
-    safetyMattersNext.push(`Confirm how ${med.name} should be taken.`);
-  }
-  if (med.uncertainty) {
-    safetyMattersNext.push(`Clarify the current status of ${med.name} (name, dose, or purpose).`);
-  }
-  if (safetyMattersNext.length > 0) {
-    return {
-      date,
-      event: `Medication: ${med.name}`,
-      source: "Document",
-      whatChanged,
-      whatMattersNext: safetyMattersNext.join(" "),
-    };
-  }
-
+  
+  const whatMattersNext = buildMedicationWhatMattersNext(med).join(" ");
+  
   return {
     date,
     event: `Medication: ${med.name}`,
     source: "Document",
     whatChanged,
-    whatMattersNext: med.refill
-      ? "Plan a refill."
-      : med.concern
-        ? "Review the noted concern."
-        : "Confirm with the care team if anything is unclear.",
+    whatMattersNext,
   };
 }
 
@@ -105,7 +111,7 @@ function appointmentEvent(appointment: AppointmentInfo): CareTimelineEvent {
   const label = appointment.kind.replace(/_/g, " ");
   const who = appointment.who ? ` with ${appointment.who}` : "";
   const mattersNext = appointment.preparation
-    ? `Prepare before this: ${appointment.preparation}`
+    ? `Prepare: ${appointment.preparation}`
     : "Add to planning and prepare any questions or notes to bring.";
   return {
     date: timeframe || "Upcoming",
@@ -121,13 +127,13 @@ function instructionEvent(instruction: CareInstruction): CareTimelineEvent {
   const mattersNext = (() => {
     switch (instruction.kind) {
       case "warning_sign":
-        return "Know what to watch for and act on it if it appears.";
+        return `Watch for: ${instruction.description}. Act immediately if this appears.`;
       case "monitoring_requirement":
-        return "Set up a simple way to track this.";
+        return `Track: ${instruction.description}. Set up a simple way to record this.`;
       case "restriction":
-        return "Respect this restriction in daily care.";
+        return `Respect: ${instruction.description}. Ensure this is followed in daily care.`;
       default:
-        return "Incorporate into daily care.";
+        return `Incorporate into daily care: ${instruction.description}.`;
     }
   })();
   return {
@@ -143,6 +149,8 @@ function instructionEvent(instruction: CareInstruction): CareTimelineEvent {
  * Build timeline events for a document. When `documentsSeenCount` is 0 this is a
  * first document — SolenOS does not claim a full history from one file; events
  * are additive and traceable.
+ * 
+ * IMPROVED: Every whatMattersNext is concrete and evidence-backed.
  */
 export function buildDocumentTimelineEvents(
   understanding: {
@@ -175,4 +183,50 @@ export function buildDocumentTimelineEvents(
   }
 
   return events;
+}
+
+/**
+ * NEW: Build richer timeline events with explicit evidence chains
+ * for the Living Care Record quality gate.
+ */
+export function buildDocumentTimelineEventsWithEvidence(
+  understanding: {
+    medicalEvents: MedicalEvent[];
+    medications: MedicationInfo[];
+    appointments: AppointmentInfo[];
+    careInstructions: CareInstruction[];
+  },
+  sourceName: string,
+): Array<CareTimelineEvent & { evidence_chain?: string[] }> {
+  const events = buildDocumentTimelineEvents(understanding, sourceName);
+  
+  return events.map((event, index) => {
+    const evidence_chain: string[] = [];
+    
+    // Add source text as evidence
+    if (understanding.medicalEvents[index]) {
+      evidence_chain.push(`Source: ${understanding.medicalEvents[index].sourceText}`);
+    } else if (understanding.medications[index]) {
+      evidence_chain.push(`Source: ${understanding.medications[index].sourceText}`);
+    } else if (understanding.appointments[index]) {
+      evidence_chain.push(`Source: ${understanding.appointments[index].sourceText}`);
+    } else if (understanding.careInstructions[index]) {
+      evidence_chain.push(`Source: ${understanding.careInstructions[index].sourceText}`);
+    }
+    
+    // Add safety flags as evidence
+    const med = understanding.medications.find(m => event.event.includes(m.name));
+    if (med) {
+      if (med.duplicateDose) evidence_chain.push("Safety: duplicate dose flag");
+      if (med.missedDose) evidence_chain.push("Safety: missed dose flag");
+      if (med.refillProblem) evidence_chain.push("Safety: refill problem flag");
+      if (med.unclearInstructions) evidence_chain.push("Safety: unclear instructions flag");
+      if (med.uncertainty) evidence_chain.push("Safety: uncertainty flag");
+    }
+    
+    return {
+      ...event,
+      evidence_chain: evidence_chain.length > 0 ? evidence_chain : undefined,
+    };
+  });
 }

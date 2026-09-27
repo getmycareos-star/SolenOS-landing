@@ -22,6 +22,7 @@ export {
 } from "./caregiver-translation";
 export {
   buildDocumentTimelineEvents,
+  buildDocumentTimelineEventsWithEvidence,
 } from "./timeline-events";
 export {
   buildCaregiverPrioritization,

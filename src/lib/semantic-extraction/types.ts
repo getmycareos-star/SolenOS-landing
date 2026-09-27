@@ -166,4 +166,6 @@ export type ExtractionResult = {
   repair_notes?: string[];
   /** How many structured facts the rule floor recovered independently. */
   rule_floor_facts?: number;
+  /** Qwen reasoning layer output — intent, synthesis, contradictions, baseline, uncertainty. */
+  reasoning?: import("./reasoning-engine").QwenReasoningOutput | null;
 };

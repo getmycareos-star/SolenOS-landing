@@ -18,6 +18,7 @@ import type { ExtractionCoverage, ExtractionResult, SemanticExtraction } from ".
 import { buildExtractionPrompt } from "./prompt";
 import { extractWithRules } from "./rule-extractor";
 import { extractionCoverage, mergeExtractions, normalizeExtraction, salvageJson } from "./normalize";
+import { createQwenReasoningEngine, type ReasoningInput } from "./reasoning-engine";
 
 const EXTRACTION_TIMEOUT_MS = Number(process.env.SEMANTIC_EXTRACTION_TIMEOUT_MS ?? 30000);
 
@@ -30,13 +31,13 @@ export const EXTRACTION_MODEL_LADDER: string[] = (
   "qwen2.5-coder:7b,qwen2.5:7b,qwen2.5-coder:3b,qwen2.5-coder:1.5b"
 )
   .split(",")
-  .map((m) => m.trim())
+  .map((m: string) => m.trim())
   .filter(Boolean);
 
 /** Opt-in larger models when quality matters more than latency. */
 const ESCALATION_MODELS: string[] = (process.env.SEMANTIC_EXTRACTION_ESCALATION_MODELS ?? "")
   .split(",")
-  .map((m) => m.trim())
+  .map((m: string) => m.trim())
   .filter(Boolean);
 
 const EXTRACTION_SYSTEM_MESSAGE =

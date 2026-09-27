@@ -3,6 +3,7 @@ import { ingestRawInput, validatedToCanonical } from "../data-acquisition-resili
 import type { DareIngestResult } from "../data-acquisition-resilience/types";
 import { createSemanticExtractor, extractWithRules } from "../semantic-extraction";
 import type { ExtractionResult, SemanticExtraction } from "../semantic-extraction/types";
+import { createQwenReasoningEngine } from "../semantic-extraction/reasoning-engine";
 import { appendEventsToContext, getCareContextRoot, getOrCreateCareContextRoot } from "./context-store";
 import {
   buildProvisionalEvent,
@@ -714,6 +715,29 @@ export async function processSituationInput(
     try {
       const extractor = createSemanticExtractor();
       semanticExtraction = await extractor.extract(input.raw_input.trim());
+
+      // Qwen Reasoning Layer — multi-pass synthesis after extraction.
+      // Non-fatal: if reasoning fails, extraction still succeeds.
+      if (semanticExtraction?.success && semanticExtraction.extraction) {
+        try {
+          const reasoningEngine = createQwenReasoningEngine();
+          const priorObs: Array<{ raw_text: string; captured_at?: string | null }> = [];
+          const contradictions = (semanticExtraction.extraction.contradictions ?? []).map((c) => ({
+            claim_a: c.claim_a,
+            claim_b: c.claim_b,
+            field: "unspecified",
+          }));
+          semanticExtraction.reasoning = await reasoningEngine.reason({
+            latestNote: input.raw_input.trim(),
+            extraction: semanticExtraction.extraction,
+            priorObservations: priorObs,
+            contradictions,
+          });
+        } catch (reasoningError) {
+          console.error("[situation-entry] Qwen reasoning failed:", reasoningError);
+          // Non-fatal — extraction still succeeds without reasoning
+        }
+      }
     } catch (extractionError) {
       console.error("[situation-entry] Semantic extraction failed:", extractionError);
       // Rule floor still applies — capture must never degrade to "held, not understood".

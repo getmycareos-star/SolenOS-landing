@@ -15,6 +15,7 @@ import {
 } from "../care-reality-extraction/classify";
 import { classifyEpistemicClaim } from "../care-epistemics";
 import { buildCareRecipientAnchor } from "../care-reality-intelligence/care-recipient-anchor";
+import { caregiverLoadProfile } from "../caregiver-capacity/caregiver-load-signals";
 import type { ActiveCareSituation } from "../active-care-situation/types";
 import { prioritizeCareSituation, looksLikeFragmentationOrAdmin } from "./prioritize";
 import { prioritizeFromUnderstanding } from "./prioritize-from-understanding";
@@ -67,17 +68,34 @@ function createFallbackUnderstanding(params: {
   const facts: CareSituationFact[] = [];
   const unknowns: string[] = [];
   const follow_up_questions: string[] = [];
+  const context_only: string[] = [];
+
+  // The caregiver's own words are held as context, never as a care fact. A message
+  // that is only about their load has no event in it, and saying otherwise would
+  // invent one.
+  const loadOnly = caregiverLoadProfile(raw).load_only;
 
   if (raw.length >= 12) {
-    facts.push({
-      kind: "observation",
-      text: raw.slice(0, 240),
-      source_fragment: raw,
-    });
+    if (loadOnly) {
+      context_only.push(raw.slice(0, 240));
+      follow_up_questions.push(
+        person
+          ? `When something happens with ${person}, what would you like me to hold?`
+          : "When something happens with the person you care for, what would you like me to hold?",
+      );
+    } else {
+      facts.push({
+        kind: "observation",
+        text: raw.slice(0, 240),
+        source_fragment: raw,
+      });
+    }
     unknowns.push(
       `What is happening with ${person || "the person you care for"}?`,
     );
-    follow_up_questions.push("What changed, or what is on your mind?");
+    if (!loadOnly) {
+      follow_up_questions.push("What changed, or what is on your mind?");
+    }
   }
 
   return {
@@ -90,7 +108,7 @@ function createFallbackUnderstanding(params: {
     matters_now: [],
     can_wait: [],
     follow_up_questions: [...new Set(follow_up_questions)].slice(0, 3),
-    context_only: [],
+    context_only: [...new Set(context_only)].slice(0, 4),
     continuity_hooks: [],
     can_orient: false,
     instant_path: true,

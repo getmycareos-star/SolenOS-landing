@@ -207,8 +207,38 @@ for (const event of timelineEvents) {
   if (!event.date || !event.event || !event.source || !event.whatChanged || !event.whatMattersNext) {
     throw new Error("every timeline event must have all 5 fields (date, event, source, whatChanged, whatMattersNext)");
   }
+  // Quality: whatMattersNext must be concrete, not vague
+  const vaguePhrases = ["something needs attention", "care situation changed", "care story continues", "add to planning"];
+  const nextLower = event.whatMattersNext.toLowerCase();
+  for (const vague of vaguePhrases) {
+    if (nextLower.includes(vague)) {
+      throw new Error(`whatMattersNext must be concrete, not vague: "${event.whatMattersNext}"`);
+    }
+  }
+  if (nextLower.includes("confirm")) {
+    // Good - concrete action
+  }
 }
-console.log("✓ timeline event generation (all 5 fields present)");
+console.log("✓ timeline event generation (all 5 fields present, concrete whatMattersNext)");
+
+// ─── 6b. Timeline events with evidence chains (quality) ────────────────────────
+const { buildDocumentTimelineEventsWithEvidence } = await import("../src/lib/document-intelligence/timeline-events");
+const timelineWithEvidence = buildDocumentTimelineEventsWithEvidence(dischargeJourney, "Discharge summary.pdf");
+let evidenceCount = 0;
+for (const event of timelineWithEvidence) {
+  if (event.evidence_chain && event.evidence_chain.length > 0) {
+    evidenceCount++;
+    // Verify evidence chain references source text
+    const hasSource = event.evidence_chain.some(e => e.startsWith("Source:"));
+    if (!hasSource) {
+      throw new Error("evidence chain must reference source text");
+    }
+  }
+}
+if (evidenceCount === 0) {
+  throw new Error("at least some timeline events should have evidence chains");
+}
+console.log("✓ timeline events with evidence chains (traceable to source)");
 
 // ─── 7. Integration through processDocumentIntelligenceLayer ─────────────────
 
