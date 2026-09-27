@@ -62,27 +62,8 @@ export function detectCareChanges(
           : `This document mentions ${med.name}${med.dose ? ` (${med.dose})` : ""}.`,
         field: "medication",
       });
-      continue;
     }
-    if (med.dose && priorMed.dose && normalize(med.dose) !== normalize(priorMed.dose)) {
-      changes.push({
-        kind: "changed",
-        category: "medication",
-        label: `Medication dose changed: ${med.name}`,
-        detail: `Document shows ${med.dose} vs previously ${priorMed.dose}.`,
-        field: "dose",
-      });
-    }
-    if (med.status === "discontinued" && priorMed.status !== "discontinued") {
-      changes.push({
-        kind: "changed",
-        category: "medication",
-        label: `Medication discontinued: ${med.name}`,
-        detail: `The document indicates ${med.name} is no longer being taken.`,
-        field: "status",
-      });
-    }
-    // High-priority medication safety signals — surfaced for care coordination.
+    // Safety signal checks should run for ALL medications, not just existing ones
     if (med.duplicateDose) {
       changes.push({
         kind: "unclear",
@@ -127,6 +108,27 @@ export function detectCareChanges(
         detail: `The current medication situation for ${med.name} is not clearly stated — confirm the name, dose, or purpose.`,
         field: "uncertainty",
       });
+    }
+    // Dose/status change checks only apply when there IS a prior medication
+    if (priorMed) {
+      if (med.dose && priorMed.dose && normalize(med.dose) !== normalize(priorMed.dose)) {
+        changes.push({
+          kind: "changed",
+          category: "medication",
+          label: `Medication dose changed: ${med.name}`,
+          detail: `Document shows ${med.dose} vs previously ${priorMed.dose}.`,
+          field: "dose",
+        });
+      }
+      if (med.status === "discontinued" && priorMed.status !== "discontinued") {
+        changes.push({
+          kind: "changed",
+          category: "medication",
+          label: `Medication discontinued: ${med.name}`,
+          detail: `The document indicates ${med.name} is no longer being taken.`,
+          field: "status",
+        });
+      }
     }
   }
 

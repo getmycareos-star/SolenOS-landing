@@ -105,9 +105,9 @@ const MISSED_DOSE_MARKER =
 const REFILL_PROBLEM_MARKER =
   /\b(?:refill\s+(?:problem|issue|delayed|not (?:available|filled|approved)|was denied)|out of\s+.*refill|refill\s+denied|unable to (?:refill|get the refill)|pharmacy\s+(?:could not|couldn'?t)\s+fill)\b/i;
 const UNCLEAR_INSTRUCTIONS_MARKER =
-  /\b(?:unclear (?:instructions?|directions?|dosing)|instructions?\s+(?:unclear|not clear|confusing)|not sure (?:how|when|how often) to (?:take|give)|dose unclear|directions?\s+unclear)\b/i;
+  /\b(?:unclear (?:instructions?|directions?|dosing)|instructions?(?:\s+for\s+\w+)?\s+(?:are\s+)?(?:unclear|not clear|confusing)|not sure (?:how|when|how often) to (?:take|give)|dose unclear|directions?(?:\s+for\s+\w+)?\s+(?:are\s+)?unclear)\b/i;
 const MED_UNCERTAINTY_MARKER =
-  /\b(?:not sure (?:which|what|if) (?:medication|med|medicine|drug)|which medication|current medications?\s+(?:unclear|unknown|uncertain|not listed)|medication list\s+(?:needs|unclear)|unsure about (?:the )?(?:current )?medications?\b|can'?t remember (?:the )?(?:name|what) (?:of the )?(?:medication|med|medicine))\b/i;
+  /\b(?:not sure (?:which|what|if) (?:medication|med|medicine|drug)|which medication|current medications?(?:\s+list)?\s+(?:unclear|unknown|uncertain|not listed)|medication list\s+(?:needs|unclear|is unclear)|unsure about (?:the )?(?:current )?medications?\b|can'?t remember (?:the )?(?:name|what) (?:of the )?(?:medication|med|medicine))\b/i;
 
 function buildMedicationNames(sentence: string): string[] {
   const names: string[] = [];
@@ -228,10 +228,10 @@ function extractAppointments(text: string, sourceType: SolenOSDocument): Appoint
     let kind: AppointmentInfo["kind"] | null = null;
     if (FAMILY_DISCUSSION_MARKER.test(sentence)) kind = "family_discussion";
     else if (PLANNED_DECISION_MARKER.test(sentence)) kind = "planned_care_decision";
+    else if (UPCOMING_MARKER.test(sentence)) kind = "upcoming_visit";
     else if (SPECIALIST_MARKER.test(sentence)) kind = "specialist_referral";
     else if (DEADLINE_MARKER.test(sentence)) kind = "deadline";
     else if (FOLLOW_UP_MARKER.test(sentence)) kind = "recommended_follow_up";
-    else if (UPCOMING_MARKER.test(sentence)) kind = "upcoming_visit";
     if (!kind) continue;
     apps.push({
       kind,
