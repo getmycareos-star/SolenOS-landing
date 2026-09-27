@@ -147,3 +147,42 @@ export {
   HUMAN_CONTEXT_WRONG_VS_RIGHT,
 } from "./human-context";
 export type { HumanContextInsight, HumanContextLayer } from "./human-context";
+
+// Phase 2 engine implementations
+export {
+  processCareMoment,
+  buildCareMomentResponseSections,
+  projectCareMomentToMomentOfNeed,
+  projectCareMoment,
+  type CareMomentEngineInput,
+  type CareMomentEngineResult,
+} from "./care-moment-engine";
+
+export {
+  detectConfidenceCollapseMoment,
+  processIClarityRequest,
+  buildIClaritySections,
+  projectIClarityToMomentOfNeed,
+  projectIClarity,
+  type IClarityEngineInput,
+  type IClarityEngineResult,
+} from "./i-need-clarity-engine";
+
+// Phase 3 engine implementations
+export {
+  processCareCommunication,
+  buildCurrentSituationSummary,
+  buildEvidenceFromCareReality,
+  buildConversationPreparation,
+  buildCommunicationDrafts,
+  type CareCommunicationInput,
+  type CareCommunicationResult,
+} from "./care-communication-support-engine";
+
+export {
+  processHelpMeCommunicate,
+  buildDraftForAudience,
+  validateCommunicationDraft,
+  type HelpMeCommunicateInput,
+  type HelpMeCommunicateResult,
+} from "./help-me-communicate-engine";
