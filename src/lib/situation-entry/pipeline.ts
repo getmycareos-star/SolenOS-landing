@@ -155,6 +155,10 @@ import { createIntegrityState } from "../care-event-integrity";
 import { createStubPriority } from "../care-event-priority";
 import { classifySourceReliability } from "../continuity-properties/source-reliability";
 import { createIngestionTime, parseEventTimeFromText, temporalSortKey } from "../time-model";
+import { runEvidencePreservationPipeline, createEvidencePipelineInput } from "../evidence-preservation";
+import { materializeContradictions } from "../contradiction-detection-engine/materialization";
+import { integrateSourceReliability } from "../source-reliability-integration";
+import { computeAggregatedConfidence } from "../confidence-aggregation";
 
 function persistCanonicalEvent(
   event: CanonicalCareEvent,
