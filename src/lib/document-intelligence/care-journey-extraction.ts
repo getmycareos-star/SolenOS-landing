@@ -23,7 +23,7 @@ const DATE_MARKER =
   /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2},?\s+\d{4}\b|\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b\d{4}-\d{2}-\d{2}\b/gi;
 
 const TIMEFRAME_MARKER =
-  /\b(?:within|in|by)\s+(\d+)\s*(?:days?|weeks?|months?|hours?)\b|\bnext\s+(?:week|month)\b|\b(?:by|before)\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2},?\s+\d{4}\b/gi;
+  /\b(?:within|in|by)\s+(\d+)\s*(?:days?|weeks?|months?|hours?)\b|\bnext\s+(?:week|month)\b|\b(?:by|before)\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2},?\s+\d{4}\b|\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+at\s+\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)\b|\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)\b/gi;
 
 function sentences(text: string): string[] {
   return text
@@ -177,15 +177,15 @@ const TIMEFRAME_WITHIN = /\b(?:within|in|by)\s+\d+\s*(?:days?|weeks?|months?)\b/
 const FAMILY_DISCUSSION_MARKER =
   /\b(?:family discussion|family meeting|care conference|talk with the family|discuss with (?:the )?family|family call)\b/i;
 const PLANNED_DECISION_MARKER =
-  /\b(?:care decision|planned (?:decision|care)|decide (?:whether|on|about)|decision needed|we will decide|plan to decide|decision meeting)\b/i;
+  /\b(?:care decision|planned (?:decision|care)|decide (?:whether|on|about)|decision needed|we will decide|plan to decide|decision meeting|decision about (?:the )?care plan)\b/i;
 const PREPARATION_MARKER =
-  /\b(?:bring|prepare|have (?:the|your|their)|gather|ready)\s+(?:questions?|notes?|list|medications?|records?|paperwork|information)\b/i;
+  /\b(?:bring|prepare|have (?:the|your|their)|gather|ready)\s+(?:(?:the|your|their)\s+)?(?:questions?|notes?|list|medications?|records?|paperwork|information)(?:\s+(?:and|,)\s+(?:the|your|their)?\s*(?:questions?|notes?|list|medications?|records?|paperwork|information))*\b/i;
 
 function appointmentWho(sentence: string): string | undefined {
   const doc = sentence.match(/\b(?:Dr\.?|Doctor|physician)\s+([A-Z][a-zA-Z.'\- ]{1,40})/i);
   if (doc?.[1]) return doc[1].trim();
   const specialist = sentence.match(
-    /\b(cardiologist|neurologist|oncologist|pulmonologist|gastroenterologist|surgeon|specialist)\b/i,
+    /\b(cardiologist|neurologist|oncologist|pulmonologist|gastroenterologist|surgeon|specialist|neurology|cardiology|oncology|pulmonology|gastroenterology)\b/i,
   );
   if (specialist?.[0]) return specialist[0].toLowerCase();
   if (/\bpharmacy\b/i.test(sentence)) return "the pharmacy";
@@ -224,26 +224,48 @@ function appointmentPreparation(sentence: string): string | undefined {
 function extractAppointments(text: string, sourceType: SolenOSDocument): AppointmentInfo[] {
   if (sourceType !== "medical_document" && sourceType !== "care_plan") return [];
   const apps: AppointmentInfo[] = [];
+  let pendingPreparation: string | undefined;
+  
   for (const sentence of sentences(text)) {
-    let kind: AppointmentInfo["kind"] | null = null;
-    if (FAMILY_DISCUSSION_MARKER.test(sentence)) kind = "family_discussion";
-    else if (PLANNED_DECISION_MARKER.test(sentence)) kind = "planned_care_decision";
-    else if (UPCOMING_MARKER.test(sentence)) kind = "upcoming_visit";
-    else if (SPECIALIST_MARKER.test(sentence)) kind = "specialist_referral";
-    else if (DEADLINE_MARKER.test(sentence)) kind = "deadline";
-    else if (FOLLOW_UP_MARKER.test(sentence)) kind = "recommended_follow_up";
-    if (!kind) continue;
-    apps.push({
-      kind,
-      description: sentence,
-      what: appointmentWhat(sentence, kind),
-      who: appointmentWho(sentence),
-      timeframe: firstTimeframe(sentence) ?? undefined,
-      preparation: appointmentPreparation(sentence),
-      sourceText: sentence,
-    });
+    // Check all matching kinds for this sentence
+    const kinds: AppointmentInfo["kind"][] = [];
+    if (FAMILY_DISCUSSION_MARKER.test(sentence)) kinds.push("family_discussion");
+    if (PLANNED_DECISION_MARKER.test(sentence)) kinds.push("planned_care_decision");
+    if (UPCOMING_MARKER.test(sentence)) kinds.push("upcoming_visit");
+    if (SPECIALIST_MARKER.test(sentence)) kinds.push("specialist_referral");
+    if (DEADLINE_MARKER.test(sentence)) kinds.push("deadline");
+    if (FOLLOW_UP_MARKER.test(sentence)) kinds.push("recommended_follow_up");
+    
+    // Check for preparation in this sentence
+    const prep = appointmentPreparation(sentence);
+    if (prep) {
+      pendingPreparation = prep;
+      // If no appointment kind found, attach to previous appointment
+      if (kinds.length === 0 && apps.length > 0) {
+        apps[apps.length - 1].preparation = prep;
+        pendingPreparation = undefined;
+        continue;
+      }
+    }
+    
+    if (kinds.length === 0) continue;
+    
+    // Create appointment for each matching kind
+    for (const kind of kinds) {
+      apps.push({
+        kind,
+        description: sentence,
+        what: appointmentWhat(sentence, kind),
+        who: appointmentWho(sentence),
+        timeframe: firstTimeframe(sentence) ?? undefined,
+        preparation: prep ?? pendingPreparation,
+        sourceText: sentence,
+      });
+    }
+    
+    if (pendingPreparation) pendingPreparation = undefined;
   }
-  return unique(apps, (a) => a.sourceText.toLowerCase());
+  return unique(apps, (a) => `${a.kind}|${a.sourceText.toLowerCase()}`);
 }
 
 // ─── Care instructions (restrictions, monitoring, warning signs, actions) ──

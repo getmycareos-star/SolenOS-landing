@@ -23,6 +23,12 @@ import { createQwenReasoningEngine, type ReasoningInput } from "./reasoning-engi
 const EXTRACTION_TIMEOUT_MS = Number(process.env.SEMANTIC_EXTRACTION_TIMEOUT_MS ?? 30000);
 
 /**
+ * Wall-clock ceiling for the whole ladder. A caregiver waiting at 11pm is not served
+ * by a 3-minute model hunt: when the budget is spent, the rule floor answers.
+ */
+const EXTRACTION_TOTAL_BUDGET_MS = Number(process.env.SEMANTIC_EXTRACTION_TOTAL_BUDGET_MS ?? 25000);
+
+/**
  * Strongest-first. Capability order matters more than raw size: instruction
  * following on strict JSON is what extraction needs.
  */
@@ -45,6 +51,10 @@ const EXTRACTION_SYSTEM_MESSAGE =
 
 function clampTimeout(): number {
   return Math.max(2000, Math.min(EXTRACTION_TIMEOUT_MS, 120000));
+}
+
+function clampTotalBudget(): number {
+  return Math.max(3000, Math.min(EXTRACTION_TOTAL_BUDGET_MS, 180000));
 }
 
 function factCount(coverage: ExtractionCoverage): number {
@@ -149,6 +159,7 @@ export class SemanticExtractor {
 
     const rules = extractWithRules(text);
     const rulesCoverage = extractionCoverage(rules);
+    const deadline = startTime + clampTotalBudget();
 
     let provider: LlmProvider;
     try {
@@ -172,6 +183,11 @@ export class SemanticExtractor {
     let lastError: string | null = null;
 
     for (const model of ladder) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        lastError = "budget_exhausted";
+        break;
+      }
       modelsAttempted.push(model);
       const result = await provider.invoke({
         model,
@@ -181,7 +197,7 @@ export class SemanticExtractor {
         ],
         temperature: 0,
         maxTokens: 4096,
-        timeoutMs: clampTimeout(),
+        timeoutMs: Math.max(2000, Math.min(clampTimeout(), remaining)),
         format: "json",
       });
 

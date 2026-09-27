@@ -110,9 +110,35 @@ function appointmentEvent(appointment: AppointmentInfo): CareTimelineEvent {
   const timeframe = appointment.timeframe ? ` (${appointment.timeframe})` : "";
   const label = appointment.kind.replace(/_/g, " ");
   const who = appointment.who ? ` with ${appointment.who}` : "";
-  const mattersNext = appointment.preparation
-    ? `Prepare: ${appointment.preparation}`
-    : "Add to planning and prepare any questions or notes to bring.";
+  
+  let mattersNext: string;
+  if (appointment.preparation) {
+    mattersNext = `Prepare: ${appointment.preparation}`;
+  } else {
+    switch (appointment.kind) {
+      case "upcoming_visit":
+        mattersNext = `Attend ${appointment.what}${who}${timeframe}. Bring medication list and questions.`;
+        break;
+      case "specialist_referral":
+        mattersNext = `Schedule specialist visit for ${appointment.what}${who}${timeframe}.`;
+        break;
+      case "recommended_follow_up":
+        mattersNext = `Complete follow-up for ${appointment.what}${who}${timeframe}.`;
+        break;
+      case "family_discussion":
+        mattersNext = `Prepare for family discussion about ${appointment.what}${who}${timeframe}.`;
+        break;
+      case "planned_care_decision":
+        mattersNext = `Prepare for care decision: ${appointment.what}${who}${timeframe}.`;
+        break;
+      case "deadline":
+        mattersNext = `Complete by deadline: ${appointment.what}${who}${timeframe}.`;
+        break;
+      default:
+        mattersNext = `Attend ${appointment.what}${who}${timeframe}.`;
+    }
+  }
+  
   return {
     date: timeframe || "Upcoming",
     event: `${label.charAt(0).toUpperCase()}${label.slice(1)}: ${appointment.what}${who}${timeframe}`,
@@ -152,6 +178,23 @@ function instructionEvent(instruction: CareInstruction): CareTimelineEvent {
  * 
  * IMPROVED: Every whatMattersNext is concrete and evidence-backed.
  */
+function buildMedicalEventWhatMattersNext(event: MedicalEvent): string {
+  switch (event.kind) {
+    case "hospital_visit":
+      return "Add any follow-up requirements from the hospital visit to the care plan.";
+    case "discharge":
+      return "Review discharge instructions and schedule follow-up appointments.";
+    case "diagnosis":
+      return "Discuss the mentioned diagnosis with the care team at the next visit.";
+    case "procedure":
+      return "Monitor recovery from the procedure and report any concerns.";
+    case "provider_instruction":
+      return `Follow the provider instruction: ${event.sourceText}.`;
+    default:
+      return "Add any follow-up requirements to the care plan.";
+  }
+}
+
 export function buildDocumentTimelineEvents(
   understanding: {
     medicalEvents: MedicalEvent[];
@@ -169,7 +212,7 @@ export function buildDocumentTimelineEvents(
       event: `${eventLabel(event)}: ${event.sourceText}`,
       source: sourceName,
       whatChanged: eventWhatChanged(event),
-      whatMattersNext: "Add any follow-up requirements to the care plan.",
+      whatMattersNext: buildMedicalEventWhatMattersNext(event),
     });
   }
   for (const med of understanding.medications) {

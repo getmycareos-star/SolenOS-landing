@@ -922,8 +922,12 @@ export async function processSituationInput(
     const extraction = semanticExtraction.extraction;
     const extractionEvents = buildExtractionCareEvents(extraction, caregiverId, input);
     for (const event of extractionEvents) {
-      event.root_event_id = isFirstSituation && events.length === 0 ? null : rootEventId;
-      event.situation_id = null;
+      // These events are the same capture as the raw evidence, so they belong to the
+      // same situation and the same spine. An event with no situation_id cannot be
+      // found again from the Living Care Record.
+      event.situation_id = spineLink?.situation_id ?? null;
+      event.root_event_id = spineLink?.root_event_id ?? rootEventId;
+      event.attributes = { ...event.attributes, situation_relation: spineLink?.relation ?? null };
       persistCanonicalEvent(event, caregiverId, input.provenance);
     }
     events.push(...extractionEvents);
