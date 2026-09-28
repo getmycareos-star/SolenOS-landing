@@ -131,8 +131,10 @@ function main(): void {
     path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"),
     "utf8",
   );
-  assert(/fetch\("\/api\/situation"/.test(workspace), "Workspace must use /api/situation");
-  assert(!/fetch\("\/api\/analyze"/.test(workspace), "Workspace must not POST /api/analyze");
+  // The workspace calls the entry through apiUrl() so the base path is applied once;
+  // match the path either way.
+  assert(/\/api\/situation/.test(workspace), "Workspace must use /api/situation");
+  assert(!/\/api\/analyze/.test(workspace), "Workspace must not POST /api/analyze");
 
   const pipeline = fs.readFileSync(path.join(root, "src/lib/situation-entry/pipeline.ts"), "utf8");
   const compileMatch = pipeline.match(/enforceCompiledDominantOutput\s*\(/);

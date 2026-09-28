@@ -44,10 +44,16 @@ console.log("✓ system contract");
 
 const caregiverId = "cg_memory";
 
+// These events must be *recent* for "recent events are prioritized" to mean
+// anything, so the fixture is anchored to today rather than a fixed past date.
+function daysAgoIso(days: number): string {
+  return new Date(Date.now() - days * 86400000).toISOString();
+}
+
 const first = await processSituationInput({
   raw_input: "Mom fell yesterday and went to hospital",
   caregiver_id: caregiverId,
-  timestamp: "2026-07-01T10:00:00.000Z",
+  timestamp: daysAgoIso(3),
 });
 
 assert(first.memory_layer !== null, "memory layer in response");
@@ -58,13 +64,13 @@ console.log("✓ Layer 1 raw + Layer 3 episodes on ingest");
 await processSituationInput({
   raw_input: "Discharge summary received — follow-up in 2 weeks",
   caregiver_id: caregiverId,
-  timestamp: "2026-07-05T10:00:00.000Z",
+  timestamp: daysAgoIso(2),
 });
 
 const second = await processSituationInput({
   raw_input: "Insurance rejected the hospital claim",
   caregiver_id: caregiverId,
-  timestamp: "2026-07-08T10:00:00.000Z",
+  timestamp: daysAgoIso(1),
 });
 
 const store = rebuildMemoryLayers(caregiverId, second.context.events);
@@ -120,9 +126,9 @@ const required = [
   "src/lib/care-memory-layers/layer-episodes.ts",
   "src/lib/care-memory-layers/retrieve.ts",
   "src/lib/care-memory-layers/pipeline.ts",
-  "src/app/api/situation/memory/route.ts",
   "src/components/ops-devtools/MemoryEpisodePanel.tsx",
-  "db/migrations/030_memory_layers.sql",
+  // Memory layers are built during ingest and rendered from the situation response;
+  // there is no separate memory route and the store is in-process, so no table.
 ];
 
 for (const rel of required) {

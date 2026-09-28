@@ -235,6 +235,17 @@ export function resolveCareTurnConfirmation(params: {
       : "What we already understand continues — share what changed when you can.";
   }
 
+  // A turn that added no care anchor must never be told the record was updated.
+  // What the caregiver can be told is that what is already held stays available.
+  if (
+    !params.latestIsCareWorthy &&
+    !isProductSessionMetaText(params.latestRawText)
+  ) {
+    return named
+      ? `What is already held about ${named} stays available to you — share what changed when you can.`
+      : "What is already held stays available to you — share what changed when you can.";
+  }
+
   // careWorthyCount ≥ 1 and current turn is care-worthy — care continuity confirmations allowed.
   if (params.turnClass === "emotional_only") {
     return params.isNewCareReality

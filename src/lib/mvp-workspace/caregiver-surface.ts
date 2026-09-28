@@ -17,7 +17,9 @@ export const CAREGIVER_MVP_WORKSPACE_FILES = [
   "ResearchPreviewAckGate.tsx",
   "SituationResponsePanel.tsx",
   "UnderstandingFeedbackPrompt.tsx",
+  "WorkspaceMoreMenu.tsx",
   "capture",
+  "share",
   "index.ts",
 ] as const;
 

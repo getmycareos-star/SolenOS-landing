@@ -13,6 +13,11 @@
  */
 
 import { createLlmProvider } from "../llm-provider";
+import {
+  clearLlmUnavailable,
+  isLlmMarkedUnavailable,
+  markLlmUnavailable,
+} from "../llm-provider/availability-memo";
 import type { LlmProvider } from "../llm-provider";
 import type { ExtractionCoverage, ExtractionResult, SemanticExtraction } from "./types";
 import { buildExtractionPrompt } from "./prompt";
@@ -161,10 +166,17 @@ export class SemanticExtractor {
     const rulesCoverage = extractionCoverage(rules);
     const deadline = startTime + clampTotalBudget();
 
+    // A recently unreachable model endpoint is not probed again: answer from the
+    // rule floor straight away rather than making the caregiver wait it out.
+    if (isLlmMarkedUnavailable()) {
+      return this.rulesResult(rules, startTime, "llm_unavailable_recently", []);
+    }
+
     let provider: LlmProvider;
     try {
       provider = await this.getProvider();
     } catch (error) {
+      markLlmUnavailable();
       return this.rulesResult(
         rules,
         startTime,
@@ -174,8 +186,10 @@ export class SemanticExtractor {
     }
 
     if (!(await provider.isAvailable())) {
+      markLlmUnavailable();
       return this.rulesResult(rules, startTime, "llm_unavailable", []);
     }
+    clearLlmUnavailable();
 
     const ladder = await this.resolveLadder();
     const modelsAttempted: string[] = [];

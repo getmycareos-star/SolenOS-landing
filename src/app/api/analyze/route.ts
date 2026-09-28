@@ -2,10 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAnalyzeFailure, runAnalyzePipeline } from "@/lib/analyze-pipeline";
 import { recordReliefMeasurementEvent } from "@/lib/telemetry-persistence/server";
 import type { CaregiverDepletionSignalsResult } from "@/lib/caregiver-depletion-signals";
+import {
+  ANALYZE_OPS_KEY_HEADER,
+  analyzePipelineDisabledResponse,
+  isAnalyzePipelineEnabled,
+} from "@/lib/analyze-pipeline/caregiver-entry-gate";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  // /api/analyze is an ops/engine path, not a caregiver entry. Caregiver surfaces
+  // use /api/situation, which is the only path that writes to the Living Care Record.
+  if (!isAnalyzePipelineEnabled({ opsKey: request.headers.get(ANALYZE_OPS_KEY_HEADER) })) {
+    const disabled = analyzePipelineDisabledResponse();
+    return NextResponse.json(
+      { error: disabled.error, caregiver_entry: disabled.caregiver_entry },
+      { status: disabled.status },
+    );
+  }
+
   try {
     const body = await request.json();
     const { input, context } = body ?? {};

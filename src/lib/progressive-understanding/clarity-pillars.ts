@@ -62,6 +62,18 @@ export function heldFocusLines(situation: ActiveCareSituation, max = 2): string[
     const isLatest = o === observations[observations.length - 1];
     const sourceText = (o.raw_text || o.human_fact || "").trim();
 
+    // A check-in or a remark about the app is not held care. Without this, returning
+    // after a pause orients the caregiver from "just checking back in" instead of
+    // from the confusion or hospital thread they came back about.
+    if (
+      !observationCareFact({ human_fact: o.human_fact, raw_text: o.raw_text }) &&
+      !hasOrientableCareContent(sourceText) &&
+      !looksLikeConcreteObservation(sourceText)
+    ) {
+      if (isLatest && max === 1) break;
+      continue;
+    }
+
     // Prefer extraction-partitioned surfaces over human_fact ≈ raw.
     const fromExtraction = caregiverFacingLinesFromCaptureText({
       rawText: sourceText,

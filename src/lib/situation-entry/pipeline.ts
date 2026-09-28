@@ -798,6 +798,43 @@ export async function processSituationInput(
     }
   }
 
+  // ─── Deep Understanding Layer ─────────────────────────────────────────────
+  // Person model, dialogue record, caregiver-as-person, time model, good care
+  // model, and plain language explanation. Non-fatal: if any layer fails the
+  // deterministic pipeline carries forward. Nothing here blocks capture.
+  let deep_understanding_layer: {
+    personModelUpdated: boolean;
+    dialogueRecorded: boolean;
+    caregiverPersonUpdated: boolean;
+    timeModelUpdated: boolean;
+    goodCareUpdated: boolean;
+    careSettingUpdated: boolean;
+    proactiveEngineUpdated: boolean;
+    explanation: { headline: string; whyItMatters: string; whatWeUnderstood: string; whatWeAreUnsureAbout: string[]; whatWouldHelp: string[]; whatYouCanDo: string[]; whatCanWait: string[]; trustFooter: string } | null;
+    errors: string[];
+  } | null = null;
+  if (input.raw_input?.trim()) {
+    try {
+      const { runDeepUnderstandingLayer } = await import("../deep-understanding");
+      deep_understanding_layer = await runDeepUnderstandingLayer({
+        input,
+        caregiverId,
+        careRecipientId: careRecipientIdForIdentity,
+        rawInput: input.raw_input,
+        semanticExtraction: semanticExtraction
+          ? {
+              source: semanticExtraction.provider,
+              extraction: semanticExtraction.extraction
+                ? { uncertainties: semanticExtraction.extraction.uncertainties?.length ?? 0 }
+                : undefined,
+            }
+          : null,
+      });
+    } catch (deepError) {
+      console.error("[situation-entry] Deep understanding layer failed:", deepError);
+    }
+  }
+
   const events: CanonicalCareEvent[] = [];
   if (dare) {
     for (const ve of dare.validated_events) {
@@ -1430,6 +1467,7 @@ export async function processSituationInput(
         }
       : null,
     baseline_semantic_layer,
+    deep_understanding_layer,
     failure_resilience_layer: {
       failures: failureResilience.failures,
       confidence_summaries: failureResilience.confidence_summaries,

@@ -278,6 +278,27 @@ export type SituationResponse = {
     error: string | null;
     quantity_comparisons: number;
   } | null;
+  /** Deep Understanding — person model, dialogue, caregiver-as-person, time model, good care, plain language. */
+  deep_understanding_layer?: {
+    personModelUpdated: boolean;
+    dialogueRecorded: boolean;
+    caregiverPersonUpdated: boolean;
+    timeModelUpdated: boolean;
+    goodCareUpdated: boolean;
+    careSettingUpdated: boolean;
+    proactiveEngineUpdated: boolean;
+    explanation: {
+      headline: string;
+      whyItMatters: string;
+      whatWeUnderstood: string;
+      whatWeAreUnsureAbout: string[];
+      whatWouldHelp: string[];
+      whatYouCanDo: string[];
+      whatCanWait: string[];
+      trustFooter: string;
+    } | null;
+    errors: string[];
+  } | null;
   architectural_boundaries_layer?: import("../architectural-boundaries/types").ArchitecturalBoundariesResult;
 };
 

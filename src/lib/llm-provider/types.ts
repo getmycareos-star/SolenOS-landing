@@ -1,6 +1,6 @@
 /** LLM provider boundary types — model-agnostic interface for structured extraction. */
 
-export type LlmProviderType = "ollama" | "openai" | "anthropic" | "gemini";
+export type LlmProviderType = "ollama" | "openai" | "anthropic" | "gemini" | "qwen";
 
 export type LlmRequestMessage = {
   role: "system" | "user" | "assistant";
@@ -34,6 +34,7 @@ export type LlmProviderConfig = {
   provider: LlmProviderType;
   model: string;
   baseUrl: string;
+  apiKey?: string;
   timeoutMs: number;
   temperature: number;
   maxTokens: number;

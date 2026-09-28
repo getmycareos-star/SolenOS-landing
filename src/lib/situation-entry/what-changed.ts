@@ -37,6 +37,16 @@ export function computeWhatChanged(
   });
 
   const changes: string[] = [];
+  // What arrived always comes first: before a change can be read as a change,
+  // the caregiver has to see that something new was recorded.
+  if (newEvents.length > 0) {
+    const kinds = [...new Set(newEvents.map((e) => e.extracted_type.replace(/_/g, " ")))];
+    changes.push(
+      kinds.length === 1
+        ? `New event added: ${kinds[0]}.`
+        : `New events added: ${kinds.slice(0, 3).join(", ")}.`,
+    );
+  }
   for (const change of report.all_changes) {
     const classification = change.classification;
     const domain = change.domain.replace(/_/g, " ");

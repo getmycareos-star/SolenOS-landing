@@ -111,6 +111,22 @@ function softActive(active: ActiveCareSituation): boolean {
 }
 
 /**
+ * An evolving concern does not expire at the end of the same day. A caregiver
+ * tracking a change reports it over days ("she seems more tired today"), and
+ * splitting that into a new situation every morning loses the thread the
+ * Living Care Record is meant to hold. Only soft follow-ups benefit: a new hard
+ * event, or an emotional note after an incident, still opens its own thread.
+ */
+const SOFT_CONTINUATION_GRACE_MS = 48 * 60 * 60 * 1000;
+
+function withinSoftGrace(updatedAt: string, nowIso: string): boolean {
+  const a = Date.parse(updatedAt);
+  const b = Date.parse(nowIso);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return Math.abs(b - a) <= SOFT_CONTINUATION_GRACE_MS;
+}
+
+/**
  * Core engine: evaluate new input against Active Care Situation + Care Reality context.
  * Does not invent diagnosis. Does not expose enums to caregivers.
  */
@@ -323,9 +339,32 @@ export function evaluateSituationRelationship(params: {
     };
   }
 
-  // Related care-change after incident (e.g. med change / visit after fall) → linked event.
+  // Soft follow-up after the same-day window: a concern that is still being
+  // tracked continues the same situation instead of starting a new one each
+  // morning. Incidents keep their own thread, so emotional notes cannot glue
+  // themselves onto a fall or a hospital stay.
   if (
-    inWindow &&
+    softIncoming &&
+    !inWindow &&
+    !isHardEventKind(kind) &&
+    !activeIsIncident &&
+    withinSoftGrace(active.updated_at, nowIso)
+  ) {
+    return {
+      decision: "UPDATE_EXISTING_SITUATION",
+      acs_relation: "updates_active",
+      related_situation_id: active.id,
+      reason:
+        "Soft follow-up continues the open care concern beyond the same-day window.",
+      confidence: "medium",
+      is_reinforcement: false,
+      identity_mismatch: false,
+      is_improvement_outcome: false,
+    };
+  }
+
+  // Related care-change after incident (e.g. med change / visit after fall) → linked event.
+  if (    inWindow &&
     active.theme === "incident" &&
     (kind === "medication_change" ||
       kind === "appointment" ||

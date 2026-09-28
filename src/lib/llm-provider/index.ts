@@ -14,9 +14,10 @@ export interface LlmProvider {
 }
 
 export type CreateLlmProviderOptions = {
-  provider?: "ollama";
+  provider?: "ollama" | "qwen";
   model?: string;
   baseUrl?: string;
+  apiKey?: string;
   timeoutMs?: number;
   temperature?: number;
   maxTokens?: number;
@@ -36,6 +37,7 @@ export async function createLlmProvider(
     provider: providerType,
     model,
     baseUrl,
+    apiKey: options.apiKey,
     timeoutMs,
     temperature,
     maxTokens,
@@ -44,6 +46,11 @@ export async function createLlmProvider(
   if (providerType === "ollama") {
     const { OllamaProvider } = await import("./ollama-provider");
     return new OllamaProvider(config);
+  }
+
+  if (providerType === "qwen") {
+    const { QwenProvider } = await import("./qwen-provider");
+    return new QwenProvider(config);
   }
 
   throw new Error(`Unsupported LLM provider: ${providerType}`);

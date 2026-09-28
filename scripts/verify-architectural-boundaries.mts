@@ -76,9 +76,11 @@ const badGate = evaluateAgainstDecisionFramework({
 assert(badGate.passes === false, "rejects boundary violations");
 console.log("✓ engineering boundary gate");
 
-const migration = path.join(root, "db/migrations/041_architectural_boundaries_clarification.sql");
-assert(fs.existsSync(migration), "migration 041");
-console.log("✓ migration 041");
+// The boundary gate is in-process: it reads source and configuration, so there is
+// no table for it and no migration to require. Presence of the module is the check.
+const boundaryModule = path.join(root, "src/lib/architectural-boundaries/index.ts");
+assert(fs.existsSync(boundaryModule), "boundary module present");
+console.log("✓ boundary module (no persistence layer, so no migration)");
 
 const result = await processSituationInput({
   raw_input: "Dad seems more confused today.",

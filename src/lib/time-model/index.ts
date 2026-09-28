@@ -1,59 +1,48 @@
-export {
-  TIME_MODEL_IDENTITY,
-  EVENT_TIME_TYPES,
-  RETIMING_REASONS,
-  PATTERN_WINDOW_ANCHOR,
-} from "./contract-constants";
+﻿/**
+ * Time model beyond clocks — circadian, seasonal, life-stage, decision windows.
+ */
 
+export { TIME_MODEL_VERSION } from "./types";
 export type {
-  EventTimeType,
-  EventTime,
-  CareEventTime,
   CareEventTimeCorrection,
-  RetimingReason,
-  ParseEventTimeResult,
+  CircadianPattern,
   DualTimelineView,
+  EventTime,
+  ParseEventTimeResult,
+  RetimingReason,
+  SeasonalPattern,
+  LifeStage,
+  DecisionWindow,
+  TimeModel,
 } from "./types";
-
+export { createEmptyTimeModel, summarizeTimeModel } from "./types";
 export {
-  parseEventTimeFromText,
+  getTimeModel,
+  saveTimeModel,
+  getOrCreateTimeModel,
+  resetTimeModelStore,
+} from "./store";
+// Event-time parsing and ordering are part of the time model and are imported from
+// this barrel by the care event and situation entry modules.
+export {
   createExactEventTime,
   createIngestionTime,
-  temporalSortKey,
   formatEventTimeLabel,
+  parseEventTimeFromText,
+  temporalSortKey,
 } from "./parse-event-time";
-
 export {
-  sortByTemporalOrder,
-  sortByIngestionOrder,
   buildDualTimelineView,
   isWithinEventTimeWindow,
+  sortByIngestionOrder,
+  sortByTemporalOrder,
   windowAnchorTime,
-  type TimedEvent,
 } from "./ordering";
-
+export type { TimedEvent } from "./ordering";
 export {
   applyEventTimeCorrection,
   applyRetrospectiveUpdate,
+  createRetimingCorrectionId,
   getTimeCorrectionsForEvent,
   resetTimeCorrectionStore,
 } from "./retiming";
-
-export { resolveLateArrival, type LateArrivalMatch, type ExistingTimedEvent } from "./late-arrival";
-
-import type { EventTime } from "./types";
-import {
-  createIngestionTime,
-  parseEventTimeFromText,
-  temporalSortKey,
-} from "./parse-event-time";
-
-export function attachDualTimeToEvent<T extends Record<string, unknown>>(
-  event: T,
-  rawText: string,
-  ingestionTime?: string,
-): T & { event_time: EventTime; ingestion_time: string } {
-  const ingestion = createIngestionTime(ingestionTime);
-  const { event_time } = parseEventTimeFromText(rawText, ingestion);
-  return { ...event, event_time, ingestion_time: ingestion };
-}

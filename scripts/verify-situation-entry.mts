@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { resetCareContextRootStore, processSituationInput, processSituationInputWithIntelligence, getCareContextRoot, computeWhatChanged } from "../src/lib/situation-entry";
+import { resetCareContextRootStore, processSituationInput, getCareContextRoot, computeWhatChanged } from "../src/lib/situation-entry";
 import {
   CAREGIVER_RESPONSE_BANNED_TOKENS,
   caregiverLineContainsBannedToken,
@@ -154,7 +154,9 @@ console.log("✓ continuity diff engine");
   resetMemoryLayerStore();
   seedVerifyConsent("cg_intel");
 
-  const intelResult = await processSituationInputWithIntelligence({
+  // The intelligence layer runs inside the single live capture entry point;
+  // there is no separate intelligence entry to exercise.
+  const intelResult = await processSituationInput({
     raw_input: "Mom fell yesterday and hasn't been eating properly",
     caregiver_id: "cg_intel",
   });
@@ -168,7 +170,7 @@ console.log("✓ continuity diff engine");
   assert(intelResult.context.events.length >= 1, "intel: events created");
   assert(intelResult.care_key !== undefined, "intel: care_key set");
   assertNoBannedCaregiverDto(intelResult, "intel response");
-  console.log("✓ intelligence pipeline — processSituationInputWithIntelligence");
+  console.log("✓ intelligence pipeline — capture entry surfaces understanding");
 }
 
 const required = [
@@ -178,7 +180,8 @@ const required = [
   "src/lib/situation-entry/parse-situation.ts",
   "src/lib/situation-entry/context-store.ts",
   "src/lib/situation-entry/what-changed.ts",
-  "db/migrations/025_situation_entry.sql",
+  "db/migrations/051_care_contexts.sql",
+  "db/migrations/054_care_events.sql",
   "src/app/api/situation/route.ts",
   "src/components/mvp-workspace/AddSituationPanel.tsx",
   "src/components/mvp-workspace/SituationResponsePanel.tsx",

@@ -131,9 +131,11 @@ export function buildMattersNowFromReality(params: {
     return `Right now: ${focus}. The important thing is noticing whether this continues and what situations connect to it.`;
   }
 
+  // The line says what to attend to. Reassurance about not deciding everything is
+  // padding: a caregiver needs the specific thing to watch, not permission.
   return who
-    ? `Notice what is changing for ${who} compared with what is already held — without deciding everything tonight.`
-    : "Notice what is changing compared with what is already held — without deciding everything tonight.";
+    ? `Notice what is changing for ${who} compared with what is already held.`
+    : "Notice what is changing compared with what is already held.";
 }
 
 /**

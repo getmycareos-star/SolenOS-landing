@@ -55,8 +55,10 @@ function main(): void {
     assert(DO_NOT_BUILD.includes(item), `DO_NOT_BUILD must include ${item}`);
   }
 
-  const migrationPath = path.join(root, "db/migrations/074_care_reality_intelligence.sql");
-  assert(fs.existsSync(migrationPath), "Migration 074 must exist");
+  // Care reality intelligence runs in process against the care record, so it has no
+  // table and no migration; the module itself is the contract.
+  const intelligenceModule = path.join(root, "src/lib/care-reality-intelligence/index.ts");
+  assert(fs.existsSync(intelligenceModule), "care reality intelligence module present");
 
   const result = processCareRealityIntelligence({
     care_recipient_id: "verify_recipient",

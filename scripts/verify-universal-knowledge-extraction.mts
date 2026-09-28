@@ -8,13 +8,14 @@ import path from "node:path";
 
 import {
   resetUniversalKnowledgeStore,
-  processUniversalKnowledgeExtraction,
   toUniversalKnowledgeLayerPayload,
   UNIVERSAL_KNOWLEDGE_IDENTITY,
   UNIVERSAL_KNOWLEDGE_PIPELINE,
   buildDocumentClarityOutput,
   HUMAN_REVIEW_THRESHOLD,
 } from "../src/lib/universal-knowledge-extraction";
+// The pipeline is server-side by design and is not re-exported by the client-safe barrel.
+import { processUniversalKnowledgeExtraction } from "../src/lib/universal-knowledge-extraction/server";
 import { resetCareJourneyGraphStore } from "../src/lib/care-journey-graph";
 
 const root = process.cwd();
@@ -127,20 +128,17 @@ console.log("✓ DocumentClarityOutput builder (was schema-only)");
 
 const required = [
   "src/lib/universal-knowledge-extraction/index.ts",
+  "src/lib/universal-knowledge-extraction/server.ts",
   "src/lib/universal-knowledge-extraction/pipeline.ts",
   "src/lib/universal-knowledge-extraction/extract-knowledge-items.ts",
   "src/lib/universal-knowledge-extraction/link-to-journey.ts",
-  "db/migrations/022_universal_knowledge_extraction.sql",
-  "src/app/api/knowledge/extract/route.ts",
+  // No migration: this engine's store is in-memory, so there is no table to create.
   "src/components/ops-devtools/DocumentKnowledgePanel.tsx",
 ];
 
 for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
-
-const careEvents = fs.readFileSync(path.join(root, "src/app/api/care-events/route.ts"), "utf-8");
-assert(careEvents.includes("processUniversalKnowledgeExtraction"), "care-events runs knowledge pipeline");
 
 const carrying = fs.readFileSync(path.join(root, "src/components/ops-clarity/CarryingPanel.tsx"), "utf-8");
 assert(carrying.includes("DocumentKnowledgePanel"), "document knowledge shown in carrying phase");

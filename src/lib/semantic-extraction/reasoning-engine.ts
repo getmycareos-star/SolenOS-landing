@@ -12,6 +12,11 @@
  */
 
 import { createLlmProvider } from "../llm-provider";
+import {
+  clearLlmUnavailable,
+  isLlmMarkedUnavailable,
+  markLlmUnavailable,
+} from "../llm-provider/availability-memo";
 import type { LlmProvider } from "../llm-provider";
 import type { SemanticExtraction } from "./types";
 import type { QwenReasoningOutput } from "./reasoning-types";
@@ -68,6 +73,11 @@ export class QwenReasoningEngine {
       return this.degradedResult(start);
     }
 
+    // If extraction just learned that no model answered, reasoning must not probe again.
+    if (isLlmMarkedUnavailable()) {
+      return this.degradedResult(start);
+    }
+
     // Caregiving capture must never wait on a model. The multi-pass run is raced
     // against a hard budget; if the model is slow or unreachable the caregiver
     // still gets an answer, marked degraded.
@@ -90,8 +100,10 @@ export class QwenReasoningEngine {
   private async runMultiPass(input: ReasoningInput, start: number): Promise<QwenReasoningOutput> {
     const provider = await this.getProvider();
     if (!provider || !(await provider.isAvailable().catch(() => false))) {
+      markLlmUnavailable();
       return this.degradedResult(start);
     }
+    clearLlmUnavailable();
 
     const model = REASONING_MODEL;
     const [intent, synthesis, contradictions, baseline, uncertainty] =

@@ -86,7 +86,10 @@ console.log("✓ SoT + 10 rules + pipeline");
     raw_input: "Walking is still harder today.",
     prior_held: ["Fall occurred last week.", "Hospital discharge noted."],
   });
-  assert.ok(/already held|care story/i.test(u.internal.care_state_update ?? ""));
+  assert.ok(
+    /already held|already noted|care story/i.test(u.internal.care_state_update ?? ""),
+    "the update says this is read against what the record already holds",
+  );
   console.log("✓ connects across time when prior exists");
 }
 

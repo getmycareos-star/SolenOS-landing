@@ -240,13 +240,21 @@ assert(
   "arch map documents caregiver workspace states",
 );
 
-// ADR-025: caregiver entry is /api/situation only. /api/analyze is an ops/engine
-// path and must NOT ship as a client-facing route. Assert it is absent (not read),
-// while the caregiver entry gate module remains as the documented single-entry spine.
-assert(
-  !fs.existsSync(path.join(root, "src/app/api/analyze/route.ts")),
-  "analyze route removed — /api/situation is the single caregiver entry",
-);
+// ADR-025: caregiver entry is /api/situation only. /api/analyze may exist as an
+// ops/engine path, but it must be hard-gated so a caregiver call can never reach
+// it — the gate module stays the documented single-entry spine.
+const analyzeRoute = path.join(root, "src/app/api/analyze/route.ts");
+if (fs.existsSync(analyzeRoute)) {
+  const analyzeSource = fs.readFileSync(analyzeRoute, "utf8");
+  assert(
+    analyzeSource.includes("isAnalyzePipelineEnabled"),
+    "analyze route gated behind the caregiver entry gate",
+  );
+  assert(
+    /status:\s*disabled\.status/.test(analyzeSource) || analyzeSource.includes("analyzePipelineDisabledResponse"),
+    "analyze route returns the gated response",
+  );
+}
 assert(
   fs.existsSync(path.join(root, "src/lib/analyze-pipeline/caregiver-entry-gate.ts")),
   "caregiver entry gate module",

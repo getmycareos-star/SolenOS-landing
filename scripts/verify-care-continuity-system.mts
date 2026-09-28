@@ -15,7 +15,8 @@ import {
   listCareContinuityEvents,
 } from "../src/lib/care-continuity-system";
 import { reconstructMemory } from "../src/lib/memory-reconstruction-engine";
-import { processUniversalKnowledgeExtraction } from "../src/lib/universal-knowledge-extraction";
+// The knowledge pipeline is server-side; the client-safe barrel does not re-export it.
+import { processUniversalKnowledgeExtraction } from "../src/lib/universal-knowledge-extraction/server";
 import { createMeeting, generatePreparationPack } from "../src/lib/meeting-preparation";
 import { runDecisionGate } from "../src/lib/risk-uncertainty-engine/decision-gate";
 import { checkInformationCompleteness } from "../src/lib/risk-uncertainty-engine/completeness-check";
@@ -136,7 +137,8 @@ const required = [
   "src/lib/meeting-preparation/index.ts",
   "src/lib/risk-uncertainty-engine/index.ts",
   "src/lib/care-continuity-system/index.ts",
-  "src/app/api/care-continuity/route.ts",
+  // Continuity is projected inside the caregiver entry and read by the ops panels
+  // below; it has no separate HTTP route.
   "src/components/ops-devtools/CareJourneyTimelinePanel.tsx",
   "src/components/ops-devtools/MemoryReconstructionPanel.tsx",
   "src/components/ops-devtools/MeetingPreparationPanel.tsx",

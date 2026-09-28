@@ -59,6 +59,19 @@ export type ResponseFacets = {
   evidence_maturity: EvidenceMaturityLevel;
 };
 
+/** Greetings and "where are we" openers with no care content of their own. */
+function isCheckInTurn(text: string): boolean {
+  const t = text
+    .trim()
+    .replace(/^(hi|hey|hello)\b[\s,.!]*/i, "")
+    .trim();
+  if (t.length === 0) return true;
+  if (t.length > 40) return false;
+  return /\b(?:check(?:ing|s)?\s*(?:back)?\s*(?:in|on)?|catching up|popping in|just back|back again|where we (?:are|left off))\b/i.test(
+    t,
+  );
+}
+
 export function classifyCaregiverTurn(params: {
   latestRawText: string;
   kind: CareEventKind;
@@ -97,6 +110,13 @@ export function classifyCaregiverTurn(params: {
     if (fact) sequentialPriors.push(fact);
   }
   const isCareAnchor = isCareRealityAnchorText(text, { priorFacts: sequentialPriors });
+
+  // A check-in carries no care content of its own. When care is already held, the
+  // caregiver is asking to be re-oriented from what we hold — that is a continuity
+  // symptom, not a new observation, and must never be recorded as one.
+  if (!isCareAnchor && sequentialPriors.length > 0 && isCheckInTurn(text)) {
+    return "continuity_symptom";
+  }
 
   const emotionalOnly =
     !isCareAnchor &&

@@ -54,6 +54,22 @@ const CATEGORY_GATHER_ASK: Record<string, string> = {
 const DISEASE_OR_DIAGNOSIS =
   /\b(?:dementia|alzheimer|diagnosis|diagnosed|progression|prognosis|disease)\b/i;
 
+/** The ask we must not make once the caregiver has already described a change. */
+const GENERIC_CHANGE_ASK = /has something changed with care recently/i;
+
+/**
+ * A change the caregiver has already described in their own words: a medication
+ * change, a hospital or clinic contact, a new symptom, an accident.
+ * Asking "has something changed?" after they told us what changed asks them to
+ * repeat themselves, which reads as not having listened.
+ */
+const CHANGE_ALREADY_DESCRIBED =
+  /\b(?:changed|changed|switched|adjusted|increased|reduced|stopped|restarted|new|started)\b[^.!?]{0,60}\b(?:medication|medicines?|dose|tablets?|pills?|insulin|prescription|meds)\b|\b(?:medication|medicines?|dose|tablets?|pills?|insulin|prescription|meds)\b[^.!?]{0,60}\b(?:changed|switched|adjusted|increased|reduced|stopped|restarted|went up|went down)\b|\b(?:hospital|admitted|admission|clinic|ward|emergency|ambulance|appointment|seen by|dr\b|doctor)\b|\b(?:fell|fall|falls|fell again)\b|\b(?:confused|confusion|forgetful|not making sense|not herself|not himself)\b/i;
+
+function changeAlreadyDescribed(texts: readonly string[]): boolean {
+  return texts.some((t) => CHANGE_ALREADY_DESCRIBED.test(t));
+}
+
 function gatherAskForUnknown(u: ExplicitUnknown): string | null {
   const mapped = CATEGORY_GATHER_ASK[u.category]?.trim();
   if (!mapped || DISEASE_OR_DIAGNOSIS.test(mapped)) return null;
@@ -96,11 +112,14 @@ export function caregiverAsksFromClinicalProfile(params: {
   const openCategories = [...new Set(unresolved.map((u) => u.category))];
   const asks: string[] = [];
   const seen = new Set<string>();
+  const changeDescribed = changeAlreadyDescribed(texts);
 
   for (const u of unresolved) {
     if (asks.length >= maxAsks) break;
     const ask = gatherAskForUnknown(u);
     if (!ask) continue;
+    // The caregiver already said what changed — ask the specific open question instead.
+    if (changeDescribed && GENERIC_CHANGE_ASK.test(ask)) continue;
     const key = ask.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -127,19 +146,21 @@ export function caregiverMattersHintFromClinicalProfile(params: {
     cats.has("clinical_events") ||
     /\b(?:doctor|hospital|clinic|visit|appoint)\b/i.test(blob);
 
+  // Each line names the specific thing to watch. The reassurance tail
+  // ("without deciding everything tonight") was padding and has been removed.
   if (nutrition && sleep) {
     return visit
-      ? "Most important next: how eating and overnight rest sit after the care visit — without deciding everything tonight."
-      : "Most important next: how eating and overnight rest sit with what was usual — without deciding everything tonight.";
+      ? "Most important next: how eating and overnight rest sit after the care visit."
+      : "Most important next: how eating and overnight rest sit with what was usual.";
   }
   if (nutrition) {
-    return "Most important next: how eating sits with what was usual — without deciding everything tonight.";
+    return "Most important next: how eating sits with what was usual.";
   }
   if (sleep) {
-    return "Most important next: how overnight rest sits with what was usual — without deciding everything tonight.";
+    return "Most important next: how overnight rest sits with what was usual.";
   }
   if (cats.has("wandering") || cats.has("falls")) {
-    return "Most important next: what is known about safety around this, and what is still unclear — without deciding everything tonight.";
+    return "Most important next: what is known about safety around this, and what is still unclear.";
   }
   return null;
 }
