@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getJSON, postJSON, getPersonId } from '../api/client'
+import CareCapture from '../components/CareCapture'
 
 interface Caregiver {
   id: string
@@ -114,6 +115,8 @@ export default function DailyCare() {
       <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
         Record today's observations. All entries are manual — no voice or camera required.
       </p>
+
+      <CareCapture personId={personId} />
 
       {saved && (
         <div style={{

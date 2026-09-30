@@ -69,6 +69,17 @@ export async function getJSON(path: string) {
   return handleResponse(res)
 }
 
+// Downloads a binary response, e.g. the care summary PDF. Kept here so the API
+// base is resolved in one place rather than reconstructed by a caller that would
+// otherwise hardcode a second copy of the localhost default.
+export async function getBlob(path: string): Promise<Blob> {
+  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`)
+  }
+  return res.blob()
+}
+
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
   const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
     method: 'POST',

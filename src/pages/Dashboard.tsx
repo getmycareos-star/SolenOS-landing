@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
+import CareCapture from '../components/CareCapture'
 
 interface Event {
   id: string
@@ -104,10 +105,21 @@ export default function Dashboard() {
         A calm view of what changed and what needs attention.
       </p>
 
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+        <Link to="/community" style={{ fontSize: '13px', color: 'var(--trust)', textDecoration: 'none' }}>
+          Community →
+        </Link>
+        <Link to="/login" style={{ fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+          Role switch →
+        </Link>
+      </div>
+
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
       {!loading && (
         <>
+          <CareCapture personId={getPersonId()} />
+
           {dailyIntel && (
             <section style={{ marginBottom: '40px' }}>
               <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>

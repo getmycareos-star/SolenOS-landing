@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getJSON, getPersonId } from '../api/client'
+import { getJSON, getBlob, getPersonId } from '../api/client'
 
 interface CareEvent {
   id: string
@@ -66,6 +66,24 @@ export default function SummaryExport({ compact = false }: SummaryExportProps) {
       setError(e.message || 'Failed to load summary')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // The PDF is generated server-side so the same document can be emailed to a
+  // GP portal or printed elsewhere. Fetched as a blob rather than navigating to
+  // the URL, so the user stays on the page.
+  const exportPDF = async () => {
+    setError(null)
+    try {
+      const blob = await getBlob(`/care-summary/${personId}/pdf`)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `care-summary-${personId}-${new Date().toISOString().split('T')[0]}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setError(e.message || 'Failed to build the PDF')
     }
   }
 
@@ -183,6 +201,10 @@ export default function SummaryExport({ compact = false }: SummaryExportProps) {
           <div style={{
             display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap'
           }}>
+            <button onClick={exportPDF} style={{
+              padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--trust)',
+              background: 'var(--trust)', color: 'white', fontSize: '13px', cursor: 'pointer'
+            }}>Download PDF for the appointment</button>
             <button onClick={exportJSON} style={{
               padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)',
               background: 'var(--surface)', fontSize: '13px', cursor: 'pointer'

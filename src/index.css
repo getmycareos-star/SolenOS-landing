@@ -10,6 +10,12 @@
   --trust-soft: #ecfdf5;
   --unknown: #d97706;
   --unknown-soft: #fffbeb;
+  --success: #22c55e;
+  --success-soft: #dcfce7;
+  --warning: #f59e0b;
+  --warning-soft: #fef3c7;
+  --error: #dc2626;
+  --error-soft: #fee2e2;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
