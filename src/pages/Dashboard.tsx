@@ -101,25 +101,42 @@ export default function Dashboard() {
   return (
     <div>
       <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>What matters today</h1>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '32px' }}>
-        A calm view of what changed and what needs attention.
+      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
+        Quickly record changes, symptoms, behaviors, or observations from today.
       </p>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-        <Link to="/community" style={{ fontSize: '13px', color: 'var(--trust)', textDecoration: 'none' }}>
-          Community →
-        </Link>
-        <Link to="/login" style={{ fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-          Role switch →
-        </Link>
+      <div style={{
+        background: 'var(--trust-soft)', border: '1px solid var(--trust)',
+        borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
+      }}>
+        <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '4px' }}>
+          Today's changes are automatically added to the Living Care Record.
+        </p>
+        <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
+          Examples: refused medication · wandering overnight · sleep got worse · new confusion
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '24px' }}>
+        <CareCapture personId={getPersonId()} />
+      </div>
+
+      <div style={{
+        background: 'var(--accent-soft)', border: '1px solid var(--accent)',
+        borderRadius: '8px', padding: '8px 14px', marginBottom: '24px'
+      }}>
+        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
+          📚 Living Care Record system model
+        </p>
+        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
+          Today's Change → Living Care Record → Timeline → Insights → Community Wisdom
+        </p>
       </div>
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
       {!loading && (
         <>
-          <CareCapture personId={getPersonId()} />
-
           {dailyIntel && (
             <section style={{ marginBottom: '40px' }}>
               <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
@@ -291,8 +308,18 @@ export default function Dashboard() {
               View all insights →
             </Link>
           </section>
-        </>
-      )}
-    </div>
+          </>
+        )}
+
+        <div style={{
+          display: 'flex', gap: '24px', padding: '16px 0',
+          borderTop: '1px solid var(--border)', fontSize: '13px', color: 'var(--text-secondary)'
+        }}>
+          <Link to="/community" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Community wisdom</Link>
+          <Link to="/record" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Living Care Record</Link>
+          <Link to="/daily-care" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Daily care form</Link>
+          <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Role switch</Link>
+        </div>
+      </div>
   )
 }

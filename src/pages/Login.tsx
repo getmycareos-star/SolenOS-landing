@@ -27,15 +27,22 @@ export default function Login() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <div style={{ maxWidth: '480px', width: '100%', padding: '32px 24px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <span style={{ fontSize: '48px', marginBottom: '16px', display: 'block' }}>🏠</span>
-          <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)' }}>
-            SolenOS — Three Login Paths
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-            Select your role to enter SolenOS.
-          </p>
-        </div>
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <span style={{ fontSize: '48px', marginBottom: '16px', display: 'block' }}>🏠</span>
+        <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)' }}>
+          SolenOS — Three Login Paths
+        </h1>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '400px', margin: '8px auto 0' }}>
+          Are you a caregiver, healthcare professional, or part of the SolenOS team? Select your role below.
+          Caregivers can also start directly at the dashboard.
+        </p>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <Link to="/" style={{ fontSize: '13px', color: 'var(--trust)', textDecoration: 'none' }}>
+          Skip login — go to dashboard as caregiver →
+        </Link>
+      </div>
 
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border)',

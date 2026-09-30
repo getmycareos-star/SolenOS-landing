@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getJSON, postJSON, getPersonId } from '../api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
@@ -332,11 +333,20 @@ export default function Community() {
 
   return (
     <div>
-      <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Community</h1>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-        A calm, trusted space for dementia caregivers to share what worked and learn from each other.
-        Shared experience is not medical advice — always confirm with a clinician.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Community</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '500px' }}>
+            Shared experiences from caregivers like you. When you capture what changed in "What Matters Today," similar experiences surface here.
+          </p>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.7, marginTop: '4px' }}>
+            Shared experience is not medical advice — always confirm with a clinician.
+          </p>
+        </div>
+        <Link to="/" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+          ← Back to capture
+        </Link>
+      </div>
 
       {/* Care-Record Wisdom section — connects community to care context */}
       <div style={{

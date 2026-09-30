@@ -111,10 +111,22 @@ export default function DailyCare() {
 
   return (
     <div>
-      <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Daily care check-in</h1>
+      <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>What matters today</h1>
       <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-        Record today's observations. All entries are manual — no voice or camera required.
+        Record changes, symptoms, behaviors, or observations from today. These build the Living Care Record over time.
       </p>
+
+      <div style={{
+        background: 'var(--trust-soft)', border: '1px solid var(--trust)',
+        borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
+      }}>
+        <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '2px' }}>
+          These entries automatically become part of your Living Care Record.
+        </p>
+        <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
+          Examples: refused medication · wandering · sleep changes · appetite · new confusion
+        </p>
+      </div>
 
       <CareCapture personId={personId} />
 
