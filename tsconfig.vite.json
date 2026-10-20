@@ -6,8 +6,7 @@
     "noUnusedParameters": false
   },
   "include": [
-    "src/main.tsx",
-    "src/vite-env.d.ts"
+    "src/main.tsx"
   ],
   "exclude": [
     "src/app/**",
