@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "dev:vite": "vite",
-    "build:vite": "tsc --noEmit && vite build",
+    "build:vite": "tsc --noEmit -p tsconfig.vite.json && vite build",
     "preview": "vite preview",
     "test": "jest",
     "android": "capacitor copy android && capacitor open android",
