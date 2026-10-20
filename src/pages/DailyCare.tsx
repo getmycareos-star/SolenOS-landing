@@ -355,7 +355,7 @@ export default function DailyCare() {
                  Latitude: {form.location?.latitude.toFixed(6)}°, Longitude: {form.location?.longitude.toFixed(6)}°
                </p>
                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                 Accuracy: {form.location?.accuracy} meters • Timestamp: {new Date(form.location?.timestamp).toLocaleString()}
+                 Accuracy: {form.location?.accuracy} meters • Timestamp: {form.location?.timestamp ? new Date(form.location.timestamp).toLocaleString() : 'Timestamp unavailable'}
                </p>
                <button
                  type="button"
