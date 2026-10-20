@@ -2,22 +2,6 @@ import { useState } from 'react'
 import { postJSON, getPersonId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
-interface SimilarExperience {
-  post_id: string
-  author_label: string
-  author_type: string
-  content: string
-  tags: string[]
-  relevance_score: number
-}
-
-interface ExperienceResult {
-  trigger_observation: string
-  matched_keywords: string[]
-  matches: SimilarExperience[]
-  community_pattern: string | null
-}
-
 interface CareCaptureProps {
   personId?: string
   onCapture?: (text: string) => void
@@ -35,7 +19,7 @@ const CAPTURE_HINTS = [
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
-  const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
+  const [saved, setSaved] = useState(false)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -53,7 +37,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
     await submitSituation({
       mutationFn: ({ caregiverId, personId, rawInput }) =>
-        postJSON('/situation', {
+        postJSON('/api/situation', {
           caregiver_id: caregiverId,
           person_id: personId,
           raw_input: rawInput,
@@ -62,16 +46,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         caregiverId, personId, rawInput,
       }),
       onSuccess: async (_data, mutationVariables) => {
-        // The care observation is saved independently of optional community matching.
+        // Only report success after the backend confirms the situation was saved.
+        setSaved(true)
         onCapture?.(mutationVariables.rawInput)
-        try {
-          const experienceData = await postJSON('/community/experience', {
-            observation: mutationVariables.rawInput,
-          }) as ExperienceResult
-          setExperiences(experienceData)
-        } catch (error) {
-          console.error('Observation saved, but similar experiences could not be loaded:', error)
-        }
       },
       onError: async (error) => {
         console.error('Failed to save situation:', error)
@@ -85,8 +62,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }, variables)
   }
 
-  const clearExperiences = () => setExperiences(null)
-
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)',
@@ -94,13 +69,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
-        marginBottom: experiences ? '12px' : '8px',
+        marginBottom: saved ? '12px' : '8px',
       }}>
         <span style={{ fontSize: '20px' }}>📝</span>
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {experiences && (
+        {saved && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -136,7 +111,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => { setText(e.target.value); setSaved(false) }}
         placeholder="Dad wandered at 2 AM and was confused about where he was..."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
@@ -182,66 +157,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         </button>
       </div>
 
-      {experiences && (
-        <div style={{
-          marginTop: '16px', padding: '12px 16px',
-          background: 'var(--accent-soft)', border: '1px solid var(--accent)',
-          borderRadius: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '14px' }}>💡</span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
-              Similar caregiver experiences
-            </span>
-            <span
-              onClick={clearExperiences}
-              style={{
-                marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </span>
-          </div>
-
-          {experiences.community_pattern && (
-            <p style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '8px' }}>
-              {experiences.community_pattern}
-            </p>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {experiences.matches.map(m => (
-              <div key={m.post_id} style={{
-                padding: '8px 12px', background: 'var(--surface)',
-                borderRadius: '8px', border: '1px solid var(--border)'
-              }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text)' }}>
-                    {m.author_label}
-                  </span>
-                  {m.author_type === 'solenos_verified' && (
-                    <span style={{ fontSize: '10px', color: 'var(--trust)', background: 'var(--trust-soft)', padding: '1px 6px', borderRadius: '4px' }}>
-                      SolenOS verified
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {m.content}
-                </p>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  {m.tags.map(t => (
-                    <span key={t} style={{
-                      fontSize: '10px', padding: '1px 6px', borderRadius: '4px',
-                      background: 'var(--bg)', color: 'var(--text-secondary)',
-                    }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+}
     </div>
   )
 }
