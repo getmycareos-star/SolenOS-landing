@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import type { ProcessSituationInput } from "@/lib/situation-entry";
 import {
   processSituationInput,
-  processSessionReentry,
   getCareContextRoot,
   getOrCreateCareContextRoot,
 } from "@/lib/situation-entry";
