@@ -100,3 +100,28 @@ export async function patchJSON(path: string, body: unknown, personId?: boolean)
   })
   return handleResponse(res)
 }
+
+
+// The current API deployment does not expose a durable authentication/session
+// endpoint. Fail closed instead of treating client-side role/localStorage values
+// as proof of identity. Replace these compatibility functions when server-side
+// authentication is implemented and verified.
+export async function checkAuthState(): Promise<{ authenticated: false; sessionInfo: null }> {
+  return { authenticated: false, sessionInfo: null }
+}
+
+export function subscribeToAuthState(
+  callback: (authenticated: boolean, sessionInfo: any) => void
+): () => void {
+  callback(false, null)
+  return () => undefined
+}
+
+// Token refresh cannot be enabled until the server issues refreshable sessions.
+export function startTokenRefresh(): void {
+  // Intentionally no-op: no refresh-token contract exists yet.
+}
+
+export function stopTokenRefresh(): void {
+  // Intentionally no-op: no refresh-token contract exists yet.
+}
