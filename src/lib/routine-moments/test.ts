@@ -1,14 +1,8 @@
+import { jest } from '@jest/globals';
 // src/lib/routine-moments/test.ts
 import { establishBaseline, detectChanges } from './service';
 import { createRoutineMomentObservation } from './builder';
 import { ApiRoutineMomentStore } from './store';
-
-// Mock the API functions for testing
-jest.mock('../../api/client', () => ({
-  getJSON: jest.fn(),
-  postJSON: jest.fn(),
-  patchJSON: jest.fn(),
-}));
 
 describe('Routine Moments Service', () => {
   let store: ApiRoutineMomentStore;
