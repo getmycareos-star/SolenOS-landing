@@ -127,6 +127,8 @@ export default function PerspectivePromotion() {
     });
   };
 
+  const eligiblePerspectives = perspectives.filter(p => p.promoted && !(p as any).promotedToInsight);
+
   if (loading) {
     return <div aria-live="polite">Loading perspectives...</div>;
   }
@@ -139,9 +141,6 @@ export default function PerspectivePromotion() {
       <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
         Transform clinical perspectives into actionable care insights.
       </p>
-      
-      // Filter to perspectives that have been promoted to observations but not yet to insights
-      const eligiblePerspectives = perspectives.filter(p => p.promoted && !p.promotedToInsight);
       
       {eligiblePerspectives.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
