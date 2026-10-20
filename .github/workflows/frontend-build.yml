@@ -4,19 +4,6 @@ on:
   push:
     branches:
       - repair/api-contract-netlify-2026-10
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "src/**"
-      - "public/**"
-      - "package.json"
-      - "package-lock.json"
-      - "vite.config.*"
-      - "tsconfig*.json"
-      - "netlify.toml"
-      - ".github/workflows/frontend-build.yml"
-
 permissions:
   contents: write
 
