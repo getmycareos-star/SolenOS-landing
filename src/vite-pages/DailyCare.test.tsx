@@ -1,16 +1,18 @@
+import { jest } from '@jest/globals';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import DailyCare from './DailyCare';
 
-var mockLocationState: any = { status: 'unknown' };
-var mockRequestLocation = jest.fn();
+let mockLocationState: any = { status: 'unknown' };
+let mockRequestLocation = jest.fn();
 
-jest.mock('../lib/permissions/useLocationPermission', () => ({
+jest.unstable_mockModule('../lib/permissions/useLocationPermission', () => ({
   useLocationPermission: () => ({
     state: mockLocationState,
     requestLocation: mockRequestLocation,
   }),
 }));
+
+const { default: DailyCare } = await import('./DailyCare');
 
 describe('DailyCare', () => {
   beforeEach(() => {
