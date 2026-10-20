@@ -28,7 +28,7 @@ jobs:
       - name: Reconcile lockfile with package manifest
         run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
       - name: Install exact reconciled dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
       - name: Type-check and build production assets
         run: npm run build
       - name: Upload generated lockfile for review
