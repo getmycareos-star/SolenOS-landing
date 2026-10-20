@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { ARIA, Focus } from '../lib/accessibility';
+import { ARIA, Focus } from '../../lib/accessibility';
 
 interface AccessibleInputProps {
   /** Input label */
