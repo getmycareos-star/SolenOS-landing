@@ -1,15 +1,11 @@
 /**
- * API client base resolution.
+ * API URL resolution for the Vite + React SPA.
  *
- * PRODUCTION: the frontend calls the Railway backend directly to avoid
- * Netlify proxy body-limitation for non-GET requests. CORS is configured
- * in backend middleware to allow the Netlify frontend origin.
- *
- * LOCAL DEV: set NEXT_PUBLIC_API_URL to a backend origin (e.g. localhost or
- * ngrok) to bypass the proxy and hit the backend directly. When unset, we fall
- * back to same-origin relative paths.
+ * By default requests stay same-origin so Netlify can proxy /api/* to FastAPI.
+ * To call a backend origin directly in a controlled environment, set
+ * VITE_API_ORIGIN. Do not use Next.js process.env variables in this Vite app.
  */
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = import.meta.env.VITE_API_ORIGIN || "";
 
 export function apiUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
