@@ -1133,6 +1133,7 @@ export default function StructuredDailyCapture() {
                   }}
                 />
               </div>
+              </div>
               
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
