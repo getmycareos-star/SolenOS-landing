@@ -590,8 +590,8 @@ export default function StructuredDailyCapture() {
             fontSize: '12px', 
             padding: '2px 6px', 
             borderRadius: '4px', 
-            backgroundColor: vital.is_out_of_range ? 'var(--error-soft)' : 'var(--success-soft)', 
-            color: vital.is_out_of_range ? 'var(--error)' : 'var(--success)' 
+            backgroundColor: 'var(--unknown-soft)', 
+            color: 'var(--unknown)' 
           }}>
             Recorded
           </span>
