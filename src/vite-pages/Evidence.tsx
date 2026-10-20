@@ -26,7 +26,12 @@ const statusColor = {
   SUPERSEDED: { bg: 'var(--error-soft)', color: 'var(--error)' },
 };
 
-export default function Evidence() {
+export interface EvidenceProps {
+  compressImageFn?: typeof compressImage;
+  dataURLtoFileFn?: typeof dataURLtoFile;
+}
+
+export default function Evidence({ compressImageFn = compressImage, dataURLtoFileFn = dataURLtoFile }: EvidenceProps = {}) {
   const [filter, setFilter] = useState({
     search: '',
     type: '',
@@ -157,13 +162,13 @@ export default function Evidence() {
         const dataUrl = canvas.toDataURL('image/png');
         
         // Convert data URL to file for compression
-        const file = dataURLtoFile(dataUrl, 'captured_image.png');
+        const file = dataURLtoFileFn(dataUrl, 'captured_image.png');
         
         // Show compression status
         setCompressing(true);
         
         // Compress the image
-        const compressedFile = await compressImage(file, {
+        const compressedFile = await compressImageFn(file, {
           maxSizeMB: 0.5, // 500KB target
           maxWidthOrHeight: 2000, // 2000px max dimension
           useWebWorker: true,
@@ -203,7 +208,7 @@ export default function Evidence() {
     
     try {
       // Compress the image
-      const compressedFile = await compressImage(file, {
+      const compressedFile = await compressImageFn(file, {
         maxSizeMB: 0.5, // 500KB target
         maxWidthOrHeight: 2000, // 2000px max dimension
         useWebWorker: true,
@@ -252,7 +257,7 @@ export default function Evidence() {
     try {
       if (imagePreview) {
         setUploading(true);
-        const imageFile = dataURLtoFile(imagePreview, 'care-image.png');
+        const imageFile = dataURLtoFileFn(imagePreview, 'care-image.png');
         const uploadForm = new FormData();
         uploadForm.append('file', imageFile);
         uploadForm.append('caregiver_id', caregiverId);
