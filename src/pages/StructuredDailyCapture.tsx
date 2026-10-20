@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, getPersonId } from '../api/client';
+import { postJSON, postFormData, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { useLocationPermission } from '../lib/permissions/useLocationPermission';
 import { compressImage } from '../lib/imageCompression';
@@ -234,16 +234,10 @@ export default function StructuredDailyCapture() {
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (!uploadResponse.ok) {
-          throw new Error('Failed to upload image');
+        const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
+        if (!uploadResult.evidence_id) {
+          throw new Error('Upload response did not include an evidence ID');
         }
-        
-        const uploadResult = await uploadResponse.json();
         evidenceId = uploadResult.evidence_id;
       }
       
