@@ -23,7 +23,7 @@ export default function PersonSelector() {
       border: `1px solid ${isMissing ? 'var(--unknown)' : 'var(--trust)'}`,
       borderRadius: '8px', padding: '6px 12px'
     }}>
-      <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDemo ? 'var(--unknown)' : 'var(--trust)' }}>
+      <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: isMissing ? 'var(--unknown)' : 'var(--trust)' }}>
         Person:
       </span>
       <input
@@ -33,7 +33,7 @@ export default function PersonSelector() {
         placeholder="Care recipient ID"
         style={{
           fontSize: '13px', background: 'transparent', border: 'none', outline: 'none',
-          width: '160px', color: isDemo ? 'var(--unknown)' : 'var(--trust)',
+          width: '160px', color: isMissing ? 'var(--unknown)' : 'var(--trust)',
         }}
       />
       {isMissing && (
