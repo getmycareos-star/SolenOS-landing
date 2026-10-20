@@ -19,7 +19,7 @@ interface AccessibleInputProps {
   /** Input name attribute */
   name?: string;
   /** ARIA describedby for error messages or additional help */
-  aria-describedby?: string;
+  'aria-describedby'?: string;
   /** Error message for validation */
   error?: string | null;
   /** Success message for validation */
@@ -81,7 +81,7 @@ export function AccessibleInput({
   required = false,
   disabled = false,
   name,
-  aria-describedby: ariaDescribedby,
+  'aria-describedby': ariaDescribedby,
   error,
   success,
   showClearButton = false,
