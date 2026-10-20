@@ -33,8 +33,13 @@ function SessionControls() {
 
   useEffect(() => {
     const onExpired = () => setVisible(false)
+    const onAuthChanged = () => setVisible(Boolean(getAccessToken()))
     window.addEventListener('solenos:auth-expired', onExpired)
-    return () => window.removeEventListener('solenos:auth-expired', onExpired)
+    window.addEventListener('solenos:auth-changed', onAuthChanged)
+    return () => {
+      window.removeEventListener('solenos:auth-expired', onExpired)
+      window.removeEventListener('solenos:auth-changed', onAuthChanged)
+    }
   }, [])
 
   const logout = async () => {
