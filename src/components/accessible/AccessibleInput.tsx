@@ -213,6 +213,7 @@ export function AccessibleInput({
             max={max as any}
             rows={rows}
             cols={cols}
+            placeholder={placeholder}
             dir={dir}
             spellCheck={spellCheck}
             inputMode={inputMode}
@@ -239,7 +240,6 @@ export function AccessibleInput({
             step={step}
             min={min}
             max={max}
-            placeholder={placeholder}
             dir={dir}
             spellCheck={spellCheck}
             inputMode={inputMode}
