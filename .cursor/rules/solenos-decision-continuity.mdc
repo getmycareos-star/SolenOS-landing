@@ -1,0 +1,14 @@
+---
+description: Decision Memory + Care Continuity — preserve why decisions existed; prep not advice; not document summaries
+alwaysApply: true
+---
+
+# Decision Memory + Care Continuity
+
+**SoT:** [`docs/02-product/solenos-decision-continuity.md`](../../docs/02-product/solenos-decision-continuity.md) — promoted product doc (Phase 3.4). Do not duplicate; edit the doc.
+
+**Module:** `src/lib/decision-memory` · **Verify:** G13 in `verify:continuity-core-tier1`
+
+**Pipeline:** Input → Care Reality Understanding → SRE → **Decision Memory** → Evidence-backed Care Context → LCR
+
+**Reject:** Input → Document summary → Generic answer. **Success:** caregiver understands better — not notes uploaded.

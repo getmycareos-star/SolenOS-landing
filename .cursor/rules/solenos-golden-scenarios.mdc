@@ -1,0 +1,24 @@
+---
+description: Golden scenarios G1–G61 — No Reconstruction; No Prompt Patch; spine before UI
+alwaysApply: true
+---
+
+# Golden Caregiver Scenarios Gate
+
+**SoT:** [`docs/02-product/solenos-golden-caregiver-scenarios.md`](../../docs/02-product/solenos-golden-caregiver-scenarios.md)
+
+## Sequence
+
+C (scenarios) → A (implement). **Engine spine first:** CareContext → Relationship Engine → CRS → LCR → response. **Not** prompt/UI patches.
+
+## Laws
+
+- Orientation + **No Reconstruction Rule** + **G61 Real Caregiver Test**
+- **No Prompt Patch Architecture** — scenarios test behavior, not wording
+- Failed scenarios → Failure Types 1–5 (Memory / Understanding / Trust / Load / Identity)
+
+## Coding gate
+
+Pass framework for G1–G19 + dementia-critical set (G34, G37, G40–G41, G43–G48, G50–G51, G54–G57) + G61 before Response Behavior code.
+
+Never: dementia FAQ, population comparison, phrase if-branches as product logic.

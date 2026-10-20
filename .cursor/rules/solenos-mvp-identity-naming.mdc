@@ -1,0 +1,16 @@
+---
+description: Ask once for care recipient display name; never silent inference; allow rename
+alwaysApply: true
+---
+
+# MVP Identity Naming
+
+**SoT:** [`docs/02-product/solenos-mvp-identity-naming.md`](../../docs/02-product/solenos-mvp-identity-naming.md)
+
+## Locked: A
+
+Ask once: how they call the person. Use that name in all caregiver copy. Allow change later.
+
+Never silently infer “Mom”/given names from notes into identity. Avoid “patient / subject / your loved one.”
+
+Internal: care_recipient_id + display_name. Display label ≠ medical identity.

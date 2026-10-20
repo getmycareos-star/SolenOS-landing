@@ -1,0 +1,23 @@
+export {
+
+  BRAND_NAME,
+
+  BRAND_TAGLINE,
+
+  BRAND_MOTTO,
+
+  BRAND_PROMISE,
+
+  BRAND_COLORS,
+
+  BRAND_PLACEMENT,
+
+  BRAND_PROHIBITED,
+
+  BRAND_PERSONALITY,
+
+  BRAND_ONE_RULE,
+
+} from "./contract-constants";
+
+

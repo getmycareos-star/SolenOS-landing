@@ -1,0 +1,26 @@
+---
+description: Begin starts a session — never resets durable care reality
+alwaysApply: true
+---
+
+# "/welcome → Begin" Directive
+
+**SoT:** [`docs/02-product/solenos-welcome-begin-continuity.md`](../../docs/02-product/solenos-welcome-begin-continuity.md)
+
+## Locked: A
+
+**Begin** = new **interaction session**.  
+**Done for now** = pause interaction.  
+Neither resets durable care reality.
+
+Same authenticated identity → restore CRS, CareContext, ACS, LCR, Timeline, Evidence, relationships, decision memory, open uncertainties.
+
+```
+Identity → Care Recipient → Durable Care Reality → New Interaction Session
+```
+
+Session = temporary. Care Reality = durable. Never tie their lifetimes.
+
+Begin = *start interacting again* — never *start the care journey over*.
+
+Demo care-key resets are not product truth.

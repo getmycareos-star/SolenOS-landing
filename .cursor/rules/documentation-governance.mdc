@@ -1,0 +1,60 @@
+---
+description: SolenOS Documentation Governance — completion rule, docs as SoT, canonical architecture
+alwaysApply: true
+---
+
+# Documentation Governance (SolenOS)
+
+SolenOS is **continuous intelligence for family responsibility, caregiving, and crisis prevention** — not a feature product.
+
+## Completion Rule (non-negotiable)
+
+A change is **incomplete** until all that apply are done:
+
+1. Code works
+2. Relevant tests / `npm run verify:*` scripts pass
+3. Docs under `/docs/01-*` … `/docs/17-*` updated
+4. **Canonical architecture** updated if architecture affected:
+   - `docs/17-canonical-architecture/`
+   - `src/lib/solenos-layers/architecture-map.ts`
+5. **PRDs** updated if product behavior/constraints affected (`docs/02-product/prds/`)
+
+## Conflict rule
+
+**If code and docs conflict → documentation is the source of truth.**  
+Align code to docs, or intentionally revise docs via ADR (+ PRD if product) in the same change — never leave silent drift.
+
+## Philosophy
+
+- Continuity over features
+- Understanding over speed
+- Safety over output
+- Clarity over abstraction
+- Compounding intelligence over static functionality
+
+## Where to write
+
+| Change type | Update |
+|-------------|--------|
+| Auth / sessions | `docs/04-authentication` |
+| Schema / migrations | `docs/03-database` + data-contracts |
+| Care graph / ownership | `docs/05-care-graph` (+ state machines) |
+| Load / attention / containment | `docs/06-careload-engine` + CareLoad PRD |
+| Confidence | `docs/07-confidence-engine` + PRD |
+| Crisis | `docs/08-crisis-engine` + PRD |
+| Delegation | `docs/09-delegation-engine` |
+| LLM / prompts / tone | `docs/10-ai-systems` (+ AI behavior spec) |
+| Routes / partners | `docs/11-api-reference` (+ integrations) |
+| Safety / failure | `docs/12-security` |
+| Env / deploy | `docs/13-infrastructure` |
+| Irreversible design | new/updated ADR in `docs/15-architecture-decisions` |
+| Moat / diligence | `docs/16-investor-technical-diligence` |
+| Any architecture | `docs/17-canonical-architecture` **always** |
+
+Governance index: `docs/README.md`.
+
+## Honesty
+
+Mark **IMPLEMENTED / IN-MEMORY / STUB / SCHEMA-ONLY / FUTURE** accurately. Do not invent shipped features (auto clinical escalations, durable auth, auto-reassign, production IAM).
+
+## Code without documentation is incomplete

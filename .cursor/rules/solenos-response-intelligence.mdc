@@ -1,0 +1,49 @@
+---
+description: Response Intelligence — meaning over patterns; no keyword responses; chaos→clarity
+alwaysApply: true
+---
+
+# Response Intelligence Directive
+
+**SoT:** [`docs/02-product/solenos-response-intelligence-directive.md`](../../docs/02-product/solenos-response-intelligence-directive.md)  
+**Output contract:** [`docs/02-product/solenos-response-contract.md`](../../docs/02-product/solenos-response-contract.md)
+
+**Module:** `src/lib/response-contract` · `src/lib/response-intelligence` · composer: `src/lib/caregiver-response-composer`
+
+## MVP blocker
+
+Not storage/ingestion. **Output quality** — trustworthy care understanding from messy input.
+
+Order: Input → Meaning → Compare LCR → Changes/relationships/unknowns → Output.  
+Never: Input → Fill JSON → Text.
+
+## Non-negotiable
+
+**NO hardcoded response patterns** — no keyword triggers, phrase-matched caregiver copy, emotional category scripts, condition templates.
+
+Examples in docs = illustrations only — never product if-branches.
+
+## Internal (never expose)
+
+Reality understanding · Change detection · Relationship understanding · Uncertainty preservation
+
+## Caregiver sees
+
+Understand · Changed · Unclear · Connected · Matters now / can wait  
+Never: extracted / analyzed / detected / confidence / classification / sentiment / care event created
+
+## Emotion
+
+Emotion → context → clarity. Never therapy chatbot.
+
+## Documents
+
+What changed in the care story — never file/OCR/extraction chrome.
+
+## Questions
+
+≤1–3; only if answer changes understanding.
+
+## Success
+
+Tired caregiver: chaos became clearer — not “impressive AI answer.”

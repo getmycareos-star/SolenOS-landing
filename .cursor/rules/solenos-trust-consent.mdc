@@ -1,0 +1,42 @@
+---
+description: Trust/legal/consent — visible Privacy & Terms; consent without legal wall
+alwaysApply: true
+---
+
+# Trust, Legal & User Consent (MVP)
+
+**SoT:** [`docs/02-product/solenos-trust-consent-flow.md`](../../docs/02-product/solenos-trust-consent-flow.md)
+
+## Goal
+
+Trust without friction. Legal visible and accessible — never a blocker before care value.
+
+Feel: *"We respect your information."*  
+Never: *"Complete legal steps before we help you."*
+
+## Public
+
+Footer always: Privacy Policy · Terms of Service · Contact · Help  
+Pages: `/privacy` · `/terms` · `/contact` · `/support` (`/help` alias) · `/about`  
+Home `/welcome`: Research Preview + Free Early Access (not forever) + short FAQ (`HOME_FAQ_IDS`) below hero — not a separate legal wall.  
+Help `/support`: full FAQ. `/capabilities`: honest works-well / still-improving.
+
+Support: `davidsolenos@gmail.com`
+
+## Early access / signup
+
+Required checkboxes with clickable links to Terms + Privacy.  
+Submit disabled until both checked. No force-read wall.
+
+## Product entry
+
+One-time Research Preview ack for new entrants (`ResearchPreviewAckGate`). Returning users skip. Early Access badge in header.
+
+## In product
+
+Menu → About: Help · Privacy · Terms · About · Contact — never interrupt capture.  
+Quiet upload privacy notice · post-response understanding feedback · emergency boundary (not alarm).
+
+## Never
+
+Hide legal only in fine print · turn SolenOS into a legal website · hard-block Begin with a document wall · claim “free forever”

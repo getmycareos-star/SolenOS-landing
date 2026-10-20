@@ -1,0 +1,33 @@
+# MVP Response Behavior (SolenOS)
+
+**SoT:** [`docs/02-product/solenos-mvp-response-behavior.md`](../../docs/02-product/solenos-mvp-response-behavior.md)  
+**Evaluation examples:** [`docs/02-product/solenos-mvp-reasoning-examples.md`](../../docs/02-product/solenos-mvp-reasoning-examples.md)  
+**AI guidelines:** [`docs/10-ai-systems/solenos-reasoning-guidelines.md`](../../docs/10-ai-systems/solenos-reasoning-guidelines.md)
+
+## Critical
+
+Examples are **evaluation only**. Never keyword → template. Never if/else on illustration sentences.
+
+## Build
+
+```
+Input → Care Reality Object → Reasoning → Orientation
+```
+
+Not: Input → keyword match → pre-written answer.
+
+## Care Reality Object (required)
+
+person · events · observations · changes · decisions · outcomes · relationships · unknowns · confidence (engine-only)
+
+## Pipeline
+
+1 Care recipient · 2 Event/observation · 3 Change · 4 Connect · 5 Unknowns · 6 Understanding response
+
+## Never
+
+Diagnose · treatment recommendations · dementia-progression theater · invent facts · therapy empathy · document summary as product · hardcode doc examples
+
+## Module
+
+`src/lib/mvp-response-behavior` · **Verify:** `verify:mvp-response-behavior`

@@ -1,0 +1,23 @@
+---
+description: Event extraction — care journey occurrences only; timeline not meaning; never intentions or conclusions
+alwaysApply: true
+---
+
+# Event Extraction
+
+**SoT:** [`docs/02-product/solenos-event-extraction.md`](../../docs/02-product/solenos-event-extraction.md)
+
+**Ask:** what happened in the person's care journey, when did it happen, and who was involved?  
+**Never ask:** what does this mean?
+
+## Rules
+
+- Events = timeline (actions, encounters, transitions, occurrences)  
+- Observations = evidence (state/behavior) — keep separate  
+- Healthcare interactions + care transitions → events  
+- Never invent reasons · never future intentions · never good/bad conclusions  
+- Related observations = link existing ids only — never mint observations here  
+- Doc examples are illustrations only — never product if-branches
+
+**Module:** `src/lib/care-reality-extraction` · **Verify:** `verify:care-reality-extraction`
+---

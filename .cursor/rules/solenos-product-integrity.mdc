@@ -1,0 +1,31 @@
+---
+description: Product integrity — Care Reality not chatbot/summarizer/tasks; meaning before info; no UX decoration to look advanced
+alwaysApply: true
+---
+
+# Product Integrity (MVP Preview)
+
+**SoT:** [`docs/02-product/solenos-product-integrity.md`](../../docs/02-product/solenos-product-integrity.md) · Preview: [`docs/13-infrastructure/preview-qualification.md`](../../docs/13-infrastructure/preview-qualification.md)
+
+## Prove
+
+SolenOS behaves as a **Care Reality / Living Care Record** system — never chatbot, document summarizer, or task manager.
+
+## Final test
+
+Tired caregiver feels *situation organized* — not *another AI tool*.
+
+## Enforce
+
+- Meaning before information · change as unit · preserve unknowns · no false continuity  
+- Never task-ify early · no engagement tricks · situation before solution  
+- Caregiver UI: no enums · no confidence % · no engine chrome · no hollow dashboards  
+- Hollow “what matters” / recognition-only responses must fail midnight + acceptance gates  
+
+## Do not
+
+Add components, labels, cards, or explanations to “improve UX” or look advanced.  
+Weaken `verify:product-path` to pass.
+
+**Gate:** `npm run verify:product-path` (includes midnight test, intelligence validation, MVP response behavior — not optional)  
+---

@@ -1,0 +1,371 @@
+/*
+  Landing-page-only visual system (dark charcoal / cream / sage / gold + orb).
+  Scoped entirely under `landing-` class names so nothing here can collide
+  with or override globals.css, PublicShell, or any other route's styles.
+  Imported directly by src/app/page.tsx only.
+*/
+
+.landing-root {
+  --landing-bg-dark: #17191a;
+  --landing-bg-dark-2: #1d1f20;
+  --landing-line-dark: rgba(255, 255, 255, 0.1);
+  --landing-cream: #efe7d2;
+  --landing-cream-2: #f5f0e2;
+  --landing-line-cream: rgba(20, 20, 15, 0.12);
+  --landing-sage: #93ae8f;
+  --landing-sage-2: #5c7a63;
+  --landing-gold: #e8cb93;
+  --landing-gold-2: #dcc07e;
+  --landing-tan-btn: #efe3c4;
+  --landing-text-light: #f1eee6;
+  --landing-text-light-muted: #acafa8;
+  --landing-text-dark: #20211d;
+  --landing-text-dark-muted: #5b584e;
+
+  font-family: var(--font-solenos-sans, "DM Sans", sans-serif);
+}
+
+.landing-block {
+  padding: 88px 28px;
+}
+.landing-block--tight {
+  padding-top: 56px;
+}
+.landing-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.landing-dark {
+  background: var(--landing-bg-dark);
+  color: var(--landing-text-light);
+}
+.landing-dark2 {
+  background: var(--landing-bg-dark-2);
+  color: var(--landing-text-light);
+}
+.landing-cream {
+  background: var(--landing-cream);
+  color: var(--landing-text-dark);
+}
+
+.landing-serif {
+  font-family: var(--font-solenos-serif, "Libre Baskerville", serif);
+}
+
+.landing-eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--landing-sage);
+  margin: 0 0 14px;
+}
+.landing-cream .landing-eyebrow {
+  color: var(--landing-sage-2);
+}
+
+.landing-hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.landing-orb {
+  position: relative;
+  width: 240px;
+  height: 184px;
+  margin: 0 auto 6px;
+}
+.landing-orb span {
+  position: absolute;
+  border-radius: 50%;
+}
+.orb-a {
+  width: 164px;
+  height: 164px;
+  background: radial-gradient(circle at 32% 28%, #a9c5a5, var(--landing-sage) 72%);
+  left: 24px;
+  top: 18px;
+}
+.orb-b {
+  width: 122px;
+  height: 122px;
+  background: radial-gradient(circle at 30% 26%, #789180, var(--landing-sage-2) 75%);
+  left: 84px;
+  top: 0;
+  mix-blend-mode: screen;
+}
+.orb-c {
+  width: 86px;
+  height: 86px;
+  background: radial-gradient(circle at 32% 28%, #fbf6e7, var(--landing-cream) 75%);
+  right: 2px;
+  top: 2px;
+}
+.landing-orb-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #20261f;
+  line-height: 1.15;
+  padding: 0 20px;
+}
+
+.landing-title {
+  font-size: clamp(1.9rem, 4.2vw, 2.7rem);
+  line-height: 1.26;
+  font-weight: 500;
+  margin: 6px 0 22px;
+}
+
+.landing-fragments {
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  max-width: 460px;
+  width: 100%;
+}
+.landing-fragments li {
+  font-size: 1.03rem;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--landing-line-dark);
+  font-family: var(--font-solenos-serif, "Libre Baskerville", serif);
+}
+.landing-cream .landing-fragments li {
+  border-bottom: 1px solid var(--landing-line-cream);
+}
+.landing-fragments li:last-child {
+  border-bottom: none;
+}
+
+.landing-pull {
+  font-family: var(--font-solenos-serif, "Libre Baskerville", serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.12rem;
+  color: var(--landing-gold);
+  margin: 4px 0 18px;
+  padding-left: 16px;
+  border-left: 2px solid var(--landing-gold);
+  text-align: left;
+  max-width: 460px;
+}
+.landing-cream .landing-pull {
+  color: var(--landing-sage-2);
+  border-left-color: var(--landing-sage-2);
+}
+
+.landing-lede {
+  font-size: 1.02rem;
+  line-height: 1.7;
+  max-width: 460px;
+  margin: 0 0 30px;
+  color: var(--landing-text-light-muted);
+}
+.landing-cream .landing-lede {
+  color: var(--landing-text-dark-muted);
+}
+
+.landing-cta-group {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 26px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+.landing-btn-fill {
+  background: var(--landing-tan-btn);
+  color: #26240f;
+  border-color: var(--landing-tan-btn);
+}
+.landing-btn-fill:hover {
+  background: var(--landing-gold-2);
+  transform: translateY(-1px);
+}
+.landing-btn-outline {
+  border-color: var(--landing-line-dark);
+  color: var(--landing-text-light);
+}
+.landing-btn-outline:hover {
+  border-color: var(--landing-gold);
+  color: var(--landing-gold);
+}
+.landing-cream .landing-btn-outline {
+  border-color: var(--landing-line-cream);
+  color: var(--landing-text-dark);
+}
+
+.landing-section-title {
+  font-size: clamp(1.55rem, 3vw, 2.05rem);
+  font-weight: 500;
+  line-height: 1.28;
+  margin: 0 0 20px;
+}
+
+.landing-prose {
+  font-size: 1.03rem;
+  line-height: 1.72;
+  margin: 0 0 14px;
+}
+
+.landing-quiet-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.landing-quiet-list li {
+  padding: 9px 0 9px 20px;
+  font-size: 1rem;
+  position: relative;
+  border-bottom: 1px solid var(--landing-line-dark);
+}
+.landing-cream .landing-quiet-list li {
+  border-bottom: 1px solid var(--landing-line-cream);
+}
+.landing-quiet-list li:last-child {
+  border-bottom: none;
+}
+.landing-quiet-list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--landing-sage);
+}
+.landing-cream .landing-quiet-list li::before {
+  color: var(--landing-sage-2);
+}
+
+.landing-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin: 26px 0 0;
+  border-top: 1px solid var(--landing-line-dark);
+  border-left: 1px solid var(--landing-line-dark);
+}
+.landing-cream .landing-answer-grid {
+  border-top: 1px solid var(--landing-line-cream);
+  border-left: 1px solid var(--landing-line-cream);
+}
+.landing-answer-grid div {
+  border-right: 1px solid var(--landing-line-dark);
+  border-bottom: 1px solid var(--landing-line-dark);
+  padding: 20px 16px;
+  font-family: var(--font-solenos-serif, "Libre Baskerville", serif);
+  font-size: 1rem;
+}
+.landing-cream .landing-answer-grid div {
+  border-right: 1px solid var(--landing-line-cream);
+  border-bottom: 1px solid var(--landing-line-cream);
+}
+
+.landing-flow {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.landing-flow-step {
+  display: flex;
+  gap: 22px;
+  padding: 24px 0;
+}
+.landing-flow-rail {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 14px;
+}
+.landing-flow-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--landing-gold);
+  flex: none;
+}
+.landing-flow-line {
+  flex: 1;
+  width: 1px;
+  background: var(--landing-line-dark);
+  margin-top: 6px;
+}
+.landing-flow-step:last-child .landing-flow-line {
+  display: none;
+}
+.landing-flow-content h4 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: var(--font-solenos-serif, "Libre Baskerville", serif);
+}
+.landing-flow-content p {
+  margin: 0;
+  font-size: 0.97rem;
+  line-height: 1.65;
+  color: var(--landing-text-light-muted);
+}
+
+.landing-closing {
+  text-align: center;
+}
+.landing-closing-line {
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+.landing-closing-brand {
+  font-size: 0.9rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--landing-text-light-muted);
+  margin: 0 0 32px;
+}
+
+@media (max-width: 760px) {
+  .landing-block {
+    padding: 60px 20px;
+  }
+  .landing-orb {
+    width: 190px;
+    height: 148px;
+  }
+  .orb-a {
+    width: 130px;
+    height: 130px;
+    left: 18px;
+    top: 14px;
+  }
+  .orb-b {
+    width: 98px;
+    height: 98px;
+    left: 66px;
+    top: 0;
+  }
+  .orb-c {
+    width: 68px;
+    height: 68px;
+    right: 2px;
+    top: 2px;
+  }
+  .landing-orb-title {
+    font-size: 0.98rem;
+  }
+}

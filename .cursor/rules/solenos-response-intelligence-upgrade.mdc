@@ -1,0 +1,38 @@
+---
+description: STRICT — response acceptance gate; Care Reality Engine not AI assistant
+alwaysApply: true
+---
+
+# Response Intelligence Upgrade (Non-Negotiable)
+
+**SoT:** [`docs/02-product/solenos-response-intelligence-upgrade.md`](../../docs/02-product/solenos-response-intelligence-upgrade.md)
+
+## This is NOT a UI copy task
+
+Upgrade the **transformation layer**: Care Reality Model → caregiver response.  
+Do not add features. Do not redesign the app. Do not ship ChatGPT summaries.
+
+## SolenOS is
+
+Living Care Record · Events → Relationships → Understanding → Confidence  
+
+## SolenOS is not
+
+Chatbot · summarizer · notes app · task manager · medical answer engine  
+
+## Enforce in code
+
+`src/lib/response-acceptance-gate` must **reject** output that:
+
+- Summarizes / echoes without understanding  
+- Exposes internal jargon (care signal, memory anchor, confidence score, …)  
+- Empathy scripts / false certainty / diagnosis / generic advice / task-ifying  
+- Fakes continuity when no memory · ignores history when memory exists  
+
+## Required feel
+
+*“How this fits the bigger care story”* — never *“The AI analyzed my message.”*
+
+## Final test
+
+Can months of use reconstruct evolution + decisions + uncertainty? If no → incomplete.

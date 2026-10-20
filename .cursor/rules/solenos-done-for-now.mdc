@@ -1,0 +1,28 @@
+---
+description: Done for now pauses the session only — never resolves care reality
+alwaysApply: true
+---
+
+# "Done for now" Continuity Directive
+
+**SoT:** [`docs/02-product/solenos-done-for-now-continuity.md`](../../docs/02-product/solenos-done-for-now-continuity.md)
+
+## Rule
+
+"Done for now" is a **UI pause**, not a care decision. Never treat it as ending the care situation.
+
+## MVP default
+
+**A — Pause session.** Persist CareContext, ACS, CRS, LCR, Timeline, Evidence, uncertainties, relationships, decision memory, patterns.  
+Do **not** resolve ACS on the button. Do **not** make the caregiver choose pause vs close.
+
+## Return
+
+Continue the story. Feel: *SolenOS remembers where we left off.* Never restart-from-zero.
+
+## Lifecycle (engine-owned)
+
+Active → Quiet → Resolved → Historical (evidence-driven). Quiet may return to Active.  
+Situation Relationship Engine owns transitions — **not** the Done button.
+
+If Done-for-now clears understanding, the implementation is wrong.

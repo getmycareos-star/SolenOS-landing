@@ -1,0 +1,22 @@
+---
+description: Emotional-only inputs — acknowledge + invite care context; never ChatGPT therapy
+alwaysApply: true
+---
+
+# Emotional-Only Inputs + Language Safety
+
+**SoT:**  
+- [`docs/02-product/solenos-emotional-only-inputs.md`](../../docs/02-product/solenos-emotional-only-inputs.md)  
+- [`docs/02-product/solenos-emotional-language-safety.md`](../../docs/02-product/solenos-emotional-language-safety.md)  
+- [`docs/02-product/solenos-emotional-response-language.md`](../../docs/02-product/solenos-emotional-response-language.md)
+- [ADR-023](../../docs/15-architecture-decisions/ADR-023-emotional-phrasing-record-voice.md) — record voice; ban "That sounds difficult" in composer
+
+## Locked: A
+
+Acknowledge burden → invite care-reality share. Internally may store CareLoad — **never** show it.
+
+## Bans
+
+No CareLoad/burnout/sentiment/scores in UI. No ChatGPT empathy (“I’m here for you”, “I understand how you feel”, etc.). No false certainty (“I know you are exhausted” → “You mentioned…”). Prefer record-based, low first-person voice.
+
+Feel: care situation clearer — not talking to an AI therapist.

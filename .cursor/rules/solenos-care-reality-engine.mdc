@@ -1,0 +1,27 @@
+---
+description: Care Reality Engine Foundation — sequential spine; not features or PDF summary
+alwaysApply: true
+---
+
+# Care Reality Engine Foundation (MVP)
+
+**SoT:** [`docs/02-product/solenos-care-reality-engine-foundation.md`](../../docs/02-product/solenos-care-reality-engine-foundation.md)
+
+## Identity
+
+SolenOS = evolving understanding of one person's care reality — not notes, chatbot, summarizer, reminders, or medical advice.
+
+## Build order
+
+Identity → Baseline → Core objects → Situation → Evidence pipeline → Change → Behavioral observation → Evidence priority/conflict → Capacity → Transitions → Safety → Memory correction → Orientation validation
+
+Do not skip. Do not ship later features (community, chat, marketplace, predictions) before this spine.
+
+## Moat test
+
+Messy **document + text + observation** → coherent Care Reality (changes, uncertainty, next understanding).  
+Never optimize for “can it summarize a PDF?”
+
+## Never
+
+Hardcoded scenario templates · silent overwrite · diagnosis from observations · anonymous permanent memory without attribution

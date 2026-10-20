@@ -1,0 +1,28 @@
+# Communicate Understanding, Not Summarize
+
+**SoT:** [`docs/02-product/solenos-communicate-understanding.md`](../../docs/02-product/solenos-communicate-understanding.md)
+
+## Identity
+
+Not: Input → summarize → done.  
+Yes: Input → update Care Reality → explain understanding to caregiver.
+
+## Ask
+
+> What does this change about our understanding of this person's care?
+
+Not: What should I say about this input?
+
+## Caregiver must see
+
+Current understanding · What changed · What matters now · What is unclear · Useful questions
+
+Never: “Here is a summary of your document.”
+
+## Moat
+
+State · relationships · decisions/why · uncertainty · evidence — not LLM paraphrase.
+
+**Module:** `src/lib/caregiver-understanding-output`  
+**Gate:** `src/lib/response-acceptance-gate`  
+**Verify:** `verify:caregiver-understanding-output`

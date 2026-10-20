@@ -1,0 +1,43 @@
+{
+  "name": "SolenOS",
+  "short_name": "SolenOS",
+  "description": "The care journey, remembered.",
+  "start_url": "/?enter=1",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#3d4543",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": [
+            "image/*",
+            "application/pdf",
+            "text/*",
+            ".pdf",
+            ".txt",
+            ".md",
+            ".doc",
+            ".docx",
+            ".eml"
+          ]
+        }
+      ]
+    }
+  }
+}

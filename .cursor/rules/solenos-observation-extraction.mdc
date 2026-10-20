@@ -1,0 +1,14 @@
+---
+description: Observation extraction — only witnessed care-recipient state; never opinions, events, decisions, or load
+alwaysApply: true
+---
+
+# Observation Extraction
+
+**SoT:** [`docs/02-product/solenos-observation-extraction.md`](../../docs/02-product/solenos-observation-extraction.md)
+
+**Ask:** what was directly witnessed or reported about the person receiving care?  
+**Never ask:** what is important?
+
+Module: `src/lib/care-reality-extraction`. Never hardcode illustration scenarios.
+---

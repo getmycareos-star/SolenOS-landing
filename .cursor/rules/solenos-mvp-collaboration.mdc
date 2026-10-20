@@ -1,0 +1,19 @@
+---
+description: MVP — shared Care Reality; attribution; not family chat; not parallel realities
+alwaysApply: true
+---
+
+# MVP Collaboration Model
+
+**SoT:** [`docs/02-product/solenos-mvp-collaboration-model.md`](../../docs/02-product/solenos-mvp-collaboration-model.md)
+
+## Locked: B
+
+Living Care Record = care recipient’s. Multiple contributors with attribution from day one.
+
+Not MVP: family chat, social feed, household management.  
+Never: separate realities per caregiver.
+
+Vocabulary: Care Recipient · Contributor · Care Reality — not “users/workspace.”
+
+Conflicts → keep both + uncertainty. One person · one LCR · many trusted contributors.

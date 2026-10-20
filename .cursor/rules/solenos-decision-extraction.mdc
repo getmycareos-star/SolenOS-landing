@@ -1,0 +1,33 @@
+---
+description: Decision extraction — choices with who/why/evidence; Reason unknown; core stack with Observation + Event
+alwaysApply: true
+---
+
+# Decision Extraction
+
+**SoT:** [`docs/02-product/solenos-decision-extraction.md`](../../docs/02-product/solenos-decision-extraction.md)
+
+## Core stack asks
+
+| Layer | Ask |
+|-------|-----|
+| Observation | What was directly witnessed about the person receiving care? |
+| Event | What happened, when, who was involved? |
+| Decision | Was a choice made, by whom, with what evidence, and do we know why? |
+
+**Never ask for Decision:** what happened? (that is Event)
+
+## Required
+
+Decision · Who · Why (or Reason unknown) · Evidence · Alternatives (or unknown) · Outcome (or pending) · Status
+
+## Rules
+
+- Visit/encounter → Event; deliberate treatment/plan choice → Decision  
+- Recipient state → Observation; choosing to act on it → Decision  
+- Missing why → **Reason unknown** — never invent motives  
+- Recommendations ≠ decisions until accepted or acted on  
+
+**Modules:** `src/lib/care-reality-extraction/decisions.ts` · `src/lib/decision-memory`  
+**Verify:** `verify:care-reality-extraction`
+---

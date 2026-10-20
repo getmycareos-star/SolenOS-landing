@@ -1,0 +1,36 @@
+---
+description: Living Care Record UX — AI invisible; four-section caregiver responses
+alwaysApply: true
+---
+
+# Living Care Record UX (SolenOS)
+
+**The Living Care Record is the product. The AI is almost invisible.**
+
+SolenOS is not an AI chatbot. Caregivers update and understand a care record — they do not converse with an assistant or read how a model thinks.
+
+## After every interaction
+
+Caregiver should think: *SolenOS understood what happened and knows what it still needs.*  
+Never: *The AI is showing me how it thinks.*
+
+## Progressive disclosure
+
+Caregiver UI shows **only** the four Living Care Record sections (+ optional original notes). Related observations grow an Active Care Situation.
+Engine panels and internal terms are **never rendered** in the caregiver workspace.
+
+## Forbidden in caregiver UI
+
+Internal terms (`ambiguous_extraction`, `partial_signal`, `reasoning_chain`, …), confidence percentages, system-layer dumps. Logs/devtools only.
+
+## Tone
+
+Calm, trustworthy, concise, evidence-based. Context before urgency. Never generic one-list clarifiers for every event type.
+
+## Visual
+
+Care Reality cards — not chatbot bubbles. See [`solenos-visual-language.md`](../../docs/02-product/solenos-visual-language.md).
+
+## Module
+
+`src/lib/living-care-record-ux` · UI: `LivingCareRecordPanel` · ADR-019

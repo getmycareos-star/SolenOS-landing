@@ -1,0 +1,22 @@
+---
+description: Outcome extraction — result after event/decision with evidence; never success theater or intentions
+alwaysApply: true
+---
+
+# Outcome Extraction
+
+**SoT:** [`docs/02-product/solenos-outcome-extraction.md`](../../docs/02-product/solenos-outcome-extraction.md)
+
+**Ask:** what changed after this event or decision, and what evidence shows that?  
+**Never ask:** was this successful?
+
+## Rules
+
+- Only with evidence of something after an event/decision  
+- Not decisions, observations, or interpretations  
+- Preserve mixed outcomes · preserve uncertainty · no intentions as outcomes  
+- Link to related decision/event  
+- Doc examples are illustrations only — never product if-branches
+
+**Module:** `src/lib/care-reality-extraction` · **Verify:** `verify:care-reality-extraction`
+---

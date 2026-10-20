@@ -1,0 +1,26 @@
+---
+description: 30-Second Caregiver Understanding Test — midnight gate; improve understanding/orientation/uncertainty/priority; reject echo and false reassurance
+alwaysApply: true
+---
+
+# 30-Second Caregiver Understanding Test
+
+**SoT:** [`docs/02-product/solenos-caregiver-understanding-test.md`](../../docs/02-product/solenos-caregiver-understanding-test.md)
+
+## Midnight question
+
+If a stressed caregiver reads this in 30 seconds, do they understand the situation **better than before**?  
+If no → reject.
+
+## Must improve at least one
+
+Understanding · Orientation · Uncertainty reduction · Priority  
+
+Rich captures: improve more than one.
+
+## Reject
+
+Echo · task lists · interview overload · family distraction · false reassurance · false certainty
+
+**Module:** `src/lib/care-reality-intelligence/caregiver-understanding-test.ts` · **Verify:** `verify:caregiver-understanding-test`
+---

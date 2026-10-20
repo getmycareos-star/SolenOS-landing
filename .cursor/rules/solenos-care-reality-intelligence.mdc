@@ -1,0 +1,70 @@
+---
+description: Care Reality Intelligence — category composition, intelligence chain, evidence-first engineering. Not a product rename. No UI-first builds.
+alwaysApply: true
+---
+
+# Care Reality Intelligence (SolenOS)
+
+**Category phrase only.** Company/product name remains **SolenOS**.
+
+## What SolenOS is
+
+An evolving intelligence layer that maintains an understanding of a person's changing care reality.
+
+## What SolenOS is not
+
+- Notes app · document analyzer · task manager · AI chatbot · medical record replacement · family communication platform
+
+## Build order (non-negotiable)
+
+1. **Data model + event pipeline first** — events, changes, decisions, outcomes, evidence, confidence, uncertainty  
+2. **Engine composition** — `care-reality-intelligence` facade over baseline, profile, care-state, continuity  
+3. **Interface last** — UI exposes understanding; intelligence lives underneath  
+
+Do **not** create screens for Care Transition Mode, Care Moment, or pattern dashboards until spine fields exist.
+
+## Intelligence chain
+
+Every feature must strengthen:
+
+`Events → Changes → Decisions → Outcomes → Context → Confidence`
+
+## Comparison engine
+
+Answer: **What is happening with this person compared with what we know about them?**  
+Never default to: **What happens in dementia?**
+
+## Do not build (architecture)
+
+- Symptom checker · dementia FAQ assistant · generic health chatbot · medical recommendation engine  
+- Document vault / task manager / reminder app / family chat as **primary UX**  
+- Voice note → transcript only · document → summary only · message → storage only  
+
+Build instead: personal baseline · care history · change detection · context reconstruction · **decision memory** (why + outcome; prep not advice) · uncertainty awareness
+
+Never: document summary as the product · medical recommendation engine · hide unknown reasons
+
+## Trust
+
+Trust is the product. AI supports trust — does not replace it.
+
+- Never invent facts · never hide uncertainty · every conclusion traceable to CareEvents  
+- Conservative when evidence is incomplete  
+- Capture always succeeds; interpretation may degrade gracefully  
+
+Module: `src/lib/care-reality-intelligence` · Docs: `docs/CARE_REALITY_INTELLIGENCE.md`
+
+## Product filter
+
+Before any feature:
+
+1. Does this strengthen the Living Care Record?  
+2. Does this improve **understanding** (not just storage)?  
+3. Does this reduce cognitive burden?  
+4. Does this preserve continuity with evidence and confidence?  
+
+If no → reject.
+
+## First week rule
+
+Value before setup. Chaos → Understanding before Setup → Completion.
