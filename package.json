@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "jest",
     "android": "capacitor copy android && capacitor open android",
-    "ios": "capacitor copy ios && capacitor open ios"
+    "ios": "capacitor copy ios && capacitor open ios",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.0",
