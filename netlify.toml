@@ -27,8 +27,8 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Proxy all /api/* calls to the Railway backend (SolenOS_backend).
-# The frontend repo no longer ships Next.js API route handlers.
+# Proxy only versioned FastAPI endpoints to Railway.
+# Keep Next.js-owned routes such as /api/situation on the Next.js runtime.
 [[redirects]]
   from = "/api/v1/*"
   to = "https://solenosbackend-production-8773.up.railway.app/api/v1/:splat"
@@ -42,15 +42,6 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-# CORS headers for API proxy to Railway backend
-[[headers]]
-  for = "/api/v1/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-    Access-Control-Max-Age = "86400"
 
 [[headers]]
   for = "/assets/*"
