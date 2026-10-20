@@ -53,14 +53,8 @@ describe('Routine Moments Service', () => {
 
     expect(baseline.routine_name).toBe('Morning Routine');
     expect(baseline.person_id).toBe('test-person-id');
-    // Frequency: 3 observations over 2 days -> 3/2/7*7 = 1.5 per week? Actually 3 obs over 2 days = 1.5 per week? Let's compute: 3 obs over 2 days = 1.5 per week? Wait, per week: (3 obs / 2 days) * 7 days = 10.5 per week? That's not right.
-    // Actually, frequency per week = (number of observations) / (weeks spanned)
-    // Time span: 2 days = 2/7 weeks ≈ 0.2857 weeks
-    // Frequency = 3 / (2/7) = 3 * 7 / 2 = 10.5 per week.
-    // Our function calculates weeksDiff = daysDiff / 7, where daysDiff = 2.
-    // weeksDiff = 2/7 ≈ 0.2857
-    // frequencyPerWeek = 3 / 0.2857 ≈ 10.5
-    expect(baseline.frequency_per_week).toBeCloseTo(10.2857142857);
+    // The first and last observations span 49 elapsed hours, so frequency is 3 / (49 / 168) per week.
+    expect(baseline.frequency_per_week).toBeCloseTo(3 / (49 / 168));
     // Average time of day: (8:00, 8:30, 9:00) -> 8:30
     expect(baseline.average_time_of_day).toBe('08:30');
     // Assistance level distribution: 2 independent, 1 assisted
