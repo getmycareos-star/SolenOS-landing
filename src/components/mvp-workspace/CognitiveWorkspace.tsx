@@ -399,6 +399,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       return;
     }
 
+    if (!careRecipientId || !caregiverId || caregiverId === DEFAULT_DURABLE_CARE_KEY) {
+      setCaregiverError(
+        "Your private care record is still initializing. Wait a moment and try again; your note has not been sent.",
+      );
+      return;
+    }
+
     // Empty or greeting-only input → SESSION_REENTRY_EVENT (handled by API)
 
     setLoading(true);
@@ -413,34 +420,41 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         payload: { entry: "add_situation", has_documents: readyDocs.length > 0 },
       });
 
+      const capturePayload: Record<string, unknown> = {
+        raw_input: text,
+        caregiver_id: caregiverId,
+        person_id: careRecipientId,
+        care_session_id: interactionSessionId(),
+        captured_at: provenance.captured_at,
+        provenance: {
+          input_type:
+            readyDocs.length > 0 && !text ? "document" : provenance.input_type,
+          entry_method: provenance.entry_method,
+          captured_at: provenance.captured_at,
+          recognition_confidence: provenance.recognition_confidence,
+          transcript_uncertain: provenance.transcript_uncertain,
+        },
+        documents: readyDocs.map((d) => ({
+          id: d.id,
+          name: d.name,
+          mime_type: d.mimeType || null,
+          extracted_text: d.extractedText,
+          extracted_text_preview: d.extractedTextPreview ?? undefined,
+          extracted_char_count: d.extractedCharCount ?? undefined,
+          ocr_confidence: d.ocrConfidence ?? null,
+          extraction_source: d.extractionSource ?? undefined,
+          entry_method: d.entryMethod,
+        })),
+      };
+      const idempotencyKey = getOrCreateCaptureIdempotencyKey(capturePayload);
       const situationRes = await fetch(apiUrl("/api/situation"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          raw_input: text,
-          caregiver_id: caregiverId,
-          care_session_id: interactionSessionId(),
-          captured_at: provenance.captured_at,
-          provenance: {
-            input_type:
-              readyDocs.length > 0 && !text ? "document" : provenance.input_type,
-            entry_method: provenance.entry_method,
-            captured_at: provenance.captured_at,
-            recognition_confidence: provenance.recognition_confidence,
-            transcript_uncertain: provenance.transcript_uncertain,
-          },
-          documents: readyDocs.map((d) => ({
-            id: d.id,
-            name: d.name,
-            mime_type: d.mimeType || null,
-            extracted_text: d.extractedText,
-            extracted_text_preview: d.extractedTextPreview ?? undefined,
-            extracted_char_count: d.extractedCharCount ?? undefined,
-            ocr_confidence: d.ocrConfidence ?? null,
-            extraction_source: d.extractionSource ?? undefined,
-            entry_method: d.entryMethod,
-          })),
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${caregiverId}`,
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify(capturePayload),
       });
 
       if (!situationRes.ok) {
@@ -468,6 +482,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         situationData.context?.caregiver_id ??
         caregiverId;
       setSituationResponse(situationData);
+      clearPendingCaptureIdempotencyKey();
       setHasContextRoot(true);
       setSessionHasNote(true);
       setShowSoftPrivacyNote(true);
