@@ -30,8 +30,8 @@
 # Proxy all /api/* calls to the Railway backend (SolenOS_backend).
 # The frontend repo no longer ships Next.js API route handlers.
 [[redirects]]
-  from = "/api/*"
-  to = "https://solenosbackend-production-8773.up.railway.app/api/:splat"
+  from = "/api/v1/*"
+  to = "https://solenosbackend-production-8773.up.railway.app/api/v1/:splat"
   status = 200
   force = true
 
@@ -45,7 +45,7 @@
 
 # CORS headers for API proxy to Railway backend
 [[headers]]
-  for = "/api/*"
+  for = "/api/v1/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
