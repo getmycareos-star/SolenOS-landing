@@ -7,7 +7,10 @@ declare global {
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
+// Production uses the same-origin Netlify proxy. Local Vite development proxies
+// /api to the local FastAPI server (see vite.config.ts).
+const configuredBase = import.meta.env.VITE_API_BASE || '/api/v1'
+const API_BASE = configuredBase.replace(/\/$/, '')
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
@@ -39,11 +42,11 @@ async function handleResponse(res: Response) {
         const err = await res.json()
         message = err.detail || err.message || message
       } catch {
-        // keep generic message
+        // Keep the generic status message when the error body is malformed.
       }
     } else {
-      const text = await res.text()
-      message = text || message
+      const responseText = await res.text()
+      message = responseText || message
     }
     throw new Error(message)
   }
@@ -52,13 +55,11 @@ async function handleResponse(res: Response) {
     throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
   }
 
-  const text = await res.text()
-  if (!text) {
-    throw new Error('Empty response from server')
-  }
+  const responseText = await res.text()
+  if (!responseText) throw new Error('Empty response from server')
 
   try {
-    return JSON.parse(text)
+    return JSON.parse(responseText)
   } catch {
     throw new Error('Invalid JSON response from server')
   }
@@ -69,14 +70,9 @@ export async function getJSON(path: string) {
   return handleResponse(res)
 }
 
-// Downloads a binary response, e.g. the care summary PDF. Kept here so the API
-// base is resolved in one place rather than reconstructed by a caller that would
-// otherwise hardcode a second copy of the localhost default.
 export async function getBlob(path: string): Promise<Blob> {
   const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`)
-  }
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.blob()
 }
 
