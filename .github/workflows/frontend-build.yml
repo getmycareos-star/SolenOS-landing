@@ -25,7 +25,17 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Install exact lockfile dependencies
-        run: npm ci
+      - name: Reconcile lockfile with package manifest
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install exact reconciled dependencies
+        run: npm ci --no-audit --no-fund
       - name: Type-check and build production assets
         run: npm run build
+      - name: Upload generated lockfile for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reconciled-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 7
