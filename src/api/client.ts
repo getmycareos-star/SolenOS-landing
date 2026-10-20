@@ -14,11 +14,18 @@ const configuredBase = import.meta.env.VITE_API_BASE || '/api/v1'
 const API_BASE = configuredBase.replace(/\/$/, '')
 
 export function getPersonId(): string {
-  return localStorage.getItem('solenos_person_id') || 'demo-person-id'
+  const personId = localStorage.getItem('solenos_person_id')?.trim() || ''
+  // A demo identifier is not a real care recipient and must never be sent to the API.
+  return personId && personId !== 'demo-person-id' ? personId : ''
 }
 
 export function setPersonId(id: string): void {
-  localStorage.setItem('solenos_person_id', id)
+  const normalizedId = id.trim()
+  if (!normalizedId || normalizedId === 'demo-person-id') {
+    localStorage.removeItem('solenos_person_id')
+  } else {
+    localStorage.setItem('solenos_person_id', normalizedId)
+  }
   window.dispatchEvent(new Event('personIdChanged'))
 }
 
