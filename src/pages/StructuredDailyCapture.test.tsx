@@ -11,6 +11,8 @@ jest.mock('../api/client', () => ({
 describe('StructuredDailyCapture', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.setItem("solenos_person_id", "test-person-id");
+    localStorage.setItem("solenos_caregiver_id", "test-caregiver-id");
   });
 
   it('should render the main heading', () => {
