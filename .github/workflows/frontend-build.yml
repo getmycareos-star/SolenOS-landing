@@ -22,14 +22,14 @@ jobs:
           node-version: "20"
           cache: npm
       - name: Regenerate lockfile from package.json
-        run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        run: rm -f package-lock.json && npm install --package-lock-only --legacy-peer-deps --ignore-scripts --no-audit --no-fund
       - name: Print npm diagnostics on failure
         if: failure()
         run: |
           log_file="$(ls -t "$HOME"/.npm/_logs/*debug-0.log 2>/dev/null | head -n 1)"
           if [ -n "$log_file" ]; then tail -n 180 "$log_file"; else echo "No npm debug log found"; fi
       - name: Install dependencies from regenerated lockfile
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - name: Type-check and build Vite application
         run: npm run build
       - name: Commit reconciled lockfile when changed
