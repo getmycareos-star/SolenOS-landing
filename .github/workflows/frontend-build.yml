@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - repair/api-contract-netlify-2026-10
+concurrency:
+  group: frontend-repair-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
