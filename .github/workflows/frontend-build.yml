@@ -37,7 +37,7 @@ jobs:
         run: npm ci --legacy-peer-deps
       - name: Type-check frontend TypeScript
         run: npm run typecheck
-      - name: Build Vite application
+      - name: Create Vite production bundle
         run: npm run build
       - name: Commit reconciled lockfile when changed
         run: |
