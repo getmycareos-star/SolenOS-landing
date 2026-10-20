@@ -30,7 +30,7 @@ export function authHeaders(extra: Record<string, string> = {}): Record<string, 
 }
 
 export function getPersonId(): string {
-  return localStorage.getItem('solenos_person_id') || 'demo-person-id'
+  return typeof localStorage === 'undefined' ? '' : (localStorage.getItem('solenos_person_id') || '')
 }
 
 export function setPersonId(id: string): void {
@@ -61,7 +61,12 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
 }
 
 function interpolatePersonId(path: string): string {
-  return path.replace(/demo-person-id/g, getPersonId())
+  if (path.includes('demo-person-id')) {
+    const personId = getPersonId()
+    if (!personId) throw new Error('Select an authorized care record before loading or changing care data.')
+    return path.replace(/demo-person-id/g, personId)
+  }
+  return path
 }
 
 async function handleResponse(res: Response) {
