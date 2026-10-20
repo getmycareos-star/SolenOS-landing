@@ -769,7 +769,7 @@ export default function StructuredDailyCapture() {
       
       {/* Medications section */}
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h1>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h2>
         
         {/* Medication form */}
         <div style={{ 
@@ -1163,6 +1163,7 @@ export default function StructuredDailyCapture() {
                   {submitting ? 'Adding...' : 'Add Vital'}
                 </button>
               </div>
+              </div>
             </form>
           </div>
           
@@ -1288,6 +1289,7 @@ export default function StructuredDailyCapture() {
                 >
                   {submitting ? 'Adding...' : 'Add Scale'}
                 </button>
+              </div>
               </div>
             </form>
           </div>
