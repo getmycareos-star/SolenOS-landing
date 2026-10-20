@@ -225,7 +225,7 @@ export default function StructuredDailyCapture() {
         
         const formData = new FormData();
         formData.append('file', compressedFile);
-        formData.append('caregiver_id', caregiverId);
+        formData.append('caregiver_id', getCaregiverId() || caregiverId);
         formData.append('person_id', personId);
         
         const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
