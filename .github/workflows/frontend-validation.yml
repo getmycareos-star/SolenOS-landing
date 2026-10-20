@@ -26,6 +26,13 @@ jobs:
         run: |
           rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+      - name: Upload regenerated lockfile for review and commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: reconciled-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Install dependencies without running unapproved scripts
         run: npm ci --ignore-scripts --no-audit --no-fund --legacy-peer-deps
       - name: Approve required dependency install scripts
