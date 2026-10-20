@@ -47,6 +47,6 @@ jobs:
             git push
           fi
       - name: Install clean dependency tree
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - name: Type-check and build production assets
         run: npm run build
