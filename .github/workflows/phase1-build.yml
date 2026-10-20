@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - repair/phase1-build-deployment
+    paths-ignore:
+      - package-lock.json
   pull_request:
     branches:
       - main
