@@ -3,7 +3,7 @@ import { PublicShell, PublicCtaGroup } from "@/components/public/PublicShell";
 import { WelcomeTrustStack } from "@/components/public/WelcomeTrustStack";
 import { OpsPageView } from "@/components/ops/OpsPageView";
 import { WELCOME_HOME } from "@/lib/trust-content";
-import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
+import { BRAND_NAME } from "@/lib/brand";
 import { SolenosWordmark } from "@/components/brand";
 
 export const metadata: Metadata = {
