@@ -44,6 +44,14 @@ export function setCaregiverId(id: string): void {
   localStorage.setItem('solenos_caregiver_id', id)
 }
 
+export function clearCareContext(): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('solenos_person_id')
+    localStorage.removeItem('solenos_caregiver_id')
+  }
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('personIdChanged'))
+}
+
 export function subscribeToPersonId(callback: (id: string) => void): () => void {
   const handler = () => callback(getPersonId())
   window.addEventListener('personIdChanged', handler)
