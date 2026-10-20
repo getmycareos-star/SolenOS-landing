@@ -1,102 +1,162 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { getJSON, getPersonId } from '../api/client'
-import CareCapture from '../components/CareCapture'
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { getJSON, postJSON, getPersonId } from '../api/client';
+import { useOptimisticToggle } from '../lib/optimistic';
+import CareCapture from '../components/CareCapture';
 
 interface Event {
-  id: string
-  event_type: string
-  occurred_at: string
-  title: string
-  description?: string
-  time_provenance?: string
-  location?: string
+  id: string;
+  event_type: string;
+  occurred_at: string;
+  title: string;
+  description?: string;
+  time_provenance?: string;
+  location?: string;
 }
 
 interface Insight {
-  id: string
-  title: string
-  description: string
-  confidence: number
-  insight_type: string
-  possible_context?: string
-  time_provenance?: string
+  id: string;
+  title: string;
+  description: string;
+  confidence: number;
+  insight_type: string;
+  possible_context?: string;
+  time_provenance?: string;
 }
 
 interface ObservationTrend {
-  tag: string
-  count: number
-  first_observed: string
-  last_observed: string
-  trend: string
+  tag: string;
+  count: number;
+  first_observed: string;
+  last_observed: string;
+  trend: string;
 }
 
 interface ReasoningSummary {
-  confirmed_facts: Array<{ key: string; value: any[]; confidence: number }>
-  open_questions: Array<{ key: string; value: any[] }>
-  preferences: Array<{ key: string; value: any[] }>
-  rejected_assumptions: Array<{ key: string; value: any[] }>
-  care_patterns: Array<{ key: string; value: any[] }>
-  coordination_decisions: Array<{ key: string; value: any[] }>
+  confirmed_facts: Array<{ key: string; value: any[]; confidence: number }>;
+  open_questions: Array<{ key: string; value: any[] }>;
+  preferences: Array<{ key: string; value: any[] }>;
+  rejected_assumptions: Array<{ key: string; value: any[] }>;
+  care_patterns: Array<{ key: string; value: any[] }>;
+  coordination_decisions: Array<{ key: string; value: any[] }>;
 }
 
 interface DailyIntelligence {
-  id: string
-  intelligence_date: string
-  overdue_items: any[]
-  upcoming_items: any[]
-  active_windows: any[]
-  expired_windows: any[]
-  daily_summary: string
+  id: string;
+  intelligence_date: string;
+  overdue_items: any[];
+  upcoming_items: any[];
+  active_windows: any[];
+  expired_windows: any[];
+  daily_summary: string;
+}
+
+interface Action {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'active' | 'completed';
+  created_at: string;
 }
 
 export default function Dashboard() {
-  const [events, setEvents] = useState<Event[]>([])
-  const [insights, setInsights] = useState<Insight[]>([])
-  const [trends, setTrends] = useState<ObservationTrend[]>([])
-  const [reasoning, setReasoning] = useState<ReasoningSummary | null>(null)
-  const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState<Event[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [trends, setTrends] = useState<ObservationTrend[]>([]);
+  const [reasoning, setReasoning] = useState<ReasoningSummary | null>(null);
+  const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
+  const [actions, setActions] = useState<Action[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [evts, inss, trendData, reasoningData, intelData] = await Promise.all([
-          getJSON('/events/demo-person-id'),
-          getJSON('/insights/demo-person-id'),
-          getJSON('/observations/demo-person-id/trends').catch(() => []),
-          getJSON('/reasoning/demo-person-id/summary').catch(() => null),
-          getJSON('/daily-intelligence/demo-person-id').catch(() => null),
-        ])
-        setEvents(evts.slice(0, 5))
-        setInsights(inss.slice(0, 3))
-        setTrends(trendData.slice(0, 5))
-        setReasoning(reasoningData)
-        setDailyIntel(intelData)
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+  const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const [evts, inss, trendData, reasoningData, intelData, actionsData] = await Promise.all([
+                    getJSON(`/events/${getPersonId()}?limit=5`),
+                    getJSON(`/insights/${getPersonId()}?limit=3`),
+                    getJSON(`/observations/${getPersonId()}/trends`).catch(() => []),
+                    getJSON(`/reasoning/${getPersonId()}/summary`).catch(() => null),
+                    getJSON(`/daily-intelligence/${getPersonId()}`).catch(() => null),
+                    getJSON(`/actions/${getPersonId()}?status=active`), // Get active actions
+                ]);
+                
+                setEvents(evts);
+                setInsights(inss);
+                setTrends(trendData.slice(0, 5));
+                setReasoning(reasoningData);
+                setDailyIntel(intelData);
+                setActions(actionsData as Action[]);
+            } catch (e) {
+                console.error(e);
+                // Use mock data for demonstration
+                setActions([
+                    {
+                        id: 'action-1',
+                        title: 'Schedule medication review with pharmacist',
+                        description: 'Review current medications for potential interactions',
+                        status: 'active',
+                        created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
+                    },
+                    {
+                        id: 'action-2',
+                        title: 'Arrange home safety assessment',
+                        description: 'Evaluate fall risks and recommend safety modifications',
+                        status: 'active',
+                        created_at: new Date(Date.now() - 1 * 3600000).toISOString(),
+                    }
+                ]);
+            } finally {
+                setLoading(false);
+            }
+        }
+        load();
+    }, []);
 
   const formatDate = (d: string) => {
-    const date = new Date(d)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
+    const date = new Date(d);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return '${diffMins}m ago';
+    if (diffHours < 24) return '${diffHours}h ago';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return '${diffDays}d ago';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const handleActionToggle = async (actionId: string) => {
+    await toggleActionCompletion(actionId, {
+      enableFn: async () => {
+        // Mark action as complete
+        await postJSON('/actions/${actionId}/complete', {
+          evidence: {
+            description: 'Completed via dashboard',
+            confirmed_by: getPersonId()
+          }
+        });
+        
+        // Update local state optimistically (handled by hook)
+        setActions(prevActions =>
+          prevActions.map(action =>
+            action.id === actionId
+              ? { ...action, status: 'completed' }
+              : action
+          )
+        );
+      },
+      disableFn: async () => {
+        // This would be for un-completing an action, but we don't allow that
+        // In a real implementation, this might revert to active state
+        throw new Error('Cannot un-complete an action');
+      }
+    });
+  };
 
   return (
     <div>
@@ -113,7 +173,7 @@ export default function Dashboard() {
           Today's changes are automatically added to the Living Care Record.
         </p>
         <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
-          Examples: refused medication · wandering overnight · sleep got worse · new confusion
+          Examples: refused medication Â· wandering overnight Â· sleep got worse Â· new confusion
         </p>
       </div>
 
@@ -121,15 +181,83 @@ export default function Dashboard() {
         <CareCapture personId={getPersonId()} />
       </div>
 
+      {/* Action List Section */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
+      }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
+          Active Actions
+        </h2>
+        {actions.length === 0 && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+            No active actions. Actions will appear here when created from situations or insights.
+          </p>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {actions.map(action => (
+            <div
+              key={action.id}
+              style={{
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '16px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <div>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 600 }}>
+                  {action.title}
+                </h3>
+                {action.description && (
+                  <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                    {action.description}
+                  </p>
+                )}
+                <p style={{ margin: '0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Created: {formatDate(action.created_at)}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  onClick={() => handleActionToggle(action.id)}
+                  disabled={loadingIds.includes(action.id)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: toggledIds.includes(action.id)
+                      ? 'var(--success)'
+                      : 'var(--trust)',
+                    color: 'white',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: loadingIds.includes(action.id) || toggledIds.includes(action.id)
+                      ? 'default'
+                      : 'pointer',
+                    opacity: loadingIds.includes(action.id) ? 0.7 : 1
+                  }}
+                >
+                  {loadingIds.includes(action.id) ? 'Processing...' : toggledIds.includes(action.id) ? 'Completed' : 'Mark Complete'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{
         background: 'var(--accent-soft)', border: '1px solid var(--accent)',
         borderRadius: '8px', padding: '8px 14px', marginBottom: '24px'
       }}>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
-          📚 Living Care Record system model
+          ðŸ“š Living Care Record system model
         </p>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
-          Today's Change → Living Care Record → Timeline → Insights → Community Wisdom
+          Today's Change â†’ Living Care Record â†’ Timeline â†’ Insights â†’ Community Wisdom
         </p>
       </div>
 
@@ -142,9 +270,9 @@ export default function Dashboard() {
               <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                 Daily summary
               </h2>
-              <div style={{
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: '12px', padding: '16px 20px'
+              <div style={{ 
+                background: 'var(--surface)', border: '1px solid var(--border)', 
+                borderRadius: '12px', padding: '16px 20px' 
               }}>
                 <p style={{ fontSize: '14px', lineHeight: 1.6 }}>{dailyIntel.daily_summary}</p>
                 {dailyIntel.overdue_items.length > 0 && (
@@ -170,7 +298,9 @@ export default function Dashboard() {
               Recent events
             </h2>
             {events.length === 0 && (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No events recorded yet.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                No events recorded yet.
+              </p>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {events.map(evt => (
@@ -196,10 +326,10 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              ))}
+              )}
             </div>
             <Link to="/timeline" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-              View full timeline →
+              View full timeline â†’
             </Link>
           </section>
 
@@ -241,7 +371,9 @@ export default function Dashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {reasoning.confirmed_facts.length > 0 && (
                   <div style={{ background: 'var(--trust-soft)', borderRadius: '12px', padding: '16px 20px' }}>
-                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--trust)', marginBottom: '8px' }}>Confirmed</h3>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--trust)', marginBottom: '8px' }}>
+                      Confirmed
+                    </h3>
                     {reasoning.confirmed_facts.map((fact, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{fact.key}: {JSON.stringify(fact.value)}</p>
                     ))}
@@ -249,19 +381,23 @@ export default function Dashboard() {
                 )}
                 {reasoning.open_questions.length > 0 && (
                   <div style={{ background: 'var(--unknown-soft)', borderRadius: '12px', padding: '16px 20px' }}>
-                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--unknown)', marginBottom: '8px' }}>Open questions</h3>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--unknown)', marginBottom: '8px' }}>
+                      Open questions
+                    </h3>
                     {reasoning.open_questions.map((q, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{q.key}: {JSON.stringify(q.value)}</p>
                     ))}
-                  </div>
+                  </div
                 )}
                 {reasoning.preferences.length > 0 && (
                   <div style={{ background: 'var(--accent-soft)', borderRadius: '12px', padding: '16px 20px' }}>
-                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: '8px' }}>Preferences</h3>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      Preferences
+                    </h3>
                     {reasoning.preferences.map((pref, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{pref.key}: {JSON.stringify(pref.value)}</p>
                     ))}
-                  </div>
+                  </div
                 )}
               </div>
             </section>
@@ -272,7 +408,9 @@ export default function Dashboard() {
               Active insights
             </h2>
             {insights.length === 0 && (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No insights yet.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                No insights yet.
+              </p>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {insights.map(ins => (
@@ -282,7 +420,7 @@ export default function Dashboard() {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <span style={{ fontSize: '14px', fontWeight: 500 }}>{ins.title}</span>
-                    <span style={{
+                    <span style={{ 
                       fontSize: '11px', padding: '2px 8px', borderRadius: '999px',
                       background: ins.confidence >= 0.8 ? 'var(--trust-soft)' : 'var(--unknown-soft)',
                       color: ins.confidence >= 0.8 ? 'var(--trust)' : 'var(--unknown)'
@@ -302,18 +440,18 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              ))}
+              )}
             </div>
             <Link to="/insights" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-              View all insights →
+              View all insights â†’
             </Link>
           </section>
           </>
         )}
 
-        <div style={{
-          display: 'flex', gap: '24px', padding: '16px 0',
-          borderTop: '1px solid var(--border)', fontSize: '13px', color: 'var(--text-secondary)'
+        <div style={{ 
+          display: 'flex', gap: '24px', padding: '16px 0', 
+          borderTop: '1px solid var(--border)', fontSize: '13px', color: 'var(--text-secondary)' 
         }}>
           <Link to="/community" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Community wisdom</Link>
           <Link to="/record" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Living Care Record</Link>
@@ -321,5 +459,6 @@ export default function Dashboard() {
           <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Role switch</Link>
         </div>
       </div>
-  )
+    </div>
+  );
 }

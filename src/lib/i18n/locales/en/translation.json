@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "SolenOS",
+    "dashboard": "Dashboard",
+    "founder": "Founder",
+    "login": "Login"
+  },
+  "dashboard": {
+    "loading": "Loading..."
+  },
+  "founder": {
+    "access_denied": "Access Denied",
+    "insufficient_privileges": "Insufficient privileges. Founder access required.",
+    "login": "Login to Founder Dashboard",
+    "go_to_dashboard": "Go to User Dashboard",
+    "return_to_dashboard": "Return to Dashboard",
+    "loading_executive_overview": "Loading executive overview...",
+    "executive_overview": "Executive Overview"
+  }
+}

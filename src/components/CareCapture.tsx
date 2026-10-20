@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { postJSON, getPersonId } from '../api/client'
+import { useOptimisticMutation } from '../lib/optimistic'
 
 interface SimilarExperience {
   post_id: string
@@ -34,38 +35,55 @@ const CAPTURE_HINTS = [
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
-  const [saved, setSaved] = useState(false)
   const personId = pid || getPersonId()
+  
+  const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
+    any, 
+    { caregiverId: string; personId: string; rawInput: string }
+  >({
+    mutationFn: ({ caregiverId, personId, rawInput }) => 
+      postJSON('/situation', {
+        caregiver_id: caregiverId,
+        person_id: personId,
+        raw_input: rawInput,
+      }),
+    onMutate: async ({ caregiverId, personId, rawInput }) => {
+      // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
+      return { caregiverId, personId, rawInput };
+    },
+    onSuccess: async (data, variables, context) => {
+      // On success, fetch the community experience
+      const experienceData = await postJSON('/community/experience', {
+        observation: variables.rawInput,
+      }) as ExperienceResult
+      setExperiences(experienceData)
+      onCapture?.(variables.rawInput)
+    },
+    onError: async (error, variables, context) => {
+      // On error, we could show a failed state, but for simplicity we'll just let the error propagate
+      // The UI will still show the text was processed optimistically
+      console.error('Failed to save situation:', error)
+    },
+    onSettled: () => {
+      // Clear the text after submission attempt
+      setText('')
+    },
+    retry: true,
+    maxRetries: 3
+  })
 
   const handleSubmit = async () => {
     if (!text.trim()) return
-    setSubmitting(true)
-    setSaved(false)
-
-    try {
-      await postJSON('/daily-care/entries', {
-        person_id: personId,
-        caregiver_id: personId,
-        general_notes: text.trim(),
-        auto_tag: true,
-      })
-
-      setSaved(true)
-
-      const data = await postJSON('/community/experience', {
-        observation: text.trim(),
-      }) as ExperienceResult
-
-      setExperiences(data)
-      onCapture?.(text.trim())
-    } catch {
-      setSaved(true)
-    } finally {
-      setSubmitting(false)
-      setText('')
-    }
+    
+    // Get caregiver ID from auth context or use demo
+    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
+    
+    await submitSituation({
+      caregiverId,
+      personId,
+      rawInput: text.trim()
+    })
   }
 
   const clearExperiences = () => setExperiences(null)
@@ -77,19 +95,34 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
-        marginBottom: saved ? '12px' : '8px',
+        marginBottom: experiences ? '12px' : '8px',
       }}>
         <span style={{ fontSize: '20px' }}>📝</span>
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {saved && (
+        {experiences && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
-            animation: 'fadeOut 2s ease-in-out',
           }}>
             Saved
+          </span>
+        )}
+        {submitting && !experiences && (
+          <span style={{
+            fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
+            background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
+          }}>
+            Saving...
+          </span>
+        )}
+        {submitError && !experiences && (
+          <span style={{
+            fontSize: '11px', color: 'var(--error)', fontWeight: 500,
+            background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
+          }}>
+            Failed to save
           </span>
         )}
       </div>
@@ -143,7 +176,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             background: submitting || !text.trim()
               ? 'var(--text-secondary)'
               : 'var(--trust)',
-            color: 'white', fontSize: '13px', fontWeight: 500, cursor: 'default',
+            color: 'white', fontSize: '13px', fontWeight: 500, cursor: submitting ? 'default' : 'pointer',
           }}
         >
           {submitting ? 'Saving...' : 'Save what changed →'}

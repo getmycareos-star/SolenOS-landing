@@ -1,0 +1,214 @@
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Source type</label>
+                <select name="source_type" style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '14px' }}>
+                  <option value="free_form_note">Free form note</option>
+                  <option value="document">Document</option>
+                  <option value="device_reading">Device reading</option>
+                  <option value="caregiver_input">Caregiver input</option>
+                  <option value="family_report">Family report</option>
+                  <option value="clinician_note">Clinician note</option>
+                  <option value="lab_result">Lab result</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 500, alignSelf: 'flex-start' }}>
+              Create Evidence
+            </button>
+          </form>
+        </div>
+      )}
+      
+      <div style={{
+        display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px',
+        padding: '12px 16px', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)',
+      }}>
+        <input
+          type="text"
+          placeholder="Search evidence..."
+          value={filter.search}
+          onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+          style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '13px', minWidth: '200px' }}
+        />
+        <select
+          value={filter.type}
+          onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+          style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '13px' }}
+        >
+          <option value="">All types</option>
+          {Object.keys(typeIcon).map(t => (
+            <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+          ))}
+        </select>
+        <select
+          value={filter.status}
+          onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+          style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '13px' }}
+        >
+          <option value="">All statuses</option>
+          {Object.keys(statusColor).map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+      
+      {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
+      
+      {!loading && items.length === 0 && (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', padding: '32px', textAlign: 'center' }}>
+          No evidence found. Create your first evidence above.
+        </p>
+      )}
+      
+      {!loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {items.map(item => {
+            const sc = statusColor[item.status] || statusColor.ACTIVE
+            return (
+              <div
+                key={item.id}
+                onClick={() => selectEvidence(item)}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '12px', padding: '16px 20px', cursor: 'pointer',
+                  transition: 'border-color 0.15s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>{typeIcon[item.type] || '📎'}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 500, textTransform: 'capitalize' }}>{item.type.replace(/_/g, ' ')}</span>
+                    <span style={{
+                      fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '999px',
+                      background: sc.bg, color: sc.color,
+                    }}>
+                      {item.status}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>v{item.version}</span>
+                  </div>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                    {formatDate(item.created_at)}
+                  </span>
+                </div>
+                <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text)', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {item.source_text}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  {item.confidence_overall != null && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      Confidence: {formatConfidence(item.confidence_overall)}
+                    </span>
+                  )}
+                  {item.negation_status && item.negation_status !== 'ASSERTED' && (
+                    <span style={{ padding: '1px 6px', borderRadius: '4px', background: 'var(--warning-soft)', color: 'var(--warning)' }}>
+                      {item.negation_status}
+                    </span>
+                  )}
+                  {item.uncertainty_level && item.uncertainty_level !== 'CERTAIN' && (
+                    <span style={{ padding: '1px 6px', borderRadius: '4px', background: 'var(--unknown-soft)', color: 'var(--unknown)' }}>
+                      {item.uncertainty_level}
+                    </span>
+                  )}
+                  {item.event_time && (
+                    <span>{formatDate(item.event_time)}</span>
+                  )}
+                </div>
+                
+                {/* Trust components for list view */}
+                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <SourceIndicator
+                    sourceType={item.sourceType}
+                    sourceDate={item.sourceDate}
+                    eventDate={item.eventDate}
+                    description={item.source_text.substring(0, 50) + '...'}
+                  />
+                  
+                  <InformationStatus
+                    status={item.accessLevel as any}
+                    explanation={item.accessLevel === 'private' ? 'This information is private to you' : 
+                              item.accessLevel === 'shared' ? 'Shared with selected people' : 
+                              'Access information unavailable'}
+                  />
+                  
+                  <AIAttribution
+                    isAIGenerated={item.sourceType === 'ai-generated'}
+                    confidence={item.confidence_overall}
+                    explanation={item.sourceType === 'ai-generated' 
+                      ? 'Based on analysis of care patterns and historical data'
+                      : undefined}
+                  />
+                  
+                  <PrivacyIndicator
+                    accessLevel={item.accessLevel}
+                    sharedWith={item.sharedWith}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// RelationshipForm component (moved to the end to avoid forward reference issues)
+function RelationshipForm({ selectedId, onCreated }: { selectedId: string; onCreated: (id: string) => void }) {
+  const [targetId, setTargetId] = useState('')
+  const [relType, setRelType] = useState('SUPPORTS')
+  const [creating, setCreating] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setCreating(true)
+    try {
+      await postJSON('/evidence/relationships?caregiver_id=demo-caregiver', {
+        source_evidence_id: selectedId,
+        target_evidence_id: targetId,
+        relationship_type: relType,
+        detection_confidence: 0.8,
+      })
+      setTargetId('')
+      onCreated(targetId)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+      <div style={{ flex: 1 }}>
+        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Target evidence ID</label>
+        <input
+          type="text"
+          value={targetId}
+          onChange={(e) => setTargetId(e.target.value)}
+          required
+          placeholder="Enter evidence ID..."
+          style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '13px' }}
+        />
+      </div>
+      <div>
+        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Type</label>
+        <select value={relType} onChange={(e) => setRelType(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '13px' }}>
+          <option value="SUPPORTS">Supports</option>
+          <option value="CONTRADICTS">Contradicts</option>
+          <option value="RELATED_TO">Related to</option>
+          <option value="SUPERSEDES">Supersedes</option>
+          <option value="SIMILAR_TO">Similar to</option>
+          <option value="CAUSES">Causes</option>
+          <option value="PRECEDES">Precedes</option>
+          <option value="FOLLOWS">Follows</option>
+        </select>
+      </div>
+      <button type="submit" disabled={creating} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontSize: '13px' }}>
+        {creating ? 'Creating...' : 'Create'}
+      </button>
+    </form>
+  )
+}

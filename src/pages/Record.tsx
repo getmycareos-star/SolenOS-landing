@@ -42,13 +42,18 @@ export default function Record() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Living Care Record</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5, maxWidth: '500px' }}>
-            Upload documents, notes, photos, messages, and care information. SolenOS remembers and connects these over time.
-          </p>
-        </div>
-        <Link to="/daily-care" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-          ← Daily capture
-        </Link>
-      </div>
+             Upload documents, notes, photos, messages, and care information. SolenOS remembers and connects these over time.
+           </p>
+         </div>
+         <div>
+           <Link to="/daily-care" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none', marginRight: '16px' }}>
+             ← Daily notes
+           </Link>
+           <Link to="/structured-daily-capture" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+             ← Structured capture
+           </Link>
+         </div>
+       </div>
 
       <div style={{
         background: 'var(--accent-soft)', border: '1px solid var(--accent)',

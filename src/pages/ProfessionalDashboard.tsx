@@ -1,315 +1,282 @@
-import { useState, useEffect } from 'react'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { useEffect, useState } from 'react'
+import { getJSON, getPersonId } from '../api/client'
 
-interface HelpRequest {
-  question_id: string
-  post_id: string
-  content: string
-  author_label: string
-  created_at: string
-  tags: string[]
-  community_answer: string | null
+interface ProfessionalDashboardAlert {
+  person_id: string
+  person_name: string
+  alert_type: string
+  title: string
+  description: string
+  severity: string
+  timestamp: string
+  action_required: boolean
+  suggested_action: string | null
 }
 
-interface ImpactMetrics {
-  answers_given: number
-  professionals_active: number
-  questions_answered: number
-  avg_helpfulness: number
-  expertise_match_rate: number
+interface ProfessionalDashboardPersonSummary {
+  person_id: string
+  person_name: string
+  primary_condition: string | null
+  last_updated: string
+  alert_count: number
+  alerts: string[]
+  care_team_size: number
+  has_recent_updates: boolean
+  next_appointment: string | null
+  compliance_score: number | null
 }
 
-const DEMO_HELP_REQUESTS: HelpRequest[] = [
-  {
-    question_id: 'q1',
-    post_id: 'post-1',
-    content: 'My father with Lewy Body Dementia is having severe hallucinations in the evenings. We tried reducing lights but nothing helps. What has worked for others?',
-    author_label: 'Anonymous caregiver',
-    created_at: new Date().toISOString(),
-    tags: ['hallucinations', 'evening-calling'],
-    community_answer: 'Several caregivers found that a small nightlight (not overhead) plus a consistent bedtime routine helped. Melatonin (discuss with doctor) also mentioned frequently.',
-  },
-  {
-    question_id: 'q2',
-    post_id: 'post-2',
-    content: 'How do you safely help someone with advanced AD take daily medication when they refuse? We\'ve tried pill crushers but they catch on.',
-    author_label: 'Anonymous caregiver',
-    created_at: new Date().toISOString(),
-    tags: ['medication-management', 'resistance'],
-    community_answer: null,
-  },
-]
+interface ProfessionalDashboard {
+  total_patients: number
+  active_patients_today: number
+  patients_with_alerts: number
+  total_alerts: number
+  alerts: ProfessionalDashboardAlertItem[]
+  patients: ProfessionalDashboardPersonSummary[]
+  professional_name: string
+  professional_role: string
+  specialty: string | null
+  generated_at: string
+  timeframe_days: number
+}
 
-const DEMO_METRICS: ImpactMetrics = {
-  answers_given: 87,
-  professionals_active: 3,
-  questions_answered: 142,
-  avg_helpfulness: 4.2,
-  expertise_match_rate: 78,
+interface ProfessionalDashboardAlertItem {
+  person_id: string
+  person_name: string
+  alert_type: string
+  title: string
+  description: string
+  severity: string
+  timestamp: string
+  action_required: boolean
+  suggested_action: string | null
 }
 
 export default function ProfessionalDashboard() {
-  const [helpRequests, setHelpRequests] = useState<HelpRequest[]>([])
-  const [metrics, setMetrics] = useState<ImpactMetrics>(DEMO_METRICS)
-  const [selected, setSelected] = useState<HelpRequest | null>(null)
-  const [answer, setAnswer] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'requests' | 'impact' | 'office-hours'>('requests')
+  const [dashboard, setDashboard] = useState<ProfessionalDashboard | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [timeframeDays, setTimeframeDays] = useState(7)
   const personId = getPersonId()
 
   useEffect(() => {
-    fetchHelpRequests()
-    fetchMetrics()
-  }, [])
+    fetchDashboard()
+  }, [personId, timeframeDays])
 
-  const fetchHelpRequests = async () => {
-    try {
-      const data = await getJSON('/community/help-requests') as any
-      if (data?.requests && Array.isArray(data.requests)) {
-        setHelpRequests(data.requests)
-      } else {
-        setHelpRequests(DEMO_HELP_REQUESTS)
-      }
-    } catch {
-      setHelpRequests(DEMO_HELP_REQUESTS)
-    }
-  }
-
-  const fetchMetrics = async () => {
-    try {
-      const data = await getJSON('/team/dashboard') as any
-      if (data) {
-        setMetrics({
-          answers_given: data.answers_given || 0,
-          professionals_active: data.professionals_active || 0,
-          questions_answered: data.questions_answered || 0,
-          avg_helpfulness: data.avg_helpfulness || 0,
-          expertise_match_rate: data.expertise_match_rate || 0,
-        })
-      }
-    } catch {
-      setMetrics(DEMO_METRICS)
-    }
-  }
-
-  const submitAnswer = async (request: HelpRequest) => {
-    if (!answer.trim()) return
+  const fetchDashboard = async () => {
     setLoading(true)
+    setError(null)
     try {
-      await postJSON(`/community/${request.post_id}/reactions`, {
-        reaction_type: 'caregiver_answer',
-        caregiver_id: personId,
-        content: answer,
-      })
-      setHelpRequests(prev => prev.filter(r => r.question_id !== request.question_id))
-      if (selected?.question_id === request.question_id) {
-        setSelected(null)
-      }
-      setAnswer('')
-      fetchMetrics()
-    } catch {
+      const data = await getJSON(`/professional-dashboard/?timeframe_days=${timeframeDays}`)
+      setDashboard(data as ProfessionalDashboard)
+    } catch (err: any) {
+      console.error('Failed to fetch professional dashboard:', err)
+      setError(err.message || 'Failed to load dashboard')
     } finally {
       setLoading(false)
     }
   }
 
-  const markHelpful = async (request: HelpRequest) => {
-    try {
-      await postJSON(`/community/${request.post_id}/reactions`, {
-        reaction_type: 'caregiver_helpful',
-        caregiver_id: personId,
-      })
-      setHelpRequests(prev => prev.filter(r => r.question_id !== request.question_id))
-    } catch {
-    }
+  if (loading) {
+    return (
+      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
+        <div style={{ fontSize: '20px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          Loading professional dashboard...
+        </div>
+      </div>
+    )
   }
 
-  const TabButton = ({ id, label }: { id: typeof activeTab; label: string }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      style={{
-        padding: '8px 16px', borderRadius: '8px', border: 'none',
-        background: activeTab === id ? 'var(--trust-soft)' : 'transparent',
-        color: activeTab === id ? 'var(--trust)' : 'var(--text-secondary)',
-        fontSize: '13px', fontWeight: activeTab === id ? 600 : 500,
-        cursor: 'pointer',
-      }}
-    >
-      {label}
-    </button>
-  )
+  if (error) {
+    return (
+      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
+        <div style={{ fontSize: '20px', color: 'var(--error)', marginBottom: '16px' }}>
+          {error}
+        </div>
+        <button
+          onClick={fetchDashboard}
+          style={{
+            padding: '8px 16px', borderRadius: '8px', border: 'none',
+            background: 'var(--trust)', color: 'white', fontSize: '13px',
+            cursor: 'pointer'
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  if (!dashboard) {
+    return (
+      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
+        <div style={{ fontSize: '20px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          No dashboard data available
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: '24px 32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 600 }}>Professional Dashboard</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <TabButton id="requests" label="Help Requests" />
-          <TabButton id="impact" label="My Impact" />
-          <TabButton id="office-hours" label="Office Hours" />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <label style={{ fontSize: '13px', color: 'var(--text-secondary)', marginRight: '8px' }}>
+            Timeframe:
+          </label>
+          <select
+            value={timeframeDays}
+            onChange={(e) => setTimeframeDays(parseInt(e.target.value))}
+            style={{
+              padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)',
+              background: 'var(--surface)', fontSize: '13px'
+            }}
+          >
+            <option value={7}>7 Days</option>
+            <option value={14}>14 Days</option>
+            <option value={30}>30 Days</option>
+          </select>
         </div>
       </div>
 
-      {activeTab === 'requests' && (
+      {/* Dashboard Summary */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent)' }}>{dashboard.total_patients}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Total Patients</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--trust)' }}>{dashboard.active_patients_today}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Active Today</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--warning)' }}>{dashboard.patients_with_alerts}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Patients with Alerts</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--error)' }}>{dashboard.total_alerts}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Total Alerts</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Professional Info */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Your Professional Information</h2>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>{dashboard.professional_name}</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{dashboard.professional_role}</div>
+            {dashboard.specialty && (
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Specialty: {dashboard.specialty}
+              </div>
+            )}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Last updated: {new Date(dashboard.generated_at).toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {/* Alerts Section */}
+      {dashboard.alerts.length > 0 && (
         <>
-          <div style={{
-            display: 'flex', gap: '8px', marginBottom: '16px',
-            overflowX: 'auto', paddingBottom: '4px'
-          }}>
-            {helpRequests.length === 0 ? (
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No open requests. Thank you for your service.</p>
-            ) : (
-              helpRequests.map(req => (
-                <div
-                  key={req.question_id}
-                  onClick={() => setSelected(req)}
-                  style={{
-                    padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)',
-                    background: 'var(--surface)', cursor: 'pointer',
-                    flex: 1, minWidth: '200px',
-                    borderLeft: `3px solid var(--${req.community_answer ? 'success' : 'warning'})`,
-                    maxHeight: '120px', overflow: 'hidden',
-                  }}
-                >
-                  <div style={{
-                    fontSize: '12px', fontWeight: 600, color: 'var(--text)',
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}>
-                    {req.content.substring(0, 80)}...
+          <div style={{ marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Active Alerts</h2>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+              {dashboard.alerts.map((alert, index) => (
+                <div key={index} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: index < dashboard.alerts.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{
+                          width: '8px', height: '8px', borderRadius: '50%',
+                          background: alert.severity === 'critical' ? 'var(--error)' :
+                                   alert.severity === 'high' ? 'var(--warning)' :
+                                   alert.severity === 'medium' ? 'var(--accent)' : 'var(--success)'
+                        }}></div>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
+                          {alert.title}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        {new Date(alert.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    {alert.action_required && (
+                      <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'var(--error-soft)', color: 'var(--error)' }}>
+                        Action Required
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Tags: {req.tags.join(', ')}
-                  </div>
-                  {req.community_answer && (
-                    <div style={{ fontSize: '11px', color: 'var(--success)', marginTop: '4px' }}>
-                      Community already answered
+                  <p style={{ fontSize: '13px', color: 'var(--text)', marginBottom: '8px' }}>
+                    {alert.description}
+                  </p>
+                  {alert.suggested_action && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                      Suggested action: {alert.suggested_action}
                     </div>
                   )}
                 </div>
-              ))
-            )}
-          </div>
-
-          {selected && (
-            <div style={{
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: '12px', padding: '20px',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    {selected.tags.map(t => (
-                      <span key={t} style={{
-                        fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
-                        background: 'var(--accent-soft)', color: 'var(--accent)'
-                      }}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text)' }}>{selected.content}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                    Asked by: {selected.author_label}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelected(null)}
-                  style={{
-                    background: 'none', border: 'none', color: 'var(--text-secondary)',
-                    cursor: 'pointer', fontSize: '16px',
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              {selected.community_answer && (
-                <div style={{
-                  background: 'var(--success-soft)', border: '1px solid var(--success)',
-                  borderRadius: '8px', padding: '12px 16px', marginTop: '16px'
-                }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--success)', marginBottom: '4px' }}>
-                    Community answer:
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text)' }}>{selected.community_answer}</div>
-                </div>
-              )}
-
-              <textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Your professional guidance to display alongside the community answer..."
-                style={{
-                  width: '100%', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border)',
-                  background: 'var(--bg)', fontSize: '14px', outline: 'none', marginTop: '16px',
-                  resize: 'vertical', minHeight: '80px',
-                }}
-              />
-
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button
-                  onClick={() => submitAnswer(selected)}
-                  disabled={loading || !answer.trim()}
-                  style={{
-                    padding: '8px 16px', borderRadius: '8px', border: 'none',
-                    background: loading || !answer.trim() ? 'var(--text-secondary)' : 'var(--trust)',
-                    color: 'white', fontSize: '13px', fontWeight: 500, cursor: 'default',
-                  }}
-                >
-                  {loading ? '...' : 'Submit Professional Guidance'}
-                </button>
-                {!selected.community_answer && (
-                  <button
-                    onClick={() => markHelpful(selected)}
-                    style={{
-                      padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)',
-                      background: 'var(--surface)', fontSize: '12px', color: 'var(--text-secondary)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Mark as Helpful ✓
-                  </button>
-                )}
-              </div>
+              ))}
             </div>
-          )}
+          </div>
         </>
       )}
 
-      {activeTab === 'impact' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent)' }}>{metrics.answers_given}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Guidance Provided</div>
-          </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--trust)' }}>{metrics.professionals_active}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Professionals Active</div>
-          </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--success)' }}>{metrics.questions_answered}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Questions Answered</div>
-          </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--warning)' }}>{metrics.avg_helpfulness.toFixed(1)}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Avg Helpfulness</div>
-          </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent)' }}>{metrics.expertise_match_rate}%</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Expertise Match Rate</div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'office-hours' && (
+      {/* Patients Section */}
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Patient Summaries</h2>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Upcoming Office Hours</h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Office hours let professionals host live Q&A sessions. Schedule one from the team dashboard.
-          </p>
+          {dashboard.patients.map((patient, index) => (
+            <div key={index} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: index < dashboard.patients.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>{patient.person_name}</div>
+                  {patient.primary_condition && (
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      {patient.primary_condition}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: patient.alert_count > 0 ? 'var(--warning)' : 'var(--success)' }}></div>
+                    <span>{patient.alert_count} alerts</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: patient.has_recent_updates ? 'var(--success)' : 'var(--text-soft)' }}></div>
+                    <span>{patient.has_recent_updates ? 'Recent updates' : 'No recent updates'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: patient.next_appointment ? 'var(--accent)' : 'var(--text-soft)' }}></div>
+                    <span>{patient.next_appointment ? 'Upcoming appointment' : 'No upcoming appointments'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Patient Details */}
+              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-soft)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Care Team Size</div>
+                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{patient.care_team_size}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Compliance Score</div>
+                    <div style={{ fontSize: '16px', fontWeight: 600, color: patient.compliance_score !== null && patient.compliance_score >= 80 ? 'var(--success)' : patient.compliance_score !== null && patient.compliance_score >= 60 ? 'var(--warning)' : 'var(--error)' }}>
+                      {patient.compliance_score !== null ? patient.compliance_score.toFixed(0) + '%' : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }
