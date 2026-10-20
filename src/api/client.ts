@@ -60,6 +60,10 @@ async function handleResponse(res: Response) {
   const isJson = contentType.includes('application/json') || (typeof res.text !== 'function' && typeof res.json === 'function')
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAccessToken()
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenos:auth-expired'))
+    }
     let message = `API ${res.status}`
     if (isJson) {
       try {
