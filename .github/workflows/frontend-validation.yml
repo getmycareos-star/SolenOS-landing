@@ -36,6 +36,8 @@ jobs:
           npm install-scripts approve unrs-resolver
       - name: Run approved dependency install scripts
         run: npm rebuild --legacy-peer-deps
+      - name: Type-check all Next.js application sources
+        run: npx tsc --project tsconfig.next.json --pretty false
       - name: Build Next.js production application
         run: npm run build
       - name: Type-check and build Vite client
