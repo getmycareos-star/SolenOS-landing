@@ -7,6 +7,19 @@ on:
     branches: [main, "fix/**"]
 
 jobs:
+  lockfile-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Verify committed lockfile supports clean install
+        run: npm ci
+
   build-and-test:
     runs-on: ubuntu-latest
     steps:
@@ -17,8 +30,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Install locked dependencies
-        run: npm ci
+      - name: Install dependencies and reconcile local lock state
+        run: npm install --no-audit --no-fund
       - name: Type-check and build Vite application
         run: npm run build
       - name: Run Jest unit tests
