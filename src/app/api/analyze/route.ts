@@ -3,6 +3,7 @@ import { isAnalyzeFailure, runAnalyzePipeline } from "@/lib/analyze-pipeline";
 import { recordReliefMeasurementEvent } from "@/lib/telemetry-persistence/server";
 import type { CaregiverDepletionSignalsResult } from "@/lib/caregiver-depletion-signals";
 import {
+import { withAuthentication } from '@/lib/auth/middleware';
   ANALYZE_OPS_KEY_HEADER,
   analyzePipelineDisabledResponse,
   isAnalyzePipelineEnabled,
@@ -10,7 +11,7 @@ import {
 
 export const runtime = "nodejs";
 
-export async function POST(request: NextRequest) {
+async function postAnalyzeHandler(request: NextRequest, user: any) {
   // /api/analyze is an ops/engine path, not a caregiver entry. Caregiver surfaces
   // use /api/situation, which is the only path that writes to the Living Care Record.
   if (!isAnalyzePipelineEnabled({ opsKey: request.headers.get(ANALYZE_OPS_KEY_HEADER) })) {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
       depletionSignals?.environmental_dependency_flag ?? "none";
 
     void recordReliefMeasurementEvent({
-      telemetry_user_id: context?.telemetry_user_id ?? "anonymous",
+      telemetry_user_id: user.telemetry_user_id ?? "anonymous",
       input_raw: input,
       prior_input_raw: input,
       output: result,
@@ -75,3 +76,12 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+
+export const POST = withAuthentication(postAnalyzeHandler);
+
+
+
+
+
