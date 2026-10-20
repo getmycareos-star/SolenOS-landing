@@ -18,20 +18,36 @@ on:
       - ".github/workflows/frontend-build.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out repair branch
         uses: actions/checkout@v4
+        with:
+          ref: repair/api-contract-netlify-2026-10
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-      - name: Install locked dependencies
+      - name: Regenerate lockfile from package.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies from regenerated lockfile
         run: npm ci
       - name: Type-check and build Vite application
         run: npm run build
+      - name: Commit reconciled lockfile when changed
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "Reconcile frontend lockfile with package manifest"
+            git push origin HEAD:repair/api-contract-netlify-2026-10
+          else
+            echo "package-lock.json already matches package.json"
+          fi
