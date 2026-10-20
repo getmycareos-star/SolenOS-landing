@@ -36,7 +36,9 @@ jobs:
           npm install-scripts approve unrs-resolver
       - name: Run approved dependency install scripts
         run: npm rebuild --legacy-peer-deps
-      - name: Type-check and production build
+      - name: Build Next.js production application
         run: npm run build
+      - name: Type-check and build Vite client
+        run: npm run build:vite
       - name: Run frontend tests
         run: npm test -- --runInBand
