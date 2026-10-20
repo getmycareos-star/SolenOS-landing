@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import StructuredDailyCapture from '../StructuredDailyCapture';
 import { compressImage } from '../../lib/imageCompression';
