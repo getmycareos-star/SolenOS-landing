@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Navigate, Outlet, Routes, Route } from 'react-router-dom'
 import { getAccessToken } from './api/client'
 import Dashboard from './pages/Dashboard'
@@ -16,7 +17,13 @@ import Login from './pages/Login'
 import InvestorDashboard from './pages/InvestorDashboard'
 
 function RequireAuth() {
-  return getAccessToken() ? <Outlet /> : <Navigate to="/login" replace />
+  const [authenticated, setAuthenticated] = useState(() => Boolean(getAccessToken()))
+  useEffect(() => {
+    const onExpired = () => setAuthenticated(false)
+    window.addEventListener('solenos:auth-expired', onExpired)
+    return () => window.removeEventListener('solenos:auth-expired', onExpired)
+  }, [])
+  return authenticated ? <Outlet /> : <Navigate to="/login" replace />
 }
 
 export default function App() {
