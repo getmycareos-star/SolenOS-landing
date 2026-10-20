@@ -1,41 +1,29 @@
-# SolenOS-landing — Netlify configuration for Next.js App Router
-# Build must run `next build` and Netlify must serve the Next.js server output.
-# The @netlify/plugin-nextjs runtime REQUIRES publish = ".next"
-# (the plugin transforms .next output into Netlify-compatible functions + rewrites).
-# publish must be distinct from base (repo root) or the plugin errors out.
-
+# SolenOS frontend is a Vite + React SPA (package.json is authoritative).
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
 
-# Build caching — persist the Next.js build cache and node_modules between deploys
-[[build.cache]]
-  path = ".next/cache"
-  ttl = "7"
-
-[[build.cache]]
-  path = "node_modules"
-  ttl = "7"
-
 [dev]
   command = "npm run dev"
-  port = 3000
+  port = 5173
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# Preserve client-side React Router navigation.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
-# Proxy all /api/* calls to the Railway backend (SolenOS_backend).
-# The frontend repo no longer ships Next.js API route handlers.
+# Keep the /api prefix and forward the exact suffix to the backend.
+# Example: /api/v1/situation -> backend /api/v1/situation.
 [[redirects]]
   from = "/api/*"
   to = "https://solenosbackend-production-8773.up.railway.app/api/:splat"
   status = 200
   force = true
 
-# Security headers
 [[headers]]
   for = "/*"
   [headers.values]
@@ -43,17 +31,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# CORS headers for API proxy to Railway backend
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-    Access-Control-Max-Age = "86400"
-
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
