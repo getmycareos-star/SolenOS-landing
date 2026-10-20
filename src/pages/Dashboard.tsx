@@ -326,7 +326,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/timeline" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View full timeline â†’
@@ -440,7 +440,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/insights" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View all insights â†’
