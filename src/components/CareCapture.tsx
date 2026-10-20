@@ -35,6 +35,7 @@ const CAPTURE_HINTS = [
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
+  const [identityError, setIdentityError] = useState<string | null>(null)
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
   const personId = pid || getPersonId()
   
@@ -85,9 +86,10 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     
     const caregiverId = getCaregiverId()
     if (!caregiverId || !personId || personId === 'demo-person-id') {
-      console.error('Care capture requires an authenticated care record and linked caregiver identity.')
+      setIdentityError('Sign in and link a caregiver identity before saving a care change.')
       return
     }
+    setIdentityError(null)
 
     await submitSituation({
       caregiverId,
@@ -137,6 +139,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         )}
       </div>
 
+      {identityError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginBottom: '10px' }}>{identityError}</p>}
       <p style={{
         fontSize: '12px', color: 'var(--text-secondary)',
         marginBottom: '12px', lineHeight: 1.5
