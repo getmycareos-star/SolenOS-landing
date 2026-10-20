@@ -424,6 +424,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         raw_input: text,
         caregiver_id: caregiverId,
         person_id: careRecipientId,
+        care_recipient_id: careRecipientId,
         care_session_id: interactionSessionId(),
         captured_at: provenance.captured_at,
         provenance: {
