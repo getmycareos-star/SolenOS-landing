@@ -768,8 +768,9 @@ export default function StructuredDailyCapture() {
           
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
+              <label htmlFor="medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
               <input
+                id="medication-name"
                 type="text"
                 value={medicationForm.medication_name}
                 onChange={(e) => setMedicationForm(prev => ({ ...prev, medication_name: e.target.value }))}
@@ -787,8 +788,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
+                <label htmlFor="medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
                 <select
+                  id="medication-status"
                   value={medicationForm.status}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
                   style={{ 
@@ -807,8 +809,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Dose</label>
+                <label htmlFor="medication-dose" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Dose</label>
                 <input
+                  id="medication-dose"
                   type="text"
                   value={medicationForm.dose || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, dose: e.target.value || null }))}
@@ -827,8 +830,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scheduled For</label>
+                <label htmlFor="medication-scheduled-for" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scheduled For</label>
                 <input
+                  id="medication-scheduled-for"
                   type="datetime-local"
                   value={medicationForm.scheduled_for || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null }))}
@@ -844,8 +848,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Administered At</label>
+                <label htmlFor="medication-administered-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Administered At</label>
                 <input
+                  id="medication-administered-at"
                   type="datetime-local"
                   value={medicationForm.administered_at || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null }))}
@@ -862,8 +867,9 @@ export default function StructuredDailyCapture() {
             </div>
             
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+              <label htmlFor="medication-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
               <textarea
+                id="medication-note"
                 value={medicationForm.note || ''}
                 onChange={(e) => setMedicationForm(prev => ({ ...prev, note: e.target.value || null }))}
                 placeholder="Add any notes about the medication"
@@ -961,13 +967,14 @@ export default function StructuredDailyCapture() {
                       {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
                     </button>
                     <input
+                      id="medication-image-file"
                       type="file"
                       accept="image/*"
                       onChange={handleMedicationImageUpload}
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
                     />
-                    <label className='medication-file-label'>
+                    <label htmlFor="medication-image-file" className='medication-file-label'>
                       or upload from device
                     </label>
                   </div>
@@ -1036,8 +1043,9 @@ export default function StructuredDailyCapture() {
           
           <form onSubmit={handleVitalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
+              <label htmlFor="vital-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
               <select
+                id="vital-type"
                 value={vitalForm.vital_type}
                 onChange={(e) => setVitalForm(prev => ({ ...prev, vital_type: e.target.value }))}
                 style={{ 
@@ -1059,8 +1067,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
+                <label htmlFor="vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
                 <input
+                  id="vital-value"
                   type="number"
                   value={vitalForm.value}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
@@ -1077,8 +1086,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
+                <label htmlFor="vital-unit" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
                 <input
+                  id="vital-unit"
                   type="text"
                   value={vitalForm.unit || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, unit: e.target.value || null }))}
@@ -1095,8 +1105,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured At</label>
+                <label htmlFor="vital-measured-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured At</label>
                 <input
+                  id="vital-measured-at"
                   type="datetime-local"
                   value={vitalForm.measured_at}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, measured_at: e.target.value }))}
@@ -1112,8 +1123,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="vital-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
                 <textarea
+                  id="vital-note"
                   value={vitalForm.note || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, note: e.target.value || null }))}
                   placeholder="Add any notes about the vital"
@@ -1179,8 +1191,9 @@ export default function StructuredDailyCapture() {
             
             <form onSubmit={handleScaleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
+                <label htmlFor="scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
                 <select
+                  id="scale-type"
                   value={scaleForm.axis}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, axis: e.target.value }))}
                   style={{ 
@@ -1202,8 +1215,9 @@ export default function StructuredDailyCapture() {
               
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
+                  <label htmlFor="scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
                 <input
+                  id="scale-score"
                   type="number"
                   min={1}
                   max={5}
@@ -1222,8 +1236,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed At</label>
+                <label htmlFor="scale-observed-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed At</label>
                 <input
+                  id="scale-observed-at"
                   type="datetime-local"
                   value={scaleForm.observed_at}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, observed_at: e.target.value }))}
@@ -1239,8 +1254,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="scale-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
                 <textarea
+                  id="scale-note"
                   value={scaleForm.note || ''}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, note: e.target.value || null }))}
                   placeholder="Add any notes about the scale observation"
@@ -1300,8 +1316,9 @@ export default function StructuredDailyCapture() {
             borderRadius: '8px', 
             padding: '16px' 
           }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Additional Notes</label>
+            <label htmlFor="additional-notes" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Additional Notes</label>
             <textarea
+              id="additional-notes"
               value={form.notes}
               onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Add any additional notes about the day"
