@@ -20,6 +20,7 @@ import {
   DURABLE_CARE_KEY_STORAGE,
   ensureClientDurableCareKey,
   ensureClientInteractionSessionId,
+  mintDurableCareKey,
 } from "@/lib/care-identity";
 import type { Situation } from "@/lib/ui-runtime/types";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
@@ -82,6 +83,67 @@ function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string 
     parts.push(`[Document: ${d.name}]\n${d.extractedText.trim()}`);
   }
   return parts.join("\n\n");
+}
+
+const PENDING_CAPTURE_IDEMPOTENCY_STORAGE = "solenos_pending_capture_idempotency_v1";
+
+function stableCaptureFingerprint(payload: Record<string, unknown>): string {
+  const stable: Record<string, unknown> = { ...payload };
+  delete stable.care_session_id;
+  delete stable.captured_at;
+  delete stable.timestamp;
+  const provenance = stable.provenance;
+  if (provenance && typeof provenance === "object" && !Array.isArray(provenance)) {
+    const stableProvenance = { ...(provenance as Record<string, unknown>) };
+    delete stableProvenance.captured_at;
+    stable.provenance = stableProvenance;
+  }
+  const serialized = JSON.stringify(stable);
+  // This is a local retry identity only, not a security hash. A collision
+  // causes a safe 409 from the server rather than merging different captures.
+  let hash = 2166136261;
+  for (let i = 0; i < serialized.length; i += 1) {
+    hash ^= serialized.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${serialized.length}:${(hash >>> 0).toString(16)}`;
+}
+
+function newCaptureIdempotencyKey(): string {
+  if (typeof window !== "undefined" && typeof window.crypto?.randomUUID === "function") {
+    return `capture_${window.crypto.randomUUID()}`;
+  }
+  return `capture_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+}
+
+function getOrCreateCaptureIdempotencyKey(payload: Record<string, unknown>): string {
+  const fingerprint = stableCaptureFingerprint(payload);
+  try {
+    const raw = window.localStorage.getItem(PENDING_CAPTURE_IDEMPOTENCY_STORAGE);
+    if (raw) {
+      const existing = JSON.parse(raw) as { fingerprint?: unknown; key?: unknown };
+      if (existing.fingerprint === fingerprint && typeof existing.key === "string" && existing.key) {
+        return existing.key;
+      }
+    }
+    const key = newCaptureIdempotencyKey();
+    // Store only the payload fingerprint and random key, never the care text.
+    window.localStorage.setItem(
+      PENDING_CAPTURE_IDEMPOTENCY_STORAGE,
+      JSON.stringify({ fingerprint, key }),
+    );
+    return key;
+  } catch {
+    return newCaptureIdempotencyKey();
+  }
+}
+
+function clearPendingCaptureIdempotencyKey(): void {
+  try {
+    window.localStorage.removeItem(PENDING_CAPTURE_IDEMPOTENCY_STORAGE);
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
 }
 
 type Props = {
