@@ -36,7 +36,7 @@ interface CareCircleMembership {
 export default function CareCircle() {
   const [careCircles, setCareCircles] = useState<CareCircle[]>([])
   const [selectedCircle, setSelectedCircle] = useState<CareCircle | null>(null)
-  const [circleMembers, setCircleMembers] = useState<CareCircleMembership[]>([])
+  const [circleMembers] = useState<CareCircleMembership[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const personId = getPersonId()
