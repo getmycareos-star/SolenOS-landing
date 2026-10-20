@@ -14,6 +14,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out repair branch
         uses: actions/checkout@v4
@@ -26,7 +27,7 @@ jobs:
           node-version: "20"
           cache: npm
       - name: Regenerate lockfile from package.json
-        run: rm -f package-lock.json && npm install --package-lock-only --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+        run: rm -f package-lock.json && npm install --package-lock-only --legacy-peer-deps --ignore-scripts --no-audit --no-fund --fetch-timeout=60000 --fetch-retries=1
       - name: Print npm diagnostics on failure
         if: failure()
         run: |
