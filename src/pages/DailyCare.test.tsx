@@ -6,7 +6,7 @@ import DailyCare from './DailyCare';
 jest.mock('../api/client', () => ({
   ...jest.requireActual('../api/client'),
   postJSON: jest.fn().mockResolvedValue({}),
-  getJSON: jest.fn().mockResolvedValue([{ id: 'demo-caregiver', name: 'Demo Caregiver' }])
+  getJSON: jest.fn().mockResolvedValue([])
 }));
 
 // Mock the useLocationPermission hook
@@ -37,6 +37,8 @@ jest.mock('react', () => ({
 describe('DailyCare', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.setItem("solenos_person_id", "test-person-id");
+    localStorage.setItem("solenos_caregiver_id", "test-caregiver-id");
     locationState = null;
   });
 
@@ -136,10 +138,13 @@ describe('DailyCare', () => {
     
     // Verify postJSON was called with location data
     expect(require('../api/client').postJSON).toHaveBeenCalledWith(
-      '/daily-care/entries',
+      '/daily/log',
       expect.objectContaining({
-        mood: 'Calm',
-        agitation_level: 'None',
+        person_id: 'test-person-id',
+        caregiver_id: 'test-caregiver-id',
+        medications: [],
+        notes: expect.stringContaining('Mood selected: Calm'),
+        scales: expect.arrayContaining([expect.objectContaining({ axis: 'agitation', score: 1 })]),
         location: {
           latitude: 40.7128,
           longitude: -74.0060,
