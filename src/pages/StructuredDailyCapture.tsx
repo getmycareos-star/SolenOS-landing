@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { postJSON, postFormData, getCaregiverId, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
-import { useLocationPermission } from '../lib/permissions/useLocationPermission';
 import { compressImage } from '../lib/imageCompression';
 import { useOptimisticMutation } from '../lib/optimistic';
 
-const MOOD_OPTIONS = ['Calm', 'Content', 'Anxious', 'Restless', 'Agitated', 'Aggressive', 'Confused', 'Other'];
-const AGITATION_OPTIONS = ['None', 'Mild', 'Moderate', 'Severe', 'Extreme'];
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 
@@ -43,7 +40,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Medication form state
-  const [medicationForm, setMedicationForm] = useState({
+  const [medicationForm, setMedicationForm] = useState<{ medication_name: string; status: string; dose: string | null; scheduled_for: string | null; administered_at: string | null; photo_evidence_id: string | null; note: string | null }>({
     medication_name: '',
     status: 'given', // default to given
     dose: null,
@@ -54,7 +51,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Vitals form state
-  const [vitalForm, setVitalForm] = useState({
+  const [vitalForm, setVitalForm] = useState<{ vital_type: string; value: number; measured_at: string; unit: string | null; note: string | null }>({
     vital_type: 'bp_systolic',
     value: 0,
     measured_at: new Date().toISOString(),
@@ -63,7 +60,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Scale form state
-  const [scaleForm, setScaleForm] = useState({
+  const [scaleForm, setScaleForm] = useState<{ axis: string; score: number; observed_at: string; note: string | null }>({
     axis: 'mood',
     score: 3,
     observed_at: new Date().toISOString(),
@@ -77,36 +74,19 @@ export default function StructuredDailyCapture() {
   
   // Permission hooks
   const { state: cameraState, requestCamera: requestCam, stopCamera: stopCam } = useCameraPermission();
-  const { state: locationState, requestLocation: requestLoc } = useLocationPermission();
   
   // Person ID
   const personId = getPersonId();
-  
-  // Load caregivers (simplified for now)
-  const [caregivers, setCaregivers] = useState<Array<{id: string; name: string}>>([]);
-  const [caregiverId, setCaregiverId] = useState<string>('');
-  const [loadingCaregivers, setLoadingCaregivers] = useState<boolean>(true);
-  
-  useEffect(() => {
-    const linkedCaregiverId = getCaregiverId();
-    if (linkedCaregiverId) {
-      setCaregivers([{ id: linkedCaregiverId, name: 'Your linked caregiver profile' }]);
-      setCaregiverId(linkedCaregiverId);
-    } else {
-      setCaregivers([]);
-      setCaregiverId('');
-    }
-    setLoadingCaregivers(false);
-  }, [personId]);
   
   // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
     try {
       const stream = await requestCam();
+      if (!stream) throw new Error('Camera access is unavailable or was denied.');
       // Create a video element to capture a frame
       const video = document.createElement('video');
       video.srcObject = stream;
-      video.play();
+      await video.play();
       
       // Wait for the video to play
       await new Promise<void>((resolve) => {
@@ -147,10 +127,10 @@ export default function StructuredDailyCapture() {
       }
       
       // Stop the stream
-      stream.getTracks().forEach(track => track.stop());
+      stopCam();
     } catch (err) {
       console.error('Failed to capture image:', err);
-      alert('Failed to capture image: ' + err.message);
+      alert('Failed to capture image: ' + (err instanceof Error ? err.message : 'Unknown error'));
       setMedicationCompressing(false);
     }
   };
@@ -225,7 +205,9 @@ export default function StructuredDailyCapture() {
         
         const formData = new FormData();
         formData.append('file', compressedFile);
-        formData.append('caregiver_id', getCaregiverId() || caregiverId);
+        const linkedCaregiverId = getCaregiverId();
+        if (!linkedCaregiverId) throw new Error('Link a caregiver identity before uploading care evidence.');
+        formData.append('caregiver_id', linkedCaregiverId);
         formData.append('person_id', personId);
         
         const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
@@ -349,7 +331,7 @@ export default function StructuredDailyCapture() {
   };
   
   // Handle form submission to backend with optimistic update
-  const { mutate: submitDailyLog, loading: submittingMutation, error: submitError } = useOptimisticMutation<
+  const { mutate: submitDailyLog, loading: submittingMutation } = useOptimisticMutation<
     any,
     {
       personId: string;
@@ -398,7 +380,7 @@ export default function StructuredDailyCapture() {
         })),
         notes: notes,
       }),
-    onMutate: async (variables) => {
+    onMutate: async (_variables) => {
       // Return snapshot for potential rollback
       return { 
         prevForm: form, 
@@ -408,7 +390,7 @@ export default function StructuredDailyCapture() {
         prevMedicationImagePreview: medicationImagePreview
       };
     },
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (_data, _variables, _context) => {
       // On success, reset the form
       setForm({
         medications: [],
@@ -451,7 +433,7 @@ export default function StructuredDailyCapture() {
       setSaveError(null);
       setSaved(true);
     },
-    onError: async (error, variables, context) => {
+    onError: async (error, _variables, context) => {
       // On error, rollback to previous state
       if (context && typeof context === 'object' && 'prevForm' in context) {
         const prevContext = context as {
@@ -471,7 +453,7 @@ export default function StructuredDailyCapture() {
       
       setSaveError(error);
       setSaved(false);
-      alert(`Failed to save: ${error.message}`);
+      alert(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
     },
     onSettled: () => {
       setSubmitting(false);
@@ -608,7 +590,7 @@ export default function StructuredDailyCapture() {
             backgroundColor: vital.is_out_of_range ? 'var(--error-soft)' : 'var(--success-soft)', 
             color: vital.is_out_of_range ? 'var(--error)' : 'var(--success)' 
           }}>
-            {vital.is_out_of_range ? 'Out of range' : 'Normal'}
+            Recorded
           </span>
         </div>
         
@@ -738,7 +720,7 @@ export default function StructuredDailyCapture() {
       )}
       
       {/* Save error indicator */}
-      {saveError && !saved && (
+      {saveError !== null && !saved && (
         <div style={{ 
           background: 'var(--error-soft)', 
           border: '1px solid var(--error)', 
@@ -747,7 +729,7 @@ export default function StructuredDailyCapture() {
           marginBottom: '24px' 
         }}>
           <span style={{ fontSize: '13px', color: 'var(--error)', fontWeight: '500' }}>
-            Failed to save. Please try again.
+            {saveError instanceof Error ? saveError.message : 'Failed to save. Please try again.'}
           </span>
         </div>
       )}
