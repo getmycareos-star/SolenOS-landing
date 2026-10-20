@@ -1,13 +1,6 @@
-declare global {
-  interface ImportMetaEnv {
-    VITE_API_BASE?: string
-  }
-  interface ImportMeta {
-    readonly env: ImportMetaEnv
-  }
-}
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
+const viteApiBase = import.meta.env?.VITE_API_BASE
+const nextApiBase = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_API_BASE : undefined
+const API_BASE = viteApiBase || nextApiBase || 'http://localhost:8000/api/v1'
 export const ACCESS_TOKEN_STORAGE_KEY = 'solenos_access_token'
 
 export function getAccessToken(): string | null {
