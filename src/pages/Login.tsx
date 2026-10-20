@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { getJSON, postJSON, setAccessToken, setPersonId } from '../api/client'
 
 type AuthMode = 'login' | 'signup'
@@ -246,11 +246,6 @@ export default function Login() {
         <p style={{ fontSize: '12px', lineHeight: 1.5, textAlign: 'center', color: 'var(--text-secondary)', marginTop: '18px' }}>
           Caregiver sign-in is supported. Professional and SolenOS team access will remain unavailable until separate verified roles and permissions are implemented.
         </p>
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Link to="/" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-            Return to dashboard
-          </Link>
-        </div>
       </div>
     </div>
   )
