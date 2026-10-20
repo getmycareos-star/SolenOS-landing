@@ -27,7 +27,6 @@ type AppShellProps = {
   navItems?: readonly NavItem[];
   careContext?: ReactNode;
   brandHref?: string;
-  onMenuToggle?: () => void;
 };
 
 /** Tab icons per position — Care Record, Timeline, Documents, Settings. */
@@ -64,7 +63,6 @@ export function AppShell({
   navItems,
   careContext,
   brandHref = "/",
-  onMenuToggle,
 }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
