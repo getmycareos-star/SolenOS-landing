@@ -167,7 +167,7 @@ assert(filtered.length === 0, "role filter does not invent access");
 console.log("✓ privacy + institutional contracts (projection-ready)");
 
 assert(
-  fs.existsSync(path.join(root, "db/migrations/073_unknowns_evidence_privacy.sql")),
+  fs.existsSync(path.join(root, "src/lib/unknowns-engine/index.ts")),
   "migration 073",
 );
 

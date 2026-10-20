@@ -15,7 +15,7 @@ const careAttentionService = new CareAttentionService(pool)
 async function getAttentionSummaryHandler(request: Request, user: any) {
   try {
     const { searchParams } = new URL(request.url)
-    const caregiverId = searchParams.get('caregiver_id') ?? user.id;
+    const caregiverId = user.id;
     const careRecipientId = searchParams.get('care_recipient_id')
     
     if (!careRecipientId) {

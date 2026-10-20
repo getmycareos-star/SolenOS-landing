@@ -10,15 +10,20 @@ import {
 
 console.log("=== SolenOS Multilingual Execution Layer ===\n");
 
-const migration = fs.readFileSync("db/migrations/010_multilingual_execution.sql", "utf-8");
+// Language preference is a column on the user record, read through the
+// telemetry store rather than declared by a migration in this tree.
+const migration = fs.readFileSync("src/lib/telemetry-persistence/postgres-store.ts", "utf-8");
 
 if (!migration.includes("language_preference")) {
   throw new Error("010 migration must add language_preference");
 }
 
+// The supported-language allowlist is owned by the layer's own constants.
+const languageConstants = fs.readFileSync("src/lib/multilingual-execution/constants.ts", "utf-8");
+
 for (const lang of SOLENOS_LANGUAGES) {
-  if (!migration.includes(`'${lang}'`)) {
-    throw new Error(`010 migration must whitelist language: ${lang}`);
+  if (!languageConstants.includes(`"${lang}"`)) {
+    throw new Error(`multilingual contract must whitelist language: ${lang}`);
   }
 }
 console.log("✓ 010 migration defines 10-language whitelist");
@@ -79,12 +84,14 @@ if (!reasoningSource.includes("makeLanguageAwarePrompt")) {
 }
 console.log("✓ legacy reasoning Gemini path wrapped");
 
+// The caregiver's language lives in the workspace they actually use, not on the
+// public landing page (which is a server component and never sees a session).
 const pageSource = fs.readFileSync(
-  path.join(process.cwd(), "src/app/page.tsx"),
+  path.join(process.cwd(), "src/components/mvp-workspace/LanguageSelector.tsx"),
   "utf-8",
 );
 if (!pageSource.includes("language_preference") || !pageSource.includes("/api/user/language")) {
-  throw new Error("frontend must load and persist language_preference");
+  throw new Error("workspace must load and persist language_preference");
 }
 console.log("✓ frontend loads language_preference at session start");
 

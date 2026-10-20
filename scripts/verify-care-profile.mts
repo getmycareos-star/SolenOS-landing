@@ -243,10 +243,11 @@ if (pipelineSource.includes("careProfileLayer") && pipelineSource.includes("obse
 }
 console.log("✓ care profile wired in analyze pipeline");
 
-const migration = fs.readFileSync("db/migrations/012_care_profile.sql", "utf-8");
-if (!migration.includes("care_profile_state")) {
-  throw new Error("migration 012 must add care_profile_state column");
+// Care profile state is held in-process for the session and parsed through a
+// schema on every write, rather than persisted as a user column.
+const careProfilePersistence = fs.readFileSync("src/lib/care-profile/persistence.ts", "utf-8");
+if (!careProfilePersistence.includes("getUserCareProfileState") || !careProfilePersistence.includes("parseCareProfileState")) {
+  throw new Error("care profile must persist validated state per user");
 }
-console.log("✓ postgres migration 012 present");
 
 console.log("\n✓ Care Profile Layer enforced");

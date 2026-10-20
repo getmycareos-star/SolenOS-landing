@@ -24,3 +24,32 @@ export function isLlmMarkedUnavailable(): boolean {
 export function clearLlmUnavailable(): void {
   unavailableUntil = 0;
 }
+
+/**
+ * A slow model is not a missing model.
+ *
+ * A timeout means the endpoint was reached but the answer did not arrive in
+ * budget — usually a first load into memory. Marking that as "unavailable"
+ * would mute semantic understanding for minutes after a single cold start, so
+ * only connection-class failures may write the memo.
+ */
+export function isEndpointUnreachable(error: unknown): boolean {
+  const raw =
+    error instanceof Error
+      ? `${error.message} ${(error as { code?: string; cause?: unknown }).code ?? ""} ${describeCause(error)}`
+      : String(error ?? "");
+  const message = raw.toLowerCase();
+
+  if (/abort|timed? ?out|timeout|etimedout|esockettimedout/.test(message)) return false;
+
+  return /econnrefused|econnreset|enotfound|eai_again|ehostunreach|enetunreach|socket hang up|fetch failed|network|connect/.test(
+    message,
+  );
+}
+
+function describeCause(error: unknown): string {
+  const cause = (error as { cause?: unknown }).cause;
+  if (!cause) return "";
+  if (cause instanceof Error) return `${cause.message} ${(cause as { code?: string }).code ?? ""}`;
+  return String(cause);
+}

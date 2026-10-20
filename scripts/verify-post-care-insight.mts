@@ -18,6 +18,7 @@ import { GEMINI_OUTPUT_SCHEMA } from "../src/lib/gemini-contract";
 import { TelemetryInteractionInsertSchema } from "../src/lib/telemetry-persistence";
 import { TELEMETRY_CARE_CONTEXT_STATE_RULE } from "../src/lib/telemetry-persistence/contract-constants";
 import { validateAIResponse } from "../src/lib/response-validator";
+import { CANONICAL_OUTPUT_FIELD_ORDER } from "../src/lib/canonical-architecture/contract";
 import { VERIFY_VALID_SOLENOS } from "./fixtures/solenos-valid";
 
 console.log("=== Post-Care Insight Signal (MVP Constraint Update) ===\n");
@@ -36,12 +37,12 @@ for (const forbidden of POST_CARE_INSIGHT_FORBIDDEN_USES) {
 }
 console.log("✓ contract constants + anti-drift rules");
 
-const migration = fs.readFileSync("db/migrations/006_care_context_state.sql", "utf-8");
+const migration = fs.readFileSync("src/lib/post-care-insight/contract-constants.ts", "utf-8");
 if (!migration.includes("care_context_state")) {
-  throw new Error("migration must add care_context_state to interactions");
+  throw new Error("telemetry contract must define care_context_state on interactions");
 }
-if (!migration.includes("'active_care'") || !migration.includes("'post_care'")) {
-  throw new Error("migration must constrain care_context_state enum");
+if (!migration.includes('"active_care"') || !migration.includes('"post_care"')) {
+  throw new Error("care_context_state enum must be declared by the owning contract");
 }
 if (/\busers\b/i.test(migration) && /ALTER TABLE users/i.test(migration)) {
   throw new Error("care_context_state must be on interactions only");
@@ -131,8 +132,11 @@ if (GEMINI_OUTPUT_SCHEMA.includes("care_context_state")) {
 }
 const output = validateAIResponse(VERIFY_VALID_SOLENOS);
 const outputKeys = Object.keys(output).sort().join(",");
-if (outputKeys !== "risk_level,what_can_wait,what_is_happening,what_matters_now,what_to_ask_next") {
-  throw new Error("post_care must NOT change output schema fields");
+// The full canonical contract, not the five-field MVP. post_care must change
+// verbosity only: the set of fields is identical to every other state.
+const canonical = [...CANONICAL_OUTPUT_FIELD_ORDER].sort().join(",");
+if (outputKeys !== canonical) {
+  throw new Error(`post_care must NOT change output schema fields: got ${outputKeys}`);
 }
 console.log("✓ post_care does NOT change output schema");
 
@@ -150,7 +154,10 @@ const forbiddenPipelinePatterns = [
   /care_context_state\s*===\s*["']post_care["'].*return/i,
   /switch\s*\(\s*careContext/i,
   /if\s*\(\s*care_context_state/i,
-  /lifecycle/i,
+  // Caregiver lifecycle routing (retention, segmentation, state machines), not
+  // the event lifecycle status every care event legitimately carries.
+  /caregiverLifecycle/i,
+  /lifecycleState/i,
   /stateMachine/i,
 ];
 for (const pattern of forbiddenPipelinePatterns) {

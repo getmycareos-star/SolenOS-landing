@@ -26,7 +26,9 @@ const RESOLUTION_KEYWORDS =
   /\b(resolved|sorted|handled|done|fixed|taken care of|no longer worried)\b/i;
 
 function daysBetween(a: Date, b: Date): number {
-  return Math.floor(Math.abs(a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24));
+  // Days elapsed from b to a, never negative: a timestamp in the future is clock
+  // skew, and someone whose device runs fast is here now, not long gone.
+  return Math.max(0, Math.floor((a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
 function pickReengagementMessage(userId: string): string {

@@ -23,7 +23,7 @@ export type ButtonProps = {
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">;
 
 /**
- * Reusable SolenOS button system.
+ * Reusable solenos button system.
  * Primary (filled), Secondary (outline), Icon (44x44 tap target), Destructive (muted tone).
  * Every state has a visible pressed response (scale + color) within 100ms.
  */

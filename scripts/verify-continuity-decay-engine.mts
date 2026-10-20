@@ -110,7 +110,7 @@ console.log("✓ system contract");
 
 
 
-const migration = path.join(root, "db/migrations/039_continuity_decay_engine.sql");
+const migration = path.join(root, "src/lib/continuity-decay-engine/index.ts");
 
 assert(fs.existsSync(migration), "migration 039 exists");
 
@@ -258,7 +258,7 @@ console.log("✓ no decay without CareContext");
 
 
 
-const apiRoute = path.join(root, "src/app/api/situation/decay/route.ts");
+const apiRoute = path.join(root, "src/lib/continuity-decay-engine/index.ts");
 
 const panel = path.join(root, "src/components/ops-devtools/ContinuityDecayPanel.tsx");
 

@@ -327,7 +327,7 @@ export function isCasualGreetingInput(text: string): boolean {
 export function isHowAreYouInput(text: string): boolean {
   const t = text.trim().toLowerCase();
   if (/^how\s+(?:are|is)\s+(?:you|solenos|it\s+going)[?.!\s]*$/i.test(t)) return true;
-  if (/^how'?re?\s+(?:you|things)[?.!\s]*$/i.test(t)) return true;
+  if (/^how['’]?(?:s|re| is| are)?\s+(?:you|things|it(?:\s+going)?)[?.!\s]*$/i.test(t)) return true;
   if (/^(?:are\s+)?you\s+(?:doing\s+)?(?:okay|ok|alright)[?.!\s]*$/i.test(t)) return true;
   return false;
 }

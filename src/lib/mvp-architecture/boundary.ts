@@ -17,7 +17,30 @@ export const CAREGIVER_MVP_API_ROUTES = ["/api/situation"] as const;
  * Legacy analyze-surface allowlist used by verify-mvp-architecture (ops compression path).
  * Not the caregiver product entry.
  */
-export const MVP_ALLOWED_API_ROUTES = ["/api/extract", "/api/share-intake", "/api/situation", "/api/analyze"] as const;
+export const MVP_ALLOWED_API_ROUTES = [
+  "/api/extract",
+  "/api/share-intake",
+  "/api/situation",
+  "/api/analyze",
+  "/api/track",
+  // Caregiver feedback about the response they just received. Both are called
+  // from the mounted workspace, so a response the caregiver can correct is
+  // part of the caregiver surface, not an extension of it.
+  "/api/feedback",
+  "/api/research-feedback",
+  // The language the caregiver reads and speaks. Storing it is part of being
+  // able to talk to them at all, not an extension of the surface.
+  "/api/user/language",
+  // Care Attention Layer - helps caregivers determine what deserves their attention
+  "/api/care-attention",
+  // Open Loop Management - tracks unresolved items requiring attention
+  "/api/open-loops",
+  "/api/open-loops/[id]",
+  // Care Events - individual observations/actions that inform care understanding
+  "/api/care-events/[id]",
+  // Attention Summary - provides summary of attention items for dashboards and notifications
+  "/api/attention-summary",
+] as const;
 
 export const MVP_ALLOWED_FRONTEND_PAGES = [
   "src/app/page.tsx",
@@ -46,6 +69,8 @@ export const MVP_ALLOWED_FRONTEND_PAGES = [
   "src/app/workspace/documents/page.tsx",
   "src/app/workspace/settings/page.tsx",
   "src/app/workspace/timeline/page.tsx",
+  // Care Attention Layer UI
+  "src/app/care-attention/page.tsx",
 ] as const;
 
 export const MVP_ALLOWED_FRONTEND_SHELL = [

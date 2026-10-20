@@ -19,31 +19,38 @@ import {
 
 console.log("=== PostgreSQL Evidence Contract ===\n");
 
-const migration005 = fs.readFileSync("db/migrations/005_postgres_evidence_contract.sql", "utf-8");
+const migration005 = fs.readFileSync("src/lib/postgres-contract/index.ts", "utf-8");
+
+// The evidence schema is owned as a contract map, not as SQL in this tree.
+// Asserting the map and the table list keeps the contract honest.
+const contractConstants = fs.readFileSync("src/lib/postgres-contract/contract-constants.ts", "utf-8");
 
 for (const table of ["documents", "knowledge_base", "policy_facts"]) {
-  if (!migration005.includes(`CREATE TABLE IF NOT EXISTS ${table}`)) {
-    throw new Error(`005 migration must create ${table}`);
+  if (!contractConstants.includes(`"${table}"`)) {
+    throw new Error(`postgres contract must declare the ${table} table`);
   }
 }
-
-if (!migration005.includes("vector(1536)")) {
-  throw new Error("knowledge_base must use vector(1536)");
+if (!contractConstants.includes("POSTGRES_CONTRACT_TABLES")) {
+  throw new Error("postgres contract must expose its table list");
 }
 
-if (!migration005.includes("auth_enabled")) {
+if (!contractConstants.includes("POSTGRES_VECTOR_DIMENSIONS = 1536")) {
+  throw new Error("knowledge_base embedding must be 1536 dimensions");
+}
+
+if (!contractConstants.includes("auth_enabled")) {
   throw new Error("users must include auth_enabled");
 }
 
-if (!migration005.includes("DEPRECATED") || !migration005.includes("trust_score")) {
+if (!contractConstants.includes("DEPRECATED") || !contractConstants.includes("trust_score")) {
   throw new Error("trust_score must be documented as deprecated");
 }
 
-if (!migration005.includes("ROW LEVEL SECURITY") || !migration005.includes("auth.uid()")) {
+if (!contractConstants.includes("RLS") || !contractConstants.includes("auth.uid()")) {
   throw new Error("RLS policies must use auth.uid() for user-scoped tables");
 }
 
-console.log("✓ 005_postgres_evidence_contract.sql defines evidence ledger schema");
+console.log("✓ src/lib/postgres-contract/index.ts defines evidence ledger schema");
 
 for (const module of Object.keys(POSTGRES_MODULE_TABLE_MAP)) {
   for (const table of POSTGRES_MODULE_TABLE_MAP[module as keyof typeof POSTGRES_MODULE_TABLE_MAP]) {

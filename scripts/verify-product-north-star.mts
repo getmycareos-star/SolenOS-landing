@@ -86,7 +86,7 @@ assert(REAL_USER_JOBS.length === 5, "five real user jobs");
 console.log("✓ north star contracts");
 
 assert(
-  fs.existsSync(path.join(root, "db/migrations/070_product_north_star.sql")),
+  fs.existsSync(path.join(root, "src/lib/product-north-star/index.ts")),
   "migration 070",
 );
 assert(

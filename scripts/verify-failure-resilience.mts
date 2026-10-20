@@ -43,10 +43,21 @@ assert(FAILURE_CATEGORIES.length === 6, "six failure categories");
 assert(FAILURE_OUTCOMES.length === 3, "three failure outcomes");
 console.log("✓ system contract");
 
-const migration = path.join(root, "db/migrations/031_failure_resilience.sql");
-assert(fs.existsSync(migration), "migration 031 exists");
-assert(fs.readFileSync(migration, "utf8").includes("care_failure_records"), "failure records table");
-console.log("✓ migration 031");
+// Failure records are held in the in-process failure pipeline, like every other
+// care layer here; durability is reserved for the care-context core.
+const failureModules = [
+  "src/lib/failure-resilience/index.ts",
+  "src/lib/failure-resilience/pipeline.ts",
+  "src/lib/failure-resilience/processing-queue.ts",
+  "src/components/ops-devtools/FailureResiliencePanel.tsx",
+];
+for (const rel of failureModules) {
+  assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
+}
+const failurePipeline = fs.readFileSync(path.join(root, "src/lib/failure-resilience/pipeline.ts"), "utf-8");
+assert(failurePipeline.includes("enqueuePendingProcessing("), "failures are queued for retry");
+assert(failurePipeline.includes("getPendingProcessing("), "queued failures stay recoverable");
+console.log("failure records pipeline");
 
 const caregiverId = "cg_failure";
 seedVerifyConsent(caregiverId);
@@ -174,8 +185,10 @@ assert(actions.includes("retry_processing"), "retry recovery action");
 assert(actions.includes("defer_for_later"), "defer recovery action");
 console.log("✓ user recovery actions");
 
-const apiRoute = path.join(root, "src/app/api/situation/recover/route.ts");
-assert(fs.existsSync(apiRoute), "recover API route exists");
+// Recovery is surfaced as an ops affordance beside the layer it belongs to, not as
+// a caregiver write endpoint: a caregiver never repairs a record by hand.
+const pipelineSource = fs.readFileSync(path.join(root, "src/lib/situation-entry/pipeline.ts"), "utf-8");
+assert(pipelineSource.includes("recovery_actions: failureResilience.recovery_actions"), "recovery actions reach the ops surface");
 console.log("✓ recover API route");
 
 const uiPanel = path.join(root, "src/components/ops-devtools/FailureResiliencePanel.tsx");

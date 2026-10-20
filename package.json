@@ -48,6 +48,7 @@
     "verify:chaos-to-clarity": "tsx scripts/verify-chaos-to-clarity.mts",
     "verify:cognitive-load-reduction": "tsx scripts/verify-cognitive-load-reduction.mts",
     "verify:telemetry-persistence": "tsx scripts/verify-telemetry-persistence.mts",
+    "test:telemetry": "tsx test-telemetry.ts",
     "verify:semantic-role-isolation": "tsx scripts/verify-semantic-role-isolation.mts",
     "verify:relief-validation": "tsx scripts/verify-relief-validation.mts",
     "verify:implementation-enforcement": "tsx scripts/verify-implementation-enforcement.mts",
@@ -240,7 +241,8 @@
     "verify:family-intelligence": "tsx scripts/verify-family-intelligence.mts",
     "verify:case-memory": "tsx scripts/verify-case-memory.mts",
     "verify:document-intelligence-care": "tsx scripts/verify-document-intelligence-care.mts",
-    "verify:document-intelligence-quality": "tsx scripts/verify-document-intelligence-quality.mts"
+    "verify:document-intelligence-quality": "tsx scripts/verify-document-intelligence-quality.mts",
+    "verify:entity-model": "tsx scripts/verify-entity-model.mts"
   },
   "dependencies": {
     "@aws-sdk/client-polly": "^3.1100.0",
@@ -255,6 +257,7 @@
     "react-dom": "^19.1.0",
     "server-only": "^0.0.1",
     "tesseract.js": "^7.0.0",
+    "uuid": "^14.0.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

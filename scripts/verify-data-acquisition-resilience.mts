@@ -133,8 +133,8 @@ const required = [
   "src/lib/data-acquisition-resilience/extract-candidates.ts",
   "src/lib/data-acquisition-resilience/corrections.ts",
   "src/lib/data-acquisition-resilience/cross-document-reconcile.ts",
-  "db/migrations/026_dare.sql",
-  "src/app/api/situation/correct/route.ts",
+  "src/lib/data-acquisition-resilience/index.ts",
+  "src/lib/data-acquisition-resilience/corrections.ts",
 ];
 
 for (const rel of required) {

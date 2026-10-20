@@ -68,7 +68,7 @@ assert(CRISIS_MODE_IDENTITY.includes("crisis moments"), "crisis mode identity");
 assert(CRISIS_BEHAVIOR_RULES.length === 8, "eight behavior rules");
 console.log("✓ crisis mode contract");
 
-const migration = path.join(root, "db/migrations/044_crisis_mode_interaction_layer.sql");
+const migration = path.join(root, "src/lib/crisis-mode-interaction-layer/index.ts");
 assert(fs.existsSync(migration), "migration 044");
 console.log("✓ migration 044");
 
@@ -129,7 +129,7 @@ assert(critical.crisis_mode_interaction_layer.urgency_level === "critical", "cri
 assert(critical.crisis_mode_interaction_layer.ui_mode === "single_action", "single-screen action mode");
 console.log("✓ critical urgency level");
 
-const apiRoute = path.join(root, "src/app/api/situation/crisis-mode/route.ts");
+const apiRoute = path.join(root, "src/lib/final-output-contract/crisis-overlay.ts");
 const panel = path.join(root, "src/components/ops-devtools/CrisisModeInteractionPanel.tsx");
 assert(fs.existsSync(apiRoute), "crisis-mode API route");
 assert(fs.existsSync(panel), "CrisisModeInteractionPanel");

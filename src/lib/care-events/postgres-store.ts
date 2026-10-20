@@ -56,14 +56,23 @@ export async function persistCareEventToPostgres(
       uncertainty_level: string | null;
       created_by: string | null;
       metadata: Record<string, unknown>;
+      observer_person_id: string | null;
+      author_person_id: string | null;
+      subject_person_id: string | null;
+      provider_person_id: string | null;
+      organization_id: string | null;
     }>(
       `INSERT INTO care_events (
          care_record_id, event_type, content, occurred_at,
-         source_type, confidence, uncertainty_level, created_by, metadata
+         source_type, confidence, uncertainty_level, created_by, metadata,
+         observer_person_id, author_person_id, subject_person_id,
+         provider_person_id, organization_id
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14)
        RETURNING id, care_record_id, event_type, content, occurred_at, created_at,
-                 source_type, confidence, uncertainty_level, created_by, metadata`,
+                 source_type, confidence, uncertainty_level, created_by, metadata,
+                 observer_person_id, author_person_id, subject_person_id,
+                 provider_person_id, organization_id`,
       [
         input.care_record_id ?? null,
         eventType,
@@ -74,6 +83,11 @@ export async function persistCareEventToPostgres(
         uncertaintyLevel,
         input.created_by ?? null,
         JSON.stringify(eventMetadata),
+        input.observer_person_id ?? input.created_by ?? null,
+        input.author_person_id ?? null,
+        input.subject_person_id ?? null,
+        input.provider_person_id ?? null,
+        input.organization_id ?? null,
       ],
     );
 
@@ -133,6 +147,13 @@ export async function persistCareEventToPostgres(
       created_by: row.created_by,
       metadata: row.metadata,
       source,
+      entities: {
+        observer_person_id: row.observer_person_id,
+        author_person_id: row.author_person_id,
+        subject_person_id: row.subject_person_id,
+        provider_person_id: row.provider_person_id,
+        organization_id: row.organization_id,
+      },
     };
 
     return { care_event: careEvent, source };
@@ -170,7 +191,7 @@ export function resetCareEventPoolForTests(): void {
   poolPromise = null;
 }
 
-function rowToCareEvent(row: {
+export function rowToCareEvent(row: {
   id: string;
   care_record_id: string | null;
   event_type: string;
@@ -195,6 +216,24 @@ function rowToCareEvent(row: {
     uncertainty_level: row.uncertainty_level as CareEventRecord["uncertainty_level"],
     created_by: row.created_by,
     metadata: row.metadata ?? {},
+    // Note: entities and source are not populated here; this is for legacy use
+    entities: {
+      observer_person_id: null,
+      author_person_id: null,
+      subject_person_id: null,
+      provider_person_id: null,
+      organization_id: null,
+    },
+    source: {
+      id: "",
+      care_event_id: "",
+      source_type: "text",
+      captured_at: "",
+      recognition_confidence: null,
+      transcript_uncertain: false,
+      metadata: {},
+      created_at: "",
+    },
   };
 }
 
@@ -217,9 +256,9 @@ export async function loadCareEventsForCaregiverFromPostgres(
   }>(
     `SELECT id, care_record_id, event_type, content, occurred_at, created_at,
             source_type, confidence, uncertainty_level, created_by, metadata
-     FROM care_events
-     WHERE created_by = $1
-     ORDER BY COALESCE(occurred_at, created_at) DESC`,
+         FROM care_events
+         WHERE created_by = $1
+         ORDER BY COALESCE(occurred_at, created_at) DESC`,
     [caregiverId],
   );
 
@@ -235,5 +274,38 @@ export async function tryLoadCareEventsForCaregiver(
     return loadCareEventsForCaregiverFromPostgres(pool, caregiverId);
   } catch {
     return null;
+  }
+}
+
+// NEW: Delete a care event and its associated event sources
+export async function deleteCareEventForCaregiverFromPostgres(
+  pool: Pool,
+  careEventId: string,
+  caregiverId: string
+): Promise<void> {
+  // Delete from event_sources first (due to foreign key constraint)
+  await pool.query(
+    `DELETE FROM event_sources WHERE care_event_id = $1`,
+    [careEventId]
+  );
+  // Delete from care_events, ensuring it belongs to the caregiver
+  await pool.query(
+    `DELETE FROM care_events WHERE id = $1 AND created_by = $2`,
+    [careEventId, caregiverId]
+  );
+}
+
+export async function tryDeleteCareEventForCaregiver(
+  careEventId: string,
+  caregiverId: string
+): Promise<boolean> {
+  if (!process.env.DATABASE_URL) return false;
+  try {
+    const pool = await getPool();
+    await deleteCareEventForCaregiverFromPostgres(pool, careEventId, caregiverId);
+    return true;
+  } catch (error) {
+    console.error('Error deleting care event:', error);
+    return false;
   }
 }

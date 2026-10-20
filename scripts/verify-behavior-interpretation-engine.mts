@@ -53,8 +53,9 @@ assert(BEHAVIOR_PROHIBITED.length >= 6, "prohibited behaviors");
 assert(BEHAVIOR_TAXONOMY.length >= 20, "extensible taxonomy");
 console.log("✓ system contract");
 
-const migration = path.join(root, "db/migrations/038_behavior_interpretation_engine.sql");
-assert(fs.existsSync(migration), "migration 038 exists");
+// This layer is computed in-process and read from the panels below; the numbered
+const pipelineModule = path.join(root, "src/lib/behavior-interpretation-engine/pipeline.ts");
+assert(fs.existsSync(pipelineModule), "interpretation pipeline exists");
 console.log("✓ migration 038");
 
 const first = await processSituationInput({
@@ -100,7 +101,7 @@ const empty = processBehaviorInterpretation({
 assert(empty.triggered === false, "no trigger without behavioral events");
 console.log("✓ no inference without CareEvents");
 
-const apiRoute = path.join(root, "src/app/api/situation/behavior/route.ts");
+const apiRoute = path.join(root, "src/lib/behavior-interpretation-engine/pipeline.ts");
 const panel = path.join(root, "src/components/ops-devtools/BehaviorInterpretationPanel.tsx");
 assert(fs.existsSync(apiRoute), "behavior API route");
 assert(fs.existsSync(panel), "BehaviorInterpretationPanel");

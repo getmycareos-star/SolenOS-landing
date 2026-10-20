@@ -91,7 +91,22 @@ export function evolveSynthesis(params: {
 }): string | null {
   const { situation, stage, signals, latestSignals } = params;
   void signals;
-  if (stage === "gathering" && !isImprovementUpdate(latestSignals)) return null;
+  if (stage === "gathering") {
+    // A first substantive capture is still "what is happening". Orientation is
+    // presented alongside it, so withholding the line here would leave the
+    // caregiver with a next step and no picture of the situation it belongs to.
+    const latestHeld = situation.observations
+      .map((o) => o.human_fact.trim())
+      .filter(Boolean)
+      .slice(-1)[0];
+    if (latestHeld) {
+      return `${latestHeld.replace(/\.$/, "")} — held as the latest picture.`;
+    }
+    if (isImprovementUpdate(latestSignals)) {
+      return "The latest update changes what we understand. Earlier understanding stays in the care story.";
+    }
+    return null;
+  }
 
   if (isImprovementUpdate(latestSignals)) {
     const latest =
@@ -102,8 +117,6 @@ export function evolveSynthesis(params: {
     }
     return "The latest update changes what we understand. Earlier understanding stays in the care story.";
   }
-
-  if (stage === "gathering") return null;
 
   // Orient from held facts — never phrase if-branches (frustrated+sad+go home scripts).
   const held = situation.observations

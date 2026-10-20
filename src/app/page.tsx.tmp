@@ -1,0 +1,239 @@
+import type { Metadata } from \"next\";
+import Link from \"next/link\";
+import { PublicShell } from \"@/components/public/PublicShell\";
+import { OpsPageView } from \"@/components/ops/OpsPageView\";
+import { SolenosWordmark } from \"@/components/brand\";
+import { BRAND_NAME, BRAND_TAGLINE } from \"@/lib/brand\";
+import { HOME_LANDING } from \"@/lib/trust-content\";
+import \"./landing.css\";
+
+export const metadata: Metadata = {
+  title: `${BRAND_NAME} — ${BRAND_TAGLINE}`,
+  description:
+    \"SolenOS helps family caregivers organize care information and understand what changed — without replacing healthcare professionals.\",
+};
+
+/**
+ * Public landing (/) — discover SolenOS.
+ * CTA enters /workspace directly (not a waitlist wall).
+ * Dark / cream / sage / gold visual system, scoped to this route only
+ * via landing.css. Same routes as before: Enter SolenOS -> /workspace?enter=1,
+ * How it works -> /how-it-works. Footer/nav unchanged (PublicShell).
+ */
+export default function LandingPage() {
+  const l = HOME_LANDING;
+
+  return (
+    <PublicShell activeHref=\"/\" hideNavLinks>
+      <OpsPageView page=\"/\" />
+
+      <div className=\"landing-root\">
+        {/* Hero */}
+        <section className=\"landing-block landing-dark landing-hero\">
+          <div className=\"landing-inner\">
+            <SolenosWordmark size=\"lg\" className=\"public-hero-brand\" />
+
+            <div className=\"landing-orb\" aria-hidden=\"true\">
+              <span className=\"orb-a\" />
+              <span className=\"orb-b\" />
+              <span className=\"orb-c\" />
+              <span className=\"landing-orb-title landing-serif\">
+                Living Care
+                <br />
+                Record
+              </span>
+            </div>
+
+            <p className=\"landing-eyebrow\">{l.hero.eyebrow}</p>
+            <h1 className=\"landing-title landing-serif\">{l.hero.title}</h1>
+
+            <ul className=\"landing-fragments\">
+              {l.hero.fragments.map((item) => (
+                <li key={item}>{item}
+              )))}
+            </ul>
+
+            <p className=\"landing-pull\">{l.hero.pull}</p>
+            <p className=\"landing-lede\">{l.hero.lede}</p>
+
+            <div className=\"landing-cta-group\">
+              <Link href=\"/workspace?enter=1\" className=\"landing-btn landing-btn-fill\">
+                Start your care record
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Why care is difficult to reconstruct */}
+        <section className=\"landing-block landing-cream\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.scattered.title}</h2>
+            {l.scattered.lead.map((p, index) => (
+              <p key={\scattered-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+            <p className=\"landing-pull\">{l.scattered.pull}</p>
+          </div>
+        </section>
+
+        {/* The invisible burden */}
+        <section className=\"landing-block landing-dark\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.burden.title}</h2>
+            {l.burden.items.map((item, index) => (
+              <p key={\urden-item-\\} className=\"landing-prose\">
+                {item}
+              </p>
+            ))}
+            <p className=\"landing-pull\">{l.burden.pull}</p>
+          </div>
+        </section>
+
+        {/* Emotional centerpiece */}
+        <section className=\"landing-block landing-cream\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.centerpiece.title}</h2>
+            {l.centerpiece.lead.map((p, index) => (
+              <p key={\centerpiece-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* What SolenOS actually helps you see */}
+        <section className=\"landing-block landing-dark\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.sees.title}</h2>
+            <p className=\"landing-prose\">{l.sees.intro}</p>
+            <ul className=\"landing-quiet-list\">
+              {l.sees.questions.map((q, index) => (
+                <li key={\sees-question-\\}>{q}</li>
+              ))}
+            </ul>
+            <p className=\"landing-pull\">{l.sees.pull}</p>
+          </div>
+        </section>
+
+        {/* Care timeline */}
+        <section className=\"landing-block landing-cream\" id=\"care-timeline\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.timeline.title}</h2>
+            {l.timeline.lead.map((p, index) => (
+              <p key={\	imeline-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* Care handoffs */}
+        <section className=\"landing-block landing-dark\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.handoffs.title}</h2>
+            {l.handoffs.lead.map((p, index) => (
+              <p key={\handoffs-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* Appointments */}
+        <section className=\"landing-block landing-cream\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.appointments.title}</h2>
+            {l.appointments.lead.map((p, index) => (
+              <p key={\ppointments-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* Dementia care */}
+        <section className=\"landing-block landing-dark\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.dementia.title}</h2>
+            {l.dementia.lead.map((p, index) => (
+              <p key={\dementia-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* Relief */}
+        <section className=\"landing-block landing-cream\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.relief.title}</h2>
+            {l.relief.lead.map((p, index) => (
+              <p key={\elief-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* Trust and uncertainty */}
+        <section className=\"landing-block landing-dark\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.trust.title}</h2>
+            {l.trust.lead.map((p, index) => (
+              <p key={\	rust-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* Founder section */}
+        <section className=\"landing-block landing-cream\">
+          <div className=\"landing-inner\">
+            <h2 className=\"landing-section-title landing-serif\">{l.founder.title}</h2>
+            {l.founder.lead.map((p, index) => (
+              <p key={\ounder-lead-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+            <p className=\"landing-pull\">
+              <strong>{l.founder.founderName}</strong> &mdash; {l.founder.founderRole}
+            </p>
+            <div className=\"landing-cta-group\">
+              <Link href=\"/our-story\" className=\"landing-btn landing-btn-outline\">
+                Read our story ?
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className=\"landing-block landing-dark landing-closing\">
+          <div className=\"landing-inner\" style={{ textAlign: \"center\" }}>
+            <p className=\"landing-closing-line landing-serif\">{l.cta.title}</p>
+            <p className=\"landing-closing-line landing-serif\">{l.cta.support}</p>
+            {l.cta.copy.map((p, index) => (
+              <p key={\cta-copy-\\} className=\"landing-prose\">
+                {p}
+              </p>
+            ))}
+            <div className=\"landing-cta-group\">
+              <Link href=\"/workspace?enter=1\" className=\"landing-btn landing-btn-fill\">
+                Start your care record
+              </Link>
+            </div>
+            <p className=\"landing-closing-brand\">
+              The care journey, remembered.
+            </p>
+          </div>
+        </section>
+      </div>
+    </PublicShell>
+  );
+}
+
+
+
+
+

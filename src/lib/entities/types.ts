@@ -1,0 +1,1 @@
+export const CONFIDENCE_LEVELS = ["high", "medium", "low", "none", "unknown"] as const;

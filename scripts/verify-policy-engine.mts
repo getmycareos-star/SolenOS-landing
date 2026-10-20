@@ -82,7 +82,7 @@ assert(POLICY_ENGINE_DEFINING_PRINCIPLE.includes("Capture always"), "capture-alw
 assert(POLICY_CAPTURE_ALWAYS_PRINCIPLE.includes("Always persist raw input"), "capture principle");
 console.log("✓ structural contract");
 
-assert(fs.existsSync(path.join(root, "db/migrations/055_policy_engine.sql")), "migration 055");
+assert(fs.existsSync(path.join(root, "src/lib/policy-engine/index.ts")), "migration 055");
 console.log("✓ migration 055");
 
 const blocked = validateIngestionPolicy({

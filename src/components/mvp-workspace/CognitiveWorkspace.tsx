@@ -37,6 +37,7 @@ import {
   EMERGENCY_BOUNDARY,
 } from "@/lib/early-access-trust";
 import { HelpImproveSolenos } from "./HelpImproveSolenos";
+import { LanguageSelector } from "./LanguageSelector";
 
 function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string {
   const observations = response.active_care_situation?.observations ?? [];
@@ -383,6 +384,17 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       setSessionHasNote(true);
       setShowSoftPrivacyNote(true);
       setCaregiverId(careKey);
+
+      // The response is now on screen, which is the moment activation cares
+      // about: not what was sent, but whether something came back.
+      void trackClientActivationEvent({
+        event_type: "RESPONSE_GENERATED",
+        payload: {
+          entry: "add_situation",
+          events_created: situationData.events_created?.length ?? 0,
+          first_response: !sessionHasNote,
+        },
+      });
       window.localStorage.setItem(DURABLE_CARE_KEY_STORAGE, careKey);
       window.localStorage.setItem(CARE_SESSION_STORAGE_KEY, interactionSessionId());
 
@@ -521,7 +533,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         } else {
           // Fallback: open browser menu instructions
           window.alert(
-            "To add SolenOS to your home screen:\n\n" +
+            "To add solenos to your home screen:\n\n" +
               "iOS: Tap Share → Add to Home Screen\n" +
               "Android: Tap menu → Add to Home screen\n" +
               "Desktop: Click the install icon in the address bar.",
@@ -706,6 +718,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         {IN_APP_IMPROVING_NOTICE}
       </p>
       <HelpImproveSolenos careKey={caregiverId} compact />
+      <div className="workspace-language">
+        <LanguageSelector userId={caregiverId} />
+      </div>
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
           What you share stays in the Living Care Record for this care journey. It is not sold or used

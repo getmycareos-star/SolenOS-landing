@@ -31,6 +31,7 @@ export const TIMELINE_ENTRY_TYPES = [
   "correction",
   "system_event",
   "demand_completed",
+  "appointment",
 ] as const;
 
 export const DOCUMENT_SOURCE_TYPES = ["medical", "insurance", "benefits", "other"] as const;
@@ -56,6 +57,7 @@ export const CAREGIVER_SIDEBAR_SECTION_IDS = [
   "active_situations",
   "timeline",
   "about_solenos",
+  "appointment",
 ] as const satisfies readonly (typeof SIDEBAR_SECTION_IDS)[number][];
 
 /** Ops / instrumentation sections — gated behind OPS_SECRET. */

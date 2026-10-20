@@ -116,7 +116,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
             checked={medicalAck}
             onChange={(e) => setMedicalAck(e.target.checked)}
           />
-          <span>I acknowledge SolenOS does not provide medical advice or emergency guidance.</span>
+          <span>I acknowledge solenos does not provide medical advice or emergency guidance.</span>
         </label>
 
         <label className="consent-checkbox">
@@ -126,12 +126,12 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
             onChange={(e) => setPrivacyAck(e.target.checked)}
           />
           <span>
-            I have read and understand the SolenOS{" "}
+            I have read and understand the solenos{" "}
             <Link href="/privacy" target="_blank" rel="noopener noreferrer">
               Privacy Policy
             </Link>
             . The Living Care Record belongs to the person receiving care. Trusted contributors
-            may add to the same Care Reality; SolenOS keeps who contributed for understanding —
+            may add to the same Care Reality; solenos keeps who contributed for understanding —
             it is not a family chat.
           </span>
         </label>
@@ -144,7 +144,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
           />
           <span>
             I accept that other trusted contributors may add notes to this Care Reality
-            without turning SolenOS into a messaging feed.
+            without turning solenos into a messaging feed.
           </span>
         </label>
 

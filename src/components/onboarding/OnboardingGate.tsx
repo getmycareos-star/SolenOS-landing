@@ -76,7 +76,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
             <h2 className="onboarding-title">One quick confirmation</h2>
             <EarlyAccessConsentForm
               continueHref=""
-              continueLabel="Continue to SolenOS"
+              continueLabel="Continue to solenos"
               onConsentDone={handleConsentDone}
             />
             <p className="onboarding-legal-note">

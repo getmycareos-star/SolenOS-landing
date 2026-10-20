@@ -1,0 +1,263 @@
+import { NextResponse } from "next/server";
+import type { ProcessSituationInput, SituationResponse } from "@/lib/situation-entry";
+import {
+  processSituationInput,
+  getCareContextRoot,
+} from "@/lib/situation-entry";
+import { getActiveCareSituation } from "@/lib/active-care-situation";
+import { getCareRealityState } from "@/lib/care-reality-state";
+import { buildReturnContinuityProjection } from "@/lib/return-continuity";
+import {
+  upsertTrackedSituationFromCareInput,
+} from "@/lib/resolution-engine/care-context-sync";
+import { composeGreetingResponse } from "@/lib/caregiver-response-composer";
+import type { ComposedCaregiverResponse } from "@/lib/caregiver-response-composer";
+
+export const runtime = "nodejs";
+
+function resolveCaregiverId(input: { care_recipient_id?: string; care_session_id?: string }): string {
+  return input.care_recipient_id ?? input.care_session_id ?? "default_caregiver";
+}
+
+/**
+ * Tier 2 — care-event POSTs must not block on slow Ollama extraction (~tens of
+ * seconds), which causes platform ingress 504s. The POST returns an immediate,
+ * deterministic provisional `composed_response` (no LLM) and backgrounds the
+ * full `processSituationInput` pipeline. Clients poll GET with `processing_id`
+ * to retrieve the completed final `composed_response`.
+ */
+type ProcessingStatus = "processing" | "complete" | "failed";
+
+interface ProcessingRecord {
+  status: ProcessingStatus;
+  provisional_composed_response: ComposedCaregiverResponse;
+  final_composed_response: ComposedCaregiverResponse | null;
+  result: SituationResponse | null;
+  ui_situations: ReturnType<typeof upsertTrackedSituationFromCareInput>["ui_situations"];
+  situations: ReturnType<typeof upsertTrackedSituationFromCareInput>["situations"];
+  error: string | null;
+  timestamps: { started: number; completed: number | null };
+}
+
+// In-process store; bounded by PROCESSING_TTL_MS and reaped on access.
+const processingStore = new Map<string, ProcessingRecord>();
+const PROCESSING_TTL_MS = 5 * 60 * 1000;
+
+function reapStaleProcessingRecords(now: number): void {
+  for (const [id, rec] of processingStore) {
+    const age = now - (rec.timestamps.completed ?? rec.timestamps.started);
+    if (age > PROCESSING_TTL_MS) processingStore.delete(id);
+  }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const caregiverId = resolveCaregiverId({
+    care_recipient_id: url.searchParams.get("caregiver_id") ?? undefined,
+    care_session_id: url.searchParams.get("care_session_id") ?? undefined,
+  });
+  const offerReturnInvite = url.searchParams.get("offer_return_invite") === "1";
+  const processingId = url.searchParams.get("processing_id") ?? undefined;
+
+  reapStaleProcessingRecords(Date.now());
+
+  const context = getCareContextRoot(caregiverId);
+  const hasContextRoot = Boolean(context && context.events.length > 0);
+
+  const acs = getActiveCareSituation(caregiverId);
+  const crs = getCareRealityState(caregiverId);
+
+  let returnContinuity = null;
+  if (offerReturnInvite) {
+    returnContinuity = buildReturnContinuityProjection({
+      careKey: caregiverId,
+      acs,
+      crs,
+      offerSoftInvite: true,
+    });
+  }
+
+  const trackedSync = upsertTrackedSituationFromCareInput({
+    durableCareKey: caregiverId,
+    rawInput: "",
+    eventIds: [],
+    documentIds: [],
+    userId: caregiverId,
+    opensNewSituation: false,
+  });
+
+  const uiSituations = trackedSync.ui_situations.filter((s) => s.status !== "resolved");
+  const situations = trackedSync.situations;
+
+  const response: Record<string, unknown> = {
+    has_context_root: hasContextRoot,
+    care_key: caregiverId,
+    care_recipient_id: context?.care_recipient_id ?? caregiverId,
+    care_recipient_display_name: crs?.care_recipient_label ?? null,
+    context,
+    active_care_situation: acs ?? null,
+    active_care_situation_turn: acs ? { situation: acs } : null,
+    ui_situations: uiSituations,
+    situations,
+    return_continuity: returnContinuity,
+  };
+
+  if (processingId && processingStore.has(processingId)) {
+    const rec = processingStore.get(processingId)!;
+    response.processing_id = processingId;
+    response.processing_status = rec.status;
+    if (rec.status === "complete") {
+      response.composed_response = rec.final_composed_response ?? rec.provisional_composed_response;
+      response.care_situation_groups = rec.result?.care_situation_groups ?? null;
+      response.events_created = rec.result?.events_created ?? null;
+      response.ui_situations = rec.ui_situations.filter((s) => s.status !== "resolved");
+      response.situations = rec.situations;
+    } else if (rec.status === "failed") {
+      response.composed_response = rec.provisional_composed_response;
+      response.error = rec.error;
+    } else {
+      response.composed_response = rec.provisional_composed_response;
+    }
+    response.processing_completed_at = rec.timestamps.completed;
+  }
+
+  return NextResponse.json(response);
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const rawInput = typeof body.raw_input === "string" ? body.raw_input.trim() : "";
+    const caregiverId = resolveCaregiverId({
+      care_recipient_id: typeof body.care_recipient_id === "string" ? body.care_recipient_id : undefined,
+      care_session_id: typeof body.care_session_id === "string" ? body.care_session_id : undefined,
+    });
+
+    if (!rawInput && (!Array.isArray(body.documents) || body.documents.length === 0)) {
+      return NextResponse.json(
+        { error: "missing_input", note: "Provide raw_input or at least one document." },
+        { status: 400 },
+      );
+    }
+
+    const documents = Array.isArray(body.documents)
+      ? body.documents.filter(
+          (d: unknown) =>
+            typeof d === "object" &&
+            d !== null &&
+            typeof (d as { id?: unknown }).id === "string" &&
+            typeof (d as { extracted_text?: unknown }).extracted_text === "string",
+        )
+      : [];
+
+    const input: ProcessSituationInput = {
+      raw_input: rawInput,
+      contributor_id: typeof body.contributor_id === "string" ? body.contributor_id : caregiverId,
+      care_recipient_id: typeof body.care_recipient_id === "string" ? body.care_recipient_id : caregiverId,
+      source: "user_input",
+      timestamp: typeof body.captured_at === "string" ? body.captured_at : undefined,
+      documents: documents.map((d: Record<string, unknown>) => ({
+        id: d.id as string,
+        name: (d.name ?? d.id) as string,
+        extracted_text: d.extracted_text as string,
+        mime_type: (d.mime_type ?? null) as string | null,
+        ocr_confidence: (d.ocr_confidence ?? null) as number | null,
+        extraction_source: (d.extraction_source ?? null) as string | null,
+      })),
+    };
+
+    reapStaleProcessingRecords(Date.now());
+
+    // Context check for orientation (new user vs returning).
+    const context = getCareContextRoot(caregiverId);
+    const hasContextRoot = Boolean(context && context.events.length > 0);
+
+    // Provisional response: deterministic, no LLM — returns in milliseconds.
+    const provisional = composeGreetingResponse({
+      raw_input: rawInput,
+      context_exists: hasContextRoot,
+    });
+
+    const processingId = `${caregiverId}:${crypto.randomUUID()}`;
+    processingStore.set(processingId, {
+      status: "processing",
+      provisional_composed_response: provisional,
+      final_composed_response: null,
+      result: null,
+      ui_situations: [],
+      situations: [],
+      error: null,
+      timestamps: { started: Date.now(), completed: null },
+    });
+
+    // Background the slow, LLM-heavy pipeline so the HTTP response is not
+    // blocked by Ollama extraction (~95s in degraded environments). The client
+    // retrieves the completed final result via GET ?processing_id=...
+    void backgroundProcessSituation(processingId, input, rawInput, documents, caregiverId);
+
+    return NextResponse.json({
+      processing_id: processingId,
+      status: "processing",
+      composed_response: provisional,
+      care_key: caregiverId,
+      care_session_id: body.care_session_id ?? caregiverId,
+    });
+  } catch (error) {
+    console.error("[api/situation] POST failed:", error);
+    return NextResponse.json(
+      {
+        error: "situation_pipeline_failed",
+        note: error instanceof Error ? error.message : "Unexpected error processing situation input.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+async function backgroundProcessSituation(
+  processingId: string,
+  input: ProcessSituationInput,
+  rawInput: string,
+  documents: Array<{ id: string }>,
+  caregiverId: string,
+): Promise<void> {
+  const record = processingStore.get(processingId);
+  if (!record) return;
+  try {
+    const result = await processSituationInput(input);
+
+    const trackedSync = upsertTrackedSituationFromCareInput({
+      durableCareKey: caregiverId,
+      rawInput,
+      eventIds: result.events_created.map((e) => e.id),
+      documentIds: documents.map((d) => d.id),
+      userId: caregiverId,
+      opensNewSituation: result.active_care_situation_turn?.relation === "opens_new",
+    });
+
+    processingStore.set(processingId, {
+      ...record,
+      status: "complete",
+      final_composed_response:
+        result.composed_response ?? record.provisional_composed_response,
+      result,
+      ui_situations: trackedSync.ui_situations,
+      situations: trackedSync.situations,
+      timestamps: {
+        started: record.timestamps.started,
+        completed: Date.now(),
+      },
+    });
+  } catch (error) {
+    console.error(`[api/situation] background processing failed (${processingId}):`, error);
+    processingStore.set(processingId, {
+      ...record,
+      status: "failed",
+      error: error instanceof Error ? error.message : "Background processing failed.",
+      timestamps: {
+        started: record.timestamps.started,
+        completed: Date.now(),
+      },
+    });
+  }
+}

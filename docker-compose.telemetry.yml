@@ -1,0 +1,48 @@
+# Docker Compose for local OpenTelemetry development
+# This provides a simple setup for collecting and visualizing telemetry data
+version: '3.8'
+
+services:
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.100.0
+    container_name: solenos-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"  # OTLP gRPC receiver
+      - "4318:4318"  # OTLP HTTP receiver
+      - "55679:55679"  # Extension server
+      - "8888:8888"  # Prometheus metrics
+      - "14250:14250"  # Jaeger Thrift HTTP
+      - "14268:14268"  # Jaeger gRPC
+    restart: unless-stopped
+
+  # Jaeger for trace visualization
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: solenos-jaeger
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # gRPC
+      - "14250:14250"  # HTTP Thrift
+      - "9411:9411"    # Zipkin
+    restart: unless-stopped
+
+  # Prometheus for metrics storage
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: solenos-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:

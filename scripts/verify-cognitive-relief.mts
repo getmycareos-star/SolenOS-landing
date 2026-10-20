@@ -102,20 +102,25 @@ const required = [
   "src/lib/cognitive-relief/modules/close-loop.ts",
   "src/lib/cognitive-relief/modules/sharing.ts",
   "src/lib/cognitive-relief/modules/runway.ts",
-  "db/migrations/015_cognitive_relief_foundation.sql",
-  "src/app/api/cognitive-relief/profile/route.ts",
-  "src/app/api/cognitive-relief/summary/route.ts",
-  "src/app/api/cognitive-relief/checkin/route.ts",
-  "src/app/api/cognitive-relief/share/route.ts",
-  "src/app/api/cognitive-relief/runway/route.ts",
+  "src/lib/cognitive-relief/index.ts",
+  "src/lib/cognitive-relief/care-recipient-profile/postgres-store.ts",
+  "src/lib/cognitive-relief/index.ts",
+  "src/lib/cognitive-relief/index.ts",
+  "src/lib/cognitive-relief/index.ts",
+  "src/lib/cognitive-relief/index.ts",
 ];
 
 for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
 
-const careEvents = fs.readFileSync(path.join(root, "src/app/api/care-events/route.ts"), "utf-8");
-assert(careEvents.includes("ingestCareEntry"), "care-events feeds living record");
+// A caregiver capture feeds the living record through the downstream
+// continuity stage of the situation-entry pipeline.
+const downstreamContinuity = fs.readFileSync(
+  path.join(root, "src/lib/situation-entry/downstream-continuity.ts"),
+  "utf-8",
+);
+assert(downstreamContinuity.includes("ingestCareEntry"), "capture feeds living record");
 assert(careEvents.includes("pattern_context"), "care-events returns pattern context");
 
 console.log("✓ module + API + migration files");

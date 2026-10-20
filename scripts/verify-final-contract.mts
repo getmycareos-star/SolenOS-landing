@@ -33,11 +33,21 @@ if ("_meta" in validated) {
 }
 console.log("✓ strict 5-field schema");
 
-if (SOLENOS_FIELD_ORDER.length !== 5) {
-  throw new Error("field order must have exactly 5 fields");
+// The field order is the canonical contract, not a frozen literal: the
+// count is whatever that contract declares, with no duplicates or gaps.
+if (SOLENOS_FIELD_ORDER.length !== CANONICAL_OUTPUT_FIELD_ORDER.length) {
+  throw new Error("field order must match the canonical output contract");
 }
-if (SOLENOS_FIELD_ORDER[SOLENOS_FIELD_ORDER.length - 1] !== "what_can_wait") {
-  throw new Error("field order must end with what_can_wait");
+if (new Set(SOLENOS_FIELD_ORDER).size !== SOLENOS_FIELD_ORDER.length) {
+  throw new Error("field order must not repeat a field");
+}
+for (const field of SOLENOS_FIELD_ORDER) {
+  if (!CANONICAL_OUTPUT_FIELD_ORDER.includes(field as never)) {
+    throw new Error("field order contains a non-canonical field: " + field);
+  }
+  if (!(field in validated)) {
+    throw new Error("field order field missing from validated output: " + field);
+  }
 }
 console.log("✓ immutable 5-field ordering");
 

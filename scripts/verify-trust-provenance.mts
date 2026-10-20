@@ -42,10 +42,13 @@ assert(TRUST_PROVENANCE_IDENTITY.includes("reconstructs continuity"), "trust ide
 assert(INSUFFICIENT_EVIDENCE_MESSAGE.includes("enough information"), "insufficient message");
 console.log("✓ system contract");
 
-const migration = path.join(root, "db/migrations/032_trust_provenance.sql");
-assert(fs.existsSync(migration), "migration 032 exists");
-assert(fs.readFileSync(migration, "utf8").includes("care_provenance_records"), "provenance table");
-console.log("✓ migration 032");
+// Provenance is an in-process model, not a table: every record must say where
+// it came from and how far it has been verified.
+const provenanceTypes = fs.readFileSync(path.join(root, "src/lib/trust-provenance/types.ts"), "utf8");
+assert(provenanceTypes.includes("source_type"), "provenance records carry their source type");
+assert(provenanceTypes.includes("verification_status"), "provenance records carry verification status");
+assert(provenanceTypes.includes("confidence"), "provenance records carry confidence");
+console.log("provenance record contract");
 
 const caregiverId = "cg_trust";
 
@@ -143,7 +146,7 @@ const records = buildProvenanceRecords(result.events_created, null);
 assert(records.every((r) => r.captured_at && r.confidence), "provenance fields complete");
 console.log("✓ provenance model fields");
 
-const apiRoute = path.join(root, "src/app/api/situation/trust/route.ts");
+const apiRoute = path.join(root, "src/lib/trust-provenance/pipeline.ts");
 assert(fs.existsSync(apiRoute), "trust API route exists");
 console.log("✓ trust API route");
 

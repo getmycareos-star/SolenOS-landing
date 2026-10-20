@@ -39,10 +39,11 @@ export async function extractAttachedDocument(
     form.append("file", file);
     // Bound the request so a slow/cold extractor never leaves the UI on "Reading…" forever.
     const controller = new AbortController();
-    const timeoutMs = 40_000;
+    const timeoutMs = 120_000; // Increased timeout for OCR processing (2 minutes)
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res: Response;
     try {
+      // Step 1: Upload file and create OCR job
       res = await fetch(apiUrl("/api/extract"), {
         method: "POST",
         body: form,
@@ -51,55 +52,106 @@ export async function extractAttachedDocument(
     } finally {
       clearTimeout(timer);
     }
-    let data: {
-      ok?: boolean;
-      document?: {
-        id: string;
-        name: string;
-        mime_type: string | null;
-        extracted_text: string;
-        extracted_text_preview: string;
-        extracted_char_count: number;
-        ocr_confidence?: number | null;
-        extraction_source?: string;
-      };
+    
+    let uploadData: {
+      success?: boolean;
+      jobId?: string;
+      documentId?: string;
       note?: string;
-      message?: string;
       error?: string;
     } = {};
+    
     try {
-      data = (await safeJson(res)) as typeof data;
+      uploadData = (await safeJson(res)) as typeof uploadData;
     } catch (err) {
-      data = { error: err instanceof Error ? err.message : "Extraction failed" };
+      uploadData = { error: err instanceof Error ? err.message : "Upload failed" };
     }
 
-    const doc = data.document;
-    if (!res.ok || !data.ok || !doc?.extracted_text?.trim()) {
+    if (!res.ok || !uploadData.success || !uploadData.jobId) {
       const isImage = file.type.startsWith("image/");
       return {
         ...base,
         status: "failed",
         errorNote: sanitizeCaregiverErrorMessage(
-          data.note ??
-            data.message ??
-            data.error ??
+          uploadData.error ??
             (isImage
-              ? "Could not read text from this image yet. Type what you see, or try another photo/PDF."
-              : "Could not read this document. Try another file, or type the key details."),
+              ? "Could not upload this image for OCR processing. Type what you see, or try another photo/PDF."
+              : "Could not upload this document for OCR processing. Try another file, or type the key details."),
         ),
       };
     }
 
+    // Step 2: Poll for OCR job completion
+    const jobId = uploadData.jobId;
+    const maxPollingAttempts = 30; // 30 attempts * 5 seconds = 2.5 minutes max
+    const pollingIntervalMs = 5000; // 5 seconds
+    
+    for (let attempt = 0; attempt < maxPollingAttempts; attempt++) {
+      // Check if we've been aborted
+      if (controller.signal.aborted) {
+        return {
+          ...base,
+          status: "failed",
+          errorNote: sanitizeCaregiverErrorMessage(
+            "Reading this document is taking too long. You can try again, or type the key details."
+          ),
+        };
+      }
+      
+      // Wait before polling (except for first attempt)
+      if (attempt > 0) {
+        await new Promise(resolve => setTimeout(resolve, pollingIntervalMs));
+      }
+      
+      // Check job status
+      const statusRes = await fetch(apiUrl(`/api/extract?jobId=${jobId}`), {
+        signal: controller.signal,
+      });
+      
+      if (!statusRes.ok) {
+        continue; // Try again on next iteration
+      }
+      
+      const statusData = await safeJson(statusRes);
+      
+      if (statusData.status === "completed") {
+        // OCR processing completed successfully
+        return {
+          ...base,
+          id: statusData.jobId ?? jobId,
+          name: statusData.name ?? file.name,
+          mimeType: statusData.contentType ?? file.type,
+          extractedText: statusData.extractedText?.trim() ?? "",
+          extractedTextPreview: statusData.extractedText ? 
+            statusData.extractedText.substring(0, 100) + (statusData.extractedText.length > 100 ? "..." : "") : "",
+          extractedCharCount: statusData.extractedText?.length ?? 0,
+          status: "ready",
+          ocrConfidence: statusData.ocrConfidence ?? null,
+        };
+      } else if (statusData.status === "failed") {
+        // OCR processing failed
+        const isImage = file.type.startsWith("image/");
+        return {
+          ...base,
+          status: "failed",
+          errorNote: sanitizeCaregiverErrorMessage(
+            statusData.errorMessage ??
+              (isImage
+                ? "Could not read text from this image. Type what you see, or try another photo/PDF."
+                : "Could not read this document. Try another file, or type the key details."),
+          ),
+        };
+      }
+      // If still processing or queued, continue polling
+    }
+    
+    // If we've exhausted polling attempts
     return {
       ...base,
-      id: doc.id,
-      name: doc.name,
-      mimeType: doc.mime_type ?? base.mimeType,
-      extractedText: doc.extracted_text.trim(),
-      extractedTextPreview: doc.extracted_text_preview,
-      extractedCharCount: doc.extracted_char_count,
-      status: "ready",
-      ocrConfidence: doc.ocr_confidence ?? null,
+      status: "failed",
+      errorNote: sanitizeCaregiverErrorMessage(
+        "OCR processing is taking longer than expected. You can try again, or type the key details."
+      ),
     };
   } catch (e) {
     const aborted = e instanceof DOMException && e.name === "AbortError";

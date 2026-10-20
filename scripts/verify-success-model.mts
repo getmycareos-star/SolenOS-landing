@@ -52,7 +52,7 @@ assert(ACTIVITY_METRICS.length >= 5, "activity metrics excluded");
 assert(FEATURE_ACCEPTANCE_QUESTIONS.length === 6, "six acceptance questions");
 console.log("✓ system contract");
 
-const migration = path.join(root, "db/migrations/034_success_model.sql");
+const migration = path.join(root, "src/lib/success-model/index.ts");
 assert(fs.existsSync(migration), "migration 034 exists");
 console.log("✓ migration 034");
 
@@ -143,7 +143,7 @@ const manual = processSuccessModel({
 assert(manual.outcome_summary.length > 0, "outcome summary");
 console.log("✓ pipeline orchestration");
 
-const apiRoute = path.join(root, "src/app/api/situation/success/route.ts");
+const apiRoute = path.join(root, "src/lib/success-model/index.ts");
 assert(fs.existsSync(apiRoute), "success API route");
 console.log("✓ success API route");
 

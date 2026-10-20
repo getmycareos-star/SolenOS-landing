@@ -15,6 +15,7 @@
 import { createLlmProvider } from "../llm-provider";
 import {
   clearLlmUnavailable,
+  isEndpointUnreachable,
   isLlmMarkedUnavailable,
   markLlmUnavailable,
 } from "../llm-provider/availability-memo";
@@ -30,8 +31,9 @@ const EXTRACTION_TIMEOUT_MS = Number(process.env.SEMANTIC_EXTRACTION_TIMEOUT_MS 
 /**
  * Wall-clock ceiling for the whole ladder. A caregiver waiting at 11pm is not served
  * by a 3-minute model hunt: when the budget is spent, the rule floor answers.
+ * Short enough that a model too slow to help has not yet become a burden.
  */
-const EXTRACTION_TOTAL_BUDGET_MS = Number(process.env.SEMANTIC_EXTRACTION_TOTAL_BUDGET_MS ?? 25000);
+const EXTRACTION_TOTAL_BUDGET_MS = Number(process.env.SEMANTIC_EXTRACTION_TOTAL_BUDGET_MS ?? 12000);
 
 /**
  * Strongest-first. Capability order matters more than raw size: instruction
@@ -176,7 +178,7 @@ export class SemanticExtractor {
     try {
       provider = await this.getProvider();
     } catch (error) {
-      markLlmUnavailable();
+      if (isEndpointUnreachable(error)) markLlmUnavailable();
       return this.rulesResult(
         rules,
         startTime,

@@ -6,11 +6,19 @@
  */
 
 import { createLlmProvider } from "../llm-provider";
+import {
+  isEndpointUnreachable,
+  isLlmMarkedUnavailable,
+  markLlmUnavailable,
+} from "../llm-provider/availability-memo";
 import type { LlmProvider } from "../llm-provider";
 import type { ContradictionResolutionResult } from "./types";
 import { createEmptyResolutionResult } from "./types";
 
-const RESOLUTION_TIMEOUT_MS = Number(process.env.CONTRADICTION_TIMEOUT_MS ?? 30000);
+// Advisory only: a resolution is a proposal the caregiver may reject, so it must
+// never be the reason a capture takes half a minute. The caregiver's wait
+// matters more than the model's second opinion.
+const RESOLUTION_TIMEOUT_MS = Number(process.env.CONTRADICTION_TIMEOUT_MS ?? 8000);
 const RESOLUTION_MODEL = process.env.CONTRADICTION_MODEL ?? "qwen2.5-coder:7b";
 
 const RESOLUTION_SYSTEM = `You resolve contradictions in care information. Return ONLY a JSON object.
@@ -77,11 +85,18 @@ export async function resolveContradictions(
     return { ...createEmptyResolutionResult(), durationMs: Date.now() - start };
   }
 
+  // Contradictions are always surfaced to the caregiver regardless; only the
+  // model's proposed reading is skipped while the provider is known to be down.
+  if (!input.provider && isLlmMarkedUnavailable()) {
+    return { ...createEmptyResolutionResult(), durationMs: Date.now() - start };
+  }
+
   let provider = input.provider;
   if (!provider) {
     try {
       provider = await createLlmProvider({ provider: "ollama", model, timeoutMs, temperature: 0, maxTokens: 4096 });
     } catch {
+      markLlmUnavailable();
       return { ...createEmptyResolutionResult(), durationMs: Date.now() - start };
     }
   }
@@ -100,6 +115,7 @@ export async function resolveContradictions(
     });
 
     if (!response.success || !response.parsedContent) {
+      if (isEndpointUnreachable(response.error)) markLlmUnavailable();
       return { ...createEmptyResolutionResult(), durationMs: Date.now() - start, model };
     }
 
@@ -116,7 +132,8 @@ export async function resolveContradictions(
       model,
       durationMs: response.durationMs,
     };
-  } catch {
+  } catch (error) {
+    if (isEndpointUnreachable(error)) markLlmUnavailable();
     return { ...createEmptyResolutionResult(), durationMs: Date.now() - start, model };
   }
 }

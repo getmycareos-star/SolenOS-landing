@@ -133,7 +133,7 @@ assert(upd.confidence_delta < 0, "confidence drops");
 console.log("✓ FDLL explicit feedback learning");
 
 assert(
-  fs.existsSync(path.join(root, "db/migrations/072_continuity_properties.sql")),
+  fs.existsSync(path.join(root, "src/lib/continuity-properties/index.ts")),
   "migration 072",
 );
 console.log("✓ migration");

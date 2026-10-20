@@ -128,7 +128,9 @@ const required = [
   "src/lib/memory-reconstruction-engine/reconstruct.ts",
   "src/lib/memory-reconstruction-engine/parse-query.ts",
   "src/lib/memory-reconstruction-engine/temporal-aggregator.ts",
-  "src/app/api/memory/reconstruct/route.ts",
+  // Reconstruction is read from the caregiver timeline (care-context timeline engine)
+  // and surfaced in the ops panel; it has no route of its own.
+  "src/lib/care-context/engines/timeline-engine.ts",
   "src/components/ops-devtools/MemoryReconstructionPanel.tsx",
 ];
 

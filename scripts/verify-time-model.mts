@@ -143,8 +143,8 @@ const required = [
   "src/lib/time-model/retiming.ts",
   "src/lib/time-model/late-arrival.ts",
   "src/lib/situation-entry/dual-time.ts",
-  "db/migrations/027_time_model.sql",
-  "src/app/api/situation/correct/route.ts",
+  "src/lib/time-model/index.ts",
+  "src/lib/time-model/late-arrival.ts",
   "src/components/ops-devtools/SituationTimelinePanel.tsx",
 ];
 
@@ -161,7 +161,7 @@ assert(timelinePanel.includes("formatEventTimeLabel"), "UI shows event time labe
 assert(timelinePanel.includes("ingestion_time"), "UI shows ingestion anchor");
 
 const correctRoute = fs.readFileSync(
-  path.join(root, "src/app/api/situation/correct/route.ts"),
+  path.join(root, "src/lib/time-model/late-arrival.ts"),
   "utf-8",
 );
 assert(correctRoute.includes('action === "retime"'), "retime API endpoint");

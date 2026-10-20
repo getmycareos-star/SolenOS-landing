@@ -278,6 +278,24 @@ export type SituationResponse = {
     error: string | null;
     quantity_comparisons: number;
   } | null;
+  /**
+   * Downstream continuity — whether the capture was carried forward into the
+   * journey timeline, the relationship and continuity graphs, the caregiver
+   * relief profile, cross-capture patterns, and the caregiver's own capacity.
+   *
+   * Internal observability: each capability reports independently so a fault
+   * in one is visible rather than silently losing the capture.
+   */
+  downstream_continuity?: {
+    journey: { wired: boolean; error: string | null };
+    journey_graph: { wired: boolean; error: string | null };
+    continuity_graph: { wired: boolean; error: string | null };
+    cognitive_relief: { wired: boolean; error: string | null };
+    patterns: { wired: boolean; error: string | null };
+    caregiver_self: { wired: boolean; error: string | null };
+    journey_event_description: string | null;
+    any_wired: boolean;
+  };
   /** Deep Understanding — person model, dialogue, caregiver-as-person, time model, good care, plain language. */
   deep_understanding_layer?: {
     personModelUpdated: boolean;
@@ -328,6 +346,16 @@ export type ProcessSituationInput = {
     ocr_confidence?: number | null;
     extraction_source?: string | null;
   }[];
+  /** Explicit entity resolution from upstream extraction. */
+  entity_resolution?: {
+    care_recipient_person_id?: string | null;
+    observer_person_id?: string | null;
+    author_person_id?: string | null;
+    provider_person_id?: string | null;
+    organization_id?: string | null;
+    mentioned_person_ids?: string[];
+    mentioned_organization_ids?: string[];
+  };
 };
 
 export type SituationDareSummary = {

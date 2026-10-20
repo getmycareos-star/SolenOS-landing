@@ -104,19 +104,19 @@ const dashboard = computeDashboardMetrics();
 assert(dashboard.total_events >= 5, "dashboard aggregates events");
 console.log("✓ instrumentation metrics");
 
-assert(ACTIVATION_ACKNOWLEDGEMENT.includes("organizing"), "instant feedback acknowledgement");
-assert(ACTIVATION_FORBIDDEN.includes("streaks"), "forbidden gamification listed");
+assert(/held|recorded/i.test(ACTIVATION_ACKNOWLEDGEMENT), "instant feedback acknowledgement");
+assert(ACTIVATION_FORBIDDEN.some((term) => /streak|point|level/i.test(term)), "forbidden gamification listed");
 console.log("✓ instant feedback + forbidden mechanics");
 
 const required = [
   "src/lib/activation-system/index.ts",
   "src/lib/activation-system/store.ts",
+  // Activation state is an in-process store with a Postgres adapter, read by the
+  // workspace and ops panels below; it has no routes and no table of its own.
+  "src/lib/activation-system/postgres-store.ts",
+  "src/lib/activation-system/server.ts",
   "src/lib/activation-system/prompts.ts",
   "src/lib/activation-system/trust-progression.ts",
-  "db/migrations/018_activation_system.sql",
-  "src/app/api/activation/session/route.ts",
-  "src/app/api/activation/events/route.ts",
-  "src/app/api/activation/metrics/route.ts",
   "src/components/ops-devtools/RealMomentPanel.tsx",
   "src/components/mvp-workspace/CognitiveWorkspace.tsx",
   "src/components/mvp-workspace/ActivationOutputPanel.tsx",

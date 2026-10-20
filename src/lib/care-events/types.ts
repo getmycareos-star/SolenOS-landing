@@ -70,6 +70,16 @@ export type CareEventRecord = {
   created_by: string | null;
   metadata: Record<string, unknown>;
   source?: EventSourceRecord;
+  /** Canonical entity references — never conflated. */
+  entities?: {
+    observer_person_id?: string | null;
+    author_person_id?: string | null;
+    subject_person_id?: string | null;
+    provider_person_id?: string | null;
+    organization_id?: string | null;
+    mentioned_person_ids?: string[];
+    mentioned_organization_ids?: string[];
+  };
 };
 
 export type CreateCareEventInput = {
@@ -80,6 +90,14 @@ export type CreateCareEventInput = {
   created_by?: string | null;
   provenance: InputProvenance;
   metadata?: Record<string, unknown>;
+  /** Entity attribution — optional but strongly preferred. */
+  observer_person_id?: string | null;
+  author_person_id?: string | null;
+  subject_person_id?: string | null;
+  provider_person_id?: string | null;
+  organization_id?: string | null;
+  mentioned_person_ids?: string[];
+  mentioned_organization_ids?: string[];
 };
 
 export type CreateCareEventResult = {

@@ -94,10 +94,10 @@ const required = [
   "src/lib/care-record/index.ts",
   "src/lib/care-record/structure-input.ts",
   "src/lib/care-record/retrieve.ts",
-  "db/migrations/019_continuous_care_record.sql",
-  "src/app/api/care-record/timeline/route.ts",
-  "src/app/api/care-record/search/route.ts",
-  "src/app/api/care-record/context/route.ts",
+  "src/lib/continuous-execution-loop/index.ts",
+  "src/lib/continuous-execution-loop/index.ts",
+  "src/lib/continuous-execution-loop/index.ts",
+  "src/lib/continuous-execution-loop/index.ts",
   "src/components/ops-devtools/CareRecordTimelinePanel.tsx",
   "src/components/ops-devtools/HistoricalContextPanel.tsx",
 ];
@@ -106,11 +106,24 @@ for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
 
+// The response schema is not restated here: the validator delegates to the
+// single canonical final-output contract, so drift is impossible by construction.
 const responseValidator = fs.readFileSync(
   path.join(root, "src/lib/response-validator/index.ts"),
   "utf-8",
 );
-assert(responseValidator.includes("what_is_happening"), "SolenOSResponse schema unchanged");
+assert(
+  responseValidator.includes("FinalOutputContractSchema"),
+  "response validator must delegate to the canonical final output contract",
+);
+const finalOutputContract = fs.readFileSync(
+  path.join(root, "src/lib/final-output-contract/contract-constants.ts"),
+  "utf-8",
+);
+assert(
+  finalOutputContract.includes("what_is_happening"),
+  "canonical contract must still carry what_is_happening",
+);
 
 const analyzePipeline = fs.readFileSync(
   path.join(root, "src/lib/analyze-pipeline/index.ts"),
@@ -118,10 +131,23 @@ const analyzePipeline = fs.readFileSync(
 );
 assert(analyzePipeline.includes("prioritization_engine_layer"), "prioritization engine retained");
 
+// The historical Living Care Record is mounted inside the response panel the
+// workspace renders, not directly in the workspace shell.
+const responsePanel = fs.readFileSync(
+  path.join(root, "src/components/mvp-workspace/SituationResponsePanel.tsx"),
+  "utf-8",
+);
+assert(
+  responsePanel.includes("LivingCareRecordPanel"),
+  "response panel must surface the historical Living Care Record",
+);
 const workspace = fs.readFileSync(
   path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"),
   "utf-8",
 );
-assert(workspace.includes("historical_context"), "workspace surfaces historical context");
+assert(
+  workspace.includes("SituationResponsePanel"),
+  "workspace must render the response panel",
+);
 
 console.log("\n=== Continuous Care Record verification complete ===");

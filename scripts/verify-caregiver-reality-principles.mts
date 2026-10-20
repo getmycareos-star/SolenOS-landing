@@ -129,10 +129,25 @@ for (const phrase of visibleForbidden) {
     throw new Error(`visible UI copy contains forbidden phrase: ${phrase}`);
   }
 }
-if (!pageSource.includes("Less to carry")) {
-  throw new Error("page tagline must reinforce carry-less framing");
+// The landing hero states the carry-less promise in its own words; the framing
+// is what matters, not one frozen tagline.
+const landingContent = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/trust-content/index.ts"),
+  "utf-8",
+);
+if (!landingContent.includes("you shouldn't have to remember everything")) {
+  throw new Error("landing hero must reinforce carry-less framing");
 }
-if (!outputRendererSource.includes("What is happening")) {
+if (!pageSource.includes("l.hero.title")) {
+  throw new Error("landing page must render the hero framing from the content source");
+}
+// Output field labels are centralized in the DecisionCard surface, which the
+// OutputRenderer delegates to. The field label must stay neutral and present.
+const decisionCardSrc = fs.readFileSync(
+  path.join(process.cwd(), "src/components/ui-runtime/DecisionCardView.tsx"),
+  "utf-8",
+);
+if (!decisionCardSrc.includes("What is happening")) {
   throw new Error("output field labels must remain neutral");
 }
 console.log("✓ UI visible copy passes reality principles audit");

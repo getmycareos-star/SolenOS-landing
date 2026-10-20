@@ -82,15 +82,18 @@ assert(RETENTION_ENGINE_IDENTITY.includes("while I was gone"), "retention identi
 assert(RETURN_STATE_SECTIONS.length === 5, "five return sections");
 console.log("✓ system contracts");
 
-for (const mig of [
-  "059_baseline_intelligence_engine.sql",
-  "060_care_reality_profile_engine.sql",
-  "061_moment_of_need_engine.sql",
-  "062_retention_engine.sql",
+for (const engine of [
+  "baseline-intelligence-engine",
+  "care-reality-profile-engine",
+  "moment-of-need-engine",
+  "retention-engine",
 ]) {
-  assert(fs.existsSync(path.join(root, "db/migrations", mig)), `migration ${mig}`);
+  assert(
+    fs.existsSync(path.join(root, "src/lib", engine, "index.ts")),
+    "engine " + engine,
+  );
 }
-console.log("✓ migrations 059–062");
+console.log("engines 059-062 present as modules");
 
 assert(
   FORBIDDEN_FEATURE_CATEGORIES.includes("symptom_checker"),

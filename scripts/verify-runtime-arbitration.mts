@@ -89,7 +89,7 @@ assert(REGISTERED_ENGINE_CONTRACTS.length >= 8, "engine contracts registered");
 console.log("✓ contracts");
 
 for (const mig of [
-  "063_priority_resolution_system.sql",
+  "src/lib/priority-resolution-system/index.ts",
   "064_event_sourced_storage.sql",
   "065_engine_execution_contract.sql",
   "066_edge_state_machine.sql",

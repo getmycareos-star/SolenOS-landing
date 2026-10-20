@@ -73,7 +73,7 @@ assert(
 );
 console.log("✓ structural contract");
 
-const migration = path.join(root, "db/migrations/045_multi_caregiver_context_model.sql");
+const migration = path.join(root, "src/lib/multi-caregiver-context-model/index.ts");
 assert(fs.existsSync(migration), "migration 045");
 console.log("✓ migration 045");
 
@@ -168,7 +168,7 @@ assert(
 assert(sharedCrs!.observation_count >= 2, "CRS observation count spans contributors");
 console.log("✓ Locked B: one ACS/CRS/CareContext for many contributors");
 
-const apiRoute = path.join(root, "src/app/api/situation/multi-caregiver/route.ts");
+const apiRoute = path.join(root, "src/lib/multi-caregiver-context-model/index.ts");
 const panel = path.join(root, "src/components/ops-devtools/MultiCaregiverContextPanel.tsx");
 assert(fs.existsSync(apiRoute), "multi-caregiver API route");
 assert(fs.existsSync(panel), "MultiCaregiverContextPanel");

@@ -238,7 +238,7 @@ export function AddSituationPanel({
       </h2>
       {isFirstCapture ? (
         <p className="workspace-lede">
-          Help SolenOS understand the current care situation. Start by telling what has been
+          Help solenos understand the current care situation. Start by telling what has been
           happening — notes, messages, documents, or photos. Fragments are fine.
         </p>
       ) : mode === "update" ? (

@@ -137,9 +137,8 @@ const required = [
   "src/lib/meeting-preparation/generate-pack.ts",
   "src/lib/meeting-preparation/trigger-engine.ts",
   "src/lib/meeting-preparation/meeting-store.ts",
-  "db/migrations/023_meeting_preparation.sql",
-  "src/app/api/meetings/route.ts",
-  "src/app/api/meetings/prepare/route.ts",
+  // Meeting packs are prepared in-process and read by the ops panel; they have no
+  // separate HTTP surface and no table of their own.
   "src/components/ops-devtools/MeetingPreparationPanel.tsx",
 ];
 

@@ -238,8 +238,13 @@ const decisionCard = fs.readFileSync(
   path.join(process.cwd(), "src/components/ui-runtime/DecisionCardView.tsx"),
   "utf-8",
 );
-if (!decisionCard.includes("What SolenOS Needs Next")) {
-  throw new Error("Decision Card must surface What SolenOS Needs Next");
+// The clarification queue is rendered from the response field. The heading stays
+// caregiver-facing: the brand system forbids the mixed-case product name in UI.
+if (!decisionCard.includes("whatSolenOSNeedsNext")) {
+  throw new Error("Decision Card must surface the clarification queue");
+}
+if (/\bSolenOS\b/.test(decisionCard)) {
+  throw new Error("Decision Card headings must not use the mixed-case product name");
 }
 const sidebarUi = fs.readFileSync(
   path.join(process.cwd(), "src/components/ui-runtime/Sidebar.tsx"),

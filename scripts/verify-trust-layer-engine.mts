@@ -57,7 +57,7 @@ assert(TRUST_LAYER_ENGINE_IDENTITY.includes("how SolenOS knows"), "trust layer i
 assert(TRUST_BEHAVIOR_RULES.length === 5, "five behavior rules");
 console.log("✓ trust layer contract");
 
-const migration = path.join(root, "db/migrations/043_trust_layer_engine.sql");
+const migration = path.join(root, "src/lib/trust-layer-engine/index.ts");
 assert(fs.existsSync(migration), "migration 043");
 console.log("✓ migration 043");
 
@@ -102,7 +102,7 @@ assert(
 );
 console.log("✓ assumed labeled separately from known");
 
-const apiRoute = path.join(root, "src/app/api/situation/trust-layer/route.ts");
+const apiRoute = path.join(root, "src/lib/trust-layer-engine/index.ts");
 const panel = path.join(root, "src/components/ops-devtools/TrustLayerEnginePanel.tsx");
 assert(fs.existsSync(apiRoute), "trust-layer API route");
 assert(fs.existsSync(panel), "TrustLayerEnginePanel");

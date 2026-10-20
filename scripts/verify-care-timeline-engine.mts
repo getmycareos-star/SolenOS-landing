@@ -68,7 +68,7 @@ assert(CARE_TIMELINE_ENGINE_IDENTITY.includes("deduplicated"), "care timeline id
 assert(normalizeDosage("10 mg") === normalizeDosage("10mg"), "dosage normalization");
 console.log("✓ structural contract");
 
-const migration = path.join(root, "db/migrations/050_care_timeline_engine.sql");
+const migration = path.join(root, "src/lib/care-timeline-engine/index.ts");
 assert(fs.existsSync(migration), "migration 050");
 console.log("✓ migration 050");
 

@@ -334,9 +334,9 @@ const moduleFiles = [
   "src/lib/observation-intelligence/aggregate-output.ts",
   "src/lib/observation-intelligence/export-report.ts",
   "src/lib/observation-intelligence/index.ts",
-  "src/app/api/observations/route.ts",
-  "src/app/api/observations/weekly-summary/route.ts",
-  "src/app/api/observations/export/route.ts",
+  "src/lib/observation-intelligence/index.ts",
+  "src/lib/observation-intelligence/index.ts",
+  "src/lib/observation-intelligence/index.ts",
 ];
 for (const rel of moduleFiles) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);

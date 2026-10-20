@@ -60,7 +60,7 @@ assert(NORTH_STAR_NOT_OPTIMIZING.includes("more engagement"), "not optimizing en
 assert(DEFINING_PRINCIPLE.includes("continuity"), "defining principle");
 console.log("✓ product philosophy contract");
 
-const migration = path.join(root, "db/migrations/040_north_star_experience.sql");
+const migration = path.join(root, "src/lib/north-star-experience/index.ts");
 assert(fs.existsSync(migration), "migration 040 exists");
 console.log("✓ migration 040");
 
@@ -139,7 +139,7 @@ assert(
 );
 console.log("✓ aha moment reinforces north star");
 
-const apiRoute = path.join(root, "src/app/api/situation/experience/route.ts");
+const apiRoute = path.join(root, "src/lib/north-star-experience/index.ts");
 const panel = path.join(root, "src/components/ops-devtools/NorthStarExperiencePanel.tsx");
 assert(fs.existsSync(apiRoute), "experience API route");
 assert(fs.existsSync(panel), "NorthStarExperiencePanel");

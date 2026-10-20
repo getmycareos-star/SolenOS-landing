@@ -3,6 +3,8 @@
  * Documents are evidence. Action ≠ Outcome. Supporting layers emerge from relationships.
  */
 
+import type { FreshnessAssessment } from '../freshness-evaluation/types';
+
 export type CareRealityEvent = {
   id: string;
   type: string;
@@ -36,7 +38,6 @@ export type CareRealityDecision = {
   status: "active" | "superseded" | "unknown";
 };
 
-/** Something someone did — not a choice (Decision) and not a result (Outcome). */
 export type CareRealityAction = {
   id: string;
   description: string;
@@ -64,6 +65,16 @@ export type CareRealityUnknown = {
   related_situation_id: string | null;
 };
 
+/** Freshness assessments for core reality objects */
+export type CareRealityFreshness = {
+  events: FreshnessAssessment[];
+  observations: FreshnessAssessment[];
+  decisions: FreshnessAssessment[];
+  actions: FreshnessAssessment[];
+  outcomes: FreshnessAssessment[];
+  unknowns: FreshnessAssessment[];
+};
+
 export type CareRealityCoreBundle = {
   events: CareRealityEvent[];
   observations: CareRealityObservation[];
@@ -71,6 +82,8 @@ export type CareRealityCoreBundle = {
   actions: CareRealityAction[];
   outcomes: CareRealityOutcome[];
   unknowns: CareRealityUnknown[];
+  /** Freshness assessments for each type of object */
+  freshness: CareRealityFreshness;
 };
 
 export function emptyCoreBundle(): CareRealityCoreBundle {
@@ -81,5 +94,13 @@ export function emptyCoreBundle(): CareRealityCoreBundle {
     actions: [],
     outcomes: [],
     unknowns: [],
+    freshness: {
+      events: [],
+      observations: [],
+      decisions: [],
+      actions: [],
+      outcomes: [],
+      unknowns: [],
+    },
   };
 }

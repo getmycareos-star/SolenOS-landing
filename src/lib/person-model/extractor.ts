@@ -8,11 +8,18 @@
  */
 
 import { createLlmProvider } from "../llm-provider";
+import {
+  isEndpointUnreachable,
+  isLlmMarkedUnavailable,
+  markLlmUnavailable,
+} from "../llm-provider/availability-memo";
 import type { LlmProvider } from "../llm-provider";
 import { PERSON_EXTRACTION_SYSTEM_PROMPT } from "./prompt";
 import type { PersonExtractionResult, ExtractedPersonValue } from "./extraction";
 
-const PERSON_TIMEOUT_MS = Number(process.env.PERSON_EXTRACTION_TIMEOUT_MS ?? 30000);
+// A person model is derived depth, not a prerequisite: a slow answer must not
+// hold a capture hostage while the caregiver's own words are already waiting.
+const PERSON_TIMEOUT_MS = Number(process.env.PERSON_EXTRACTION_TIMEOUT_MS ?? 8000);
 const PERSON_MODEL = process.env.PERSON_EXTRACTION_MODEL ?? "qwen2.5-coder:7b";
 
 function groundedSpan(span: unknown, source: string): string | null {
@@ -92,11 +99,17 @@ export async function extractPersonModel(
     return { result: { ...empty(), durationMs: Date.now() - start }, provider: "deterministic", model: "rule-extraction-floor", durationMs: Date.now() - start };
   }
 
+  // The rule floor already answers; do not re-probe a provider known to be down.
+  if (!options.provider && isLlmMarkedUnavailable()) {
+    return { result: { ...empty(), durationMs: Date.now() - start }, provider: "deterministic", model: "rule-extraction-floor", durationMs: Date.now() - start };
+  }
+
   let provider = options.provider;
   if (!provider) {
     try {
       provider = await createLlmProvider({ provider: "ollama", model, timeoutMs, temperature: 0, maxTokens: 4096 });
     } catch {
+      markLlmUnavailable();
       return { result: { ...empty(), durationMs: Date.now() - start }, provider: "deterministic", model: "rule-extraction-floor", durationMs: Date.now() - start };
     }
   }
@@ -115,6 +128,7 @@ export async function extractPersonModel(
     });
 
     if (!response.success || !response.parsedContent) {
+      if (isEndpointUnreachable(response.error)) markLlmUnavailable();
       return { result: { ...empty(), rawResponse: response.content, durationMs: Date.now() - start, model }, provider: response.provider, model, durationMs: Date.now() - start };
     }
 
@@ -139,7 +153,8 @@ export async function extractPersonModel(
     };
 
     return { result, provider: response.provider, model, durationMs: Date.now() - start };
-  } catch {
+  } catch (error) {
+    if (isEndpointUnreachable(error)) markLlmUnavailable();
     return { result: { ...empty(), durationMs: Date.now() - start }, provider: provider.provider, model, durationMs: Date.now() - start };
   }
 }

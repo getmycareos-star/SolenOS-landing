@@ -111,7 +111,7 @@ const required = [
   "src/lib/pattern-intelligence/proactive-engine.ts",
   "src/lib/pattern-intelligence/frequency-patterns.ts",
   "src/lib/pattern-intelligence/trend-patterns.ts",
-  "src/app/api/pattern-intelligence/route.ts",
+  "src/lib/pattern-intelligence/proactive-engine.ts",
   "src/components/ops-devtools/PatternIntelligencePanel.tsx",
 ];
 
@@ -119,7 +119,12 @@ for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
 
-const careEvents = fs.readFileSync(path.join(root, "src/app/api/care-events/route.ts"), "utf-8");
+// A caregiver capture feeds the pattern intelligence through the downstream
+// continuity stage of the situation-entry pipeline.
+const downstreamContinuity = fs.readFileSync(
+  path.join(root, "src/lib/situation-entry/downstream-continuity.ts"),
+  "utf-8",
+);
 assert(careEvents.includes("runPatternIntelligence"), "care-events runs pattern intelligence");
 
 const realMoment = fs.readFileSync(

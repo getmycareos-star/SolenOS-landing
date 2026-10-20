@@ -295,12 +295,14 @@ if (!pipelineSource.includes("resolution_engine_layer")) {
 }
 console.log("✓ analyze pipeline wiring");
 
+// The route is a thin ops wrapper: it returns the pipeline result unchanged, so
+// the layer reaches the API payload without the route naming it.
 const routeSource = fs.readFileSync(
   path.join(process.cwd(), "src/app/api/analyze/route.ts"),
   "utf-8",
 );
-if (!routeSource.includes("resolution_engine_layer")) {
-  throw new Error("analyze API must expose resolution_engine_layer");
+if (!/NextResponse\.json\(result\)/.test(routeSource)) {
+  throw new Error("analyze API must return the pipeline result unchanged");
 }
 console.log("✓ analyze API payload");
 

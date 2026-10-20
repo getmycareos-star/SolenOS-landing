@@ -934,7 +934,13 @@ export function composeCaregiverResponse(params: {
   }
 
   let situation_summary: string | null = null;
-  if (!facets.show_what_is_happening || gatheringContext) {
+  // Gathering framing reduces load only when there is nothing substantive to
+  // hold. When relief has opened Clarity, the held line is what Clarity is
+  // anchored to, so it stays even if the turn is still filling in.
+  const heldOrientationForClarity = Boolean(turn.what_seems_happening?.trim());
+  if (!facets.show_what_is_happening) {
+    situation_summary = null;
+  } else if (gatheringContext && !heldOrientationForClarity) {
     situation_summary = null;
   } else if (continuitySymptom && priorObservationFacts.length > 0) {
     situation_summary = "What you already shared today is the open concern.";
@@ -970,7 +976,10 @@ export function composeCaregiverResponse(params: {
       facets.show_what_is_happening &&
       !gatheringContext
     ) {
-      situation_summary = scrub(modelOrientation.current_understanding);
+      // Prefer the model orientation, but never trade a held summary for an
+      // empty one â€” losing "what is happening" leaves Clarity unanchored.
+      situation_summary =
+        scrub(modelOrientation.current_understanding) ?? situation_summary;
     }
     // Prefer recipient-centered model understanding when family conflict was in the capture
     if (
@@ -980,7 +989,10 @@ export function composeCaregiverResponse(params: {
       !gatheringContext &&
       situationModel.care_recipient_anchor.recipient_changes.length > 0
     ) {
-      situation_summary = scrub(modelOrientation.current_understanding);
+      // Prefer the model orientation, but never trade a held summary for an
+      // empty one â€” losing "what is happening" leaves Clarity unanchored.
+      situation_summary =
+        scrub(modelOrientation.current_understanding) ?? situation_summary;
     }
     // Always prefer structured Care Reality summary when we can orient (Response Contract).
     // Never dump the current ask into "what is happening" — asks are a separate field.
@@ -1008,7 +1020,6 @@ export function composeCaregiverResponse(params: {
       situation_summary = structured;
     }
   }
-
   const factCap = 2;
   const understandingSource = crsCtx.heldUnderstanding.filter(
     (line) => !isCaregiverGuidanceDemand(line),
@@ -1522,7 +1533,6 @@ if (improvement) {
       }
     }
   }
-
   // New care reality: never keep fake-continuity lines in orientation fields.
   if (isNewCareReality) {
     if (situation_summary && containsFakeContinuity(situation_summary)) {
@@ -1958,7 +1968,10 @@ if (show_clarity && !pushback && what_matters_now) {
       facets.show_what_is_happening &&
       !gatheringContext
     ) {
-      situation_summary = scrub(modelOrientation.current_understanding);
+      // Prefer the model orientation, but never trade a held summary for an
+      // empty one â€” losing "what is happening" leaves Clarity unanchored.
+      situation_summary =
+        scrub(modelOrientation.current_understanding) ?? situation_summary;
     }
     if (
       facets.show_asks &&
@@ -1992,7 +2005,10 @@ if (show_clarity && !pushback && what_matters_now) {
       facets.show_what_is_happening &&
       !gatheringContext
     ) {
-      situation_summary = scrub(modelOrientation.current_understanding);
+      // Prefer the model orientation, but never trade a held summary for an
+      // empty one â€” losing "what is happening" leaves Clarity unanchored.
+      situation_summary =
+        scrub(modelOrientation.current_understanding) ?? situation_summary;
     }
     if (modelOrientation.what_changed && !gatheringContext && !what_changed) {
       what_changed = scrub(modelOrientation.what_changed);
@@ -2225,7 +2241,6 @@ connection_note = scrubPasteField(connection_note);
       what_matters_now = `${domain} change: ${classification}${confidence}`.slice(0, 160);
     }
   }
-
   const composed: ComposedCaregiverResponse = {
     recognition_line,
     confirmation,
@@ -2404,7 +2419,6 @@ export function composeGreetingResponse(params: {
     follow_up_items: [],
     risk_level: "low",
   });
-
   const composed: ComposedCaregiverResponse = {
     recognition_line: null,
     confirmation: orientation,

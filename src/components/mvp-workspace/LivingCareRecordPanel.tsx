@@ -2,6 +2,7 @@
 
 import type { LivingCareRecordResponseView } from "@/lib/living-care-record-ux";
 import { UnderstandingFeedbackPrompt } from "./UnderstandingFeedbackPrompt";
+import { ProblemReportingPrompt } from "./ProblemReportingPrompt";
 
 type Props = {
   view: LivingCareRecordResponseView;
@@ -309,27 +310,29 @@ export function LivingCareRecordPanel({
       {view.care_story_update && (
         <p className="panel-muted lcr-care-story">{view.care_story_update}</p>
       )}
-
       {careKey?.trim() && (
         <UnderstandingFeedbackPrompt
           careKey={careKey.trim()}
           situationId={view.care_reality_state_id}
           rawInputExcerpt={rawInputExcerpt ?? view.original_input}
         />
+        {/* Add the problem reporting prompt below the understanding feedback prompt */}
+        <ProblemReportingPrompt
+          careKey={careKey.trim()}
+          situationId={view.care_reality_state_id}
+          rawInputExcerpt={rawInputExcerpt ?? view.original_input}
+          aiContent={view.original_input || ""}
+        />
       )}
-
-      <div className="situation-actions">
-        {onAddUpdate && (
-          <button type="button" className="workspace-secondary" onClick={onAddUpdate}>
-            Tell us what happened
-          </button>
-        )}
-        {onContinue && (
+      {onContinue && (
           <button type="button" className="workspace-primary" onClick={onContinue}>
             Done for now
           </button>
-        )}
+      )}
       </div>
     </section>
   );
 }
+
+
+

@@ -1,6 +1,6 @@
 # SolenOS Intelligence Specification
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** Canonical  
 **Owner:** Product Architecture  
 **Priority:** Highest  
@@ -405,7 +405,1698 @@ The response is never the first output. It is the final step after extraction, u
 
 ---
 
-# Chapter 11 — Evaluation Framework
+# Chapter 11 — "WHAT MATTERS?" — THE CARE ATTENTION LAYER
+
+## 11.1 Foundational Workflow: "What Matters?"
+
+**STATUS**
+
+This is a foundational SolenOS workflow.
+
+It must not be implemented as a cosmetic dashboard section, generic AI summary, notification feed, arbitrary priority list, or "important events" filter.
+
+The objective is to create a reliable Care Attention Layer that helps a caregiver move from:
+
+«"Everything feels important."»
+
+to:
+
+«"I know what deserves attention."»
+
+The system must help the caregiver understand:
+
+- what is happening now,
+- what changed,
+- what remains unresolved,
+- what requires attention,
+- what can wait,
+- what is unknown,
+- what needs confirmation,
+- what needs professional follow-up,
+- and what the caregiver should ask next.
+
+---
+
+### 1. CORE PRINCIPLE
+
+"WHAT MATTERS?" is NOT "WHAT IS MOST MEDICALLY SERIOUS?"
+
+SolenOS must not independently determine clinical severity, diagnosis, urgency, or medical appropriateness.
+
+Instead, it should determine care-attention relevance from the canonical care record.
+
+The system should ask:
+
+«Given what we currently know about this care situation, what deserves the caregiver's attention now?»
+
+That determination may be influenced by:
+
+- recent meaningful change,
+- unresolved continuity,
+- upcoming appointments,
+- pending follow-up,
+- missing information,
+- contradictions,
+- stale information,
+- responsibilities,
+- important observations,
+- recent decisions,
+- expected outcomes,
+- outcomes that have not yet been established,
+- medication changes or unresolved medication information,
+- repeated routine changes,
+- caregiver/user-marked importance,
+- professional follow-up explicitly documented,
+- timing,
+- dependencies,
+- and whether additional information could materially reduce uncertainty.
+
+It must not be based on unsupported clinical inference.
+
+---
+
+### 2. FORENSIC REPOSITORY INSPECTION FIRST
+
+Before writing or modifying implementation code:
+
+1. Inspect the repository.
+2. Identify the canonical CareContext/state model.
+3. Identify canonical Evidence/atomic-claim models.
+4. Identify canonical Open Loop model.
+5. Identify canonical Appointment model.
+6. Identify canonical Responsibility model.
+7. Identify canonical Observation/Routine model.
+8. Identify canonical Decision Memory.
+9. Identify canonical Outcome Memory.
+10. Identify canonical Medication model.
+11. Identify existing verification/provenance/versioning infrastructure.
+12. Identify existing prioritization/status/importance fields.
+13. Identify existing API endpoints.
+14. Identify existing frontend data-fetching/state patterns.
+15. Identify existing authorization/permission checks.
+16. Identify existing audit/version infrastructure.
+17. Identify existing AI reasoning pipeline.
+
+Do not create duplicate models merely because a new UI requires different information.
+
+If the repository already contains a canonical representation, reuse it.
+
+There must be one source of truth.
+
+---
+
+### 3. NO HARDCODED EXAMPLE DATA
+
+Any names, dates, medications, symptoms, appointments, responsibilities, observations, professionals, or care events mentioned in this specification are conceptual examples only.
+
+They must NEVER become:
+
+- production seed data,
+- default records,
+- fallback records,
+- hardcoded dashboard cards,
+- fake "important" items,
+- static UI examples,
+- AI prompt facts,
+- demo data inside production logic.
+
+All displayed information must originate from actual authorized care-record data.
+
+If information does not exist:
+
+«Unknown / Not provided»
+
+must remain unknown.
+
+Never fabricate information to make the "What Matters?" experience appear complete.
+
+---
+
+### 4. THE CARE ATTENTION MODEL
+
+Create or reuse a canonical representation for a Care Attention Item.
+
+It must not become an independent competing truth system.
+
+Conceptually, an attention item should reference canonical evidence/entities rather than copying their substantive content.
+
+It should support at least:
+
+- identity
+- attention reason
+- related evidence
+- related CareContext state
+- related change
+- related Open Loop
+- related appointment
+- related responsibility
+- related observation
+- related medication
+- related decision
+- related outcome
+- related professional interaction
+- source/provenance
+- created date
+- relevant event date
+- effective date where applicable
+- current status
+- user importance
+- system attention rationale
+- confirmation state
+- professional follow-up state
+- priority
+- dependency
+- resolution state
+- version
+- supersession
+- permissions
+- audit history
+
+Do not duplicate the underlying care object.
+
+---
+
+### 5. DISTINGUISH SYSTEM ATTENTION FROM USER IMPORTANCE
+
+This distinction is critical.
+
+A caregiver may say:
+
+«"This is important to me."»
+
+That is different from SolenOS determining:
+
+«"This requires attention because it remains unresolved."»
+
+These must be separate dimensions.
+
+For example:
+
+User importance
+
+- IMPORTANT
+- INFORMATIONAL
+- LOW_PRIORITY
+
+Care attention state
+
+- NEEDS_ATTENTION
+- AWAITING_CONFIRMATION
+- PROFESSIONAL_FOLLOW_UP
+- CAN_WAIT
+- RESOLVED
+- INFORMATIONAL
+- UNKNOWN
+
+Do not collapse these into one arbitrary numeric priority score.
+
+---
+
+### 6. WHAT MATTERS? INPUTS
+
+The "What Matters?" engine must review the current canonical care state.
+
+At minimum, it must inspect:
+
+A. Current Situation
+
+What is currently known about the care recipient?
+
+What is the current CareContext?
+
+What has changed from the previous known state?
+
+What remains uncertain?
+
+What is currently unresolved?
+
+---
+
+B. Recent Changes
+
+Review meaningful recent changes.
+
+Examples of change categories include:
+
+- new observation,
+- changed routine,
+- medication change,
+- professional interaction,
+- decision,
+- outcome,
+- appointment,
+- responsibility change,
+- unresolved issue,
+- new document,
+- new care instruction,
+- new concern,
+- change in caregiver availability,
+- changed handoff context.
+
+The engine must prioritize state changes, not simply count events.
+
+Five routine notes should not automatically outrank one meaningful unresolved continuity issue.
+
+---
+
+C. Unresolved Items
+
+Review canonical Open Loops.
+
+Examples:
+
+- unanswered question,
+- pending professional follow-up,
+- pending appointment,
+- pending test/result,
+- unresolved medication discrepancy,
+- unresolved contradiction,
+- missing outcome,
+- unassigned responsibility,
+- missing document,
+- unverified information.
+
+An unresolved item should remain visible until there is evidence supporting resolution.
+
+Do not automatically mark something resolved because it has become old.
+
+---
+
+D. Upcoming Appointments
+
+Review actual appointment records.
+
+Distinguish:
+
+- scheduled appointment,
+- tentative appointment,
+- recommended follow-up,
+- unknown appointment state.
+
+Do not create an appointment merely because someone said:
+
+«"They should see the doctor."»
+
+A recommendation is not a scheduled appointment.
+
+Upcoming appointments may matter because they create a near-term opportunity to:
+
+- prepare,
+- resolve questions,
+- verify information,
+- gather relevant evidence,
+- review changes,
+- identify what should be communicated.
+
+Integrate with Appointment Preparation rather than duplicating it.
+
+---
+
+E. Responsibilities
+
+Review actual responsibilities.
+
+Identify:
+
+- assigned responsibilities,
+- pending responsibilities,
+- overdue responsibilities where an actual timeframe exists,
+- responsibilities without an owner,
+- responsibilities blocked by missing information,
+- responsibilities awaiting confirmation.
+
+Do not infer an owner.
+
+If nobody is documented as responsible:
+
+«Responsibility: unassigned»
+
+not:
+
+«"Probably the daughter."»
+
+---
+
+F. Important Observations
+
+Review observations and routine changes.
+
+Important observations may include:
+
+- newly observed change,
+- repeated deviation from established baseline,
+- unresolved observation,
+- observation linked to a pending question,
+- observation relevant to an upcoming appointment,
+- observation the caregiver has explicitly marked important.
+
+Do not convert an observation into a diagnosis.
+
+Do not treat one observation as an established pattern.
+
+Do not manufacture a baseline.
+
+---
+
+G. Stale Information
+
+Identify information that may no longer reliably represent the current state because insufficient recent evidence exists.
+
+Critical distinction:
+
+«STALE ≠ FALSE»
+
+For example:
+
+- an old medication list may be stale,
+- an old responsibility assignment may be stale,
+- an old routine baseline may be stale,
+- an old contact or care instruction may be stale.
+
+SolenOS must not declare stale information false unless contradictory evidence exists.
+
+The purpose of identifying stale information is:
+
+«"This may need confirmation."»
+
+not:
+
+«"This is wrong."»
+
+---
+
+### 7. CONFLICTS
+
+Review known conflicts.
+
+A conflict may exist when:
+
+- two sources report different information,
+- two dates imply different states,
+- medication instructions differ,
+- caregivers report different observations,
+- current state conflicts with historical information,
+- professional information conflicts with caregiver-entered information.
+
+The system must preserve both sides of a conflict.
+
+Never silently choose one.
+
+The "What Matters?" layer should be able to say, in substance:
+
+«There is conflicting information here. Confirmation may be needed.»
+
+It must identify:
+
+- conflicting claims,
+- sources,
+- dates,
+- relevant entities,
+- verification state,
+- what remains unresolved.
+
+---
+
+### 8. MISSING INFORMATION
+
+Identify information gaps that materially affect continuity.
+
+Examples:
+
+- missing appointment outcome,
+- missing follow-up date,
+- missing responsibility,
+- missing medication instruction,
+- missing professional response,
+- missing outcome,
+- missing source,
+- missing date,
+- unclear person,
+- unresolved question,
+- unknown current status.
+
+The system must distinguish:
+
+«Unknown»
+
+from:
+
+«Not important»
+
+and from:
+
+«Resolved.»
+
+Missing information must never be silently filled by an LLM.
+
+---
+
+### 9. RECENTLY ADDED INFORMATION
+
+Review recently added evidence.
+
+But:
+
+«Recent does not automatically mean important.»
+
+A newly added piece of information should receive attention when it changes understanding, creates uncertainty, affects an open loop, changes responsibility, affects preparation, changes current state, or is explicitly marked important.
+
+The system should prevent a "newest information wins" algorithm.
+
+---
+
+### 10. ASK: "WHAT CHANGED?"
+
+This question must be answered from actual state comparison.
+
+It should not produce a chronological event dump.
+
+The engine should compare:
+
+previous relevant CareContext
+
+against
+
+current CareContext
+
+and identify meaningful differences.
+
+Each change should be explainable.
+
+Conceptually:
+
+«What changed: [state change]
+Compared with: [previous state/time]
+Evidence: [supporting evidence]
+Confidence: [state]
+Why it matters: [continuity reason]»
+
+Do not use unsupported clinical significance.
+
+---
+
+### 11. ASK: "WHAT MATTERS?"
+
+This is the central question.
+
+The answer should prioritize items based on care continuity relevance, not medical drama.
+
+Potential reasons include:
+
+1. unresolved,
+2. recently changed,
+3. awaiting confirmation,
+4. upcoming time-sensitive interaction,
+5. missing information blocking the next step,
+6. conflicting information,
+7. responsibility gap,
+8. important observation,
+9. expected outcome awaiting evidence,
+10. professional follow-up explicitly documented,
+11. user-marked important,
+12. stale information requiring confirmation,
+13. dependency affecting another care action.
+
+Every generated attention item must have an explainable reason.
+
+Never output:
+
+«"This is important."»
+
+without explaining why.
+
+---
+
+### 12. ASK: "WHAT REMAINS UNKNOWN?"
+
+This must come directly from canonical uncertainty.
+
+Examples:
+
+- unknown current status,
+- unknown outcome,
+- unknown responsibility,
+- unknown follow-up date,
+- unknown professional response,
+- unresolved medication instruction,
+- unknown source,
+- unresolved contradiction.
+
+The system must not convert uncertainty into a guess.
+
+The UI should make uncertainty actionable:
+
+«Unknown → What information would resolve this?»
+
+---
+
+### 13. ASK: "WHAT NEEDS ATTENTION?"
+
+This should produce a small, prioritized set rather than an exhaustive database dump.
+
+An item can need attention because:
+
+- it blocks another action,
+- it is unresolved,
+- it has an upcoming deadline or interaction,
+- it requires confirmation,
+- it has changed materially,
+- it is linked to a professional follow-up,
+- it represents a responsibility gap,
+- it is preventing reliable understanding of current care state.
+
+The system should prefer actionable attention over information overload.
+
+---
+
+### 14. ASK: "WHAT SHOULD I ASK?"
+
+This must remain an evidence-grounded question-generation workflow.
+
+Questions may arise from:
+
+- unresolved contradiction,
+- missing information,
+- medication discrepancy,
+- pending professional response,
+- unclear outcome,
+- upcoming appointment,
+- unresolved decision,
+- unclear responsibility,
+- stale information,
+- important observation.
+
+Every question should answer:
+
+1. Why is this question being suggested?
+2. What evidence created the question?
+3. What information would answering it resolve?
+4. Who is the appropriate source, if the record supports that?
+5. What downstream care-context uncertainty could be reduced?
+
+Do not invent a professional recipient.
+
+Do not prescribe the questioner.
+
+Do not provide medical advice disguised as a question.
+
+---
+
+### 15. PRIORITIZATION BEHAVIOUR
+
+The caregiver must be able to explicitly classify an item.
+
+Required user actions:
+
+MARK IMPORTANT
+
+Meaning:
+
+«"This deserves my attention."»
+
+This is a user-provided importance signal.
+
+It must not be converted into a clinical severity judgment.
+
+---
+
+MARK INFORMATIONAL
+
+Meaning:
+
+«"This is useful context, but it does not currently require attention."»
+
+The information remains in the Care Record.
+
+It is not deleted.
+
+---
+
+MARK RESOLVED
+
+Only allow this when the underlying item can legitimately be resolved.
+
+For evidence-backed Open Loops, resolution must require supporting evidence or an explicit user resolution where the object type permits it.
+
+Do not allow:
+
+«old = resolved.»
+
+Resolution history must be preserved.
+
+---
+
+MARK AWAITING CONFIRMATION
+
+Use when:
+
+- information is uncertain,
+- conflicting,
+- stale,
+- incomplete,
+- awaiting professional confirmation,
+- awaiting source verification.
+
+This must not mean:
+
+«"Probably true."»
+
+It means:
+
+«"We do not yet have sufficient confirmation."»
+
+---
+
+MARK LOW PRIORITY
+
+This means the caregiver does not currently want this item surfaced prominently.
+
+It must not delete the information or override safety-critical system state.
+
+A low-priority user preference must not suppress an objectively unresolved continuity dependency when doing so would make the record misleading.
+
+---
+
+IDENTIFY PROFESSIONAL FOLLOW-UP
+
+This state may only be supported when the underlying record contains evidence for professional involvement or follow-up.
+
+Examples:
+
+- professional explicitly requested follow-up,
+- professional response is pending,
+- an appointment exists,
+- a referral was recommended/ordered,
+- a question is explicitly intended for a professional.
+
+Do not infer:
+
+«"This requires a doctor"»
+
+merely because an observation exists.
+
+---
+
+IDENTIFY "CAN WAIT"
+
+"Can wait" must be treated as a care-attention classification, not a clinical safety judgment.
+
+It should mean:
+
+«"Based on the current recorded context, this does not appear to require immediate caregiver attention for continuity purposes."»
+
+It must not mean:
+
+«"This is medically safe to delay."»
+
+The distinction must be explicit in the UI where necessary.
+
+---
+
+### 16. ATTENTION STATES MUST NOT BE CLINICAL TRIAGE
+
+Do NOT create a hidden medical urgency engine.
+
+Do not silently classify records as:
+
+- emergency,
+- urgent,
+- non-urgent,
+- medically safe,
+- medically unsafe,
+- serious,
+- benign.
+
+unless such a state is explicitly supported by authoritative source data and is merely being represented faithfully.
+
+SolenOS's job is care continuity prioritization, not independent clinical triage.
+
+---
+
+### 17. PRIORITY MUST BE EXPLAINABLE
+
+If SolenOS places an item near the top of "What Matters?", it must be possible to explain:
+
+«Why is this here?»
+
+Possible explanation:
+
+«"This is near the top because it is unresolved, relates to a recent change, and is connected to an upcoming appointment."»
+
+Not:
+
+«"The AI thinks this is important."»
+
+Every attention recommendation should expose its evidence and rationale.
+
+---
+
+### 18. DO NOT REDUCE EVERYTHING TO A SINGLE SCORE
+
+Do not create a black-box:
+
+importanceScore = 0.87
+
+and use that as the primary explanation.
+
+A numerical ranking may exist internally if genuinely useful, but it must be composed from interpretable dimensions and never replace the underlying reasoning.
+
+The system must preserve:
+
+- why it surfaced,
+- what evidence supports it,
+- what state created the attention,
+- what remains unknown,
+- what action could reduce uncertainty,
+- whether the caregiver or system assigned the importance.
+
+---
+
+### 19. ATTENTION ≠ TASK
+
+A major architectural distinction:
+
+«Something can matter without creating a task.»
+
+Examples:
+
+- a meaningful change may deserve awareness but no task,
+- an unresolved contradiction may need confirmation,
+- an observation may be important context,
+- a recent decision may need monitoring,
+- an upcoming appointment may require preparation,
+- a resolved issue may remain important historical context.
+
+Do not turn every attention item into a task.
+
+---
+
+### 20. ATTENTION ≠ EVENT
+
+Do not build a feed:
+
+«Monday: observation
+Tuesday: medication
+Wednesday: appointment
+Thursday: note»
+
+and call that "What Matters?"
+
+The system must interpret the record.
+
+The caregiver should see:
+
+«What changed?
+What matters now?
+What remains unresolved?
+What needs confirmation?
+What can wait?»
+
+not merely:
+
+«What happened?»
+
+---
+
+### 21. ATTENTION ≠ NOTIFICATION
+
+Do not automatically notify the caregiver every time an item becomes potentially important.
+
+The attention layer is an understanding layer.
+
+Notification behavior is a separate product decision.
+
+Avoid notification fatigue.
+
+---
+
+### 22. CAREGIVER VERIFICATION
+
+AI-generated attention classifications must remain reviewable.
+
+The caregiver should be able to say:
+
+- correct,
+- not important,
+- important,
+- informational,
+- unresolved,
+- resolved,
+- awaiting confirmation,
+- missing context,
+- wrong reason,
+- wrong related item,
+- wrong date,
+- wrong person,
+- wrong source.
+
+Corrections must update the canonical record/state where appropriate.
+
+They must not merely alter a temporary UI card.
+
+---
+
+### 23. AI BOUNDARIES
+
+AI may:
+
+- compare current and prior state,
+- detect changes,
+- identify unresolved items,
+- identify possible conflicts,
+- identify missing information,
+- group related evidence,
+- suggest questions,
+- suggest attention candidates,
+- explain why evidence may matter for continuity,
+- detect stale information,
+- identify dependencies,
+- draft an understandable explanation.
+
+AI may NOT:
+
+- invent facts,
+- invent importance,
+- diagnose,
+- declare medical severity,
+- prescribe,
+- recommend medication changes,
+- resolve medication conflicts,
+- mark professional decisions as appropriate,
+- assign responsibility without evidence,
+- fabricate appointments,
+- fabricate professional follow-up,
+- declare an outcome without evidence,
+- silently resolve conflicts,
+- silently mark information current,
+- convert uncertainty into fact.
+
+---
+
+### 24. INTEGRATION WITH EXISTING SOLENOS SYSTEMS
+
+"What Matters?" must consume canonical state from:
+
+- CareContext
+- Evidence
+- Atomic Claims
+- Open Loops
+- Appointment Preparation
+- After Appointment
+- Decision Memory
+- Outcome Memory
+- Medication Day
+- Routine Moments
+- Responsibilities
+- Handoff
+- Verification
+- Professional Summary
+- Two-Week Care Review
+- Weekly Care Review
+
+It must not create parallel versions of these systems.
+
+Example:
+
+If an Open Loop already says:
+
+«unresolved medication discrepancy»
+
+"What Matters?" references that Open Loop.
+
+It does not create another independent medication discrepancy object.
+
+---
+
+### 25. RELATIONSHIP TO WEEKLY REVIEW
+
+The Weekly Care Review asks:
+
+«What happened and changed this week, and what needs to be maintained in Care Memory?»
+
+"What Matters?" asks:
+
+«Given the current Care Memory, what deserves attention now?»
+
+Weekly Review should update the canonical state.
+
+"What Matters?" should consume the updated state.
+
+Do not make the two workflows compete.
+
+---
+
+### 26. RELATIONSHIP TO TWO-WEEK REVIEW
+
+Two-Week Review:
+
+«What changed over the trajectory?»
+
+"What Matters?":
+
+«What deserves attention now?»
+
+The trajectory review provides longitudinal context.
+
+"What Matters?" provides current prioritization.
+
+---
+
+### 27. RELATIONSHIP TO "WHAT SHOULD I DO?"
+
+These are adjacent but distinct.
+
+WHAT MATTERS?
+
+«What deserves attention?»
+
+WHAT SHOULD I DO?
+
+«What information-reducing action could I take next?»
+
+Therefore:
+
+What Matters? → What Should I Do?
+
+may become a natural flow.
+
+Example:
+
+«What matters: A medication instruction conflicts between two sources.»
+
+Then:
+
+«What should I do?»
+
+Potential action:
+
+«Confirm which instruction is current with the appropriate documented source.»
+
+Not:
+
+«"Change the medication."»
+
+---
+
+### 28. RELATIONSHIP TO "WHAT CHANGED?"
+
+These questions form a sequence:
+
+«What changed?
+↓
+What matters?
+↓
+What remains unknown?
+↓
+What needs attention?
+↓
+What should I ask/do next?»
+
+This sequence should become one of SolenOS's core reasoning patterns.
+
+---
+
+### 29. UI REQUIREMENTS
+
+The primary screen should not overwhelm the caregiver.
+
+A strong initial structure is:
+
+WHAT MATTERS NOW
+
+1. Needs Attention
+
+Small number of highest-value continuity items.
+
+Each card should show:
+
+- what is happening,
+- why it matters,
+- evidence,
+- current state,
+- what remains unknown,
+- possible next information-reducing action.
+
+---
+
+2. Awaiting Confirmation
+
+Things that need verification or clarification.
+
+---
+
+3. Professional Follow-Up
+
+Only evidence-supported professional follow-up.
+
+---
+
+4. Upcoming
+
+Relevant upcoming appointments/events/responsibilities.
+
+---
+
+5. Important Context
+
+Items the caregiver has marked important but that do not currently require action.
+
+---
+
+6. Can Wait / Low Priority
+
+Information deliberately deprioritized.
+
+---
+
+7. Unknowns
+
+Important unresolved information gaps.
+
+---
+
+8. Conflicts
+
+Information that currently cannot be reconciled.
+
+---
+
+9. Recent Changes
+
+Meaningful state changes, not event dumps.
+
+---
+
+### 30. EVERY ITEM NEEDS A REASON
+
+Never display:
+
+«Important»
+
+without explanation.
+
+Instead:
+
+«Needs attention
+This information conflicts with a newer documented instruction.»
+
+or:
+
+«Awaiting confirmation
+The outcome of the last appointment has not yet been recorded.»
+
+or:
+
+«Upcoming
+A scheduled appointment is approaching and unresolved questions are linked to it.»
+
+The exact language must come from actual evidence.
+
+---
+
+### 31. TEMPORAL REASONING
+
+"What Matters?" must understand time.
+
+Distinguish:
+
+- event date,
+- documentation date,
+- upload date,
+- effective date,
+- appointment date,
+- follow-up date,
+- expected outcome date,
+- review date,
+- currentness.
+
+Do not assume the newest database row represents the current truth.
+
+Do not assume the most recent documentation date is the event date.
+
+---
+
+### 32. DEPENDENCIES
+
+Attention should account for dependencies.
+
+Example:
+
+«Missing professional response
+↓
+prevents resolution of question
+↓
+prevents updating current CareContext
+↓
+affects upcoming appointment preparation.»
+
+The system should surface the upstream unresolved item rather than creating four duplicate "important" cards.
+
+---
+
+### 33. ATTENTION COLLAPSE / DEDUPLICATION
+
+Multiple evidence objects may support the same attention item.
+
+Do not display:
+
+«7 separate alerts»
+
+when they represent one unresolved continuity issue.
+
+Group related evidence under the canonical underlying issue.
+
+Show:
+
+«One unresolved issue
+Supported by 4 pieces of evidence.»
+
+This prevents attention overload.
+
+---
+
+### 34. RESOLUTION BEHAVIOUR
+
+When an item becomes resolved:
+
+1. preserve the original attention state,
+2. preserve the evidence,
+3. preserve who resolved it,
+4. preserve when,
+5. preserve the supporting evidence,
+6. update canonical state,
+7. remove it from active attention where appropriate,
+8. retain it in historical context.
+
+Resolution must not erase history.
+
+If new contradictory evidence arrives:
+
+«the item may reopen.»
+
+A reopened issue must preserve its previous resolution.
+
+---
+
+### 35. STALE INFORMATION BEHAVIOUR
+
+When information becomes stale:
+
+Do not automatically mark:
+
+«FALSE»
+
+Instead:
+
+«Awaiting confirmation»
+
+may become appropriate.
+
+The system should identify:
+
+- what is stale,
+- why it is considered stale,
+- what evidence was previously supporting it,
+- what newer evidence is missing,
+- how confirmation could resolve the uncertainty.
+
+---
+
+### 36. CONFLICT BEHAVIOUR
+
+If two pieces of evidence conflict:
+
+Do not select one because it is newer.
+
+Compare:
+
+- source authority,
+- temporal applicability,
+- effective date,
+- explicit supersession,
+- verification,
+- context.
+
+If the conflict remains unresolved:
+
+«Conflict remains unresolved.»
+
+Then generate an information-reducing question/action where appropriate.
+
+---
+
+### 37. "CAN WAIT" MUST BE CAREFULLY DEFINED
+
+This classification should be available for ordinary continuity prioritization.
+
+It must never be interpreted as medical clearance.
+
+Where ambiguity could cause harm, the UI should distinguish:
+
+«Can wait for SolenOS attention»
+
+from:
+
+«Medically safe to wait»
+
+The latter is outside SolenOS's independent authority.
+
+---
+
+### 38. USER-CONTROLLED PRIORITIZATION
+
+The caregiver must be able to influence attention.
+
+For example:
+
+«"This matters to me."»
+
+must persist.
+
+However, user prioritization must not corrupt factual state.
+
+Marking something low priority does not mean:
+
+«the underlying event did not happen.»
+
+Marking something important does not mean:
+
+«it is clinically serious.»
+
+This distinction must be preserved in the data model.
+
+---
+
+### 39. EXPLAINABILITY REQUIREMENT
+
+For every surfaced item, the system should be able to answer:
+
+Why is this here?
+
+What evidence supports it?
+
+What changed?
+
+What remains unknown?
+
+What related care object created the attention?
+
+What could resolve the uncertainty?
+
+Who can provide that information, if known?
+
+What happens if nothing changes?
+
+The final question must be used cautiously.
+
+Do not speculate about medical consequences.
+
+It may instead describe continuity consequences:
+
+«"This remains unresolved and may leave the upcoming appointment preparation incomplete."»
+
+---
+
+### 40. NO MEDICAL ADVICE THROUGH PRIORITIZATION
+
+The following are prohibited unless directly representing authoritative documented information:
+
+- "This is serious."
+- "This is dangerous."
+- "You should go to the hospital."
+- "Stop the medication."
+- "Continue the medication."
+- "Wait until the appointment."
+- "This symptom is probably caused by X."
+- "This is safe."
+- "This is not urgent."
+
+The attention system may say:
+
+«"This is unresolved."»
+
+«"This conflicts with another documented instruction."»
+
+«"This requires confirmation."»
+
+«"This is linked to an upcoming appointment."»
+
+«"This information is missing."»
+
+«"A professional follow-up is documented."»
+
+That is the correct product boundary.
+
+---
+
+### 41. FIRST-VALUE TEST
+
+A new caregiver should be able to enter SolenOS and eventually reach a useful understanding:
+
+«What changed?»
+
+«What matters now?»
+
+«What remains unknown?»
+
+«What needs attention?»
+
+«What should I ask?»
+
+without manually sorting every piece of information.
+
+The system should reduce cognitive load rather than create another dashboard the caregiver must maintain.
+
+---
+
+### 42. END-TO-END BEHAVIOURAL TEST
+
+Create a realistic test scenario using isolated test fixtures only.
+
+The test must contain a messy combination of:
+
+- recent observations,
+- older observations,
+- an actual appointment,
+- an unresolved question,
+- a responsibility,
+- an unassigned responsibility,
+- stale information,
+- conflicting information,
+- recent information that is informational only,
+- a meaningful change,
+- an outcome awaiting evidence,
+- a professional interaction,
+- missing information,
+- user-marked important information,
+- user-marked low-priority information.
+
+Verify that SolenOS:
+
+1. reconstructs the current state,
+2. identifies meaningful changes,
+3. identifies unresolved continuity issues,
+4. surfaces appropriate attention candidates,
+5. explains why they matter,
+6. separates user importance from system attention,
+7. distinguishes stale from false,
+8. distinguishes conflict from uncertainty,
+9. distinguishes missing from resolved,
+10. identifies actual upcoming appointments,
+11. preserves responsibilities accurately,
+12. does not invent owners,
+13. identifies professional follow-up only when supported,
+14. generates evidence-grounded questions,
+15. allows caregiver verification,
+16. persists prioritization,
+17. updates canonical CareContext,
+18. updates Open Loops where appropriate,
+19. does not duplicate canonical objects,
+20. preserves provenance,
+21. preserves version history,
+22. respects permissions,
+23. writes audit events,
+24. survives AI failure,
+25. does not fabricate anything.
+
+---
+
+### 43. REQUIRED NEGATIVE TESTS
+
+Explicitly test that:
+
+- recent ≠ important,
+- old ≠ resolved,
+- stale ≠ false,
+- unknown ≠ false,
+- unknown ≠ resolved,
+- conflict ≠ uncertainty,
+- informational ≠ irrelevant,
+- important ≠ clinically serious,
+- low priority ≠ deleted,
+- attention ≠ task,
+- attention ≠ notification,
+- observation ≠ diagnosis,
+- caregiver report ≠ professional instruction,
+- professional recommendation ≠ scheduled appointment,
+- recommendation ≠ decision,
+- decision ≠ outcome,
+- expected outcome ≠ actual outcome,
+- absence of evidence ≠ negative outcome,
+- no responsibility ≠ assigned responsibility,
+- newest record ≠ automatically current truth,
+- AI inference ≠ canonical fact,
+- AI ranking ≠ clinical triage,
+- "can wait" ≠ medically safe to wait,
+- one deviation ≠ established pattern,
+- one conflict ≠ permission to choose a side,
+- user importance ≠ system truth,
+- user correction ≠ deletion of historical evidence.
+
+---
+
+### 44. FAILURE HANDLING
+
+If AI fails:
+
+The care record must remain intact.
+
+"What Matters?" may fall back to deterministic canonical-state analysis.
+
+The system must never:
+
+- fabricate a result,
+- display an empty result as if nothing matters,
+- overwrite canonical state,
+- lose caregiver-entered information.
+
+AI is an interpretation layer, not the persistence layer.
+
+---
+
+### 45. SECURITY AND AUTHORIZATION
+
+"What Matters?" must only use information the current user is authorized to access.
+
+Respect:
+
+- care-recipient permissions,
+- caregiver roles,
+- shared-record permissions,
+- professional access,
+- document permissions,
+- sensitive information boundaries,
+- audit requirements.
+
+Do not expose a hidden care fact merely because an AI model can retrieve it.
+
+---
+
+### 46. VERSIONING
+
+Attention decisions may change as CareContext changes.
+
+Therefore preserve:
+
+- attention item version,
+- underlying CareContext version,
+- evidence version,
+- user classification,
+- AI-generated rationale version where applicable,
+- correction history,
+- resolution history,
+- reopening history.
+
+A later change must not rewrite historical attention decisions as though they never existed.
+
+---
+
+### 47. ACCEPTANCE CRITERIA
+
+This feature is NOT complete merely because a "What Matters?" page exists.
+
+It is complete only when:
+
+DATA
+
+- canonical records are used,
+- no duplicate truth exists,
+- provenance exists,
+- temporal state exists,
+- permissions exist,
+- audit exists,
+- versioning exists.
+
+REASONING
+
+- current situation is reconstructed,
+- recent changes are identified,
+- unresolved items are identified,
+- upcoming appointments are identified,
+- responsibilities are reviewed,
+- important observations are reviewed,
+- stale information is identified,
+- conflicts are identified,
+- missing information is identified,
+- recent information is interpreted rather than merely displayed.
+
+PRIORITIZATION
+
+The user can:
+
+- mark important,
+- mark informational,
+- mark resolved,
+- mark awaiting confirmation,
+- mark low priority,
+- identify professional follow-up,
+- identify something that can wait.
+
+EXPLANATION
+
+Every surfaced attention item has:
+
+- evidence,
+- reason,
+- current state,
+- uncertainty where applicable,
+- related canonical object,
+- next possible information-reducing action where appropriate.
+
+SAFETY
+
+The system does not:
+
+- diagnose,
+- prescribe,
+- independently triage,
+- invent professional follow-up,
+- invent responsibilities,
+- invent appointments,
+- resolve conflicts without evidence,
+- turn uncertainty into fact.
+
+INTEGRATION
+
+The feature correctly integrates with:
+
+- CareContext,
+- Open Loops,
+- Appointment Preparation,
+- Weekly Review,
+- Two-Week Review,
+- Decision Memory,
+- Outcome Memory,
+- Medication Day,
+- Routine Moments,
+- Verification,
+- Handoff,
+- Professional Summary.
+
+BEHAVIOUR
+
+The caregiver should experience:
+
+«Everything feels important»
+
+becoming:
+
+«I know what deserves attention.»
+
+That behavioral transformation is the actual success criterion.
+
+---
+
+### 48. FINAL FORENSIC IMPLEMENTATION REQUIREMENT
+
+Before declaring the feature complete, perform a final repository-wide forensic inspection.
+
+Search for:
+
+- duplicate attention models,
+- duplicate priority fields,
+- hardcoded example values,
+- fake appointments,
+- fake responsibilities,
+- demo "important" cards,
+- stale API responses,
+- frontend-only state,
+- unpersisted classifications,
+- bypassed authorization,
+- missing audit events,
+- missing provenance,
+- silent conflict resolution,
+- unsupported medical language,
+- arbitrary AI priority scores,
+- notification logic masquerading as attention logic,
+- task objects duplicating Open Loops,
+- timeline objects duplicating CareContext,
+- AI outputs being written directly as canonical truth.
+
+Trace the complete path:
+
+Actual Care Evidence
+→ Canonical CareContext
+→ Current State
+→ Recent Change
+→ Uncertainty / Conflict / Open Loop / Dependency
+→ Care Attention Candidate
+→ Explainable Rationale
+→ Caregiver Review
+→ User Classification
+→ Canonical State Update
+→ What Matters? Refresh
+→ What Should I Do? / Ask Next
+→ New Evidence
+→ Verification
+→ Updated CareContext
+
+No step may exist only as mock UI state.
+
+No step may depend on hardcoded examples.
+
+No step may create a competing source of truth.
+
+---
+
+CORE SOLENOS PRINCIPLE
+
+Care records tell SolenOS what exists.
+
+CareContext tells SolenOS what is currently understood.
+
+Verification tells SolenOS what has been confirmed or corrected.
+
+Open Loops tell SolenOS what remains unresolved.
+
+Decision Memory tells SolenOS what was decided and why.
+
+Outcome Memory tells SolenOS what happened afterward.
+
+What Matters? tells the caregiver what deserves attention now.
+
+What Should I Do? tells the caregiver what information-reducing action may come next.
+
+That is the progression:
+
+«What happened?
+→ What changed?
+→ What is true now?
+→ What remains unknown?
+→ What matters?
+→ What needs attention?
+→ What should I ask/do next?
+→ What happened after that?
+→ Update the Care Memory.»
+
+The product outcome is not a better dashboard.
+
+It is:
+
+«"I no longer have to treat everything as equally important. SolenOS helps me see what deserves my attention, why it matters, what is still uncertain, and what information I need next."»This is the right level for the feature. "What Matters?" should become one of SolenOS’s central reasoning surfaces, not another page layered on top of the existing system.
+
+
+# Chapter 12 — Evaluation Framework
 
 ## 11.1 Permanent Evaluation Tests
 
@@ -449,7 +2140,7 @@ Does the system respond within the latency budget? Does it degrade gracefully un
 
 ---
 
-# Chapter 12 — Architecture Roadmap
+# Chapter 13 — Architecture Roadmap
 
 ## 12.1 Current State Assessment
 
@@ -530,9 +2221,9 @@ Does the system respond within the latency budget? Does it degrade gracefully un
 7. Break `CognitiveWorkspace` into composed panels with explicit contracts
 8. Implement longitudinal memory reasoning (not just storage)
 9. Add open loop management as first-class runtime concern
-
 **Phase 3 — Evaluation & Quality**
-10. Build behavioral evaluation suite from Chapter 11 tests
+
+10. Build behavioral evaluation suite from Chapter 12 tests
 11. Replace component-level verify scripts with behavioral regression tests
 12. Add continuity-aware evaluation (can returning caregivers pick up naturally?)
 
@@ -598,8 +2289,9 @@ Does the system respond within the latency budget? Does it degrade gracefully un
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
+| 1.1 | 2026-10-08 | Added Chapter 11 — "WHAT MATTERS?" — THE CARE ATTENTION LAYER: Complete specification for the care attention system that helps caregivers determine what deserves attention based on evidence, change, uncertainty, unresolved continuity, timing, and user-defined importance | Product Architecture |
 | 1.0 | 2026-07-30 | Initial canonical specification | Product Architecture |
 
 ---
 
-**End of SolenOS Intelligence Specification v1.0**
+**End of SolenOS Intelligence Specification v1.1**

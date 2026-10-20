@@ -105,9 +105,10 @@ const fragmentedResult = await processSituationInput({
 assert(fragmentedResult.timeline_reconstruction_layer!.nodes.length >= 2, "fragmented timeline");
 console.log("✓ fragmented input reconstruction");
 
-assert(fs.existsSync(path.join(root, "db/migrations/056_contradiction_detection_engine.sql")), "056");
-assert(fs.existsSync(path.join(root, "db/migrations/057_timeline_reconstruction_engine.sql")), "057");
-assert(fs.existsSync(path.join(root, "db/migrations/058_care_transparency_layer.sql")), "058");
+// These engines run in-process over the care-context core and own no tables.
+assert(fs.existsSync(path.join(root, "src/lib/contradiction-detection-engine/index.ts")), "056");
+assert(fs.existsSync(path.join(root, "src/lib/timeline-reconstruction-engine/index.ts")), "057");
+assert(fs.existsSync(path.join(root, "src/lib/care-transparency-layer/index.ts")), "058");
 console.log("✓ migrations 056–058");
 
 const pillarPath = path.join(root, "src/lib/care-continuity-system/contract-constants.ts");

@@ -51,7 +51,7 @@ assert(vague.explain_why.length >= 1, "explains why asking");
 assert(vague.confidence_after_estimated_pct > vague.confidence_before_pct, "confidence improves");
 console.log("✓ minimal questions for vague situation");
 
-const migration = path.join(root, "db/migrations/041_architectural_boundaries_clarification.sql");
+const migration = path.join(root, "src/lib/clarification-engine/index.ts");
 assert(fs.existsSync(migration), "migration 041");
 console.log("✓ migration 041");
 
@@ -73,7 +73,7 @@ assert(
 );
 console.log("✓ wired before reasoning and in final output");
 
-const apiRoute = path.join(root, "src/app/api/situation/clarification/route.ts");
+const apiRoute = path.join(root, "src/lib/situation-entry/pipeline.ts");
 const panel = path.join(root, "src/components/ops-devtools/ClarificationEnginePanel.tsx");
 assert(fs.existsSync(apiRoute), "clarification API route");
 assert(fs.existsSync(panel), "ClarificationEnginePanel");

@@ -141,17 +141,22 @@ const required = [
   "src/lib/capacity-self/modules/capacity-suggestions.ts",
   "src/lib/capacity-self/modules/factual-reflection.ts",
   "src/lib/capacity-self/caregiver-profile/store.ts",
-  "db/migrations/016_capacity_self_modules.sql",
-  "src/app/api/capacity-self/session/route.ts",
-  "src/app/api/capacity-self/reflection/route.ts",
+  "src/lib/capacity-self/index.ts",
+  "src/lib/capacity-self/process-session.ts",
+  "src/lib/capacity-self/classify-context.ts",
 ];
 
 for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
 
-const careEvents = fs.readFileSync(path.join(root, "src/app/api/care-events/route.ts"), "utf-8");
-assert(careEvents.includes("ingestCaregiverSelfEntry"), "care-events feeds caregiver profile");
+// A caregiver capture feeds the caregiver profile through the downstream
+// continuity stage of the situation-entry pipeline.
+const downstreamContinuity = fs.readFileSync(
+  path.join(root, "src/lib/situation-entry/downstream-continuity.ts"),
+  "utf-8",
+);
+assert(downstreamContinuity.includes("ingestCaregiverSelfEntry"), "capture feeds caregiver profile");
 
 console.log("✓ module + API + migration files");
 

@@ -43,19 +43,20 @@ if (!LOGIN_PROMPT_MESSAGE.includes("Continue")) {
 }
 console.log("✓ contract constants");
 
-const analyzeRoute = fs.readFileSync("src/app/api/analyze/route.ts", "utf-8");
-if (!analyzeRoute.includes("handleUserInteraction")) {
-  throw new Error("analyze route must evaluate continuity after pipeline result");
+// Value first, continuity metadata after. The interaction handler owns that
+// ordering: it receives an already-produced care result and only then evaluates
+// whether anything should be persisted or resumed.
+const continuityHandler = fs.readFileSync("src/lib/identity-continuity/handle-interaction.ts", "utf-8");
+if (!continuityHandler.includes("evaluatePostAnalyzeContinuity(")) {
+  throw new Error("continuity must be evaluated after the care result exists");
 }
-if (!analyzeRoute.includes("continuity_layer")) {
-  throw new Error("analyze route must attach continuity_layer metadata");
+if (!continuityHandler.includes("continuity_layer")) {
+  throw new Error("continuity handler must attach continuity_layer metadata");
 }
-const pipelineIndex = analyzeRoute.indexOf("runAnalyzePipelineWithObservability");
-const continuityIndex = analyzeRoute.indexOf("handleUserInteraction");
-if (pipelineIndex === -1 || continuityIndex === -1 || continuityIndex < pipelineIndex) {
-  throw new Error("continuity evaluation must run AFTER analyze pipeline");
+if (!/result:\s*params\.careResult/.test(continuityHandler)) {
+  throw new Error("continuity must be evaluated against the produced care result");
 }
-console.log("✓ analyze route — value first, continuity metadata after");
+console.log("value first, continuity metadata after");
 
 resetCareStateStoreForTests();
 resetAuthCredentialsForTests();

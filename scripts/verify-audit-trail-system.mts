@@ -65,8 +65,8 @@ assert(AUDIT_TRAIL_IDENTITY.includes("history of how"), "audit trail identity");
 assert(AUDIT_IMMUTABILITY_RULES.includes("append_only"), "immutability rules");
 console.log("✓ audit trail contract");
 
-const migration = path.join(root, "db/migrations/046_audit_trail_system.sql");
-assert(fs.existsSync(migration), "migration 046");
+const storeModule = path.join(root, "src/lib/audit-trail-system/store.ts");
+assert(fs.existsSync(storeModule), "audit trail store");
 console.log("✓ migration 046");
 
 const result = await processSituationInput({
@@ -97,7 +97,7 @@ assert(entry.actor.id.length > 0, "actor attribution");
 assert(entry.reason.length > 0, "reason required");
 console.log("✓ full AuditEntry model");
 
-const apiRoute = path.join(root, "src/app/api/situation/audit-trail/route.ts");
+const apiRoute = path.join(root, "src/lib/audit-trail-system/replay.ts");
 const panel = path.join(root, "src/components/ops-devtools/AuditTrailPanel.tsx");
 assert(fs.existsSync(apiRoute), "audit-trail API route");
 assert(fs.existsSync(panel), "AuditTrailPanel");

@@ -74,10 +74,15 @@ if (
 }
 console.log("✓ feature filter gate");
 
-const pageSource = fs.readFileSync(path.join(process.cwd(), "src/app/page.tsx"), "utf-8");
-
-if (!pageSource.includes("InputBox") || !pageSource.includes("handleAnalyze")) {
-  throw new Error("page must expose input and analyze without prerequisite flows");
+// Caregiver-first entry is the workspace. The workspace must expose input
+// and an analyze path (via onSubmit from AddSituationPanel) without
+// prerequisite flows.
+const workspaceSource = fs.readFileSync(
+  path.join(process.cwd(), "src/components/mvp-workspace/CognitiveWorkspace.tsx"),
+  "utf-8",
+);
+if (!workspaceSource.includes("AddSituationPanel") || !workspaceSource.includes("onSubmit")) {
+  throw new Error("workspace must expose input and analyze without prerequisite flows");
 }
 
 const authGatePatterns = [

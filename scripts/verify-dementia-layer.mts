@@ -121,8 +121,8 @@ const required = [
   "src/lib/care-contexts/index.ts",
   "src/lib/care-contexts/dementia/operations.ts",
   "src/lib/care-contexts/dementia/types.ts",
-  "db/migrations/017_dementia_layer.sql",
-  "src/app/api/care-contexts/dementia/route.ts",
+  "src/lib/dementia-wedge-integration/index.ts",
+  "src/lib/care-contexts/dementia/validate.ts",
   "src/components/ops-devtools/DementiaCareRecordPanel.tsx",
 ];
 

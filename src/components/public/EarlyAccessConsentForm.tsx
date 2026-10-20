@@ -41,7 +41,7 @@ export function EarlyAccessConsentForm({
   return (
     <form className="early-access-consent" onSubmit={handleSubmit} noValidate>
       <p className="early-access-consent-lead">
-        Before you begin, please confirm you agree to how SolenOS treats your information.
+        Before you begin, please confirm you agree to how solenos treats your information.
       </p>
 
       <label className="early-access-consent-check">
@@ -52,7 +52,7 @@ export function EarlyAccessConsentForm({
           aria-required="true"
         />
         <span>
-          I agree to the SolenOS{" "}
+          I agree to the solenos{" "}
           <Link href="/terms" target="_blank" rel="noopener noreferrer">
             Terms of Service
           </Link>
@@ -67,7 +67,7 @@ export function EarlyAccessConsentForm({
           aria-required="true"
         />
         <span>
-          I have read and understand the SolenOS{" "}
+          I have read and understand the solenos{" "}
           <Link href="/privacy" target="_blank" rel="noopener noreferrer">
             Privacy Policy
           </Link>

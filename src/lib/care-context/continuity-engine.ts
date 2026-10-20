@@ -46,6 +46,14 @@ export function assessContinuity(context: CareContext): ContinuityAssessment {
     );
   }
 
+  // Add decision-specific considerations to what matters now
+  const decisionMattersNow = assessDecisionMattersNow(context);
+  whatMattersNow.push(...decisionMattersNow);
+
+  // Add decision-specific considerations to what can wait
+  const decisionCanWait = assessDecisionCanWait(context);
+  whatCanWait.push(...decisionCanWait);
+
   return {
     whatChanged,
     whatMattersNow,
@@ -55,8 +63,88 @@ export function assessContinuity(context: CareContext): ContinuityAssessment {
   };
 }
 
+/**
+ * Assess what decision-related matters need immediate attention.
+ */
+function assessDecisionMattersNow(context: CareContext): string[] {
+  const mattersNow: string[] = [];
+  
+  if (!context.decisions || context.decisions.length === 0) {
+    return mattersNow;
+  }
+  
+  // Find current decisions that need review
+  const currentDecisions = context.decisions.filter(
+    d => d.status === "CURRENT"
+  );
+  
+  // Check for decisions with pending outcomes that should have been observed by now
+  const pendingOutcomeDecisions = currentDecisions.filter(
+    d => d.actual_outcome === null && d.expected_outcome !== null && d.follow_up_date !== null
+  );
+  
+  for (const decision of pendingOutcomeDecisions) {
+    mattersNow.push(
+      `Decision "${decision.decision}" has an expected outcome that should be reviewable now.`
+    );
+  }
+  
+  // Check for decisions with planned follow-up that is due
+  const dueFollowUpDecisions = currentDecisions.filter(
+    d => d.follow_up !== null && d.follow_up_date !== null
+  );
+  
+  for (const decision of dueFollowUpDecisions) {
+    mattersNow.push(
+      `Decision "${decision.decision}" has a planned follow-up that is due.`
+    );
+  }
+  
+  // Check for decisions that were recently superseded
+  const recentlySuperseded = context.decisions.filter(
+    d => d.status === "SUPERSEDED" && d.superseded_by !== null
+  );
+  
+  if (recentlySuperseded.length > 0) {
+    mattersNow.push(
+      `${recentlySuperseded.length} decision(s) have been recently superseded — review the care plan evolution.`
+    );
+  }
+  
+  return mattersNow;
+}
+
+/**
+ * Assess what decision-related matters can wait for later attention.
+ */
+function assessDecisionCanWait(context: CareContext): string[] {
+  const canWait: string[] = [];
+  
+  if (!context.decisions || context.decisions.length === 0) {
+    return canWait;
+  }
+  
+  // Add general decision tracking matters
+  canWait.push(
+    "Monitor decision outcomes and update care plan as new information becomes available."
+  );
+  
+  // Check for historical decisions that provide context
+  const historicalDecisions = context.decisions.filter(
+    d => d.status === "HISTORICAL"
+  );
+  
+  if (historicalDecisions.length > 0) {
+    canWait.push(
+      `${historicalDecisions.length} historical decision(s) provide context for current care approach.`
+    );
+  }
+  
+  return canWait;
+}
+
 export function formatContinuityAssessment(
-  assessment: ContinuityAssessment,
+  assessment: ContinuityAssessment
 ): string {
   const section = (title: string, items: string[]) => {
     const body =
@@ -80,7 +168,7 @@ export function formatContinuityAssessment(
     section(
       "What should happen next?",
       assessment.whatShouldHappenNext.map(
-        (a) => `[${a.urgency}] ${a.action} — ${a.reason}`,
+        (a) => `[${a.urgency}] ${a.action} — ${a.reason}`
       ),
     ),
   ].join("\n");

@@ -36,7 +36,7 @@ const DEFAULT_PRIVACY: PrivacyControl = {
 const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 
 /**
- * SettingsManager — client-side settings panel that talks to the SolenOS backend
+ * SettingsManager — client-side settings panel that talks to the solenos backend
  * (/api/user/notifications, /api/user/privacy) using the telemetry user id stored
  * in localStorage by the workspace.
  */
@@ -54,7 +54,7 @@ export function SettingsManager() {
     setUserId(stored);
     if (!stored) {
       setLoading(false);
-      setError("No active SolenOS session found. Open the Living Care Record to create one.");
+      setError("No active solenos session found. Open the Living Care Record to create one.");
     }
   }, []);
 
@@ -83,7 +83,7 @@ export function SettingsManager() {
       setNotifications({ ...DEFAULT_NOTIFICATIONS, ...(notifData.notificationControl ?? {}) });
       setPrivacy({ ...DEFAULT_PRIVACY, ...(privacyData.privacyControl ?? {}) });
     } catch {
-      setError("Could not reach the SolenOS backend. Settings are read-only right now.");
+      setError("Could not reach the solenos backend. Settings are read-only right now.");
     } finally {
       setLoading(false);
     }

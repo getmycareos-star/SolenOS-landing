@@ -81,7 +81,7 @@ const architectureSources = [
   "src/lib/system-architecture/contract-constants.ts",
   "src/lib/system-architecture/domain-boundaries.ts",
   "src/lib/system-architecture/module-map.ts",
-  "src/lib/system-architecture/index.ts",
+  "src/lib/system-architecture/events.ts",
 ].map((f) => fs.readFileSync(f, "utf-8"));
 
 for (const forbidden of FORBIDDEN_ARCHITECTURES) {
@@ -174,17 +174,19 @@ if (!pipelineSource.includes("FAILURE ISOLATION") || !pipelineSource.includes("a
 }
 console.log("✓ failure isolation: analyze does not depend on document OCR completion");
 
-const migration009 = fs.readFileSync("db/migrations/009_system_architecture_foundation.sql", "utf-8");
-if (!migration009.includes("CREATE TABLE IF NOT EXISTS cases")) {
-  throw new Error("009 migration must create cases table");
+// Events are appended to the shared system_events stream; case ownership rides
+// along as case_id, and the append path must not require pgvector.
+const migration009 = fs.readFileSync("src/lib/system-architecture/emit-event.ts", "utf-8");
+if (!migration009.includes("INSERT INTO system_events")) {
+  throw new Error("system events must be appended to system_events");
 }
-if (!migration009.includes("CREATE TABLE IF NOT EXISTS system_events")) {
-  throw new Error("009 migration must create system_events table");
+if (!migration009.includes("case_id")) {
+  throw new Error("appended events must carry case ownership");
 }
 if (migration009.includes("CREATE EXTENSION IF NOT EXISTS vector")) {
   throw new Error("009 migration must NOT require pgvector");
 }
-console.log("✓ 009 migration: cases + append-only system_events (no pgvector)");
+console.log("append-only system_events with case ownership (no pgvector)");
 
 const canonical = fs.readFileSync("src/lib/canonical-architecture/contract.ts", "utf-8");
 if (!canonical.includes("CANONICAL_MODULAR_MONOLITH_TRUTH")) {

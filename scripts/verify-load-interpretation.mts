@@ -75,9 +75,18 @@ console.log("✓ hidden signal mapping (vigilance + burnout)");
 const loadFirst = processLoadInterpretation({ rawInput: abuseSleepInput });
 assert(loadFirst.loadFirstMode === true, "multi-signal input engages loadFirstMode");
 assert(loadFirst.primaryContributors.length >= 2, "primary contributors populated");
+// Recognition-first means the caregiver hears what drove the load in their own
+// words, never the engine's "contributor" label or a score readout.
+const namedContributors = loadFirst.primaryContributors.filter((c) =>
+  loadFirst.burdenSummary.includes(c),
+);
 assert(
-  loadFirst.burdenSummary.includes("contributor"),
-  "burdenSummary is recognition-first",
+  namedContributors.length >= 2,
+  "burdenSummary must name the drivers in caregiver-facing language",
+);
+assert(
+  !/contributor|score|\b\d{2,}\b/i.test(loadFirst.burdenSummary),
+  "burdenSummary must stay free of engine labels and scores",
 );
 assert(loadFirst.emotionalLoadScore >= LOAD_FIRST_EMOTIONAL_SCORE_THRESHOLD - 10, "emotional load score");
 console.log("✓ loadFirstMode + burdenSummary");
@@ -169,7 +178,13 @@ const decisionCardSrc = fs.readFileSync(
   path.join(root, "src/components/ui-runtime/DecisionCardView.tsx"),
   "utf8",
 );
-assert(decisionCardSrc.includes("load-first-burden"), "DecisionCardView shows burden block");
+// Load-first rendering is keyed off the response flag, not a styling hook, and
+// it must stay in caregiver language.
+assert(decisionCardSrc.includes("loadFirstMode"), "DecisionCardView keys load-first rendering");
+assert(
+  decisionCardSrc.includes("What can be ignored safely today"),
+  "load-first block must be caregiver-facing",
+);
 console.log("✓ DecisionCardView wiring");
 
 const humanTrustSrc = fs.readFileSync(

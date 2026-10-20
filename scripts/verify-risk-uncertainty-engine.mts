@@ -116,7 +116,10 @@ assert(pipeline.includes("processRiskUncertainty"), "wired into analyze pipeline
 assert(pipeline.includes("risk_uncertainty_layer"), "layer exposed in pipeline output");
 assert(pipeline.includes("applyRiskUncertaintyToResponse"), "post-output enforcement wired");
 
+// SolenOSResponse is the final output contract; the validator only aliases it now.
+const contract = fs.readFileSync(path.join(root, "src/lib/final-output-contract/types.ts"), "utf-8");
+assert(contract.includes("what_is_happening"), "SolenOSResponse schema unchanged");
 const validator = fs.readFileSync(path.join(root, "src/lib/response-validator/index.ts"), "utf-8");
-assert(validator.includes("what_is_happening"), "SolenOSResponse schema unchanged");
+assert(validator.includes("FinalOutputContract"), "SolenOSResponse still resolves to the contract");
 
 console.log("\n=== Risk & Uncertainty Engine verification complete ===");

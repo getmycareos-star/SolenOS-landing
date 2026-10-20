@@ -3,6 +3,7 @@ import { DM_Sans, Libre_Baskerville } from "next/font/google";
 import "./globals.css";
 import "./mobile-app.css";
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_PROMISE } from "@/lib/brand";
+import '@/lib/telemetry/server.init';
 
 const dmSans = DM_Sans({
   subsets: ["latin"],

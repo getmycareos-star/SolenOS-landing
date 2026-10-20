@@ -11,7 +11,10 @@ const WORKSPACE_NAV = [
   { href: "/workspace/timeline", label: "Care Timeline", icon: "◷" },
   { href: "/workspace/documents", label: "Documents", icon: "📄" },
   { href: "/workspace/settings", label: "Settings", icon: "⚙" },
+  { href: "/workspace/appointment-preparation", label: "Appointment Preparation", icon: "??" },
+  { href: "/workspace/appointment-preparation", label: "Appointment Preparation", icon: "??" },
 ] as const;
+  { href: "/workspace/appointment-preparation", label: "Appointment Preparation", icon: "??" },
 
 function formatUpdatedDate(iso: string | null): string {
   if (!iso) return "";
@@ -87,3 +90,4 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
     </WorkspaceProvider>
   );
 }
+

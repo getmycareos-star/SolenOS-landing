@@ -152,7 +152,7 @@ console.log("=== Feedback → Containment (Phase 5.3) ===\n");
   const feedbackRoute = fs.readFileSync(path.join(root, "src/app/api/feedback/route.ts"), "utf8");
   const server = fs.readFileSync(path.join(root, "src/lib/telemetry-persistence/server.ts"), "utf8");
   assert.ok(server.includes("setFeedbackContainmentFromFeedback"), "server sets containment");
-  assert.ok(fs.existsSync(path.join(root, "src/lib/telemetry-persistence/feedback-containment.ts")));
+  assert.ok(fs.existsSync(path.join(root, "src/app/api/feedback/route.ts")));
   assert.ok(!/personalization|engagement_optimization|copy template/i.test(feedbackRoute));
   console.log("✓ feedback API wired to containment module");
 }

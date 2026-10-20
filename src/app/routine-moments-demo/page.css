@@ -1,0 +1,257 @@
+.demo-header {
+  text-align: center;
+  padding: 2rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  margin-bottom: 2rem;
+}
+
+.demo-header h1 {
+  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+}
+
+.demo-header p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.demo-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.demo-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.demo-section h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.demo-section h2::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: #667eea;
+  border-radius: 2px;
+}
+
+.demo-examples ul {
+  columns: 2;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.demo-examples li {
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.demo-examples li::before {
+  content: '•';
+  color: #667eea;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.result-explanation {
+  background: #f8f9ff;
+  border-left: 4px solid #667eea;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.result-explanation h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.result-explanation ol {
+  padding-left: 2rem;
+}
+
+.result-explanation li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.important-notes {
+  background: #fff8f0;
+  border-left: 4px solid #ff9900;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.important-notes h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.important-notes ul {
+  padding-left: 2rem;
+}
+
+.important-notes li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.demo-footer {
+  text-align: center;
+  padding: 2rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  border-top: 1px solid #eee;
+  margin-top: 3rem;
+}
+
+/* Form styles */
+.routine-moment-form {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 600px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background: #5a67d8;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+button[disabled]:hover {
+  background: #ccc;
+}
+
+.error-message {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.result-message {
+  background: #c6f6d5;
+  color: #22543d;
+  padding: 1.5rem;
+  border-radius: 6px;
+  margin-top: 1.5rem;
+}
+
+.changes-notice {
+  background: #fffbeb;
+  border-left: 4px solid #d69e2e;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  border-radius: 0 8px 8px 0;
+}
+
+.changes-notice h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.changes-notice ul {
+  padding-left: 1.5rem;
+}
+
+.changes-notice li {
+  margin-bottom: 0.5rem;
+}
+
+.changes-notice .note {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .demo-header {
+    padding: 1.5rem 0;
+  }
+  
+  .demo-header h1 {
+    font-size: 2rem;
+  }
+  
+  .demo-header p {
+    font-size: 1rem;
+  }
+  
+  .demo-section {
+    padding: 1.5rem;
+  }
+  
+  .routine-moment-form {
+    gap: 1rem;
+  }
+  
+  .demo-examples ul {
+    columns: 1;
+  }
+}

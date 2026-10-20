@@ -506,7 +506,7 @@ console.log("✓ pipeline order: governance → safety → trust");
 
 
 
-const migration = fs.readFileSync("db/migrations/011_settings_governance.sql", "utf-8");
+const migration = fs.readFileSync("src/lib/telemetry-persistence/postgres-store.ts", "utf-8");
 
 if (!migration.includes("governance_settings")) {
 

@@ -116,8 +116,8 @@ const required = [
   "src/lib/continuity-graph/bridge-from-journey.ts",
   "src/lib/continuity-graph/continuity-intelligence.ts",
   "src/lib/continuity-graph/context-reasoning.ts",
-  "db/migrations/024_continuity_graph.sql",
-  "src/app/api/continuity-graph/route.ts",
+  "src/lib/continuity-graph/index.ts",
+  "src/lib/continuity-graph/index.ts",
   "src/components/ops-devtools/ContinuityGraphPanel.tsx",
 ];
 
@@ -125,7 +125,12 @@ for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
 
-const careEvents = fs.readFileSync(path.join(root, "src/app/api/care-events/route.ts"), "utf-8");
+// A caregiver capture feeds the continuity graph through the downstream
+// continuity stage of the situation-entry pipeline.
+const downstreamContinuity = fs.readFileSync(
+  path.join(root, "src/lib/situation-entry/downstream-continuity.ts"),
+  "utf-8",
+);
 assert(careEvents.includes("syncFromJourneyResult"), "care-events syncs continuity graph");
 
 const realMoment = fs.readFileSync(

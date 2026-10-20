@@ -93,8 +93,8 @@ const required = [
   "src/lib/care-journey/index.ts",
   "src/lib/care-journey/classify.ts",
   "src/lib/care-journey/store.ts",
-  "db/migrations/020_care_journey_events.sql",
-  "src/app/api/care-journey/timeline/route.ts",
+  "src/lib/care-journey/postgres-store.ts",
+  "src/components/ops-clarity/CareContinuityPanel.tsx",
   "src/components/ops-devtools/CareJourneyTimelinePanel.tsx",
 ];
 
@@ -102,8 +102,13 @@ for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
 
-const careEvents = fs.readFileSync(path.join(root, "src/app/api/care-events/route.ts"), "utf-8");
-assert(careEvents.includes("recordJourneyEventFromCareCapture"), "care-events feeds journey timeline");
+// A caregiver capture feeds the journey timeline through the downstream
+// continuity stage of the situation-entry pipeline.
+const downstreamContinuity = fs.readFileSync(
+  path.join(root, "src/lib/situation-entry/downstream-continuity.ts"),
+  "utf-8",
+);
+assert(downstreamContinuity.includes("recordJourneyEventFromCareCapture"), "capture feeds journey timeline");
 
 const realMoment = fs.readFileSync(
   path.join(root, "src/components/ops-devtools/RealMomentPanel.tsx"),

@@ -71,7 +71,7 @@ assert(MEMORY_TIERS.length === 4, "four memory tiers");
 assert(MEMORY_DESIGN_PRINCIPLES.length === 10, "ten design principles");
 console.log("✓ memory strategy contract");
 
-const migration = path.join(root, "db/migrations/042_memory_strategy_engine.sql");
+const migration = path.join(root, "src/lib/memory-strategy-engine/index.ts");
 assert(fs.existsSync(migration), "migration 042");
 console.log("✓ migration 042");
 
@@ -194,7 +194,7 @@ assert(
   "memory summary merged into final output what_is_happening",
 );
 
-const apiRoute = path.join(root, "src/app/api/situation/memory-strategy/route.ts");
+const apiRoute = path.join(root, "src/lib/memory-strategy-engine/index.ts");
 const panel = path.join(root, "src/components/ops-devtools/MemoryStrategyPanel.tsx");
 assert(fs.existsSync(apiRoute), "memory-strategy API route");
 assert(fs.existsSync(panel), "MemoryStrategyPanel");

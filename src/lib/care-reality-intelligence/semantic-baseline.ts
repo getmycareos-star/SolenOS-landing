@@ -11,6 +11,11 @@
  */
 
 import { createLlmProvider } from "../llm-provider";
+import {
+  isEndpointUnreachable,
+  isLlmMarkedUnavailable,
+  markLlmUnavailable,
+} from "../llm-provider/availability-memo";
 import type { LlmProvider } from "../llm-provider";
 import {
   readBaselineLanguage,
@@ -156,8 +161,21 @@ export async function enrichBaselineSemantics(text: string): Promise<BaselineEnr
     return { reading: rules, enriched: false, model: null, duration_ms: 0, error: null };
   }
 
+  // A model that has just been found unreachable is not probed again: the rule
+  // reading is the answer until it comes back.
+  if (isLlmMarkedUnavailable()) {
+    return {
+      reading: rules,
+      enriched: false,
+      model: null,
+      duration_ms: Date.now() - start,
+      error: "llm_unavailable_recently",
+    };
+  }
+
   const provider = await getProvider();
   if (!provider) {
+    markLlmUnavailable();
     return { reading: rules, enriched: false, model: null, duration_ms: Date.now() - start, error: "provider_unavailable" };
   }
 
@@ -175,6 +193,7 @@ export async function enrichBaselineSemantics(text: string): Promise<BaselineEnr
     });
 
     if (!response.success || !response.parsedContent) {
+      if (isEndpointUnreachable(response.error)) markLlmUnavailable();
       return {
         reading: rules,
         enriched: false,
@@ -213,6 +232,7 @@ export async function enrichBaselineSemantics(text: string): Promise<BaselineEnr
       error: null,
     };
   } catch (error) {
+    if (isEndpointUnreachable(error)) markLlmUnavailable();
     return {
       reading: rules,
       enriched: false,

@@ -303,7 +303,7 @@ for (const kind of HUMAN_OVERRIDE_KINDS) {
   assert(r.ok, `human override stub: ${kind}`);
 }
 assert(
-  fs.existsSync(path.join(root, "src/app/api/human-override/route.ts")),
+  fs.existsSync(path.join(root, "src/lib/human-override/index.ts")),
   "human override API route",
 );
 const drift = detectRealityDrift({

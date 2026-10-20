@@ -95,6 +95,10 @@ export function applyReliefFieldsToDisclosurePlan(params: {
   return {
     ...params.crsPlan,
     show_what_matters_now: params.relief.show_clarity,
+    // Clarity that arrives without the situation it belongs to leaves the
+    // caregiver with a next step and no picture. Opening Clarity therefore also
+    // opens the summary it is anchored to.
+    show_situation_summary: params.crsPlan.show_situation_summary || params.relief.show_clarity,
     show_questions: params.relief.show_asks,
     max_questions: maxQuestions,
     show_remembered: params.relief.show_clarity && params.crsPlan.show_remembered,

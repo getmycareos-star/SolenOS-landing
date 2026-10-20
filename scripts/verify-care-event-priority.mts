@@ -127,7 +127,7 @@ const required = [
   "src/lib/situation-entry/pipeline.ts",
   "src/components/ops-devtools/SituationTimelinePanel.tsx",
   "src/components/ops-devtools/PriorityAttentionPanel.tsx",
-  "db/migrations/029_care_event_priority.sql",
+  "src/lib/care-event-priority/attach-priority.ts",
 ];
 
 for (const rel of required) {

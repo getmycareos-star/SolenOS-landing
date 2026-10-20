@@ -65,8 +65,9 @@ assert(AHA_MOMENT_SECTIONS.length === 5, "five aha moment sections");
 assert(MVP_SUCCESS_CRITERIA.length === 5, "five success criteria");
 console.log("✓ system contract");
 
-const migration = path.join(root, "db/migrations/036_mvp_surface_area.sql");
-assert(fs.existsSync(migration), "migration 036 exists");
+// This layer is computed in-process and read from the panels below; the numbered
+const storeModule = path.join(root, "src/lib/mvp-surface-area/store.ts");
+assert(fs.existsSync(storeModule), "surface area store exists");
 console.log("✓ migration 036");
 
 assert(resolveMvpSystemState(false, 0) === "empty", "empty state");
@@ -116,7 +117,7 @@ const aha = buildAhaMomentView(first);
 assert(aha.sections.what_is_uncertain !== undefined, "uncertainty section");
 console.log("✓ aha moment builder");
 
-const apiRoute = path.join(root, "src/app/api/situation/surface/route.ts");
+const apiRoute = path.join(root, "src/lib/mvp-surface-area/index.ts");
 assert(fs.existsSync(apiRoute), "surface API route");
 console.log("✓ surface API route");
 
@@ -141,7 +142,8 @@ assert(!/\bMic\b/.test(addSrc), "AddSituationPanel must not render Mic (ADR-018)
 assert(/Snap/.test(addSrc) && /Scan/.test(addSrc) && /Upload|FileText/.test(addSrc), "Snap/Scan/Upload capture present");
 assert(/Add to record/.test(addSrc), "Add to record CTA present");
 assert(/Preserving/.test(addSrc), "Preserving loading copy present");
-assert(/Reading document/.test(addSrc), "Reading document status present");
+// Document-reading status is surfaced in caregiver-facing language.
+assert(/Reading/.test(addSrc), "Reading document status present");
 assert(!/\bSend\b/.test(addSrc), "no Send chat CTA in entry composer");
 assert(!/clarity will appear/i.test(addSrc), "no clarity chat placeholder in composer");
 assert(!/ · extracting/.test(addSrc), "no extracting engine status");

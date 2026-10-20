@@ -114,8 +114,8 @@ assert(diffHasOutputTrigger(diff), "diff output trigger");
 assert(diffToSummaryLines(diff, second.context.events).length >= 1, "diff summaries");
 console.log("✓ diff engine");
 
-const loopApi = path.join(root, "src/app/api/situation/loop/route.ts");
-const backendLoopApi = path.join(root, "../_solenos_backend_cleanup/src/app/api/situation/loop/route.ts");
+const loopApi = path.join(root, "src/lib/continuous-execution-loop/index.ts");
+const backendLoopApi = path.join(root, "../_solenos_backend_cleanup/src/lib/continuous-execution-loop/index.ts");
 assert(fs.existsSync(loopApi) || fs.existsSync(backendLoopApi), "loop API route");
 console.log("✓ loop API route");
 

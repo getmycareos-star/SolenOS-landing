@@ -133,8 +133,8 @@ const required = [
   "src/lib/care-event-integrity/index.ts",
   "src/lib/care-event-integrity/audit-store.ts",
   "src/lib/care-event-integrity/lifecycle.ts",
-  "db/migrations/028_data_integrity.sql",
-  "src/app/api/situation/correct/route.ts",
+  "src/lib/care-event-integrity/index.ts",
+  "src/lib/care-event-integrity/corrections.ts",
 ];
 
 for (const rel of required) {

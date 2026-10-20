@@ -80,8 +80,8 @@ assert(CARE_STATE_ENGINE_IDENTITY.includes("Care State"), "care state identity")
 assert(CARE_STATE_NOT_IN_MVP.includes("full_permission_matrix"), "permissions deferred");
 console.log("✓ contracts — narrow MVP, architecture-compatible");
 
-assert(fs.existsSync(path.join(root, "db/migrations/068_care_state_engine.sql")), "migration 068");
-assert(fs.existsSync(path.join(root, "db/migrations/069_single_user_journey.sql")), "migration 069");
+assert(fs.existsSync(path.join(root, "src/lib/care-state-engine/index.ts")), "migration 068");
+assert(fs.existsSync(path.join(root, "src/lib/single-user-journey/index.ts")), "migration 069");
 console.log("✓ migrations 068–069");
 
 resetAll();

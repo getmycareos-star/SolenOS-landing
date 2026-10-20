@@ -1,15 +1,19 @@
 import type { SolenOSResponse } from "./response-validator";
 
-/** String caregiver fields — strict 5-field schema. */
+/** String caregiver fields — canonical output contract. */
 export const SOLENOS_STRING_FIELDS = [
   "what_is_happening",
   "what_matters_now",
   "what_to_ask_next",
   "what_can_wait",
+  "follow_up_items",
 ] as const satisfies ReadonlyArray<keyof SolenOSResponse>;
 
 export function collectCaregiverText(output: SolenOSResponse): string {
-  return SOLENOS_STRING_FIELDS.map((field) => output[field]).join("\n");
+  return SOLENOS_STRING_FIELDS.map((field) => {
+    const value = output[field];
+    return Array.isArray(value) ? value.join("\n") : String(value ?? "");
+  }).join("\n");
 }
 
 export function hasClarifyingQuestion(output: SolenOSResponse): boolean {

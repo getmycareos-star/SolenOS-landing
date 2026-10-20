@@ -89,9 +89,9 @@ assert(ADOPTION_WEDGE_IDENTITY.includes("Send me everything"), "adoption wedge i
 assert(OPERATING_ASSUMPTIONS.includes("contradiction_is_normal"), "reality model assumptions");
 console.log("✓ structural contracts");
 
-assert(fs.existsSync(path.join(root, "db/migrations/052_forbidden_build_zone.sql")), "migration 052");
-assert(fs.existsSync(path.join(root, "db/migrations/053_adoption_wedge_engine.sql")), "migration 053");
-assert(fs.existsSync(path.join(root, "db/migrations/054_product_reality_model.sql")), "migration 054");
+assert(fs.existsSync(path.join(root, "src/lib/forbidden-build-zone/index.ts")), "migration 052");
+assert(fs.existsSync(path.join(root, "src/lib/adoption-wedge-engine/index.ts")), "migration 053");
+assert(fs.existsSync(path.join(root, "src/lib/product-reality-model/index.ts")), "migration 054");
 console.log("✓ migrations 052–054");
 
 const blocked = passesBuildFilter({

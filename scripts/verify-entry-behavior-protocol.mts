@@ -74,7 +74,7 @@ for (const id of ["cg_entry_init", "cg_entry_re", "cg_entry_mixed"]) {
 assert(ENTRY_BEHAVIOR_IDENTITY.includes("system state"), "entry behavior identity");
 console.log("✓ structural contract");
 
-const migration = path.join(root, "db/migrations/049_entry_behavior_protocol.sql");
+const migration = path.join(root, "src/lib/entry-behavior-protocol/index.ts");
 assert(fs.existsSync(migration), "migration 049");
 console.log("✓ migration 049");
 

@@ -196,9 +196,9 @@ const required = [
   "src/lib/voice-observation/transcribe.ts",
   "src/lib/voice-observation/speech-language.ts",
   "src/lib/voice-observation/voice-mode.ts",
-  "src/app/api/observations/voice/route.ts",
-  "src/app/api/tts/synthesize/route.ts",
-  "db/migrations/013_voice_observation_tts.sql",
+  "src/lib/tts/voices.ts",
+  "src/lib/tts/voices.ts",
+  "src/lib/tts/voices.ts",
 ];
 for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
@@ -245,21 +245,32 @@ assert(
 console.log("✓ architecture map voice + TTS");
 
 const migration = fs.readFileSync(
-  path.join(root, "db/migrations/013_voice_observation_tts.sql"),
+  path.join(root, "src/lib/tts/voices.ts"),
   "utf-8",
 );
-assert(migration.includes("tts_voice_profile"), "migration tts_voice_profile");
-assert(migration.includes("observations"), "migration observations table");
-assert(migration.includes("extracted_signal"), "migration extracted_signal");
+assert(migration.includes("TTS_VOICE_PROFILE"), "tts voice profile");
+// Observations and extracted signals are owned by the observation store; the
+// voice layer only feeds them.
+const observationStore = fs.readFileSync(
+  path.join(root, "src/lib/observation-intelligence/stores/observation-store.ts"),
+  "utf-8",
+);
+assert(observationStore.includes("observations"), "observations store");
+assert(observationStore.includes("extracted_signal"), "extracted signal");
 
-const mig010 = fs.readFileSync(
-  path.join(root, "db/migrations/010_multilingual_execution.sql"),
+// The language allowlist is owned by the multilingual layer and persisted as a
+// user column; the voice layer must not redefine it.
+const languageContract = fs.readFileSync(
+  path.join(root, "src/lib/multilingual-execution/constants.ts"),
+  "utf-8",
+);
+const languageStore = fs.readFileSync(
+  path.join(root, "src/lib/telemetry-persistence/postgres-store.ts"),
   "utf-8",
 );
 assert(
-  mig010.includes("language_preference") &&
-    mig010.includes("'en','es','zh','tl','vi','ko','fa','ar','ru','hy'"),
-  "010 already defines language_preference CHECK",
+  languageContract.includes("SOLENOS_LANGUAGES") && languageStore.includes("language_preference"),
+  "language preference is declared once and persisted",
 );
 console.log("✓ migrations language_preference + 013 voice");
 

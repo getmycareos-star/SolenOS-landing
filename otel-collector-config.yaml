@@ -1,0 +1,36 @@
+# OpenTelemetry Collector configuration
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+
+exporters:
+  # Export traces to Jaeger
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+  # Export metrics to Prometheus
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+    const_labels:
+      label: solenos-otel
+    send_timestamps: true
+  # Also export to console for debugging
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [jaeger, logging]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus, logging]

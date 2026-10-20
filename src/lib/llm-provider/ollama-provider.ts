@@ -2,6 +2,8 @@
 
 import type { LlmRequestOptions, LlmResponse, LlmProviderConfig } from "./types";
 
+const MODEL_LIST_TIMEOUT_MS = 5000;
+
 export class OllamaProvider {
   readonly provider = "ollama";
   readonly model: string;
@@ -30,7 +32,16 @@ export class OllamaProvider {
   /** Model tags installed locally (e.g. "qwen2.5-coder:7b"). */
   async listLocalModels(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/tags`);
+      // Bounded like the availability probe: a model list is a nice-to-have, and a
+      // caregiver must never wait on a socket that never answers.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), MODEL_LIST_TIMEOUT_MS);
+      let response: Response;
+      try {
+        response = await fetch(`${this.config.baseUrl}/api/tags`, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
       if (!response.ok) return [];
       const data = (await response.json()) as { models?: { name?: string; model?: string }[] };
       return (data.models ?? [])

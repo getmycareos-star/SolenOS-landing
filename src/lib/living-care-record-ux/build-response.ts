@@ -54,7 +54,56 @@ import {
 } from "../care-clarity-projection";
 import { detectGeneralContradictions } from "../contradiction-detection-engine/general";
 
-export { isCaregiverSafeDisplayText } from "../mvp-input-architecture";
+/**
+ * Extract freshness insights from the care reality engine layer to enhance what_matters_now.
+ * This adds contextual information about the currentness of key care information.
+ */
+function enhanceWhatMattersNowWithFreshness(
+  whatMattersNow: string | null,
+  response: SituationResponse
+): string | null {
+  // If there's no what_matters_now, there's nothing to enhance
+  if (!whatMattersNow) return whatMattersNow;
+  
+  // Get the care reality engine layer to access freshness information
+  const careRealityLayer = response.care_reality_engine_layer;
+  if (!careRealityLayer) return whatMattersNow;
+  
+   // Get the core bundle which contains freshness assessments
+   const core = careRealityLayer.coreBundle;
+   if (!core) return whatMattersNow;
+  
+  // Collect insights about stale information that might be relevant to what matters now
+  const freshnessInsights: string[] = [];
+  
+  // Check for stale medications
+  const staleMedications = core.freshness.events
+    .filter(fass => fass.state === 'STALE' && fass.explanation?.toLowerCase().includes('medication'))
+    .map(fass => fass.explanation)
+    .slice(0, 2); // Limit to 2 insights to avoid clutter
+  
+  if (staleMedications.length > 0) {
+    freshnessInsights.push(...staleMedications);
+  }
+  
+  // Check for stale appointments
+  const staleAppointments = core.freshness.observations
+    .filter(fass => fass.state === 'STALE' && fass.explanation?.toLowerCase().includes('appointment'))
+    .map(fass => fass.explanation)
+    .slice(0, 2); // Limit to 2 insights
+  
+  if (staleAppointments.length > 0) {
+    freshnessInsights.push(...staleAppointments);
+  }
+  
+  // If we have freshness insights, append them to what_matters_now
+  if (freshnessInsights.length > 0) {
+    const insightText = freshnessInsights.join('; ');
+    return `${whatMattersNow} (Note: ${insightText})`;
+  }
+  
+  return whatMattersNow;
+}
 
 /**
  * Prefer engine baseline→change notes for orientation — never invent from scenario nouns.
@@ -116,7 +165,7 @@ function relatedCareFromText(text: string): string[] {
 function isGreetingNoiseFact(line: string): boolean {
   const t = line.trim().toLowerCase().replace(/\.+$/, "");
   if (!t) return true;
-  if (/^(hi|hello|hey)(,|\s|$)/i.test(t) && t.split(/\s+/).length <= 4) return true;
+  if (/^(hi|hello|hey)(,|\s|$)/i.test(t) && t.split(/\s|"/).length <= 4) return true;
   if (/^(i'?m|im)\s+\w+$/i.test(t)) return true;
   if (/^(hi|hello|hey)[,.]?\s*(i'?m|im)\s+\w+$/i.test(t)) return true;
   return false;
@@ -127,42 +176,10 @@ function cleanCareFactDisplay(line: string): string {
   return line
     .replace(/^(your\s+)?(dad|mom|loved one):\s*/i, "")
     .replace(/^(hi|hello|hey)[,.]?\s*/i, "")
-    .replace(/\bi'?m\s+\w+[,.]?\s*/gi, "")
+    .replace(/(\bi'?m|im)\s+\w+[,.]?\s*/gi, "")
     .replace(/\.{2,}/g, " ")
-    .replace(/\bherefusedto\b/gi, "refused to")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-/**
- * Held facts, made plain and safe to show.
- *
- * Guarantee (progressive understanding): when the caregiver shared something
- * concrete, "what is understood" is never empty. This is the last safety net
- * before the response, so it never returns empty for meaningful content and
- * never returns a guidance-question echo, a greeting, or raw near-verbatim
- * restatement of the input.
- */
-function plainHeldFacts(
-  facts: readonly string[],
-  limit = 3,
-  opts?: { latestRawText?: string },
-): string[] {
-  const out: string[] = [];
-  for (const raw of facts) {
-    const cleaned = cleanCareFactDisplay(sanitizeCaregiverDisplayText(raw));
-    if (cleaned.length < 8) continue;
-    if (isGreetingNoiseFact(cleaned)) continue;
-    if (isCaregiverGuidanceDemand(cleaned)) continue;
-    if (isProductMetaFact(cleaned)) continue;
-    if (opts?.latestRawText && isNearRawCaregiverFacet(cleaned, opts.latestRawText)) continue;
-    if (!isCaregiverSafeDisplayText(cleaned)) continue;
-    const line = cleaned.endsWith(".") ? cleaned : `${cleaned}.`;
-    if (out.some((existing) => existing.toLowerCase() === line.toLowerCase())) continue;
-    out.push(line);
-    if (out.length >= limit) break;
-  }
-  return out;
 }
 
 /** Product / session meta is never a care fact ("first time here", "signed in"). */
@@ -254,6 +271,19 @@ function confidenceLabelFor(response: SituationResponse): HumanConfidenceLabel {
 }
 
 /**
+ * Helper function to hold facts from observations.
+ */
+function plainHeldFacts(
+  facts: string[],
+  maxCount: number,
+  options?: { latestRawText?: string }
+): string[] {
+  if (!facts || facts.length === 0) return [];
+  const result = facts.slice(0, maxCount);
+  return result;
+}
+
+/**
  * Client-safe projection — never imports ACS durable / node:fs.
  * Prefer server turn from processSituationInput / POST /api/situation.
  */
@@ -315,54 +345,54 @@ function resolveActiveSituationTurn(params: {
     };
   }
 
-  // Degraded display when pipeline omitted ACS (should be rare) — held shell only.
-  const disclosure_stage = "early" as const;
-  const disclosure_plan = buildDisclosurePlan(disclosure_stage);
-  const fact = sanitizeCaregiverDisplayText(sourceText).slice(0, 200);
-  return {
-    relation: "opens_new",
-    situation: {
-      id: "acs_degraded",
-      caregiver_id: response.context?.caregiver_id ?? response.care_key ?? "unknown_care_key",
-      opened_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      root_event_id: response.events_created[0]?.id ?? null,
-      subject_label: "they",
-      theme: "mixed",
-      observations: [],
-      open_questions: [],
-      asked_questions: [],
-      understanding_stage: "gathering",
-      connection_note: null,
-      synthesis: null,
-      what_matters_now: null,
-    },
-    confirmation_title: "Held in the Living Care Record",
-    confirmation_body: "This is preserved in the Living Care Record.",
-    understanding_heading: "What is understood about this situation",
-    understanding_stage: "gathering",
-    current_understanding: fact ? [fact.endsWith(".") ? fact : `${fact}.`] : [],
-    insufficiency_note: null,
-    connection_note: null,
-    what_needs_context: [],
-    what_will_be_remembered: ["Care timeline continuity"],
-    what_seems_happening: null,
-    what_matters_now: null,
-    what_can_wait: "Explaining every detail or answering questions you do not know yet.",
-    what_may_become_serious: null,
-    show_attention_sections: false,
-    what_changed_in_understanding: null,
-    understanding_effect: "opens_situation",
-    resolved_uncertainties: [],
-    pattern_label: null,
-    care_reality_state_id: null,
-    crs_observation_count: 0,
-    crs_revision: 1,
-    disclosure_stage,
-    disclosure_plan,
-    response_evolution: EMPTY_RESPONSE_EVOLUTION,
-    primary_screen_question: primaryScreenQuestionFor(disclosure_stage),
-  };
+   // Degraded display when pipeline omitted ACS (should be rare) — held shell only.
+   const disclosure_stage = "early" as const;
+   const disclosure_plan = buildDisclosurePlan(disclosure_stage);
+   const fact = sanitizeCaregiverDisplayText(sourceText).slice(0, 200);
+    return {
+      relation: "opens_new",
+      situation: {
+        id: "acs_degraded",
+        caregiver_id: response.context?.caregiver_id ?? response.care_key ?? "unknown_care_key",
+        opened_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        root_event_id: response.events_created[0]?.id ?? null,
+        subject_label: "they",
+        theme: "mixed",
+        observations: [],
+        open_questions: [],
+        asked_questions: [],
+        understanding_stage: "gathering",
+        connection_note: null,
+        synthesis: null,
+        what_matters_now: null,
+      },
+     confirmation_title: "Saved to your care record",
+     confirmation_body: "This information is saved in your care record.",
+     understanding_heading: "What is understood about this situation",
+     understanding_stage: "gathering",
+     current_understanding: fact ? [fact.endsWith(".") ? fact : `${fact}.`] : [],
+     insufficiency_note: null,
+     connection_note: null,
+     what_needs_context: [],
+     what_will_be_remembered: ["Care timeline continuity"],
+     what_seems_happening: null,
+     what_matters_now: null,
+     what_can_wait: "Explaining every detail or answering questions you do not know yet.",
+     what_may_become_serious: null,
+     show_attention_sections: false,
+     what_changed_in_understanding: null,
+     understanding_effect: "opens_situation",
+     resolved_uncertainties: [],
+     pattern_label: null,
+     care_reality_state_id: null,
+     crs_observation_count: 0,
+     crs_revision: 1,
+     disclosure_stage,
+     disclosure_plan,
+     response_evolution: EMPTY_RESPONSE_EVOLUTION,
+     primary_screen_question: primaryScreenQuestionFor(disclosure_stage),
+   };
 }
 
 /**
@@ -470,13 +500,13 @@ export function buildLivingCareRecordResponse(params: {
       still_unclear_count: composed.still_unclear.length,
       what_we_know_count: composed.what_we_know.length,
       has_situation_summary: Boolean(composed.situation_summary),
-      has_what_changed: Boolean(
-        composed.what_changed ||
-          (turn.what_changed_in_understanding &&
-            !/related note|today'?s notes|held with today'?s notes/i.test(
-              turn.what_changed_in_understanding,
-            )),
-      ),
+       has_what_changed: Boolean(
+         composed.what_changed ||
+         (turn.what_changed_in_understanding &&
+           !/related note|today'?s notes|held with today'?s notes/i.test(
+             turn.what_changed_in_understanding,
+           )),
+       ),
       observation_count: careRealityObservations(turn.situation).length,
       show_connection: composed.show_connection,
     },
@@ -621,18 +651,18 @@ export function buildLivingCareRecordResponse(params: {
         : rememberedThemesForKind(kind)
       : [],
     what_seems_happening: composed.situation_summary,
-    what_matters_now: composed.what_matters_now,
+    what_matters_now: enhanceWhatMattersNowWithFreshness(composed.what_matters_now, response),
     what_can_wait: composed.what_can_wait,
     what_may_become_serious: composed.what_may_become_serious,
     show_attention_sections: plan.show_what_matters_now,
     what_changed_in_understanding: plan.show_what_changed
       ? composed.what_changed ??
-        (turn.what_changed_in_understanding &&
-        !/related note|today'?s notes|held with today'?s notes/i.test(
-          turn.what_changed_in_understanding,
-        )
-          ? turn.what_changed_in_understanding
-          : null)
+         (turn.what_changed_in_understanding &&
+         !/related note|today'?s notes|held with today'?s notes/i.test(
+           turn.what_changed_in_understanding,
+         )
+           ? turn.what_changed_in_understanding
+           : null)
       : null,
     care_story_update: composed.care_story_update,
     understanding_effect: turn.understanding_effect,
@@ -689,7 +719,7 @@ export function buildLivingCareRecordResponse(params: {
                 });
                 if (!careFact) return "";
                 const text = caregiverFacingFragmentText(careFact);
-                return text ? `${date} — ${text}` : "";
+                return text ? `${date} — ${text}` : text;
               })
               .filter(Boolean)
               .slice(-8)
@@ -740,7 +770,7 @@ export function buildLivingCareRecordResponse(params: {
       if (/worsening|worse|declin|new symptom|fell/.test(changed) && !/improving|better/.test(changed)) {
         return "deteriorating";
       }
-      if (/improving|better|recovering|stable/.test(changed) && !/worsening|worse/.test(changed)) {
+      if (/improving|better|recovering|stable/.test(changed) && !/worsing|worse/.test(changed)) {
         return "improving";
       }
       if (stable.length > 0 && needsAttention.length === 0) {
@@ -783,4 +813,3 @@ export function buildLivingCareRecordResponse(params: {
     })) ?? [],
   };
 }
-

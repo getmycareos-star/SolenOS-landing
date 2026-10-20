@@ -21,8 +21,8 @@ for (const marker of SYSTEM_PROMPT_SPEC_MARKERS) {
 }
 console.log("✓ unified cognitive load system prompt markers");
 
-if (SOLENOS_FIELD_ORDER.length !== 6) {
-  throw new Error("schema must have exactly 6 fields");
+if (SOLENOS_FIELD_ORDER.length !== CANONICAL_OUTPUT_FIELD_ORDER.length) {
+  throw new Error("schema must match the canonical output contract");
 }
 if (SOLENOS_FIELD_ORDER.join(",") !== COGNITIVE_LOAD_STRICT_SCHEMA.join(",")) {
   throw new Error("field order must match strict schema contract");

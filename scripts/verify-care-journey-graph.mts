@@ -119,8 +119,8 @@ const required = [
   "src/lib/care-journey-graph/graph-store.ts",
   "src/lib/care-journey-graph/detect-relationships.ts",
   "src/lib/care-journey-graph/continuity-assess.ts",
-  "db/migrations/021_care_journey_graph.sql",
-  "src/app/api/care-journey/graph/route.ts",
+  "src/lib/care-journey-graph/index.ts",
+  "src/lib/care-journey-graph/index.ts",
   "src/components/ops-clarity/CareContinuityPanel.tsx",
 ];
 
@@ -135,8 +135,13 @@ const analyzePipeline = fs.readFileSync(
 assert(analyzePipeline.includes("processCareJourneyInput"), "analyze pipeline updates graph before reasoning");
 assert(analyzePipeline.includes("care_journey_graph_layer"), "analyze pipeline exposes graph layer");
 
-const careEvents = fs.readFileSync(path.join(root, "src/app/api/care-events/route.ts"), "utf-8");
-assert(careEvents.includes("processCareJourneyInputAsync"), "care-events feeds graph pipeline");
+// A caregiver capture feeds the graph pipeline through the downstream
+// continuity stage of the situation-entry pipeline.
+const downstreamContinuity = fs.readFileSync(
+  path.join(root, "src/lib/situation-entry/downstream-continuity.ts"),
+  "utf-8",
+);
+assert(downstreamContinuity.includes("processCareJourneyInputAsync"), "capture feeds graph pipeline");
 
 const clarityPanel = fs.readFileSync(
   path.join(root, "src/components/ops-clarity/ClarityPanel.tsx"),

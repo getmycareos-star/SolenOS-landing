@@ -3,6 +3,7 @@
  */
 
 export { TIME_MODEL_VERSION } from "./types";
+export { TIME_MODEL_IDENTITY } from "./contract-constants";
 export type {
   CareEventTimeCorrection,
   CircadianPattern,
@@ -46,3 +47,4 @@ export {
   getTimeCorrectionsForEvent,
   resetTimeCorrectionStore,
 } from "./retiming";
+export { resolveLateArrival } from "./late-arrival";

@@ -94,6 +94,15 @@ export function createCareEvent(input: CreateCareEventInput): CreateCareEventRes
       ...(input.metadata ?? {}),
     },
     source,
+    entities: {
+      observer_person_id: input.observer_person_id ?? input.created_by ?? null,
+      author_person_id: input.author_person_id ?? null,
+      subject_person_id: input.subject_person_id ?? null,
+      provider_person_id: input.provider_person_id ?? null,
+      organization_id: input.organization_id ?? null,
+      mentioned_person_ids: input.mentioned_person_ids ?? [],
+      mentioned_organization_ids: input.mentioned_organization_ids ?? [],
+    },
   };
 
   careEvents.set(careEventId, careEvent);

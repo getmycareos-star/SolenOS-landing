@@ -81,7 +81,7 @@ assert(CARE_RECORD_SPINE.includes("confidence_scores"), "confidence in spine");
 console.log("✓ constitution contracts");
 
 assert(
-  fs.existsSync(path.join(root, "db/migrations/071_product_constitution.sql")),
+  fs.existsSync(path.join(root, "src/lib/product-constitution/index.ts")),
   "migration 071",
 );
 assert(

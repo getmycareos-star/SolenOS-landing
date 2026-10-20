@@ -46,7 +46,7 @@ assert(NON_COMPOUNDING_TYPES.length >= 5, "non-compounding types defined");
 assert(assertMaturityStagesDefined(), "maturity stages");
 console.log("✓ system contract");
 
-const migration = path.join(root, "db/migrations/033_network_effect_moat.sql");
+const migration = path.join(root, "src/lib/network-effect-moat/index.ts");
 assert(fs.existsSync(migration), "migration 033 exists");
 console.log("✓ migration 033");
 
@@ -155,7 +155,7 @@ const manual = processNetworkEffectMoat({
 assert(assertContextGrew(manual.interaction_outcomes), "manual context grew");
 console.log("✓ pipeline orchestration");
 
-const apiRoute = path.join(root, "src/app/api/situation/moat/route.ts");
+const apiRoute = path.join(root, "src/lib/network-effect-moat/index.ts");
 assert(fs.existsSync(apiRoute), "moat API route");
 console.log("✓ moat API route");
 

@@ -68,7 +68,7 @@ console.log("✓ learning-first contracts");
   assert.ok(fs.existsSync(sot));
   const rule = path.join(root, ".cursor/rules/solenos-learning-first-release.mdc");
   assert.ok(fs.existsSync(rule));
-  const api = path.join(root, "src/app/api/research-feedback/route.ts");
+  const api = path.join(root, "src/lib/research-feedback/index.ts");
   assert.ok(fs.existsSync(api));
   const panel = fs.readFileSync(
     path.join(root, "src/components/mvp-workspace/LivingCareRecordPanel.tsx"),

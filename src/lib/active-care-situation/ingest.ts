@@ -352,7 +352,9 @@ function turnFromProgressive(
   return {
     ...attached,
     disclosure_plan: reliefPlan,
-    what_seems_happening: attached.disclosure_plan.show_situation_summary
+    // Relief owns the resolved plan, so the summary must follow it — reading
+    // the pre-relief CRS plan here would drop the very line Clarity anchors to.
+    what_seems_happening: reliefPlan.show_situation_summary
       ? attached.what_seems_happening
       : null,
     what_matters_now,

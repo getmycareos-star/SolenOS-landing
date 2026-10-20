@@ -30,6 +30,10 @@ function assessDimension(
       pattern: /\b(exhaust|burn|overwhelm|can't cope|stressed)\b/i,
       label: "caregiver burden",
     },
+    specialist: {
+      pattern: /\b(specialist|spclist)\b/i,
+      label: "specialist care",
+    },
     mobility: {
       pattern: /\b(fell|fall|mobility|walk|wheelchair|unsteady)\b/i,
       label: "mobility",
@@ -47,7 +51,7 @@ function assessDimension(
       label: "wandering",
     },
     medication_changes: {
-      pattern: /\b(medication|med|pill|dose|prescription|changed|missed|forgot)\b/i,
+      pattern: /\b(medication|med|drug|prescription|pill|dose|dosage)\b/i,
       label: "medication",
     },
     uncertainty_level: {
@@ -61,7 +65,8 @@ function assessDimension(
   };
 
   const config = configs[dimension];
-
+  
+  // Handle uncertainty_level specially since it uses a different pattern
   if (dimension === "uncertainty_level") {
     const recentCount = context.uncertainties.length;
     return {
@@ -116,6 +121,58 @@ function splitTimelineWindows(context: CareContext) {
   };
 }
 
+function assessDecisionContext(context: CareContext): string[] {
+  const considerations: string[] = [];
+  
+  if (!context.decisions || context.decisions.length === 0) {
+    return considerations;
+  }
+  
+  // Count decisions by status
+  const currentDecisions = context.decisions.filter(d => d.status === "CURRENT");
+  const historicalDecisions = context.decisions.filter(d => d.status === "HISTORICAL");
+  const supersededDecisions = context.decisions.filter(d => d.status === "SUPERSEDED");
+  const cancelledDecisions = context.decisions.filter(d => d.status === "CANCELLED");
+  const reconsideredDecisions = context.decisions.filter(d => d.status === "RECONSIDERED");
+  
+  considerations.push(
+    `Care context includes ${currentDecisions.length} current decision(s), ${historicalDecisions.length} historical decision(s), ${supersededDecisions.length} superseded decision(s), ${cancelledDecisions.length} cancelled decision(s), and ${reconsideredDecisions.length} reconsidered decision(s).`
+  );
+  
+  // Add information about decision outcomes
+  const decisionsWithKnownOutcomes = context.decisions.filter(d => d.actual_outcome !== null);
+  const decisionsWithUnknownOutcomes = context.decisions.filter(d => d.actual_outcome === null);
+  
+  if (decisionsWithKnownOutcomes.length > 0) {
+    considerations.push(
+      `${decisionsWithKnownOutcomes.length} decision(s) have documented outcomes.`
+    );
+  }
+  
+  if (decisionsWithUnknownOutcomes.length > 0) {
+    considerations.push(
+      `${decisionsWithUnknownOutcomes.length} decision(s) have pending outcomes awaiting observation.`
+    );
+  }
+  
+  // Add information about expected vs actual outcomes
+  const decisionsWithOutcomeComparison = context.decisions.filter(
+    d => d.outcome_comparison !== "unknown" && d.outcome_comparison !== "pending"
+  );
+  
+  if (decisionsWithOutcomeComparison.length > 0) {
+    const achievedCount = decisionsWithOutcomeComparison.filter(
+      d => d.outcome_comparison === "achieved"
+    ).length;
+    
+    considerations.push(
+      `Of decisions with comparable outcomes, ${achievedCount} achieved their expected outcomes.`
+    );
+  }
+  
+  return considerations;
+}
+
 function deriveGuidance(
   checks: ContextCheck[],
   context: CareContext,
@@ -164,6 +221,10 @@ function deriveGuidance(
     });
   }
 
+  // Add decision-specific guidance
+  const decisionGuidance = deriveDecisionGuidance(context);
+  actions.push(...decisionGuidance);
+
   if (actions.length === 0 && context.timeline.length >= 3) {
     actions.push({
       action: "Continue documenting observations to refine care understanding",
@@ -174,6 +235,57 @@ function deriveGuidance(
   }
 
   return actions;
+}
+
+function deriveDecisionGuidance(context: CareContext): PrioritizedAction[] {
+  const guidance: PrioritizedAction[] = [];
+  
+  if (!context.decisions || context.decisions.length === 0) {
+    return guidance;
+  }
+  
+  // Check for decisions that need reconsideration
+  const decisionsNeedingReview = context.decisions.filter(
+    d => d.status === "CURRENT" && 
+         (d.actual_outcome === null && d.expected_outcome !== null) &&
+         (d.follow_up_date === null || new Date(d.follow_up_date) <= new Date())
+  );
+  
+  if (decisionsNeedingReview.length > 0) {
+    guidance.push({
+      action: "Review recent decisions for which expected outcomes should be observable",
+      urgency: "soon",
+      reason: `${decisionsNeedingReview.length} decision(s) have expected outcomes that should be reviewable now.`
+    });
+  }
+  
+  // Check for decisions with conflicting outcomes
+  const decisionsWithConflictingOutcomes = context.decisions.filter(
+    d => d.outcome_comparison === "conflicting"
+  );
+  
+  if (decisionsWithConflictingOutcomes.length > 0) {
+    guidance.push({
+      action: "Investigate conflicting reports about decision outcomes",
+      urgency: "soon",
+      reason: `${decisionsWithConflictingOutcomes.length} decision(s) have conflicting outcome reports requiring clarification.`
+    });
+  }
+  
+  // Check for decisions that were recently superseded
+  const recentlySuperseded = context.decisions.filter(
+    d => d.status === "SUPERSEDED" && d.superseded_by !== null
+  );
+  
+  if (recentlySuperseded.length > 0) {
+    guidance.push({
+      action: "Review care plan evolution following recent decision changes",
+      urgency: "when_possible",
+      reason: `${recentlySuperseded.length} decision(s) have been recently superseded, indicating evolution in care approach.`
+    });
+  }
+  
+  return guidance;
 }
 
 /**
@@ -188,6 +300,7 @@ export function reasonThroughContext(
 
   const dimensions: ContextCheckDimension[] = [
     "caregiver_burden",
+    "specialist",
     "mobility",
     "nighttime_events",
     "supervision_demand",
@@ -206,6 +319,7 @@ export function reasonThroughContext(
   const caregiverLoad = assessCaregiverLoad(context);
   const clarificationsNeeded = deriveClarifications(context);
   const patterns = detectPatterns(context);
+  const decisionContext = assessDecisionContext(context);
 
   const enrichedContext: CareContext = {
     ...context,
@@ -228,6 +342,7 @@ export function reasonThroughContext(
     stateOfCare,
     caregiverLoad,
     clarificationsNeeded,
+    decisionContext: decisionContext.join(" "),
     guidance,
     patterns,
     reasoningNote:
@@ -264,12 +379,21 @@ export function formatContextReasoning(reasoning: ContextReasoning): string {
 
   sections.push(
     "",
-    "---",
+    "---", 
     "",
     `STATE OF CARE: ${reasoning.stateOfCare.trajectory}`,
     reasoning.stateOfCare.summary,
     "",
+    "---",
+    "",
     `CAREGIVER LOAD: ${reasoning.caregiverLoad.level} (score: ${reasoning.caregiverLoad.score})`,
+    "",
+    "---",
+    "",
+    `DECISION CONTEXT:`,
+    reasoning.decisionContext
+      ? `  ${reasoning.decisionContext}`
+      : "  No decision context available",
   );
 
   if (reasoning.clarificationsNeeded.length > 0) {

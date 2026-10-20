@@ -7,6 +7,7 @@ import {
   sanitizeDurableCareKey,
   writeDurableJson,
 } from "../living-care-record-persistence/fs-store";
+import { createPerson, getPerson, assignRole, findPersonByAlias, resetEntityStore } from "../entities/store";
 
 const recipientContexts = new Map<string, MultiCaregiverCareContext>();
 const caregiverToRecipient = new Map<string, string>();
@@ -36,7 +37,7 @@ function hydrateLinks(): void {
 
 function persistLinks(): void {
   const obj: LinkMap = {};
-  for (const [contributorId, careRecipientId] of caregiverToRecipient) {
+  for (const [contributorId, careRecipientId] of caregiverToRecipient.entries()) {
     obj[contributorId] = careRecipientId;
   }
   writeDurableJson(linksPath(), obj);
@@ -45,12 +46,18 @@ function persistLinks(): void {
 /**
  * Link a contributor to a Care Reality (care recipient).
  * Locked B: many contributors → one Living Care Record.
+ *
+ * CRITICAL: Never infers care recipient identity from contributor ID alone.
+ * Care recipient identity must be explicitly provided or resolved.
  */
 export function linkCaregiverToRecipient(
   caregiverId: string,
   careRecipientId: string,
 ): void {
   hydrateLinks();
+  if (!careRecipientId || careRecipientId === caregiverId) {
+    return;
+  }
   caregiverToRecipient.set(caregiverId, careRecipientId);
   persistLinks();
 }
@@ -58,7 +65,8 @@ export function linkCaregiverToRecipient(
 /**
  * Ensure this contributor has a Care Reality.
  * - Optional joinCareRecipientId attaches them to an existing shared reality.
- * - Otherwise mint a personal care_recipient_id (never a global shared default).
+ * - Otherwise DO NOT mint a personal care_recipient_id (no silent identity creation).
+ * - Returns the existing link or DEFAULT_CARE_RECIPIENT_ID if no link exists.
  */
 export function ensureContributorCareReality(
   contributorId: string,
@@ -66,20 +74,24 @@ export function ensureContributorCareReality(
 ): string {
   hydrateLinks();
   const join = joinCareRecipientId?.trim();
-  if (join) {
+  if (join && join !== contributorId) {
     linkCaregiverToRecipient(contributorId, join);
     return join;
   }
   const existing = caregiverToRecipient.get(contributorId);
   if (existing) return existing;
-  const minted = `cr_${sanitizeDurableCareKey(contributorId)}`;
-  linkCaregiverToRecipient(contributorId, minted);
-  return minted;
+
+  // CRITICAL: Do not auto-mint a care recipient ID from contributor ID.
+  // This was a critical identity assumption that conflated caregiver and care recipient.
+  // Return default instead — the care recipient must be explicitly identified.
+  return DEFAULT_CARE_RECIPIENT_ID;
 }
 
 /**
  * Resolve durable store key for ACS / CRS / CareContext.
  * Accepts contributor id or an existing care_recipient_id (no double-mint).
+ *
+ * CRITICAL: Never conflates contributor identity with care recipient identity.
  */
 export function resolveCareRealityStoreKey(contributorOrRealityId: string): string {
   hydrateLinks();
@@ -94,12 +106,15 @@ export function resolveCareRealityStoreKey(contributorOrRealityId: string): stri
   ) {
     return contributorOrRealityId;
   }
-  return ensureContributorCareReality(contributorOrRealityId);
+  // Do not auto-create a care recipient from contributor ID
+  return DEFAULT_CARE_RECIPIENT_ID;
 }
 
-/** Resolve Care Reality id for a contributor (auto-mints if unlinked). */
+/** Resolve Care Reality id for a contributor (DO NOT auto-mint). */
 export function resolveCareRecipientId(caregiverId: string): string {
-  return ensureContributorCareReality(caregiverId);
+  const linked = caregiverToRecipient.get(caregiverId);
+  if (linked) return linked;
+  return DEFAULT_CARE_RECIPIENT_ID;
 }
 
 export function appendRecipientEvents(
@@ -143,4 +158,10 @@ export function resetMultiCaregiverContextStore(): void {
   caregiverToRecipient.clear();
   recipientEvents.clear();
   linksHydrated = false;
+}
+
+// Backward-compatible reset that also clears entity store
+export function resetAllEntityStores(): void {
+  resetMultiCaregiverContextStore();
+  resetEntityStore();
 }

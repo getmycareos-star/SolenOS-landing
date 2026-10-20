@@ -15,3 +15,9 @@ app = FastAPI(
 
 app.include_router(action_router)
 app.include_router(meaning_router)
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring services."""
+    return {"status": "healthy", "service": "solenos-backend"}

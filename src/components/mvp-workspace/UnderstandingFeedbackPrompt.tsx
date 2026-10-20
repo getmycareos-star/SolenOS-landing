@@ -69,7 +69,7 @@ export function UnderstandingFeedbackPrompt({
   if (step === "thanks") {
     return (
       <p className="panel-muted research-feedback-thanks" role="status">
-        Thank you — your feedback helps our team improve future versions of SolenOS.
+        Thank you — your feedback helps our team improve future versions of solenos.
         <button type="button" className="link-button" onClick={() => setStep("hidden")}>
           Dismiss
         </button>
@@ -79,8 +79,8 @@ export function UnderstandingFeedbackPrompt({
 
   if (step === "details") {
     return (
-      <div className="research-feedback" aria-label="What SolenOS misunderstood">
-        <p className="workspace-lede">What did SolenOS misunderstand?</p>
+      <div className="research-feedback" aria-label="What solenos misunderstood">
+        <p className="workspace-lede">What did solenos misunderstand?</p>
         <ul className="research-feedback-options">
           {UNDERSTANDING_MISUNDERSTAND_OPTIONS.map((opt) => (
             <li key={opt}>
@@ -98,7 +98,7 @@ export function UnderstandingFeedbackPrompt({
           ))}
         </ul>
         <label className="research-feedback-field">
-          <span>What should SolenOS have understood? (optional)</span>
+          <span>What should solenos have understood? (optional)</span>
           <textarea
             rows={2}
             value={expected}

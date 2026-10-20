@@ -26,6 +26,47 @@ let passed = 0;
 let failed = 0;
 let total = 0;
 
+/** Build a complete ContinuityDecision from the fields a case cares about. */
+function continuityDecision(overrides: Partial<ContinuityDecision>): ContinuityDecision {
+  return {
+    continuity_type: "new",
+    identity: null,
+    input_relation: {
+      same_recipient: true,
+      is_new_information: true,
+      is_continuation: false,
+      describes_change: false,
+      is_correction: false,
+      is_emotional_only: false,
+      is_question: false,
+    },
+    care_reality_diff: {
+      confirmed: [],
+      added: [],
+      changed: [],
+      contradicted: [],
+      remaining_unknowns: [],
+      new_unknowns: [],
+    },
+    can_orient: true,
+    context: {
+      continuity_type: "new",
+      identity: null,
+      prior_events_exist: false,
+      prior_decisions_exist: false,
+      prior_unknowns_exist: false,
+      prior_observations_exist: false,
+      open_uncertainties: [],
+      continuity_hooks: [],
+      care_reality_state_summary: null,
+      prior_decisions: [],
+    },
+    should_acknowledge_return: false,
+    should_orient_new_user: false,
+    ...overrides,
+  };
+}
+
 function assert(condition: boolean, label: string): void {
   total++;
   if (condition) {
@@ -132,7 +173,7 @@ console.log("\n📋 Test 1: New caregiver — no care record");
   assert(output.should_orient, "should orient");
   assert(output.orientation_kind === "new_caregiver", "orientation_kind should be new_caregiver");
   assert(output.orientation_line !== null, "orientation_line should not be null");
-  assertIncludes(output.orientation_line!, "share information", "should invite sharing");
+  assertIncludes(output.orientation_line!, "telling me what is different", "should invite sharing");
   assertNotIncludes(output.orientation_line!, "how can I help", "no chatbot language");
   assertNotIncludes(output.orientation_line!, "I'm here for you", "no companion language");
   assertNotIncludes(output.orientation_line!, "assistant", "no assistant framing");
@@ -423,7 +464,7 @@ console.log("\n📋 Test 4: Casual greeting — 'hi' → transition to care");
   const output = buildGreetingOrientation(ctxWithRecord);
   assert(output.should_orient, "should orient with record");
   assert(output.orientation_line !== null, "orientation_line should not be null");
-  assertIncludes(output.orientation_line!, "held", "should reference held updates");
+  assertIncludes(output.orientation_line!, "ready", "should reference updates already held");
 
   // No care record
   const ctxEmpty = makeEmptyContext({
@@ -526,7 +567,7 @@ console.log("\n📋 Test 5: 'How are you?' — operational readiness, not emotio
   assert(output.should_orient, "should orient");
   assert(output.orientation_kind === "how_are_you", "orientation_kind should be how_are_you");
   assert(output.orientation_line !== null, "orientation_line should not be null");
-  assertIncludes(output.orientation_line!, "care record", "should reference care record");
+  assertIncludes(output.orientation_line!, "are ready", "should reference what is already held");
   assertNotIncludes(output.orientation_line!, "I'm doing great", "no emotions");
   assertNotIncludes(output.orientation_line!, "I'm happy", "no happiness claims");
   assertNotIncludes(output.orientation_line!, "I'm here for you", "no companion language");
@@ -624,8 +665,8 @@ console.log("\n📋 Test 6: 'Thank you' — reinforces continuity");
   assert(output.should_orient, "should orient");
   assert(output.orientation_kind === "gratitude", "orientation_kind should be gratitude");
   assert(output.orientation_line !== null, "orientation_line should not be null");
-  assertIncludes(output.orientation_line!, "held", "should reference held information");
-  assertIncludes(output.orientation_line!, "Return whenever", "should reinforce continuity");
+  assertIncludes(output.orientation_line!, "kept here", "should reference held information");
+  assertIncludes(output.orientation_line!, "Come back whenever", "should reinforce continuity");
   assertNotIncludes(output.orientation_line!, "you're welcome", "no chat closing");
   assertNotIncludes(output.orientation_line!, "happy to help", "no companion language");
 }
@@ -639,7 +680,7 @@ console.log("\n📋 Test 7: Substantive care event — no orientation needed");
     is_how_are_you: false,
     is_gratitude: false,
     raw_input: "Mom fell today and hurt her hip",
-    continuity: newContinuationDecision({
+    continuity: continuityDecision({
       continuity_type: "returning",
       should_acknowledge_return: true,
       should_orient_new_user: false,

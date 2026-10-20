@@ -54,7 +54,7 @@ const FAB_ACTIONS: {
 ];
 
 /**
- * SolenOS mobile app shell.
+ * solenos mobile app shell.
  * Fixed bottom tab bar (Care Record | Timeline | Documents | Settings) with
  * active accent underline, a FAB above the bar opening an Add bottom sheet,
  * and real-data care context supplied by the workspace layout.

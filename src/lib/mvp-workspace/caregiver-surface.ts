@@ -12,6 +12,7 @@ export const CAREGIVER_MVP_WORKSPACE_FILES = [
   "ConsentGatePanel.tsx",
   "ContinuityHomePanel.tsx",
   "HelpImproveSolenos.tsx",
+  "LanguageSelector.tsx",
   "LivingCareRecordPanel.tsx",
   "PolicySettingsPanel.tsx",
   "ResearchPreviewAckGate.tsx",

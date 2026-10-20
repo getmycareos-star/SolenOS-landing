@@ -122,6 +122,13 @@ export function applyQuestionToContext(
     uncertainties: mergeUncertainties(context.uncertainties, interpretation.uncertainties),
     prioritizedActions: prioritizedActions.slice(-8),
     updatedAt: now,
+    identity: {
+      ...context.identity,
+      // Preserve existing identity fields
+      patientName: context.identity?.patientName,
+      contextLabel: context.identity?.contextLabel,
+      caregiverId: context.identity?.caregiverId
+    }
   };
 
   const { context: withOml } = updateCareContextWithOML(updated, omlState);
@@ -135,5 +142,8 @@ export function createEmptyContext(): CareContext {
     uncertainties: [],
     prioritizedActions: [],
     updatedAt: new Date().toISOString(),
+    identity: {
+      caregiverId: undefined
+    }
   };
 }

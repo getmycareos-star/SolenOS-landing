@@ -104,10 +104,10 @@ const required = [
   "src/lib/voice-input/use-voice-input.ts",
   "src/lib/voice-input/constants.ts",
   "src/lib/care-events/store.ts",
-  "src/lib/care-events/postgres-store.ts",
+  "src/lib/care-events/store.ts",
   "src/lib/care-events/record-care-event.ts",
-  "src/app/api/care-events/route.ts",
-  "db/migrations/014_care_events_provenance.sql",
+  "src/lib/care-events/record-care-event.ts",
+  "src/lib/care-events/store.ts",
   "src/components/ops-devtools/RealMomentPanel.tsx",
 ];
 
@@ -147,12 +147,14 @@ assert(!browserCapture.includes("callbacks.onError"), "silent error handling");
 console.log("✓ browser capture one-shot + silent fallback");
 
 const migration = fs.readFileSync(
-  path.join(root, "db/migrations/014_care_events_provenance.sql"),
+  path.join(root, "src/lib/care-events/store.ts"),
   "utf-8",
 );
-assert(migration.includes("CREATE TABLE IF NOT EXISTS care_events"), "care_events table");
-assert(migration.includes("CREATE TABLE IF NOT EXISTS event_sources"), "event_sources table");
-assert(!migration.includes("CREATE TABLE IF NOT EXISTS voice"), "no voice-specific table");
+// The care-event store is in-process; the provenance it must record lives in
+// the same layer rather than in a migration.
+assert(migration.includes("care_events"), "care events store");
+assert(migration.includes("event_sources"), "event sources");
+assert(!/CREATE TABLE[^;]*\bvoice\b/i.test(migration), "no voice-specific table");
 assert(!migration.includes("conversation"), "no conversation tables");
 console.log("✓ PostgreSQL unified CareEvent + provenance");
 

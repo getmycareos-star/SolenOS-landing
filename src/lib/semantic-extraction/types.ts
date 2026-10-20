@@ -48,6 +48,12 @@ export type ExtractionAttribution = {
   role: "patient" | "caregiver" | "family" | "clinician" | "document" | "unknown";
   claim: string;
   confidence?: number | null;
+  /** Resolved canonical person ID when entity resolution succeeds. */
+  resolved_person_id?: string | null;
+  /** Resolution confidence when person is matched to a canonical entity. */
+  resolution_confidence?: number | null;
+  /** Resolution outcome: CONFIRMED_MATCH, PROBABLE_MATCH, POSSIBLE_MATCH, AMBIGUOUS, NEW_ENTITY, UNRESOLVED. */
+  resolution_outcome?: "CONFIRMED_MATCH" | "PROBABLE_MATCH" | "POSSIBLE_MATCH" | "AMBIGUOUS" | "NEW_ENTITY" | "UNRESOLVED" | null;
 };
 
 export type ExtractionContradiction = {
@@ -149,6 +155,24 @@ export type SemanticExtraction = {
   coverage?: ExtractionCoverage;
   /** Caregiver capacity signals held alongside care facts. */
   caregiver_load_signals?: CaregiverLoadSignal[];
+  /** Entity resolution results — maps extracted person names to canonical entity IDs. */
+  entity_resolution?: {
+    resolved_persons: Array<{
+      extracted_name: string;
+      canonical_person_id: string | null;
+      confidence: number | null;
+      outcome: "CONFIRMED_MATCH" | "PROBABLE_MATCH" | "POSSIBLE_MATCH" | "AMBIGUOUS" | "NEW_ENTITY" | "UNRESOLVED";
+      match_basis: string[];
+    }>;
+    resolved_organizations: Array<{
+      extracted_name: string;
+      canonical_organization_id: string | null;
+      confidence: number | null;
+      outcome: "CONFIRMED_MATCH" | "PROBABLE_MATCH" | "POSSIBLE_MATCH" | "AMBIGUOUS" | "NEW_ENTITY" | "UNRESOLVED";
+      match_basis: string[];
+    }>;
+    unresolved_names: string[];
+  };
 };
 
 export type ExtractionResult = {

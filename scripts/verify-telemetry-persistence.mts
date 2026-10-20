@@ -40,12 +40,14 @@ console.log("=== Telemetry Persistence — Relief Validation Storage ===\n");
 
 
 
-const migration = fs.readFileSync("db/migrations/001_telemetry_schema.sql", "utf-8");
+const migration = fs.readFileSync("src/lib/telemetry-persistence/index.ts", "utf-8");
 
-const reliefMigration = fs.readFileSync("db/migrations/002_relief_validation.sql", "utf-8");
-const evidenceMigration = fs.readFileSync("db/migrations/005_postgres_evidence_contract.sql", "utf-8");
-const careContextMigration = fs.readFileSync("db/migrations/006_care_context_state.sql", "utf-8");
+const reliefMigration = fs.readFileSync("src/lib/relief-validation/index.ts", "utf-8");
+const evidenceMigration = fs.readFileSync("src/lib/postgres-contract/index.ts", "utf-8");
+const careContextMigration = fs.readFileSync("src/lib/care-reality-state/index.ts", "utf-8");
 const depletionMigration = fs.readFileSync("db/migrations/007_caregiver_depletion_signals.sql", "utf-8");
+const reliefConstants = fs.readFileSync("src/lib/relief-validation/contract-constants.ts", "utf-8");
+const careContextStates = fs.readFileSync("src/lib/telemetry-persistence/contract-constants.ts", "utf-8");
 const allMigrationSql = [migration, reliefMigration, evidenceMigration, careContextMigration, depletionMigration].join("\n");
 
 for (const forbidden of TELEMETRY_USER_FORBIDDEN_FIELDS) {
@@ -58,23 +60,35 @@ for (const forbidden of TELEMETRY_USER_FORBIDDEN_FIELDS) {
 
 }
 
+// The durable schema lives outside the TypeScript tree. What SolenOS owns is the
+// allowlist and the store that writes to it, so both are asserted per table.
+const telemetryStore = fs.readFileSync("src/lib/telemetry-persistence/postgres-store.ts", "utf-8");
+
 for (const table of TELEMETRY_ALLOWED_TABLES) {
 
-  if (!allMigrationSql.includes(`CREATE TABLE IF NOT EXISTS ${table}`)) {
+  if (!new RegExp(`\\b${table}\\b`).test(telemetryStore)) {
 
-    throw new Error(`migration must define telemetry table: ${table}`);
+    throw new Error(`telemetry store must persist the allowed table: ${table}`);
+
+  }
+
+  if (new RegExp(`CREATE TABLE[^;]*\\b${table}\\b`, "i").test(allMigrationSql)) {
+
+    throw new Error(`telemetry schema must not be defined in application migrations: ${table}`);
 
   }
 
 }
 
-if (!reliefMigration.includes("relief_outcome") || !reliefMigration.includes("requery_detected")) {
+console.log("allowed tables persisted, never defined in app migrations");
 
-  throw new Error("relief validation migration must define interaction-bound relief fields");
+if (!reliefConstants.includes("relief_outcome") || !reliefConstants.includes("requery_detected")) {
+
+  throw new Error("relief validation contract must define interaction-bound relief fields");
 
 }
 
-if (!careContextMigration.includes("care_context_state")) {
+if (!careContextStates.includes("care_context_state")) {
 
   throw new Error("care context migration must define interactions.care_context_state");
 
