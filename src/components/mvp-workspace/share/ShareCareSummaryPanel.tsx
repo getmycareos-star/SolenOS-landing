@@ -195,7 +195,7 @@ export function ShareCareSummaryPanel({
         if (!printWindow) {
           throw new Error("Could not open print window. Please allow pop-ups.");
         }
-        const html = buildPrintHtml(summary, selectedContent, careRecipientName);
+        const html = buildPrintHtml(summary, careRecipientName);
         printWindow.document.open();
         printWindow.document.write(html);
         printWindow.document.close();
@@ -708,7 +708,6 @@ function buildPlainTextSummary(summary: GeneratedSummary): string {
 
 function buildPrintHtml(
   summary: GeneratedSummary,
-  content: SelectedContent,
   recipientName?: string,
 ): string {
   const sectionsHtml = summary.sections
