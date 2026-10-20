@@ -32,14 +32,16 @@ jobs:
         run: |
           rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+      - name: Install dependencies without running unapproved scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund --legacy-peer-deps
       - name: Approve required dependency install scripts
         run: |
           npm install-scripts approve @parcel/watcher
           npm install-scripts approve @sentry/cli
           npm install-scripts approve esbuild
           npm install-scripts approve unrs-resolver
-      - name: Install exact generated dependencies
-        run: npm ci --no-audit --no-fund --legacy-peer-deps
+      - name: Run approved dependency install scripts
+        run: npm rebuild --legacy-peer-deps
       - name: Type-check and build production assets
         run: npm run build
       - name: Commit regenerated lockfile on repair branch
