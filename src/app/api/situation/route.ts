@@ -15,16 +15,25 @@ import { openSituationsFromSituationApi } from "@/lib/ui-runtime/open-situations
 
 export const runtime = "nodejs";
 
+function bearerCareKey(request: Request): string | null {
+  const header = request.headers.get("authorization") ?? "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
 function resolveCaregiverId(input: { caregiver_id?: string; care_session_id?: string }): string {
   return input.caregiver_id ?? input.care_session_id ?? "default_caregiver";
 }
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const caregiverId = resolveCaregiverId({
-    caregiver_id: url.searchParams.get("caregiver_id") ?? undefined,
-    care_session_id: url.searchParams.get("care_session_id") ?? undefined,
-  });
+  const caregiverId = bearerCareKey(request);
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    return NextResponse.json(
+      { error: "unauthorized_care_key", note: "A private durable care key is required." },
+      { status: 401 },
+    );
+  }
   const offerReturnInvite = url.searchParams.get("offer_return_invite") === "1";
 
   const context = getCareContextRoot(caregiverId);
@@ -75,10 +84,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const rawInput = typeof body.raw_input === "string" ? body.raw_input.trim() : "";
-    const caregiverId = resolveCaregiverId({
-      caregiver_id: typeof body.caregiver_id === "string" ? body.caregiver_id : undefined,
-      care_session_id: typeof body.care_session_id === "string" ? body.care_session_id : undefined,
-    });
+    const caregiverId = typeof body.caregiver_id === "string" ? body.caregiver_id : "";
+    const bearerKey = bearerCareKey(request);
+    if (!bearerKey || bearerKey === "default_caregiver" || bearerKey !== caregiverId) {
+      return NextResponse.json(
+        { error: "unauthorized_care_key", note: "The care key must match the authorized caregiver context." },
+        { status: 401 },
+      );
+    }
 
     if (!rawInput && (!Array.isArray(body.documents) || body.documents.length === 0)) {
       return NextResponse.json(
