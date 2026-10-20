@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Navigate, Outlet, Routes, Route } from 'react-router-dom'
+import { getAccessToken } from './api/client'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
@@ -14,24 +15,30 @@ import CareCircle from './pages/CareCircle'
 import Login from './pages/Login'
 import InvestorDashboard from './pages/InvestorDashboard'
 
+function RequireAuth() {
+  return getAccessToken() ? <Outlet /> : <Navigate to="/login" replace />
+}
+
 export default function App() {
   return (
     <div className="app-container">
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/daily-care" element={<DailyCare />} />
-        <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
-        <Route path="/timeline" element={<Timeline />} />
-        <Route path="/record" element={<Record />} />
-        <Route path="/memory" element={<Memory />} />
-        <Route path="/care-circle" element={<CareCircle />} />
-        <Route path="/companion" element={<Companion />} />
-        <Route path="/insights" element={<Insights />} />
-        <Route path="/community" element={<Community />} />
-        <Route path="/professional" element={<ProfessionalDashboard />} />
-        <Route path="/team" element={<TeamDashboard />} />
-        <Route path="/investor/dashboard" element={<InvestorDashboard />} />
+        <Route element={<RequireAuth />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/daily-care" element={<DailyCare />} />
+          <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
+          <Route path="/timeline" element={<Timeline />} />
+          <Route path="/record" element={<Record />} />
+          <Route path="/memory" element={<Memory />} />
+          <Route path="/care-circle" element={<CareCircle />} />
+          <Route path="/companion" element={<Companion />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/professional" element={<ProfessionalDashboard />} />
+          <Route path="/team" element={<TeamDashboard />} />
+          <Route path="/investor/dashboard" element={<InvestorDashboard />} />
+        </Route>
        </Routes>
     </div>
   )
