@@ -62,13 +62,17 @@ export function useOptimisticMutation<TData, TVariables>() {
       // Generate a unique request ID to prevent race conditions
       const requestId = ++requestIdRef.current;
       
+      let resultData: TData | undefined
+      let mutationError: unknown | null = null
+
       try {
         // 1. Capture snapshot for potential rollback
         const snapshot = await options.onMutate(variables);
         snapshotRef.current = snapshot;
         
         // 2. Perform the mutation
-        const result = await options.mutationFn(variables);
+        const result = await options.mutationFn(variables)
+        resultData = result;
         
         // 3. Check if this is still the latest request
         if (requestId !== requestIdRef.current) {
@@ -82,16 +86,22 @@ export function useOptimisticMutation<TData, TVariables>() {
         
         return result;
       } catch (err) {
-        // 5. Handle error and rollback
-        await options.onError(err, variables, snapshotRef.current);
-        setError(err);
-        throw err;
+        // 5. Handle error and rollback. Keep the original mutation error even if
+        // an error callback itself fails.
+        mutationError = err
+        setError(err)
+        try {
+          await options.onError(err, variables, snapshotRef.current)
+        } catch (callbackError) {
+          console.error('Optimistic mutation onError callback failed:', callbackError)
+        }
+        throw err
       } finally {
         // 6. Clean up
         if (requestId === requestIdRef.current) {
           // Only settle if this is still the latest request
-          await options.onSettled(data, error, variables, snapshotRef.current);
-          setLoading(false);
+          await options.onSettled(resultData, mutationError, variables, snapshotRef.current)
+          setLoading(false)
         }
       }
     },
