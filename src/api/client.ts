@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
