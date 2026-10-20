@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getJSON, postJSON, setAccessToken, setPersonId } from '../api/client'
 
