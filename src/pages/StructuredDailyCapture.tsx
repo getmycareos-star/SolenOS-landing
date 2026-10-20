@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { postJSON, postFormData, getCaregiverId, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { compressImage } from '../lib/imageCompression';
@@ -77,6 +77,12 @@ export default function StructuredDailyCapture() {
   
   // Person ID
   const personId = getPersonId();
+
+  useEffect(() => {
+    return () => {
+      if (medicationImagePreview?.startsWith('blob:')) URL.revokeObjectURL(medicationImagePreview);
+    };
+  }, [medicationImagePreview]);
   
   // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
@@ -85,12 +91,14 @@ export default function StructuredDailyCapture() {
       if (!stream) throw new Error('Camera access is unavailable or was denied.');
       // Create a video element to capture a frame
       const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
       video.srcObject = stream;
-      await video.play();
-      
-      // Wait for the video to play
-      await new Promise<void>((resolve) => {
-        video.onplaying = () => resolve();
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => {
+          video.play().then(() => resolve()).catch(reject);
+        };
+        video.onerror = () => reject(new Error('The camera preview could not be started.'));
       });
       
       const canvas = document.createElement('canvas');
@@ -121,16 +129,14 @@ export default function StructuredDailyCapture() {
         // Convert compressed file back to data URL for preview
         const compressedUrl = URL.createObjectURL(compressedFile);
         setMedicationImagePreview(compressedUrl);
-        
-        // Clean up
-        URL.revokeObjectURL(compressedUrl);
       }
       
-      // Stop the stream
-      stopCam();
     } catch (err) {
       console.error('Failed to capture image:', err);
       alert('Failed to capture image: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      setMedicationCompressing(false);
+    } finally {
+      stopCam();
       setMedicationCompressing(false);
     }
   };
@@ -161,9 +167,6 @@ export default function StructuredDailyCapture() {
       // Convert compressed file to data URL for preview
       const compressedUrl = URL.createObjectURL(compressedFile);
       setMedicationImagePreview(compressedUrl);
-      
-      // Clean up
-      URL.revokeObjectURL(compressedUrl);
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
