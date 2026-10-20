@@ -24,7 +24,7 @@ jobs:
       - name: Regenerate lockfile from package manifest
         run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
       - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
       - name: Type-check and production build
         run: npm run build
       - name: Run frontend tests
