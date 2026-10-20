@@ -119,7 +119,7 @@ export async function getJSON(path: string) {
 // base is resolved in one place rather than reconstructed by a caller that would
 // otherwise hardcode a second copy of the localhost default.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`, { headers: requestHeaders() })
+  const res = await fetch(`${getApiBase()}${interpolatePersonId(path)}`, { headers: requestHeaders() })
   if (!res.ok) {
     if (res.status === 401 && getAccessToken()) {
       clearAccessToken()
@@ -140,7 +140,7 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
+  const res = await fetch(`${getApiBase()}${personId ? interpolatePersonId(path) : path}`, {
     method: 'PATCH',
     headers: requestHeaders(true),
     body: JSON.stringify(body),
