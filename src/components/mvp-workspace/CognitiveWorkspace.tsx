@@ -250,9 +250,16 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   }, []);
 
   useEffect(() => {
-    const storedCareKey = ensureClientDurableCareKey(
+    let storedCareKey = ensureClientDurableCareKey(
       window.localStorage.getItem(DURABLE_CARE_KEY_STORAGE),
     );
+    const replacedSharedDemoKey = storedCareKey === DEFAULT_DURABLE_CARE_KEY;
+    if (replacedSharedDemoKey) {
+      // Never let the old shared demo identity bind different browsers to one
+      // care record. The server rejects this shared key for privacy.
+      storedCareKey = mintDurableCareKey();
+      window.localStorage.removeItem(CARE_RECIPIENT_ID_STORAGE);
+    }
     setCaregiverId(storedCareKey);
     window.localStorage.setItem(DURABLE_CARE_KEY_STORAGE, storedCareKey);
     const sessionId = interactionSessionId(false);
@@ -262,11 +269,19 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       void trackClientActivationEvent({ event_type: "RETURN_SESSION" });
     }
 
-    // Mount hydrate must not consume soft invite — Done path offers once (Locked B).
+    // The care key is a bearer capability, so send it in the Authorization
+    // header rather than exposing it in the query string.
     void fetch(
-      apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
+      apiUrl(`/api/situation?care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
+      { headers: { Authorization: `Bearer ${storedCareKey}` } },
     )
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const err = (await safeJson(r)) as { error?: string; detail?: string };
+          throw new Error(err.error ?? err.detail ?? "Could not load your care record.");
+        }
+        return r.json();
+      })
       .then(
         (data: {
           has_context_root?: boolean;
@@ -289,9 +304,18 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           if (data.care_key) setCaregiverId(data.care_key);
           else if (data.context?.caregiver_id) setCaregiverId(data.context.caregiver_id);
           if (typeof data.care_recipient_id === "string" && data.care_recipient_id.trim()) {
-            setCareRecipientId(data.care_recipient_id.trim());
+            const resolvedPersonId = data.care_recipient_id.trim();
+            setCareRecipientId(resolvedPersonId);
+            window.localStorage.setItem(CARE_RECIPIENT_ID_STORAGE, resolvedPersonId);
           }
           if (data.has_context_root) setHasContextRoot(true);
+          if (replacedSharedDemoKey) {
+            setCaregiverError(
+              "For privacy, this browser's old shared demo key was replaced with a private care key. Data under the shared demo key was not copied into this private record.",
+            );
+          } else {
+            setCaregiverError(null);
+          }
           setDisplayName(
             typeof data.care_recipient_display_name === "string" &&
               data.care_recipient_display_name.trim()
@@ -357,6 +381,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       )
       .catch(() => {
         setDisplayName("");
+        setCaregiverError(
+          "Could not load your private care record. Your note has not been sent. Check your connection and try again.",
+        );
       });
     // Restore once on mount — same durable care key must not remint care reality.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only hydrate
