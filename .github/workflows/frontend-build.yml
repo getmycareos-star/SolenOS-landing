@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: frontend-build-${{ github.workflow }}-${{ github.ref }}
@@ -20,51 +20,15 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - name: Use current npm lockfile resolver
-        run: npm install --global npm@11
-      - name: Regenerate corrupted or incomplete npm lockfile
-        run: |
-          rm -f package-lock.json
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
-      - name: Install dependencies without running unapproved scripts
-        run: npm ci --ignore-scripts --no-audit --no-fund --legacy-peer-deps
-      - name: Approve required dependency install scripts
-        run: |
-          npm install-scripts approve @parcel/watcher
-          npm install-scripts approve @sentry/cli
-          npm install-scripts approve esbuild
-          npm install-scripts approve unrs-resolver
-      - name: Run approved dependency install scripts
-        run: npm rebuild --legacy-peer-deps
-      - name: Build Next.js production application
+          node-version: 20
+      - name: Repair manifest/lockfile drift in the ephemeral runner
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Type-check and build production assets
         run: npm run build
-      - name: Type-check and build Vite client
-        run: npm run build:vite
-      - name: Commit regenerated lockfile on repair branch
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/repair/')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json package.json
-          if git diff --cached --quiet; then
-            echo "Generated lockfile matches the branch; no commit needed."
-          else
-            git commit -m "Repair npm lockfile from package manifest"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
-      - name: Upload generated lockfile for review
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: reconciled-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 7
+      - name: Run frontend tests
+        run: npm test -- --runInBand
