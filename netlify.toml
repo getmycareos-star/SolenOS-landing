@@ -1,31 +1,22 @@
-# SolenOS-landing — Netlify configuration for Next.js App Router
-# Build must run `next build` and Netlify must serve the Next.js server output.
-# The @netlify/plugin-nextjs runtime REQUIRES publish = ".next"
-# (the plugin transforms .next output into Netlify-compatible functions + rewrites).
-# publish must be distinct from base (repo root) or the plugin errors out.
+# SolenOS-landing — Netlify configuration for the Vite + React application.
+# Vite writes the production static site to dist/.
 
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
 
-# Build caching — persist the Next.js build cache and node_modules between deploys
-[[build.cache]]
-  path = ".next/cache"
-  ttl = "7"
-
+# Cache installed dependencies between deploys.
 [[build.cache]]
   path = "node_modules"
   ttl = "7"
 
 [dev]
   command = "npm run dev"
-  port = 3000
+  port = 5173
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
 
 # Proxy all /api/* calls to the Railway backend (SolenOS_backend).
 # The frontend repo no longer ships Next.js API route handlers.
