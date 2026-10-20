@@ -53,10 +53,10 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const continueWithContext = async (context: CareContext) => {
+  const continueWithContext = async (context: CareContext, accountId = account?.id) => {
     setSelectedPersonId(context.person_id)
     const links = await getJSON(`/auth/my-caregiver-links?person_id=${encodeURIComponent(context.person_id)}`) as CaregiverLink[]
-    const ownLink = links.find((link) => link.account_id === account?.id)
+    const ownLink = links.find((link) => link.account_id === accountId)
     if (ownLink) {
       setPersonId(context.person_id)
       setCaregiverId(ownLink.caregiver_id)
@@ -89,7 +89,7 @@ export default function Login() {
       if (availableContexts.length === 0) {
         setStage('create-context')
       } else if (availableContexts.length === 1) {
-        await continueWithContext(availableContexts[0])
+        await continueWithContext(availableContexts[0], session.account.id)
       } else {
         setStage('choose-context')
       }
