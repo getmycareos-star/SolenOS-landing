@@ -397,7 +397,7 @@ export default function Dashboard() {
                     {reasoning.preferences.map((pref, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{pref.key}: {JSON.stringify(pref.value)}</p>
                     ))}
-                  </div
+                  </div>
                 )}
               </div>
             </section>
