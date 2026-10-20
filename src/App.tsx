@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, Routes, Route, useNavigate } from 'react-router-dom'
-import { clearAccessToken, clearCareContext, getAccessToken, postJSON } from './api/client'
+import { clearAccessToken, clearCareContext, getAccessToken, getCaregiverId, getPersonId, postJSON } from './api/client'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
@@ -17,11 +17,17 @@ import Login from './pages/Login'
 import InvestorDashboard from './pages/InvestorDashboard'
 
 function RequireAuth() {
-  const [authenticated, setAuthenticated] = useState(() => Boolean(getAccessToken()))
+  const [authenticated, setAuthenticated] = useState(() => Boolean(getAccessToken() && getPersonId() && getCaregiverId()))
   useEffect(() => {
-    const onExpired = () => setAuthenticated(false)
-    window.addEventListener('solenos:auth-expired', onExpired)
-    return () => window.removeEventListener('solenos:auth-expired', onExpired)
+    const refresh = () => setAuthenticated(Boolean(getAccessToken() && getPersonId() && getCaregiverId()))
+    window.addEventListener('solenos:auth-expired', refresh)
+    window.addEventListener('solenos:auth-changed', refresh)
+    window.addEventListener('personIdChanged', refresh)
+    return () => {
+      window.removeEventListener('solenos:auth-expired', refresh)
+      window.removeEventListener('solenos:auth-changed', refresh)
+      window.removeEventListener('personIdChanged', refresh)
+    }
   }, [])
   return authenticated ? <Outlet /> : <Navigate to="/login" replace />
 }
