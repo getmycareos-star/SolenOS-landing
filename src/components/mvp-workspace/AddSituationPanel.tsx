@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Camera, FileText, Loader2, MoreHorizontal, Plus, ScanLine } from "lucide-react";
+import { Camera, FileText, Loader2, Plus, ScanLine } from "lucide-react";
 
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputProvenance } from "@/lib/care-events";
