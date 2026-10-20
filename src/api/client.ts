@@ -56,8 +56,8 @@ function interpolatePersonId(path: string): string {
 
 async function handleResponse(res: Response) {
   if (res.status === 204) return null
-  const contentType = res.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
+  const contentType = res.headers?.get?.('content-type') || ''
+  const isJson = contentType.includes('application/json') || (typeof res.text !== 'function' && typeof res.json === 'function')
 
   if (!res.ok) {
     let message = `API ${res.status}`
@@ -79,6 +79,7 @@ async function handleResponse(res: Response) {
     throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
   }
 
+  if (typeof res.text !== 'function') return res.json()
   const text = await res.text()
   if (!text) {
     throw new Error('Empty response from server')
