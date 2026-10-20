@@ -8,7 +8,11 @@ on:
     branches: [main, "repair/**"]
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: frontend-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   frontend-validation:
@@ -20,31 +24,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Use current npm lockfile resolver
+      - name: Use npm 11 lockfile resolver
         run: npm install --global npm@11
-      - name: Regenerate lockfile in CI workspace
-        run: |
-          rm -f package-lock.json
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
-      - name: Upload regenerated lockfile for review and commit
-        uses: actions/upload-artifact@v4
-        with:
-          name: reconciled-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 7
-      - name: Commit reconciled lockfile on repair branch
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/repair/')
-        run: |
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore: reconcile frontend package lockfile"
-            git push
-          fi
-      - name: Install dependencies without running unapproved scripts
-        run: npm ci --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+      - name: Install checked-in lockfile dependencies without scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Approve required dependency install scripts
         run: |
           npm install-scripts approve @parcel/watcher
