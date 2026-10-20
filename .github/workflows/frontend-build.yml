@@ -25,13 +25,19 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Use current npm lockfile resolver
         run: npm install --global npm@11
       - name: Regenerate corrupted or incomplete npm lockfile
         run: |
           rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+      - name: Approve required dependency install scripts
+        run: |
+          npm install-scripts approve @parcel/watcher
+          npm install-scripts approve @sentry/cli
+          npm install-scripts approve esbuild
+          npm install-scripts approve unrs-resolver
       - name: Install exact generated dependencies
         run: npm ci --no-audit --no-fund --legacy-peer-deps
       - name: Type-check and build production assets
@@ -43,7 +49,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
+          git add package-lock.json package.json
           if git diff --cached --quiet; then
             echo "Generated lockfile matches the branch; no commit needed."
           else
