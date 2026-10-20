@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
