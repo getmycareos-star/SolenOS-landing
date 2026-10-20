@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Outlet, Routes, Route } from 'react-router-dom'
-import { getAccessToken } from './api/client'
+import { Navigate, Outlet, Routes, Route, useNavigate } from 'react-router-dom'
+import { clearAccessToken, clearCareContext, getAccessToken, postJSON } from './api/client'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
@@ -26,9 +26,45 @@ function RequireAuth() {
   return authenticated ? <Outlet /> : <Navigate to="/login" replace />
 }
 
+function SessionControls() {
+  const navigate = useNavigate()
+  const [visible, setVisible] = useState(() => Boolean(getAccessToken()))
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    const onExpired = () => setVisible(false)
+    window.addEventListener('solenos:auth-expired', onExpired)
+    return () => window.removeEventListener('solenos:auth-expired', onExpired)
+  }, [])
+
+  const logout = async () => {
+    setBusy(true)
+    try {
+      await postJSON('/auth/logout', {})
+    } catch (error) {
+      console.warn('Backend logout did not complete; clearing the local session anyway.', error)
+    } finally {
+      clearAccessToken()
+      clearCareContext()
+      setVisible(false)
+      setBusy(false)
+      navigate('/login', { replace: true })
+    }
+  }
+
+  if (!visible) return null
+  return (
+    <button type="button" onClick={logout} disabled={busy}
+      style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 1000, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }}>
+      {busy ? 'Signing out…' : 'Sign out'}
+    </button>
+  )
+}
+
 export default function App() {
   return (
     <div className="app-container">
+      <SessionControls />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<RequireAuth />}>
