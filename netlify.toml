@@ -10,12 +10,7 @@
   command = "npm run dev"
   port = 5173
 
-# Preserve client-side React Router navigation.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
+# API proxy must precede the SPA fallback so /api requests never resolve to index.html.
 # Keep the /api prefix and forward the exact suffix to the backend.
 # Example: /api/v1/situation -> backend /api/v1/situation.
 [[redirects]]
@@ -23,6 +18,12 @@
   to = "https://solenosbackend-production-8773.up.railway.app/api/:splat"
   status = 200
   force = true
+
+# Preserve client-side React Router navigation.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
 [[headers]]
   for = "/*"
