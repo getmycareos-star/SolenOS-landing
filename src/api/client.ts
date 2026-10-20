@@ -36,6 +36,14 @@ export function setPersonId(id: string): void {
   window.dispatchEvent(new Event('personIdChanged'))
 }
 
+export function getCaregiverId(): string | null {
+  return typeof localStorage === 'undefined' ? null : localStorage.getItem('solenos_caregiver_id')
+}
+
+export function setCaregiverId(id: string): void {
+  localStorage.setItem('solenos_caregiver_id', id)
+}
+
 export function subscribeToPersonId(callback: (id: string) => void): () => void {
   const handler = () => callback(getPersonId())
   window.addEventListener('personIdChanged', handler)
