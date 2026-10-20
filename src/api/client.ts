@@ -8,6 +8,24 @@ declare global {
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
+export const ACCESS_TOKEN_STORAGE_KEY = 'solenos_access_token'
+
+export function getAccessToken(): string | null {
+  return typeof localStorage === 'undefined' ? null : localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
+}
+
+export function setAccessToken(token: string): void {
+  localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)
+}
+
+export function clearAccessToken(): void {
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+}
+
+export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const token = getAccessToken()
+  return token ? { ...extra, Authorization: 'Bearer ' + token } : extra
+}
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
@@ -29,6 +47,7 @@ function interpolatePersonId(path: string): string {
 }
 
 async function handleResponse(res: Response) {
+  if (res.status === 204) return null
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
 
@@ -65,7 +84,7 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`, { headers: authHeaders() })
   return handleResponse(res)
 }
 
@@ -83,7 +102,7 @@ export async function getBlob(path: string): Promise<Blob> {
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
   const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -94,6 +113,15 @@ export async function patchJSON(path: string, body: unknown, personId?: boolean)
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  })
+  return handleResponse(res)
+}
+
+export async function postFormData(path: string, body: FormData) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body,
   })
   return handleResponse(res)
 }
