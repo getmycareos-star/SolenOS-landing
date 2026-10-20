@@ -23,7 +23,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Use npm 11 lockfile resolver
         run: npm install --global npm@11
       - name: Install checked-in lockfile dependencies without scripts
