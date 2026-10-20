@@ -8,8 +8,9 @@
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "next.config.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx"
+    "src/vite-env.d.ts",
+    "src/app/**/*.ts",
+    "src/app/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
