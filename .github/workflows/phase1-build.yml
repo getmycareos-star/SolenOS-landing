@@ -28,7 +28,7 @@ jobs:
       - name: Rebuild malformed lockfile from package.json
         run: |
           rm -f package-lock.json
-          npm install --package-lock-only --ignore-scripts
+          npm install --package-lock-only --ignore-scripts --legacy-peer-deps
       - name: Commit lockfile reconciliation on repair branch
         if: github.event_name == 'push'
         run: |
