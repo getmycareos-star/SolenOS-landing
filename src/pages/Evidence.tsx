@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getJSON, postJSON, getPersonId } from '../api/client';
+import { getJSON, postFormData, postJSON, getCaregiverId, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { formatDate, formatConfidence } from '../lib/utils';
 import { compressImage, dataURLtoFile } from '../lib/imageCompression';
@@ -60,11 +60,11 @@ export default function Evidence() {
   >({
     mutationFn: ({ source_type, source_text, caregiver_id, person_id }) => 
       postJSON('/evidence', {
-        ...form,
-        caregiver_id,
         person_id,
+        type: source_type,
         source_type,
         source_text,
+        uploaded_by_caregiver_id: caregiver_id,
       }),
     onMutate: async (variables) => {
       // Return snapshot for potential rollback
@@ -78,7 +78,7 @@ export default function Evidence() {
       // But we also optimistically added it, so we could add it to the list
       // For simplicity, we'll refetch the list
       try {
-        const freshData = await getJSON('/evidence');
+        const freshData = await getJSON(`/evidence/${getPersonId()}`);
         setItems(freshData);
       } catch (err) {
         console.error('Failed to refresh evidence list:', err);
@@ -121,7 +121,7 @@ export default function Evidence() {
   useEffect(() => {
     async function loadEvidence() {
       try {
-        const data = await getJSON('/evidence');
+        const data = await getJSON(`/evidence/${getPersonId()}`);
         setItems(data);
       } catch (err) {
         console.error(err);
@@ -240,21 +240,47 @@ export default function Evidence() {
       return;
     }
     
+    const caregiverId = getCaregiverId();
+    const personId = getPersonId();
+    if (!caregiverId || !personId || personId === 'demo-person-id') {
+      setSubmitError(new Error('Sign in and link a caregiver identity before creating evidence.'));
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError(null);
-    
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver'; // In a real app, we would get the caregiver ID from auth
-    
-    // For evidence creation, we handle image uploads optimistically
-    // If we have an image, we optimistically create the evidence
-    // The actual upload happens in the mutation function
-    await createEvidenceOptimistic({
-      source_type: form.source_type,
-      source_text: form.source_text,
-      caregiver_id: caregiverId,
-      person_id: getPersonId()
-    });
+    try {
+      if (imagePreview) {
+        setUploading(true);
+        const imageFile = dataURLtoFile(imagePreview, 'care-image.png');
+        const uploadForm = new FormData();
+        uploadForm.append('file', imageFile);
+        uploadForm.append('caregiver_id', caregiverId);
+        uploadForm.append('person_id', personId);
+        const uploaded = await postFormData('/upload', uploadForm) as { evidence_id?: string };
+        if (!uploaded.evidence_id) throw new Error('Upload response did not include an evidence ID.');
+        setImagePreview(null);
+        const freshEvidence = await getJSON(`/evidence/${personId}`);
+        setItems(freshEvidence);
+      }
+
+      if (form.source_text.trim()) {
+        await createEvidenceOptimistic({
+          source_type: form.source_type,
+          source_text: form.source_text.trim(),
+          caregiver_id: caregiverId,
+          person_id: personId,
+        });
+      } else {
+        setForm({ source_type: 'free_form_note', source_text: '' });
+        setSubmitError(null);
+      }
+    } catch (cause) {
+      setSubmitError(cause instanceof Error ? cause : new Error('Evidence could not be saved.'));
+    } finally {
+      setUploading(false);
+      setSubmitting(false);
+    }
   };
 
   const selectEvidence = (evidence: any) => {
