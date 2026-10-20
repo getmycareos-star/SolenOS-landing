@@ -239,14 +239,13 @@ export function AccessibleInput({
             step={step}
             min={min}
             max={max}
-            placeholder={placeholder}
             dir={dir}
             spellCheck={spellCheck}
             inputMode={inputMode}
-            'aria-describedby'={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
-            'aria-invalid'={hasError}
-            'aria-readonly'={readOnly}
-            'aria-required'={required}
+            aria-describedby={(ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '')}
+            aria-invalid={hasError}
+            aria-readonly={readOnly}
+            aria-required={required}
             className={getInputClasses() + ' w-full'}
           />
         )}
