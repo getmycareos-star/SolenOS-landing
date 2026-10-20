@@ -89,6 +89,10 @@ export function ShareCareSummaryPanel({
 
   const startShare = useCallback(async () => {
     setError(null);
+    if (isOffline) {
+      setState("offline");
+      return;
+    }
     setState("checking_readiness");
 
     try {
@@ -112,7 +116,7 @@ export function ShareCareSummaryPanel({
       setError(e instanceof Error ? e.message : "Could not load care information.");
       setState("failed");
     }
-  }, [fetchCareData]);
+  }, [fetchCareData, isOffline]);
 
   const handleAudienceSelect = useCallback(
     async (selected: ShareAudience) => {
