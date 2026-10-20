@@ -15,7 +15,6 @@ import {
 import type { SituationResponse } from "@/lib/situation-entry";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import {
-  CARE_RECIPIENT_ID_STORAGE,
   DEFAULT_DURABLE_CARE_KEY,
   DURABLE_CARE_KEY_STORAGE,
   ensureClientDurableCareKey,
