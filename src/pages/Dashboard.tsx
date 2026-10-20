@@ -119,10 +119,9 @@ export default function Dashboard() {
       enableFn: async () => {
         // Mark action as complete
         await postJSON(`/actions/actions/${actionId}/complete`, {
-          evidence: {
-            description: 'Completed via dashboard',
-            confirmed_by: getPersonId()
-          }
+          evidence_ids: [],
+          completion_confidence: 1,
+          notes: 'Marked complete in the dashboard by the authenticated caregiver.',
         });
         
         // Update local state optimistically (handled by hook)
