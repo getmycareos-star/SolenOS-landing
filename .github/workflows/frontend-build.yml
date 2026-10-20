@@ -35,7 +35,7 @@ jobs:
           if [ -n "$log_file" ]; then tail -n 180 "$log_file"; else echo "No npm debug log found"; fi
       - name: Install dependencies from regenerated lockfile
         run: npm ci --legacy-peer-deps
-      - name: Type-check frontend TypeScript
+      - name: Type-check the Vite SPA import graph
         run: npm run typecheck
       - name: Create Vite production bundle
         run: npm run build
