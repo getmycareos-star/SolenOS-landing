@@ -7,7 +7,11 @@ import { useOptimisticMutation } from '../lib/optimistic';
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 
-export default function StructuredDailyCapture() {
+export interface StructuredDailyCaptureProps {
+  compressImageFn?: typeof compressImage;
+}
+
+export default function StructuredDailyCapture({ compressImageFn = compressImage }: StructuredDailyCaptureProps = {}) {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
@@ -116,7 +120,7 @@ export default function StructuredDailyCapture() {
         setMedicationCompressing(true);
         
         // Compress the image
-        const compressedFile = await compressImage(file, {
+        const compressedFile = await compressImageFn(file, {
           maxSizeMB: 0.5, // 500KB target
           maxWidthOrHeight: 2000, // 2000px max dimension
           useWebWorker: true,
@@ -155,7 +159,7 @@ export default function StructuredDailyCapture() {
     
     try {
       // Compress the image
-      const compressedFile = await compressImage(file, {
+      const compressedFile = await compressImageFn(file, {
         maxSizeMB: 0.5, // 500KB target
         maxWidthOrHeight: 2000, // 2000px max dimension
         useWebWorker: true,
@@ -196,7 +200,7 @@ export default function StructuredDailyCapture() {
         
         // Compress the image before upload
         setMedicationCompressing(true);
-        const compressedFile = await compressImage(file, {
+        const compressedFile = await compressImageFn(file, {
           maxSizeMB: 0.5, // 500KB target
           maxWidthOrHeight: 2000, // 2000px max dimension
           useWebWorker: true,
