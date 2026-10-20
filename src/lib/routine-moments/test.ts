@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 // src/lib/routine-moments/test.ts
 import { establishBaseline, detectChanges } from './service';
 import { createRoutineMomentObservation } from './builder';
