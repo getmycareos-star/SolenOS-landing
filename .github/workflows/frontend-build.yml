@@ -22,7 +22,7 @@ jobs:
           node-version: "20"
           cache: npm
       - name: Regenerate lockfile from package.json
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Install dependencies from regenerated lockfile
         run: npm ci
       - name: Type-check and build Vite application
