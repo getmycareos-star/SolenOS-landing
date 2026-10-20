@@ -53,7 +53,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
       return { caregiverId, personId, rawInput };
     },
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (_data, variables, _context) => {
       // On success, fetch the community experience
       try {
         const experienceData = await postJSON('/community/experience', {
@@ -68,7 +68,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       }
       onCapture?.(variables.rawInput)
     },
-    onError: async (error, variables, context) => {
+    onError: async (error, _variables, _context) => {
       // On error, we could show a failed state, but for simplicity we'll just let the error propagate
       // The UI will still show the text was processed optimistically
       console.error('Failed to save situation:', error)
