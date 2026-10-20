@@ -72,6 +72,16 @@ export default function StructuredDailyCapture() {
   
   // Image upload state for medications
   const [medicationImagePreview, setMedicationImagePreview] = useState<string | null>(null);
+
+  // Keep object URLs alive while they are displayed or uploaded, then release them
+  // when replaced or when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (medicationImagePreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(medicationImagePreview);
+      }
+    };
+  }, [medicationImagePreview]);
   const [medicationUploading, setMedicationUploading] = useState(false);
   const [medicationCompressing, setMedicationCompressing] = useState(false);
   
@@ -129,9 +139,6 @@ export default function StructuredDailyCapture() {
         // Convert compressed file back to data URL for preview
         const compressedUrl = URL.createObjectURL(compressedFile);
         setMedicationImagePreview(compressedUrl);
-        
-        // Clean up
-        URL.revokeObjectURL(compressedUrl);
       }
       
       // Stop the stream
@@ -169,9 +176,6 @@ export default function StructuredDailyCapture() {
       // Convert compressed file to data URL for preview
       const compressedUrl = URL.createObjectURL(compressedFile);
       setMedicationImagePreview(compressedUrl);
-      
-      // Clean up
-      URL.revokeObjectURL(compressedUrl);
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
