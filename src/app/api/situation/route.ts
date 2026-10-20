@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { ProcessSituationInput, SituationResponse } from "@/lib/situation-entry";
+import type { ProcessSituationInput } from "@/lib/situation-entry";
 import {
   processSituationInput,
   processSessionReentry,
