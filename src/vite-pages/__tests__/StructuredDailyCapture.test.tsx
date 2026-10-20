@@ -1,17 +1,14 @@
+import { jest } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import StructuredDailyCapture from '../StructuredDailyCapture';
-import { compressImage } from '../../lib/imageCompression';
 
-// Mock the compression library
-jest.mock('../../lib/imageCompression', () => ({
-  ...jest.requireActual('../../lib/imageCompression'),
-  compressImage: jest.fn().mockImplementation(async (file) => {
-    // Return a smaller file for testing
-    return new File([file.slice(0, Math.floor(file.size / 2))], file.name, { 
-      type: file.type 
-    });
-  })
+jest.unstable_mockModule('../../lib/imageCompression', () => ({
+  compressImage: jest.fn(async (file: File) =>
+    new File([file.slice(0, Math.floor(file.size / 2))], file.name, { type: file.type }),
+  ),
 }));
+
+const { default: StructuredDailyCapture } = await import('../StructuredDailyCapture');
+const { compressImage } = await import('../../lib/imageCompression');
 
 describe('StructuredDailyCapture Component Image Compression Integration', () => {
   beforeEach(() => {
