@@ -1280,6 +1280,8 @@ export default function StructuredDailyCapture() {
                 />
               </div>
               
+            </div>
+              
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
                   type="button"
