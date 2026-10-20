@@ -10,7 +10,7 @@
     "dev:vite": "vite",
     "build:vite": "tsc --noEmit -p tsconfig.vite.json && vite build",
     "preview": "vite preview",
-    "test": "jest",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "android": "capacitor copy android && capacitor open android",
     "ios": "capacitor copy ios && capacitor open ios"
   },
