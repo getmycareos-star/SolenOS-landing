@@ -67,8 +67,15 @@ async function handleResponse(res: Response) {
   }
 }
 
+function resolveApiUrl(path: string, interpolate = false): string {
+  const resolvedPath = interpolate ? interpolatePersonId(path) : path
+  // Explicit /api/... paths target unversioned backend routes such as /api/situation.
+  // Other paths use the versioned API prefix (/api/v1).
+  return resolvedPath.startsWith('/api/') ? resolvedPath : `${API_BASE}${resolvedPath}`
+}
+
 export async function getJSON(path: string) {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  const res = await fetch(resolveApiUrl(path, true))
   return handleResponse(res)
 }
 
@@ -76,7 +83,7 @@ export async function getJSON(path: string) {
 // base is resolved in one place rather than reconstructed by a caller that would
 // otherwise hardcode a second copy of the localhost default.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  const res = await fetch(resolveApiUrl(path, true))
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -84,7 +91,7 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
+  const res = await fetch(resolveApiUrl(path, personId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
