@@ -82,28 +82,10 @@ export default function StructuredDailyCapture() {
   // Person ID
   const personId = getPersonId();
   
-  // Load caregivers (simplified for now)
-  const [caregivers, setCaregivers] = useState<Array<{id: string; name: string}>>([]);
-  const [caregiverId, setCaregiverId] = useState<string>('');
-  const [loadingCaregivers, setLoadingCaregivers] = useState<boolean>(true);
-  
-  useEffect(() => {
-    async function loadCaregivers() {
-      try {
-        // In a real app, we would fetch caregivers for the person
-        // For now, we'll use a default
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } catch (e) {
-        console.error(e);
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } finally {
-        setLoadingCaregivers(false);
-      }
-    }
-    loadCaregivers();
-  }, [personId]);
+  // A caregiver identity must come from a verified authentication/care-circle flow.
+  // Do not fabricate a caregiver record or attribute care observations to a demo identity.
+  const [caregiverId] = useState<string>('');
+  const [loadingCaregivers] = useState<boolean>(false);
   
   // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
@@ -492,13 +474,18 @@ export default function StructuredDailyCapture() {
     maxRetries: 3
   });
 
-  // Handle form submission to backend
+  // Handle form submission to backend. Fail closed until a real authenticated
+  // caregiver identity is supplied; never write care records under a demo identity.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    if (!caregiverId.trim()) {
+      const error = new Error('Daily capture is unavailable until your authenticated caregiver identity is connected.');
+      setSaveError(error);
+      setSaved(false);
+      alert(error.message);
+      return;
+    }
+
     await submitDailyLog({
       personId,
       caregiverId,
