@@ -16,10 +16,12 @@ export function getAccessToken(): string | null {
 
 export function setAccessToken(token: string): void {
   localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenos:auth-changed'))
 }
 
 export function clearAccessToken(): void {
   if (typeof localStorage !== 'undefined') localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenos:auth-changed'))
 }
 
 export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
