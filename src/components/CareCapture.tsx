@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { postJSON, getCaregiverId, getPersonId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface SimilarExperience {
@@ -54,10 +54,17 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     },
     onSuccess: async (data, variables, context) => {
       // On success, fetch the community experience
-      const experienceData = await postJSON('/community/experience', {
-        observation: variables.rawInput,
-      }) as ExperienceResult
-      setExperiences(experienceData)
+      try {
+        const experienceData = await postJSON('/community/experience', {
+          observation: variables.rawInput,
+        }) as ExperienceResult
+        setExperiences(experienceData)
+      } catch (error) {
+        // Community matching is optional; a failed community request must not
+        // turn a successfully saved care situation into a failed capture.
+        console.warn('Community matching is unavailable:', error)
+        setExperiences(null)
+      }
       onCapture?.(variables.rawInput)
     },
     onError: async (error, variables, context) => {
@@ -76,9 +83,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const handleSubmit = async () => {
     if (!text.trim()) return
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    const caregiverId = getCaregiverId()
+    if (!caregiverId || !personId || personId === 'demo-person-id') {
+      console.error('Care capture requires an authenticated care record and linked caregiver identity.')
+      return
+    }
+
     await submitSituation({
       caregiverId,
       personId,
