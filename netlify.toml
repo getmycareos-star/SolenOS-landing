@@ -1,6 +1,6 @@
 # SolenOS frontend is a Vite/React SPA. Keep this aligned with package.json.
 [build]
-  command = "npm ci && npm run build"
+  command = "npm run build"
   publish = "dist"
 
 [build.environment]
