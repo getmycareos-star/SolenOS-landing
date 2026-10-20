@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
-  ChevronRight,
   ClipboardCopy,
   Download,
   Loader2,
