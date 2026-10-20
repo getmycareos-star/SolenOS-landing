@@ -7,9 +7,7 @@ import {
 import { getActiveCareSituation } from "@/lib/active-care-situation";
 import { getCareRealityState } from "@/lib/care-reality-state";
 import { buildReturnContinuityProjection } from "@/lib/return-continuity";
-import { upsertTrackedSituationFromCareInput, trackedSituationToUiSituation } from "@/lib/resolution-engine/care-context-sync";
-import { toActiveSituation } from "@/lib/ui-runtime/situation-store";
-import { openSituationsFromSituationApi } from "@/lib/ui-runtime/open-situations";
+import { upsertTrackedSituationFromCareInput } from "@/lib/resolution-engine/care-context-sync";
 
 export const runtime = "nodejs";
 
