@@ -35,7 +35,9 @@ jobs:
           if [ -n "$log_file" ]; then tail -n 180 "$log_file"; else echo "No npm debug log found"; fi
       - name: Install dependencies from regenerated lockfile
         run: npm ci --legacy-peer-deps
-      - name: Type-check and build Vite application
+      - name: Type-check frontend TypeScript
+        run: npm run typecheck
+      - name: Build Vite application
         run: npm run build
       - name: Commit reconciled lockfile when changed
         run: |
