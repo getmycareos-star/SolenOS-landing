@@ -211,7 +211,6 @@ import {
   type HighSignalStressLayerPayload,
 } from "../caregiver-psychological-load";
 import {
-  formatLoadInterpretationObservation,
   processLoadInterpretation,
   shapeLoadFirstOutput,
   toLoadInterpretationLayerPayload,
