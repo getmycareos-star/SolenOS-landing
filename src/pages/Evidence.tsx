@@ -515,8 +515,8 @@ export default function Evidence() {
             {/* Evidence list */}
             <div className='evidence-list-items'>
               {loading && <p className='evidence-list-loading'>Loading evidence...</p>}
-              {!loading && items.length === 0 && (p>
-                No evidence found. Create your first evidence above.
+              {!loading && items.length === 0 && (
+                <p>No evidence found. Create your first evidence above.</p>
               )}
               {!loading && items.length > 0 && (
                 <div className='evidence-list-grid'>
