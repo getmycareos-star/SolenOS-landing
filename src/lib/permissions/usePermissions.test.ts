@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { renderHook, act } from '@testing-library/react';
 import { useLocationPermission } from './useLocationPermission';
 import { useCameraPermission } from './useCameraPermission';
