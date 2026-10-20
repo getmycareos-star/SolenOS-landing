@@ -349,8 +349,9 @@ export default function Evidence() {
             
             <div className='evidence-list-filter'>
               <div className='evidence-list-filter-group'>
-                <label className='evidence-list-filter-label'>Evidence Type</label>
+                <label htmlFor="evidence-filter-type" className='evidence-list-filter-label'>Evidence Type</label>
                 <select
+                  id="evidence-filter-type"
                   value={filter.type}
                   onChange={(e) => setFilter({ ...filter, type: e.target.value })}
                   className='evidence-list-filter-select'
@@ -362,8 +363,9 @@ export default function Evidence() {
                 </select>
               </div>
               <div className='evidence-list-filter-group'>
-                <label className='evidence-list-filter-label'>Status</label>
+                <label htmlFor="evidence-filter-status" className='evidence-list-filter-label'>Status</label>
                 <select
+                  id="evidence-filter-status"
                   value={filter.status}
                   onChange={(e) => setFilter({ ...filter, status: e.target.value })}
                   className='evidence-list-filter-select'
@@ -375,8 +377,9 @@ export default function Evidence() {
                 </select>
               </div>
               <div className='evidence-list-filter-group'>
-                <label className='evidence-list-filter-label'>Search</label>
+                <label htmlFor="evidence-filter-search" className='evidence-list-filter-label'>Search</label>
                 <input
+                  id="evidence-filter-search"
                   type="text"
                   placeholder="Search evidence..."
                   value={filter.search}
@@ -409,8 +412,9 @@ export default function Evidence() {
               <h3>Create New Evidence</h3>
               <form onSubmit={handleSubmit} className='evidence-list-form-inner'>
                 <div className='evidence-list-form-group'>
-                  <label className='evidence-list-form-label'>Evidence Type</label>
+                  <label htmlFor="evidence-source-type" className='evidence-list-form-label'>Evidence Type</label>
                   <select
+                    id="evidence-source-type"
                     value={form.source_type}
                     onChange={(e) => setForm({ ...form, source_type: e.target.value })}
                     className='evidence-list-form-select'
@@ -425,8 +429,9 @@ export default function Evidence() {
                   </select>
                 </div>
                 <div className='evidence-list-form-group'>
-                  <label className='evidence-list-form-label'>Source Text</label>
+                  <label htmlFor="evidence-source-text" className='evidence-list-form-label'>Source Text</label>
                   <textarea
+                    id="evidence-source-text"
                     value={form.source_text}
                     onChange={(e) => setForm({ ...form, source_text: e.target.value })}
                     rows={4}
@@ -435,7 +440,7 @@ export default function Evidence() {
                 </div>
                 {/* Image upload controls */}
                 <div className='evidence-list-form-group'>
-                  <label className='evidence-list-form-label'>Image Attachment</label>
+                  <p className='evidence-list-form-label'>Image Attachment</p>
                   <div className='evidence-list-form-image-controls'>
                     {imagePreview ? (
                       <div>
@@ -463,13 +468,14 @@ export default function Evidence() {
                           {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
                         </button>
                         <input
+                          id="evidence-image-file"
                           type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
                           className='evidence-list-file-input'
                           disabled={submitting}
                         />
-                        <label className='evidence-list-file-label'>
+                        <label htmlFor="evidence-image-file" className='evidence-list-file-label'>
                           or upload from device
                         </label>
                       </div>
