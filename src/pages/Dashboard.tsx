@@ -446,8 +446,8 @@ export default function Dashboard() {
               View all insights â†’
             </Link>
           </section>
-          </>
-        )}
+        </>
+      )}
 
         <div style={{ 
           display: 'flex', gap: '24px', padding: '16px 0', 
