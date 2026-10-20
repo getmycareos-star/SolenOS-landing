@@ -42,8 +42,10 @@ jobs:
           npm install-scripts approve unrs-resolver
       - name: Run approved dependency install scripts
         run: npm rebuild --legacy-peer-deps
-      - name: Type-check and build production assets
+      - name: Build Next.js production application
         run: npm run build
+      - name: Type-check and build Vite client
+        run: npm run build:vite
       - name: Commit regenerated lockfile on repair branch
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/repair/')
         env:
