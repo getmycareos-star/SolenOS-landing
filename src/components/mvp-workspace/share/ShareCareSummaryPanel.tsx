@@ -15,7 +15,6 @@ import {
   type ShareAudience,
   AUDIENCE_OPTIONS,
   assessReadiness,
-  type ReadinessResult,
   generateSummary,
   type GeneratedSummary,
   recordShareHistory,
@@ -67,7 +66,6 @@ export function ShareCareSummaryPanel({
   onShared,
 }: ShareCareSummaryPanelProps) {
   const [state, setState] = useState<ShareRequestState>("idle");
-  const [readiness, setReadiness] = useState<ReadinessResult | null>(null);
   const [audience, setAudience] = useState<ShareAudience | null>(null);
   const [otherRecipient, setOtherRecipient] = useState("");
   const [summary, setSummary] = useState<GeneratedSummary | null>(null);
@@ -100,7 +98,6 @@ export function ShareCareSummaryPanel({
       const readinessResult = assessReadiness(
         data as SituationResponse | null,
       );
-      setReadiness(readinessResult);
 
       if (readinessResult.state === "empty") {
         setState("empty");
