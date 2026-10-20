@@ -180,7 +180,7 @@ export function ShareCareSummaryPanel({
 
     try {
       if (format === "copy") {
-        const text = buildPlainTextSummary(summary, selectedContent);
+        const text = buildPlainTextSummary(summary);
         await navigator.clipboard.writeText(text);
         setSharingResult("Summary copied to clipboard.");
         recordShareHistory(summary.preparedFor, "text", "shared");
@@ -212,7 +212,7 @@ export function ShareCareSummaryPanel({
 
       if (format === "native") {
         if (typeof navigator !== "undefined" && typeof (navigator as any).share === "function") {
-          const text = buildPlainTextSummary(summary, selectedContent);
+          const text = buildPlainTextSummary(summary);
           await (navigator as any).share({
             title: "Care summary",
             text,
@@ -250,7 +250,7 @@ export function ShareCareSummaryPanel({
   const handleCopyText = useCallback(async () => {
     if (!summary || !selectedContent) return;
     try {
-      const text = buildPlainTextSummary(summary, selectedContent);
+      const text = buildPlainTextSummary(summary);
       await navigator.clipboard.writeText(text);
       setSharingResult("Summary copied to clipboard.");
       recordShareHistory(summary.preparedFor, "text", "shared");
@@ -265,7 +265,7 @@ export function ShareCareSummaryPanel({
 
   const handleSaveDownload = useCallback(() => {
     if (!summary || !selectedContent) return;
-    const text = buildPlainTextSummary(summary, selectedContent);
+    const text = buildPlainTextSummary(summary);
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -656,10 +656,7 @@ export function ShareCareSummaryPanel({
 /*  Helpers — plain text and print HTML                                */
 /* ------------------------------------------------------------------ */
 
-function buildPlainTextSummary(
-  summary: GeneratedSummary,
-  content: SelectedContent,
-): string {
+function buildPlainTextSummary(summary: GeneratedSummary): string {
   const lines: string[] = [];
   lines.push("CARE SUMMARY");
   lines.push(`Prepared for: ${summary.preparedFor}`);
