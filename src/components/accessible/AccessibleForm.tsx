@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useScreenReaderAnnouncer } from '../lib/accessibility';
+import { useScreenReaderAnnouncer } from '../../lib/accessibility';
 import { AccessibleInput } from './AccessibleInput';
 import { AccessibleButton } from './AccessibleButton';
 
