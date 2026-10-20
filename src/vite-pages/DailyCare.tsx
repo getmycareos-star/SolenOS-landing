@@ -33,6 +33,8 @@ export default function DailyCare() {
 
   const personId = getPersonId()
   const [caregiverId, setCaregiverId] = useState('')
+  const [manualLatitude, setManualLatitude] = useState('')
+  const [manualLongitude, setManualLongitude] = useState('')
   const [caregivers, setCaregivers] = useState<Caregiver[]>([])
   const [loadingCaregivers, setLoadingCaregivers] = useState(true)
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set())
@@ -211,13 +213,14 @@ export default function DailyCare() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Caregiver selector */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="recorded-by" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Recorded by
           </label>
           {loadingCaregivers ? (
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Loading caregivers...</p>
           ) : (
             <select
+              id="recorded-by"
               value={caregiverId}
               onChange={e => setCaregiverId(e.target.value)}
               required
@@ -236,10 +239,11 @@ export default function DailyCare() {
 
         {/* Mood */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="daily-mood" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Mood
           </label>
           <select
+            id="daily-mood"
             value={form.mood}
             onChange={e => updateField('mood', e.target.value)}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
@@ -247,17 +251,18 @@ export default function DailyCare() {
             <option value="">Select mood</option>
             {MOOD_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
-          <label style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', display: 'block' }}>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', display: 'block' }}>
             Mood is stored as a caregiver-reported label; no numeric score is inferred.
-          </label>
+          </p>
         </section>
 
         {/* Agitation */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="daily-agitation-level" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Agitation level
           </label>
           <select
+            id="daily-agitation-level"
             value={form.agitation_level}
             onChange={e => { updateField('agitation_level', e.target.value); updateField('agitation_scale', AGITATION_OPTIONS.indexOf(e.target.value) + 1) }}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
@@ -268,9 +273,9 @@ export default function DailyCare() {
 
         {/* Vitals */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <h2 style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
             Vitals (manual entry)
-          </label>
+          </h2>
           {Object.keys(form.vitals).length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
               {Object.entries(form.vitals).map(([k, v]) => (
@@ -291,10 +296,11 @@ export default function DailyCare() {
 
         {/* Behavior */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="behavior-notes" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Behavior notes
           </label>
           <textarea
+            id="behavior-notes"
             value={form.behavior_notes}
             onChange={e => updateField('behavior_notes', e.target.value)}
             placeholder="Any notable behavior or interaction today..."
@@ -305,10 +311,11 @@ export default function DailyCare() {
 
         {/* Sleep */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="sleep-notes" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Sleep notes
           </label>
           <textarea
+            id="sleep-notes"
             value={form.sleep_notes}
             onChange={e => updateField('sleep_notes', e.target.value)}
             placeholder="Night rest, naps, sleep quality..."
@@ -319,10 +326,11 @@ export default function DailyCare() {
 
         {/* Eating */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="eating-notes" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Eating / appetite
           </label>
           <textarea
+            id="eating-notes"
             value={form.eating_notes}
             onChange={e => updateField('eating_notes', e.target.value)}
             placeholder="Meals, appetite, fluid intake..."
@@ -333,10 +341,11 @@ export default function DailyCare() {
 
         {/* General */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="general-notes" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             General notes
           </label>
           <textarea
+            id="general-notes"
             value={form.general_notes}
             onChange={e => updateField('general_notes', e.target.value)}
             placeholder="Anything else worth noting..."
@@ -346,9 +355,9 @@ export default function DailyCare() {
          </section>
          {/* Location */}
          <section>
-           <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+           <h2 style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
              Location
-           </label>
+           </h2>
            {locationState.status === 'granted' ? (
              <div>
                <p style={{ fontSize: '14px', marginBottom: '4px' }}>
@@ -382,22 +391,25 @@ export default function DailyCare() {
                </p>
                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                  <input
-                   type="number"
-                   placeholder="Latitude"
-                   value={form.location ? form.location.latitude : ''}
-                   onChange={e => {
-                     const val = parseFloat(e.target.value);
-                     if (!isNaN(val)) {
-                       setForm(prev => ({
-                         ...prev,
-                         location: {
-                           ...(prev.location || { latitude: 0, longitude: 0, accuracy: 0, timestamp: Date.now() }),
-                           latitude: val,
-                         }
-                       }));
-                     }
-                   }}
-                   style={{
+                  id="manual-latitude"
+                  aria-label="Latitude"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Latitude"
+                  value={manualLatitude}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    setManualLatitude(raw);
+                    const latitude = Number(raw);
+                    const longitude = Number(manualLongitude);
+                    if (raw.trim() !== '' && manualLongitude.trim() !== '' && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+                      setForm(prev => ({ ...prev, location: { latitude, longitude, accuracy: prev.location?.accuracy ?? 0, timestamp: prev.location?.timestamp ?? Date.now() } }));
+                      setTouchedFields(prev => new Set(prev).add('location'));
+                    } else {
+                      setForm(prev => ({ ...prev, location: null }));
+                    }
+                  }}
+                  style={{
                      width: '120px',
                      padding: '8px 12px',
                      borderRadius: '6px',
@@ -407,22 +419,25 @@ export default function DailyCare() {
                    }}
                  />
                  <input
-                   type="number"
-                   placeholder="Longitude"
-                   value={form.location ? form.location.longitude : ''}
-                   onChange={e => {
-                     const val = parseFloat(e.target.value);
-                     if (!isNaN(val)) {
-                       setForm(prev => ({
-                         ...prev,
-                         location: {
-                           ...(prev.location || { latitude: 0, longitude: 0, accuracy: 0, timestamp: Date.now() }),
-                           longitude: val,
-                         }
-                       }));
-                     }
-                   }}
-                   style={{
+                  id="manual-longitude"
+                  aria-label="Longitude"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Longitude"
+                  value={manualLongitude}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    setManualLongitude(raw);
+                    const latitude = Number(manualLatitude);
+                    const longitude = Number(raw);
+                    if (manualLatitude.trim() !== '' && raw.trim() !== '' && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+                      setForm(prev => ({ ...prev, location: { latitude, longitude, accuracy: prev.location?.accuracy ?? 0, timestamp: prev.location?.timestamp ?? Date.now() } }));
+                      setTouchedFields(prev => new Set(prev).add('location'));
+                    } else {
+                      setForm(prev => ({ ...prev, location: null }));
+                    }
+                  }}
+                  style={{
                      width: '120px',
                      padding: '8px 12px',
                      borderRadius: '6px',
