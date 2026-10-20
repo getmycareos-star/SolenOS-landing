@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, postFormData, getPersonId } from '../api/client';
+import { postJSON, postFormData, getCaregiverId, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { useLocationPermission } from '../lib/permissions/useLocationPermission';
 import { compressImage } from '../lib/imageCompression';
@@ -88,21 +88,15 @@ export default function StructuredDailyCapture() {
   const [loadingCaregivers, setLoadingCaregivers] = useState<boolean>(true);
   
   useEffect(() => {
-    async function loadCaregivers() {
-      try {
-        // In a real app, we would fetch caregivers for the person
-        // For now, we'll use a default
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } catch (e) {
-        console.error(e);
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } finally {
-        setLoadingCaregivers(false);
-      }
+    const linkedCaregiverId = getCaregiverId();
+    if (linkedCaregiverId) {
+      setCaregivers([{ id: linkedCaregiverId, name: 'Your linked caregiver profile' }]);
+      setCaregiverId(linkedCaregiverId);
+    } else {
+      setCaregivers([]);
+      setCaregiverId('');
     }
-    loadCaregivers();
+    setLoadingCaregivers(false);
   }, [personId]);
   
   // Handle image capture for medication
@@ -490,12 +484,16 @@ export default function StructuredDailyCapture() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    const authenticatedCaregiverId = getCaregiverId();
+    if (!authenticatedCaregiverId || !personId || personId === 'demo-person-id') {
+      setSaveError(new Error('Sign in and link a caregiver identity before saving daily care.'));
+      setSaved(false);
+      return;
+    }
+
     await submitDailyLog({
       personId,
-      caregiverId,
+      caregiverId: authenticatedCaregiverId,
       medications: form.medications,
       vitals: form.vitals,
       scales: form.scales,
