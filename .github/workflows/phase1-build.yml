@@ -29,7 +29,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - name: Rebuild malformed lockfile from package.json
         run: |
@@ -43,6 +43,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add package-lock.json
             git commit -m "build: synchronize npm lockfile"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
             git push
           fi
       - name: Install clean dependency tree
