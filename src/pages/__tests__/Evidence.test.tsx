@@ -17,6 +17,8 @@ describe('Evidence Component Image Compression Integration', () => {
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
+    localStorage.setItem('solenos_person_id', 'test-person-id');
+    localStorage.setItem('solenos_caregiver_id', 'test-caregiver-id');
   });
 
   it('should compress image before upload when using gallery upload', async () => {
