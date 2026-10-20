@@ -92,7 +92,7 @@ export async function getJSON(path: string) {
 // base is resolved in one place rather than reconstructed by a caller that would
 // otherwise hardcode a second copy of the localhost default.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`, { headers: authHeaders() })
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -111,7 +111,7 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
   const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
