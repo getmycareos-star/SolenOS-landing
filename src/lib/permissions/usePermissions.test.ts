@@ -49,9 +49,9 @@ describe('useLocationPermission', () => {
       coords: {
         latitude: 40.7128,
         longitude: -74.0060,
-        accuracy: 10,
-        timestamp: Date.now()
-      }
+        accuracy: 10
+      },
+      timestamp: 1700000000000
     };
 
     mockGeolocation.getCurrentPosition.mockImplementation((success) => {
@@ -72,6 +72,7 @@ describe('useLocationPermission', () => {
         expect(result.current.state.latitude).toBe(40.7128);
         expect(result.current.state.longitude).toBe(-74.0060);
         expect(result.current.state.accuracy).toBe(10);
+        expect(result.current.state.timestamp).toBe(1700000000000);
         resolve();
       }, 100);
     });
