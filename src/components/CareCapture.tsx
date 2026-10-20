@@ -83,7 +83,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && (
+        {submitting && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -91,7 +91,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {submitError && !experiences && (
+        {submitError && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -106,7 +106,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         marginBottom: '12px', lineHeight: 1.5
       }}>
         Capture one thing that changed — a behavior, a symptom, a moment.
-        SolenOS will remember it for your next appointment and find similar experiences from other caregivers.
+        SolenOS will keep this observation available for future care review.
       </p>
 
       <textarea
@@ -157,7 +157,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         </button>
       </div>
 
-}
     </div>
   )
 }
