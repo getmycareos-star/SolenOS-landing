@@ -26,12 +26,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Use current npm lockfile resolver
+        run: npm install --global npm@11
       - name: Regenerate corrupted or incomplete npm lockfile
         run: |
           rm -f package-lock.json
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
       - name: Install exact generated dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
       - name: Type-check and build production assets
         run: npm run build
       - name: Commit regenerated lockfile on repair branch
