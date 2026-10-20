@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { insertSolenEvent } from "@/lib/ops-console/insert-event";
 import { isOpsEventName } from "@/lib/ops-console/event-names";
+import { withAuthentication } from '@/lib/auth/middleware';
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
  * Product analytics only: event name, session, user id, metadata. Never care content.
  * Unknown event names are rejected so a typo cannot pollute the funnel.
  */
-export async function POST(request: NextRequest) {
+async function postTrackHandler(request: NextRequest, user: any) {
   try {
     const body = (await request.json()) ?? {};
     const eventName = typeof body.event_name === "string" ? body.event_name : "";
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
         : {};
 
     await insertSolenEvent({
-      user_id: typeof body.user_id === "string" ? body.user_id : null,
+      user_id: user.id,  // Use authenticated user's ID for security
       event_name: eventName,
       session_id: sessionId,
       metadata,
@@ -39,3 +40,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid request" }, { status: 400 });
   }
 }
+
+
+
+export const POST = withAuthentication(postTrackHandler);
+
+
+

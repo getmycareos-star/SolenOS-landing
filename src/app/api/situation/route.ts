@@ -232,7 +232,11 @@ export async function POST(request: Request, user: any) {
   }
 }
 
+export const GET = withAuthentication(GET);
+
+
 async function backgroundProcessSituation(
+
   processingId: string,
   input: ProcessSituationInput,
   rawInput: string,
@@ -279,6 +283,10 @@ async function backgroundProcessSituation(
     });
   }
 }
+
+export const GET = withAuthentication(GET);
+export const POST = withAuthentication(POST);
+
 
 
 

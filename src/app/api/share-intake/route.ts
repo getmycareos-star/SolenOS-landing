@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { claimSharedIntake } from "@/lib/input-entry-contract/share-intake";
+import { withAuthentication } from '@/lib/auth/middleware';
 
 export const runtime = "nodejs";
 
 /** Claim shared evidence into the composer — same extract → situation path afterward. */
-export async function GET(request: Request) {
+async function getShareIntakeHandler(request: Request, user: any) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id) {
     return NextResponse.json({ ok: false, error: "missing id" }, { status: 400 });
@@ -24,3 +25,7 @@ export async function GET(request: Request) {
     files: payload.files,
   });
 }
+
+
+export const GET = withAuthentication(getShareIntakeHandler);
+
