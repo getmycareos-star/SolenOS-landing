@@ -54,7 +54,6 @@ function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string
   });
 }
 
-const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 const CARE_SESSION_STORAGE_KEY = "solenos_care_session_id";
 const LAST_INPUT_STORAGE_KEY = "solenos_last_input_raw";
 
