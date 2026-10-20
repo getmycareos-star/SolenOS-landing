@@ -19,7 +19,7 @@ interface AccessibleInputProps {
   /** Input name attribute */
   name?: string;
   /** ARIA describedby for error messages or additional help */
-  'aria-describedby'?: string;
+  aria-describedby?: string;
   /** Error message for validation */
   error?: string | null;
   /** Success message for validation */
@@ -81,7 +81,7 @@ export function AccessibleInput({
   required = false,
   disabled = false,
   name,
-  'aria-describedby': ariaDescribedby,
+  aria-describedby: ariaDescribedby,
   error,
   success,
   showClearButton = false,
@@ -213,14 +213,13 @@ export function AccessibleInput({
             max={max as any}
             rows={rows}
             cols={cols}
-            placeholder={placeholder}
             dir={dir}
             spellCheck={spellCheck}
             inputMode={inputMode}
-            'aria-describedby'={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
-            'aria-invalid'={hasError}
-            'aria-readonly'={readOnly}
-            'aria-required'={required}
+            aria-describedby={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
+            aria-invalid={hasError}
+            aria-readonly={readOnly}
+            aria-required={required}
             className={getInputClasses() + (rows ? ' resize-y w-full' : ' w-full')}
           />
         ) : (
@@ -244,12 +243,12 @@ export function AccessibleInput({
             dir={dir}
             spellCheck={spellCheck}
             inputMode={inputMode}
-            'aria-describedby'={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
-            'aria-invalid'={hasError}
-            'aria-readonly'={readOnly}
-            'aria-required'={required}
-            className={getInputClasses()}
+            aria-describedby={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
+            aria-invalid={hasError}
+            aria-readonly={readOnly}
+            aria-required={required}
             className={getInputClasses() + ' w-full'}
+          />
         )}
         
         {/* Clear button */}
