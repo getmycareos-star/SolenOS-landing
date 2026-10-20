@@ -1,13 +1,14 @@
 declare global {
   interface ImportMetaEnv {
     VITE_API_BASE?: string
+    PROD?: boolean
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
+const CONFIGURED_API_BASE = import.meta.env.VITE_API_BASE?.trim()
 const ACCESS_TOKEN_KEY = 'solenos_access_token'
 
 export function getAccessToken(): string | null {
@@ -50,6 +51,13 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
 
 function interpolatePersonId(path: string): string {
   return path.replace(/demo-person-id/g, getPersonId())
+}
+
+function getApiBase(): string {
+  if (import.meta.env.PROD && (!CONFIGURED_API_BASE || CONFIGURED_API_BASE.includes('your-solenos-backend-domain.com'))) {
+    throw new Error('SolenOS backend URL is not configured. Set VITE_API_BASE to the deployed backend API URL in Netlify.')
+  }
+  return CONFIGURED_API_BASE || 'http://localhost:8000/api/v1'
 }
 
 function requestHeaders(json = false): Record<string, string> {
@@ -103,7 +111,7 @@ async function handleResponse(res: Response, path = '') {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`, { headers: requestHeaders() })
+  const res = await fetch(`${getApiBase()}${interpolatePersonId(path)}`, { headers: requestHeaders() })
   return handleResponse(res, path)
 }
 
@@ -123,7 +131,7 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
+  const res = await fetch(`${getApiBase()}${personId ? interpolatePersonId(path) : path}`, {
     method: 'POST',
     headers: requestHeaders(true),
     body: JSON.stringify(body),
