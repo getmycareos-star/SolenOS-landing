@@ -1,0 +1,30 @@
+name: Phase 1 frontend build
+
+on:
+  push:
+    branches:
+      - repair/phase1-build-deployment
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Reconcile lockfile against package.json
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Install from reconciled lockfile
+        run: npm ci
+      - name: Type-check and build Vite production assets
+        run: npm run build
