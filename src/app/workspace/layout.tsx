@@ -25,7 +25,7 @@ function formatUpdatedDate(iso: string | null): string {
 }
 
 function CareContextBar() {
-  const { runtime, careKey } = useWorkspace();
+  const { runtime } = useWorkspace();
   const active = runtime.situations.find((s) => s.status === "active");
   const hasSituations = runtime.situations.length > 0;
   const [mounted, setMounted] = useState(false);
