@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ChevronLeft,
   ClipboardCopy,
@@ -75,7 +75,18 @@ export function ShareCareSummaryPanel({
   const [format, setFormat] = useState<ShareFormat | null>(null);
   const [sharingResult, setSharingResult] = useState<string | null>(null);
 
-  const isOffline = useMemo(() => typeof navigator !== "undefined" && !navigator.onLine, []);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const updateConnectivity = () => setIsOffline(typeof navigator !== "undefined" && !navigator.onLine);
+    updateConnectivity();
+    window.addEventListener("online", updateConnectivity);
+    window.addEventListener("offline", updateConnectivity);
+    return () => {
+      window.removeEventListener("online", updateConnectivity);
+      window.removeEventListener("offline", updateConnectivity);
+    };
+  }, []);
 
   const fetchCareData = useCallback(async (): Promise<any> => {
     const url = apiUrl(
@@ -586,8 +597,7 @@ export function ShareCareSummaryPanel({
       <div className="share-readiness-card share-readiness-card--limited">
         <h3 className="share-readiness-title">You're offline</h3>
         <p className="share-readiness-message">
-          Your care information is safely saved on this device. We can prepare this
-          shareable summary when your connection is restored.
+          Reconnect to load the current care information and prepare a shareable summary.
         </p>
         <div className="share-readiness-actions">
           <Button variant="secondary" onClick={onClose}>
