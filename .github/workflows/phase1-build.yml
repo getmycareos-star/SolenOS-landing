@@ -25,8 +25,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Regenerate lockfile from package.json
-        run: npm install --package-lock-only --ignore-scripts
+      - name: Rebuild malformed lockfile from package.json
+        run: |
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts
       - name: Commit lockfile reconciliation on repair branch
         if: github.event_name == 'push'
         run: |
