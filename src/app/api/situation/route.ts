@@ -3,7 +3,6 @@ import type { ProcessSituationInput } from "@/lib/situation-entry";
 import {
   processSituationInput,
   getCareContextRoot,
-  getOrCreateCareContextRoot,
 } from "@/lib/situation-entry";
 import { getActiveCareSituation } from "@/lib/active-care-situation";
 import { getCareRealityState } from "@/lib/care-reality-state";
