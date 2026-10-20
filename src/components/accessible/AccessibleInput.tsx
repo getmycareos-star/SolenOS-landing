@@ -198,7 +198,6 @@ export function AccessibleInput({
           <textarea
             ref={inputRef}
             id={name}
-            type={type}
             value={value}
             onChange={handleChange}
             placeholder={placeholder}
@@ -208,9 +207,6 @@ export function AccessibleInput({
             autoComplete={autoComplete}
             maxLength={maxLength}
             minLength={minLength}
-            step={step as any}
-            min={min as any}
-            max={max as any}
             rows={rows}
             cols={cols}
             dir={dir}
