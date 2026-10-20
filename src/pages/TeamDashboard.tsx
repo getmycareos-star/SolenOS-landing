@@ -34,37 +34,10 @@ interface MetricsData {
   [key: string]: any
 }
 
-const DEMO_RISK: CaregiverAtRisk[] = [
-  { caregiver_id: 'caregiver-1', label: 'M. Johnson', risk_level: 'high', distress_signals: 3, last_active: '2h ago' },
-  { caregiver_id: 'caregiver-2', label: 'R. Chen', risk_level: 'moderate', distress_signals: 2, last_active: '1d ago' },
-  { caregiver_id: 'caregiver-3', label: 'A. Rodriguez', risk_level: 'mild', distress_signals: 1, last_active: '3d ago' },
-]
-
-const DEMO_REVIEW: PostNeedsReview[] = [
-  {
-    id: 'post-5',
-    content: 'Has anyone tried giving their loved one CBD oil for anxiety? My doctor said it might help but I want to hear real experiences.',
-    author_label: 'Anonymous caregiver',
-    reason: 'medication-discussion',
-    tags: ['anxiety', 'medication'],
-  },
-]
-
-const DEMO_REPORT: StateReport = {
-  total_caregivers: 142,
-  avg_helpfulness: 4.2,
-  top_concerns: ['sleep', 'medication-management', 'hallucinations'],
-  trending_tags: [
-    { tag: 'mealtime-challenges', count: 42, growth: '+12%' },
-    { tag: 'wandering', count: 31, growth: '+8%' },
-    { tag: 'communication', count: 28, growth: '+5%' },
-  ],
-}
-
 export default function TeamDashboard() {
-  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>(DEMO_RISK)
-  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>(DEMO_REVIEW)
-  const [report, setReport] = useState<StateReport>(DEMO_REPORT)
+  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>([])
+  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>([])
+  const [report, setReport] = useState<StateReport>({ total_caregivers: 0, avg_helpfulness: 0, top_concerns: [], trending_tags: [] })
   const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'report' | 'monitoring'>('overview')
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null)
   const [metricsLoading, setMetricsLoading] = useState<boolean>(true)
@@ -95,10 +68,10 @@ export default function TeamDashboard() {
       const data = await getJSON('/team/state-report') as any
       if (data) {
         setReport({
-          total_caregivers: data.total_caregivers || DEMO_REPORT.total_caregivers,
-          avg_helpfulness: data.avg_helpfulness || DEMO_REPORT.avg_helpfulness,
-          top_concerns: data.top_concerns || DEMO_REPORT.top_concerns,
-          trending_tags: data.trending_tags || DEMO_REPORT.trending_tags,
+          total_caregivers: data.total_caregivers ?? 0,
+          avg_helpfulness: data.avg_helpfulness ?? 0,
+          top_concerns: data.top_concerns ?? [],
+          trending_tags: data.trending_tags ?? [],
         })
       }
     } catch (error) {
@@ -168,43 +141,6 @@ export default function TeamDashboard() {
     </button>
   )
 
-  // Helper function to parse Prometheus metrics text
-  const parsePrometheusMetrics = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('#'))
-    const metrics: { [key: string]: any } = {}
-    
-    lines.forEach(line => {
-      // Simple parser for counter, gauge, histogram
-      // Format: metric_name{label1="value1",label2="value2"} value
-      const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{.*\})?\s+([0-9.eE+-]+)$/)
-      if (match) {
-        const [, name, labelsStr, valueStr] = match
-        const value = parseFloat(valueStr)
-        
-        if (labelsStr) {
-          // Parse labels
-          const labels: { [key: string]: string } = {}
-          const labelMatches = labelsStr.matchAll(/([a-zA-Z_][a-zA-Z0-9_]*)="([^"]*)"/g)
-          for (const labelMatch of labelMatches) {
-            labels[labelMatch[1]] = labelMatch[2]
-          }
-          
-          // For simplicity, we'll store as a nested structure
-          // In a real app, we might want to organize by metric name and labels
-          if (!metrics[name]) {
-            metrics[name] = {}
-          }
-          // Create a key from labels
-          const labelKey = Object.entries(labels).sort().map(([k, v]) => `${k}=${v}`).join('|')
-          metrics[name][labelKey] = { value, labels }
-        } else {
-          metrics[name] = value
-        }
-      }
-    })
-    
-    return metrics
-  }
 
   return (
     <div style={{ padding: '24px 32px' }}>
