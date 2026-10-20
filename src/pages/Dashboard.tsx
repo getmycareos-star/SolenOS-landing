@@ -263,8 +263,8 @@ export default function Dashboard() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading && (
-        <>
+      {!loading ? (
+        <div>
           {dailyIntel && (
             <section style={{ marginBottom: '40px' }}>
               <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
@@ -446,8 +446,8 @@ export default function Dashboard() {
               View all insights â†’
             </Link>
           </section>
-        </>
-      )}
+        </div>
+      ) : null}
 
         <div style={{ 
           display: 'flex', gap: '24px', padding: '16px 0', 
