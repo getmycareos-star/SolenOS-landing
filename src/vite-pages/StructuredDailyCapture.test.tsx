@@ -1,16 +1,12 @@
-import { render, screen, act } from '@testing-library/react';
+import { jest } from '@jest/globals';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
-
-// Mock the postJSON function
-jest.mock('../api/client', () => ({
-  ...jest.requireActual('../api/client'),
-  postJSON: jest.fn().mockResolvedValue({})
-}));
 
 describe('StructuredDailyCapture', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }) as unknown as typeof fetch;
     localStorage.setItem("solenos_person_id", "test-person-id");
     localStorage.setItem("solenos_caregiver_id", "test-caregiver-id");
   });
@@ -90,17 +86,20 @@ describe('StructuredDailyCapture', () => {
     // Submit the form
     await userEvent.click(screen.getByRole('button', { name: /save daily capture/i }));
     
-    // Verify postJSON was called
-    expect(require('../api/client').postJSON).toHaveBeenCalledWith(
-      '/daily/log',
-      expect.objectContaining({
-        medications: expect.arrayContaining([
-          expect.objectContaining({
-            medication_name: 'Aspirin',
-            status: 'given'
-          })
-        ])
-      })
-    );
+    // Verify the real API client sends the expected request body.
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/daily/log'),
+        expect.objectContaining({ method: 'POST', body: expect.any(String) }),
+      );
+    });
+    const fetchMock = global.fetch as jest.Mock;
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('/daily/log'));
+    expect(call).toBeDefined();
+    expect(JSON.parse(call![1].body as string)).toEqual(expect.objectContaining({
+      medications: expect.arrayContaining([
+        expect.objectContaining({ medication_name: 'Aspirin', status: 'given' }),
+      ]),
+    }));
   });
 });
