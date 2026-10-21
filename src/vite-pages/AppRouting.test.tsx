@@ -22,7 +22,7 @@ describe('public entry and workspace routing', () => {
         name: /when you’re caring for someone, you shouldn’t have to remember everything/i,
       }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Enter SolenOS' })).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: 'Enter SolenOS' })[0]).toHaveAttribute(
       'href',
       '/workspace?enter=1',
     )
