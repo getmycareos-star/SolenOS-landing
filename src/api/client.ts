@@ -111,3 +111,53 @@ export async function patchJSON(path: string, body: unknown, personId?: boolean)
   })
   return handleResponse(res)
 }
+
+
+// Multipart upload helper. Do not set Content-Type manually: the browser must
+// add the multipart boundary for FormData requests.
+export async function postFormData(path: string, body: FormData) {
+  const res = await fetch(resolveApiUrl(path), {
+    method: 'POST',
+    body,
+  })
+  return handleResponse(res)
+}
+
+// Caregiver identity is only accepted when explicitly stored by the current
+// frontend session. Never fabricate a caregiver ID for a care record.
+export function getCaregiverId(): string | null {
+  return localStorage.getItem('solenos_caregiver_id')
+}
+
+// The backend currently has no implemented authentication/session endpoints.
+// Fail closed rather than treating a client-side role choice as authentication.
+export interface AuthSessionInfo {
+  authenticated: boolean
+  account_id: string | null
+  session_type: string
+  authorized_person_ids: string[]
+  caregiver_roles: Record<string, string>
+  professional_roles: Record<string, string>
+  anonymous_session_id: string | null
+  expires_at: string
+  mfa_verified: boolean
+}
+
+export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
+  return { authenticated: false, sessionInfo: null }
+}
+
+export function subscribeToAuthState(
+  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
+): () => void {
+  // No backend session event stream exists yet.
+  return () => undefined
+}
+
+export function startTokenRefresh(): void {
+  // No backend-issued token exists to refresh until authentication is implemented.
+}
+
+export function stopTokenRefresh(): void {
+  // No active token-refresh task exists.
+}
