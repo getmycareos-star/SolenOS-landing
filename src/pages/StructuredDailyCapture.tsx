@@ -797,8 +797,9 @@ export default function StructuredDailyCapture() {
           
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
+              <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
               <input
+                id="capture-medication-name"
                 type="text"
                 value={medicationForm.medication_name}
                 onChange={(e) => setMedicationForm(prev => ({ ...prev, medication_name: e.target.value }))}
@@ -990,9 +991,10 @@ export default function StructuredDailyCapture() {
                       {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
                     </button>
                     <input
+                      id="medication-file-input"
                       type="file"
                       accept="image/*"
-                      onChange={handleMedicationImageUpload}
+                      onChange={handleMedicationImageUpload
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
                     />
@@ -1065,8 +1067,9 @@ export default function StructuredDailyCapture() {
           
           <form onSubmit={handleVitalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
+              <label htmlFor="capture-vital-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
               <select
+                id="capture-vital-type"
                 value={vitalForm.vital_type}
                 onChange={(e) => setVitalForm(prev => ({ ...prev, vital_type: e.target.value }))}
                 style={{ 
@@ -1208,8 +1211,9 @@ export default function StructuredDailyCapture() {
             
             <form onSubmit={handleScaleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
+                <label htmlFor="capture-scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
                 <select
+                  id="capture-scale-type"
                   value={scaleForm.axis}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, axis: e.target.value }))}
                   style={{ 
