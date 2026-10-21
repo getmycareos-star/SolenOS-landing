@@ -307,9 +307,9 @@ export default function DailyCare() {
          </section>
          {/* Location */}
          <section>
-           <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+           <h2 style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
              Location
-           </label>
+           </h2>
            {locationState.status === 'granted' ? (
              <div>
                <p style={{ fontSize: '14px', marginBottom: '4px' }}>

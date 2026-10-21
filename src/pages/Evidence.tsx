@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { getJSON, postJSON, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { formatDate, formatConfidence } from '../lib/utils';
 import { compressImage, dataURLtoFile } from '../lib/imageCompression';
-import { SourceIndicator } from '../components/SourceIndicator';
-import { InformationStatus } from '../components/InformationStatus';
-import { AIAttribution } from '../components/AIAttribution';
-import { PrivacyIndicator } from '../components/PrivacyIndicator';
 import { useOptimisticMutation } from '../lib/optimistic';
 
 const typeIcon = {
@@ -35,7 +30,6 @@ export default function Evidence() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
-  const [navigate] = useNavigate();
 
   // Form state for creating new evidence
   const [form, setForm] = useState({
