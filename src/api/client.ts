@@ -11,37 +11,45 @@ declare global {
   }
 }
 
-// Most backend endpoints are mounted at /api/v1. Netlify proxies /api/* to
-// Railway, and Vite proxies /api/* to localhost:8000 during development.
 const API_BASE = ((import.meta.env || {}).VITE_API_BASE || '/api/v1').replace(/\/$/, '')
 const ACCESS_TOKEN_KEY = 'solenos_access_token'
 
-export type AuthAccount = { id: string; email: string; display_name?: string | null }
-export type CareContext = { person_id: string; name: string; role: string; permissions: string[] }
+export interface AuthAccount {
+  id: string
+  email: string
+  display_name?: string | null
+}
 
-function notifyAuthStateChanged(): void {
-  window.dispatchEvent(new Event('authStateChanged'))
+export interface CareContext {
+  person_id: string
+  name: string
+  role: string
+  permissions: string[]
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY)
 }
 
-function getAuthHeaders(): Record<string, string> {
+export function getAuthHeaders(): Record<string, string> {
   const token = getAccessToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
-  const token = getAccessToken()
-  if (!token) return fetch(url, init)
   const headers = new Headers(init?.headers)
-  headers.set('Authorization', `Bearer ${token}`)
+  const token = getAccessToken()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
   return fetch(url, { ...init, headers })
 }
 
+function notifyAuthStateChanged(): void {
+  window.dispatchEvent(new Event('authStateChanged'))
+}
+
 export function getPersonId(): string {
-  return localStorage.getItem('solenos_person_id') || ((import.meta.env || {}).VITE_DEMO_MODE === 'true' ? 'demo-person-id' : '')
+  return localStorage.getItem('solenos_person_id') ||
+    ((import.meta.env || {}).VITE_DEMO_MODE === 'true' ? 'demo-person-id' : '')
 }
 
 export function setPersonId(id: string): void {
@@ -59,8 +67,6 @@ function interpolatePersonId(path: string): string {
   return path.replace(/demo-person-id/g, getPersonId())
 }
 
-// Situation capture is intentionally mounted at /api/situation, outside the
-// versioned /api/v1 router. Keep that one endpoint on its actual backend path.
 function requestUrl(path: string, interpolate = true): string {
   const resolvedPath = interpolate ? interpolatePersonId(path) : path
   if (resolvedPath === '/situation' || resolvedPath.startsWith('/situation?')) {
@@ -81,11 +87,11 @@ async function handleResponse(res: Response) {
         const err = await res.json()
         message = err.detail || err.message || message
       } catch {
-        // keep generic message
+        // Retain the status-based message when an error body is malformed.
       }
     } else {
-      const text = await res.text()
-      message = text || message
+      const responseText = await res.text()
+      message = responseText || message
     }
     throw new Error(message)
   }
@@ -94,58 +100,47 @@ async function handleResponse(res: Response) {
     throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
   }
 
-  const text = await res.text()
-  if (!text) {
-    throw new Error('Empty response from server')
-  }
-
+  const responseText = await res.text()
+  if (!responseText) throw new Error('Empty response from server')
   try {
-    return JSON.parse(text)
+    return JSON.parse(responseText)
   } catch {
     throw new Error('Invalid JSON response from server')
   }
 }
 
 export async function getJSON(path: string) {
-  const res = await apiFetch(requestUrl(path))
-  return handleResponse(res)
+  return handleResponse(await apiFetch(requestUrl(path)))
 }
 
-// Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
   const res = await apiFetch(requestUrl(path))
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`)
-  }
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await apiFetch(requestUrl(path, personId === true), {
+export async function postJSON(path: string, body: unknown, interpolate = false) {
+  return handleResponse(await apiFetch(requestUrl(path, interpolate), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  })
-  return handleResponse(res)
+  }))
 }
 
-export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await apiFetch(requestUrl(path, personId === true), {
+export async function patchJSON(path: string, body: unknown, interpolate = false) {
+  return handleResponse(await apiFetch(requestUrl(path, interpolate), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  })
-  return handleResponse(res)
+  }))
 }
 
-
-// Session endpoints backed by the FastAPI authentication router.
 export async function signUp(email: string, password: string, displayName: string): Promise<AuthAccount> {
-  return postJSON('/auth/signup', {
+  return await postJSON('/auth/signup', {
     email: email.trim().toLowerCase(),
     password,
     display_name: displayName.trim() || undefined,
-  }) as Promise<AuthAccount>
+  }) as AuthAccount
 }
 
 export async function logIn(email: string, password: string): Promise<AuthAccount> {
@@ -157,45 +152,29 @@ export async function logIn(email: string, password: string): Promise<AuthAccoun
   if (!result.access_token || !result.account?.id) {
     throw new Error('The server returned an incomplete login response.')
   }
-  localStorage.setItem(ACCESS_TOKEN_KEY, result.access_token)
+  sessionStorage.setItem(ACCESS_TOKEN_KEY, result.access_token)
   notifyAuthStateChanged()
   return result.account
 }
 
 export async function getCareContexts(): Promise<CareContext[]> {
-  return getJSON('/auth/care-contexts') as Promise<CareContext[]>
+  return await getJSON('/auth/care-contexts') as CareContext[]
 }
 
 export async function createCareContext(name: string): Promise<CareContext> {
-  const context = await postJSON('/auth/care-contexts', { name: name.trim() }) as CareContext
-  const account = await getJSON('/auth/me') as AuthAccount
-  const caregiver = await postJSON('/caregivers', {
-    person_id: context.person_id,
-    name: account.display_name?.trim() || account.email.split('@')[0],
-    email: account.email,
-    relationship: 'caregiver',
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-  }) as { id: string }
-  const invitation = await postJSON('/auth/caregiver-invitations', {
-    person_id: context.person_id,
-    caregiver_id: caregiver.id,
-    permissions: ['read', 'write'],
-  }) as { invitation_token: string }
-  await postJSON('/auth/caregiver-invitations/accept', { token: invitation.invitation_token })
-  return context
+  // The backend atomically creates the care recipient, owner grant, caregiver
+  // identity, and verified account-to-caregiver link.
+  return await postJSON('/auth/care-contexts', { name: name.trim() }) as CareContext
 }
 
 export async function logOut(): Promise<void> {
   const token = getAccessToken()
   try {
     if (token) {
-      await fetch(requestUrl('/auth/logout'), {
-        method: 'POST',
-        headers: getAuthHeaders(),
-      })
+      await apiFetch(requestUrl('/auth/logout'), { method: 'POST' })
     }
   } finally {
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem('solenos_person_id')
     notifyAuthStateChanged()
   }
@@ -207,7 +186,7 @@ export async function checkAuthState(): Promise<{ authenticated: boolean; sessio
     const account = await getJSON('/auth/me') as AuthAccount
     return { authenticated: true, sessionInfo: account }
   } catch {
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY)
     return { authenticated: false, sessionInfo: null }
   }
 }
@@ -229,7 +208,7 @@ export function subscribeToAuthState(
 }
 
 export function startTokenRefresh(): void {
-  // Sessions are expiry-checked by the API; no refresh endpoint exists yet.
+  // The backend exposes expiring sessions but no refresh-token endpoint.
 }
 
 export function stopTokenRefresh(): void {
