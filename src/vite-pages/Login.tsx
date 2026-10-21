@@ -297,6 +297,10 @@ export default function Login() {
             </p>
             <p style={helpTextStyle}>SolenOS will create a caregiver record for your account and link it to this care record. If your email is already assigned to an existing caregiver record, the backend may require an invitation instead.</p>
             <button type="submit" disabled={busy} style={primaryButtonStyle}>{busy ? 'Setting up…' : 'Set up my caregiver access'}</button>
+            <button type="button" onClick={() => { setStage('accept-invitation'); setError('') }}
+              style={{ ...secondaryButtonStyle, marginTop: '10px' }}>
+              I have a caregiver invitation
+            </button>
           </form>
         )}
 
