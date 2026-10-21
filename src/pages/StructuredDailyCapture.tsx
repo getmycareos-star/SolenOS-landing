@@ -72,6 +72,11 @@ export default function StructuredDailyCapture() {
   
   // Image upload state for medications
   const [medicationImagePreview, setMedicationImagePreview] = useState<string | null>(null);
+  useEffect(() => {
+    return () => {
+      if (medicationImagePreview?.startsWith('blob:')) URL.revokeObjectURL(medicationImagePreview);
+    };
+  }, [medicationImagePreview]);
   const [medicationUploading, setMedicationUploading] = useState(false);
   const [medicationCompressing, setMedicationCompressing] = useState(false);
   
@@ -109,6 +114,7 @@ export default function StructuredDailyCapture() {
   const handleMedicationImageCapture = async () => {
     try {
       const stream = await requestCam();
+      if (!stream) throw new Error('Camera access was not granted.');
       // Create a video element to capture a frame
       const video = document.createElement('video');
       video.srcObject = stream;
@@ -149,14 +155,14 @@ export default function StructuredDailyCapture() {
         setMedicationImagePreview(compressedUrl);
         
         // Clean up
-        URL.revokeObjectURL(compressedUrl);
       }
       
       // Stop the stream
-      stream.getTracks().forEach(track => track.stop());
+      stopCam();
     } catch (err) {
       console.error('Failed to capture image:', err);
-      alert('Failed to capture image: ' + err.message);
+      alert('Failed to capture image: ' + (err instanceof Error ? err.message : String(err)));
+      stopCam();
       setMedicationCompressing(false);
     }
   };
