@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CareCapture from '../../components/CareCapture';
 import DailyCare from '../DailyCare';
+import Dashboard from '../Dashboard';
 
 function jsonResponse(payload: unknown) {
   return {
@@ -128,5 +129,31 @@ describe('DailyCare durable capture contract', () => {
       scales: [expect.objectContaining({ axis: 'mood', score: 1, note: 'Calm' })],
     });
     expect(payload.vitals).toEqual([]);
+  });
+});
+
+describe('Dashboard failure behavior', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    jest.clearAllMocks();
+  });
+
+  it('does not invent care actions when the backend is unavailable', async () => {
+    localStorage.setItem('solenos_person_id', 'test-person-id');
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 503,
+      headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
+      json: async () => ({ detail: 'Backend unavailable' }),
+      text: async () => 'Backend unavailable',
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    render(<Dashboard />);
+
+    expect(await screen.findByText(/your care record could not be loaded/i)).toBeInTheDocument();
+    expect(screen.queryByText(/schedule medication review with pharmacist/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/arrange home safety assessment/i)).not.toBeInTheDocument();
   });
 });
