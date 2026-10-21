@@ -1,186 +1,123 @@
 import { useState, useCallback, useRef } from 'react';
-import { postJSON, patchJSON, getJSON } from './client';
 
 /**
- * Interface for optimistic mutation options
+ * Options for a single optimistic mutation.
  */
 interface OptimisticMutationOptions<TData, TVariables> {
-  /** Function to perform the mutation */
   mutationFn: (variables: TVariables) => Promise<TData>;
-  /** Function to update the optimistic state */
   onMutate: (variables: TVariables) => Promise<unknown> | unknown;
-  /** Function to apply the mutation result */
   onSuccess: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Function to handle errors and rollback */
   onError: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Function to clean up */
   onSettled: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Whether to retry on failure */
   retry?: boolean;
-  /** Maximum number of retries */
   maxRetries?: number;
 }
 
 /**
- * Hook for performing optimistic mutations
- * 
- * @returns Object with mutate function and state
+ * Run one mutation at a time. The options are bound when the hook is created;
+ * callers pass only the mutation variables to mutate().
  */
-export function useOptimisticMutation<TData, TVariables>() {
+export function useOptimisticMutation<TData, TVariables>(options: OptimisticMutationOptions<TData, TVariables>) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const [data, setData] = useState<TData | null>(null);
-  
-  // Ref to store the rollback data
-  const snapshotRef = useRef<unknown>(null);
-  
-  // Ref to prevent race conditions
-  const requestIdRef = useRef(0);
-  
-  const mutate = useCallback(
-    async (options: OptimisticMutationOptions<TData, TVariables>, variables: TVariables) => {
-      // Prevent multiple concurrent mutations
-      if (loading) {
-        if (options.retry) {
-          // Wait for current request to complete before retrying
-          return new Promise((resolve, reject) => {
-            const checkComplete = () => {
-              if (!loading) {
-                mutate(options, variables).then(resolve).catch(reject);
-              } else {
-                setTimeout(checkComplete, 100);
-              }
-            };
-            checkComplete();
-          });
-        }
-        return Promise.reject(new Error('Mutation already in progress'));
-      }
-      
-      setLoading(true);
-      setError(null);
-      
-      // Generate a unique request ID to prevent race conditions
-      const requestId = ++requestIdRef.current;
-      
+  const inFlightRef = useRef(false);
+
+  const mutate = useCallback(async (variables: TVariables): Promise<TData> => {
+    if (inFlightRef.current) {
+      throw new Error('Mutation already in progress');
+    }
+
+    inFlightRef.current = true;
+    setLoading(true);
+    setError(null);
+
+    let context: unknown;
+    let result: TData | undefined;
+    let failure: unknown | null = null;
+
+    try {
+      context = await options.onMutate(variables);
+      result = await options.mutationFn(variables);
+      await options.onSuccess(result, variables, context);
+      setData(result);
+      return result;
+    } catch (cause) {
+      failure = cause;
       try {
-        // 1. Capture snapshot for potential rollback
-        const snapshot = await options.onMutate(variables);
-        snapshotRef.current = snapshot;
-        
-        // 2. Perform the mutation
-        const result = await options.mutationFn(variables);
-        
-        // 3. Check if this is still the latest request
-        if (requestId !== requestIdRef.current) {
-          // A newer request has been made, ignore this result
-          return;
-        }
-        
-        // 4. Apply success update
-        await options.onSuccess(result, variables, snapshot);
-        setData(result);
-        
-        return result;
-      } catch (err) {
-        // 5. Handle error and rollback
-        await options.onError(err, variables, snapshotRef.current);
-        setError(err);
-        throw err;
+        await options.onError(cause, variables, context);
       } finally {
-        // 6. Clean up
-        if (requestId === requestIdRef.current) {
-          // Only settle if this is still the latest request
-          await options.onSettled(data, error, variables, snapshotRef.current);
-          setLoading(false);
-        }
+        setError(cause);
       }
-    },
-    [loading, data, error]
-  );
-  
+      throw cause;
+    } finally {
+      try {
+        await options.onSettled(result, failure, variables, context);
+      } finally {
+        inFlightRef.current = false;
+        setLoading(false);
+      }
+    }
+  }, [options]);
+
   return {
     mutate,
     loading,
     error,
     data,
     reset: () => {
+      if (inFlightRef.current) return;
       setLoading(false);
       setError(null);
       setData(null);
-      snapshotRef.current = null;
-      requestIdRef.current = 0;
-    }
+    },
   };
 }
 
-/**
- * Specialized optimistic mutation for toggling boolean states (like completion)
- */
+/** Specialized optimistic mutation for toggling boolean states. */
 export function useOptimisticToggle<TId>() {
   const [toggledIds, setToggledIds] = useState<Set<TId>>(new Set());
   const [loadingIds, setLoadingIds] = useState<Set<TId>>(new Set());
-  const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({});
-  
-  const toggle = useCallback(
-    async (id: TId, options: {
-      enableFn: () => Promise<void>;
-      disableFn: () => Promise<void>;
-    }) => {
-      // Prevent multiple concurrent toggles on the same ID
-      if (loadingIds.has(id)) {
-        return;
-      }
-      
-      setLoadingIds(prev => new Set(prev).add(id));
-      setErrorIds(prev => ({ ...prev, [id]: undefined }));
-      
-      try {
-        // Optimistically toggle the state
-        setToggledIds(prev => {
-          const next = new Set(prev);
-          if (next.has(id)) {
-            next.delete(id);
-          } else {
-            next.add(id);
-          }
-          return next;
-        });
-        
-        // Perform the actual mutation
-        const currentlyToggled = toggledIds.has(id);
-        if (currentlyToggled) {
-          await options.disableFn();
-        } else {
-          await options.enableFn();
-        }
-        
-        // Success - state already optimistically updated
-      } catch (err) {
-        // Rollback - revert the optimistic update
-        setToggledIds(prev => {
-          const next = new Set(prev);
-          if (next.has(id)) {
-            next.delete(id);
-          } else {
-            next.add(id);
-          }
-          return next;
-        });
-        
-        setErrorIds(prev => ({ ...prev, [id]: err }));
-        throw err;
-      } finally {
-        setLoadingIds(prev => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    },
-    [toggledIds]
-  );
-  
+  const [errorIds, setErrorIds] = useState<Record<string, unknown>>({});
+
+  const toggle = useCallback(async (id: TId, options: {
+    enableFn: () => Promise<void>;
+    disableFn: () => Promise<void>;
+  }) => {
+    if (loadingIds.has(id)) return;
+
+    setLoadingIds(prev => new Set(prev).add(id));
+    setErrorIds(prev => ({ ...prev, [String(id)]: undefined }));
+
+    const currentlyToggled = toggledIds.has(id);
+    setToggledIds(prev => {
+      const next = new Set(prev);
+      if (currentlyToggled) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+    try {
+      if (currentlyToggled) await options.disableFn();
+      else await options.enableFn();
+    } catch (cause) {
+      setToggledIds(prev => {
+        const next = new Set(prev);
+        if (currentlyToggled) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      setErrorIds(prev => ({ ...prev, [String(id)]: cause }));
+      throw cause;
+    } finally {
+      setLoadingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, [toggledIds, loadingIds]);
+
   return {
     toggle,
     toggledIds: Array.from(toggledIds),
@@ -190,6 +127,6 @@ export function useOptimisticToggle<TId>() {
       setToggledIds(new Set());
       setLoadingIds(new Set());
       setErrorIds({});
-    }
+    },
   };
 }
