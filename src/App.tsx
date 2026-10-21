@@ -13,10 +13,11 @@ import Record from './pages/Record';
 import Memory from './pages/Memory';
 import CareCircle from './pages/CareCircle';
 import Login from './pages/Login';
+import { getAccessToken } from './api/client';
 import InvestorDashboard from './pages/InvestorDashboard';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  return sessionStorage.getItem('solenos_access_token')
+  return getAccessToken()
     ? <>{children}</>
     : <Navigate to="/login" replace />;
 }
