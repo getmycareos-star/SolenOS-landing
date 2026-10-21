@@ -20,22 +20,16 @@ function installFetchMock() {
     if (path.startsWith('blob:')) {
       return { ok: true, blob: async () => new Blob(['compressed image'], { type: 'image/png' }) };
     }
+
+    let body: unknown = [];
     if (path.includes('/caregivers/person/')) {
-      return { ok: true, json: async () => [{ id: 'test-caregiver', name: 'Test Caregiver' }] };
+      body = [{ id: 'test-caregiver', name: 'Test Caregiver' }];
+    } else if (path.includes('/upload')) {
+      body = { evidence_id: 'test-evidence-id', file_id: 'test-file-id' };
+    } else if (path.includes('/daily/log')) {
+      body = { id: 'test-daily-log' };
     }
-    if (path.includes('/upload')) {
-      return { ok: true, json: async () => ({ evidence_id: 'test-evidence-id', file_id: 'test-file-id' }) };
-    }
-    if (path.includes('/daily/log')) {
-      return { ok: true, json: async () => ({ id: 'test-daily-log' }) };
-    }
-    const body = path.includes('/caregivers/person/')
-      ? [{ id: 'test-caregiver', name: 'Test Caregiver' }]
-      : path.includes('/upload')
-        ? { evidence_id: 'test-evidence-id', file_id: 'test-file-id' }
-        : path.includes('/daily/log')
-          ? { id: 'test-daily-log' }
-          : [];
+
     return {
       ok: true,
       headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
