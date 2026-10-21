@@ -60,14 +60,15 @@ export default function Evidence() {
       source_text: string;
       caregiver_id: string;
       person_id: string;
+      image_preview: string | null;
     }
   >({
-    mutationFn: async ({ source_type, source_text, caregiver_id, person_id }) => {
-      if (imagePreview) {
+    mutationFn: async ({ source_type, source_text, caregiver_id, person_id, image_preview }) => {
+      if (image_preview) {
         setUploading(true);
         setCompressing(true);
         try {
-          const file = dataURLtoFile(imagePreview, 'evidence-image.png');
+          const file = dataURLtoFile(image_preview, 'evidence-image.png');
           const compressedFile = await compressImage(file, {
             maxSizeMB: 0.5,
             maxWidthOrHeight: 2000,
@@ -278,7 +279,8 @@ export default function Evidence() {
       source_type: form.source_type,
       source_text: form.source_text,
       caregiver_id: caregiverId,
-      person_id: personId
+      person_id: personId,
+      image_preview: imagePreview
     });
   };
 
