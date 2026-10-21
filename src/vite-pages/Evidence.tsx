@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { getJSON, postFormData, postJSON, getCaregiverId, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { formatDate, formatConfidence } from '../lib/utils';
@@ -40,7 +39,6 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
-  const [navigate] = useNavigate();
 
   // Form state for creating new evidence
   const [form, setForm] = useState({
