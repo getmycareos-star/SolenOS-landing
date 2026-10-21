@@ -38,4 +38,41 @@ describe('Community unavailable state', () => {
     await waitFor(() => expect(mockGetJSON).toHaveBeenCalledTimes(1))
   })
 
+  it('does not increase a reaction count when the API rejects the reaction', async () => {
+    mockGetJSON.mockResolvedValueOnce({
+      posts: [{
+        id: 'post-1',
+        author_type: 'peer_caregiver',
+        author_label: 'Caregiver',
+        author_avatar_seed: 'cg',
+        title: 'A real post',
+        body: 'A caregiver-shared experience.',
+        media: [],
+        visibility: 'public',
+        care_stage: 'moderate',
+        tags: [],
+        created_at: '2026-10-21T10:00:00.000Z',
+        updated_at: null,
+        provenance_source: 'community:peer_caregiver',
+        reaction_counts: { like: 3, thank_you: 0, support: 0 },
+        comment_count: 0,
+        user_reaction: null,
+      }],
+    })
+    mockPostJSON.mockRejectedValueOnce(new Error('404 Not Found'))
+
+    render(
+      <MemoryRouter>
+        <Community />
+      </MemoryRouter>,
+    )
+
+    const likeButton = await screen.findByRole('button', { name: /👍 3/ })
+    likeButton.click()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your reaction was not saved.')
+    expect(screen.getByRole('button', { name: /👍 3/ })).toBeInTheDocument()
+    expect(mockPostJSON).toHaveBeenCalledTimes(1)
+  })
+
 })
