@@ -14,7 +14,18 @@ import Record from './vite-pages/Record'
 import Memory from './vite-pages/Memory'
 import CareCircle from './vite-pages/CareCircle'
 import Login from './vite-pages/Login'
+import Landing from './vite-pages/Landing'
 import InvestorDashboard from './vite-pages/InvestorDashboard'
+
+function RootEntry() {
+  const authenticated = Boolean(getAccessToken() && getPersonId() && getCaregiverId())
+  return authenticated ? <Dashboard /> : <Landing />
+}
+
+function WorkspaceEntry() {
+  const authenticated = Boolean(getAccessToken() && getPersonId() && getCaregiverId())
+  return <Navigate to={authenticated ? '/' : '/login'} replace />
+}
 
 function RequireAuth() {
   const [authenticated, setAuthenticated] = useState(() => Boolean(getAccessToken() && getPersonId() && getCaregiverId()))
@@ -78,8 +89,9 @@ export default function App() {
       <SessionControls />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/" element={<RootEntry />} />
+        <Route path="/workspace" element={<WorkspaceEntry />} />
         <Route element={<RequireAuth />}>
-          <Route path="/" element={<Dashboard />} />
           <Route path="/daily-care" element={<DailyCare />} />
           <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
           <Route path="/timeline" element={<Timeline />} />
