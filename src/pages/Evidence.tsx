@@ -150,7 +150,7 @@ export default function Evidence() {
   useEffect(() => {
     async function loadEvidence() {
       try {
-        const data = await getJSON('/evidence');
+        const data = await getJSON('/evidence/' + getPersonId());
         setItems(data);
       } catch (err) {
         console.error(err);
