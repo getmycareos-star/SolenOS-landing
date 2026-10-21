@@ -44,7 +44,7 @@ export default function CareCircle() {
     setLoading(true)
     setError(null)
     try {
-      const result = await getJSON(`/caregivers/person/${encodeURIComponent(personId)}`)
+      const result = await getJSON(`/caregivers/${encodeURIComponent(personId)}`)
       if (!Array.isArray(result)) throw new Error('The backend returned an invalid caregiver list.')
       setCaregivers(result as Caregiver[])
     } catch (cause) {
