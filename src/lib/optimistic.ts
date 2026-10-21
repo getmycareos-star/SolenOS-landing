@@ -108,7 +108,7 @@ export function useOptimisticMutation<TData, TVariables>(
 export function useOptimisticToggle<TId extends string | number | symbol>() {
   const [toggledIds, setToggledIds] = useState<Set<TId>>(new Set());
   const [loadingIds, setLoadingIds] = useState<Set<TId>>(new Set());
-  const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({});
+  const [errorIds, setErrorIds] = useState<Partial<Record<TId, unknown>>>({});
   
   const toggle = useCallback(
     async (id: TId, options: {
