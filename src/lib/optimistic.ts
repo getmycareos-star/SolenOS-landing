@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { postJSON, patchJSON, getJSON } from './client';
+import { postJSON, patchJSON, getJSON } from '../api/client';
 
 /**
  * Interface for optimistic mutation options
