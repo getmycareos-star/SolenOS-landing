@@ -101,6 +101,7 @@ describe('DailyCare durable capture contract', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/v1/caregivers/test-person-id');
     });
+    await screen.findByRole('option', { name: 'Test Caregiver' });
 
     fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'Calm' } });
     fireEvent.change(screen.getByPlaceholderText('Anything else worth noting...'), {
