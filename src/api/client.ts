@@ -10,7 +10,7 @@ declare global {
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
 
 export function getPersonId(): string {
-  return localStorage.getItem('solenos_person_id') || 'demo-person-id'
+  return localStorage.getItem('solenos_person_id') || ''
 }
 
 export function setPersonId(id: string): void {
@@ -25,7 +25,12 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
 }
 
 function interpolatePersonId(path: string): string {
-  return path.replace(/demo-person-id/g, getPersonId())
+  if (!path.includes('demo-person-id')) return path
+  const personId = getPersonId()
+  if (!personId) {
+    throw new Error('Select an authorized care record before loading or changing care data.')
+  }
+  return path.replace(/demo-person-id/g, personId)
 }
 
 async function handleResponse(res: Response) {
