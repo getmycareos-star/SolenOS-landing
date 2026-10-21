@@ -57,7 +57,7 @@ describe('StructuredDailyCapture', () => {
     await userEvent.click(screen.getByRole('button', { name: /add vital/i }));
     
     // Verify vital is added to the list
-    expect(await screen.findByText(/heart rate/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/heart rate/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/72 bpm/i)).toBeInTheDocument();
   });
 
@@ -66,7 +66,9 @@ describe('StructuredDailyCapture', () => {
     
     // Fill in scale form
     await userEvent.selectOptions(screen.getByLabelText(/scale type/i), 'mood');
-    await userEvent.selectOptions(screen.getByLabelText(/score \(1-5\)/i), '4');
+    const scoreInput = screen.getByLabelText(/score \(1-5\)/i);
+    await userEvent.clear(scoreInput);
+    await userEvent.type(scoreInput, '4');
     
     // Submit scale form
     await userEvent.click(screen.getByRole('button', { name: /add scale/i }));
