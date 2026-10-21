@@ -37,6 +37,14 @@ export default function DailyCare() {
   const [loadingCaregivers, setLoadingCaregivers] = useState(true)
 
   useEffect(() => {
+    if (!personId) {
+      setCaregivers([])
+      setCaregiverId('')
+      setCaregiverError('Select a care record before recording daily care.')
+      setLoadingCaregivers(false)
+      return
+    }
+
     async function loadCaregivers() {
       try {
         const data = await getJSON(`/caregivers/${personId}`)
@@ -90,6 +98,11 @@ export default function DailyCare() {
 
      if (loadingCaregivers) {
       alert('Caregiver information is still loading. Please try again.')
+      setSubmitting(false)
+      return
+    }
+    if (!personId) {
+      alert('Select a care record before saving daily care.')
       setSubmitting(false)
       return
     }
