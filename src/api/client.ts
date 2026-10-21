@@ -4,7 +4,8 @@
 const API_BASE = '/api/v1'
 
 export function getPersonId(): string {
-  return localStorage.getItem('solenos_person_id') || 'demo-person-id'
+  // Do not invent a care-record identifier: callers must handle an unset ID.
+  return localStorage.getItem('solenos_person_id') || ''
 }
 
 export function setPersonId(id: string): void {
