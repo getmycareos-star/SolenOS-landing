@@ -39,7 +39,7 @@ export default function DailyCare() {
   useEffect(() => {
     async function loadCaregivers() {
       try {
-        const data = await getJSON(`/caregivers/person/${personId}`)
+        const data = await getJSON(`/caregivers/${personId}`)
         setCaregivers(data)
         if (data.length > 0) setCaregiverId(data[0].id)
         else setCaregiverError('No caregiver is linked to this person yet.')
@@ -96,20 +96,60 @@ export default function DailyCare() {
      const caregiver = caregiverId
 
      try {
-       await postJSON('/daily-care/entries', {
+       const allowedVitalTypes = new Set([
+         'bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight',
+       ])
+       const invalidVitalTypes = Object.keys(form.vitals).filter(key => !allowedVitalTypes.has(key))
+       if (invalidVitalTypes.length > 0) {
+         throw new Error(`Unsupported vital type(s): ${invalidVitalTypes.join(', ')}. Use bp_systolic, bp_diastolic, heart_rate, oxygen_sat, temperature, or weight.`)
+       }
+
+       const observedAt = new Date().toISOString()
+       const vitals = Object.entries(form.vitals).map(([vital_type, rawValue]) => {
+         const value = Number(rawValue)
+         if (!Number.isFinite(value)) throw new Error(`Enter a numeric value for ${vital_type}.`)
+         return { vital_type, value, measured_at: observedAt, unit: null, note: null }
+       })
+       const scales = []
+       if (form.mood || form.mood_scale !== 3) {
+         scales.push({
+           axis: 'mood',
+           score: form.mood_scale,
+           observed_at: observedAt,
+           note: form.mood || null,
+         })
+       }
+       if (form.agitation_level !== 'None' || form.agitation_scale !== 1) {
+         scales.push({
+           axis: 'agitation',
+           score: form.agitation_scale,
+           observed_at: observedAt,
+           note: form.agitation_level === 'None' ? null : form.agitation_level,
+         })
+       }
+       if (form.wellbeing_notes.trim() || form.wellbeing_stress !== 3) {
+         scales.push({
+           axis: 'wellbeing_stress',
+           score: form.wellbeing_stress,
+           observed_at: observedAt,
+           note: form.wellbeing_notes.trim() || null,
+         })
+       }
+
+       const notes = [
+         form.behavior_notes.trim() ? `Behavior: ${form.behavior_notes.trim()}` : '',
+         form.sleep_notes.trim() ? `Sleep: ${form.sleep_notes.trim()}` : '',
+         form.eating_notes.trim() ? `Eating: ${form.eating_notes.trim()}` : '',
+         form.general_notes.trim(),
+       ].filter(Boolean).join('\\n')
+
+       await postJSON('/daily/log', {
          person_id: personId,
          caregiver_id: caregiver,
-         mood: form.mood || undefined,
-         mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
-         agitation_level: form.agitation_level,
-         agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
-         vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
-         behavior_notes: form.behavior_notes || undefined,
-         sleep_notes: form.sleep_notes || undefined,
-         eating_notes: form.eating_notes || undefined,
-         wellbeing_stress: form.wellbeing_stress !== 3 ? form.wellbeing_stress : undefined,
-         wellbeing_notes: form.wellbeing_notes || undefined,
-         general_notes: form.general_notes || undefined,
+         medications: [],
+         vitals,
+         scales,
+         notes,
          location: form.location ? {
            latitude: form.location.latitude,
            longitude: form.location.longitude,
