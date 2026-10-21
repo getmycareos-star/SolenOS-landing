@@ -34,6 +34,7 @@ function installFetchMock() {
       status: 200,
       headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
       text: async () => JSON.stringify(body),
+      json: async () => body,
     };
   });
   global.fetch = fetchMock as unknown as typeof fetch;
