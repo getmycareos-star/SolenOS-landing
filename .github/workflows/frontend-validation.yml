@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --package-lock=false --no-audit --no-fund --fetch-retries=1 --fetch-timeout=60000 --registry=https://registry.npmjs.org
+        run: npm ci --legacy-peer-deps --no-audit --no-fund --fetch-retries=1 --fetch-timeout=60000 --registry=https://registry.npmjs.org
       - name: Type-check and production build
         run: npm run build
       - name: Run Jest tests
