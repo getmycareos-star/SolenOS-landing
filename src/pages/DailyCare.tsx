@@ -39,13 +39,13 @@ export default function DailyCare() {
   useEffect(() => {
     async function loadCaregivers() {
       try {
-        const data = await getJSON(`/caregivers/${personId}`)
+        const data = await getJSON(`/caregivers/person/${personId}`)
         setCaregivers(data)
         if (data.length > 0) setCaregiverId(data[0].id)
       } catch (e) {
         console.error(e)
-        setCaregiverError('Could not load caregiver list. Using demo-default.')
-        setCaregiverId('demo-caregiver')
+        setCaregiverError('Could not load caregivers. Check the connection and try again.')
+        setCaregiverId('')
       } finally {
         setLoadingCaregivers(false)
       }
@@ -87,7 +87,12 @@ export default function DailyCare() {
      setSubmitting(true)
      setSaved(false)
 
-     const caregiver = loadingCaregivers ? caregiverId : (caregiverId || 'demo-caregiver')
+     if (loadingCaregivers || !caregiverId) {
+       setCaregiverError('A valid caregiver must be linked to this person before saving.')
+       setSubmitting(false)
+       return
+     }
+     const caregiver = caregiverId
 
      try {
        await postJSON('/daily-care/entries', {
@@ -314,7 +319,7 @@ export default function DailyCare() {
                  Latitude: {form.location?.latitude.toFixed(6)}°, Longitude: {form.location?.longitude.toFixed(6)}°
                </p>
                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                 Accuracy: {form.location?.accuracy} meters • Timestamp: {new Date(form.location?.timestamp).toLocaleString()}
+                 Accuracy: {form.location?.accuracy} meters • Timestamp: {form.location?.timestamp ? new Date(form.location.timestamp).toLocaleString() : '—'}
                </p>
                <button
                  type="button"
