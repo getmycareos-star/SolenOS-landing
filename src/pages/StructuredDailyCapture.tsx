@@ -983,12 +983,13 @@ export default function StructuredDailyCapture() {
                     </button>
                     <input
                       type="file"
+                      id="medication-image-input"
                       accept="image/*"
                       onChange={handleMedicationImageUpload}
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
                     />
-                    <label className='medication-file-label'>
+                    <label htmlFor="medication-image-input" className='medication-file-label'>
                       or upload from device
                     </label>
                   </div>
