@@ -78,9 +78,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const handleSubmit = async () => {
     if (!text.trim()) return
     
+    if (!personId) {
+      setIdentityError('Select a care record before saving this care update.')
+      return
+    }
     const caregiverId = getCaregiverId()
     if (!caregiverId) {
-      setIdentityError('A signed-in caregiver is required to save this care update.')
+      setIdentityError('A linked caregiver is required to save this care update.')
       return
     }
     setIdentityError(null)
