@@ -17,5 +17,8 @@ module.exports = {
     '<rootDir>/src/**/*.test.tsx',
     '<rootDir>/src/lib/routine-moments/test.ts',
   ],
+  moduleNameMapper: { '^@/(.*)
+};
+: '<rootDir>/src/$1' },
   testPathIgnorePatterns: ['/node_modules/', '/tests/'],
 };
