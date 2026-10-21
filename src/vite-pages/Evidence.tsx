@@ -47,9 +47,14 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
   });
   const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageAttachment, setImageAttachment] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [submitError, setSubmitError] = useState<unknown | null>(null);
+
+  useEffect(() => () => {
+    if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+  }, [imagePreview]);
 
   // Optimistic mutation for creating evidence
   const { mutate: createEvidenceOptimistic, loading: creating, error: createError } = useOptimisticMutation<
@@ -176,11 +181,9 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
         });
         
         // Convert compressed file back to data URL for preview
+        setImageAttachment(compressedFile);
         const compressedUrl = URL.createObjectURL(compressedFile);
         setImagePreview(compressedUrl);
-        
-        // Clean up
-        URL.revokeObjectURL(compressedUrl);
         setCompressing(false);
       }
 
@@ -216,6 +219,7 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
       });
       
       // Convert compressed file to data URL for preview
+      setImageAttachment(compressedFile);
       const compressedUrl = URL.createObjectURL(compressedFile);
       setImagePreview(compressedUrl);
       
@@ -224,6 +228,7 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
+      setImageAttachment(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setImagePreview(event.target?.result as string);
@@ -255,14 +260,15 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
     try {
       if (imagePreview) {
         setUploading(true);
-        const imageFile = dataURLtoFileFn(imagePreview, 'care-image.png');
+        const uploadFile = imageAttachment ?? dataURLtoFileFn(imagePreview, 'care-image.png');
         const uploadForm = new FormData();
-        uploadForm.append('file', imageFile);
+        uploadForm.append('file', uploadFile);
         uploadForm.append('caregiver_id', caregiverId);
         uploadForm.append('person_id', personId);
         const uploaded = await postFormData('/upload', uploadForm) as { evidence_id?: string };
         if (!uploaded.evidence_id) throw new Error('Upload response did not include an evidence ID.');
         setImagePreview(null);
+        setImageAttachment(null);
         const freshEvidence = await getJSON(`/evidence/${personId}`);
         setItems(freshEvidence);
       }
@@ -453,7 +459,7 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
                         <button
                           type="button"
                           aria-label="Remove preview"
-                          onClick={() => setImagePreview(null)}
+                          onClick={() => { setImagePreview(null); setImageAttachment(null); }}
                           className='btn btn-outline'
                         >
                           Remove Preview
