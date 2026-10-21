@@ -150,8 +150,14 @@ export default function Evidence() {
 
   useEffect(() => {
     async function loadEvidence() {
+      const personId = getPersonId();
+      if (!personId) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
       try {
-        const data = await getJSON('/evidence/' + getPersonId());
+        const data = await getJSON('/evidence/' + personId);
         setItems(data);
       } catch (err) {
         console.error(err);
@@ -268,7 +274,8 @@ export default function Evidence() {
     const caregiverId = getCaregiverId();
     const personId = getPersonId();
     if (!caregiverId || !personId) {
-      setSubmitError(new Error('A signed-in caregiver and care record are required to create evidence.'));
+      setSubmitError(new Error('A linked caregiver and selected care record are required to create evidence.'));
+      setSubmitting(false);
       return;
     }
     
