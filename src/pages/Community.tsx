@@ -257,9 +257,15 @@ export default function Community() {
     setActionError(null)
     setLoadingWisdom(true)
     try {
-      const data = await postJSON('/community/experience', { observation: wisdomQuery.trim() }) as ExperienceResult
+      const data = await postJSON<ExperienceResult>('/community/experience', { observation: wisdomQuery.trim() })
       if (data?.matches) {
-        setWisdomMatches(data.matches.slice(0, 4))
+        setWisdomMatches(data.matches.slice(0, 4).map(match => ({
+          post_id: match.post.id,
+          author_label: match.post.author_label,
+          author_type: match.post.author_type,
+          content: match.post.content,
+          tags: Array.isArray(match.post.tags) ? match.post.tags : [],
+        })))
       }
     } catch (e) {
       setWisdomMatches([])
@@ -273,17 +279,25 @@ export default function Community() {
     e.preventDefault()
     const content = composerText.trim()
     if (!content || submitting) return
+    if (!caregiverId) {
+      setActionError('Sign in with a caregiver account before sharing a post.')
+      return
+    }
     setActionError(null)
+    setNotice(null)
     setSubmitting(true)
     try {
-      await postJSON('/community', {
-        caregiver_id: personId,
+      const created = await postJSON<ApiCommunityPost>('/community', {
+        caregiver_id: caregiverId,
         author_type: 'peer_caregiver',
         author_label: 'Anonymous caregiver',
         post_type: postType,
         content,
         visibility: 'public',
       })
+      if (!created?.id || created.moderation_status !== 'pending') {
+        throw new Error('The backend did not confirm that the post was saved for moderation.')
+      }
     } catch (e) {
       // A timeout can leave the server outcome unknown. Preserve the draft and
       // tell the caregiver to check the feed before attempting another create.
@@ -295,19 +309,12 @@ export default function Community() {
       return
     }
 
-    // Clear the draft only after the create request returns success.
+    // A successful create returns a pending post; it is not public until review.
     setComposerText('')
     setComposerOpen(false)
-    try {
-      const response = await getJSON('/community?caregiver_id=' + encodeURIComponent(personId)) as CommunityPostSummary
-      setPosts(Array.isArray(response?.posts) ? response.posts : [])
-      setLoadError(null)
-    } catch (e) {
-      console.error(e)
-      setActionError('The post request succeeded, but the feed could not be refreshed. Refresh the page to verify the saved post.')
-    } finally {
-      setSubmitting(false)
-    }
+    setNotice('Your post was saved and is awaiting moderation. It will appear in the public feed after review.')
+    await loadPosts()
+    setSubmitting(false)
   }
 
   const filteredPosts = posts.filter(p => {
@@ -476,6 +483,7 @@ export default function Community() {
         </div>
       )}
 
+      {notice && <p role="status" style={{ color: 'var(--trust)', fontSize: '13px', marginBottom: '12px' }}>{notice}</p>}
       {actionError && <p role="alert" style={{ color: 'var(--error)', fontSize: '13px', marginBottom: '12px' }}>{actionError}</p>}
 
       <div style={{ display: 'flex', gap: '24px' }}>
