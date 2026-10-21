@@ -33,15 +33,18 @@ export const useCameraPermission = () => {
       return stream;
     } catch (err: unknown) {
       const cameraError = err instanceof Error ? err : new Error(String(err));
-      let message = 'Unknown error';
-      if ('name' in (err as object) && ((err as { name?: string }).name === 'NotAllowedError' || (err as { name?: string }).name === 'PermissionDeniedError')) {
+      const errorName =
+        typeof err === 'object' && err !== null && 'name' in err
+          ? String((err as { name?: unknown }).name)
+          : '';
+
+      let message = cameraError.message || 'Unknown error';
+      if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
         message = 'Permission denied';
-      } else if ('name' in (err as object) && ((err as { name?: string }).name === 'NotFoundError' || (err as { name?: string }).name === 'DevicesNotFoundError')) {
+      } else if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
         message = 'No camera found';
-      } else if ('name' in (err as object) && ((err as { name?: string }).name === 'NotReadableError' || (err as { name?: string }).name === 'TrackStartError')) {
+      } else if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
         message = 'Camera is already in use';
-      } else {
-        message = cameraError.message;
       }
       setState({ status: 'error', message });
       return null;
