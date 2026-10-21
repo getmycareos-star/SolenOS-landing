@@ -16,7 +16,6 @@ describe('useOptimisticMutation', () => {
 
   it('should handle successful mutation', async () => {
     const mockData = { id: '123', name: 'Test' };
-    (require('../api/client').postJSON as jest.Mock).mockResolvedValue(mockData);
     
     const mutationFn = jest.fn().mockResolvedValue(mockData);
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
@@ -62,7 +61,6 @@ describe('useOptimisticMutation', () => {
 
   it('should handle mutation error', async () => {
     const mockError = new Error('Test error');
-    (require('../api/client').postJSON as jest.Mock).mockRejectedValue(mockError);
     
     const mutationFn = jest.fn().mockRejectedValue(mockError);
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
