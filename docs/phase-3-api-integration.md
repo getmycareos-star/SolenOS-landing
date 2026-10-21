@@ -24,7 +24,7 @@ Scope: compare the Vite/React frontend against the FastAPI application in this r
 | Appointments | `GET /api/v1/appointments/{person_id}` | `GET /api/v1/appointments/{person_id}` | Implemented |
 | Professional Care Overview | Reads events, appointments, insights, and linked caregivers for selected person | Existing routes above | Replaced nonexistent multi-patient endpoint with actual selected-person data; does not claim professional-level access |
 | Memory | `GET /api/v1/observations/{person_id}` | `GET /api/v1/observations/{person_id}` | Route exists |
-| Caregiver handoffs and responsibilities | Existing caregiver-intelligence endpoints | `/api/v1/caregiver-handoffs`, `/api/v1/caregiver-responsibilities`, related routes | Backend endpoints exist; verify UI call-by-call before declaring each workflow integrated |
+| Caregiver coordination | `GET /caregivers/{person_id}`, `GET /caregiver-responsibilities/{person_id}`, `GET /caregiver-handoffs/{person_id}`, `POST /caregiver-handoffs`, `POST /caregiver-handoffs/{id}/accept` | Existing caregiver-intelligence endpoints | Wired in `/care-circle`; handoff creation requires two real linked caregivers and acknowledgement evidence |
 
 ## Unsupported frontend features intentionally disabled
 
