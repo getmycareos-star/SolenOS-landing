@@ -61,8 +61,8 @@ function RequireAuth() {
       setStatus('authenticated')
     } catch (cause) {
       if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
-        clearAccessToken()
-        clearCareContext()
+        if (getAccessToken()) clearAccessToken()
+        if (getPersonId() || getCaregiverId()) clearCareContext()
         setStatus('unauthenticated')
         return
       }
