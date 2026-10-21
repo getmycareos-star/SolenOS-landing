@@ -85,6 +85,15 @@ function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError'
 }
 
+const AUTH_TOKEN_KEY = 'solenos_access_token'
+const AUTH_EVENT = 'solenosAuthChanged'
+export interface AuthAccount { id: string; email: string; role: 'caregiver' | 'professional' | 'team'; caregiver_id: string; person_id: string }
+export interface AuthResult { access_token: string; token_type: 'bearer'; expires_in: number; account: AuthAccount }
+export function getAccessToken(): string { return localStorage.getItem(AUTH_TOKEN_KEY) || '' }
+export function clearAuthSession(): void { localStorage.removeItem(AUTH_TOKEN_KEY); localStorage.removeItem('solenos_caregiver_id'); localStorage.removeItem('solenos_identifier'); localStorage.removeItem('solenos_user_role'); window.dispatchEvent(new Event(AUTH_EVENT)) }
+function persistAuthSession(result: AuthResult): void { localStorage.setItem(AUTH_TOKEN_KEY, result.access_token); localStorage.setItem('solenos_caregiver_id', result.account.caregiver_id); localStorage.setItem('solenos_identifier', result.account.email); localStorage.setItem('solenos_user_role', result.account.role); setPersonId(result.account.person_id); window.dispatchEvent(new Event(AUTH_EVENT)) }
+export async function loginWithPassword(email: string, password: string): Promise<AuthAccount> { const result = await postJSON<AuthResult>('/auth/login', { email, password }); persistAuthSession(result); return result.account }
+export async function registerCaregiverAccount(input: { email: string; password: string; enrollment_key: string; name: string; person_name: string; relationship?: string }): Promise<AuthAccount> { const result = await postJSON<AuthResult>('/auth/register', input); persistAuthSession(result); return result.account }
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
   const method = (init.method || 'GET').toUpperCase()
   const canRetry = method === 'GET'
@@ -95,7 +104,11 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
-      const response = await fetch(url, { ...init, signal: controller.signal })
+      const headers = new Headers(init.headers || {})
+      const publicAuthRequest = path.endsWith('/auth/login') || path.endsWith('/auth/register') || path.endsWith('/auth/provision')
+      const token = getAccessToken()
+      if (token && !publicAuthRequest) headers.set('Authorization', 'Bearer ' + token)
+      const response = await fetch(url, { ...init, headers, signal: controller.signal })
       if (canRetry && attempt === 0 && RETRYABLE_GET_STATUSES.has(response.status)) {
         // Only retry safe reads. Never automatically retry create/update requests.
         await response.body?.cancel()
@@ -164,34 +177,36 @@ export function getCaregiverId(): string | null {
   return localStorage.getItem('solenos_caregiver_id')
 }
 
-// The backend currently has no implemented authentication/session endpoints.
-// Fail closed rather than treating a client-side role choice as authentication.
 export interface AuthSessionInfo {
   authenticated: boolean
   account_id: string | null
-  session_type: string
-  authorized_person_ids: string[]
-  caregiver_roles: Record<string, string>
-  professional_roles: Record<string, string>
-  anonymous_session_id: string | null
-  expires_at: string
-  mfa_verified: boolean
+  email: string | null
+  role: string | null
+  caregiver_id: string | null
+  person_id: string | null
 }
 
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (!getAccessToken()) return { authenticated: false, sessionInfo: null }
+  try {
+    const sessionInfo = await getJSON<AuthSessionInfo>('/auth/me')
+    return { authenticated: sessionInfo.authenticated === true, sessionInfo }
+  } catch {
+    clearAuthSession()
+    return { authenticated: false, sessionInfo: null }
+  }
 }
 
-export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
-): () => void {
-  return () => undefined
+export function subscribeToAuthState(callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void): () => void {
+  const handler = () => { void checkAuthState().then(result => callback(result.authenticated, result.sessionInfo)) }
+  window.addEventListener(AUTH_EVENT, handler)
+  return () => window.removeEventListener(AUTH_EVENT, handler)
 }
 
 export function startTokenRefresh(): void {
-  // No backend-issued token exists to refresh until authentication is implemented.
+  // Access tokens expire; the client deliberately fails closed because no refresh-token contract exists yet.
 }
 
 export function stopTokenRefresh(): void {
-  // No active token-refresh task exists.
+  // No background refresh process is scheduled.
 }
