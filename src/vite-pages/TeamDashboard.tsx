@@ -114,6 +114,15 @@ export default function TeamDashboard() {
     }
   }
 
+  const rejectPost = async (postId: string) => {
+    try {
+      await postJSON(`/community/${postId}/moderate`, { status: 'rejected' })
+      setPostsToReview(prev => prev.filter(p => p.id !== postId))
+    } catch (error) {
+      console.error('Failed to reject post:', error)
+    }
+  }
+
   const RiskBadge = ({ level }: { level: string }) => {
     const config: Record<string, { bg: string; color: string; label: string }> = {
       high: { bg: 'var(--error-soft)', color: 'var(--error)', label: 'ðŸŸ¥ HIGH RISK' },
@@ -248,12 +257,15 @@ export default function TeamDashboard() {
                   >
                     Approve
                   </button>
-                  <button style={{
-                    padding: '6px 16px', borderRadius: '8px', border: '1px solid var(--border)',
-                    background: 'var(--surface)', fontSize: '12px', color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                  }}>
-                    Request Edit
+                  <button
+                    onClick={() => rejectPost(post.id)}
+                    style={{
+                      padding: '6px 16px', borderRadius: '8px', border: '1px solid var(--border)',
+                      background: 'var(--surface)', fontSize: '12px', color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Reject
                   </button>
                 </div>
               </div>
