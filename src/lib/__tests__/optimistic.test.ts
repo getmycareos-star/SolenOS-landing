@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useOptimisticMutation } from './optimistic';
+import { useOptimisticMutation } from '../optimistic';
 
 describe('useOptimisticMutation', () => {
   beforeEach(() => {
