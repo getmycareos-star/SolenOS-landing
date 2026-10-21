@@ -143,26 +143,11 @@ export default function Community() {
   }, [])
 
   useEffect(() => {
-    let cancelled = false
-    async function load() {
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const data = await getJSON('/community?caregiver_id=' + encodeURIComponent(personId)) as CommunityPostSummary
-        if (!cancelled) setPosts(Array.isArray(data?.posts) ? data.posts : [])
-      } catch (e) {
-        console.error(e)
-        if (!cancelled) {
-          setPosts([])
-          setLoadError(e instanceof Error ? e.message : 'Community posts could not be loaded.')
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    load()
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // The inspected FastAPI backend has no Community feed route. Do not issue
+    // guaranteed-failing requests or imply that community content is available.
+    setPosts([])
+    setLoadError('Community APIs are not implemented by the current backend.')
+    setLoading(false)
   }, [personId])
 
   async function handleReaction(postId: string, reactionType: ReactionType) {
@@ -412,7 +397,7 @@ export default function Community() {
             </span>
             <button
               onClick={handleSubmit}
-              disabled={submitting || !composerText.trim()}
+              disabled={submitting || !composerText.trim() || Boolean(loadError)}
               style={{
                 background: 'var(--trust-soft)', border: '1px solid var(--trust)',
                 borderRadius: '8px', padding: '8px 16px', fontSize: '13px',
