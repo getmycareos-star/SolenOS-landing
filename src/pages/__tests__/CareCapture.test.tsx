@@ -2,19 +2,22 @@ import { jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import CareCapture from '../../components/CareCapture';
 
+function jsonResponse(payload: unknown) {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
+    text: async () => JSON.stringify(payload),
+  };
+}
+
 function installFetchMock(caregivers: Array<{ id: string; name: string }>) {
-  const fetchMock = jest.fn(async (url: unknown, options?: RequestInit) => {
+  const fetchMock = jest.fn(async (url: unknown, _options?: RequestInit) => {
     const path = String(url);
-    if (path.includes('/caregivers/person/')) {
-      return { ok: true, json: async () => caregivers };
-    }
-    if (path.includes('/situation')) {
-      return { ok: true, json: async () => ({ ok: true, evidence_id: 'evidence-1', care_event_id: 'event-1' }) };
-    }
-    if (path.includes('/community/experience')) {
-      return { ok: true, json: async () => ({ matched: false }) };
-    }
-    return { ok: true, json: async () => [] };
+    if (path.includes('/caregivers/person/')) return jsonResponse(caregivers);
+    if (path.endsWith('/api/situation')) return jsonResponse({ ok: true, evidence_id: 'evidence-1', care_event_id: 'event-1' });
+    if (path.includes('/community/experience')) return jsonResponse({ matched: false });
+    return jsonResponse([]);
   });
   global.fetch = fetchMock as unknown as typeof fetch;
   return fetchMock;
@@ -29,13 +32,10 @@ describe('CareCapture caregiver workflow', () => {
   it('resolves the linked caregiver and submits a care observation', async () => {
     const fetchMock = installFetchMock([{ id: 'caregiver-1', name: 'Test Caregiver' }]);
     const onCapture = jest.fn();
-    render(<CareCapture pid="test-person-id" onCapture={onCapture} />);
+    render(<CareCapture personId="test-person-id" onCapture={onCapture} />);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/caregivers/person/test-person-id'),
-        expect.anything(),
-      );
+      expect(fetchMock).toHaveBeenCalledWith('/api/v1/caregivers/person/test-person-id');
     });
 
     fireEvent.change(screen.getByPlaceholderText(/Dad wandered at 2 AM/i), {
@@ -45,7 +45,7 @@ describe('CareCapture caregiver workflow', () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/api/situation'),
+        '/api/situation',
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('"caregiver_id":"caregiver-1"'),
@@ -57,7 +57,7 @@ describe('CareCapture caregiver workflow', () => {
 
   it('disables saving when no caregiver is linked to the person', async () => {
     installFetchMock([]);
-    render(<CareCapture pid="test-person-id" />);
+    render(<CareCapture personId="test-person-id" />);
 
     await waitFor(() => {
       expect(screen.getByText(/no caregiver is linked/i)).toBeInTheDocument();
