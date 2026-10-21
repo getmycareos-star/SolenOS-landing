@@ -28,5 +28,7 @@ jobs:
           cache: npm
       - name: Install clean dependency tree
         run: npm ci --legacy-peer-deps
-      - name: Type-check and build production assets
+      - name: Type-check active Vite application graph
+        run: npm run typecheck
+      - name: Build production assets
         run: npm run build
