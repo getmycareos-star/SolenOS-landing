@@ -45,6 +45,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   useEffect(() => {
     let active = true
     setCaregiverLoading(true)
+    setCaregiverId('')
     setCaregiverError(null)
     getJSON(`/caregivers/person/${personId}`)
       .then((caregivers: Array<{ id: string; name: string }>) => {
