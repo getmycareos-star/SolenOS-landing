@@ -108,7 +108,11 @@ export default function StructuredDailyCapture() {
 
   const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read image preview.'));
+    reader.onload = (event) => {
+      const result = reader.result ?? (event?.target as FileReader | null)?.result;
+      if (typeof result === 'string') resolve(result);
+      else reject(new Error('Could not read image preview.'));
+    };
     reader.onerror = () => reject(new Error('Could not read image preview.'));
     reader.readAsDataURL(file);
   });
@@ -817,8 +821,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
+                <label htmlFor="capture-medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
                 <select
+                  id="capture-medication-status"
                   value={medicationForm.status}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
                   style={{ 
@@ -1091,8 +1096,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
+                <label htmlFor="capture-vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
                 <input
+                  id="capture-vital-value"
                   type="number"
                   value={vitalForm.value}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
@@ -1235,8 +1241,9 @@ export default function StructuredDailyCapture() {
               
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
+                  <label htmlFor="capture-scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
                 <input
+                  id="capture-scale-score"
                   type="number"
                   min={1}
                   max={5}
