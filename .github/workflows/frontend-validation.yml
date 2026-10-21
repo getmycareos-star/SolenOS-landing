@@ -4,20 +4,27 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    branches: [main, "repair/**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: frontend-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
       - name: Install dependencies
         run: npm install --legacy-peer-deps --package-lock=false --no-audit --no-fund --fetch-retries=1 --fetch-timeout=60000 --registry=https://registry.npmjs.org
       - name: Type-check and production build
