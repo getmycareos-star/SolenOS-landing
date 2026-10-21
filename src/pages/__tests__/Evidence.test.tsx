@@ -75,7 +75,7 @@ describe('Evidence Component Image Compression Integration', () => {
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
     const submitButton = screen.getByRole('button', { name: /create evidence/i });
@@ -173,7 +173,7 @@ describe('Evidence Component Image Compression Integration', () => {
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
     const submitButton = screen.getByRole('button', { name: /create evidence/i });
