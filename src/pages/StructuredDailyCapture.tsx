@@ -1171,6 +1171,7 @@ export default function StructuredDailyCapture() {
                   {submitting ? 'Adding...' : 'Add Vital'}
                 </button>
               </div>
+              </div>
             </form>
           </div>
           
@@ -1296,6 +1297,7 @@ export default function StructuredDailyCapture() {
                 >
                   {submitting ? 'Adding...' : 'Add Scale'}
                 </button>
+              </div>
               </div>
             </form>
           </div>
