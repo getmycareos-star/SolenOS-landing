@@ -119,7 +119,6 @@ export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
   const [communityError, setCommunityError] = useState<string | null>(null)
-  const [communityUnavailable, setCommunityUnavailable] = useState(false)
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerText, setComposerText] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -148,11 +147,9 @@ export default function Community() {
         const data = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
         setPosts(data.posts ?? [])
         setCommunityError(null)
-        setCommunityUnavailable(false)
       } catch (e) {
         console.error(e)
         setPosts([])
-        setCommunityUnavailable(true)
         setCommunityError('Community service is not available right now. No sample or invented caregiver posts are shown.')
       } finally {
         setLoading(false)
