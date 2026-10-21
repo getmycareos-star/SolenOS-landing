@@ -1,0 +1,46 @@
+name: Frontend build and regression
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "repair/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Use npm 11 lockfile resolver
+        run: npm install --global npm@11
+      - name: Install checked-in lockfile dependencies without scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Approve required dependency install scripts
+        run: |
+          npm install-scripts approve @parcel/watcher
+          npm install-scripts approve @sentry/cli
+          npm install-scripts approve esbuild
+          npm install-scripts approve unrs-resolver
+      - name: Run approved dependency install scripts
+        run: npm rebuild --legacy-peer-deps
+      - name: Type-check all Next.js application sources
+        run: npx tsc --project tsconfig.next.json --pretty false
+      - name: Build Next.js production application
+        run: npm run build
+      - name: Type-check and build Vite client
+        run: npm run build:vite
+      - name: Run frontend tests
+        run: npm test -- --runInBand

@@ -60,9 +60,9 @@ export type CareProfileConflictField =
 export type CareProfileConflict = {
   field: CareProfileConflictField;
 
-  storedValue: unknown;
+  storedValue?: unknown;
 
-  inferredValue: unknown;
+  inferredValue?: unknown;
 
   detectedAt: string;
 

@@ -6,7 +6,7 @@ import { ChevronDown, Plus, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
-import { TIMELINE_ENTRY_TYPES, type TimelineEntry } from "@/lib/ui-runtime";
+import type { TimelineEntry } from "@/lib/ui-runtime";
 
 const TYPE_LABELS: Record<string, string> = {
   situation_created: "New situation",

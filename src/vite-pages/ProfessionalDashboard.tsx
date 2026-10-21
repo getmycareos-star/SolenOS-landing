@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getJSON, getPersonId } from '../api/client'
 
-interface ProfessionalDashboardAlert {
-  person_id: string
-  person_name: string
-  alert_type: string
-  title: string
-  description: string
-  severity: string
-  timestamp: string
-  action_required: boolean
-  suggested_action: string | null
-}
-
 interface ProfessionalDashboardPersonSummary {
   person_id: string
   person_name: string

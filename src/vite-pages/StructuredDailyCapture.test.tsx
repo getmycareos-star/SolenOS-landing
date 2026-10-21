@@ -1,16 +1,14 @@
-import { render, screen, act } from '@testing-library/react';
+import { jest } from '@jest/globals';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
-
-// Mock the postJSON function
-jest.mock('../api/client', () => ({
-  ...jest.requireActual('../api/client'),
-  postJSON: jest.fn().mockResolvedValue({})
-}));
 
 describe('StructuredDailyCapture', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }) as unknown as typeof fetch;
+    localStorage.setItem("solenos_person_id", "test-person-id");
+    localStorage.setItem("solenos_caregiver_id", "test-caregiver-id");
   });
 
   it('should render the main heading', () => {
@@ -48,14 +46,14 @@ describe('StructuredDailyCapture', () => {
     
     // Fill in vital form
     await userEvent.selectOptions(screen.getByLabelText(/vital type/i), 'heart_rate');
-    await userEvent.type(screen.getByLabelText(/value/i), '72');
-    await userEvent.type(screen.getByLabelText(/unit/i), 'bpm');
+    fireEvent.change(screen.getByLabelText(/value/i), { target: { value: '72' } });
+    fireEvent.change(screen.getByLabelText(/unit/i), { target: { value: 'bpm' } });
     
     // Submit vital form
     await userEvent.click(screen.getByRole('button', { name: /add vital/i }));
     
     // Verify vital is added to the list
-    expect(await screen.findByText(/heart rate/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/heart rate/i).length).toBeGreaterThanOrEqual(2);
     expect(await screen.findByText(/72 bpm/i)).toBeInTheDocument();
   });
 
@@ -64,13 +62,13 @@ describe('StructuredDailyCapture', () => {
     
     // Fill in scale form
     await userEvent.selectOptions(screen.getByLabelText(/scale type/i), 'mood');
-    await userEvent.selectOptions(screen.getByLabelText(/score \(1-5\)/i), '4');
+    fireEvent.change(screen.getByLabelText(/score \(1-5\)/i), { target: { value: '4' } });
     
     // Submit scale form
     await userEvent.click(screen.getByRole('button', { name: /add scale/i }));
     
     // Verify scale is added to the list
-    expect(await screen.findByText(/mood/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/mood/i).length).toBeGreaterThanOrEqual(2);
     expect(await screen.findByText(/4\/5/i)).toBeInTheDocument();
   });
 
@@ -88,17 +86,20 @@ describe('StructuredDailyCapture', () => {
     // Submit the form
     await userEvent.click(screen.getByRole('button', { name: /save daily capture/i }));
     
-    // Verify postJSON was called
-    expect(require('../api/client').postJSON).toHaveBeenCalledWith(
-      '/daily/log',
-      expect.objectContaining({
-        medications: expect.arrayContaining([
-          expect.objectContaining({
-            medication_name: 'Aspirin',
-            status: 'given'
-          })
-        ])
-      })
-    );
+    // Verify the real API client sends the expected request body.
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/daily/log'),
+        expect.objectContaining({ method: 'POST', body: expect.any(String) }),
+      );
+    });
+    const fetchMock = global.fetch as jest.Mock;
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('/daily/log'));
+    expect(call).toBeDefined();
+    expect(JSON.parse(call![1].body as string)).toEqual(expect.objectContaining({
+      medications: expect.arrayContaining([
+        expect.objectContaining({ medication_name: 'Aspirin', status: 'given' }),
+      ]),
+    }));
   });
 });

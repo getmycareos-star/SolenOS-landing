@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ChevronLeft,
-  ChevronRight,
   ClipboardCopy,
   Download,
   Loader2,
@@ -16,8 +15,6 @@ import {
   type ShareAudience,
   AUDIENCE_OPTIONS,
   assessReadiness,
-  type ReadinessResult,
-  detectConflicts,
   generateSummary,
   type GeneratedSummary,
   recordShareHistory,
@@ -69,7 +66,6 @@ export function ShareCareSummaryPanel({
   onShared,
 }: ShareCareSummaryPanelProps) {
   const [state, setState] = useState<ShareRequestState>("idle");
-  const [readiness, setReadiness] = useState<ReadinessResult | null>(null);
   const [audience, setAudience] = useState<ShareAudience | null>(null);
   const [otherRecipient, setOtherRecipient] = useState("");
   const [summary, setSummary] = useState<GeneratedSummary | null>(null);
@@ -79,7 +75,18 @@ export function ShareCareSummaryPanel({
   const [format, setFormat] = useState<ShareFormat | null>(null);
   const [sharingResult, setSharingResult] = useState<string | null>(null);
 
-  const isOffline = useMemo(() => typeof navigator !== "undefined" && !navigator.onLine, []);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const updateConnectivity = () => setIsOffline(typeof navigator !== "undefined" && !navigator.onLine);
+    updateConnectivity();
+    window.addEventListener("online", updateConnectivity);
+    window.addEventListener("offline", updateConnectivity);
+    return () => {
+      window.removeEventListener("online", updateConnectivity);
+      window.removeEventListener("offline", updateConnectivity);
+    };
+  }, []);
 
   const fetchCareData = useCallback(async (): Promise<any> => {
     const url = apiUrl(
@@ -93,6 +100,10 @@ export function ShareCareSummaryPanel({
 
   const startShare = useCallback(async () => {
     setError(null);
+    if (isOffline) {
+      setState("offline");
+      return;
+    }
     setState("checking_readiness");
 
     try {
@@ -102,7 +113,6 @@ export function ShareCareSummaryPanel({
       const readinessResult = assessReadiness(
         data as SituationResponse | null,
       );
-      setReadiness(readinessResult);
 
       if (readinessResult.state === "empty") {
         setState("empty");
@@ -117,7 +127,7 @@ export function ShareCareSummaryPanel({
       setError(e instanceof Error ? e.message : "Could not load care information.");
       setState("failed");
     }
-  }, [fetchCareData]);
+  }, [fetchCareData, isOffline]);
 
   const handleAudienceSelect = useCallback(
     async (selected: ShareAudience) => {
@@ -170,7 +180,7 @@ export function ShareCareSummaryPanel({
 
     try {
       if (format === "copy") {
-        const text = buildPlainTextSummary(summary, selectedContent);
+        const text = buildPlainTextSummary(summary);
         await navigator.clipboard.writeText(text);
         setSharingResult("Summary copied to clipboard.");
         recordShareHistory(summary.preparedFor, "text", "shared");
@@ -185,7 +195,7 @@ export function ShareCareSummaryPanel({
         if (!printWindow) {
           throw new Error("Could not open print window. Please allow pop-ups.");
         }
-        const html = buildPrintHtml(summary, selectedContent, careRecipientName);
+        const html = buildPrintHtml(summary, careRecipientName);
         printWindow.document.open();
         printWindow.document.write(html);
         printWindow.document.close();
@@ -202,7 +212,7 @@ export function ShareCareSummaryPanel({
 
       if (format === "native") {
         if (typeof navigator !== "undefined" && typeof (navigator as any).share === "function") {
-          const text = buildPlainTextSummary(summary, selectedContent);
+          const text = buildPlainTextSummary(summary);
           await (navigator as any).share({
             title: "Care summary",
             text,
@@ -240,7 +250,7 @@ export function ShareCareSummaryPanel({
   const handleCopyText = useCallback(async () => {
     if (!summary || !selectedContent) return;
     try {
-      const text = buildPlainTextSummary(summary, selectedContent);
+      const text = buildPlainTextSummary(summary);
       await navigator.clipboard.writeText(text);
       setSharingResult("Summary copied to clipboard.");
       recordShareHistory(summary.preparedFor, "text", "shared");
@@ -255,7 +265,7 @@ export function ShareCareSummaryPanel({
 
   const handleSaveDownload = useCallback(() => {
     if (!summary || !selectedContent) return;
-    const text = buildPlainTextSummary(summary, selectedContent);
+    const text = buildPlainTextSummary(summary);
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -587,8 +597,7 @@ export function ShareCareSummaryPanel({
       <div className="share-readiness-card share-readiness-card--limited">
         <h3 className="share-readiness-title">You're offline</h3>
         <p className="share-readiness-message">
-          Your care information is safely saved on this device. We can prepare this
-          shareable summary when your connection is restored.
+          Reconnect to load the current care information and prepare a shareable summary.
         </p>
         <div className="share-readiness-actions">
           <Button variant="secondary" onClick={onClose}>
@@ -647,10 +656,7 @@ export function ShareCareSummaryPanel({
 /*  Helpers — plain text and print HTML                                */
 /* ------------------------------------------------------------------ */
 
-function buildPlainTextSummary(
-  summary: GeneratedSummary,
-  content: SelectedContent,
-): string {
+function buildPlainTextSummary(summary: GeneratedSummary): string {
   const lines: string[] = [];
   lines.push("CARE SUMMARY");
   lines.push(`Prepared for: ${summary.preparedFor}`);
@@ -702,7 +708,6 @@ function buildPlainTextSummary(
 
 function buildPrintHtml(
   summary: GeneratedSummary,
-  content: SelectedContent,
   recipientName?: string,
 ): string {
   const sectionsHtml = summary.sections

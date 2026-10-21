@@ -19,9 +19,9 @@ export const useCameraPermission = () => {
     return true;
   }, []);
 
-  const requestCamera = useCallback(async () => {
+  const requestCamera = useCallback(async (): Promise<MediaStream | null> => {
     if (!checkAvailability()) {
-      return;
+      return null;
     }
 
     setState({ status: 'unknown' }); // Reset to unknown while requesting
@@ -30,6 +30,7 @@ export const useCameraPermission = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       streamRef.current = stream;
       setState({ status: 'granted', stream });
+      return stream;
     } catch (err: any) {
       let message = 'Unknown error';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -42,6 +43,7 @@ export const useCameraPermission = () => {
         message = err.message;
       }
       setState({ status: 'error', message });
+      return null;
     }
   }, [checkAvailability]);
 

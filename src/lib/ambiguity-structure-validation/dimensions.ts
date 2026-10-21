@@ -1,6 +1,5 @@
 import type { InputMode } from "../input-classification";
 import {
-  ADMINISTRATIVE_LEGAL_SIGNALS,
   EMOTIONAL_NARRATIVE_SIGNALS,
   MEDICAL_DOCUMENT_SIGNALS,
 } from "../input-classification/signals";

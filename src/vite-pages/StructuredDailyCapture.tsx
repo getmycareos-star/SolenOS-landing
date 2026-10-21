@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, getPersonId } from '../api/client';
+import { postJSON, postFormData, getCaregiverId, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
-import { useLocationPermission } from '../lib/permissions/useLocationPermission';
 import { compressImage } from '../lib/imageCompression';
 import { useOptimisticMutation } from '../lib/optimistic';
 
-const MOOD_OPTIONS = ['Calm', 'Content', 'Anxious', 'Restless', 'Agitated', 'Aggressive', 'Confused', 'Other'];
-const AGITATION_OPTIONS = ['None', 'Mild', 'Moderate', 'Severe', 'Extreme'];
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 
-export default function StructuredDailyCapture() {
+export interface StructuredDailyCaptureProps {
+  compressImageFn?: typeof compressImage;
+}
+
+export default function StructuredDailyCapture({ compressImageFn = compressImage }: StructuredDailyCaptureProps = {}) {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
@@ -43,7 +44,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Medication form state
-  const [medicationForm, setMedicationForm] = useState({
+  const [medicationForm, setMedicationForm] = useState<{ medication_name: string; status: string; dose: string | null; scheduled_for: string | null; administered_at: string | null; photo_evidence_id: string | null; note: string | null }>({
     medication_name: '',
     status: 'given', // default to given
     dose: null,
@@ -54,7 +55,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Vitals form state
-  const [vitalForm, setVitalForm] = useState({
+  const [vitalForm, setVitalForm] = useState<{ vital_type: string; value: number; measured_at: string; unit: string | null; note: string | null }>({
     vital_type: 'bp_systolic',
     value: 0,
     measured_at: new Date().toISOString(),
@@ -63,7 +64,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Scale form state
-  const [scaleForm, setScaleForm] = useState({
+  const [scaleForm, setScaleForm] = useState<{ axis: string; score: number; observed_at: string; note: string | null }>({
     axis: 'mood',
     score: 3,
     observed_at: new Date().toISOString(),
@@ -72,51 +73,37 @@ export default function StructuredDailyCapture() {
   
   // Image upload state for medications
   const [medicationImagePreview, setMedicationImagePreview] = useState<string | null>(null);
+  const [medicationImageFile, setMedicationImageFile] = useState<File | null>(null);
   const [medicationUploading, setMedicationUploading] = useState(false);
   const [medicationCompressing, setMedicationCompressing] = useState(false);
   
   // Permission hooks
   const { state: cameraState, requestCamera: requestCam, stopCamera: stopCam } = useCameraPermission();
-  const { state: locationState, requestLocation: requestLoc } = useLocationPermission();
   
   // Person ID
   const personId = getPersonId();
-  
-  // Load caregivers (simplified for now)
-  const [caregivers, setCaregivers] = useState<Array<{id: string; name: string}>>([]);
-  const [caregiverId, setCaregiverId] = useState<string>('');
-  const [loadingCaregivers, setLoadingCaregivers] = useState<boolean>(true);
-  
+
   useEffect(() => {
-    async function loadCaregivers() {
-      try {
-        // In a real app, we would fetch caregivers for the person
-        // For now, we'll use a default
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } catch (e) {
-        console.error(e);
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } finally {
-        setLoadingCaregivers(false);
-      }
-    }
-    loadCaregivers();
-  }, [personId]);
+    return () => {
+      if (medicationImagePreview?.startsWith('blob:')) URL.revokeObjectURL(medicationImagePreview);
+    };
+  }, [medicationImagePreview]);
   
   // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
     try {
       const stream = await requestCam();
+      if (!stream) throw new Error('Camera access is unavailable or was denied.');
       // Create a video element to capture a frame
       const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
       video.srcObject = stream;
-      video.play();
-      
-      // Wait for the video to play
-      await new Promise<void>((resolve) => {
-        video.onplaying = () => resolve();
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => {
+          video.play().then(() => resolve()).catch(reject);
+        };
+        video.onerror = () => reject(new Error('The camera preview could not be started.'));
       });
       
       const canvas = document.createElement('canvas');
@@ -134,7 +121,7 @@ export default function StructuredDailyCapture() {
         setMedicationCompressing(true);
         
         // Compress the image
-        const compressedFile = await compressImage(file, {
+        const compressedFile = await compressImageFn(file, {
           maxSizeMB: 0.5, // 500KB target
           maxWidthOrHeight: 2000, // 2000px max dimension
           useWebWorker: true,
@@ -145,18 +132,17 @@ export default function StructuredDailyCapture() {
         setMedicationCompressing(false);
         
         // Convert compressed file back to data URL for preview
+        setMedicationImageFile(compressedFile);
         const compressedUrl = URL.createObjectURL(compressedFile);
         setMedicationImagePreview(compressedUrl);
-        
-        // Clean up
-        URL.revokeObjectURL(compressedUrl);
       }
       
-      // Stop the stream
-      stream.getTracks().forEach(track => track.stop());
     } catch (err) {
       console.error('Failed to capture image:', err);
-      alert('Failed to capture image: ' + err.message);
+      alert('Failed to capture image: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      setMedicationCompressing(false);
+    } finally {
+      stopCam();
       setMedicationCompressing(false);
     }
   };
@@ -165,8 +151,8 @@ export default function StructuredDailyCapture() {
   const handleMedicationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Please select a JPEG, PNG, or WebP image.');
       return;
     }
     
@@ -175,7 +161,7 @@ export default function StructuredDailyCapture() {
     
     try {
       // Compress the image
-      const compressedFile = await compressImage(file, {
+      const compressedFile = await compressImageFn(file, {
         maxSizeMB: 0.5, // 500KB target
         maxWidthOrHeight: 2000, // 2000px max dimension
         useWebWorker: true,
@@ -185,14 +171,13 @@ export default function StructuredDailyCapture() {
       });
       
       // Convert compressed file to data URL for preview
+      setMedicationImageFile(compressedFile);
       const compressedUrl = URL.createObjectURL(compressedFile);
       setMedicationImagePreview(compressedUrl);
-      
-      // Clean up
-      URL.revokeObjectURL(compressedUrl);
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
+      setMedicationImageFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setMedicationImagePreview(event.target?.result as string);
@@ -212,38 +197,26 @@ export default function StructuredDailyCapture() {
       // If we have an image preview, upload it first to get an evidence ID
       let evidenceId: string | null = null;
       if (medicationImagePreview) {
-        // Convert data URL to file
-        const response = await fetch(medicationImagePreview);
-        const blob = await response.blob();
-        const file = new File([blob], 'medication.png', { type: 'image/png' });
-        
-        // Compress the image before upload
-        setMedicationCompressing(true);
-        const compressedFile = await compressImage(file, {
-          maxSizeMB: 0.5, // 500KB target
-          maxWidthOrHeight: 2000, // 2000px max dimension
-          useWebWorker: true,
-          initialQuality: 0.8,
-          compressForce: false,
-          rotate: true,
-        });
-        setMedicationCompressing(false);
-        
+        // The selected image is already compressed (or intentionally retained as
+        // the original if compression failed). Avoid refetching a blob URL and
+        // recompressing the same image during form submission.
+        const fileToUpload = medicationImageFile ?? await (async () => {
+          const response = await fetch(medicationImagePreview);
+          const blob = await response.blob();
+          return new File([blob], 'medication.png', { type: blob.type || 'image/png' });
+        })();
+
         const formData = new FormData();
-        formData.append('file', compressedFile);
-        formData.append('caregiver_id', caregiverId);
+        formData.append('file', fileToUpload);
+        const linkedCaregiverId = getCaregiverId();
+        if (!linkedCaregiverId) throw new Error('Link a caregiver identity before uploading care evidence.');
+        formData.append('caregiver_id', linkedCaregiverId);
         formData.append('person_id', personId);
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (!uploadResponse.ok) {
-          throw new Error('Failed to upload image');
+        const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
+        if (!uploadResult.evidence_id) {
+          throw new Error('Upload response did not include an evidence ID');
         }
-        
-        const uploadResult = await uploadResponse.json();
         evidenceId = uploadResult.evidence_id;
       }
       
@@ -282,6 +255,7 @@ export default function StructuredDailyCapture() {
       
       // Reset image preview
       setMedicationImagePreview(null);
+      setMedicationImageFile(null);
       
       alert('Medication added successfully');
     } catch (err: any) {
@@ -361,7 +335,7 @@ export default function StructuredDailyCapture() {
   };
   
   // Handle form submission to backend with optimistic update
-  const { mutate: submitDailyLog, loading: submittingMutation, error: submitError } = useOptimisticMutation<
+  const { mutate: submitDailyLog, loading: submittingMutation } = useOptimisticMutation<
     any,
     {
       personId: string;
@@ -410,7 +384,7 @@ export default function StructuredDailyCapture() {
         })),
         notes: notes,
       }),
-    onMutate: async (variables) => {
+    onMutate: async (_variables) => {
       // Return snapshot for potential rollback
       return { 
         prevForm: form, 
@@ -420,7 +394,7 @@ export default function StructuredDailyCapture() {
         prevMedicationImagePreview: medicationImagePreview
       };
     },
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (_data, _variables, _context) => {
       // On success, reset the form
       setForm({
         medications: [],
@@ -463,7 +437,7 @@ export default function StructuredDailyCapture() {
       setSaveError(null);
       setSaved(true);
     },
-    onError: async (error, variables, context) => {
+    onError: async (error, _variables, context) => {
       // On error, rollback to previous state
       if (context && typeof context === 'object' && 'prevForm' in context) {
         const prevContext = context as {
@@ -483,7 +457,7 @@ export default function StructuredDailyCapture() {
       
       setSaveError(error);
       setSaved(false);
-      alert(`Failed to save: ${error.message}`);
+      alert(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
     },
     onSettled: () => {
       setSubmitting(false);
@@ -496,12 +470,16 @@ export default function StructuredDailyCapture() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    const authenticatedCaregiverId = getCaregiverId();
+    if (!authenticatedCaregiverId || !personId || personId === 'demo-person-id') {
+      setSaveError(new Error('Sign in and link a caregiver identity before saving daily care.'));
+      setSaved(false);
+      return;
+    }
+
     await submitDailyLog({
       personId,
-      caregiverId,
+      caregiverId: authenticatedCaregiverId,
       medications: form.medications,
       vitals: form.vitals,
       scales: form.scales,
@@ -613,10 +591,10 @@ export default function StructuredDailyCapture() {
             fontSize: '12px', 
             padding: '2px 6px', 
             borderRadius: '4px', 
-            backgroundColor: vital.is_out_of_range ? 'var(--error-soft)' : 'var(--success-soft)', 
-            color: vital.is_out_of_range ? 'var(--error)' : 'var(--success)' 
+            backgroundColor: 'var(--unknown-soft)', 
+            color: 'var(--unknown)' 
           }}>
-            {vital.is_out_of_range ? 'Out of range' : 'Normal'}
+            Recorded
           </span>
         </div>
         
@@ -746,7 +724,7 @@ export default function StructuredDailyCapture() {
       )}
       
       {/* Save error indicator */}
-      {saveError && !saved && (
+      {saveError !== null && !saved && (
         <div style={{ 
           background: 'var(--error-soft)', 
           border: '1px solid var(--error)', 
@@ -755,7 +733,7 @@ export default function StructuredDailyCapture() {
           marginBottom: '24px' 
         }}>
           <span style={{ fontSize: '13px', color: 'var(--error)', fontWeight: '500' }}>
-            Failed to save. Please try again.
+            {saveError instanceof Error ? saveError.message : 'Failed to save. Please try again.'}
           </span>
         </div>
       )}
@@ -777,7 +755,7 @@ export default function StructuredDailyCapture() {
       
       {/* Medications section */}
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h1>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h2>
         
         {/* Medication form */}
         <div style={{ 
@@ -791,8 +769,9 @@ export default function StructuredDailyCapture() {
           
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
+              <label htmlFor="medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
               <input
+                id="medication-name"
                 type="text"
                 value={medicationForm.medication_name}
                 onChange={(e) => setMedicationForm(prev => ({ ...prev, medication_name: e.target.value }))}
@@ -810,8 +789,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
+                <label htmlFor="medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
                 <select
+                  id="medication-status"
                   value={medicationForm.status}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
                   style={{ 
@@ -830,8 +810,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Dose</label>
+                <label htmlFor="medication-dose" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Dose</label>
                 <input
+                  id="medication-dose"
                   type="text"
                   value={medicationForm.dose || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, dose: e.target.value || null }))}
@@ -850,8 +831,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scheduled For</label>
+                <label htmlFor="medication-scheduled-for" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scheduled For</label>
                 <input
+                  id="medication-scheduled-for"
                   type="datetime-local"
                   value={medicationForm.scheduled_for || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null }))}
@@ -867,8 +849,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Administered At</label>
+                <label htmlFor="medication-administered-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Administered At</label>
                 <input
+                  id="medication-administered-at"
                   type="datetime-local"
                   value={medicationForm.administered_at || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null }))}
@@ -885,8 +868,9 @@ export default function StructuredDailyCapture() {
             </div>
             
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+              <label htmlFor="medication-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
               <textarea
+                id="medication-note"
                 value={medicationForm.note || ''}
                 onChange={(e) => setMedicationForm(prev => ({ ...prev, note: e.target.value || null }))}
                 placeholder="Add any notes about the medication"
@@ -929,7 +913,7 @@ export default function StructuredDailyCapture() {
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setMedicationImagePreview(null)}
+                      onClick={() => { setMedicationImagePreview(null); setMedicationImageFile(null); }}
                       style={{ 
                         fontSize: '12px', 
                         color: '#dc2626', 
@@ -939,6 +923,7 @@ export default function StructuredDailyCapture() {
                         padding: '6px 10px', 
                         borderRadius: '4px' 
                       }}
+                      aria-label="Remove preview"
                     >
                       Remove Preview
                     </button>
@@ -984,13 +969,14 @@ export default function StructuredDailyCapture() {
                       {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
                     </button>
                     <input
+                      id="medication-image-file"
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={handleMedicationImageUpload}
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
                     />
-                    <label className='medication-file-label'>
+                    <label htmlFor="medication-image-file" className='medication-file-label'>
                       or upload from device
                     </label>
                   </div>
@@ -1059,8 +1045,9 @@ export default function StructuredDailyCapture() {
           
           <form onSubmit={handleVitalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
+              <label htmlFor="vital-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
               <select
+                id="vital-type"
                 value={vitalForm.vital_type}
                 onChange={(e) => setVitalForm(prev => ({ ...prev, vital_type: e.target.value }))}
                 style={{ 
@@ -1082,8 +1069,9 @@ export default function StructuredDailyCapture() {
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
+                <label htmlFor="vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
                 <input
+                  id="vital-value"
                   type="number"
                   value={vitalForm.value}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
@@ -1100,8 +1088,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
+                <label htmlFor="vital-unit" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
                 <input
+                  id="vital-unit"
                   type="text"
                   value={vitalForm.unit || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, unit: e.target.value || null }))}
@@ -1118,8 +1107,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured At</label>
+                <label htmlFor="vital-measured-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured At</label>
                 <input
+                  id="vital-measured-at"
                   type="datetime-local"
                   value={vitalForm.measured_at}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, measured_at: e.target.value }))}
@@ -1135,8 +1125,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="vital-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
                 <textarea
+                  id="vital-note"
                   value={vitalForm.note || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, note: e.target.value || null }))}
                   placeholder="Add any notes about the vital"
@@ -1171,6 +1162,7 @@ export default function StructuredDailyCapture() {
                   {submitting ? 'Adding...' : 'Add Vital'}
                 </button>
               </div>
+              </div>
             </form>
           </div>
           
@@ -1201,8 +1193,9 @@ export default function StructuredDailyCapture() {
             
             <form onSubmit={handleScaleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
+                <label htmlFor="scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
                 <select
+                  id="scale-type"
                   value={scaleForm.axis}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, axis: e.target.value }))}
                   style={{ 
@@ -1224,8 +1217,9 @@ export default function StructuredDailyCapture() {
               
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
+                  <label htmlFor="scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
                 <input
+                  id="scale-score"
                   type="number"
                   min={1}
                   max={5}
@@ -1244,8 +1238,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed At</label>
+                <label htmlFor="scale-observed-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed At</label>
                 <input
+                  id="scale-observed-at"
                   type="datetime-local"
                   value={scaleForm.observed_at}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, observed_at: e.target.value }))}
@@ -1261,8 +1256,9 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="scale-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
                 <textarea
+                  id="scale-note"
                   value={scaleForm.note || ''}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, note: e.target.value || null }))}
                   placeholder="Add any notes about the scale observation"
@@ -1297,6 +1293,7 @@ export default function StructuredDailyCapture() {
                   {submitting ? 'Adding...' : 'Add Scale'}
                 </button>
               </div>
+              </div>
             </form>
           </div>
           
@@ -1321,8 +1318,9 @@ export default function StructuredDailyCapture() {
             borderRadius: '8px', 
             padding: '16px' 
           }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Additional Notes</label>
+            <label htmlFor="additional-notes" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Additional Notes</label>
             <textarea
+              id="additional-notes"
               value={form.notes}
               onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Add any additional notes about the day"

@@ -15,7 +15,6 @@ import {
 import type { SituationResponse } from "@/lib/situation-entry";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import {
-  CARE_RECIPIENT_ID_STORAGE,
   DEFAULT_DURABLE_CARE_KEY,
   DURABLE_CARE_KEY_STORAGE,
   ensureClientDurableCareKey,
@@ -55,7 +54,6 @@ function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string
   });
 }
 
-const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 const CARE_SESSION_STORAGE_KEY = "solenos_care_session_id";
 const LAST_INPUT_STORAGE_KEY = "solenos_last_input_raw";
 
@@ -132,7 +130,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [showSoftPrivacyNote, setShowSoftPrivacyNote] = useState(false);
   const [caregiverId, setCaregiverId] = useState(DEFAULT_DURABLE_CARE_KEY);
   /** Care Reality id — shared Living Care Record (Locked B). Distinct from contributor session. */
-  const [careRecipientId, setCareRecipientId] = useState<string | null>(null);
   /** Null = still loading; "" = needs ask-once; string = set. */
   const [displayName, setDisplayName] = useState<string | null>(null);
   /** Skip name ask without blocking — first-time Locked B. */
@@ -226,9 +223,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         }) => {
           if (data.care_key) setCaregiverId(data.care_key);
           else if (data.context?.caregiver_id) setCaregiverId(data.context.caregiver_id);
-          if (typeof data.care_recipient_id === "string" && data.care_recipient_id.trim()) {
-            setCareRecipientId(data.care_recipient_id.trim());
-          }
           if (data.has_context_root) setHasContextRoot(true);
           setDisplayName(
             typeof data.care_recipient_display_name === "string" &&

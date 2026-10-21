@@ -79,7 +79,7 @@ export default function Dashboard() {
                     getJSON(`/observations/${getPersonId()}/trends`).catch(() => []),
                     getJSON(`/reasoning/${getPersonId()}/summary`).catch(() => null),
                     getJSON(`/daily-intelligence/${getPersonId()}`).catch(() => null),
-                    getJSON(`/actions/${getPersonId()}?status=active`), // Get active actions
+                    getJSON(`/actions/actions/${getPersonId()}?status=active`), // Get active actions
                 ]);
                 
                 setEvents(evts);
@@ -89,24 +89,8 @@ export default function Dashboard() {
                 setDailyIntel(intelData);
                 setActions(actionsData as Action[]);
             } catch (e) {
-                console.error(e);
-                // Use mock data for demonstration
-                setActions([
-                    {
-                        id: 'action-1',
-                        title: 'Schedule medication review with pharmacist',
-                        description: 'Review current medications for potential interactions',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-                    },
-                    {
-                        id: 'action-2',
-                        title: 'Arrange home safety assessment',
-                        description: 'Evaluate fall risks and recommend safety modifications',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 1 * 3600000).toISOString(),
-                    }
-                ]);
+                console.error('Failed to load dashboard data:', e);
+                setActions([]);
             } finally {
                 setLoading(false);
             }
@@ -123,10 +107,10 @@ export default function Dashboard() {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return '${diffMins}m ago';
-    if (diffHours < 24) return '${diffHours}h ago';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return '${diffDays}d ago';
+    if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -134,11 +118,10 @@ export default function Dashboard() {
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
         // Mark action as complete
-        await postJSON('/actions/${actionId}/complete', {
-          evidence: {
-            description: 'Completed via dashboard',
-            confirmed_by: getPersonId()
-          }
+        await postJSON(`/actions/actions/${actionId}/complete`, {
+          evidence_ids: [],
+          completion_confidence: 1,
+          notes: 'Marked complete in the dashboard by the authenticated caregiver.',
         });
         
         // Update local state optimistically (handled by hook)
@@ -326,7 +309,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/timeline" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View full timeline â†’
@@ -387,7 +370,7 @@ export default function Dashboard() {
                     {reasoning.open_questions.map((q, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{q.key}: {JSON.stringify(q.value)}</p>
                     ))}
-                  </div
+                  </div>
                 )}
                 {reasoning.preferences.length > 0 && (
                   <div style={{ background: 'var(--accent-soft)', borderRadius: '12px', padding: '16px 20px' }}>
@@ -397,7 +380,7 @@ export default function Dashboard() {
                     {reasoning.preferences.map((pref, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{pref.key}: {JSON.stringify(pref.value)}</p>
                     ))}
-                  </div
+                  </div>
                 )}
               </div>
             </section>
@@ -440,7 +423,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/insights" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View all insights â†’
@@ -456,9 +439,8 @@ export default function Dashboard() {
           <Link to="/community" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Community wisdom</Link>
           <Link to="/record" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Living Care Record</Link>
           <Link to="/daily-care" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Daily care form</Link>
-          <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Role switch</Link>
+          <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Sign in / switch account</Link>
         </div>
       </div>
-    </div>
   );
 }
