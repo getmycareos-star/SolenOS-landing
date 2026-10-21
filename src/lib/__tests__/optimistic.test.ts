@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useOptimisticMutation } from './optimistic';
 
 // Mock the API client functions
-jest.mock('../api/client', () => ({
+jest.mock('../../api/client', () => ({
   postJSON: jest.fn(),
   patchJSON: jest.fn(),
   getJSON: jest.fn(),
@@ -23,7 +23,7 @@ describe('useOptimisticMutation', () => {
 
   it('should handle successful mutation', async () => {
     const mockData = { id: '123', name: 'Test' };
-    (require('../api/client').postJSON as jest.Mock).mockResolvedValue(mockData);
+    (require('../../api/client').postJSON as jest.Mock).mockResolvedValue(mockData);
     
     const mutationFn = jest.fn().mockResolvedValue(mockData);
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
@@ -69,7 +69,7 @@ describe('useOptimisticMutation', () => {
 
   it('should handle mutation error', async () => {
     const mockError = new Error('Test error');
-    (require('../api/client').postJSON as jest.Mock).mockRejectedValue(mockError);
+    (require('../../api/client').postJSON as jest.Mock).mockRejectedValue(mockError);
     
     const mutationFn = jest.fn().mockRejectedValue(mockError);
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
