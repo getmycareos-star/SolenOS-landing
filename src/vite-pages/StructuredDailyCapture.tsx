@@ -73,6 +73,7 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
   
   // Image upload state for medications
   const [medicationImagePreview, setMedicationImagePreview] = useState<string | null>(null);
+  const [medicationImageFile, setMedicationImageFile] = useState<File | null>(null);
   const [medicationUploading, setMedicationUploading] = useState(false);
   const [medicationCompressing, setMedicationCompressing] = useState(false);
   
@@ -131,6 +132,7 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
         setMedicationCompressing(false);
         
         // Convert compressed file back to data URL for preview
+        setMedicationImageFile(compressedFile);
         const compressedUrl = URL.createObjectURL(compressedFile);
         setMedicationImagePreview(compressedUrl);
       }
@@ -169,11 +171,13 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
       });
       
       // Convert compressed file to data URL for preview
+      setMedicationImageFile(compressedFile);
       const compressedUrl = URL.createObjectURL(compressedFile);
       setMedicationImagePreview(compressedUrl);
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
+      setMedicationImageFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setMedicationImagePreview(event.target?.result as string);
@@ -193,25 +197,17 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
       // If we have an image preview, upload it first to get an evidence ID
       let evidenceId: string | null = null;
       if (medicationImagePreview) {
-        // Convert data URL to file
-        const response = await fetch(medicationImagePreview);
-        const blob = await response.blob();
-        const file = new File([blob], 'medication.png', { type: 'image/png' });
-        
-        // Compress the image before upload
-        setMedicationCompressing(true);
-        const compressedFile = await compressImageFn(file, {
-          maxSizeMB: 0.5, // 500KB target
-          maxWidthOrHeight: 2000, // 2000px max dimension
-          useWebWorker: true,
-          initialQuality: 0.8,
-          compressForce: false,
-          rotate: true,
-        });
-        setMedicationCompressing(false);
-        
+        // The selected image is already compressed (or intentionally retained as
+        // the original if compression failed). Avoid refetching a blob URL and
+        // recompressing the same image during form submission.
+        const fileToUpload = medicationImageFile ?? await (async () => {
+          const response = await fetch(medicationImagePreview);
+          const blob = await response.blob();
+          return new File([blob], 'medication.png', { type: blob.type || 'image/png' });
+        })();
+
         const formData = new FormData();
-        formData.append('file', compressedFile);
+        formData.append('file', fileToUpload);
         const linkedCaregiverId = getCaregiverId();
         if (!linkedCaregiverId) throw new Error('Link a caregiver identity before uploading care evidence.');
         formData.append('caregiver_id', linkedCaregiverId);
@@ -259,6 +255,7 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
       
       // Reset image preview
       setMedicationImagePreview(null);
+      setMedicationImageFile(null);
       
       alert('Medication added successfully');
     } catch (err: any) {
@@ -916,7 +913,7 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setMedicationImagePreview(null)}
+                      onClick={() => { setMedicationImagePreview(null); setMedicationImageFile(null); }}
                       style={{ 
                         fontSize: '12px', 
                         color: '#dc2626', 
