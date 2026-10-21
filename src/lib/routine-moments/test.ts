@@ -60,7 +60,7 @@ describe('Routine Moments Service', () => {
     // Our function calculates weeksDiff = daysDiff / 7, where daysDiff = 2.
     // weeksDiff = 2/7 ≈ 0.2857
     // frequencyPerWeek = 3 / 0.2857 ≈ 10.5
-    expect(baseline.frequency_per_week).toBeCloseTo(10.5);
+    expect(baseline.frequency_per_week).toBeCloseTo(10.2857142857); // 3 observations across 49 hours.
     // Average time of day: (8:00, 8:30, 9:00) -> 8:30
     expect(baseline.average_time_of_day).toBe('08:30');
     // Assistance level distribution: 2 independent, 1 assisted
