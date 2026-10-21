@@ -53,7 +53,7 @@ describe('StructuredDailyCapture', () => {
     await userEvent.click(screen.getByRole('button', { name: /add vital/i }));
     
     // Verify vital is added to the list
-    expect(await screen.findByText(/heart rate/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/heart rate/i).length).toBeGreaterThanOrEqual(2);
     expect(await screen.findByText(/72 bpm/i)).toBeInTheDocument();
   });
 
@@ -68,7 +68,7 @@ describe('StructuredDailyCapture', () => {
     await userEvent.click(screen.getByRole('button', { name: /add scale/i }));
     
     // Verify scale is added to the list
-    expect(await screen.findByText(/mood/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/mood/i).length).toBeGreaterThanOrEqual(2);
     expect(await screen.findByText(/4\/5/i)).toBeInTheDocument();
   });
 
