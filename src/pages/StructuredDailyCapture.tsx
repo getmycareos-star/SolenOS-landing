@@ -100,141 +100,174 @@ export default function StructuredDailyCapture() {
   // Permission hooks
   const { state: cameraState, requestCamera: requestCam, stopCamera: stopCam } = useCameraPermission();
   
-  // Person and caregiver IDs come from the authenticated care context.
+  // Person ID
   const personId = getPersonId();
+  
+  // Load caregivers (simplified for now)
   const caregiverId = getCaregiverId() ?? '';
+  
 
-  const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('Could not read image preview.'));
-    };
-    reader.onerror = () => reject(new Error('Could not read image preview.'));
-    reader.readAsDataURL(file);
-  });
-
-  const imageOptions = {
-    maxSizeMB: 0.5,
-    maxWidthOrHeight: 2000,
-    useWebWorker: true,
-    initialQuality: 0.8,
-    compressForce: false,
-    rotate: true,
-  };
-
+  // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
     try {
       const stream = await requestCam();
       if (!stream) throw new Error('Camera access was not granted.');
-
+      // Create a video element to capture a frame
       const video = document.createElement('video');
       video.srcObject = stream;
-      video.muted = true;
-      video.playsInline = true;
-      await video.play();
-      await new Promise<void>((resolve, reject) => {
-        if (video.readyState >= 2) {
-          resolve();
-          return;
-        }
-        video.onloadeddata = () => resolve();
-        video.onerror = () => reject(new Error('Camera preview could not be loaded.'));
+      video.play();
+      
+      // Wait for the video to play
+      await new Promise<void>((resolve) => {
+        video.onplaying = () => resolve();
       });
-
+      
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-      if (!context || canvas.width === 0 || canvas.height === 0) {
-        throw new Error('Camera did not provide a usable image.');
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/png');
+        
+        // Convert data URL to file for compression
+        const file = new File([await (await fetch(dataUrl)).blob()], 'medication_capture.png', { type: 'image/png' });
+        
+        // Show compression status
+        setMedicationCompressing(true);
+        
+        // Compress the image
+        const compressedFile = await compressImage(file, {
+          maxSizeMB: 0.5, // 500KB target
+          maxWidthOrHeight: 2000, // 2000px max dimension
+          useWebWorker: true,
+          initialQuality: 0.8,
+          compressForce: false,
+          rotate: true,
+        });
+        setMedicationCompressing(false);
+        
+        // Convert compressed file back to data URL for preview
+        const compressedUrl = URL.createObjectURL(compressedFile);
+        setMedicationImagePreview(compressedUrl);
+        
+        // Clean up
       }
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const file = dataURLtoFile(canvas.toDataURL('image/png'), 'medication_capture.png');
-
-      setMedicationCompressing(true);
-      const compressedFile = await compressImage(file, imageOptions);
-      setMedicationImagePreview(await fileToDataUrl(compressedFile));
-    } catch (err) {
-      console.error('Failed to capture medication image:', err);
-      alert('Failed to capture image: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setMedicationCompressing(false);
+      
+      // Stop the stream
       stopCam();
+    } catch (err) {
+      console.error('Failed to capture image:', err);
+      alert('Failed to capture image: ' + (err instanceof Error ? err.message : String(err)));
+      stopCam();
+      setMedicationCompressing(false);
     }
   };
-
+  
+  // Handle image upload for medication
   const handleMedicationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file.');
-      e.target.value = '';
       return;
     }
-
+    
+    // Show compression status
     setMedicationCompressing(true);
+    
     try {
-      const compressedFile = await compressImage(file, imageOptions);
-      setMedicationImagePreview(await fileToDataUrl(compressedFile));
+      // Compress the image
+      const compressedFile = await compressImage(file, {
+        maxSizeMB: 0.5, // 500KB target
+        maxWidthOrHeight: 2000, // 2000px max dimension
+        useWebWorker: true,
+        initialQuality: 0.8,
+        compressForce: false,
+        rotate: true,
+      });
+      
+      // Convert compressed file to data URL for preview
+      const compressedUrl = URL.createObjectURL(compressedFile);
+      setMedicationImagePreview(compressedUrl);
+      
+      // Clean up
     } catch (err) {
-      console.error('Image compression failed; preserving the original image:', err);
-      try {
-        setMedicationImagePreview(await fileToDataUrl(file));
-      } catch (readError) {
-        alert('Could not read the selected image.');
-      }
+      console.error('Image compression failed:', err);
+      // Fallback to original image if compression fails
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setMedicationImagePreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     } finally {
       setMedicationCompressing(false);
-      e.target.value = '';
     }
   };
-
+  
+  // Handle medication form submission
   const handleMedicationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!medicationForm.medication_name.trim()) {
-      alert('Medication name is required');
-      return;
-    }
     if (!personId || !caregiverId) {
       alert('A signed-in caregiver and care record are required to add medication.');
       return;
     }
-
     setMedicationUploading(true);
+    
     try {
+      // If we have an image preview, upload it first to get an evidence ID
       let evidenceId: string | null = null;
       if (medicationImagePreview) {
-        const file = medicationImagePreview.startsWith('data:')
-          ? dataURLtoFile(medicationImagePreview, 'medication.png')
-          : new File([await (await fetch(medicationImagePreview)).blob()], 'medication.png', { type: 'image/png' });
-        setMedicationCompressing(true);
-        const compressedFile = await compressImage(file, imageOptions);
-        setMedicationCompressing(false);
+        // Convert the preview data URL to a file without a network fetch.
+        const file = dataURLtoFile(medicationImagePreview, 'medication.png');
 
+        // Compress the image before upload
+        setMedicationCompressing(true);
+        const compressedFile = await compressImage(file, {
+          maxSizeMB: 0.5, // 500KB target
+          maxWidthOrHeight: 2000, // 2000px max dimension
+          useWebWorker: true,
+          initialQuality: 0.8,
+          compressForce: false,
+          rotate: true,
+        });
+        setMedicationCompressing(false);
+        
         const formData = new FormData();
         formData.append('file', compressedFile);
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
-        formData.append('type', 'document');
-        formData.append('source_text', 'Medication photo: ' + medicationForm.medication_name.trim());
-
+        
         const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
         if (!uploadResult?.evidence_id) {
           throw new Error('Image upload did not return an evidence ID');
         }
         evidenceId = uploadResult.evidence_id;
       }
-
+      
+      // Add medication to the form
       const medicationData = {
         ...medicationForm,
         medication_name: medicationForm.medication_name.trim(),
         scheduled_for: medicationForm.scheduled_for ? new Date(medicationForm.scheduled_for).toISOString() : null,
         administered_at: medicationForm.administered_at ? new Date(medicationForm.administered_at).toISOString() : null,
-        photo_evidence_id: evidenceId,
+        photo_evidence_id: evidenceId, // Set the photo evidence ID from upload
       };
-
-      setForm(prev => ({ ...prev, medications: [...prev.medications, medicationData] }));
+      
+      // Validate required fields
+      if (!medicationData.medication_name) {
+        alert('Medication name is required');
+        setMedicationUploading(false);
+        return;
+      }
+      
+      // Optimistically add to medications list
+      setForm(prev => ({
+        ...prev,
+        medications: [...prev.medications, medicationData]
+      }));
+      
+      // Reset medication form
       setMedicationForm({
         medication_name: '',
         status: 'given',
@@ -244,17 +277,20 @@ export default function StructuredDailyCapture() {
         photo_evidence_id: null,
         note: null,
       });
+      
+      // Reset image preview
       setMedicationImagePreview(null);
+      
       alert('Medication added successfully');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      alert('Failed to add medication: ' + message);
-    } finally {
+    } catch (err: any) {
       setMedicationUploading(false);
       setMedicationCompressing(false);
+      alert(`Failed to add medication: ${err.message}`);
+    } finally {
+      setMedicationUploading(false);
     }
   };
-
+  
   // Handle vitals form submission
   const handleVitalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
