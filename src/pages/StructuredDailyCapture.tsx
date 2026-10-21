@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { postJSON, getPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
-import { useLocationPermission } from '../lib/permissions/useLocationPermission';
 import { compressImage } from '../lib/imageCompression';
 import { useOptimisticMutation } from '../lib/optimistic';
 
-const MOOD_OPTIONS = ['Calm', 'Content', 'Anxious', 'Restless', 'Agitated', 'Aggressive', 'Confused', 'Other'];
-const AGITATION_OPTIONS = ['None', 'Mild', 'Moderate', 'Severe', 'Extreme'];
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 
@@ -43,7 +40,15 @@ export default function StructuredDailyCapture() {
   });
   
   // Medication form state
-  const [medicationForm, setMedicationForm] = useState({
+  const [medicationForm, setMedicationForm] = useState<{
+    medication_name: string;
+    status: string;
+    dose: string | null;
+    scheduled_for: string | null;
+    administered_at: string | null;
+    photo_evidence_id: string | null;
+    note: string | null;
+  }>({
     medication_name: '',
     status: 'given', // default to given
     dose: null,
@@ -54,7 +59,13 @@ export default function StructuredDailyCapture() {
   });
   
   // Vitals form state
-  const [vitalForm, setVitalForm] = useState({
+  const [vitalForm, setVitalForm] = useState<{
+    vital_type: string;
+    value: number;
+    measured_at: string;
+    unit: string | null;
+    note: string | null;
+  }>({
     vital_type: 'bp_systolic',
     value: 0,
     measured_at: new Date().toISOString(),
@@ -63,7 +74,12 @@ export default function StructuredDailyCapture() {
   });
   
   // Scale form state
-  const [scaleForm, setScaleForm] = useState({
+  const [scaleForm, setScaleForm] = useState<{
+    axis: string;
+    score: number;
+    observed_at: string;
+    note: string | null;
+  }>({
     axis: 'mood',
     score: 3,
     observed_at: new Date().toISOString(),
@@ -82,29 +98,22 @@ export default function StructuredDailyCapture() {
   
   // Permission hooks
   const { state: cameraState, requestCamera: requestCam, stopCamera: stopCam } = useCameraPermission();
-  const { state: locationState, requestLocation: requestLoc } = useLocationPermission();
   
   // Person ID
   const personId = getPersonId();
   
   // Load caregivers (simplified for now)
-  const [caregivers, setCaregivers] = useState<Array<{id: string; name: string}>>([]);
   const [caregiverId, setCaregiverId] = useState<string>('');
-  const [loadingCaregivers, setLoadingCaregivers] = useState<boolean>(true);
   
   useEffect(() => {
     async function loadCaregivers() {
       try {
         // In a real app, we would fetch caregivers for the person
         // For now, we'll use a default
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
         setCaregiverId('demo-caregiver');
       } catch (e) {
         console.error(e);
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
         setCaregiverId('demo-caregiver');
-      } finally {
-        setLoadingCaregivers(false);
       }
     }
     loadCaregivers();
@@ -367,7 +376,7 @@ export default function StructuredDailyCapture() {
   };
   
   // Handle form submission to backend with optimistic update
-  const { mutate: submitDailyLog, loading: submittingMutation, error: submitError } = useOptimisticMutation<
+  const { mutate: submitDailyLog, loading: submittingMutation } = useOptimisticMutation<
     any,
     {
       personId: string;
@@ -489,7 +498,7 @@ export default function StructuredDailyCapture() {
       
       setSaveError(error);
       setSaved(false);
-      alert(`Failed to save: ${error.message}`);
+      alert(`Failed to save: ${error instanceof Error ? error.message : String(error)}`);
     },
     onSettled: () => {
       setSubmitting(false);
@@ -752,7 +761,7 @@ export default function StructuredDailyCapture() {
       )}
       
       {/* Save error indicator */}
-      {saveError && !saved && (
+      {Boolean(saveError) && !saved && (
         <div style={{ 
           background: 'var(--error-soft)', 
           border: '1px solid var(--error)', 
