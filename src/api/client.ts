@@ -119,7 +119,7 @@ export async function checkAuthState(): Promise<{ authenticated: false; sessionI
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: unknown) => void,
+  _callback: (authenticated: boolean, sessionInfo: any) => void,
 ): () => void {
   return () => {}
 }
