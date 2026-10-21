@@ -92,7 +92,7 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(requestUrl(path, personId !== false), {
+  const res = await fetch(requestUrl(path, personId === true), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
