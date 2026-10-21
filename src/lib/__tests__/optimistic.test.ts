@@ -1,13 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useOptimisticMutation } from './optimistic';
 
-// Mock the API client functions
-jest.mock('../api/client', () => ({
-  postJSON: jest.fn(),
-  patchJSON: jest.fn(),
-  getJSON: jest.fn(),
-}));
-
 describe('useOptimisticMutation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
