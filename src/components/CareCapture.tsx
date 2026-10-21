@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface SimilarExperience {
@@ -36,6 +36,8 @@ const CAPTURE_HINTS = [
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
+  const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const [identityError, setIdentityError] = useState<string | null>(null)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -52,12 +54,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
       return { caregiverId, personId, rawInput };
     },
-    onSuccess: async (data, variables, context) => {
-      // On success, fetch the community experience
-      const experienceData = await postJSON('/community/experience', {
-        observation: variables.rawInput,
-      }) as ExperienceResult
-      setExperiences(experienceData)
+    onSuccess: async (data, variables) => {
+      // The backend currently returns a saved situation, not community matches.
+      // Do not call the nonexistent /community/experience endpoint or invent matches.
+      setExperiences(null)
+      setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
+      setIdentityError(null)
+      setText('')
       onCapture?.(variables.rawInput)
     },
     onError: async (error, variables, context) => {
@@ -66,8 +69,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       console.error('Failed to save situation:', error)
     },
     onSettled: () => {
-      // Clear the text after submission attempt
-      setText('')
+      // Preserve the user's text on failure so it can be corrected and retried.
     },
     retry: true,
     maxRetries: 3
@@ -76,9 +78,14 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const handleSubmit = async () => {
     if (!text.trim()) return
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    const caregiverId = getCaregiverId()
+    if (!caregiverId) {
+      setIdentityError('A signed-in caregiver is required to save this care update.')
+      return
+    }
+    setIdentityError(null)
+    setSavedMessage(null)
+
     await submitSituation({
       caregiverId,
       personId,
@@ -101,7 +108,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {experiences && (
+        {(experiences || savedMessage) && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -109,7 +116,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && (
+        {submitting && !experiences && !savedMessage && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -117,12 +124,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {submitError && !experiences && (
+        {(submitError || identityError) && !experiences && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
-            Failed to save
+            {identityError || 'Failed to save'}
           </span>
         )}
       </div>
@@ -137,7 +144,11 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          setText(e.target.value)
+          setSavedMessage(null)
+          setIdentityError(null)
+        }}
         placeholder="Dad wandered at 2 AM and was confused about where he was..."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
@@ -182,6 +193,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           {submitting ? 'Saving...' : 'Save what changed →'}
         </button>
       </div>
+
+      {savedMessage && !experiences && (
+        <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
+          {savedMessage}
+        </p>
+      )}
 
       {experiences && (
         <div style={{
