@@ -63,7 +63,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Fill medication form and submit
     const medicationInput = screen.getByPlaceholderText(/enter medication name/i);
@@ -164,7 +164,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Fill medication form and submit
     const medicationInput = screen.getByPlaceholderText(/enter medication name/i);
