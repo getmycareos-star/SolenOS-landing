@@ -10,18 +10,69 @@ declare global {
   }
 }
 
-// Use the same-origin API proxy by default in production and local development.
-// Vite proxies /api/* to the local backend; Netlify proxies /api/* to Railway.
-// Override only when deliberately targeting a different API origin.
-const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
+const configuredBase = import.meta.env.VITE_API_BASE?.trim()
+const isProduction = import.meta.env.PROD === true
+const invalidConfiguredBase = Boolean(
+  configuredBase && /your-solenos-backend-domain\.com|localhost:8000/i.test(configuredBase),
+)
+// Use Netlify's same-origin proxy in production; only local development defaults to localhost.
+const API_BASE = configuredBase && !invalidConfiguredBase
+  ? configuredBase.replace(/\/+$/, '')
+  : isProduction
+    ? '/api/v1'
+    : 'http://localhost:8000/api/v1'
+
+export const ACCESS_TOKEN_STORAGE_KEY = 'solenos_access_token'
+
+export function getAccessToken(): string | null {
+  return typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
+}
+
+export function setAccessToken(token: string): void {
+  sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenos:auth-changed'))
+}
+
+export function clearAccessToken(): void {
+  if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('solenos:auth-changed'))
+    window.dispatchEvent(new Event('solenos:auth-expired'))
+  }
+}
+
+export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const token = getAccessToken()
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra
+}
 
 export function getPersonId(): string {
-  return localStorage.getItem('solenos_person_id') || 'demo-person-id'
+  return typeof localStorage === 'undefined' ? '' : (localStorage.getItem('solenos_person_id') || '')
 }
 
 export function setPersonId(id: string): void {
   localStorage.setItem('solenos_person_id', id)
-  window.dispatchEvent(new Event('personIdChanged'))
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('personIdChanged'))
+}
+
+export function getCaregiverId(): string | null {
+  return typeof localStorage === 'undefined' ? null : localStorage.getItem('solenos_caregiver_id')
+}
+
+export function setCaregiverId(id: string): void {
+  localStorage.setItem('solenos_caregiver_id', id)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('personIdChanged'))
+    window.dispatchEvent(new Event('solenos:auth-changed'))
+  }
+}
+
+export function clearCareContext(): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('solenos_person_id')
+    localStorage.removeItem('solenos_caregiver_id')
+  }
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('personIdChanged'))
 }
 
 export function subscribeToPersonId(callback: (id: string) => void): () => void {
@@ -31,14 +82,21 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
 }
 
 function interpolatePersonId(path: string): string {
-  return path.replace(/demo-person-id/g, getPersonId())
+  if (!path.includes('demo-person-id')) return path
+  const personId = getPersonId()
+  if (!personId) throw new Error('Select an authorized care record before loading or changing care data.')
+  return path.replace(/demo-person-id/g, personId)
 }
 
 async function handleResponse(res: Response) {
-  const contentType = res.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
+  if (res.status === 204) return null
+  const contentType = res.headers?.get?.('content-type') || ''
+  const isJson = contentType.includes('application/json') || (typeof res.text !== 'function' && typeof res.json === 'function')
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAccessToken()
+    }
     let message = `API ${res.status}`
     if (isJson) {
       try {
@@ -58,11 +116,9 @@ async function handleResponse(res: Response) {
     throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
   }
 
+  if (typeof res.text !== 'function') return res.json()
   const text = await res.text()
-  if (!text) {
-    throw new Error('Empty response from server')
-  }
-
+  if (!text) throw new Error('Empty response from server')
   try {
     return JSON.parse(text)
   } catch {
@@ -72,66 +128,43 @@ async function handleResponse(res: Response) {
 
 function resolveApiUrl(path: string, interpolate = false): string {
   const resolvedPath = interpolate ? interpolatePersonId(path) : path
-  // Explicit /api/... paths target unversioned backend routes such as /api/situation.
-  // Other paths use the versioned API prefix (/api/v1).
   return resolvedPath.startsWith('/api/') ? resolvedPath : `${API_BASE}${resolvedPath}`
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path, true))
+  const res = await fetch(resolveApiUrl(path, true), { headers: authHeaders() })
   return handleResponse(res)
 }
 
-// Downloads a binary response, e.g. the care summary PDF. Kept here so the API
-// base is resolved in one place rather than reconstructed by a caller that would
-// otherwise hardcode a second copy of the localhost default.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path, true))
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`)
-  }
+  const res = await fetch(resolveApiUrl(path, true), { headers: authHeaders() })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.blob()
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(resolveApiUrl(path, personId), {
+  const res = await fetch(resolveApiUrl(path, Boolean(personId)), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(resolveApiUrl(path, personId), {
+  const res = await fetch(resolveApiUrl(path, Boolean(personId)), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
-
-// The current API deployment does not expose a durable authentication/session
-// endpoint. Fail closed instead of treating client-side role/localStorage values
-// as proof of identity. Replace these compatibility functions when server-side
-// authentication is implemented and verified.
-export async function checkAuthState(): Promise<{ authenticated: false; sessionInfo: null }> {
-  return { authenticated: false, sessionInfo: null }
-}
-
-export function subscribeToAuthState(
-  callback: (authenticated: boolean, sessionInfo: any) => void
-): () => void {
-  callback(false, null)
-  return () => undefined
-}
-
-// Token refresh cannot be enabled until the server issues refreshable sessions.
-export function startTokenRefresh(): void {
-  // Intentionally no-op: no refresh-token contract exists yet.
-}
-
-export function stopTokenRefresh(): void {
-  // Intentionally no-op: no refresh-token contract exists yet.
+export async function postFormData(path: string, body: FormData) {
+  const res = await fetch(resolveApiUrl(path), {
+    method: 'POST',
+    headers: authHeaders(),
+    body,
+  })
+  return handleResponse(res)
 }
