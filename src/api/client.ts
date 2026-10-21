@@ -126,24 +126,84 @@ export async function patchJSON(path: string, body: unknown, personId?: boolean)
 }
 
 
-// Authentication is not yet implemented by the backend. These fail-closed
-// compatibility exports keep legacy protected screens from treating a local
-// role/identifier as proof of identity. Replace them with real session APIs
-// before exposing protected screens in production.
-export async function checkAuthState(): Promise<{ authenticated: false; sessionInfo: null }> {
-  return { authenticated: false, sessionInfo: null }
+// Session endpoints backed by the FastAPI authentication router.
+export async function signUp(email: string, password: string, displayName: string): Promise<AuthAccount> {
+  return postJSON('/auth/signup', {
+    email: email.trim().toLowerCase(),
+    password,
+    display_name: displayName.trim() || undefined,
+  }) as Promise<AuthAccount>
+}
+
+export async function logIn(email: string, password: string): Promise<AuthAccount> {
+  const result = await postJSON('/auth/login', {
+    email: email.trim().toLowerCase(),
+    password,
+  }) as { access_token: string; account: AuthAccount }
+
+  if (!result.access_token || !result.account?.id) {
+    throw new Error('The server returned an incomplete login response.')
+  }
+  localStorage.setItem(ACCESS_TOKEN_KEY, result.access_token)
+  notifyAuthStateChanged()
+  return result.account
+}
+
+export async function getCareContexts(): Promise<CareContext[]> {
+  return getJSON('/auth/care-contexts') as Promise<CareContext[]>
+}
+
+export async function createCareContext(name: string): Promise<CareContext> {
+  return postJSON('/auth/care-contexts', { name: name.trim() }) as Promise<CareContext>
+}
+
+export async function logOut(): Promise<void> {
+  const token = getAccessToken()
+  try {
+    if (token) {
+      await fetch(requestUrl('/auth/logout'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      })
+    }
+  } finally {
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    localStorage.removeItem('solenos_person_id')
+    notifyAuthStateChanged()
+  }
+}
+
+export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthAccount | null }> {
+  if (!getAccessToken()) return { authenticated: false, sessionInfo: null }
+  try {
+    const account = await getJSON('/auth/me') as AuthAccount
+    return { authenticated: true, sessionInfo: account }
+  } catch {
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    return { authenticated: false, sessionInfo: null }
+  }
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: any) => void,
+  callback: (authenticated: boolean, sessionInfo: AuthAccount | null) => void,
 ): () => void {
-  return () => {}
+  let active = true
+  const handler = () => {
+    void checkAuthState().then(state => {
+      if (active) callback(state.authenticated, state.sessionInfo)
+    })
+  }
+  window.addEventListener('authStateChanged', handler)
+  return () => {
+    active = false
+    window.removeEventListener('authStateChanged', handler)
+  }
 }
 
 export function startTokenRefresh(): void {
-  // No token is issued until a real backend authentication flow exists.
+  // Sessions are expiry-checked by the API; no refresh endpoint exists yet.
 }
 
 export function stopTokenRefresh(): void {
-  // No token refresh timer is active.
+  // No refresh timer is active.
 }
