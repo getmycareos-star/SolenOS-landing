@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { getPersonId, getJSON, postJSON, patchJSON } from "../api/client";
 
 const Notifications: React.FC = () => {
@@ -11,7 +10,6 @@ const Notifications: React.FC = () => {
   const [skip, setSkip] = useState(0);
   const [limit] = useState(20);
   const [hasMore, setHasMore] = useState(true);
-  const navigate = useNavigate();
 
   // Fetch the personId on mount
   useEffect(() => {
