@@ -217,10 +217,10 @@ export function AccessibleInput({
             dir={dir}
             spellCheck={spellCheck}
             inputMode={inputMode}
-            'aria-describedby'={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
-            'aria-invalid'={hasError}
-            'aria-readonly'={readOnly}
-            'aria-required'={required}
+            aria-describedby={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
+            aria-invalid={hasError}
+            aria-readonly={readOnly}
+            aria-required={required}
             className={getInputClasses() + (rows ? ' resize-y w-full' : ' w-full')}
           />
         ) : (
@@ -240,16 +240,15 @@ export function AccessibleInput({
             step={step}
             min={min}
             max={max}
-            placeholder={placeholder}
             dir={dir}
             spellCheck={spellCheck}
             inputMode={inputMode}
-            'aria-describedby'={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
-            'aria-invalid'={hasError}
-            'aria-readonly'={readOnly}
-            'aria-required'={required}
-            className={getInputClasses()}
+            aria-describedby={ ( (ariaDescribedby || '') + (getHelperText() ? (name + '-helper') : '') ).trim() }
+            aria-invalid={hasError}
+            aria-readonly={readOnly}
+            aria-required={required}
             className={getInputClasses() + ' w-full'}
+          />
         )}
         
         {/* Clear button */}
