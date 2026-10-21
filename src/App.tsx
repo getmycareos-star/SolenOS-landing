@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Navigate, Outlet, Routes, Route, useNavigate } from 'react-router-dom'
 import {
+  ApiError,
   clearAccessToken,
   clearCareContext,
   getAccessToken,
   getCaregiverId,
+  getJSON,
   getPersonId,
   postJSON,
 } from './api/client'
@@ -20,13 +22,58 @@ import Memory from './pages/Memory'
 import CareCircle from './pages/CareCircle'
 import Login from './pages/Login'
 
+type CaregiverLink = {
+  person_id: string
+  caregiver_id: string
+  account_id: string
+  permissions: string[]
+}
+
 function RequireAuth() {
-  const [authenticated, setAuthenticated] = useState(
-    () => Boolean(getAccessToken() && getPersonId() && getCaregiverId()),
+  const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated' | 'error'>(
+    () => getAccessToken() && getPersonId() && getCaregiverId() ? 'checking' : 'unauthenticated',
   )
+  const [error, setError] = useState('Could not verify your session.')
+  const [retry, setRetry] = useState(0)
+
+  const verifySession = useCallback(async () => {
+    const token = getAccessToken()
+    const personId = getPersonId()
+    const caregiverId = getCaregiverId()
+    if (!token || !personId || !caregiverId) {
+      setStatus('unauthenticated')
+      return
+    }
+
+    setStatus('checking')
+    setError('')
+    try {
+      await getJSON('/auth/me')
+      const links = await getJSON(
+        `/auth/my-caregiver-links?person_id=${encodeURIComponent(personId)}`,
+      ) as CaregiverLink[]
+      if (!links.some(link => link.person_id === personId && link.caregiver_id === caregiverId)) {
+        clearAccessToken()
+        clearCareContext()
+        setStatus('unauthenticated')
+        return
+      }
+      setStatus('authenticated')
+    } catch (cause) {
+      if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+        clearAccessToken()
+        clearCareContext()
+        setStatus('unauthenticated')
+        return
+      }
+      setError(cause instanceof Error ? cause.message : 'Could not verify your session.')
+      setStatus('error')
+    }
+  }, [])
 
   useEffect(() => {
-    const refresh = () => setAuthenticated(Boolean(getAccessToken() && getPersonId() && getCaregiverId()))
+    void verifySession()
+    const refresh = () => void verifySession()
     window.addEventListener('solenos:auth-expired', refresh)
     window.addEventListener('solenos:auth-changed', refresh)
     window.addEventListener('personIdChanged', refresh)
@@ -35,9 +82,20 @@ function RequireAuth() {
       window.removeEventListener('solenos:auth-changed', refresh)
       window.removeEventListener('personIdChanged', refresh)
     }
-  }, [])
+  }, [verifySession, retry])
 
-  return authenticated ? <Outlet /> : <Navigate to="/login" replace />
+  if (status === 'checking') {
+    return <main role="status" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>Verifying your session…</main>
+  }
+  if (status === 'error') {
+    return (
+      <main style={{ padding: '48px 24px', textAlign: 'center' }}>
+        <p role="alert" style={{ color: 'var(--error)' }}>{error}</p>
+        <button type="button" onClick={() => setRetry(value => value + 1)}>Retry session check</button>
+      </main>
+    )
+  }
+  return status === 'authenticated' ? <Outlet /> : <Navigate to="/login" replace />
 }
 
 function SessionControls() {
