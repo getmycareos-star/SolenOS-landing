@@ -11,6 +11,7 @@ import Timeline from './pages/Timeline'
 import Record from './pages/Record'
 import Memory from './pages/Memory'
 import CareCircle from './pages/CareCircle'
+import Appointments from './pages/Appointments'
 import Login from './pages/Login'
 import InvestorDashboard from './pages/InvestorDashboard'
 
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/record" element={<Record />} />
         <Route path="/memory" element={<Memory />} />
         <Route path="/care-circle" element={<CareCircle />} />
+        <Route path="/appointments" element={<Appointments />} />
         <Route path="/companion" element={<Companion />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/community" element={<Community />} />
