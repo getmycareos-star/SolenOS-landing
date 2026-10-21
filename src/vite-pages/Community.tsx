@@ -12,6 +12,7 @@ interface CommunityPost {
   author_type: AuthorType
   author_label: string
   author_avatar_seed: string
+  is_own_post?: boolean
   title: string | null
   body: string
   media: { url: string; mime_type: string; alt: string | null }[]
@@ -619,19 +620,21 @@ export default function Community() {
                    >
                      {savedPosts.has(post.id) ? '🔖' : '🔖'}
                    </button>
-                   <button
-                     onClick={() => flagPost(post.id)}
-                     disabled={communityUnavailable || reportingPostId === post.id}
-                     style={{
-                       border: 'none', background: 'transparent',
-                       padding: '4px 8px', borderRadius: '6px',
-                       cursor: communityUnavailable || reportingPostId === post.id ? 'not-allowed' : 'pointer',
-                       color: 'var(--text-secondary)', fontSize: '12px',
-                     }}
-                     title="Report this post for staff review"
-                   >
-                     {reportingPostId === post.id ? 'Reporting…' : '⚑ Report'}
-                   </button>
+                   {!post.is_own_post && (
+                     <button
+                       onClick={() => flagPost(post.id)}
+                       disabled={communityUnavailable || reportingPostId === post.id}
+                       style={{
+                         border: 'none', background: 'transparent',
+                         padding: '4px 8px', borderRadius: '6px',
+                         cursor: communityUnavailable || reportingPostId === post.id ? 'not-allowed' : 'pointer',
+                         color: 'var(--text-secondary)', fontSize: '12px',
+                       }}
+                       title="Report this post for staff review"
+                     >
+                       {reportingPostId === post.id ? 'Reporting…' : '⚑ Report'}
+                     </button>
+                   )}
                  </div>
               </div>
             )
