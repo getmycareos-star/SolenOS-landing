@@ -42,6 +42,7 @@ export default function DailyCare() {
         const data = await getJSON(`/caregivers/person/${personId}`)
         setCaregivers(data)
         if (data.length > 0) setCaregiverId(data[0].id)
+        else setCaregiverError('No caregiver is linked to this person yet.')
       } catch (e) {
         console.error(e)
         setCaregiverError('Could not load caregivers. Check the connection and try again.')
@@ -192,10 +193,9 @@ export default function DailyCare() {
               }}
             >
               {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              <option value="demo-caregiver">Demo Caregiver</option>
             </select>
           )}
-          {caregiverError && <p style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>{caregiverError}</p>}
+          {caregiverError && <p role="alert" style={{ fontSize: '11px', color: 'var(--error)', marginTop: '4px' }}>{caregiverError}</p>}
         </section>
 
         {/* Mood */}
@@ -426,6 +426,7 @@ export default function DailyCare() {
          </section>
          <button
           type="submit"
+           disabled={submitting || loadingCaregivers || !caregiverId}
           disabled={submitting}
           style={{
             padding: '12px 24px', borderRadius: '10px', border: 'none',
