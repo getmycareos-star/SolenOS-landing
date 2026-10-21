@@ -47,10 +47,7 @@ describe('CareCapture caregiver workflow', () => {
     render(<CareCapture personId="test-person-id" onCapture={onCapture} />);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/caregivers/person/test-person-id',
-        expect.objectContaining({ headers: expect.anything() }),
-      );
+      expect(fetchMock).toHaveBeenCalledWith('/api/v1/caregivers/test-person-id');
     });
 
     fireEvent.change(screen.getByPlaceholderText(/Dad wandered at 2 AM/i), {
