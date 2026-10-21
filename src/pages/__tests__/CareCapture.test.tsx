@@ -20,7 +20,7 @@ function installFetchMock(caregivers: Array<{ id: string; name: string }>) {
     } else if (path.includes('/situation')) {
       body = { ok: true, evidence_id: 'evidence-1', care_event_id: 'event-1' };
     } else if (path.includes('/community/experience')) {
-      body = { matched: false };
+      body = { trigger_observation: '', matched_keywords: [], matches: [], community_pattern: null };
     }
 
     return {
