@@ -6,7 +6,7 @@ import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
 jest.mock('../api/client', () => ({
   getPersonId: () => 'test-person-id',
-  getJSON: jest.fn().mockResolvedValue([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]),
+  getJSON: jest.fn().mockResolvedValue([{ id: 'caregiver-123', name: 'Demo Caregiver' }]),
   postJSON: jest.fn().mockResolvedValue({}),
 }));
 
@@ -19,7 +19,7 @@ const mockUseLocationPermission = useLocationPermission as jest.MockedFunction<t
 describe('DailyCare', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (getJSON as jest.Mock).mockResolvedValue([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
+    (getJSON as jest.Mock).mockResolvedValue([{ id: 'caregiver-123', name: 'Demo Caregiver' }]);
     (postJSON as jest.Mock).mockResolvedValue({});
     mockUseLocationPermission.mockReturnValue({
       state: { status: 'unknown' },
@@ -96,10 +96,18 @@ describe('DailyCare', () => {
     await userEvent.click(screen.getByRole('button', { name: /save daily care entry/i }));
 
     await waitFor(() => expect(postJSON).toHaveBeenCalledWith(
-      '/daily-care/entries',
+      '/daily/log',
       expect.objectContaining({
-        mood: 'Calm',
-        agitation_level: 'None',
+        person_id: 'test-person-id',
+        caregiver_id: 'caregiver-123',
+        medications: [],
+        vitals: [],
+        scales: expect.arrayContaining([
+          expect.objectContaining({ axis: 'mood', score: 1 }),
+          expect.objectContaining({ axis: 'agitation', score: 1, note: 'None' }),
+          expect.objectContaining({ axis: 'wellbeing_stress', score: 3 }),
+        ]),
+        notes: '',
         location: {
           latitude: 40.7128,
           longitude: -74.006,
