@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import StructuredDailyCapture from '../StructuredDailyCapture';
 import { compressImage } from '../../lib/imageCompression';
@@ -22,13 +23,16 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
   it('should compress medication image before upload when using gallery upload', async () => {
     // Mock the API calls
     global.fetch = jest.fn().mockImplementation(async (url, options) => {
-      if (url.includes('/upload')) {
+      if (String(url).startsWith('blob:')) {
+        return { ok: true, blob: async () => new Blob(['compressed image'], { type: 'image/png' }) };
+      }
+      if (String(url).includes('/upload')) {
         return {
           ok: true,
           json: async () => ({ evidence_id: 'test-evidence-id' })
         };
       }
-      if (url.includes('/daily/log')) {
+      if (String(url).includes('/daily/log')) {
         return {
           ok: true,
           json: async () => ({ success: true })
@@ -126,7 +130,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
 
     // Mock the API calls
     global.fetch = jest.fn().mockImplementation(async (url, options) => {
-      if (url.includes('/upload')) {
+      if (String(url).includes('/upload')) {
         return {
           ok: true,
           json: async () => ({ evidence_id: 'test-evidence-id' })
