@@ -1,282 +1,97 @@
 import { useEffect, useState } from 'react'
 import { getJSON, getPersonId } from '../api/client'
 
-interface ProfessionalDashboardAlert {
-  person_id: string
-  person_name: string
-  alert_type: string
-  title: string
-  description: string
-  severity: string
-  timestamp: string
-  action_required: boolean
-  suggested_action: string | null
+type RecordItem = Record<string, unknown>
+
+function readableDate(value: unknown): string {
+  if (typeof value !== 'string' || !value) return 'Date not recorded'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
-interface ProfessionalDashboardPersonSummary {
-  person_id: string
-  person_name: string
-  primary_condition: string | null
-  last_updated: string
-  alert_count: number
-  alerts: string[]
-  care_team_size: number
-  has_recent_updates: boolean
-  next_appointment: string | null
-  compliance_score: number | null
+function itemTitle(item: RecordItem, fallback: string): string {
+  for (const key of ['title', 'summary', 'event_type', 'type', 'name', 'status']) {
+    if (typeof item[key] === 'string' && item[key]) return item[key] as string
+  }
+  return fallback
 }
 
-interface ProfessionalDashboard {
-  total_patients: number
-  active_patients_today: number
-  patients_with_alerts: number
-  total_alerts: number
-  alerts: ProfessionalDashboardAlertItem[]
-  patients: ProfessionalDashboardPersonSummary[]
-  professional_name: string
-  professional_role: string
-  specialty: string | null
-  generated_at: string
-  timeframe_days: number
-}
-
-interface ProfessionalDashboardAlertItem {
-  person_id: string
-  person_name: string
-  alert_type: string
-  title: string
-  description: string
-  severity: string
-  timestamp: string
-  action_required: boolean
-  suggested_action: string | null
+function itemDetail(item: RecordItem): string {
+  for (const key of ['description', 'detail', 'source_text', 'notes', 'content']) {
+    if (typeof item[key] === 'string' && item[key]) return item[key] as string
+  }
+  return 'No additional detail recorded.'
 }
 
 export default function ProfessionalDashboard() {
-  const [dashboard, setDashboard] = useState<ProfessionalDashboard | null>(null)
+  const personId = getPersonId()
+  const [events, setEvents] = useState<RecordItem[]>([])
+  const [appointments, setAppointments] = useState<RecordItem[]>([])
+  const [insights, setInsights] = useState<RecordItem[]>([])
+  const [caregivers, setCaregivers] = useState<RecordItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [timeframeDays, setTimeframeDays] = useState(7)
-  const personId = getPersonId()
 
-  useEffect(() => {
-    fetchDashboard()
-  }, [personId, timeframeDays])
-
-  const fetchDashboard = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await getJSON(`/professional-dashboard/?timeframe_days=${timeframeDays}`)
-      setDashboard(data as ProfessionalDashboard)
-    } catch (err: any) {
-      console.error('Failed to fetch professional dashboard:', err)
-      setError(err.message || 'Failed to load dashboard')
-    } finally {
+  const load = async () => {
+    if (!personId) {
+      setEvents([]); setAppointments([]); setInsights([]); setCaregivers([])
+      setError('Select a care recipient to view their existing care record.')
       setLoading(false)
+      return
     }
+    setLoading(true); setError(null)
+    const results = await Promise.allSettled([
+      getJSON('/events/' + encodeURIComponent(personId)),
+      getJSON('/appointments/' + encodeURIComponent(personId)),
+      getJSON('/insights/' + encodeURIComponent(personId)),
+      getJSON('/caregivers/' + encodeURIComponent(personId)),
+    ])
+    const failures = results.filter((r) => r.status === 'rejected')
+    const values = results.map((r) => r.status === 'fulfilled' ? r.value : [])
+    setEvents(Array.isArray(values[0]) ? values[0] as RecordItem[] : [])
+    setAppointments(Array.isArray(values[1]) ? values[1] as RecordItem[] : [])
+    setInsights(Array.isArray(values[2]) ? values[2] as RecordItem[] : [])
+    setCaregivers(Array.isArray(values[3]) ? values[3] as RecordItem[] : [])
+    if (failures.length) setError('Some care-record sections could not be retrieved. Displayed sections contain only data returned successfully by the backend; retry to refresh.')
+    setLoading(false)
   }
 
-  if (loading) {
-    return (
-      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '20px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          Loading professional dashboard...
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => { void load() }, [personId])
 
-  if (error) {
-    return (
-      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '20px', color: 'var(--error)', marginBottom: '16px' }}>
-          {error}
-        </div>
-        <button
-          onClick={fetchDashboard}
-          style={{
-            padding: '8px 16px', borderRadius: '8px', border: 'none',
-            background: 'var(--trust)', color: 'white', fontSize: '13px',
-            cursor: 'pointer'
-          }}
-        >
-          Retry
-        </button>
-      </div>
-    )
-  }
-
-  if (!dashboard) {
-    return (
-      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '20px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          No dashboard data available
-        </div>
-      </div>
-    )
-  }
+  const section = (title: string, items: RecordItem[], empty: string) => (
+    <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
+      <h2 style={{ fontSize: 16, fontWeight: 600 }}>{title} <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>({items.length})</span></h2>
+      {items.length === 0 ? <p style={{ marginTop: 10, color: 'var(--text-secondary)', fontSize: 13 }}>{empty}</p> : (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '10px 0 0', display: 'grid', gap: 10 }}>
+          {items.slice(0, 10).map((item, index) => (
+            <li key={typeof item.id === 'string' ? item.id : index} style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontWeight: 500 }}>{itemTitle(item, title.slice(0, -1) || 'Record')}</div>
+              <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>{itemDetail(item)}</div>
+              <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text-secondary)' }}>{readableDate(item.created_at ?? item.updated_at ?? item.occurred_at ?? item.appointment_date)}</div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
 
   return (
-    <div style={{ padding: '24px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600 }}>Professional Dashboard</h1>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <label style={{ fontSize: '13px', color: 'var(--text-secondary)', marginRight: '8px' }}>
-            Timeframe:
-          </label>
-          <select
-            value={timeframeDays}
-            onChange={(e) => setTimeframeDays(parseInt(e.target.value))}
-            style={{
-              padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)',
-              background: 'var(--surface)', fontSize: '13px'
-            }}
-          >
-            <option value={7}>7 Days</option>
-            <option value={14}>14 Days</option>
-            <option value={30}>30 Days</option>
-          </select>
-        </div>
+    <main style={{ maxWidth: 900, margin: '0 auto', padding: '28px 24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div><h1 style={{ fontSize: 24, fontWeight: 600 }}>Professional Care Overview</h1><p style={{ marginTop: 6, color: 'var(--text-secondary)', fontSize: 13 }}>Existing records for the currently selected care recipient. This is not a multi-patient professional dashboard.</p></div>
+        <button onClick={() => void load()} disabled={loading} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: loading ? 'default' : 'pointer' }}>{loading ? 'Refreshing…' : 'Refresh'}</button>
       </div>
-
-      {/* Dashboard Summary */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent)' }}>{dashboard.total_patients}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Total Patients</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--trust)' }}>{dashboard.active_patients_today}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Active Today</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--warning)' }}>{dashboard.patients_with_alerts}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Patients with Alerts</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--error)' }}>{dashboard.total_alerts}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Total Alerts</div>
-          </div>
+      {error && <p role="alert" style={{ marginTop: 16, color: 'var(--error)', fontSize: 13 }}>{error}</p>}
+      {loading && <p style={{ marginTop: 16, color: 'var(--text-secondary)' }}>Loading care records…</p>}
+      {!loading && <>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginTop: 20 }}>
+          {[['Care events', events.length], ['Appointments', appointments.length], ['Insights', insights.length], ['Linked caregivers', caregivers.length]].map(([label, count]) => <div key={String(label)} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, background: 'var(--surface)' }}><div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{label}</div><div style={{ marginTop: 6, fontSize: 24, fontWeight: 600 }}>{count}</div></div>)}
         </div>
-      </div>
-
-      {/* Professional Info */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Your Professional Information</h2>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>{dashboard.professional_name}</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{dashboard.professional_role}</div>
-            {dashboard.specialty && (
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Specialty: {dashboard.specialty}
-              </div>
-            )}
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Last updated: {new Date(dashboard.generated_at).toLocaleString()}
-          </div>
-        </div>
-      </div>
-
-      {/* Alerts Section */}
-      {dashboard.alerts.length > 0 && (
-        <>
-          <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Active Alerts</h2>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-              {dashboard.alerts.map((alert, index) => (
-                <div key={index} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: index < dashboard.alerts.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{
-                          width: '8px', height: '8px', borderRadius: '50%',
-                          background: alert.severity === 'critical' ? 'var(--error)' :
-                                   alert.severity === 'high' ? 'var(--warning)' :
-                                   alert.severity === 'medium' ? 'var(--accent)' : 'var(--success)'
-                        }}></div>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
-                          {alert.title}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        {new Date(alert.timestamp).toLocaleString()}
-                      </span>
-                    </div>
-                    {alert.action_required && (
-                      <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'var(--error-soft)', color: 'var(--error)' }}>
-                        Action Required
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ fontSize: '13px', color: 'var(--text)', marginBottom: '8px' }}>
-                    {alert.description}
-                  </p>
-                  {alert.suggested_action && (
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                      Suggested action: {alert.suggested_action}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Patients Section */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Patient Summaries</h2>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-          {dashboard.patients.map((patient, index) => (
-            <div key={index} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: index < dashboard.patients.length - 1 ? '1px solid var(--border)' : 'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <div>
-                  <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>{patient.person_name}</div>
-                  {patient.primary_condition && (
-                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      {patient.primary_condition}
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: patient.alert_count > 0 ? 'var(--warning)' : 'var(--success)' }}></div>
-                    <span>{patient.alert_count} alerts</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: patient.has_recent_updates ? 'var(--success)' : 'var(--text-soft)' }}></div>
-                    <span>{patient.has_recent_updates ? 'Recent updates' : 'No recent updates'}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: patient.next_appointment ? 'var(--accent)' : 'var(--text-soft)' }}></div>
-                    <span>{patient.next_appointment ? 'Upcoming appointment' : 'No upcoming appointments'}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Patient Details */}
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-soft)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Care Team Size</div>
-                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{patient.care_team_size}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Compliance Score</div>
-                    <div style={{ fontSize: '16px', fontWeight: 600, color: patient.compliance_score !== null && patient.compliance_score >= 80 ? 'var(--success)' : patient.compliance_score !== null && patient.compliance_score >= 60 ? 'var(--warning)' : 'var(--error)' }}>
-                      {patient.compliance_score !== null ? patient.compliance_score.toFixed(0) + '%' : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+        {section('Care events', events, 'No care events were returned for this person.')}
+        {section('Appointments', appointments, 'No appointments were returned for this person.')}
+        {section('Insights', insights, 'No insights were returned for this person.')}
+        {section('Caregivers', caregivers, 'No linked caregivers were returned for this person.')}
+      </>}
+    </main>
   )
 }
