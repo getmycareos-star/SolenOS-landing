@@ -195,10 +195,11 @@ export default function DailyCare() {
 
         {/* Mood */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="daily-care-mood" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Mood
           </label>
           <select
+            id="daily-care-mood"
             value={form.mood}
             onChange={e => { updateField('mood', e.target.value); updateField('mood_scale', MOOD_OPTIONS.indexOf(e.target.value) + 1) }}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
@@ -213,10 +214,11 @@ export default function DailyCare() {
 
         {/* Agitation */}
         <section>
-          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
+          <label htmlFor="daily-care-agitation" style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
             Agitation level
           </label>
           <select
+            id="daily-care-agitation"
             value={form.agitation_level}
             onChange={e => { updateField('agitation_level', e.target.value); updateField('agitation_scale', AGITATION_OPTIONS.indexOf(e.target.value) + 1) }}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
