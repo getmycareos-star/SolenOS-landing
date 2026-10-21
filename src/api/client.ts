@@ -99,7 +99,7 @@ export async function getJSON(path: string) {
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(requestUrl(path))
+  const res = await apiFetch(requestUrl(path))
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -107,7 +107,7 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(requestUrl(path, personId === true), {
+  const res = await apiFetch(requestUrl(path, personId === true), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
