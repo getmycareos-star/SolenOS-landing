@@ -30,7 +30,7 @@ describe('DailyCare', () => {
 
   it('loads and displays the caregiver list', async () => {
     render(<DailyCare />);
-    await waitFor(() => expect(screen.getByLabelText(/recorded by/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/recorded by/i)).toBeInTheDocument());
     expect(await screen.findByRole('option', { name: 'Test Caregiver' })).toBeInTheDocument();
   });
 
