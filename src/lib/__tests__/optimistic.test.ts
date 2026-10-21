@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useOptimisticMutation } from '../optimistic';
 
 // Mock the API client functions
@@ -23,48 +23,37 @@ describe('useOptimisticMutation', () => {
 
   it('should handle successful mutation', async () => {
     const mockData = { id: '123', name: 'Test' };
-    (require('../../api/client').postJSON as jest.Mock).mockResolvedValue(mockData);
-    
-    const mutationFn = jest.fn().mockResolvedValue(mockData);
+    let resolveMutation!: (value: typeof mockData) => void;
+    const mutationFn = jest.fn(() => new Promise<typeof mockData>((resolve) => {
+      resolveMutation = resolve;
+    }));
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
     const onSuccess = jest.fn();
     const onError = jest.fn();
     const onSettled = jest.fn();
-    
-    const { result } = renderHook(() => 
-      useOptimisticMutation()
-    );
-    
-    await act(async () => {
-      result.current.mutate(
-        {
-          mutationFn,
-          onMutate,
-          onSuccess,
-          onError,
-          onSettled,
-        },
-        { test: 'variable' }
+    const { result } = renderHook(() => useOptimisticMutation<typeof mockData, { test: string }>());
+
+    let promise!: Promise<typeof mockData | undefined>;
+    act(() => {
+      promise = result.current.mutate(
+        { mutationFn, onMutate, onSuccess, onError, onSettled },
+        { test: 'variable' },
       );
     });
-    
-    // Check loading state
-    expect(result.current.loading).toBe(true);
-    
-    // Wait for mutation to complete
+
+    await waitFor(() => expect(result.current.loading).toBe(true));
     await act(async () => {
-      // Wait a bit for the async operations
-      return new Promise(resolve => setTimeout(resolve, 10));
+      resolveMutation(mockData);
+      await promise;
     });
-    
-    // Check that loading is finished
+
     expect(result.current.loading).toBe(false);
     expect(result.current.data).toEqual(mockData);
     expect(onMutate).toHaveBeenCalledWith({ test: 'variable' });
     expect(mutationFn).toHaveBeenCalledWith({ test: 'variable' });
     expect(onSuccess).toHaveBeenCalledWith(mockData, { test: 'variable' }, { snapshot: 'test' });
     expect(onError).not.toHaveBeenCalled();
-    expect(onSettled).toHaveBeenCalled();
+    expect(onSettled).toHaveBeenCalledWith(mockData, null, { test: 'variable' }, { snapshot: 'test' });
   });
 
   it('should handle mutation error', async () => {
