@@ -26,19 +26,33 @@ Scope: compare the Vite/React frontend against the FastAPI application in this r
 | Memory | `GET /api/v1/observations/{person_id}` | `GET /api/v1/observations/{person_id}` | Route exists |
 | Caregiver coordination | `GET /caregivers/{person_id}`, `GET /caregiver-responsibilities/{person_id}`, `GET /caregiver-handoffs/{person_id}`, `POST /caregiver-handoffs`, `POST /caregiver-handoffs/{id}/accept` | Existing caregiver-intelligence endpoints | Wired in `/care-circle`; handoff creation requires two real linked caregivers and acknowledgement evidence |
 
-## Unsupported frontend features intentionally disabled
+## Newly implemented collaboration routes
 
-These features previously called URLs not present in the inspected FastAPI router. They must not fabricate records or claim writes succeeded.
+These routes are now implemented in the backend collaboration router and wired to the corresponding UI:
 
-- Community feed, posts, reactions, experience matching, and moderation: no community routes found.
-- Companion conversation: no conversation-message or companion-query route found.
-- Team dashboard/state report/metrics: no matching team routes or `/metrics` endpoint found.
-- Multi-patient professional dashboard: no professional-dashboard route found. The page now shows existing records for the selected person only.
+- Community feed and post creation: `GET/POST /api/v1/community`.
+- Community reactions: `POST/DELETE /api/v1/community/{post_id}/reactions`; each caregiver can maintain one reaction per post.
+- Shared-experience matching: `POST /api/v1/community/experience`; currently literal keyword overlap against published posts, not an AI or clinical assessment.
+- Companion messaging: `POST /api/v1/conversation/message`; persists user/assistant messages, retrieves existing care events/appointments/insights, and returns their record IDs. It is a deterministic record-review helper, not an LLM chat service. Emergency language triggers a conservative urgent-help message; this is not a validated clinical triage system.
+- Conversation history: `GET /api/v1/conversation/{person_id}` and `GET /api/v1/conversation/{session_id}/messages`.
+- Team dashboard aggregates: `GET /api/v1/team/dashboard`, `GET /api/v1/team/state-report`, `GET /api/v1/metrics`.
+- Community moderation: `GET /api/v1/team/moderation`, `PATCH /api/v1/team/moderation/{post_id}`. New posts are private to the moderation queue until explicitly published.
+- Professional multi-patient dashboard: `GET /api/v1/professional/dashboard?professional_caregiver_id=...`; returns only active access grants.
+- Professional access grant: `POST /api/v1/professional/access-grants`; requires a linked family caregiver account to grant access and a provisioned professional account to receive it.
 
-To enable these later, implement and test the backend API contracts, permissions, persistence, and response schemas before re-enabling frontend actions. Do not repurpose private caregiver observations as public Community content.
+## Authentication and authorization
+
+- `POST /api/v1/auth/register`: caregiver enrollment using a server-configured enrollment key; can attach to an existing caregiver record when email and caregiver ID match, or create a new person/caregiver pair.
+- `POST /api/v1/auth/login`: password verification and signed, expiring bearer token issuance.
+- `GET /api/v1/auth/me`: validates the token against the active account.
+- `POST /api/v1/auth/provision`: administrator-key-protected provisioning for professional/team roles. A client role selector cannot grant permissions.
+- All `/api/v1/*` and `/api/situation` requests require a valid bearer token except enrollment/login/provision, health/readiness, OpenAPI/docs, and CORS preflight.
+- The server checks account state, token role, supplied caregiver IDs, care-recipient ownership, professional access grants, and team-only route roles.
+- Team aggregates expose database counts, not identifiable care-event content. Team moderation is restricted to team accounts.
+- The browser currently stores the short-lived bearer token in localStorage. This reduces casual unauthenticated access but is not equivalent to an HttpOnly secure-cookie session and remains exposed to same-origin script compromise.
 
 ## Security and deployment blockers
 
-- Current backend APIs accept caller-supplied person/caregiver identifiers; there is no verified login/token/session contract. Relationship checks prevent mismatched IDs in the tested capture paths but are not authentication or authorization.
+- Backend authentication now uses password-hashed accounts and signed expiring bearer tokens. This is an initial implementation and still requires a full authorization regression pass across every legacy route, plus secure account-enrollment operations before real private care data is enabled.
 - Railway smoke tests returned HTTP 404 for `/health`, `/ready`, `/openapi.json`, and `/api/situation` CORS preflight. The configured production domain is not serving the inspected FastAPI application, so live persistence and browser integration remain unverified.
-- Before production care data is enabled, implement real identity/session issuance and enforce authorization on every person-scoped read and write. Do not expose private records merely because a client knows a person ID.
+- Before production care data is enabled, finish route-by-route authorization tests, configure the required secrets, validate account recovery/rotation, and consider moving browser tokens to secure HttpOnly cookies. Never expose private records merely because a client knows a person ID.
