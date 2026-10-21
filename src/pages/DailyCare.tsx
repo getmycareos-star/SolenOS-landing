@@ -42,11 +42,7 @@ export default function DailyCare() {
         const data = await getJSON(`/caregivers/${personId}`)
         setCaregivers(data)
         if (data.length > 0) setCaregiverId(data[0].id)
-      } catch (e) {
-        console.error(e)
-        setCaregiverError('Could not load caregiver list. Using demo-default.')
-        setCaregiverId('demo-caregiver')
-      } finally {
+undefined
         setLoadingCaregivers(false)
       }
     }
@@ -87,12 +83,7 @@ export default function DailyCare() {
      setSubmitting(true)
      setSaved(false)
 
-     const caregiver = loadingCaregivers ? caregiverId : (caregiverId || 'demo-caregiver')
-
-     try {
-       await postJSON('/daily-care/entries', {
-         person_id: personId,
-         caregiver_id: caregiver,
+undefined
          mood: form.mood || undefined,
          mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
          agitation_level: form.agitation_level,
@@ -186,8 +177,7 @@ export default function DailyCare() {
                 fontSize: '14px'
               }}
             >
-              {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              <option value="demo-caregiver">Demo Caregiver</option>
+undefined
             </select>
           )}
           {caregiverError && <p style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>{caregiverError}</p>}
