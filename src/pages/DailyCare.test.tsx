@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import DailyCare from './DailyCare';
 import { getJSON, postJSON } from '../api/client';
@@ -73,7 +73,7 @@ describe('DailyCare', () => {
     const latitude = screen.getByPlaceholderText(/latitude/i);
     const longitude = screen.getByPlaceholderText(/longitude/i);
     await userEvent.type(latitude, '34.0522');
-    await userEvent.type(longitude, '-118.2437');
+    fireEvent.change(longitude, { target: { value: '-118.2437' } });
     expect(latitude).toHaveValue(34.0522);
     expect(longitude).toHaveValue(-118.2437);
   });
