@@ -143,20 +143,25 @@ export default function Community() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
+      setLoading(true)
+      setLoadError(null)
       try {
-        const data = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
-        setPosts(Array.isArray(data?.posts) ? data.posts : [])
-        setLoadError(null)
+        const data = await getJSON('/community?caregiver_id=' + encodeURIComponent(personId)) as CommunityPostSummary
+        if (!cancelled) setPosts(Array.isArray(data?.posts) ? data.posts : [])
       } catch (e) {
         console.error(e)
-        setPosts([])
-        setLoadError(e instanceof Error ? e.message : 'Community posts could not be loaded.')
+        if (!cancelled) {
+          setPosts([])
+          setLoadError(e instanceof Error ? e.message : 'Community posts could not be loaded.')
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personId])
 
@@ -216,7 +221,8 @@ export default function Community() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!composerText.trim()) return
+    const content = composerText.trim()
+    if (!content || submitting) return
     setActionError(null)
     setSubmitting(true)
     try {
@@ -225,17 +231,30 @@ export default function Community() {
         author_type: 'peer_caregiver',
         author_label: 'Anonymous caregiver',
         post_type: postType,
-        content: composerText.trim(),
+        content,
         visibility: 'public',
       })
-      setComposerText('')
-      setComposerOpen(false)
-      const response = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
+    } catch (e) {
+      // A timeout can leave the server outcome unknown. Preserve the draft and
+      // tell the caregiver to check the feed before attempting another create.
+      console.error(e)
+      setActionError(e instanceof Error
+        ? 'The server did not confirm the post. Refresh the feed to check whether it was saved before retrying. Details: ' + e.message
+        : 'The server did not confirm the post. Refresh the feed to check whether it was saved before retrying.')
+      setSubmitting(false)
+      return
+    }
+
+    // Clear the draft only after the create request returns success.
+    setComposerText('')
+    setComposerOpen(false)
+    try {
+      const response = await getJSON('/community?caregiver_id=' + encodeURIComponent(personId)) as CommunityPostSummary
       setPosts(Array.isArray(response?.posts) ? response.posts : [])
       setLoadError(null)
     } catch (e) {
       console.error(e)
-      setActionError(e instanceof Error ? e.message : 'Your post could not be confirmed as saved. The text has been kept so you can retry.')
+      setActionError('The post request succeeded, but the feed could not be refreshed. Refresh the page to verify the saved post.')
     } finally {
       setSubmitting(false)
     }
