@@ -21,6 +21,7 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const personId = getPersonId()
   const caregiverId = getCaregiverId() || ''
+  const caregiverId = getCaregiverId() || ''
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
