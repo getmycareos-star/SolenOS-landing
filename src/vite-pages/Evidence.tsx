@@ -409,10 +409,11 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
                     source_text: '',
                   });
                   setImagePreview(null);
+                  setImageAttachment(null);
                 }}
                 className='btn btn-primary'
               >
-                Create Evidence
+                Reset evidence form
               </button>
             </div>
             
