@@ -90,7 +90,7 @@ describe('authenticated caregiver entry flow', () => {
     renderLogin()
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'invitee@example.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'long-enough-password' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in securely' }))
 
     expect(await screen.findByRole('heading', { name: 'Create a care record' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'I have a caregiver invitation' }))
