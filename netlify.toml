@@ -26,6 +26,14 @@
   status = 200
   force = true
 
+# React Router client-side routes must resolve to the Vite SPA entry point.
+# Keep this after the API proxy so /api/* never falls through to index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
 # Security headers
 [[headers]]
   for = "/*"
@@ -33,15 +41,6 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-# CORS headers for API proxy to Railway backend
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-    Access-Control-Max-Age = "86400"
 
 [[headers]]
   for = "/assets/*"
