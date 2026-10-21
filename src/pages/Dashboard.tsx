@@ -67,19 +67,21 @@ export default function Dashboard() {
   const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
 
     useEffect(() => {
         async function load() {
             try {
+                setLoadError(null);
                 const [evts, inss, trendData, reasoningData, intelData, actionsData] = await Promise.all([
                     getJSON(`/events/${getPersonId()}?limit=5`),
                     getJSON(`/insights/${getPersonId()}?limit=3`),
                     getJSON(`/observations/${getPersonId()}/trends`).catch(() => []),
                     getJSON(`/reasoning/${getPersonId()}/summary`).catch(() => null),
                     getJSON(`/daily-intelligence/${getPersonId()}`).catch(() => null),
-                    getJSON(`/actions/${getPersonId()}?status=active`), // Get active actions
+                    getJSON(`/actions/actions/${getPersonId()}?status=active`), // Get active actions
                 ]);
                 
                 setEvents(evts);
@@ -89,24 +91,14 @@ export default function Dashboard() {
                 setDailyIntel(intelData);
                 setActions(actionsData as Action[]);
             } catch (e) {
-                console.error(e);
-                // Use mock data for demonstration
-                setActions([
-                    {
-                        id: 'action-1',
-                        title: 'Schedule medication review with pharmacist',
-                        description: 'Review current medications for potential interactions',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-                    },
-                    {
-                        id: 'action-2',
-                        title: 'Arrange home safety assessment',
-                        description: 'Evaluate fall risks and recommend safety modifications',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 1 * 3600000).toISOString(),
-                    }
-                ]);
+                console.error('Failed to load the Living Care Record:', e);
+                setLoadError('Your care record could not be loaded. Check your connection or sign in again. No sample care data has been substituted.');
+                setEvents([]);
+                setInsights([]);
+                setTrends([]);
+                setReasoning(null);
+                setDailyIntel(null);
+                setActions([]);
             } finally {
                 setLoading(false);
             }
@@ -134,7 +126,7 @@ export default function Dashboard() {
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
         // Mark action as complete
-        await postJSON(`/actions/${actionId}/complete`, {
+        await postJSON(`/actions/actions/${actionId}/complete`, {
           evidence: {
             description: 'Completed via dashboard',
             confirmed_by: getPersonId()
