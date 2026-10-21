@@ -185,7 +185,33 @@ export default function Community() {
   const [wisdomMatches, setWisdomMatches] = useState<ExperienceMatch[]>([])
   const [loadingWisdom, setLoadingWisdom] = useState(false)
 
-  const personId = getPersonId()
+  const caregiverId = getCaregiverId() || ''
+  const [notice, setNotice] = useState<string | null>(null)
+
+  async function loadPosts() {
+    if (!caregiverId) {
+      setPosts([])
+      setLoadError('Sign in with a caregiver account to access the community.')
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const response = await getJSON<CommunityPostSummary>(
+        '/community?caregiver_id=' + encodeURIComponent(caregiverId),
+      )
+      if (!response || !Array.isArray(response.posts)) {
+        throw new Error('The backend returned an unexpected community-feed response.')
+      }
+      setPosts(response.posts.map(normalizeCommunityPost))
+    } catch (error) {
+      setPosts([])
+      setLoadError(error instanceof Error ? error.message : 'Community posts could not be loaded.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem('solenos_saved_posts')
@@ -197,33 +223,18 @@ export default function Community() {
   }, [])
 
   useEffect(() => {
-    // The inspected FastAPI backend has no Community feed route. Do not issue
-    // guaranteed-failing requests or imply that community content is available.
-    setPosts([])
-    setLoadError('Community APIs are not implemented by the current backend.')
-    setLoading(false)
-  }, [personId])
+    void loadPosts()
+  }, [caregiverId])
 
   async function handleReaction(postId: string, reactionType: ReactionType) {
     setActionError(null)
     try {
       await postJSON(`/community/${postId}/reactions`, {
-        caregiver_id: personId,
+        caregiver_id: caregiverId,
         reaction_type: reactionType,
       })
-      setPosts(prev => prev.map(p => {
-        if (p.id !== postId) return p
-        const counts = { ...p.reaction_counts }
-        if (p.user_reaction === reactionType) {
-          counts[reactionType] = Math.max(0, counts[reactionType] - 1)
-          return { ...p, reaction_counts: counts, user_reaction: null }
-        }
-        if (p.user_reaction) {
-          counts[p.user_reaction] = Math.max(0, counts[p.user_reaction] - 1)
-        }
-        counts[reactionType] = (counts[reactionType] || 0) + 1
-        return { ...p, reaction_counts: counts, user_reaction: reactionType }
-      }))
+      // Refresh server-confirmed counts; repeated clicks replace the reaction.
+      await loadPosts()
     } catch (e) {
       console.error(e)
       setActionError(e instanceof Error ? e.message : 'Your reaction was not saved.')
