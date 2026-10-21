@@ -3,7 +3,10 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/main.tsx"],
+  "include": [
+    "src/main.tsx",
+    "src/vite-env.d.ts"
+  ],
   "exclude": [
     "src/app/**",
     "src/**/*.test.ts",
