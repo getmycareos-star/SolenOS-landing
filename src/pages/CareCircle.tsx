@@ -129,8 +129,7 @@ export default function CareCircle() {
               }}
               onClick={() => {
                 setSelectedCircle(circle)
-                // In a real implementation, this would also fetch the circle members
-                alert(`Fetching members for circle: ${circle.name}`)
+                setCircleMembers([])
               }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -195,7 +194,7 @@ export default function CareCircle() {
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
               {circleMembers.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-                  No members yet. Add members using the "Add Member" functionality.
+                  Member loading and invitations are not connected to the backend yet.
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
