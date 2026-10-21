@@ -31,6 +31,7 @@ export const useCameraPermission = () => {
       streamRef.current = stream;
       setState({ status: 'granted', stream });
       return stream;
+      return stream;
     } catch (err: unknown) {
       const cameraError = err instanceof Error ? err : new Error(String(err));
       const errorName =
