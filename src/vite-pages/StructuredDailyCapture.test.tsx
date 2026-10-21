@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
 
@@ -46,8 +46,8 @@ describe('StructuredDailyCapture', () => {
     
     // Fill in vital form
     await userEvent.selectOptions(screen.getByLabelText(/vital type/i), 'heart_rate');
-    await userEvent.type(screen.getByLabelText(/value/i), '72');
-    await userEvent.type(screen.getByLabelText(/unit/i), 'bpm');
+    fireEvent.change(screen.getByLabelText(/value/i), { target: { value: '72' } });
+    fireEvent.change(screen.getByLabelText(/unit/i), { target: { value: 'bpm' } });
     
     // Submit vital form
     await userEvent.click(screen.getByRole('button', { name: /add vital/i }));
@@ -62,7 +62,7 @@ describe('StructuredDailyCapture', () => {
     
     // Fill in scale form
     await userEvent.selectOptions(screen.getByLabelText(/scale type/i), 'mood');
-    await userEvent.selectOptions(screen.getByLabelText(/score \(1-5\)/i), '4');
+    fireEvent.change(screen.getByLabelText(/score \(1-5\)/i), { target: { value: '4' } });
     
     // Submit scale form
     await userEvent.click(screen.getByRole('button', { name: /add scale/i }));
