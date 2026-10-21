@@ -14,6 +14,18 @@ declare global {
 // Railway, and Vite proxies /api/* to localhost:8000 during development.
 const API_BASE = ((import.meta.env || {}).VITE_API_BASE || '/api/v1').replace(/\/$/, '')
 
+export function getAccessToken(): string | null {
+  return sessionStorage.getItem('solenos_access_token');
+}
+
+async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
+  const token = getAccessToken();
+  if (!token) return fetch(url, init);
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+  return fetch(url, { ...init, headers });
+}
+
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
 }
@@ -81,7 +93,7 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(requestUrl(path))
+  const res = await apiFetch(requestUrl(path))
   return handleResponse(res)
 }
 
