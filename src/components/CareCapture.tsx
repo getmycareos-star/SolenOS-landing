@@ -114,7 +114,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         SolenOS will keep this observation available for future care review.
       </p>
 
-      {(identityError || submitError) && !saved && (
+      {(Boolean(identityError) || Boolean(submitError)) && !saved && (
         <p role="alert" style={{ color: 'var(--error)', fontSize: '12px', margin: '8px 0' }}>
           {identityError || (submitError instanceof Error ? submitError.message : 'Failed to save this care entry. Please retry.')}
         </p>
