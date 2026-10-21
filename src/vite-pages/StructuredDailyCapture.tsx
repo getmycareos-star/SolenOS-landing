@@ -151,8 +151,8 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
   const handleMedicationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Please select a JPEG, PNG, or WebP image.');
       return;
     }
     
@@ -971,7 +971,7 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
                     <input
                       id="medication-image-file"
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={handleMedicationImageUpload}
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
