@@ -109,7 +109,7 @@ export default function StructuredDailyCapture() {
     setLoadingCaregivers(true);
     setCaregiverId('');
     setCaregiverError(null);
-    getJSON(`/caregivers/person/${personId}`)
+    getJSON(`/caregivers/${personId}`)
       .then((data: Array<{ id: string; name: string }>) => {
         if (!active) return;
         setCaregiverId(data[0]?.id || '');
