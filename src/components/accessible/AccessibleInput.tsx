@@ -198,7 +198,6 @@ export function AccessibleInput({
           <textarea
             ref={inputRef}
             id={name}
-            type={type}
             value={value}
             onChange={handleChange}
             placeholder={placeholder}
