@@ -458,7 +458,6 @@ export default function Dashboard() {
           <Link to="/daily-care" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Daily care form</Link>
           <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Role switch</Link>
         </div>
-      </div>
     </div>
   );
 }
