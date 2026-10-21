@@ -34,37 +34,12 @@ interface MetricsData {
   [key: string]: any
 }
 
-const DEMO_RISK: CaregiverAtRisk[] = [
-  { caregiver_id: 'caregiver-1', label: 'M. Johnson', risk_level: 'high', distress_signals: 3, last_active: '2h ago' },
-  { caregiver_id: 'caregiver-2', label: 'R. Chen', risk_level: 'moderate', distress_signals: 2, last_active: '1d ago' },
-  { caregiver_id: 'caregiver-3', label: 'A. Rodriguez', risk_level: 'mild', distress_signals: 1, last_active: '3d ago' },
-]
-
-const DEMO_REVIEW: PostNeedsReview[] = [
-  {
-    id: 'post-5',
-    content: 'Has anyone tried giving their loved one CBD oil for anxiety? My doctor said it might help but I want to hear real experiences.',
-    author_label: 'Anonymous caregiver',
-    reason: 'medication-discussion',
-    tags: ['anxiety', 'medication'],
-  },
-]
-
-const DEMO_REPORT: StateReport = {
-  total_caregivers: 142,
-  avg_helpfulness: 4.2,
-  top_concerns: ['sleep', 'medication-management', 'hallucinations'],
-  trending_tags: [
-    { tag: 'mealtime-challenges', count: 42, growth: '+12%' },
-    { tag: 'wandering', count: 31, growth: '+8%' },
-    { tag: 'communication', count: 28, growth: '+5%' },
-  ],
-}
-
 export default function TeamDashboard() {
-  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>(DEMO_RISK)
-  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>(DEMO_REVIEW)
-  const [report, setReport] = useState<StateReport>(DEMO_REPORT)
+  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>([])
+  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>([])
+  const [report, setReport] = useState<StateReport>({ total_caregivers: 0, avg_helpfulness: 0, top_concerns: [], trending_tags: [] })
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'report' | 'monitoring'>('overview')
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null)
   const [metricsLoading, setMetricsLoading] = useState<boolean>(true)
@@ -83,10 +58,14 @@ export default function TeamDashboard() {
   const fetchDashboard = async () => {
     try {
       const data = await getJSON('/team/dashboard') as any
-      if (data?.caregivers_at_risk) setRiskCaregivers(data.caregivers_at_risk)
-      if (data?.posts_to_review) setPostsToReview(data.posts_to_review)
+      if (Array.isArray(data?.caregivers_at_risk)) setRiskCaregivers(data.caregivers_at_risk)
+      if (Array.isArray(data?.posts_to_review)) setPostsToReview(data.posts_to_review)
+      setDashboardError(null)
     } catch (error) {
       console.error('Failed to fetch dashboard:', error)
+      setDashboardError(error instanceof Error ? error.message : 'Team dashboard data could not be loaded.')
+      setRiskCaregivers([])
+      setPostsToReview([])
     }
   }
 
@@ -95,14 +74,17 @@ export default function TeamDashboard() {
       const data = await getJSON('/team/state-report') as any
       if (data) {
         setReport({
-          total_caregivers: data.total_caregivers || DEMO_REPORT.total_caregivers,
-          avg_helpfulness: data.avg_helpfulness || DEMO_REPORT.avg_helpfulness,
-          top_concerns: data.top_concerns || DEMO_REPORT.top_concerns,
-          trending_tags: data.trending_tags || DEMO_REPORT.trending_tags,
+          total_caregivers: typeof data.total_caregivers === 'number' ? data.total_caregivers : 0,
+          avg_helpfulness: typeof data.avg_helpfulness === 'number' ? data.avg_helpfulness : 0,
+          top_concerns: Array.isArray(data.top_concerns) ? data.top_concerns : [],
+          trending_tags: Array.isArray(data.trending_tags) ? data.trending_tags : [],
         })
       }
+      setReportError(null)
     } catch (error) {
       console.error('Failed to fetch report:', error)
+      setReportError(error instanceof Error ? error.message : 'Team report could not be loaded.')
+      setReport({ total_caregivers: 0, avg_helpfulness: 0, top_concerns: [], trending_tags: [] })
     }
   }
 
@@ -217,6 +199,14 @@ export default function TeamDashboard() {
           <TabButton id="monitoring" label="System Monitoring" />
         </div>
       </div>
+
+      {(dashboardError || reportError) && (
+        <div role="alert" style={{ color: 'var(--error)', fontSize: '13px', marginBottom: '16px' }}>
+          {dashboardError && <p>Team dashboard data unavailable: {dashboardError}. Demo records are not shown.</p>}
+          {reportError && <p>Team report unavailable: {reportError}. Demo statistics are not shown.</p>}
+          <button onClick={() => { fetchDashboard(); fetchReport() }} style={{ marginTop: '8px' }}>Retry loading team data</button>
+        </div>
+      )}
 
       {activeTab === 'overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
