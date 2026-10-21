@@ -1,9 +1,22 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
-  moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      useESM: false,
+      diagnostics: false,
+      tsconfig: {
+        module: 'CommonJS',
+        moduleResolution: 'Node',
+        jsx: 'react-jsx',
+        esModuleInterop: true,
+      },
+    }],
+  },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   testMatch: [
     '<rootDir>/src/**/*.test.ts',
     '<rootDir>/src/**/*.test.tsx',
@@ -11,11 +24,4 @@ module.exports = {
   ],
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/dist/', '/tests/smoke/'],
   clearMocks: true,
-  transform: {
-    '^.+\\.[tj]sx?$': ['ts-jest', {
-      useESM: true,
-      diagnostics: false,
-      tsconfig: '<rootDir>/tsconfig.jest.json',
-    }],
-  },
 };
