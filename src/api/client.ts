@@ -1,18 +1,5 @@
 import { getAccessToken, clearAccessToken, authHeaders, getPersonId } from './authSession';
 
-declare global {
-  interface ImportMetaEnv {
-    VITE_API_BASE?: string
-    PROD?: boolean
-    VITE_SENTRY_DSN?: string
-    VITE_SENTRY_ENVIRONMENT?: string
-    VITE_SENTRY_RELEASE?: string
-  }
-  interface ImportMeta {
-    readonly env: ImportMetaEnv
-  }
-}
-
 const configuredBase = import.meta.env.VITE_API_BASE?.trim()
 const isProduction = import.meta.env.PROD === true
 const invalidConfiguredBase = Boolean(
