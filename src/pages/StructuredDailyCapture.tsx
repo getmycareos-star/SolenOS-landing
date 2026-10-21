@@ -105,6 +105,13 @@ export default function StructuredDailyCapture() {
   
   // Load caregivers (simplified for now)
   const caregiverId = getCaregiverId() ?? '';
+
+  const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read image preview.'));
+    reader.onerror = () => reject(new Error('Could not read image preview.'));
+    reader.readAsDataURL(file);
+  });
   
 
   // Handle image capture for medication
@@ -131,7 +138,7 @@ export default function StructuredDailyCapture() {
         const dataUrl = canvas.toDataURL('image/png');
         
         // Convert data URL to file for compression
-        const file = new File([await (await fetch(dataUrl)).blob()], 'medication_capture.png', { type: 'image/png' });
+        const file = dataURLtoFile(dataUrl, 'medication_capture.png');
         
         // Show compression status
         setMedicationCompressing(true);
@@ -148,8 +155,7 @@ export default function StructuredDailyCapture() {
         setMedicationCompressing(false);
         
         // Convert compressed file back to data URL for preview
-        const compressedUrl = URL.createObjectURL(compressedFile);
-        setMedicationImagePreview(compressedUrl);
+        setMedicationImagePreview(await fileToDataUrl(compressedFile));
         
         // Clean up
       }
@@ -188,8 +194,7 @@ export default function StructuredDailyCapture() {
       });
       
       // Convert compressed file to data URL for preview
-      const compressedUrl = URL.createObjectURL(compressedFile);
-      setMedicationImagePreview(compressedUrl);
+      setMedicationImagePreview(await fileToDataUrl(compressedFile));
       
       // Clean up
     } catch (err) {
