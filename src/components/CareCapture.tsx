@@ -36,6 +36,7 @@ const CAPTURE_HINTS = [
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
+  const [saved, setSaved] = useState(false)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -52,22 +53,25 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
       return { caregiverId, personId, rawInput };
     },
-    onSuccess: async (data, variables, context) => {
-      // On success, fetch the community experience
-      const experienceData = await postJSON('/community/experience', {
-        observation: variables.rawInput,
-      }) as ExperienceResult
-      setExperiences(experienceData)
+    onSuccess: async (data, variables) => {
+      // The primary care record is saved at this point. Community matching is
+      // optional and must never turn a successful save into a reported failure.
+      setSaved(true)
+      setText('')
       onCapture?.(variables.rawInput)
+      try {
+        const experienceData = await postJSON('/community/experience', {
+          observation: variables.rawInput,
+        }) as ExperienceResult
+        setExperiences(experienceData)
+      } catch {
+        setExperiences(null)
+      }
     },
     onError: async (error, variables, context) => {
       // On error, we could show a failed state, but for simplicity we'll just let the error propagate
       // The UI will still show the text was processed optimistically
       console.error('Failed to save situation:', error)
-    },
-    onSettled: () => {
-      // Clear the text after submission attempt
-      setText('')
     },
     retry: true,
     maxRetries: 3
@@ -101,7 +105,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {experiences && (
+        {saved && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -109,7 +113,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && (
+        {submitting && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -117,7 +121,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {submitError && !experiences && (
+        {submitError && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -137,7 +141,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => { setText(e.target.value); setSaved(false); setExperiences(null) }}
         placeholder="Dad wandered at 2 AM and was confused about where he was..."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
@@ -155,7 +159,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           <button
             key={hint.text}
             type="button"
-            onClick={() => setText(hint.emoji + ' ' + hint.text + ' — ')}
+            onClick={() => { setText(hint.emoji + ' ' + hint.text + ' — '); setSaved(false); setExperiences(null) }}
             style={{
               padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)',
               background: 'var(--bg)', fontSize: '11px', color: 'var(--text-secondary)',
