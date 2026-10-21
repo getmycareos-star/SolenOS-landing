@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { postJSON } from '../../api/client';
 import { useOptimisticToggle } from '../../lib/optimistic';
 
@@ -9,6 +9,7 @@ interface Perspective {
   content: string;
   confidence: number;
   promoted?: boolean;
+  promotedToInsight?: boolean;
 }
 
 interface Insight {
@@ -68,8 +69,10 @@ export default function PerspectivePromotion() {
     setLoading(false);
   };
 
-  // Simulate component mount
-  loadInitialData();
+  // Load mock data once; never update component state during render.
+  useEffect(() => {
+    loadInitialData();
+  }, []);
 
   const formatConfidence = (confidence: number) => {
     return `${Math.round(confidence * 100)}%`;
@@ -127,6 +130,8 @@ export default function PerspectivePromotion() {
     });
   };
 
+  const eligiblePerspectives = perspectives.filter(p => p.promoted && !p.promotedToInsight);
+
   if (loading) {
     return <div aria-live="polite">Loading perspectives...</div>;
   }
@@ -140,10 +145,7 @@ export default function PerspectivePromotion() {
         Transform clinical perspectives into actionable care insights.
       </p>
       
-      // Filter to perspectives that have been promoted to observations but not yet to insights
-      const eligiblePerspectives = perspectives.filter(p => p.promoted && !p.promotedToInsight);
-      
-      {eligiblePerspectives.length === 0 ? (
+            {eligiblePerspectives.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
           No perspectives ready for promotion to insights.
         </p>
