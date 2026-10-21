@@ -101,7 +101,7 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(requestUrl(path, personId !== false), {
+  const res = await fetch(requestUrl(path, personId === true), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
