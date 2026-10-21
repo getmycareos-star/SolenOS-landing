@@ -11,6 +11,8 @@ interface Message {
   timestamp: Date
 }
 
+const companionEnabled = import.meta.env.VITE_COMPANION_ENABLED === 'true'
+
 export default function Companion() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -30,7 +32,7 @@ export default function Companion() {
 
   const sendMessage = async () => {
     const textToSend = input.trim()
-    if (!textToSend) return
+    if (!companionEnabled || !textToSend) return
     setLoading(true)
     setEmergency(false)
 
@@ -125,9 +127,10 @@ export default function Companion() {
         padding: '4px 0'
       }}>
         {messages.length === 0 && (
-          <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            The Companion response endpoint is not implemented in the connected backend yet.
-            No AI response will be generated until that service is connected and tested. Do not rely on this screen for care decisions.
+          <div role="status" style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
+            {companionEnabled
+              ? 'Ask about care needs or a concern. Responses are only available when the connected backend returns a grounded result.'
+              : 'Companion is disabled because the connected backend does not implement its response endpoint yet. Do not enter sensitive care details here. No AI response will be generated until the service is implemented, configured, and tested.'}
           </div>
         )}
         {messages.map((msg, i) => (
@@ -175,8 +178,8 @@ export default function Companion() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Type a message (Enter to send, Shift+Enter for new line)..."
-          disabled={loading}
+          placeholder={companionEnabled ? "Type a message (Enter to send, Shift+Enter for new line)..." : "Companion unavailable until the backend service is connected"}
+          disabled={loading || !companionEnabled}
           rows={Math.max(1, Math.floor(input.length / 50) + 1)}
           style={{
             flex: 1, padding: '10px 14px', borderRadius: '16px', border: '1px solid var(--border)',
@@ -186,11 +189,11 @@ export default function Companion() {
         />
         <button
           onClick={sendMessage}
-          disabled={loading || !input.trim()}
+          disabled={loading || !companionEnabled || !input.trim()}
           style={{
             padding: '10px 20px', borderRadius: '16px', border: 'none',
-            background: loading || !input.trim() ? 'var(--text-secondary)' : 'var(--trust)',
-            color: 'white', fontSize: '13px', cursor: loading || !input.trim() ? 'default' : 'pointer',
+            background: loading || !companionEnabled || !input.trim() ? 'var(--text-secondary)' : 'var(--trust)',
+            color: 'white', fontSize: '13px', cursor: loading || !companionEnabled || !input.trim() ? 'default' : 'pointer',
           }}
         >
           {loading ? '...' : 'Send'}
