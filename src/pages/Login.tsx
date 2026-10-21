@@ -1,173 +1,202 @@
-import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getJSON, postJSON, setPersonId } from '../api/client';
+import { FormEvent, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  AuthAccount,
+  CareContext,
+  checkAuthState,
+  createCareContext,
+  getCareContexts,
+  logIn,
+  setPersonId,
+  signUp,
+} from '../api/client'
 
-type CareContext = {
-  person_id: string;
-  name: string;
-  role: string;
-  permissions: string[];
-};
-
-type AuthResponse = {
-  access_token: string;
-  token_type: string;
-  account: { id: string; email: string; display_name?: string | null };
-};
+type AuthMode = 'login' | 'signup'
 
 export default function Login() {
-  const navigate = useNavigate();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [careRecipientName, setCareRecipientName] = useState('');
-  const [contexts, setContexts] = useState<CareContext[]>([]);
-  const [needsCareRecord, setNeedsCareRecord] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const navigate = useNavigate()
+  const [mode, setMode] = useState<AuthMode>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [careRecipientName, setCareRecipientName] = useState('')
+  const [account, setAccount] = useState<AuthAccount | null>(null)
+  const [contexts, setContexts] = useState<CareContext[]>([])
+  const [selectedPersonId, setSelectedPersonId] = useState('')
+  const [needsContext, setNeedsContext] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const enterContext = (context: CareContext) => {
-    setPersonId(context.person_id);
-    navigate('/');
-  };
+  const finishWithContext = (context: CareContext) => {
+    setPersonId(context.person_id)
+    navigate('/')
+  }
 
-  const createCareRecord = async () => {
+  const loadContexts = async () => {
+    const available = await getCareContexts()
+    setContexts(available)
+    if (available.length === 1) {
+      finishWithContext(available[0])
+      return
+    }
+    if (available.length > 1) {
+      setSelectedPersonId(current => available.some(item => item.person_id === current)
+        ? current
+        : available[0].person_id)
+      setNeedsContext(false)
+      return
+    }
+    setNeedsContext(true)
+  }
+
+  useEffect(() => {
+    let active = true
+    void checkAuthState().then(async state => {
+      if (!active || !state.authenticated || !state.sessionInfo) return
+      setAccount(state.sessionInfo)
+      try {
+        await loadContexts()
+      } catch (err) {
+        if (active) setError(err instanceof Error ? err.message : 'Could not load your care records.')
+      }
+    })
+    return () => { active = false }
+  }, [])
+
+  const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      if (mode === 'signup') {
+        await signUp(email, password, displayName)
+      }
+      const authenticatedAccount = await logIn(email, password)
+      setAccount(authenticatedAccount)
+      await loadContexts()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed. Check your details and try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateContext = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     if (!careRecipientName.trim()) {
-      setError('Enter the name of the person whose care you are recording.');
-      return;
+      setError('Enter the name of the person whose care you are recording.')
+      return
     }
-    setBusy(true);
-    setError('');
+    setLoading(true)
+    setError('')
     try {
-      const context = await postJSON('/auth/care-contexts', { name: careRecipientName.trim() }) as CareContext;
-      const caregiverName = displayName.trim() || email.trim().split('@')[0];
-      const caregiver = await postJSON('/caregivers', {
-        person_id: context.person_id,
-        name: caregiverName,
-        email: email.trim().toLowerCase(),
-        relationship: 'caregiver',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      }) as { id: string };
-      const invitation = await postJSON('/auth/caregiver-invitations', {
-        person_id: context.person_id,
-        caregiver_id: caregiver.id,
-        permissions: ['read', 'write'],
-      }) as { invitation_token: string };
-      await postJSON('/auth/caregiver-invitations/accept', { token: invitation.invitation_token });
-      enterContext(context);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not create the care record. Try again.');
+      const context = await createCareContext(careRecipientName)
+      finishWithContext(context)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the care record.')
     } finally {
-      setBusy(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    setError('');
-    setContexts([]);
-    setNeedsCareRecord(false);
-    try {
-      if (mode === 'signup') {
-        if (!careRecipientName.trim()) {
-          setError('Enter the name of the person whose care you are recording.');
-          return;
-        }
-        await postJSON('/auth/signup', {
-          email: email.trim().toLowerCase(),
-          password,
-          display_name: displayName.trim() || null,
-        });
-      }
-
-      const auth = await postJSON('/auth/login', {
-        email: email.trim().toLowerCase(),
-        password,
-      }) as AuthResponse;
-      if (!auth.access_token) throw new Error('The server did not return a valid session.');
-      sessionStorage.setItem('solenos_access_token', auth.access_token);
-      if (auth.account?.display_name) setDisplayName(auth.account.display_name);
-
-      if (mode === 'signup') {
-        await createCareRecord();
-        return;
-      }
-
-      const linkedContexts = await getJSON('/auth/care-contexts') as CareContext[];
-      if (!Array.isArray(linkedContexts) || linkedContexts.length === 0) {
-        setNeedsCareRecord(true);
-        return;
-      }
-      if (linkedContexts.length === 1) {
-        enterContext(linkedContexts[0]);
-        return;
-      }
-      setContexts(linkedContexts);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Authentication failed. Check your details and try again.');
-    } finally {
-      setBusy(false);
+  const handleSelectContext = () => {
+    const selected = contexts.find(item => item.person_id === selectedPersonId)
+    if (!selected) {
+      setError('Select a care record to continue.')
+      return
     }
-  };
+    finishWithContext(selected)
+  }
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '24px' }}>
-      <section style={{ maxWidth: 480, width: '100%', padding: 24, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16 }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <span style={{ fontSize: 42, display: 'block' }} aria-hidden="true">🏠</span>
-          <h1 style={{ fontSize: 22, fontWeight: 650, color: 'var(--text)' }}>SolenOS</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Your Living Care Record</p>
+      <section style={{ maxWidth: '480px', width: '100%', padding: '32px 24px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <span aria-hidden="true" style={{ fontSize: '44px', display: 'block', marginBottom: '12px' }}>🏠</span>
+          <h1 style={{ fontSize: '24px', fontWeight: 650, color: 'var(--text)', margin: 0 }}>SolenOS</h1>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.5 }}>
+            Sign in to your Living Care Record.
+          </p>
         </div>
 
-        {contexts.length > 0 ? (
+        {error && <div role="alert" style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '8px', background: 'var(--error-soft)', color: 'var(--error)', fontSize: '13px' }}>{error}</div>}
+
+        {!account && (
           <>
-            <h2 style={{ fontSize: 16 }}>Choose a care record</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Select the person whose record you need. Access is limited to records linked to your account.</p>
-            {contexts.map((context) => (
-              <button key={context.person_id} type="button" onClick={() => enterContext(context)} style={{ width: '100%', padding: 14, marginTop: 8, textAlign: 'left', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer' }}>
-                <strong>{context.name}</strong>
-                <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{context.role}</span>
-              </button>
-            ))}
-          </>
-        ) : needsCareRecord ? (
-          <>
-            <h2 style={{ fontSize: 17 }}>Create a care record</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Your account is authenticated but is not linked to a care record yet.</p>
-            <label style={{ display: 'block', fontSize: 13, margin: '16px 0 6px' }} htmlFor="care-recipient-name">Name of the person receiving care</label>
-            <input id="care-recipient-name" value={careRecipientName} onChange={(e) => setCareRecipientName(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
-            <button type="button" disabled={busy} onClick={createCareRecord} style={{ width: '100%', padding: 12, marginTop: 16, border: 0, borderRadius: 8, background: 'var(--trust)', color: '#fff', cursor: busy ? 'wait' : 'pointer' }}>{busy ? 'Creating record…' : 'Create care record'}</button>
-          </>
-        ) : (
-          <>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-              <button type="button" onClick={() => { setMode('login'); setError(''); }} aria-pressed={mode === 'login'} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: mode === 'login' ? 'var(--accent-soft)' : 'var(--bg)' }}>Sign in</button>
-              <button type="button" onClick={() => { setMode('signup'); setError(''); }} aria-pressed={mode === 'signup'} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: mode === 'signup' ? 'var(--accent-soft)' : 'var(--bg)' }}>Create account</button>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              <button type="button" onClick={() => { setMode('login'); setError('') }} aria-pressed={mode === 'login'} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: mode === 'login' ? 'var(--accent-soft)' : 'var(--bg)', color: 'var(--text)', cursor: 'pointer' }}>Sign in</button>
+              <button type="button" onClick={() => { setMode('signup'); setError('') }} aria-pressed={mode === 'signup'} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: mode === 'signup' ? 'var(--accent-soft)' : 'var(--bg)', color: 'var(--text)', cursor: 'pointer' }}>Create account</button>
             </div>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleAuthSubmit} style={{ display: 'grid', gap: '14px' }}>
               {mode === 'signup' && (
-                <>
-                  <label htmlFor="display-name" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Your name</label>
-                  <input id="display-name" autoComplete="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
-                  <label htmlFor="care-recipient-name" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Name of the person receiving care</label>
-                  <input id="care-recipient-name" value={careRecipientName} onChange={(e) => setCareRecipientName(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
-                </>
+                <label style={{ display: 'grid', gap: '6px', color: 'var(--text)', fontSize: '13px' }}>
+                  Your name
+                  <input autoComplete="name" value={displayName} onChange={event => setDisplayName(event.target.value)} required maxLength={120} placeholder="Full name" style={inputStyle} />
+                </label>
               )}
-              <label htmlFor="email" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Email</label>
-              <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
-              <label htmlFor="password" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Password</label>
-              <input id="password" type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={mode === 'signup' ? 12 : 1} value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
-              {mode === 'signup' && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>Use at least 12 characters.</p>}
-              <button type="submit" disabled={busy} style={{ width: '100%', padding: 12, marginTop: 18, border: 0, borderRadius: 8, background: 'var(--trust)', color: '#fff', cursor: busy ? 'wait' : 'pointer' }}>{busy ? 'Please wait…' : mode === 'signup' ? 'Create account and care record' : 'Sign in'}</button>
+              <label style={{ display: 'grid', gap: '6px', color: 'var(--text)', fontSize: '13px' }}>
+                Email
+                <input type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} required maxLength={254} placeholder="you@example.com" style={inputStyle} />
+              </label>
+              <label style={{ display: 'grid', gap: '6px', color: 'var(--text)', fontSize: '13px' }}>
+                Password
+                <input type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} required minLength={mode === 'signup' ? 12 : 1} maxLength={1024} placeholder={mode === 'signup' ? 'At least 12 characters' : 'Your password'} style={inputStyle} />
+              </label>
+              <button type="submit" disabled={loading} style={primaryButtonStyle}>
+                {loading ? 'Please wait…' : mode === 'signup' ? 'Create secure account' : 'Sign in securely'}
+              </button>
             </form>
           </>
         )}
 
-        {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 13, marginTop: 16 }}>{error}</p>}
-        <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 20 }}>SolenOS requires an authenticated account and explicit access to each care record. A role selection or local identifier alone does not grant access.</p>
+        {account && contexts.length > 1 && (
+          <div style={{ display: 'grid', gap: '14px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>Signed in as {account.email}. Choose a care record to continue.</p>
+            <label style={{ display: 'grid', gap: '6px', color: 'var(--text)', fontSize: '13px' }}>
+              Care record
+              <select value={selectedPersonId} onChange={event => setSelectedPersonId(event.target.value)} style={inputStyle}>
+                {contexts.map(context => <option key={context.person_id} value={context.person_id}>{context.name}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={handleSelectContext} style={primaryButtonStyle}>Open care record</button>
+          </div>
+        )}
+
+        {account && needsContext && (
+          <form onSubmit={handleCreateContext} style={{ display: 'grid', gap: '14px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>Signed in as {account.email}. Create the care record you will manage. Your account will be linked as its first caregiver.</p>
+            <label style={{ display: 'grid', gap: '6px', color: 'var(--text)', fontSize: '13px' }}>
+              Person receiving care
+              <input autoComplete="off" value={careRecipientName} onChange={event => setCareRecipientName(event.target.value)} required maxLength={200} placeholder="Name of person receiving care" style={inputStyle} />
+            </label>
+            <button type="submit" disabled={loading} style={primaryButtonStyle}>{loading ? 'Creating care record…' : 'Create care record'}</button>
+          </form>
+        )}
       </section>
     </main>
-  );
+  )
+}
+
+const inputStyle = {
+  width: '100%',
+  boxSizing: 'border-box' as const,
+  padding: '12px 14px',
+  borderRadius: '8px',
+  border: '1px solid var(--border)',
+  background: 'var(--bg)',
+  color: 'var(--text)',
+  fontSize: '14px',
+  outline: 'none',
+}
+
+const primaryButtonStyle = {
+  width: '100%',
+  padding: '12px 16px',
+  borderRadius: '8px',
+  border: 'none',
+  background: 'var(--trust)',
+  color: 'white',
+  fontSize: '14px',
+  fontWeight: 600,
+  cursor: 'pointer',
 }
