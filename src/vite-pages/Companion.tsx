@@ -11,7 +11,7 @@ interface Message {
   timestamp: Date
 }
 
-const companionEnabled = import.meta.env.VITE_COMPANION_ENABLED === 'true'
+const companionEnabled = import.meta.env?.VITE_COMPANION_ENABLED === 'true'
 
 export default function Companion() {
   const [messages, setMessages] = useState<Message[]>([])
