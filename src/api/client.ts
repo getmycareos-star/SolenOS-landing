@@ -116,9 +116,9 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
   throw new Error('Unable to complete the request.')
 }
 
-export async function getJSON(path: string): Promise<unknown> {
+export async function getJSON<T = any>(path: string): Promise<T> {
   const res = await request(interpolatePersonId(path))
-  return handleResponse(res)
+  return await handleResponse(res) as T
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
@@ -133,30 +133,30 @@ export async function getBlob(path: string): Promise<Blob> {
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown, personId?: boolean): Promise<unknown> {
+export async function postJSON<T = any>(path: string, body: unknown, personId?: boolean): Promise<T> {
   const resolvedPath = personId ? interpolatePersonId(path) : path
   const res = await request(resolvedPath, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  return handleResponse(res)
+  return await handleResponse(res) as T
 }
 
-export async function patchJSON(path: string, body: unknown, personId?: boolean): Promise<unknown> {
+export async function patchJSON<T = any>(path: string, body: unknown, personId?: boolean): Promise<T> {
   const resolvedPath = personId ? interpolatePersonId(path) : path
   const res = await request(resolvedPath, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  return handleResponse(res)
+  return await handleResponse(res) as T
 }
 
 // Multipart uploads must let the browser set the Content-Type boundary.
-export async function postFormData(path: string, body: FormData): Promise<unknown> {
+export async function postFormData<T = any>(path: string, body: FormData): Promise<T> {
   const res = await request(path, { method: 'POST', body })
-  return handleResponse(res)
+  return await handleResponse(res) as T
 }
 
 // Caregiver identity is accepted only when explicitly stored by this session.
