@@ -86,7 +86,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
 
     // Wait for submission to complete
     await waitFor(() => {
-      expect(submitMedicationButton).toHaveTextContent('Add Medication');
+      expect(screen.getByText('Test Medication')).toBeInTheDocument();
     });
 
     // Verify that compressImage was called
