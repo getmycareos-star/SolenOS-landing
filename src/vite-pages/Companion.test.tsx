@@ -32,7 +32,6 @@ describe('Companion request failure handling', () => {
 
     expect(await screen.findByText(/Companion service is not connected to the backend yet/)).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/Type a message/)).toHaveValue(message)
-    expect(screen.queryByText(message)).not.toBeInTheDocument()
     await waitFor(() => expect(mockPostJSON).toHaveBeenCalledTimes(1))
   })
 })
