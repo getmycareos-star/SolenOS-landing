@@ -47,7 +47,7 @@ describe('CareCapture caregiver workflow', () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/caregivers/test-person-id',
+        '/api/v1/caregivers/person/test-person-id',
         expect.objectContaining({ headers: expect.anything() }),
       );
     });
