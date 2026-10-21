@@ -35,6 +35,9 @@ describe('useLocationPermission', () => {
     });
 
     const { result } = renderHook(() => useLocationPermission());
+    act(() => {
+      void result.current.requestLocation();
+    });
     expect(result.current.state.status).toBe('unsupported');
   });
 
@@ -128,6 +131,9 @@ describe('useCameraPermission', () => {
     });
 
     const { result } = renderHook(() => useCameraPermission());
+    act(() => {
+      void result.current.requestCamera();
+    });
     expect(result.current.state.status).toBe('unsupported');
   });
 
