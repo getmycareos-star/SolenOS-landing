@@ -3,6 +3,7 @@ import { authHeaders, clearAccessToken, getAccessToken, getPersonId, setAccessTo
 describe('authenticated API client headers', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
   })
 
   it('adds the bearer token only when a session token exists', () => {
