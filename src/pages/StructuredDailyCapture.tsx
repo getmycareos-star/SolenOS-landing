@@ -722,6 +722,12 @@ export default function StructuredDailyCapture() {
         </p>
       </div>
       
+      {caregiverError && (
+        <div role="alert" style={{ color: 'var(--error)', marginBottom: '12px', fontSize: '13px' }}>
+          {caregiverError}
+        </div>
+      )}
+
       {/* Saved indicator */}
       {saved && (
         <div style={{ 
