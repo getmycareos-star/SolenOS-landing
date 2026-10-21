@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getJSON, postJSON, getPersonId } from '../api/client'
 import CareCapture from '../components/CareCapture'
-import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
 interface Caregiver {
   id: string
@@ -16,20 +15,19 @@ export default function DailyCare() {
   const [submitting, setSubmitting] = useState(false)
   const [caregiverError, setCaregiverError] = useState<string | null>(null)
 
-   const [form, setForm] = useState({
-     mood: '',
-     mood_scale: 3,
-     agitation_level: 'None',
-     agitation_scale: 1,
-     vitals: {} as Record<string, string>,
-     behavior_notes: '',
-     sleep_notes: '',
-     eating_notes: '',
-     wellbeing_stress: 3,
-     wellbeing_notes: '',
-     general_notes: '',
-     location: null as { latitude: number; longitude: number; accuracy: number; timestamp: number } | null,
-   })
+  const [form, setForm] = useState({
+    mood: '',
+    mood_scale: 3,
+    agitation_level: 'None',
+    agitation_scale: 1,
+    vitals: {} as Record<string, string>,
+    behavior_notes: '',
+    sleep_notes: '',
+    eating_notes: '',
+    wellbeing_stress: 3,
+    wellbeing_notes: '',
+    general_notes: '',
+  })
 
   const personId = getPersonId()
   const [caregiverId, setCaregiverId] = useState('')
@@ -42,89 +40,84 @@ export default function DailyCare() {
         const data = await getJSON(`/caregivers/${personId}`)
         setCaregivers(data)
         if (data.length > 0) setCaregiverId(data[0].id)
-undefined
+      } catch (e) {
+        console.error(e)
+        setCaregiverError('Could not load linked caregivers. Check the care record connection and try again.')
+        setCaregivers([])
+        setCaregiverId('')
+      } finally {
         setLoadingCaregivers(false)
       }
     }
     loadCaregivers()
   }, [personId])
 
-   const updateField = (field: string, value: any) => {
-     setForm({ ...form, [field]: value })
-     setSaved(false)
-   }
+  const updateField = (field: string, value: any) => {
+    setForm({ ...form, [field]: value })
+    setSaved(false)
+  }
 
-   // Location permission hook
-   const { state: locationState, requestLocation: requestLoc } = useLocationPermission();
+  const addVital = () => {
+    const key = prompt('Vital name (e.g. bp_systolic, heart_rate, oxygen_sat):')
+    if (key) {
+      const val = prompt(`Value for ${key}:`)
+      if (val !== null) setForm({ ...form, vitals: { ...form.vitals, [key]: val } })
+    }
+  }
 
-   // Update form with location data when permission is granted
-   useEffect(() => {
-     if (locationState.status === 'granted') {
-       const { latitude, longitude, accuracy, timestamp } = locationState;
-       setForm(prev => ({ ...prev, location: { latitude, longitude, accuracy, timestamp } }));
-       setSaved(false);
-     }
-   }, [locationState]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setSaved(false)
 
-   const handleLocationRequest = async () => {
-     await requestLoc();
-   };
+    if (loadingCaregivers) {
+      alert('Caregiver information is still loading. Please try again.')
+      setSubmitting(false)
+      return
+    }
+    if (!caregiverId || caregivers.length === 0) {
+      alert(caregiverError || 'No linked caregiver is available for this care record. Link a real caregiver before saving.')
+      setSubmitting(false)
+      return
+    }
 
-   const addVital = () => {
-     const key = prompt('Vital name (e.g. bp_systolic, heart_rate, oxygen_sat):')
-     if (key) {
-       const val = prompt(`Value for ${key}:`)
-       if (val !== null) setForm({ ...form, vitals: { ...form.vitals, [key]: val } })
-     }
-   }
-
-   const handleSubmit = async (e: React.FormEvent) => {
-     e.preventDefault()
-     setSubmitting(true)
-     setSaved(false)
-
-undefined
-         mood: form.mood || undefined,
-         mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
-         agitation_level: form.agitation_level,
-         agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
-         vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
-         behavior_notes: form.behavior_notes || undefined,
-         sleep_notes: form.sleep_notes || undefined,
-         eating_notes: form.eating_notes || undefined,
-         wellbeing_stress: form.wellbeing_stress !== 3 ? form.wellbeing_stress : undefined,
-         wellbeing_notes: form.wellbeing_notes || undefined,
-         general_notes: form.general_notes || undefined,
-         location: form.location ? {
-           latitude: form.location.latitude,
-           longitude: form.location.longitude,
-           accuracy: form.location.accuracy,
-           timestamp: form.location.timestamp,
-         } : undefined,
-         location_provenance: form.location ? 'user_provided' : undefined,
-       })
-       setSaved(true)
-       setForm({
-         mood: '',
-         mood_scale: 3,
-         agitation_level: 'None',
-         agitation_scale: 1,
-         vitals: {},
-         behavior_notes: '',
-         sleep_notes: '',
-         eating_notes: '',
-         wellbeing_stress: 3,
-         wellbeing_notes: '',
-         general_notes: '',
-         location: null,
-       })
-     } catch (e: any) {
-       setSaved(false)
-       alert(`Failed to save: ${e.message}`)
-     } finally {
-       setSubmitting(false)
-     }
-   }
+    try {
+      await postJSON('/daily-care/entries', {
+        person_id: personId,
+        caregiver_id: caregiverId,
+        mood: form.mood || undefined,
+        mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
+        agitation_level: form.agitation_level,
+        agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
+        vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
+        behavior_notes: form.behavior_notes || undefined,
+        sleep_notes: form.sleep_notes || undefined,
+        eating_notes: form.eating_notes || undefined,
+        wellbeing_stress: form.wellbeing_stress !== 3 ? form.wellbeing_stress : undefined,
+        wellbeing_notes: form.wellbeing_notes || undefined,
+        general_notes: form.general_notes || undefined,
+      })
+      setSaved(true)
+      setForm({
+        mood: '',
+        mood_scale: 3,
+        agitation_level: 'None',
+        agitation_scale: 1,
+        vitals: {},
+        behavior_notes: '',
+        sleep_notes: '',
+        eating_notes: '',
+        wellbeing_stress: 3,
+        wellbeing_notes: '',
+        general_notes: '',
+      })
+    } catch (e: any) {
+      setSaved(false)
+      alert(`Failed to save: ${e.message}`)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div>
@@ -177,7 +170,11 @@ undefined
                 fontSize: '14px'
               }}
             >
-undefined
+              {caregivers.length === 0 ? (
+                <option value="">No linked caregivers available</option>
+              ) : (
+                caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+              )}
             </select>
           )}
           {caregiverError && <p style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>{caregiverError}</p>}
@@ -292,124 +289,9 @@ undefined
             rows={2}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
-         </section>
-         {/* Location */}
-         <section>
-           <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', display: 'block' }}>
-             Location
-           </label>
-           {locationState.status === 'granted' ? (
-             <div>
-               <p style={{ fontSize: '14px', marginBottom: '4px' }}>
-                 Latitude: {form.location?.latitude.toFixed(6)}°, Longitude: {form.location?.longitude.toFixed(6)}°
-               </p>
-               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                 Accuracy: {form.location?.accuracy} meters • Timestamp: {form.location?.timestamp ? new Date(form.location.timestamp).toLocaleString() : 'Unknown'}
-               </p>
-               <button
-                 type="button"
-                 onClick={() => {
-                   setForm(prev => ({ ...prev, location: null }));
-                   setSaved(false);
-                 }}
-                 style={{
-                   fontSize: '12px',
-                   color: '#dc2626',
-                   background: 'none',
-                   border: 'none',
-                   cursor: 'pointer',
-                   marginTop: '8px',
-                 }}
-               >
-                 Remove location
-               </button>
-             </div>
-           ) : locationState.status === 'denied' || locationState.status === 'unsupported' ? (
-             <div>
-               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                 Location access is unavailable or denied. You can still enter a location manually.
-               </p>
-               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                 <input
-                   type="number"
-                   placeholder="Latitude"
-                   value={form.location ? form.location.latitude : ''}
-                   onChange={e => {
-                     const val = parseFloat(e.target.value);
-                     if (!isNaN(val)) {
-                       setForm(prev => ({
-                         ...prev,
-                         location: {
-                           ...(prev.location || { latitude: 0, longitude: 0, accuracy: 0, timestamp: Date.now() }),
-                           latitude: val,
-                         }
-                       }));
-                     }
-                   }}
-                   style={{
-                     width: '120px',
-                     padding: '8px 12px',
-                     borderRadius: '6px',
-                     border: '1px solid var(--border)',
-                     background: 'var(--bg)',
-                     fontSize: '13px',
-                   }}
-                 />
-                 <input
-                   type="number"
-                   placeholder="Longitude"
-                   value={form.location ? form.location.longitude : ''}
-                   onChange={e => {
-                     const val = parseFloat(e.target.value);
-                     if (!isNaN(val)) {
-                       setForm(prev => ({
-                         ...prev,
-                         location: {
-                           ...(prev.location || { latitude: 0, longitude: 0, accuracy: 0, timestamp: Date.now() }),
-                           longitude: val,
-                         }
-                       }));
-                     }
-                   }}
-                   style={{
-                     width: '120px',
-                     padding: '8px 12px',
-                     borderRadius: '6px',
-                     border: '1px solid var(--border)',
-                     background: 'var(--bg)',
-                     fontSize: '13px',
-                   }}
-                 />
-               </div>
-             </div>
-           ) : (
-             <div>
-               <button
-                 type="button"
-                 onClick={handleLocationRequest}
-                 disabled={submitting}
-                 style={{
-                   padding: '10px 20px',
-                   borderRadius: '6px',
-                   border: '1px solid var(--border)',
-                   background: locationState.status === 'unknown' ? 'var(--accent)' : 'var(--text-secondary)',
-                   color: 'white',
-                   fontSize: '13px',
-                   fontWeight: 500,
-                   cursor: locationState.status === 'unknown' ? 'pointer' : 'default',
-                 }}
-               >
-                 {locationState.status === 'unknown' ? 'Use my current location' : 'Location unavailable'}
-               </button>
-               {locationState.status === 'error' && (
-                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                   {locationState.message}
-                 </p>
-               )}
-             </div>
-           )}
-         </section>
-         <button
+        </section>
+
+        <button
           type="submit"
           disabled={submitting}
           style={{
