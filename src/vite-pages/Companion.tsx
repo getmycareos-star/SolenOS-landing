@@ -130,7 +130,7 @@ export default function Companion() {
           <div role="status" style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
             {companionEnabled
               ? 'Ask about care needs or a concern. Responses are only available when the connected backend returns a grounded result.'
-              : 'Companion is disabled because the connected backend does not implement its response endpoint yet. Do not enter sensitive care details here. No AI response will be generated until the service is implemented, configured, and tested.'}
+              : 'Companion is disabled because no AI provider is configured and verified. Do not enter sensitive care details here. The backend can persist a conversation, but it will not generate AI care responses until a provider is configured, grounded, and tested.'}
           </div>
         )}
         {messages.map((msg, i) => (
