@@ -109,7 +109,7 @@ export default function StructuredDailyCapture() {
     setLoadingCaregivers(true);
     setCaregiverId('');
     setCaregiverError(null);
-    getJSON(`/caregivers/${personId}`)
+    getJSON(`/caregivers/person/${personId}`)
       .then((data: Array<{ id: string; name: string }>) => {
         if (!active) return;
         setCaregiverId(data[0]?.id || '');
@@ -257,7 +257,7 @@ export default function StructuredDailyCapture() {
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
         
-        const uploadResponse = await fetch(`${((import.meta.env || {}).VITE_API_BASE || '/api/v1')}/upload`, {
+        const uploadResponse = await fetch(`${((import.meta.env || {}).VITE_API_BASE || '/api/v1').replace(/\/$/, '')}/upload`, {
           method: 'POST',
           body: formData,
         });
