@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   clearAccessToken,
+  clearCareContext,
   getJSON,
   postJSON,
   setAccessToken,
@@ -82,6 +83,7 @@ export default function Login() {
       if (!session?.access_token || !session.account?.id) {
         throw new Error('The authentication response was incomplete.')
       }
+      clearCareContext()
       setAccessToken(session.access_token)
       setAccount(session.account)
       const availableContexts = await getJSON('/auth/care-contexts') as CareContext[]
@@ -95,6 +97,7 @@ export default function Login() {
       }
     } catch (cause) {
       clearAccessToken()
+      clearCareContext()
       setError(cause instanceof Error ? cause.message : 'Could not authenticate. Try again.')
     } finally {
       setBusy(false)
