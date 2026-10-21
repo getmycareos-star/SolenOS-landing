@@ -10,7 +10,7 @@ import {
 } from '../api/client'
 
 type AuthMode = 'login' | 'signup'
-type Stage = 'credentials' | 'choose-context' | 'create-context' | 'setup-caregiver'
+type Stage = 'credentials' | 'choose-context' | 'create-context' | 'setup-caregiver' | 'accept-invitation'
 
 type CareContext = {
   person_id: string
@@ -47,6 +47,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [contextName, setContextName] = useState('')
+  const [invitationToken, setInvitationToken] = useState('')
   const [contexts, setContexts] = useState<CareContext[]>([])
   const [selectedPersonId, setSelectedPersonId] = useState('')
   const [account, setAccount] = useState<Account | null>(null)
@@ -155,6 +156,30 @@ export default function Login() {
     }
   }
 
+  const handleAcceptInvitation = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const token = invitationToken.trim()
+    if (!token) {
+      setError('Enter the invitation token supplied by the care-record owner.')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      const link = await postJSON('/auth/caregiver-invitations/accept', { token }) as CaregiverLink
+      if (!link?.person_id || !link?.caregiver_id) {
+        throw new Error('The backend did not return a valid caregiver link.')
+      }
+      setPersonId(link.person_id)
+      setCaregiverId(link.caregiver_id)
+      navigate('/')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not accept this caregiver invitation.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const selectedContext = contexts.find((context) => context.person_id === selectedPersonId)
 
   return (
@@ -238,6 +263,27 @@ export default function Login() {
                 style={fieldStyle} placeholder="Name" />
             </label>
             <button type="submit" disabled={busy} style={primaryButtonStyle}>{busy ? 'Creating…' : 'Create care record'}</button>
+            <button type="button" onClick={() => { setStage('accept-invitation'); setError('') }}
+              style={{ ...secondaryButtonStyle, marginTop: '10px' }}>
+              I have a caregiver invitation
+            </button>
+          </form>
+        )}
+
+        {stage === 'accept-invitation' && (
+          <form onSubmit={handleAcceptInvitation}>
+            <h2 style={sectionHeadingStyle}>Accept a caregiver invitation</h2>
+            <p style={helpTextStyle}>Paste the single-use invitation token shared by the owner of the care record. The server verifies the token and grants only the permissions in that invitation.</p>
+            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text)', marginBottom: '18px' }}>
+              Invitation token
+              <input required value={invitationToken} onChange={(event) => setInvitationToken(event.target.value)}
+                autoComplete="off" style={fieldStyle} placeholder="Paste invitation token" />
+            </label>
+            <button type="submit" disabled={busy} style={primaryButtonStyle}>{busy ? 'Accepting…' : 'Accept invitation'}</button>
+            <button type="button" onClick={() => { setStage('create-context'); setError('') }}
+              style={{ ...secondaryButtonStyle, marginTop: '10px' }}>
+              Back
+            </button>
           </form>
         )}
 
@@ -265,6 +311,18 @@ export default function Login() {
       </section>
     </main>
   )
+}
+
+const secondaryButtonStyle: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  padding: '10px 16px',
+  borderRadius: '8px',
+  border: '1px solid var(--border)',
+  background: 'var(--bg)',
+  color: 'var(--text)',
+  fontSize: '13px',
+  cursor: 'pointer',
 }
 
 const fieldStyle: React.CSSProperties = {
