@@ -463,7 +463,7 @@ export default function Community() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading community posts...</p>
           )}
 
-          {!loading && filteredPosts.length === 0 && (
+          {!loading && !communityError && filteredPosts.length === 0 && (
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
               {activeTag || activeStage
                 ? 'No posts match your filters. Try clearing them.'
