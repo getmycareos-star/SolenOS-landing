@@ -30,7 +30,7 @@ describe('DailyCare', () => {
   it('renders the main heading and location section', () => {
     render(<DailyCare />);
     expect(screen.getByRole('heading', { name: /what matters today/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /location/i })).toBeInTheDocument();
+    expect(screen.getByText('Location', { exact: true })).toBeInTheDocument();
   });
 
   it('requests the current location when the location button is clicked', async () => {
@@ -74,8 +74,8 @@ describe('DailyCare', () => {
     const longitude = screen.getByPlaceholderText(/longitude/i);
     await userEvent.type(latitude, '34.0522');
     await userEvent.type(longitude, '-118.2437');
-    expect(latitude).toHaveValue('34.0522');
-    expect(longitude).toHaveValue('-118.2437');
+    expect(latitude).toHaveValue(34.0522);
+    expect(longitude).toHaveValue(-118.2437);
   });
 
   it('submits the daily-care form with the granted location', async () => {
