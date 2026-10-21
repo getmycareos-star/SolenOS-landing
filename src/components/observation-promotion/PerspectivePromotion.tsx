@@ -25,7 +25,7 @@ export default function PerspectivePromotion() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { toggle: togglePromotion, toggledPerspectiveIds, loadingPerspectiveIds } = useOptimisticToggle<string>();
+  const { toggle: togglePromotion, loadingPerspectiveIds } = useOptimisticToggle<string>();
 
   // Load initial data
   // In a real implementation, this would fetch from API
