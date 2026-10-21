@@ -1,4 +1,4 @@
-import { authHeaders, clearAccessToken, getAccessToken, setAccessToken } from './client'
+import { authHeaders, clearAccessToken, getAccessToken, getPersonId, setAccessToken } from './client'
 
 describe('authenticated API client headers', () => {
   beforeEach(() => {
@@ -19,5 +19,15 @@ describe('authenticated API client headers', () => {
     expect(getAccessToken()).toBe('session-token-for-test')
     clearAccessToken()
     expect(getAccessToken()).toBeNull()
+  })
+})
+
+describe('care record identity selection', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('does not silently select a shared demo person when no care record is selected', () => {
+    expect(getPersonId()).toBe('')
   })
 })
