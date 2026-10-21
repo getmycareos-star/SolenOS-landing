@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getJSON, postJSON, getPersonId } from '../api/client';
+import { getJSON, postJSON, getPersonId, getAccessToken } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { compressImage } from '../lib/imageCompression';
 import { useOptimisticMutation } from '../lib/optimistic';
