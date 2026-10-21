@@ -108,8 +108,7 @@ export default function Login() {
     try {
       const context = await postJSON('/auth/care-contexts', { name: contextName.trim() }) as CareContext
       setContexts([context])
-      setSelectedPersonId(context.person_id)
-      setStage('setup-caregiver')
+      await continueWithContext(context, account?.id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not create the care record.')
     } finally {
