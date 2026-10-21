@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
 
@@ -71,7 +71,7 @@ describe('StructuredDailyCapture', () => {
     
     // Fill in scale form
     await userEvent.selectOptions(screen.getByLabelText(/scale type/i), 'mood');
-    await userEvent.selectOptions(screen.getByLabelText(/score \(1-5\)/i), '4');
+    fireEvent.change(screen.getByLabelText(/score \(1-5\)/i), { target: { value: '4' } });
     
     // Submit scale form
     await userEvent.click(screen.getByRole('button', { name: /add scale/i }));
