@@ -38,13 +38,13 @@ export const useLocationPermission = () => {
         });
       });
 
-      const { latitude, longitude, accuracy, timestamp } = position.coords;
+      const { latitude, longitude, accuracy } = position.coords;
       setState({
         status: 'granted',
         latitude,
         longitude,
         accuracy,
-        timestamp,
+        timestamp: position.timestamp,
       });
     } catch (err: any) {
       let message = 'Unknown error';
