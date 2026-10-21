@@ -425,8 +425,7 @@ export default function DailyCare() {
          </section>
          <button
           type="submit"
-           disabled={submitting || loadingCaregivers || !caregiverId}
-          disabled={submitting}
+          disabled={submitting || loadingCaregivers || !caregiverId}
           style={{
             padding: '12px 24px', borderRadius: '10px', border: 'none',
             background: submitting ? 'var(--text-secondary)' : 'var(--trust)',
