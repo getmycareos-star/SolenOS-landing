@@ -20,12 +20,12 @@ interface PostNeedsReview {
 interface TrendingTopic {
   tag: string
   count: number
-  growth: string
+  growth: string | null
 }
 
 interface StateReport {
   total_caregivers: number
-  avg_helpfulness: number
+  avg_helpfulness: number | null
   top_concerns: string[]
   trending_tags: TrendingTopic[]
 }
@@ -34,37 +34,13 @@ interface MetricsData {
   [key: string]: any
 }
 
-const DEMO_RISK: CaregiverAtRisk[] = [
-  { caregiver_id: 'caregiver-1', label: 'M. Johnson', risk_level: 'high', distress_signals: 3, last_active: '2h ago' },
-  { caregiver_id: 'caregiver-2', label: 'R. Chen', risk_level: 'moderate', distress_signals: 2, last_active: '1d ago' },
-  { caregiver_id: 'caregiver-3', label: 'A. Rodriguez', risk_level: 'mild', distress_signals: 1, last_active: '3d ago' },
-]
-
-const DEMO_REVIEW: PostNeedsReview[] = [
-  {
-    id: 'post-5',
-    content: 'Has anyone tried giving their loved one CBD oil for anxiety? My doctor said it might help but I want to hear real experiences.',
-    author_label: 'Anonymous caregiver',
-    reason: 'medication-discussion',
-    tags: ['anxiety', 'medication'],
-  },
-]
-
-const DEMO_REPORT: StateReport = {
-  total_caregivers: 142,
-  avg_helpfulness: 4.2,
-  top_concerns: ['sleep', 'medication-management', 'hallucinations'],
-  trending_tags: [
-    { tag: 'mealtime-challenges', count: 42, growth: '+12%' },
-    { tag: 'wandering', count: 31, growth: '+8%' },
-    { tag: 'communication', count: 28, growth: '+5%' },
-  ],
-}
-
 export default function TeamDashboard() {
-  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>(DEMO_RISK)
-  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>(DEMO_REVIEW)
-  const [report, setReport] = useState<StateReport>(DEMO_REPORT)
+  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>([])
+  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>([])
+  const [report, setReport] = useState<StateReport>({ total_caregivers: 0, avg_helpfulness: null, top_concerns: [], trending_tags: [] })
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
+  const [riskModelStatus, setRiskModelStatus] = useState<string>('unknown')
   const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'report' | 'monitoring'>('overview')
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null)
   const [metricsLoading, setMetricsLoading] = useState<boolean>(true)
@@ -83,26 +59,32 @@ export default function TeamDashboard() {
   const fetchDashboard = async () => {
     try {
       const data = await getJSON('/team/dashboard') as any
-      if (data?.caregivers_at_risk) setRiskCaregivers(data.caregivers_at_risk)
-      if (data?.posts_to_review) setPostsToReview(data.posts_to_review)
+      setRiskCaregivers(Array.isArray(data?.caregivers_at_risk) ? data.caregivers_at_risk : [])
+      setPostsToReview(Array.isArray(data?.posts_to_review) ? data.posts_to_review : [])
+      setRiskModelStatus(typeof data?.risk_model_status === 'string' ? data.risk_model_status : 'unknown')
+      setDashboardError(null)
     } catch (error) {
       console.error('Failed to fetch dashboard:', error)
+      setRiskCaregivers([])
+      setPostsToReview([])
+      setDashboardError('Team dashboard could not be loaded. Confirm that this account has authorized team-staff access.')
     }
   }
 
   const fetchReport = async () => {
     try {
       const data = await getJSON('/team/state-report') as any
-      if (data) {
-        setReport({
-          total_caregivers: data.total_caregivers || DEMO_REPORT.total_caregivers,
-          avg_helpfulness: data.avg_helpfulness || DEMO_REPORT.avg_helpfulness,
-          top_concerns: data.top_concerns || DEMO_REPORT.top_concerns,
-          trending_tags: data.trending_tags || DEMO_REPORT.trending_tags,
-        })
-      }
+      setReport({
+        total_caregivers: Number.isFinite(data?.total_caregivers) ? data.total_caregivers : 0,
+        avg_helpfulness: Number.isFinite(data?.avg_helpfulness) ? data.avg_helpfulness : null,
+        top_concerns: Array.isArray(data?.top_concerns) ? data.top_concerns : [],
+        trending_tags: Array.isArray(data?.trending_tags) ? data.trending_tags : [],
+      })
+      setReportError(null)
     } catch (error) {
       console.error('Failed to fetch report:', error)
+      setReport({ total_caregivers: 0, avg_helpfulness: null, top_concerns: [], trending_tags: [] })
+      setReportError('Community report could not be loaded. Confirm team-staff access.')
     }
   }
 
@@ -110,10 +92,6 @@ export default function TeamDashboard() {
     setMetricsLoading(true)
     try {
       const data = await getJSON('/metrics') as any
-      // The /metrics endpoint returns Prometheus format text, not JSON.
-      // We'll need to handle it as text and parse it.
-      // For now, we'll assume the backend might return JSON for simplicity.
-      // If it's text, we'll store the raw text.
       if (typeof data === 'string') {
         setMetricsData({ raw: data } as MetricsData)
       } else {
@@ -129,7 +107,7 @@ export default function TeamDashboard() {
 
   const approvePost = async (postId: string) => {
     try {
-      await postJSON(`/community/${postId}/moderate`, { status: 'approved', caregiver_id: 'team-moderator' })
+      await postJSON(`/community/${postId}/moderate`, { status: 'approved' })
       setPostsToReview(prev => prev.filter(p => p.id !== postId))
     } catch (error) {
       console.error('Failed to approve post:', error)
@@ -180,12 +158,20 @@ export default function TeamDashboard() {
         </div>
       </div>
 
+      {dashboardError && <p role="alert" style={{ color: 'var(--error)', marginBottom: '16px' }}>{dashboardError}</p>}
+
       {activeTab === 'overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Caregivers Needing Attention</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {riskCaregivers.map((c) => (
+              {riskCaregivers.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  {riskModelStatus === 'not_configured'
+                    ? 'No validated caregiver-risk model is configured. No risk labels are being inferred.'
+                    : 'No caregiver-risk records were returned.'}
+                </p>
+              ) : riskCaregivers.map((c) => (
                 <div key={c.caregiver_id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '12px 16px', borderRadius: '8px', background: 'var(--bg)',
@@ -206,7 +192,9 @@ export default function TeamDashboard() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Trending Topics</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {report.trending_tags.map((t) => (
+              {report.trending_tags.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No published community tags have been recorded yet.</p>
+              ) : report.trending_tags.map((t) => (
                 <div key={t.tag} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '12px', minWidth: '160px', color: 'var(--text)' }}>{t.tag}</span>
                   <div style={{ flex: 1, height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -218,7 +206,7 @@ export default function TeamDashboard() {
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', minWidth: '48px', textAlign: 'right' }}>
                     {t.count}
                   </span>
-                  <span style={{ fontSize: '10px', color: 'var(--success)', }}>{t.growth}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--success)', }}>{t.growth ?? 'Not measured'}</span>
                 </div>
               ))}
             </div>
@@ -275,6 +263,8 @@ export default function TeamDashboard() {
       )}
 
       {activeTab === 'report' && (
+        <>
+        {reportError && <p role="alert" style={{ color: 'var(--error)', marginBottom: '16px' }}>{reportError}</p>}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Community Snapshot</h2>
@@ -284,7 +274,7 @@ export default function TeamDashboard() {
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Active Caregivers</div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--success)' }}>{report.avg_helpfulness.toFixed(1)}</div>
+                <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--success)' }}>{report.avg_helpfulness == null ? 'Not measured' : report.avg_helpfulness.toFixed(1)}</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Avg Helpfulness</div>
               </div>
             </div>
@@ -293,7 +283,9 @@ export default function TeamDashboard() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Top Concerns</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {report.top_concerns.map((concern) => (
+              {report.top_concerns.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No community concerns have been recorded yet.</p>
+              ) : report.top_concerns.map((concern) => (
                 <div key={concern} style={{
                   padding: '8px 12px', borderRadius: '6px',
                   background: 'var(--trust-soft)', fontSize: '13px', color: 'var(--trust)',
@@ -304,6 +296,7 @@ export default function TeamDashboard() {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {activeTab === 'monitoring' && (
