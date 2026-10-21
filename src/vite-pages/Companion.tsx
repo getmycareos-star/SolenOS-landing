@@ -126,8 +126,8 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Ask SolenOS anything about care needs, behavior patterns, or to surface a concern.
-            Responses are backed by local evidence and reasoning.
+            The Companion response endpoint is not implemented in the connected backend yet.
+            No AI response will be generated until that service is connected and tested. Do not rely on this screen for care decisions.
           </div>
         )}
         {messages.map((msg, i) => (
