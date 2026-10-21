@@ -64,7 +64,7 @@ describe('StructuredDailyCapture medication image workflow', () => {
     mockFileReader();
     fireEvent.change(fileInput, { target: { files: [testFile] } });
 
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
     expect(mockCompressImage).toHaveBeenCalled();
 
     fireEvent.change(screen.getByPlaceholderText(/enter medication name/i), {
@@ -108,7 +108,7 @@ describe('StructuredDailyCapture medication image workflow', () => {
       target: { files: [new File(['dummy image content'], 'medication.png', { type: 'image/png' })] },
     });
 
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText(/enter medication name/i), {
       target: { value: 'Test Medication' },
     });
