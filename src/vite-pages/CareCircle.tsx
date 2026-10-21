@@ -1,248 +1,103 @@
-import { useEffect, useState } from 'react'
-import { getJSON, getPersonId } from '../api/client'
+import { useCallback, useEffect, useState } from 'react'
+import { getJSON, getPersonId, subscribeToPersonId } from '../api/client'
 
-interface CareCircle {
+interface Caregiver {
   id: string
   person_id: string
   name: string
-  description: string | null
-  is_active: boolean
+  email: string
+  relationship: string
+  timezone: string
   created_at: string
-  updated_at: string | null
-}
-
-interface CareCircleMembership {
-  id: string
-  care_circle_id: string
-  member_person_id: string | null
-  member_account_id: string | null
-  role: string
-  role_description: string | null
-  access_level: string
-  can_view_information: boolean
-  can_contribute_information: boolean
-  can_receive_notifications: boolean
-  can_participate_in_decisions: boolean
-  relationship_to_person: string | null
-  contact_information: any
-  invitation_status: string
-  joined_at: string
-  left_at: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
 }
 
 export default function CareCircle() {
-  const [careCircles, setCareCircles] = useState<CareCircle[]>([])
-  const [selectedCircle, setSelectedCircle] = useState<CareCircle | null>(null)
-  const [circleMembers] = useState<CareCircleMembership[]>([])
+  const [personId, setPersonIdState] = useState(getPersonId())
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const personId = getPersonId()
 
-  useEffect(() => {
-    fetchCareCircles()
-  }, [personId])
+  useEffect(() => subscribeToPersonId(setPersonIdState), [])
 
-  const fetchCareCircles = async () => {
+  const loadCaregivers = useCallback(async () => {
+    if (!personId) {
+      setCaregivers([])
+      setError('Select an authorized care record to view its caregiver network.')
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
-      const data = await getJSON(`/care-circle/person/${personId}`)
-      setCareCircles(data as CareCircle[])
-    } catch (err: any) {
-      console.error('Failed to fetch care circles:', err)
-      setError(err.message || 'Failed to load care circles')
+      const result = await getJSON(`/caregivers/person/${encodeURIComponent(personId)}`)
+      if (!Array.isArray(result)) {
+        throw new Error('The server returned an unexpected caregiver list.')
+      }
+      setCaregivers(result as Caregiver[])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load caregivers.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [personId])
 
-  if (loading) {
-    return (
-      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '20px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          Loading care circles...
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '20px', color: 'var(--error)', marginBottom: '16px' }}>
-          {error}
-        </div>
-        <button
-          onClick={fetchCareCircles}
-          style={{
-            padding: '8px 16px', borderRadius: '8px', border: 'none',
-            background: 'var(--trust)', color: 'white', fontSize: '13px',
-            cursor: 'pointer'
-          }}
-        >
-          Retry
-        </button>
-      </div>
-    )
-  }
+  useEffect(() => {
+    void loadCaregivers()
+  }, [loadCaregivers])
 
   return (
-    <div style={{ padding: '24px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Care Circle Management</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-          Manage family and support networks around the person receiving care.
+    <main style={{ padding: '24px 32px', maxWidth: '960px', margin: '0 auto' }}>
+      <header style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px' }}>Caregiver network</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+          Caregivers recorded for the selected care recipient. Access is checked by SolenOS before the records are returned.
         </p>
-        <button
-          onClick={() => {
-            // In a real implementation, this would open a modal to create a new care circle
-            alert('Create care circle functionality would be implemented here')
-          }}
-          style={{
-            padding: '8px 16px', borderRadius: '8px', border: 'none',
-            background: 'var(--trust)', color: 'white', fontSize: '13px',
-            cursor: 'pointer'
-          }}
-        >
-          New Care Circle
-        </button>
-      </div>
-      
-      {/* Care Circles List */}
-      <section style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '12px' }}>Your Care Circles</h2>
-        {careCircles.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-            No care circles created yet. Click "New Care Circle" to get started.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {careCircles.map(circle => (
-              <div key={circle.id} style={{
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: '12px', padding: '16px 20px',
-                cursor: 'pointer'
-              }}
-              onClick={() => {
-                setSelectedCircle(circle)
-                // In a real implementation, this would also fetch the circle members
-                alert(`Fetching members for circle: ${circle.name}`)
-              }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{circle.name}</div>
-                    {circle.description && (
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        {circle.description}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    {circle.is_active ? 'Active' : 'Inactive'}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-      
-      {/* Selected Circle Details */}
-      {selectedCircle && (
-        <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
-                {selectedCircle.name}
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
-                {selectedCircle.description || 'No description provided'}
-              </p>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Created:</div>
-                  <div style={{ fontSize: '13px' }}>
-                    {new Date(selectedCircle.created_at).toLocaleString()}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Status:</div>
-                  <div style={{ fontSize: '13px', fontWeight: 500 }}>
-                    {selectedCircle.is_active ? 'Active' : 'Inactive'}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedCircle(null)}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--text-secondary)',
-                  cursor: 'pointer', fontSize: '20px'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-          
-          {/* Circle Members */}
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Members ({circleMembers.length})</h3>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
-              {circleMembers.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-                  No members yet. Add members using the "Add Member" functionality.
-                </p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {circleMembers.map((member, index) => (
-                    <div key={index} style={{ 
-                      background: 'var(--surface-soft)', borderRadius: '8px', padding: '12px 16px',
-                      marginBottom: index < circleMembers.length - 1 ? 8 : 0
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                            {member.member_person_id || member.member_account_id ? 
-                              'Member' : 'Unknown'}
-                          </div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                            {member.role.replace(/_/g, ' ')}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                          {member.can_view_information ? '👁️' : '🚫'} 
-                          {member.can_contribute_information ? '📝' : '🚫'}
-                          {member.can_receive_notifications ? '🔔' : '🚫'}
-                          {member.can_participate_in_decisions ? '🗳️' : '🚫'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div style={{ marginTop: '16px', textAlign: 'right' }}>
-              <button
-                onClick={() => {
-                  // In a real implementation, this would open a modal to add a member
-                  alert('Add member functionality would be implemented here')
-                }}
-                style={{
-                  padding: '8px 16px', borderRadius: '8px', border: 'none',
-                  background: 'var(--trust)', color: 'white', fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-              >
-                Add Member to Circle
-              </button>
-            </div>
-          </div>
+      </header>
+
+      {loading && (
+        <p role="status" style={{ color: 'var(--text-secondary)' }}>Loading caregivers…</p>
+      )}
+
+      {error && (
+        <section role="alert" style={{ padding: '16px', border: '1px solid var(--border)', borderRadius: '12px' }}>
+          <p style={{ color: 'var(--error)', marginBottom: '12px' }}>{error}</p>
+          {personId && (
+            <button type="button" onClick={() => void loadCaregivers()} style={{
+              padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)',
+              background: 'var(--surface)', color: 'var(--text-primary)', cursor: 'pointer',
+            }}>
+              Retry
+            </button>
+          )}
         </section>
       )}
-    </div>
+
+      {!loading && !error && caregivers.length === 0 && (
+        <p style={{ color: 'var(--text-secondary)' }}>
+          No caregiver records have been added to this care recipient yet.
+        </p>
+      )}
+
+      {!loading && !error && caregivers.length > 0 && (
+        <section aria-label="Caregivers" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {caregivers.map((caregiver) => (
+            <article key={caregiver.id} style={{
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: '12px', padding: '16px 20px',
+            }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '6px' }}>{caregiver.name}</h2>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                {caregiver.relationship}
+              </p>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{caregiver.email}</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                Time zone: {caregiver.timezone}
+              </p>
+            </article>
+          ))}
+        </section>
+      )}
+    </main>
   )
 }
