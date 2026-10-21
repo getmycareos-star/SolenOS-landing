@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export type LocationPermissionState =
   | { status: 'unknown' }
@@ -11,12 +11,16 @@ export const useLocationPermission = () => {
   const [state, setState] = useState<LocationPermissionState>({ status: 'unknown' });
 
   const checkAvailability = useCallback(() => {
-    if (!('geolocation' in navigator)) {
+    if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') {
       setState({ status: 'unsupported' });
       return false;
     }
     return true;
   }, []);
+
+  useEffect(() => {
+    checkAvailability();
+  }, [checkAvailability]);
 
   const requestLocation = useCallback(async () => {
     if (!checkAvailability()) {
