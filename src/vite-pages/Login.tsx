@@ -225,7 +225,7 @@ export default function Login() {
               </label>
               <button type="submit" disabled={busy}
                 style={primaryButtonStyle}>
-                {busy ? 'Please wait…' : mode === 'signup' ? 'Create account and continue' : 'Sign in'}
+                {busy ? 'Please wait…' : mode === 'signup' ? 'Create account and continue' : 'Sign in securely'}
               </button>
             </form>
           </>
