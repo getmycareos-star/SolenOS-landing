@@ -20,7 +20,20 @@ jest.mock('../lib/permissions/useLocationPermission', () => ({
 describe('DailyCare', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    const { getPersonId } = require('../api/client');
+    (getPersonId as jest.Mock).mockReturnValue('test-person');
     mockLocationPermission.state = { status: 'unknown' };
+  });
+
+  it('does not invent a care record or request caregivers when no record is selected', async () => {
+    const { getPersonId, getJSON } = require('../api/client');
+    (getPersonId as jest.Mock).mockReturnValue('');
+
+    render(<DailyCare />);
+
+    expect(await screen.findByText(/select a care record before recording daily care/i)).toBeInTheDocument();
+    expect(getJSON).not.toHaveBeenCalled();
+    expect(screen.queryByRole('option', { name: /demo caregiver/i })).not.toBeInTheDocument();
   });
 
   it('renders the main heading', async () => {
