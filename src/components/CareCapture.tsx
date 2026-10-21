@@ -73,9 +73,10 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // The UI will still show the text was processed optimistically
       console.error('Failed to save situation:', error)
     },
-    onSettled: () => {
-      // Clear the text after submission attempt
-      setText('')
+    onSettled: (_data, error) => {
+      // Keep the caregiver's draft if the backend did not persist it.
+      // Clear only after a confirmed successful save.
+      if (!error) setText('')
     },
     retry: true,
     maxRetries: 3
@@ -91,11 +92,16 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }
     setIdentityError(null)
 
-    await submitSituation({
-      caregiverId,
-      personId,
-      rawInput: text.trim()
-    })
+    try {
+      await submitSituation({
+        caregiverId,
+        personId,
+        rawInput: text.trim()
+      })
+    } catch {
+      // The mutation exposes the failure state; preserve the draft for correction/retry
+      // and avoid an unhandled rejected promise from this event handler.
+    }
   }
 
   const clearExperiences = () => setExperiences(null)
