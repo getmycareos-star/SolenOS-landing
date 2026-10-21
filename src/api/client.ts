@@ -1,6 +1,9 @@
 declare global {
   interface ImportMetaEnv {
     VITE_API_BASE?: string
+    VITE_SENTRY_DSN?: string
+    VITE_SENTRY_ENVIRONMENT?: string
+    VITE_SENTRY_RELEASE?: string
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv
