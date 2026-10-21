@@ -2,23 +2,36 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+const sentryOrg = process.env.SENTRY_ORG;
+const sentryProject = process.env.SENTRY_PROJECT || 'solenos-frontend';
+const sentryEnabled = Boolean(sentryAuthToken && sentryOrg && sentryProject);
+
 export default defineConfig({
   plugins: [
     react(),
-    sentryVitePlugin({
-      org: "your-org",
-      project: "solenos-frontend",
-      // authToken: process.env.SENTRY_AUTH_TOKEN, // Set in CI/CD or .env
-      // Uncomment the following lines to enable source map upload during build
-      // Note: You need to set SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT in your environment
-    }),
+    ...(sentryEnabled
+      ? [
+          sentryVitePlugin({
+            authToken: sentryAuthToken,
+            org: sentryOrg,
+            project: sentryProject,
+            telemetry: false,
+            sourcemaps: {
+              filesToDeleteAfterUpload: ['./dist/**/*.js.map'],
+            },
+          }),
+        ]
+      : []),
   ],
-  // Adjust base URL if needed
-  // base: '/',
-  // Build options
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:8000',
+    },
+  },
   build: {
-    sourcemap: true, // Ensure source maps are generated
-    // outDir: 'dist',
-    // assetsDir: 'assets',
+    // Avoid publishing source maps unless authenticated Sentry upload is configured.
+    sourcemap: sentryEnabled,
   },
 });
