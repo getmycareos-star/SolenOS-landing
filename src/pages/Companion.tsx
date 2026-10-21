@@ -140,8 +140,8 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Ask SolenOS anything about care needs, behavior patterns, or to surface a concern.
-            Responses are backed by local evidence and reasoning.
+            Ask SolenOS to review what is recorded about care needs, recent events, or appointments.
+            Replies retrieve existing care-record facts; they are not generated medical advice or diagnoses.
           </div>
         )}
         {messages.map((msg, i) => (
