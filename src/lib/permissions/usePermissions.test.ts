@@ -133,7 +133,7 @@ describe('useCameraPermission', () => {
 
   it('should handle successful camera request', () => {
     // Mock mediaDevices support
-    const mockStream = new MediaStream();
+    const mockStream = { getTracks: jest.fn().mockReturnValue([]) } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       value: mockMediaDevices,
       configurable: true
@@ -189,7 +189,7 @@ describe('useCameraPermission', () => {
 
   it('should clean up media stream on unmount', () => {
     // Mock mediaDevices support
-    const mockStream = new MediaStream();
+    const mockStream = { getTracks: jest.fn().mockReturnValue([]) } as unknown as MediaStream;
     const getTracksMock = jest.fn().mockReturnValue([{ stop: jest.fn() }]);
     mockStream.getTracks = getTracksMock;
     
