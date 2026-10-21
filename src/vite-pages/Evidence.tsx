@@ -452,6 +452,7 @@ export default function Evidence({ compressImageFn = compressImage, dataURLtoFil
                         </div>
                         <button
                           type="button"
+                          aria-label="Remove preview"
                           onClick={() => setImagePreview(null)}
                           className='btn btn-outline'
                         >
