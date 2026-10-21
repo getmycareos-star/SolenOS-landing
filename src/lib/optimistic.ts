@@ -1,24 +1,24 @@
 import { useState, useCallback, useRef } from 'react';
 import { postJSON, patchJSON, getJSON } from '../api/client';
 
-/**
- * Interface for optimistic mutation options
- */
 interface OptimisticMutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>;
-  onMutate: (variables: TVariables) => Promise<unknown> | unknown;
-  onSuccess: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
-  onError: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
-  onSettled: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
+  onMutate?: (variables: TVariables) => Promise<unknown> | unknown;
+  onSuccess?: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
+  onError?: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
+  onSettled?: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
   retry?: boolean;
   maxRetries?: number;
 }
 
 /**
- * Runs mutations with rollback hooks and a ref-backed in-flight lock.
- * The ref prevents duplicate requests even before React has rerendered.
+ * Supports both established call patterns:
+ * 1) useOptimisticMutation(options) followed by mutate(variables)
+ * 2) useOptimisticMutation() followed by mutate(options, variables)
  */
-export function useOptimisticMutation<TData, TVariables>() {
+export function useOptimisticMutation<TData, TVariables>(
+  defaultOptions?: OptimisticMutationOptions<TData, TVariables>,
+) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const [data, setData] = useState<TData | null>(null);
@@ -26,18 +26,27 @@ export function useOptimisticMutation<TData, TVariables>() {
   const snapshotRef = useRef<unknown>(null);
 
   const mutate = useCallback(async (
-    options: OptimisticMutationOptions<TData, TVariables>,
-    variables: TVariables,
+    optionsOrVariables: OptimisticMutationOptions<TData, TVariables> | TVariables,
+    maybeVariables?: TVariables,
   ): Promise<TData | undefined> => {
+    const options = maybeVariables === undefined
+      ? defaultOptions
+      : optionsOrVariables as OptimisticMutationOptions<TData, TVariables>;
+    const variables = maybeVariables === undefined
+      ? optionsOrVariables as TVariables
+      : maybeVariables;
+
+    if (!options) {
+      throw new Error('Mutation options must be provided either to the hook or mutate().');
+    }
+
     const existing = inFlightRef.current;
     if (existing) {
       if (!options.retry) {
         throw new Error('Mutation already in progress');
       }
-      // Retry means queue this mutation behind the current one; do not poll
-      // React state or reuse a stale closure.
       await existing.catch(() => undefined);
-      return mutate(options, variables);
+      return mutate(optionsOrVariables, maybeVariables as TVariables);
     }
 
     setLoading(true);
@@ -48,20 +57,20 @@ export function useOptimisticMutation<TData, TVariables>() {
 
     const operation = (async () => {
       try {
-        context = await options.onMutate(variables);
+        context = await options.onMutate?.(variables);
         snapshotRef.current = context;
         result = await options.mutationFn(variables);
-        await options.onSuccess(result, variables, context);
+        await options.onSuccess?.(result, variables, context);
         setData(result);
         return result;
       } catch (err) {
         mutationError = err;
-        await options.onError(err, variables, context);
+        await options.onError?.(err, variables, context);
         setError(err);
         throw err;
       } finally {
         try {
-          await options.onSettled(result, mutationError, variables, context);
+          await options.onSettled?.(result, mutationError, variables, context);
         } finally {
           setLoading(false);
         }
@@ -76,7 +85,7 @@ export function useOptimisticMutation<TData, TVariables>() {
         inFlightRef.current = null;
       }
     }
-  }, []);
+  }, [defaultOptions]);
 
   return {
     mutate,
