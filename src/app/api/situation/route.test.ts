@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import { jest } from "@jest/globals";
 
 jest.unstable_mockModule("@/lib/situation-entry", () => ({
