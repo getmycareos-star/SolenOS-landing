@@ -20,7 +20,6 @@ function installFetchMock() {
     if (path.startsWith('blob:')) {
       return { ok: true, blob: async () => new Blob(['compressed image'], { type: 'image/png' }) };
     }
-
     let body: unknown = [];
     if (path.includes('/caregivers/person/')) {
       body = [{ id: 'test-caregiver', name: 'Test Caregiver' }];
@@ -29,12 +28,11 @@ function installFetchMock() {
     } else if (path.includes('/daily/log')) {
       body = { id: 'test-daily-log' };
     }
-
     return {
       ok: true,
+      status: 200,
       headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
       text: async () => JSON.stringify(body),
-      json: async () => body,
     };
   });
   global.fetch = fetchMock as unknown as typeof fetch;
