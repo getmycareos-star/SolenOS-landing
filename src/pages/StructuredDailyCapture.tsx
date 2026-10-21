@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, getPersonId } from '../api/client';
+import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
-import { compressImage } from '../lib/imageCompression';
+import { compressImage, dataURLtoFile } from '../lib/imageCompression';
 import { useOptimisticMutation } from '../lib/optimistic';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
@@ -104,7 +104,7 @@ export default function StructuredDailyCapture() {
   const personId = getPersonId();
   
   // Load caregivers (simplified for now)
-  const [caregiverId, setCaregiverId] = useState<string>('');
+  const caregiverId = getCaregiverId() ?? '';
   
   useEffect(() => {
     async function loadCaregivers() {
@@ -228,11 +228,9 @@ export default function StructuredDailyCapture() {
       // If we have an image preview, upload it first to get an evidence ID
       let evidenceId: string | null = null;
       if (medicationImagePreview) {
-        // Convert data URL to file
-        const response = await fetch(medicationImagePreview);
-        const blob = await response.blob();
-        const file = new File([blob], 'medication.png', { type: 'image/png' });
-        
+        // Convert the preview data URL to a file without a network fetch.
+        const file = dataURLtoFile(medicationImagePreview, 'medication.png');
+
         // Compress the image before upload
         setMedicationCompressing(true);
         const compressedFile = await compressImage(file, {
@@ -250,16 +248,10 @@ export default function StructuredDailyCapture() {
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (!uploadResponse.ok) {
-          throw new Error('Failed to upload image');
+        const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
+        if (!uploadResult?.evidence_id) {
+          throw new Error('Image upload did not return an evidence ID');
         }
-        
-        const uploadResult = await uploadResponse.json();
         evidenceId = uploadResult.evidence_id;
       }
       
@@ -512,9 +504,12 @@ export default function StructuredDailyCapture() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    if (!personId || !caregiverId) {
+      const error = new Error('A signed-in caregiver and care record are required to save daily capture.');
+      setSaveError(error);
+      return;
+    }
+
     await submitDailyLog({
       personId,
       caregiverId,
@@ -1006,7 +1001,7 @@ export default function StructuredDailyCapture() {
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
                     />
-                    <label className='medication-file-label'>
+                    <label htmlFor="medication-file-input" className='medication-file-label'>
                       or upload from device
                     </label>
                   </div>
