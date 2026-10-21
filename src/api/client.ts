@@ -7,10 +7,9 @@ declare global {
   }
 }
 
-// Production defaults to the same-origin Netlify proxy (/api/*); Vite's dev
-// server also proxies /api to localhost:8000. Set VITE_API_BASE only when a
-// deployment intentionally needs to call a different API origin.
-const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+// Most backend endpoints are mounted at /api/v1. Netlify proxies /api/* to
+// Railway, and Vite proxies /api/* to localhost:8000 during development.
+const API_BASE = (import.meta.env.VITE_API_BASE || '/api/v1').replace(/\/$/, '')
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
@@ -29,6 +28,17 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
 
 function interpolatePersonId(path: string): string {
   return path.replace(/demo-person-id/g, getPersonId())
+}
+
+// Situation capture is intentionally mounted at /api/situation, outside the
+// versioned /api/v1 router. Keep that one endpoint on its actual backend path.
+function requestUrl(path: string, interpolate = true): string {
+  const resolvedPath = interpolate ? interpolatePersonId(path) : path
+  if (resolvedPath === '/situation' || resolvedPath.startsWith('/situation?')) {
+    const apiRoot = API_BASE.replace(/\/api\/v1$/, '/api')
+    return `${apiRoot}${resolvedPath}`
+  }
+  return `${API_BASE}${resolvedPath}`
 }
 
 async function handleResponse(res: Response) {
@@ -68,13 +78,13 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  const res = await fetch(requestUrl(path))
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  const res = await fetch(requestUrl(path))
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -82,7 +92,7 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
+  const res = await fetch(requestUrl(path, personId !== false), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -91,7 +101,7 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
+  const res = await fetch(requestUrl(path, personId !== false), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
