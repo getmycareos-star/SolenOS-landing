@@ -15,7 +15,7 @@ function installFetchMock(caregivers: Array<{ id: string; name: string }>) {
   const fetchMock = jest.fn(async (url: unknown, _options?: RequestInit) => {
     const path = String(url);
     let body: unknown = [];
-    if (path.includes('/caregivers/person/')) {
+    if (path.includes('/caregivers/')) {
       body = caregivers;
     } else if (path.includes('/situation')) {
       body = { ok: true, evidence_id: 'evidence-1', care_event_id: 'event-1' };
