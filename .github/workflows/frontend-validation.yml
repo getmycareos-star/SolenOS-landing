@@ -21,6 +21,6 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund --fetch-retries=1 --fetch-timeout=60000 --registry=https://registry.npmjs.org
       - name: Type-check and production build
-        run: npm run build
+        run: npm run typecheck && npm run build
       - name: Run Jest tests
         run: NODE_OPTIONS=--experimental-vm-modules npm test -- --runInBand --passWithNoTests
