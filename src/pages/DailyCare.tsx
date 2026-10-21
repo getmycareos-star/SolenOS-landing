@@ -402,8 +402,7 @@ export default function DailyCare() {
                <button
                  type="button"
                  onClick={handleLocationRequest}
-                 disabled={submitting}
-                 style={{
+                        style={{
                    padding: '10px 20px',
                    borderRadius: '6px',
                    border: '1px solid var(--border)',
