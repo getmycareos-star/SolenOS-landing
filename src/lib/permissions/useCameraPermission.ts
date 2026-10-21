@@ -12,12 +12,16 @@ export const useCameraPermission = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   const checkAvailability = useCallback(() => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
       setState({ status: 'unsupported' });
       return false;
     }
     return true;
   }, []);
+
+  useEffect(() => {
+    checkAvailability();
+  }, [checkAvailability]);
 
   const requestCamera = useCallback(async () => {
     if (!checkAvailability()) {
