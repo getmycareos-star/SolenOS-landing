@@ -18,7 +18,9 @@
     "react-router-dom": "^6.20.0",
     "@sentry/react": "^8.0.0",
     "@sentry/tracing": "^7.48.0",
-    "browser-image-compression": "^2.0.2"
+    "browser-image-compression": "^2.0.2",
+    "i18next": "^23.16.8",
+    "react-i18next": "^15.0.0"
   },
   "devDependencies": {
     "@capacitor/android": "^6.1.0",
