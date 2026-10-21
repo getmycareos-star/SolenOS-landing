@@ -38,6 +38,12 @@ export default function Evidence() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read image preview.'));
+    reader.onerror = () => reject(new Error('Could not read image preview.'));
+    reader.readAsDataURL(file);
+  });
   const [uploading, setUploading] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [submitError, setSubmitError] = useState<unknown | null>(null);
@@ -192,11 +198,7 @@ export default function Evidence() {
         });
         
         // Convert compressed file back to data URL for preview
-        const compressedUrl = URL.createObjectURL(compressedFile);
-        setImagePreview(compressedUrl);
-        
-        // Clean up
-        URL.revokeObjectURL(compressedUrl);
+        setImagePreview(await fileToDataUrl(compressedFile));
         setCompressing(false);
       }
 
@@ -232,11 +234,7 @@ export default function Evidence() {
       });
       
       // Convert compressed file to data URL for preview
-      const compressedUrl = URL.createObjectURL(compressedFile);
-      setImagePreview(compressedUrl);
-      
-      // Clean up
-      URL.revokeObjectURL(compressedUrl);
+      setImagePreview(await fileToDataUrl(compressedFile));
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
