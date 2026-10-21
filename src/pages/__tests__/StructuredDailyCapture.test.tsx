@@ -2,6 +2,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import StructuredDailyCapture from '../StructuredDailyCapture';
 import { compressImage } from '../../lib/imageCompression';
 
+jest.mock('../../api/client', () => ({
+  getPersonId: () => 'test-person-id',
+  getJSON: jest.fn().mockResolvedValue([]),
+  postJSON: jest.fn().mockResolvedValue({}),
+}));
+
 // Mock the compression library
 jest.mock('../../lib/imageCompression', () => ({
   ...jest.requireActual('../../lib/imageCompression'),
