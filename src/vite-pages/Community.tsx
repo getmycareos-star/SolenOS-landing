@@ -119,6 +119,8 @@ export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
   const [communityError, setCommunityError] = useState<string | null>(null)
+  const [communityNotice, setCommunityNotice] = useState<string | null>(null)
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null)
   const [communityUnavailable, setCommunityUnavailable] = useState(true)
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerText, setComposerText] = useState('')
@@ -187,6 +189,23 @@ export default function Community() {
       counts[reactionType] = counts[reactionType] + 1
       return { ...p, reaction_counts: counts, user_reaction: reactionType }
     }))
+  }
+
+  async function flagPost(postId: string) {
+    setReportingPostId(postId)
+    setCommunityNotice(null)
+    try {
+      await postJSON(`/community/${postId}/flag`, {
+        reason: 'Reported by a community member for staff review',
+      })
+      setPosts(prev => prev.filter(post => post.id !== postId))
+      setCommunityNotice('Post reported for staff review and hidden from the public feed.')
+    } catch (e) {
+      console.error(e)
+      setCommunityError('The post could not be reported because the community service is unavailable.')
+    } finally {
+      setReportingPostId(null)
+    }
   }
 
   function toggleSave(postId: string) {
@@ -463,6 +482,9 @@ export default function Community() {
         </aside>
 
         <main style={{ flex: 1 }}>
+          {communityNotice && (
+            <p role="status" style={{ color: 'var(--trust)', fontSize: '14px', marginBottom: '12px' }}>{communityNotice}</p>
+          )}
           {communityError && (
             <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '12px' }}>{communityError}</p>
           )}
@@ -596,6 +618,19 @@ export default function Community() {
                      title={savedPosts.has(post.id) ? 'Unsave' : 'Save this post'}
                    >
                      {savedPosts.has(post.id) ? '🔖' : '🔖'}
+                   </button>
+                   <button
+                     onClick={() => flagPost(post.id)}
+                     disabled={communityUnavailable || reportingPostId === post.id}
+                     style={{
+                       border: 'none', background: 'transparent',
+                       padding: '4px 8px', borderRadius: '6px',
+                       cursor: communityUnavailable || reportingPostId === post.id ? 'not-allowed' : 'pointer',
+                       color: 'var(--text-secondary)', fontSize: '12px',
+                     }}
+                     title="Report this post for staff review"
+                   >
+                     {reportingPostId === post.id ? 'Reporting…' : '⚑ Report'}
                    </button>
                  </div>
               </div>
