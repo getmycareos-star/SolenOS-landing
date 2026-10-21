@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJSON, postJSON, patchJSON, getPersonId } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface CareCircle {
   id: string
@@ -33,21 +33,6 @@ interface CareCircleMembership {
   updated_at: string | null
 }
 
-interface CreateCareCircleData {
-  name: string
-  description: string | null
-}
-
-interface AddMemberToCircleData {
-  member_person_id: string | null
-  member_account_id: string | null
-  role: string
-  role_description: string | null
-  access_level: string
-  relationship_to_person: string | null
-  contact_information: any
-}
-
 export default function CareCircle() {
   const [careCircles, setCareCircles] = useState<CareCircle[]>([])
   const [selectedCircle, setSelectedCircle] = useState<CareCircle | null>(null)
@@ -74,33 +59,6 @@ export default function CareCircle() {
     }
   }
 
-  const createCareCircle = async (data: CreateCareCircleData) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const newCircle = await postJSON(`/care-circle/`, data)
-      setCareCircles(prev => [...prev, newCircle as CareCircle])
-    } catch (err: any) {
-      console.error('Failed to create care circle:', err)
-      setError(err.message || 'Failed to create care circle')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const addMemberToCircle = async (circleId: string, data: AddMemberToCircleData) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const membership = await postJSON(`/care-circle/${circleId}/members`, data)
-      setCircleMembers(prev => [...prev, membership as CareCircleMembership])
-    } catch (err: any) {
-      console.error('Failed to add member to circle:', err)
-      setError(err.message || 'Failed to add member to circle')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return (
