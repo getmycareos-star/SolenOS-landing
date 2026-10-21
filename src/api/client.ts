@@ -38,7 +38,7 @@ export function getAuthHeaders(): Record<string, string> {
 
 async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
   const token = getAccessToken()
-  if (!token) return fetch(url, init)
+  if (!token) return init ? fetch(url, init) : fetch(url)
   const headers = new Headers(init?.headers)
   headers.set('Authorization', `Bearer ${token}`)
   return fetch(url, { ...init, headers })
