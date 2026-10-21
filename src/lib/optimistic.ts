@@ -1,8 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
 
-/**
- * Configuration for a mutation and its lifecycle callbacks.
- */
 interface OptimisticMutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>;
   onMutate: (variables: TVariables) => Promise<unknown> | unknown;
@@ -14,8 +11,9 @@ interface OptimisticMutationOptions<TData, TVariables> {
 }
 
 /**
- * Supports both configured usage (useOptimisticMutation(options), mutate(variables))
+ * Supports configured usage (useOptimisticMutation(options), mutate(variables))
  * and per-call usage (useOptimisticMutation(), mutate(options, variables)).
+ * Calls that opt into retry are queued behind an in-flight mutation.
  */
 export function useOptimisticMutation<TData = unknown, TVariables = unknown>(
   configuredOptions?: OptimisticMutationOptions<TData, TVariables>
@@ -25,8 +23,10 @@ export function useOptimisticMutation<TData = unknown, TVariables = unknown>(
   const [data, setData] = useState<TData | null>(null);
   const snapshotRef = useRef<unknown>(null);
   const requestIdRef = useRef(0);
+  const inFlightRef = useRef(false);
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
 
-  const mutate = useCallback(async (
+  const mutate = useCallback((
     optionsOrVariables: OptimisticMutationOptions<TData, TVariables> | TVariables,
     maybeVariables?: TVariables
   ): Promise<TData> => {
@@ -36,61 +36,72 @@ export function useOptimisticMutation<TData = unknown, TVariables = unknown>(
       : maybeVariables as TVariables;
 
     if (!configuredOptions && maybeVariables === undefined) {
-      throw new Error('Mutation variables are required when options are supplied per call.');
+      return Promise.reject(new Error('Mutation variables are required when options are supplied per call.'));
     }
-    if (loading) {
-      throw new Error('Mutation already in progress');
+    if (inFlightRef.current && !options.retry) {
+      return Promise.reject(new Error('Mutation already in progress'));
     }
 
-    setLoading(true);
-    setError(null);
-    const requestId = ++requestIdRef.current;
-    let resultData: TData | undefined;
-    let mutationError: unknown | null = null;
-    let snapshot: unknown = null;
+    const execute = async (): Promise<TData> => {
+      inFlightRef.current = true;
+      setLoading(true);
+      setError(null);
+      const requestId = ++requestIdRef.current;
+      let resultData: TData | undefined;
+      let mutationError: unknown | null = null;
+      let snapshot: unknown = null;
 
-    try {
-      snapshot = await options.onMutate(variables);
-      snapshotRef.current = snapshot;
-
-      const maxRetries = options.retry ? Math.max(0, options.maxRetries ?? 0) : 0;
-      let attempt = 0;
-      let result: TData;
-      while (true) {
-        try {
-          result = await options.mutationFn(variables);
-          break;
-        } catch (err) {
-          if (attempt >= maxRetries) throw err;
-          attempt += 1;
-        }
-      }
-      resultData = result;
-
-      if (requestId === requestIdRef.current) {
-        await options.onSuccess(result, variables, snapshot);
-        setData(result);
-      }
-      return result;
-    } catch (err) {
-      mutationError = err;
-      setError(err);
       try {
-        await options.onError(err, variables, snapshot);
-      } catch (callbackError) {
-        console.error('Optimistic mutation onError callback failed:', callbackError);
-      }
-      throw err;
-    } finally {
-      if (requestId === requestIdRef.current) {
+        snapshot = await options.onMutate(variables);
+        snapshotRef.current = snapshot;
+
+        const maxRetries = options.retry ? Math.max(0, options.maxRetries ?? 0) : 0;
+        let attempt = 0;
+        let result: TData;
+        while (true) {
+          try {
+            result = await options.mutationFn(variables);
+            break;
+          } catch (err) {
+            if (attempt >= maxRetries) throw err;
+            attempt += 1;
+          }
+        }
+        resultData = result;
+        if (requestId === requestIdRef.current) {
+          await options.onSuccess(result, variables, snapshot);
+          setData(result);
+        }
+        return result;
+      } catch (err) {
+        mutationError = err;
+        setError(err);
+        try {
+          await options.onError(err, variables, snapshot);
+        } catch (callbackError) {
+          console.error('Optimistic mutation onError callback failed:', callbackError);
+        }
+        throw err;
+      } finally {
         try {
           await options.onSettled(resultData, mutationError, variables, snapshot);
         } finally {
           setLoading(false);
+          inFlightRef.current = false;
         }
       }
+    };
+
+    if (inFlightRef.current) {
+      const queued = queueRef.current.catch(() => undefined).then(execute);
+      queueRef.current = queued;
+      return queued as Promise<TData>;
     }
-  }, [configuredOptions, loading]);
+
+    const current = execute();
+    queueRef.current = current;
+    return current;
+  }, [configuredOptions]);
 
   return {
     mutate,
