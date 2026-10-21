@@ -15,6 +15,7 @@ export default function Companion() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [requestError, setRequestError] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -29,7 +30,12 @@ export default function Companion() {
   }, [messages])
 
   const sendMessage = async () => {
-    if (!input.trim()) return
+    if (!input.trim() || loading) return
+    if (!personId) {
+      setRequestError('Select a care recipient before starting a care conversation.')
+      return
+    }
+    setRequestError(null)
     setLoading(true)
     setEmergency(false)
 
@@ -38,8 +44,6 @@ export default function Companion() {
       text: input,
       timestamp: new Date(),
     }
-    setMessages(prev => [...prev, userMsg])
-
     try {
       const response = await postJSON('/conversation/message', {
         person_id: personId,
@@ -62,15 +66,11 @@ export default function Companion() {
         evidence_ids: response.evidence_ids,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, assistantMsg])
-    } catch (e: any) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: `Error: ${e.message}`,
-        timestamp: new Date(),
-      }])
-    } finally {
+      setMessages(prev => [...prev, userMsg, assistantMsg])
       setInput('')
+    } catch (e: unknown) {
+      setRequestError(e instanceof Error ? e.message : 'SolenOS could not send this message. Your text is still available to retry.')
+    } finally {
       setLoading(false)
     }
   }
@@ -84,6 +84,7 @@ export default function Companion() {
 
   const startNewSession = () => {
     setMessages([])
+    setRequestError(null)
     setSessionId(null)
     setEmergency(false)
   }
@@ -99,6 +100,12 @@ export default function Companion() {
           New conversation
         </button>
       </div>
+
+      {requestError && (
+        <div role="alert" style={{ color: 'var(--error)', border: '1px solid var(--error)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', fontSize: '13px' }}>
+          Message was not confirmed as sent: {requestError}
+        </div>
+      )}
 
       {emergency && (
         <div style={{
