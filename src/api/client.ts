@@ -3,6 +3,7 @@ import { getAccessToken, clearAccessToken, authHeaders, getPersonId } from './au
 declare global {
   interface ImportMetaEnv {
     VITE_API_BASE?: string
+    PROD?: boolean
     VITE_SENTRY_DSN?: string
     VITE_SENTRY_ENVIRONMENT?: string
     VITE_SENTRY_RELEASE?: string
@@ -26,6 +27,7 @@ const API_BASE = configuredBase && !invalidConfiguredBase
 
 export {
   ACCESS_TOKEN_STORAGE_KEY,
+  getAccessToken,
   setAccessToken,
   clearAccessToken,
   authHeaders,
