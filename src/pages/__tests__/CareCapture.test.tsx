@@ -14,11 +14,21 @@ function jsonResponse(payload: unknown) {
 function installFetchMock(caregivers: Array<{ id: string; name: string }>) {
   const fetchMock = jest.fn(async (url: unknown, _options?: RequestInit) => {
     const path = String(url);
-    const jsonResponse = (data: unknown) => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => data, text: async () => JSON.stringify(data) });
-    if (path.includes('/caregivers/person/')) return jsonResponse(caregivers);
-    if (path.endsWith('/api/situation')) return jsonResponse({ ok: true, evidence_id: 'evidence-1', care_event_id: 'event-1' });
-    if (path.includes('/community/experience')) return jsonResponse({ matched: false });
-    return jsonResponse([]);
+    let body: unknown = [];
+    if (path.includes('/caregivers/person/')) {
+      body = caregivers;
+    } else if (path.includes('/situation')) {
+      body = { ok: true, evidence_id: 'evidence-1', care_event_id: 'event-1' };
+    } else if (path.includes('/community/experience')) {
+      body = { matched: false };
+    }
+
+    return {
+      ok: true,
+      headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
+      text: async () => JSON.stringify(body),
+      json: async () => body,
+    };
   });
   global.fetch = fetchMock as unknown as typeof fetch;
   return fetchMock;
