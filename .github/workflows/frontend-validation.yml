@@ -23,4 +23,4 @@ jobs:
       - name: Type-check and production build
         run: npm run build
       - name: Run Jest tests
-        run: npm test -- --runInBand --passWithNoTests
+        run: NODE_OPTIONS=--experimental-vm-modules npm test -- --runInBand --passWithNoTests
