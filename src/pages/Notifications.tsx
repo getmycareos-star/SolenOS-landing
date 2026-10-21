@@ -221,7 +221,8 @@ const Notifications: React.FC = () => {
                     className="text-xs text-muted-foreground hover:underline"
                   >
                     Archive
-                  )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
