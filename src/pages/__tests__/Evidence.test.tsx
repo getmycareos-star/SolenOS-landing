@@ -2,6 +2,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Evidence from '../Evidence';
 import { compressImage } from '../../lib/imageCompression';
 
+jest.mock('../../api/client', () => ({
+  getPersonId: () => 'test-person-id',
+  getCaregiverId: () => 'demo-caregiver',
+  getJSON: jest.fn().mockResolvedValue([]),
+  postJSON: jest.fn().mockResolvedValue({}),
+  postFormData: async (path: string, body: FormData) => {
+    const response = await fetch(path, { method: 'POST', body });
+    if (!response.ok) throw new Error('Failed to upload image');
+    return response.json();
+  },
+}));
+
 // Mock the compression library
 jest.mock('../../lib/imageCompression', () => ({
   ...jest.requireActual('../../lib/imageCompression'),
@@ -51,7 +63,7 @@ describe('Evidence Component Image Compression Integration', () => {
       onload: null,
       readAsDataURL: jest.fn((file) => {
         // Simulate FileReader.onload being called with a data URL
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -63,15 +75,15 @@ describe('Evidence Component Image Compression Integration', () => {
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
-    const submitButton = screen.getByRole('button', { name: /create evidence/i });
+    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find(button => button.getAttribute('type') === 'submit')!;
     fireEvent.click(submitButton);
 
     // Wait for submission to complete
     await waitFor(() => {
-      expect(submitButton).toHaveTextContent('Create Evidence');
+      expect(screen.queryByAltText('Preview')).not.toBeInTheDocument();
     });
 
     // Verify that compressImage was called
@@ -102,7 +114,7 @@ describe('Evidence Component Image Compression Integration', () => {
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -149,7 +161,7 @@ describe('Evidence Component Image Compression Integration', () => {
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -161,15 +173,15 @@ describe('Evidence Component Image Compression Integration', () => {
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
-    const submitButton = screen.getByRole('button', { name: /create evidence/i });
+    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find(button => button.getAttribute('type') === 'submit')!;
     fireEvent.click(submitButton);
 
     // Wait for submission to complete (should use original image due to fallback)
     await waitFor(() => {
-      expect(submitButton).toHaveTextContent('Create Evidence');
+      expect(screen.queryByAltText('Preview')).not.toBeInTheDocument();
     });
 
     // Verify that fetch was still called (fallback to original image worked)

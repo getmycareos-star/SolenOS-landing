@@ -1,6 +1,28 @@
 // src/lib/routine-moments/service.ts
 import { RoutineMomentRecord, RoutineBaseline, RoutineMomentChange, ConfidenceLevel } from './types';
 
+function calendarDaysBetween(first: Date, last: Date): number {
+  const firstDay = Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), first.getUTCDate());
+  const lastDay = Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate());
+  return (lastDay - firstDay) / (1000 * 60 * 60 * 24);
+}
+
+function timeOfDayMilliseconds(observation: RoutineMomentRecord): number {
+  const explicitTime = observation.observation_data?.time;
+  if (typeof explicitTime === 'string') {
+    const match = explicitTime.match(/^(\d{1,2}):(\d{2})$/);
+    if (match) {
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+        return hours * 3600000 + minutes * 60000;
+      }
+    }
+  }
+  const date = new Date(observation.observed_at);
+  return date.getUTCHours() * 3600000 + date.getUTCMinutes() * 60000 + date.getUTCSeconds() * 1000;
+}
+
 /**
  * Establish a baseline for a routine from a list of observations.
  * @param observations List of routine moment observations for a specific routine and person.
@@ -22,15 +44,12 @@ export function establishBaseline(observations: RoutineMomentRecord[]): RoutineB
   // Calculate frequency per week
   const firstDate = new Date(sortedObs[0].observed_at);
   const lastDate = new Date(sortedObs[sortedObs.length - 1].observed_at);
-  const daysDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+  const daysDiff = calendarDaysBetween(firstDate, lastDate);
   const weeksDiff = Math.max(daysDiff / 7, 0.1); // Avoid division by zero
   const frequencyPerWeek = sortedObs.length / weeksDiff;
 
   // Calculate average time of day (in milliseconds since midnight)
-  const timeOfDayMs = sortedObs.map(obs => {
-    const date = new Date(obs.observed_at);
-    return date.getHours() * 3600000 + date.getMinutes() * 60000 + date.getSeconds() * 1000;
-  });
+  const timeOfDayMs = sortedObs.map(timeOfDayMilliseconds);
   const avgTimeOfDayMs = timeOfDayMs.reduce((sum, val) => sum + val, 0) / timeOfDayMs.length;
   const avgHours = Math.floor(avgTimeOfDayMs / 3600000);
   const avgMinutes = Math.floor((avgTimeOfDayMs % 3600000) / 60000);
@@ -128,7 +147,7 @@ export function detectChanges(
    // Check frequency change
    const firstDate = new Date(observations[0].observed_at);
    const lastDate = new Date(observations[observations.length - 1].observed_at);
-   const daysDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+   const daysDiff = calendarDaysBetween(firstDate, lastDate);
    const weeksDiff = Math.max(daysDiff / 7, 0.1);
    const currentFrequency = observations.length / weeksDiff;
    const frequencyChange = Math.abs(currentFrequency - baseline.frequency_per_week) / baseline.frequency_per_week;
@@ -144,10 +163,7 @@ export function detectChanges(
    }
 
    // Check time of day change
-   const timeOfDayMs = observations.map(obs => {
-     const date = new Date(obs.observed_at);
-     return date.getHours() * 3600000 + date.getMinutes() * 60000 + date.getSeconds() * 1000;
-   });
+   const timeOfDayMs = observations.map(timeOfDayMilliseconds);
    const avgTimeOfDayMs = timeOfDayMs.reduce((sum, val) => sum + val, 0) / timeOfDayMs.length;
    const avgHours = Math.floor(avgTimeOfDayMs / 3600000);
    const avgMinutes = Math.floor((avgTimeOfDayMs % 3600000) / 60000);

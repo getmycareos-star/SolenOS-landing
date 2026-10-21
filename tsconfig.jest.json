@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["jest", "node", "vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.setup.ts"],
+  "exclude": ["node_modules", "dist", ".next"]
+}

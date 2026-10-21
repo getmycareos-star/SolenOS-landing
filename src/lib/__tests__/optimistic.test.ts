@@ -1,12 +1,5 @@
-import { renderHook, act } from '@testing-library/react';
-import { useOptimisticMutation } from './optimistic';
-
-// Mock the API client functions
-jest.mock('../api/client', () => ({
-  postJSON: jest.fn(),
-  patchJSON: jest.fn(),
-  getJSON: jest.fn(),
-}));
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useOptimisticMutation } from '../optimistic';
 
 describe('useOptimisticMutation', () => {
   beforeEach(() => {
@@ -23,9 +16,11 @@ describe('useOptimisticMutation', () => {
 
   it('should handle successful mutation', async () => {
     const mockData = { id: '123', name: 'Test' };
-    (require('../api/client').postJSON as jest.Mock).mockResolvedValue(mockData);
     
-    const mutationFn = jest.fn().mockResolvedValue(mockData);
+    let resolveMutation!: (value: typeof mockData) => void;
+    const mutationFn = jest.fn(() => new Promise<typeof mockData>(resolve => {
+      resolveMutation = resolve;
+    }));
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
     const onSuccess = jest.fn();
     const onError = jest.fn();
@@ -35,8 +30,8 @@ describe('useOptimisticMutation', () => {
       useOptimisticMutation()
     );
     
-    await act(async () => {
-      result.current.mutate(
+    act(() => {
+      void result.current.mutate(
         {
           mutationFn,
           onMutate,
@@ -47,14 +42,12 @@ describe('useOptimisticMutation', () => {
         { test: 'variable' }
       );
     });
-    
-    // Check loading state
+
+    await waitFor(() => expect(mutationFn).toHaveBeenCalled());
     expect(result.current.loading).toBe(true);
-    
-    // Wait for mutation to complete
+
     await act(async () => {
-      // Wait a bit for the async operations
-      return new Promise(resolve => setTimeout(resolve, 10));
+      resolveMutation(mockData);
     });
     
     // Check that loading is finished
@@ -69,7 +62,6 @@ describe('useOptimisticMutation', () => {
 
   it('should handle mutation error', async () => {
     const mockError = new Error('Test error');
-    (require('../api/client').postJSON as jest.Mock).mockRejectedValue(mockError);
     
     const mutationFn = jest.fn().mockRejectedValue(mockError);
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });

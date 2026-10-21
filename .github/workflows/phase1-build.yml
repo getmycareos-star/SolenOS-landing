@@ -1,0 +1,51 @@
+name: Phase 1 frontend build
+
+on:
+  push:
+    branches:
+      - repair/phase1-build-deployment
+    paths-ignore:
+      - package-lock.json
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase1-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Reconcile npm lockfile
+        run: npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund
+      - name: Commit lockfile reconciliation on repair branch
+        if: github.event_name == 'push'
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "build: synchronize npm lockfile"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push
+          fi
+      - name: Install clean dependency tree
+        run: npm ci --legacy-peer-deps
+      - name: Type-check active Vite application graph
+        run: npm run typecheck
+      - name: Run frontend tests
+        run: npm test -- --runInBand
+      - name: Build production assets
+        run: npm run build

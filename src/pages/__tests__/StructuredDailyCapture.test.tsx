@@ -2,6 +2,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import StructuredDailyCapture from '../StructuredDailyCapture';
 import { compressImage } from '../../lib/imageCompression';
 
+jest.mock('../../api/client', () => ({
+  getPersonId: () => 'test-person-id',
+  getCaregiverId: () => 'demo-caregiver',
+  getJSON: jest.fn().mockResolvedValue([]),
+  postJSON: jest.fn().mockResolvedValue({}),
+  postFormData: async (path: string, body: FormData) => {
+    const response = await fetch(path, { method: 'POST', body });
+    if (!response.ok) throw new Error('Failed to upload image');
+    return response.json();
+  },
+}));
+
 // Mock the compression library
 jest.mock('../../lib/imageCompression', () => ({
   ...jest.requireActual('../../lib/imageCompression'),
@@ -51,7 +63,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
       onload: null,
       readAsDataURL: jest.fn((file) => {
         // Simulate FileReader.onload being called with a data URL
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -63,7 +75,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Fill medication form and submit
     const medicationInput = screen.getByPlaceholderText(/enter medication name/i);
@@ -74,7 +86,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
 
     // Wait for submission to complete
     await waitFor(() => {
-      expect(submitMedicationButton).toHaveTextContent('Add Medication');
+      expect(screen.getByText('Test Medication')).toBeInTheDocument();
     });
 
     // Verify that compressImage was called
@@ -105,7 +117,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -152,7 +164,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -164,7 +176,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     });
 
     // Wait for image preview to appear
-    expect(await screen.findByLabelText(/remove preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Fill medication form and submit
     const medicationInput = screen.getByPlaceholderText(/enter medication name/i);
@@ -175,7 +187,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
 
     // Wait for submission to complete (should use original image due to fallback)
     await waitFor(() => {
-      expect(submitMedicationButton).toHaveTextContent('Add Medication');
+      expect(screen.getByText('Test Medication')).toBeInTheDocument();
     });
 
     // Verify that fetch was still called (fallback to original image worked)

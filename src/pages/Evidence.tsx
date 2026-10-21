@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getJSON, postJSON, getPersonId } from '../api/client';
+import { getJSON, postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { formatDate, formatConfidence } from '../lib/utils';
 import { compressImage, dataURLtoFile } from '../lib/imageCompression';
-import { SourceIndicator } from '../components/SourceIndicator';
-import { InformationStatus } from '../components/InformationStatus';
-import { AIAttribution } from '../components/AIAttribution';
-import { PrivacyIndicator } from '../components/PrivacyIndicator';
 import { useOptimisticMutation } from '../lib/optimistic';
 
 const typeIcon = {
@@ -35,7 +30,6 @@ export default function Evidence() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
-  const [navigate] = useNavigate();
 
   // Form state for creating new evidence
   const [form, setForm] = useState({
@@ -44,6 +38,16 @@ export default function Evidence() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = reader.result ?? (event?.target as FileReader | null)?.result;
+      if (typeof result === 'string') resolve(result);
+      else reject(new Error('Could not read image preview.'));
+    };
+    reader.onerror = () => reject(new Error('Could not read image preview.'));
+    reader.readAsDataURL(file);
+  });
   const [uploading, setUploading] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [submitError, setSubmitError] = useState<unknown | null>(null);
@@ -58,14 +62,39 @@ export default function Evidence() {
       person_id: string;
     }
   >({
-    mutationFn: ({ source_type, source_text, caregiver_id, person_id }) => 
-      postJSON('/evidence', {
-        ...form,
-        caregiver_id,
+    mutationFn: async ({ source_type, source_text, caregiver_id, person_id }) => {
+      if (imagePreview) {
+        setUploading(true);
+        setCompressing(true);
+        try {
+          const file = dataURLtoFile(imagePreview, 'evidence-image.png');
+          const compressedFile = await compressImage(file, {
+            maxSizeMB: 0.5,
+            maxWidthOrHeight: 2000,
+            useWebWorker: true,
+            initialQuality: 0.8,
+          });
+          const formData = new FormData();
+          formData.append('file', compressedFile);
+          formData.append('caregiver_id', caregiver_id);
+          formData.append('person_id', person_id);
+          formData.append('type', source_type);
+          formData.append('source_text', source_text.trim() || 'Image upload');
+          return await postFormData('/upload', formData);
+        } finally {
+          setCompressing(false);
+          setUploading(false);
+        }
+      }
+
+      return postJSON('/evidence', {
         person_id,
+        uploaded_by_caregiver_id: caregiver_id,
+        type: source_type,
         source_type,
         source_text,
-      }),
+      });
+    },
     onMutate: async (variables) => {
       // Return snapshot for potential rollback
       return { 
@@ -78,7 +107,7 @@ export default function Evidence() {
       // But we also optimistically added it, so we could add it to the list
       // For simplicity, we'll refetch the list
       try {
-        const freshData = await getJSON('/evidence');
+        const freshData = await getJSON('/evidence/' + variables.person_id);
         setItems(freshData);
       } catch (err) {
         console.error('Failed to refresh evidence list:', err);
@@ -173,11 +202,7 @@ export default function Evidence() {
         });
         
         // Convert compressed file back to data URL for preview
-        const compressedUrl = URL.createObjectURL(compressedFile);
-        setImagePreview(compressedUrl);
-        
-        // Clean up
-        URL.revokeObjectURL(compressedUrl);
+        setImagePreview(await fileToDataUrl(compressedFile));
         setCompressing(false);
       }
 
@@ -213,11 +238,7 @@ export default function Evidence() {
       });
       
       // Convert compressed file to data URL for preview
-      const compressedUrl = URL.createObjectURL(compressedFile);
-      setImagePreview(compressedUrl);
-      
-      // Clean up
-      URL.revokeObjectURL(compressedUrl);
+      setImagePreview(await fileToDataUrl(compressedFile));
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
@@ -243,8 +264,12 @@ export default function Evidence() {
     setSubmitting(true);
     setSubmitError(null);
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver'; // In a real app, we would get the caregiver ID from auth
+    const caregiverId = getCaregiverId();
+    const personId = getPersonId();
+    if (!caregiverId || !personId) {
+      setSubmitError(new Error('A signed-in caregiver and care record are required to create evidence.'));
+      return;
+    }
     
     // For evidence creation, we handle image uploads optimistically
     // If we have an image, we optimistically create the evidence
@@ -253,7 +278,7 @@ export default function Evidence() {
       source_type: form.source_type,
       source_text: form.source_text,
       caregiver_id: caregiverId,
-      person_id: getPersonId()
+      person_id: personId
     });
   };
 
@@ -437,13 +462,14 @@ export default function Evidence() {
                           {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
                         </button>
                         <input
+                          id="evidence-image-file"
                           type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
                           className='evidence-list-file-input'
                           disabled={submitting}
                         />
-                        <label className='evidence-list-file-label'>
+                        <label htmlFor="evidence-image-file" className='evidence-list-file-label'>
                           or upload from device
                         </label>
                       </div>
@@ -489,8 +515,8 @@ export default function Evidence() {
             {/* Evidence list */}
             <div className='evidence-list-items'>
               {loading && <p className='evidence-list-loading'>Loading evidence...</p>}
-              {!loading && items.length === 0 && (p>
-                No evidence found. Create your first evidence above.
+              {!loading && items.length === 0 && (
+                <p>No evidence found. Create your first evidence above.</p>
               )}
               {!loading && items.length > 0 && (
                 <div className='evidence-list-grid'>

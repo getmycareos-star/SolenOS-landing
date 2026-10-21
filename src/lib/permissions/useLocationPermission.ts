@@ -11,7 +11,7 @@ export const useLocationPermission = () => {
   const [state, setState] = useState<LocationPermissionState>({ status: 'unknown' });
 
   const checkAvailability = useCallback(() => {
-    if (!('geolocation' in navigator)) {
+    if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') {
       setState({ status: 'unsupported' });
       return false;
     }
@@ -34,7 +34,8 @@ export const useLocationPermission = () => {
         });
       });
 
-      const { latitude, longitude, accuracy, timestamp } = position.coords;
+      const { latitude, longitude, accuracy } = position.coords;
+      const { timestamp } = position;
       setState({
         status: 'granted',
         latitude,
