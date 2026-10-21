@@ -6,11 +6,10 @@ import App from './App'
 import './index.css'
 
 import * as Sentry from '@sentry/react'
-import { Integrations } from '@sentry/tracing'
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN || '',
-  integrations: [new Integrations.BrowserTracing()],
+  integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.1,
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
   release: import.meta.env.VITE_SENTRY_RELEASE || 'solenos-frontend@0.1.0',
