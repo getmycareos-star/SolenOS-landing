@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client'
 
 interface Caregiver { id: string; name: string; relationship?: string; person_id?: string }
 interface Responsibility {
@@ -28,6 +28,8 @@ export default function CareCircle() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [professionalId, setProfessionalId] = useState('')
+  const [organization, setOrganization] = useState('')
 
   async function load() {
     if (!personId) {
@@ -80,6 +82,31 @@ export default function CareCircle() {
       await load()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Handoff could not be confirmed. Refresh before retrying.')
+    } finally { setSaving(false) }
+  }
+
+
+  async function grantProfessionalAccess(event: FormEvent) {
+    event.preventDefault()
+    const caregiverId = getCaregiverId()
+    if (!personId || !caregiverId || !professionalId.trim()) {
+      setError('A selected care recipient and professional caregiver ID are required.')
+      return
+    }
+    setError(null); setNotice(null); setSaving(true)
+    try {
+      const result = await postJSON<{ id: string; status: string }>('/professional/access-grants', {
+        professional_caregiver_id: professionalId.trim(),
+        person_id: personId,
+        granted_by_caregiver_id: caregiverId,
+        organization: organization.trim() || undefined,
+        status: 'active',
+      })
+      if (!result.id || result.status !== 'active') throw new Error('The backend did not confirm the access grant.')
+      setNotice('Professional access grant saved. The professional must sign in with their provisioned professional account.')
+      setProfessionalId(''); setOrganization('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Professional access could not be confirmed.')
     } finally { setSaving(false) }
   }
 
@@ -151,6 +178,21 @@ export default function CareCircle() {
         <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
           <h2 style={{ fontSize: 16, fontWeight: 600 }}>Current responsibilities ({responsibilities.length})</h2>
           {responsibilities.length === 0 ? <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 13 }}>No responsibilities returned by the backend.</p> : <ul style={{ marginTop: 10, paddingLeft: 20 }}>{responsibilities.map(r => <li key={r.id} style={{ marginBottom: 8 }}>{r.responsibility_type} — {caregiverName(r.caregiver_id)} · {r.status} · acceptance: {r.acceptance_status}{r.scope ? ' · ' + r.scope : ''}</li>)}</ul>}
+        </section>
+
+
+        <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600 }}>Grant professional access</h2>
+          <p style={{ marginTop: 6, color: 'var(--text-secondary)', fontSize: 13 }}>Grant a provisioned professional account access to this selected care record. Use the professional's caregiver record ID; do not share passwords or admin keys.</p>
+          <form onSubmit={grantProfessionalAccess} style={{ display: 'grid', gap: 12, marginTop: 14 }}>
+            <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Professional caregiver record ID
+              <input required value={professionalId} onChange={e => setProfessionalId(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)' }} />
+            </label>
+            <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Organization (optional)
+              <input value={organization} onChange={e => setOrganization(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)' }} />
+            </label>
+            <button type="submit" disabled={saving || !personId} style={{ justifySelf: 'start', padding: '10px 14px', border: 0, borderRadius: 8, background: 'var(--trust)', color: 'white' }}>{saving ? 'Saving…' : 'Grant access'}</button>
+          </form>
         </section>
 
         <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
