@@ -994,7 +994,7 @@ export default function StructuredDailyCapture() {
                       id="medication-file-input"
                       type="file"
                       accept="image/*"
-                      onChange={handleMedicationImageUpload
+                      onChange={handleMedicationImageUpload}
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
                     />
