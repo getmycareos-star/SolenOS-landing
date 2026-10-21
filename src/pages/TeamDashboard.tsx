@@ -362,8 +362,7 @@ export default function TeamDashboard() {
                       {(metricsData as any).raw}
                     </div>
                   ) : (
-                    {/* Otherwise, try to display as JSON or parsed metrics */}
-                    <div style={{ background: 'var(--bg)', borderRadius: '8px', padding: '16px' }}>
+                      <div style={{ background: 'var(--bg)', borderRadius: '8px', padding: '16px' }}>
                       {/* We could parse and format nicely, but for now show JSON */}
                       <pre style={{ fontSize: '13px', overflowX: 'auto' }}>{JSON.stringify(metricsData, null, 2)}</pre>
                     </div>
