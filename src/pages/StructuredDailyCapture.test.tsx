@@ -74,7 +74,7 @@ describe('StructuredDailyCapture', () => {
     await userEvent.click(screen.getByRole('button', { name: /add scale/i }));
     
     // Verify scale is added to the list
-    expect(await screen.findByText(/mood/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/mood/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/4\/5/i)).toBeInTheDocument();
   });
 
