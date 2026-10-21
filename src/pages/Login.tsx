@@ -1,116 +1,173 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getJSON, postJSON, setPersonId } from '../api/client';
 
-type UserRole = 'caregiver' | 'professional' | 'team'
+type CareContext = {
+  person_id: string;
+  name: string;
+  role: string;
+  permissions: string[];
+};
+
+type AuthResponse = {
+  access_token: string;
+  token_type: string;
+  account: { id: string; email: string; display_name?: string | null };
+};
 
 export default function Login() {
-  const [role, setRole] = useState<UserRole>('caregiver')
-  const [identifier, setIdentifier] = useState('')
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [careRecipientName, setCareRecipientName] = useState('');
+  const [contexts, setContexts] = useState<CareContext[]>([]);
+  const [needsCareRecord, setNeedsCareRecord] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    localStorage.setItem('solenos_user_role', role)
-    if (identifier) {
-      localStorage.setItem('solenos_identifier', identifier)
+  const enterContext = (context: CareContext) => {
+    setPersonId(context.person_id);
+    navigate('/');
+  };
+
+  const createCareRecord = async () => {
+    if (!careRecipientName.trim()) {
+      setError('Enter the name of the person whose care you are recording.');
+      return;
     }
-    if (role === 'caregiver') navigate('/')
-    else if (role === 'professional') navigate('/professional')
-    else navigate('/team')
-  }
+    setBusy(true);
+    setError('');
+    try {
+      const context = await postJSON('/auth/care-contexts', { name: careRecipientName.trim() }) as CareContext;
+      const caregiverName = displayName.trim() || email.trim().split('@')[0];
+      const caregiver = await postJSON('/caregivers', {
+        person_id: context.person_id,
+        name: caregiverName,
+        email: email.trim().toLowerCase(),
+        relationship: 'caregiver',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      }) as { id: string };
+      const invitation = await postJSON('/auth/caregiver-invitations', {
+        person_id: context.person_id,
+        caregiver_id: caregiver.id,
+        permissions: ['read', 'write'],
+      }) as { invitation_token: string };
+      await postJSON('/auth/caregiver-invitations/accept', { token: invitation.invitation_token });
+      enterContext(context);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create the care record. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const roleInfo: Record<UserRole, { emoji: string; label: string; desc: string }> = {
-    caregiver: { emoji: '❤️', label: 'Caregiver Login', desc: 'Access your Living Care Record, daily care, appointments, and community.' },
-    professional: { emoji: '👩‍⚕️', label: 'Professional Login', desc: 'Access your professional dashboard: help requests, office hours, and impact metrics.' },
-    team: { emoji: '🛡️', label: 'SolenOS Team Login', desc: 'Access Mission Control: community health, moderation center, and State of Dementia Care reports.' },
-  }
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    setContexts([]);
+    setNeedsCareRecord(false);
+    try {
+      if (mode === 'signup') {
+        if (!careRecipientName.trim()) {
+          setError('Enter the name of the person whose care you are recording.');
+          return;
+        }
+        await postJSON('/auth/signup', {
+          email: email.trim().toLowerCase(),
+          password,
+          display_name: displayName.trim() || null,
+        });
+      }
+
+      const auth = await postJSON('/auth/login', {
+        email: email.trim().toLowerCase(),
+        password,
+      }) as AuthResponse;
+      if (!auth.access_token) throw new Error('The server did not return a valid session.');
+      sessionStorage.setItem('solenos_access_token', auth.access_token);
+      if (auth.account?.display_name) setDisplayName(auth.account.display_name);
+
+      if (mode === 'signup') {
+        await createCareRecord();
+        return;
+      }
+
+      const linkedContexts = await getJSON('/auth/care-contexts') as CareContext[];
+      if (!Array.isArray(linkedContexts) || linkedContexts.length === 0) {
+        setNeedsCareRecord(true);
+        return;
+      }
+      if (linkedContexts.length === 1) {
+        enterContext(linkedContexts[0]);
+        return;
+      }
+      setContexts(linkedContexts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Authentication failed. Check your details and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ maxWidth: '480px', width: '100%', padding: '32px 24px' }}>
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <span style={{ fontSize: '48px', marginBottom: '16px', display: 'block' }}>🏠</span>
-        <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)' }}>
-          SolenOS — Three Login Paths
-        </h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '400px', margin: '8px auto 0' }}>
-          Are you a caregiver, healthcare professional, or part of the SolenOS team? Select your role below.
-          Caregivers can also start directly at the dashboard.
-        </p>
-      </div>
-
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <Link to="/" style={{ fontSize: '13px', color: 'var(--trust)', textDecoration: 'none' }}>
-          Skip login — go to dashboard as caregiver →
-        </Link>
-      </div>
-
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '16px', padding: '24px'
-        }}>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            {(['caregiver', 'professional', 'team'] as UserRole[]).map((r) => {
-              const info = roleInfo[r]
-              const selected = role === r
-              return (
-                <button
-                  key={r}
-                  onClick={() => setRole(r)}
-                  style={{
-                    flex: 1,
-                    background: selected ? 'var(--accent-soft)' : 'var(--bg)',
-                    border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
-                    borderRadius: '12px', padding: '16px 12px',
-                    cursor: 'pointer', textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: '28px', marginBottom: '6px' }}>{info.emoji}</div>
-                  <div style={{ fontSize: '13px', fontWeight: selected ? 600 : 500, color: selected ? 'var(--text)' : 'var(--text-secondary)' }}>
-                    {info.label}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          <div style={{
-            background: roleInfo[role].emoji === '🏥' ? 'var(--trust-soft)' : 'var(--accent-soft)',
-            borderRadius: '8px', padding: '12px 16px', marginBottom: '20px'
-          }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>{roleInfo[role].label}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{roleInfo[role].desc}</div>
-          </div>
-
-          <input
-            type="text"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            placeholder={role === 'professional' ? 'Professional ID or email' : role === 'team' ? 'Team access key' : 'Person ID'}
-            style={{
-              width: '100%', padding: '12px 16px', borderRadius: '8px',
-              border: '1px solid var(--border)', background: 'var(--bg)',
-              fontSize: '14px', outline: 'none', marginBottom: '20px',
-            }}
-          />
-
-          <button
-            onClick={handleLogin}
-            style={{
-              width: '100%', padding: '12px 20px', borderRadius: '12px',
-              border: 'none', background: 'var(--trust)', color: 'white',
-              fontSize: '14px', fontWeight: 500, cursor: 'pointer',
-            }}
-          >
-            Enter SolenOS as {roleInfo[role].label.split(' ')[0]}
-          </button>
+    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '24px' }}>
+      <section style={{ maxWidth: 480, width: '100%', padding: 24, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <span style={{ fontSize: 42, display: 'block' }} aria-hidden="true">🏠</span>
+          <h1 style={{ fontSize: 22, fontWeight: 650, color: 'var(--text)' }}>SolenOS</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Your Living Care Record</p>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '24px' }}>
-          <Link to="/" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-            Continue as caregiver (default) →
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
+        {contexts.length > 0 ? (
+          <>
+            <h2 style={{ fontSize: 16 }}>Choose a care record</h2>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Select the person whose record you need. Access is limited to records linked to your account.</p>
+            {contexts.map((context) => (
+              <button key={context.person_id} type="button" onClick={() => enterContext(context)} style={{ width: '100%', padding: 14, marginTop: 8, textAlign: 'left', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer' }}>
+                <strong>{context.name}</strong>
+                <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{context.role}</span>
+              </button>
+            ))}
+          </>
+        ) : needsCareRecord ? (
+          <>
+            <h2 style={{ fontSize: 17 }}>Create a care record</h2>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Your account is authenticated but is not linked to a care record yet.</p>
+            <label style={{ display: 'block', fontSize: 13, margin: '16px 0 6px' }} htmlFor="care-recipient-name">Name of the person receiving care</label>
+            <input id="care-recipient-name" value={careRecipientName} onChange={(e) => setCareRecipientName(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
+            <button type="button" disabled={busy} onClick={createCareRecord} style={{ width: '100%', padding: 12, marginTop: 16, border: 0, borderRadius: 8, background: 'var(--trust)', color: '#fff', cursor: busy ? 'wait' : 'pointer' }}>{busy ? 'Creating record…' : 'Create care record'}</button>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              <button type="button" onClick={() => { setMode('login'); setError(''); }} aria-pressed={mode === 'login'} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: mode === 'login' ? 'var(--accent-soft)' : 'var(--bg)' }}>Sign in</button>
+              <button type="button" onClick={() => { setMode('signup'); setError(''); }} aria-pressed={mode === 'signup'} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: mode === 'signup' ? 'var(--accent-soft)' : 'var(--bg)' }}>Create account</button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              {mode === 'signup' && (
+                <>
+                  <label htmlFor="display-name" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Your name</label>
+                  <input id="display-name" autoComplete="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
+                  <label htmlFor="care-recipient-name" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Name of the person receiving care</label>
+                  <input id="care-recipient-name" value={careRecipientName} onChange={(e) => setCareRecipientName(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
+                </>
+              )}
+              <label htmlFor="email" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Email</label>
+              <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
+              <label htmlFor="password" style={{ display: 'block', fontSize: 13, margin: '12px 0 6px' }}>Password</label>
+              <input id="password" type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={mode === 'signup' ? 12 : 1} value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg)' }} />
+              {mode === 'signup' && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>Use at least 12 characters.</p>}
+              <button type="submit" disabled={busy} style={{ width: '100%', padding: 12, marginTop: 18, border: 0, borderRadius: 8, background: 'var(--trust)', color: '#fff', cursor: busy ? 'wait' : 'pointer' }}>{busy ? 'Please wait…' : mode === 'signup' ? 'Create account and care record' : 'Sign in'}</button>
+            </form>
+          </>
+        )}
+
+        {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 13, marginTop: 16 }}>{error}</p>}
+        <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 20 }}>SolenOS requires an authenticated account and explicit access to each care record. A role selection or local identifier alone does not grant access.</p>
+      </section>
+    </main>
+  );
 }
