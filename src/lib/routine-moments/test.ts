@@ -128,7 +128,7 @@ describe('Routine Moments Service', () => {
     expect(timeChange).toBeDefined();
     if (timeChange) {
       expect(timeChange.previous_value).toBe('08:00');
-      expect(timeChange.current_value).toBe('09:30' || '10:00'); // average of 9:30 and 10:00 is 9:45? Actually our function computes average of the two observations: (9:30 + 10:00)/2 = 9:45
+      expect(timeChange.current_value).toBe('09:45'); // average of 9:30 and 10:00 is 9:45? Actually our function computes average of the two observations: (9:30 + 10:00)/2 = 9:45
       // We'll just check that it's not equal to previous
       expect(timeChange.current_value).not.toBe('08:00');
     }
