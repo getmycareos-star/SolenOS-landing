@@ -29,6 +29,7 @@ export default function StructuredDailyCapture() {
       measured_at: string;
       unit: string | null;
       note: string | null;
+      is_out_of_range?: boolean;
     }>,
     scales: [] as Array<{
       axis: string;
