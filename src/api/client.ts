@@ -14,17 +14,30 @@ declare global {
 // Most backend endpoints are mounted at /api/v1. Netlify proxies /api/* to
 // Railway, and Vite proxies /api/* to localhost:8000 during development.
 const API_BASE = ((import.meta.env || {}).VITE_API_BASE || '/api/v1').replace(/\/$/, '')
+const ACCESS_TOKEN_KEY = 'solenos_access_token'
+
+export type AuthAccount = { id: string; email: string; display_name?: string | null }
+export type CareContext = { person_id: string; name: string; role: string; permissions: string[] }
+
+function notifyAuthStateChanged(): void {
+  window.dispatchEvent(new Event('authStateChanged'))
+}
 
 export function getAccessToken(): string | null {
-  return sessionStorage.getItem('solenos_access_token');
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const token = getAccessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
-  const token = getAccessToken();
-  if (!token) return fetch(url, init);
-  const headers = new Headers(init?.headers);
-  headers.set('Authorization', `Bearer ${token}`);
-  return fetch(url, { ...init, headers });
+  const token = getAccessToken()
+  if (!token) return fetch(url, init)
+  const headers = new Headers(init?.headers)
+  headers.set('Authorization', `Bearer ${token}`)
+  return fetch(url, { ...init, headers })
 }
 
 export function getPersonId(): string {
@@ -154,7 +167,22 @@ export async function getCareContexts(): Promise<CareContext[]> {
 }
 
 export async function createCareContext(name: string): Promise<CareContext> {
-  return postJSON('/auth/care-contexts', { name: name.trim() }) as Promise<CareContext>
+  const context = await postJSON('/auth/care-contexts', { name: name.trim() }) as CareContext
+  const account = await getJSON('/auth/me') as AuthAccount
+  const caregiver = await postJSON('/caregivers', {
+    person_id: context.person_id,
+    name: account.display_name?.trim() || account.email.split('@')[0],
+    email: account.email,
+    relationship: 'caregiver',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  }) as { id: string }
+  const invitation = await postJSON('/auth/caregiver-invitations', {
+    person_id: context.person_id,
+    caregiver_id: caregiver.id,
+    permissions: ['read', 'write'],
+  }) as { invitation_token: string }
+  await postJSON('/auth/caregiver-invitations/accept', { token: invitation.invitation_token })
+  return context
 }
 
 export async function logOut(): Promise<void> {
