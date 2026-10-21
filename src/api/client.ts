@@ -108,3 +108,26 @@ export async function patchJSON(path: string, body: unknown, personId?: boolean)
   })
   return handleResponse(res)
 }
+
+
+// Authentication is not yet implemented by the backend. These fail-closed
+// compatibility exports keep legacy protected screens from treating a local
+// role/identifier as proof of identity. Replace them with real session APIs
+// before exposing protected screens in production.
+export async function checkAuthState(): Promise<{ authenticated: false; sessionInfo: null }> {
+  return { authenticated: false, sessionInfo: null }
+}
+
+export function subscribeToAuthState(
+  _callback: (authenticated: boolean, sessionInfo: unknown) => void,
+): () => void {
+  return () => {}
+}
+
+export function startTokenRefresh(): void {
+  // No token is issued until a real backend authentication flow exists.
+}
+
+export function stopTokenRefresh(): void {
+  // No token refresh timer is active.
+}
