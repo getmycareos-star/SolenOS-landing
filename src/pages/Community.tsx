@@ -311,7 +311,7 @@ export default function Community() {
           />
           <button
             onClick={fetchWisdom}
-            disabled={loadingWisdom || !wisdomQuery.trim()}
+            disabled={loadingWisdom || !wisdomQuery.trim() || Boolean(loadError)}
             style={{
               padding: '8px 16px', borderRadius: '8px', border: 'none',
               background: loadingWisdom || !wisdomQuery.trim()
@@ -340,6 +340,8 @@ export default function Community() {
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button
+          disabled={Boolean(loadError)}
+          title={loadError ? 'Community backend is unavailable; posting is disabled until the connection is restored.' : undefined}
           onClick={() => setComposerOpen(!composerOpen)}
           style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
@@ -486,7 +488,7 @@ export default function Community() {
 
           {!loading && loadError && (
             <div role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>
-              Community posts could not be loaded: {loadError}. No sample posts are being shown.
+              Community posts could not be loaded: {loadError}. No sample posts are being shown. Community posting and experience matching are disabled until the backend is reachable.
               <button onClick={() => window.location.reload()} style={{ marginLeft: '8px' }}>Retry</button>
             </div>
           )}
