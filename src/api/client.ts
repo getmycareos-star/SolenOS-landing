@@ -1,6 +1,7 @@
 declare global {
   interface ImportMetaEnv {
     VITE_API_BASE?: string
+    VITE_DEMO_MODE?: string
     VITE_SENTRY_DSN?: string
     VITE_SENTRY_ENVIRONMENT?: string
     VITE_SENTRY_RELEASE?: string
@@ -27,7 +28,7 @@ async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
 }
 
 export function getPersonId(): string {
-  return localStorage.getItem('solenos_person_id') || 'demo-person-id'
+  return localStorage.getItem('solenos_person_id') || ((import.meta.env || {}).VITE_DEMO_MODE === 'true' ? 'demo-person-id' : '')
 }
 
 export function setPersonId(id: string): void {
