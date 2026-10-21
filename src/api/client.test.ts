@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals'
-import { authHeaders, clearAccessToken, getAccessToken, setAccessToken, setCaregiverId } from './client'
+import { authHeaders, clearAccessToken, getAccessToken, setAccessToken, setCaregiverId } from './authSession'
 
 describe('authenticated API client', () => {
   beforeEach(() => {
