@@ -53,7 +53,7 @@ describe('Evidence Component Image Compression Integration', () => {
       onload: null,
       readAsDataURL: jest.fn((file) => {
         // Simulate FileReader.onload being called with a data URL
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -104,7 +104,7 @@ describe('Evidence Component Image Compression Integration', () => {
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -151,7 +151,7 @@ describe('Evidence Component Image Compression Integration', () => {
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,dummy';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
