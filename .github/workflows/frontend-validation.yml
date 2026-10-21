@@ -11,14 +11,15 @@ permissions:
 
 jobs:
   build-and-test:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --package-lock=false --registry=https://registry.npmjs.org
+        run: npm install --legacy-peer-deps --package-lock=false --no-audit --no-fund --fetch-retries=1 --fetch-timeout=60000 --registry=https://registry.npmjs.org
       - name: Type-check and production build
         run: npm run build
       - name: Run Jest tests
