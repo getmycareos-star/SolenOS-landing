@@ -336,6 +336,7 @@ export default function FounderDashboard() {
           </section>
         </div>
       </div>
+    </RequireAuth>
     );
 }
 
