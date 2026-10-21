@@ -211,8 +211,8 @@ export default function StructuredDailyCapture() {
       const compressedUrl = URL.createObjectURL(compressedFile);
       setMedicationImagePreview(compressedUrl);
       
-      // Clean up
-      URL.revokeObjectURL(compressedUrl);
+      // Keep the preview URL alive while the image is displayed and until
+      // submission or component cleanup. Revoking it here breaks preview/upload.
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
