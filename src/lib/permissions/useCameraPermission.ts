@@ -19,9 +19,9 @@ export const useCameraPermission = () => {
     return true;
   }, []);
 
-  const requestCamera = useCallback(async () => {
+  const requestCamera = useCallback(async (): Promise<MediaStream | null> => {
     if (!checkAvailability()) {
-      return;
+      return null;
     }
 
     setState({ status: 'unknown' }); // Reset to unknown while requesting
@@ -30,18 +30,21 @@ export const useCameraPermission = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       streamRef.current = stream;
       setState({ status: 'granted', stream });
-    } catch (err: any) {
+      return stream;
+    } catch (err: unknown) {
+      const cameraError = err instanceof Error ? err : new Error(String(err));
       let message = 'Unknown error';
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      if ('name' in (err as object) && ((err as { name?: string }).name === 'NotAllowedError' || (err as { name?: string }).name === 'PermissionDeniedError')) {
         message = 'Permission denied';
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      } else if ('name' in (err as object) && ((err as { name?: string }).name === 'NotFoundError' || (err as { name?: string }).name === 'DevicesNotFoundError')) {
         message = 'No camera found';
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      } else if ('name' in (err as object) && ((err as { name?: string }).name === 'NotReadableError' || (err as { name?: string }).name === 'TrackStartError')) {
         message = 'Camera is already in use';
       } else {
-        message = err.message;
+        message = cameraError.message;
       }
       setState({ status: 'error', message });
+      return null;
     }
   }, [checkAvailability]);
 
