@@ -619,28 +619,28 @@ export default function Community() {
                   paddingTop: '8px', borderTop: '1px solid var(--border)'
                 }}>
                   <button
-                    onClick={() => handleReaction(post.id, 'like')}
+                    onClick={() => handleReaction(post.id, 'helpful')}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       border: 'none', background: 'transparent',
                       padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
-                      color: post.user_reaction === 'like' ? 'var(--trust)' : 'var(--text-secondary)',
+                      color: post.user_reaction === 'helpful' ? 'var(--trust)' : 'var(--text-secondary)',
                       fontSize: '13px',
                     }}
                   >
-                    👍 {post.reaction_counts.like > 0 && post.reaction_counts.like}
+                    👍 {post.reaction_counts.helpful > 0 && post.reaction_counts.helpful}
                   </button>
                   <button
-                    onClick={() => handleReaction(post.id, 'thank_you')}
+                    onClick={() => handleReaction(post.id, 'relate')}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       border: 'none', background: 'transparent',
                       padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
-                      color: post.user_reaction === 'thank_you' ? 'var(--trust)' : 'var(--text-secondary)',
+                      color: post.user_reaction === 'relate' ? 'var(--trust)' : 'var(--text-secondary)',
                       fontSize: '13px',
                     }}
                   >
-                    🙏 {post.reaction_counts.thank_you > 0 && post.reaction_counts.thank_you}
+                    🤝 {post.reaction_counts.relate > 0 && post.reaction_counts.relate}
                   </button>
                   <button
                     onClick={() => handleReaction(post.id, 'support')}
