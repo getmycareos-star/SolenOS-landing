@@ -18,6 +18,11 @@ export async function compressImage(
     rotate?: boolean;
   } = {}
 ): Promise<File> {
+  // Reject invalid input before the compression fallback; otherwise a text file could be returned as if it were a valid upload.
+  if (!file.type.startsWith('image/')) {
+    throw new Error('File is not an image');
+  }
+
   // Dynamically import the library to avoid bundling issues if not used
   try {
     const { default: imageCompression } = await import('browser-image-compression');
