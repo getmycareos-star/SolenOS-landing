@@ -6,7 +6,6 @@ import App from './App'
 import './index.css'
 
 import * as Sentry from '@sentry/react'
-import { Integrations } from '@sentry/tracing'
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN || '',
