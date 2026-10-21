@@ -1,6 +1,11 @@
-const viteApiBase = import.meta.env?.VITE_API_BASE
-const nextApiBase = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_API_BASE : undefined
-const API_BASE = viteApiBase || nextApiBase || 'http://localhost:8000/api/v1'
+const viteEnv = import.meta.env
+const nextEnv = typeof process !== 'undefined' ? process.env : undefined
+const viteApiBase = viteEnv?.VITE_API_BASE
+const nextApiBase = nextEnv?.NEXT_PUBLIC_API_BASE
+const isProduction = viteEnv?.PROD === true || nextEnv?.NODE_ENV === 'production'
+// In production, fall back to the same-origin Netlify proxy rather than localhost.
+// Local development keeps the direct FastAPI default when no explicit base is set.
+const API_BASE = viteApiBase || nextApiBase || (isProduction ? '/api/v1' : 'http://localhost:8000/api/v1')
 export const ACCESS_TOKEN_STORAGE_KEY = 'solenos_access_token'
 
 export function getAccessToken(): string | null {
