@@ -1,13 +1,33 @@
 declare global {
   interface ImportMetaEnv {
     VITE_API_BASE?: string
+    PROD?: boolean
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
+const CONFIGURED_API_BASE = import.meta.env.VITE_API_BASE?.trim()
+const ACCESS_TOKEN_KEY = 'solenos_access_token'
+
+export function getAccessToken(): string | null {
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+export function setAccessToken(token: string): void {
+  sessionStorage.setItem(ACCESS_TOKEN_KEY, token)
+  window.dispatchEvent(new Event('authChanged'))
+}
+
+export function clearAccessToken(): void {
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY)
+  window.dispatchEvent(new Event('authChanged'))
+}
+
+export function isAuthenticated(): boolean {
+  return Boolean(getAccessToken())
+}
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
@@ -15,6 +35,11 @@ export function getPersonId(): string {
 
 export function setPersonId(id: string): void {
   localStorage.setItem('solenos_person_id', id)
+  window.dispatchEvent(new Event('personIdChanged'))
+}
+
+export function clearPersonId(): void {
+  localStorage.removeItem('solenos_person_id')
   window.dispatchEvent(new Event('personIdChanged'))
 }
 
@@ -28,11 +53,32 @@ function interpolatePersonId(path: string): string {
   return path.replace(/demo-person-id/g, getPersonId())
 }
 
-async function handleResponse(res: Response) {
+function getApiBase(): string {
+  if (import.meta.env.PROD && (!CONFIGURED_API_BASE || CONFIGURED_API_BASE.includes('your-solenos-backend-domain.com'))) {
+    throw new Error('SolenOS backend URL is not configured. Set VITE_API_BASE to the deployed backend API URL in Netlify.')
+  }
+  return CONFIGURED_API_BASE || 'http://localhost:8000/api/v1'
+}
+
+function requestHeaders(json = false): Record<string, string> {
+  const headers: Record<string, string> = {}
+  if (json) headers['Content-Type'] = 'application/json'
+  const token = getAccessToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+  return headers
+}
+
+async function handleResponse(res: Response, path = '') {
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
 
+  if (res.status === 204) return null
+
   if (!res.ok) {
+    if (res.status === 401 && getAccessToken() && !path.endsWith('/auth/login') && !path.endsWith('/auth/signup')) {
+      clearAccessToken()
+      clearPersonId()
+    }
     let message = `API ${res.status}`
     if (isJson) {
       try {
@@ -65,35 +111,49 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
-  return handleResponse(res)
+  const res = await fetch(`${getApiBase()}${interpolatePersonId(path)}`, { headers: requestHeaders() })
+  return handleResponse(res, path)
 }
 
 // Downloads a binary response, e.g. the care summary PDF. Kept here so the API
 // base is resolved in one place rather than reconstructed by a caller that would
 // otherwise hardcode a second copy of the localhost default.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
+  const res = await fetch(`${getApiBase()}${interpolatePersonId(path)}`, { headers: requestHeaders() })
   if (!res.ok) {
+    if (res.status === 401 && getAccessToken()) {
+      clearAccessToken()
+      clearPersonId()
+    }
     throw new Error(`Request failed: ${res.status}`)
   }
   return res.blob()
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
+  const res = await fetch(`${getApiBase()}${personId ? interpolatePersonId(path) : path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: requestHeaders(true),
     body: JSON.stringify(body),
   })
-  return handleResponse(res)
+  return handleResponse(res, path)
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(`${API_BASE}${personId ? interpolatePersonId(path) : path}`, {
+  const res = await fetch(`${getApiBase()}${personId ? interpolatePersonId(path) : path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: requestHeaders(true),
     body: JSON.stringify(body),
   })
-  return handleResponse(res)
+  return handleResponse(res, path)
+}
+
+
+export async function logout(): Promise<void> {
+  try {
+    await postJSON('/auth/logout', {})
+  } finally {
+    clearAccessToken()
+    clearPersonId()
+  }
 }
