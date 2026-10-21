@@ -21,7 +21,7 @@ Scope: compare the Vite/React frontend against the FastAPI application in this r
 | Living Care Record evidence | `GET/POST /api/v1/evidence...` | `GET/POST /api/v1/evidence...` | Route exists |
 | Care event history | `GET /api/v1/events/{person_id}` | `GET /api/v1/events/{person_id}` | Implemented; read-back persistence regression test added |
 | Insights | `GET /api/v1/insights/{person_id}` | `GET /api/v1/insights/{person_id}` | Implemented |
-| Appointments | `GET /api/v1/appointments/{person_id}` | `GET /api/v1/appointments/{person_id}` | Implemented |
+| Appointments page (`/appointments`) | `GET /api/v1/appointments/{person_id}`, `POST /api/v1/appointments`, plus linked-caregiver lookup | Existing appointment routes | Wired with save-response validation and read-back; available from Dashboard quick links |
 | Professional Care Overview | Reads events, appointments, insights, and linked caregivers for selected person | Existing routes above | Replaced nonexistent multi-patient endpoint with actual selected-person data; does not claim professional-level access |
 | Memory | `GET /api/v1/observations/{person_id}` | `GET /api/v1/observations/{person_id}` | Route exists |
 | Caregiver coordination | `GET /caregivers/{person_id}`, `GET /caregiver-responsibilities/{person_id}`, `GET /caregiver-handoffs/{person_id}`, `POST /caregiver-handoffs`, `POST /caregiver-handoffs/{id}/accept` | Existing caregiver-intelligence endpoints | Wired in `/care-circle`; handoff creation requires two real linked caregivers and acknowledgement evidence |
