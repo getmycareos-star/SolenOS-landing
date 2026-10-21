@@ -63,21 +63,20 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     return () => { active = false }
   }, [personId])
   
-  const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
-    any, 
-    { caregiverId: string; personId: string; rawInput: string }
-  >({
-    mutationFn: ({ caregiverId, personId, rawInput }) => 
+  type SituationVariables = { caregiverId: string; personId: string; rawInput: string }
+
+  const { mutate: submitSituation, loading: submitting, error: submitError } =
+    useOptimisticMutation<unknown, SituationVariables>()
+
+  const situationMutationOptions = {
+    mutationFn: (variables: SituationVariables) =>
       postJSON('/situation', {
-        caregiver_id: caregiverId,
-        person_id: personId,
-        raw_input: rawInput,
+        caregiver_id: variables.caregiverId,
+        person_id: variables.personId,
+        raw_input: variables.rawInput,
       }),
-    onMutate: async ({ caregiverId, personId, rawInput }) => {
-      // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
-      return { caregiverId, personId, rawInput };
-    },
-    onSuccess: async (data, variables) => {
+    onMutate: async (variables: SituationVariables) => variables,
+    onSuccess: async (_data: unknown, variables: SituationVariables) => {
       // The primary care record is saved at this point. Community matching is
       // optional and must never turn a successful save into a reported failure.
       setSaved(true)
@@ -92,14 +91,18 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         setExperiences(null)
       }
     },
-    onError: async (error, variables, context) => {
-      // On error, we could show a failed state, but for simplicity we'll just let the error propagate
-      // The UI will still show the text was processed optimistically
+    onError: async (error: unknown, _variables: SituationVariables, _context: unknown) => {
       console.error('Failed to save situation:', error)
     },
+    onSettled: async (
+      _data: unknown,
+      _error: unknown | null,
+      _variables: SituationVariables,
+      _context: unknown,
+    ) => {},
     retry: true,
-    maxRetries: 3
-  })
+    maxRetries: 3,
+  }
 
   const handleSubmit = async () => {
     if (!text.trim()) return
@@ -109,7 +112,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       return
     }
 
-    await submitSituation({
+    await submitSituation(situationMutationOptions, {
       caregiverId,
       personId,
       rawInput: text.trim()
@@ -150,7 +153,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         {caregiverError && (
           <span style={{ fontSize: '11px', color: 'var(--error)' }}>{caregiverError}</span>
         )}
-        {submitError && !saved && (
+        {Boolean(submitError) && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
