@@ -19,8 +19,10 @@ Object.defineProperty(URL, 'revokeObjectURL', {
 });
 
 // Avoid jsdom's "Not implemented" noise; component behavior is asserted through rendered state.
-Object.defineProperty(window, 'alert', {
-  configurable: true,
-  writable: true,
-  value: jest.fn(),
-});
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'alert', {
+    configurable: true,
+    writable: true,
+    value: jest.fn(),
+  });
+}
