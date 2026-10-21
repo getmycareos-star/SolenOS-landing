@@ -35,6 +35,7 @@ describe('Community unavailable state', () => {
     )
     expect(screen.queryByText('Managing sundowning evenings')).not.toBeInTheDocument()
     expect(screen.queryByText('Medication adherence hack')).not.toBeInTheDocument()
+    expect(screen.queryByText('No community posts yet. Be the first to share.')).not.toBeInTheDocument()
     await waitFor(() => expect(mockGetJSON).toHaveBeenCalledTimes(1))
   })
 
