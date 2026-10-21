@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { getPersonId, getJSON, postJSON, patchJSON } from "../api/client";
 
 const Notifications: React.FC = () => {
@@ -11,7 +10,6 @@ const Notifications: React.FC = () => {
   const [skip, setSkip] = useState(0);
   const [limit] = useState(20);
   const [hasMore, setHasMore] = useState(true);
-  const navigate = useNavigate();
 
   // Fetch the personId on mount
   useEffect(() => {
@@ -27,14 +25,14 @@ const Notifications: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getJSON<{
+        const response = await getJSON(
+          `/person/${personId}/notifications?skip=${skip}&limit=${limit}`
+        ) as {
           data: Array<any>;
           total: number;
           skip: number;
           limit: number;
-        }>(
-          `/person/${personId}/notifications?skip=${skip}&limit=${limit}`
-        );
+        };
         setNotifications(prev => [...prev, ...response.data]);
         setHasMore(response.data.length === limit);
         setLoading(false);
@@ -48,9 +46,9 @@ const Notifications: React.FC = () => {
     // Fetch the unread count
     const fetchUnreadCount = async () => {
       try {
-        const response = await getJSON<{ unread_count: number }>(
+        const response = await getJSON(
           `/person/${personId}/notifications/unread-count`
-        );
+        ) as { unread_count: number };
         setUnreadCount(response.unread_count);
       } catch (err) {
         console.error("Failed to fetch unread count:", err);
@@ -221,7 +219,8 @@ const Notifications: React.FC = () => {
                     className="text-xs text-muted-foreground hover:underline"
                   >
                     Archive
-                  )}
+                  </button>
+                )}
               </div>
             </div>
           </div>

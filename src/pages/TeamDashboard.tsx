@@ -169,42 +169,6 @@ export default function TeamDashboard() {
   )
 
   // Helper function to parse Prometheus metrics text
-  const parsePrometheusMetrics = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('#'))
-    const metrics: { [key: string]: any } = {}
-    
-    lines.forEach(line => {
-      // Simple parser for counter, gauge, histogram
-      // Format: metric_name{label1="value1",label2="value2"} value
-      const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{.*\})?\s+([0-9.eE+-]+)$/)
-      if (match) {
-        const [, name, labelsStr, valueStr] = match
-        const value = parseFloat(valueStr)
-        
-        if (labelsStr) {
-          // Parse labels
-          const labels: { [key: string]: string } = {}
-          const labelMatches = labelsStr.matchAll(/([a-zA-Z_][a-zA-Z0-9_]*)="([^"]*)"/g)
-          for (const labelMatch of labelMatches) {
-            labels[labelMatch[1]] = labelMatch[2]
-          }
-          
-          // For simplicity, we'll store as a nested structure
-          // In a real app, we might want to organize by metric name and labels
-          if (!metrics[name]) {
-            metrics[name] = {}
-          }
-          // Create a key from labels
-          const labelKey = Object.entries(labels).sort().map(([k, v]) => `${k}=${v}`).join('|')
-          metrics[name][labelKey] = { value, labels }
-        } else {
-          metrics[name] = value
-        }
-      }
-    })
-    
-    return metrics
-  }
 
   return (
     <div style={{ padding: '24px 32px' }}>
@@ -362,8 +326,7 @@ export default function TeamDashboard() {
                       {(metricsData as any).raw}
                     </div>
                   ) : (
-                    {/* Otherwise, try to display as JSON or parsed metrics */}
-                    <div style={{ background: 'var(--bg)', borderRadius: '8px', padding: '16px' }}>
+                      <div style={{ background: 'var(--bg)', borderRadius: '8px', padding: '16px' }}>
                       {/* We could parse and format nicely, but for now show JSON */}
                       <pre style={{ fontSize: '13px', overflowX: 'auto' }}>{JSON.stringify(metricsData, null, 2)}</pre>
                     </div>

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { useEffect, useState } from 'react'
+import { getJSON, postJSON, getPersonId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface SimilarExperience {
@@ -36,50 +36,83 @@ const CAPTURE_HINTS = [
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [caregiverId, setCaregiverId] = useState('')
+  const [caregiverLoading, setCaregiverLoading] = useState(true)
+  const [caregiverError, setCaregiverError] = useState<string | null>(null)
   const personId = pid || getPersonId()
+
+  useEffect(() => {
+    let active = true
+    setCaregiverLoading(true)
+    setCaregiverId('')
+    setCaregiverError(null)
+    getJSON(`/caregivers/${personId}`)
+      .then((caregivers: Array<{ id: string; name: string }>) => {
+        if (!active) return
+        const caregiver = caregivers[0]
+        setCaregiverId(caregiver?.id || '')
+        if (!caregiver) setCaregiverError('No caregiver is linked to this person yet.')
+      })
+      .catch(() => {
+        if (active) setCaregiverError('Could not load caregivers. Check the connection and try again.')
+      })
+      .finally(() => {
+        if (active) setCaregiverLoading(false)
+      })
+    return () => { active = false }
+  }, [personId])
   
-  const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
-    any, 
-    { caregiverId: string; personId: string; rawInput: string }
-  >({
-    mutationFn: ({ caregiverId, personId, rawInput }) => 
+  type SituationVariables = { caregiverId: string; personId: string; rawInput: string }
+
+  const { mutate: submitSituation, loading: submitting, error: submitError } =
+    useOptimisticMutation<unknown, SituationVariables>()
+
+  const situationMutationOptions = {
+    mutationFn: (variables: SituationVariables) =>
       postJSON('/situation', {
-        caregiver_id: caregiverId,
-        person_id: personId,
-        raw_input: rawInput,
+        caregiver_id: variables.caregiverId,
+        person_id: variables.personId,
+        raw_input: variables.rawInput,
       }),
-    onMutate: async ({ caregiverId, personId, rawInput }) => {
-      // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
-      return { caregiverId, personId, rawInput };
-    },
-    onSuccess: async (data, variables, context) => {
-      // On success, fetch the community experience
-      const experienceData = await postJSON('/community/experience', {
-        observation: variables.rawInput,
-      }) as ExperienceResult
-      setExperiences(experienceData)
+    onMutate: async (variables: SituationVariables) => variables,
+    onSuccess: async (_data: unknown, variables: SituationVariables) => {
+      // The primary care record is saved at this point. Community matching is
+      // optional and must never turn a successful save into a reported failure.
+      setSaved(true)
+      setText('')
       onCapture?.(variables.rawInput)
+      try {
+        const experienceData = await postJSON('/community/experience', {
+          observation: variables.rawInput,
+        }) as ExperienceResult
+        setExperiences(experienceData)
+      } catch {
+        setExperiences(null)
+      }
     },
-    onError: async (error, variables, context) => {
-      // On error, we could show a failed state, but for simplicity we'll just let the error propagate
-      // The UI will still show the text was processed optimistically
+    onError: async (error: unknown, _variables: SituationVariables, _context: unknown) => {
       console.error('Failed to save situation:', error)
     },
-    onSettled: () => {
-      // Clear the text after submission attempt
-      setText('')
-    },
+    onSettled: async (
+      _data: unknown,
+      _error: unknown | null,
+      _variables: SituationVariables,
+      _context: unknown,
+    ) => {},
     retry: true,
-    maxRetries: 3
-  })
+    maxRetries: 3,
+  }
 
   const handleSubmit = async () => {
     if (!text.trim()) return
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
-    await submitSituation({
+    if (!caregiverId) {
+      setCaregiverError('A valid caregiver must be linked to this person before recording care.')
+      return
+    }
+
+    await submitSituation(situationMutationOptions, {
       caregiverId,
       personId,
       rawInput: text.trim()
@@ -101,7 +134,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {experiences && (
+        {saved && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -109,7 +142,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && (
+        {submitting && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -117,7 +150,10 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {submitError && !experiences && (
+        {caregiverError && (
+          <span style={{ fontSize: '11px', color: 'var(--error)' }}>{caregiverError}</span>
+        )}
+        {Boolean(submitError) && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -137,7 +173,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => { setText(e.target.value); setSaved(false); setExperiences(null) }}
         placeholder="Dad wandered at 2 AM and was confused about where he was..."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
@@ -155,7 +191,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           <button
             key={hint.text}
             type="button"
-            onClick={() => setText(hint.emoji + ' ' + hint.text + ' — ')}
+            onClick={() => { setText(hint.emoji + ' ' + hint.text + ' — '); setSaved(false); setExperiences(null) }}
             style={{
               padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)',
               background: 'var(--bg)', fontSize: '11px', color: 'var(--text-secondary)',
@@ -170,7 +206,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
         <button
           onClick={handleSubmit}
-          disabled={submitting || !text.trim()}
+          disabled={submitting || caregiverLoading || !caregiverId || !text.trim()}
           style={{
             flex: 1, padding: '10px 20px', borderRadius: '8px', border: 'none',
             background: submitting || !text.trim()

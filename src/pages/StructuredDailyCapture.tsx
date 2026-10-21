@@ -1,12 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, getPersonId } from '../api/client';
+import { getJSON, postJSON, getPersonId, getAccessToken } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
-import { useLocationPermission } from '../lib/permissions/useLocationPermission';
 import { compressImage } from '../lib/imageCompression';
 import { useOptimisticMutation } from '../lib/optimistic';
 
-const MOOD_OPTIONS = ['Calm', 'Content', 'Anxious', 'Restless', 'Agitated', 'Aggressive', 'Confused', 'Other'];
-const AGITATION_OPTIONS = ['None', 'Mild', 'Moderate', 'Severe', 'Extreme'];
+type MedicationEntry = {
+  medication_name: string;
+  status: string;
+  dose: string | null;
+  scheduled_for: string | null;
+  administered_at: string | null;
+  photo_evidence_id: string | null;
+  note: string | null;
+};
+type VitalEntry = {
+  vital_type: string;
+  value: number;
+  measured_at: string;
+  unit: string | null;
+  note: string | null;
+};
+type ScaleEntry = {
+  axis: string;
+  score: number;
+  observed_at: string;
+  note: string | null;
+};
+type MedicationFormState = MedicationEntry;
+type VitalFormState = Omit<VitalEntry, 'measured_at'> & { measured_at: string };
+type ScaleFormState = ScaleEntry;
+type DailyLogVariables = {
+  personId: string;
+  caregiverId: string;
+  medications: MedicationEntry[];
+  vitals: VitalEntry[];
+  scales: ScaleEntry[];
+  notes: string;
+};
+
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 
@@ -16,34 +47,21 @@ export default function StructuredDailyCapture() {
   const [saveError, setSaveError] = useState<unknown | null>(null);
   
   // Form state
-  const [form, setForm] = useState({
-    medications: [] as Array<{
-      medication_name: string;
-      status: string;
-      dose: string | null;
-      scheduled_for: string | null;
-      administered_at: string | null;
-      photo_evidence_id: string | null;
-      note: string | null;
-    }>,
-    vitals: [] as Array<{
-      vital_type: string;
-      value: number;
-      measured_at: string;
-      unit: string | null;
-      note: string | null;
-    }>,
-    scales: [] as Array<{
-      axis: string;
-      score: number;
-      observed_at: string;
-      note: string | null;
-    }>,
+  const [form, setForm] = useState<{
+    medications: MedicationEntry[];
+    vitals: VitalEntry[];
+    scales: ScaleEntry[];
+    notes: string;
+  }>({
+    medications: [],
+    vitals: [],
+    scales: [],
     notes: '',
   });
+
   
   // Medication form state
-  const [medicationForm, setMedicationForm] = useState({
+  const [medicationForm, setMedicationForm] = useState<MedicationFormState>({
     medication_name: '',
     status: 'given', // default to given
     dose: null,
@@ -54,7 +72,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Vitals form state
-  const [vitalForm, setVitalForm] = useState({
+  const [vitalForm, setVitalForm] = useState<VitalFormState>({
     vital_type: 'bp_systolic',
     value: 0,
     measured_at: new Date().toISOString(),
@@ -63,7 +81,7 @@ export default function StructuredDailyCapture() {
   });
   
   // Scale form state
-  const [scaleForm, setScaleForm] = useState({
+  const [scaleForm, setScaleForm] = useState<ScaleFormState>({
     axis: 'mood',
     score: 3,
     observed_at: new Date().toISOString(),
@@ -76,34 +94,40 @@ export default function StructuredDailyCapture() {
   const [medicationCompressing, setMedicationCompressing] = useState(false);
   
   // Permission hooks
-  const { state: cameraState, requestCamera: requestCam, stopCamera: stopCam } = useCameraPermission();
-  const { state: locationState, requestLocation: requestLoc } = useLocationPermission();
+  const { state: cameraState, requestCamera: requestCam } = useCameraPermission();
   
   // Person ID
   const personId = getPersonId();
   
-  // Load caregivers (simplified for now)
-  const [caregivers, setCaregivers] = useState<Array<{id: string; name: string}>>([]);
+  // Resolve the caregiver linked to this person; never submit a fabricated ID.
   const [caregiverId, setCaregiverId] = useState<string>('');
   const [loadingCaregivers, setLoadingCaregivers] = useState<boolean>(true);
-  
+  const [caregiverError, setCaregiverError] = useState<string | null>(null);
+
   useEffect(() => {
-    async function loadCaregivers() {
-      try {
-        // In a real app, we would fetch caregivers for the person
-        // For now, we'll use a default
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } catch (e) {
-        console.error(e);
-        setCaregivers([{ id: 'demo-caregiver', name: 'Demo Caregiver' }]);
-        setCaregiverId('demo-caregiver');
-      } finally {
-        setLoadingCaregivers(false);
-      }
-    }
-    loadCaregivers();
+    let active = true;
+    setLoadingCaregivers(true);
+    setCaregiverId('');
+    setCaregiverError(null);
+    getJSON(`/caregivers/${personId}`)
+      .then((data: Array<{ id: string; name: string }>) => {
+        if (!active) return;
+        setCaregiverId(data[0]?.id || '');
+        if (!data.length) setCaregiverError('No caregiver is linked to this person yet.');
+      })
+      .catch(() => {
+        if (active) setCaregiverError('Could not load caregivers. Check the connection and try again.');
+      })
+      .finally(() => {
+        if (active) setLoadingCaregivers(false);
+      });
+    return () => { active = false; };
   }, [personId]);
+
+  useEffect(() => () => {
+    if (medicationImagePreview?.startsWith('blob:')) URL.revokeObjectURL(medicationImagePreview);
+  }, [medicationImagePreview]);
+
   
   // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
@@ -149,14 +173,13 @@ export default function StructuredDailyCapture() {
         setMedicationImagePreview(compressedUrl);
         
         // Clean up
-        URL.revokeObjectURL(compressedUrl);
       }
       
       // Stop the stream
       stream.getTracks().forEach(track => track.stop());
     } catch (err) {
       console.error('Failed to capture image:', err);
-      alert('Failed to capture image: ' + err.message);
+      alert('Failed to capture image: ' + (err instanceof Error ? err.message : 'Unknown camera error'));
       setMedicationCompressing(false);
     }
   };
@@ -188,8 +211,8 @@ export default function StructuredDailyCapture() {
       const compressedUrl = URL.createObjectURL(compressedFile);
       setMedicationImagePreview(compressedUrl);
       
-      // Clean up
-      URL.revokeObjectURL(compressedUrl);
+      // Keep the preview URL alive while the image is displayed and until
+      // submission or component cleanup. Revoking it here breaks preview/upload.
     } catch (err) {
       console.error('Image compression failed:', err);
       // Fallback to original image if compression fails
@@ -234,8 +257,10 @@ export default function StructuredDailyCapture() {
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'}/upload`, {
+        const accessToken = getAccessToken();
+        const uploadResponse = await fetch(`${((import.meta.env || {}).VITE_API_BASE || '/api/v1').replace(/\/$/, '')}/upload`, {
           method: 'POST',
+          ...(accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}),
           body: formData,
         });
         
@@ -360,76 +385,43 @@ export default function StructuredDailyCapture() {
     }
   };
   
-  // Handle form submission to backend with optimistic update
-  const { mutate: submitDailyLog, loading: submittingMutation, error: submitError } = useOptimisticMutation<
-    any,
-    {
-      personId: string;
-      caregiverId: string;
-      medications: Array<{
-        medication_name: string;
-        status: string;
-        dose: string | null;
-        scheduled_for: string | null;
-        administered_at: string | null;
-        photo_evidence_id: string | null;
-        note: string | null;
-      }>;
-      vitals: Array<{
-        vital_type: string;
-        value: number;
-        measured_at: string;
-        unit: string | null;
-        note: string | null;
-      }>;
-      scales: Array<{
-        axis: string;
-        score: number;
-        observed_at: string;
-        note: string | null;
-      }>;
-      notes: string;
-    }
-  >({
-    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes }) => 
+  // Handle form submission to backend with optimistic update.
+  const { mutate: submitDailyLog, loading: submittingMutation } =
+    useOptimisticMutation<unknown, DailyLogVariables>();
+
+  const dailyLogMutationOptions = {
+    mutationFn: (variables: DailyLogVariables) =>
       postJSON('/daily/log', {
-        person_id: personId,
-        caregiver_id: caregiverId,
-        medications: medications.map(med => ({
+        person_id: variables.personId,
+        caregiver_id: variables.caregiverId,
+        medications: variables.medications.map(med => ({
           ...med,
           scheduled_for: med.scheduled_for ? new Date(med.scheduled_for).toISOString() : null,
           administered_at: med.administered_at ? new Date(med.administered_at).toISOString() : null,
         })),
-        vitals: vitals.map(vital => ({
+        vitals: variables.vitals.map(vital => ({
           ...vital,
           measured_at: new Date(vital.measured_at).toISOString(),
         })),
-        scales: scales.map(scale => ({
+        scales: variables.scales.map(scale => ({
           ...scale,
           observed_at: new Date(scale.observed_at).toISOString(),
         })),
-        notes: notes,
+        notes: variables.notes,
       }),
-    onMutate: async (variables) => {
-      // Return snapshot for potential rollback
-      return { 
-        prevForm: form, 
-        prevMedicationForm: medicationForm,
-        prevVitalForm: vitalForm,
-        prevScaleForm: scaleForm,
-        prevMedicationImagePreview: medicationImagePreview
-      };
-    },
-    onSuccess: async (data, variables, context) => {
-      // On success, reset the form
-      setForm({
-        medications: [],
-        vitals: [],
-        scales: [],
-        notes: '',
-      });
-      
-      // Reset medication form
+    onMutate: async (_variables: DailyLogVariables) => ({
+      prevForm: form,
+      prevMedicationForm: medicationForm,
+      prevVitalForm: vitalForm,
+      prevScaleForm: scaleForm,
+      prevMedicationImagePreview: medicationImagePreview,
+    }),
+    onSuccess: async (
+      _data: unknown,
+      _variables: DailyLogVariables,
+      _context: unknown,
+    ) => {
+      setForm({ medications: [], vitals: [], scales: [], notes: '' });
       setMedicationForm({
         medication_name: '',
         status: 'given',
@@ -439,8 +431,6 @@ export default function StructuredDailyCapture() {
         photo_evidence_id: null,
         note: null,
       });
-      
-      // Reset vitals form
       setVitalForm({
         vital_type: 'bp_systolic',
         value: 0,
@@ -448,65 +438,69 @@ export default function StructuredDailyCapture() {
         unit: null,
         note: null,
       });
-      
-      // Reset scale form
       setScaleForm({
         axis: 'mood',
         score: 3,
         observed_at: new Date().toISOString(),
         note: null,
       });
-      
-      // Reset image preview
       setMedicationImagePreview(null);
-      
       setSaveError(null);
       setSaved(true);
     },
-    onError: async (error, variables, context) => {
-      // On error, rollback to previous state
+    onError: async (
+      error: unknown,
+      _variables: DailyLogVariables,
+      context: unknown,
+    ) => {
       if (context && typeof context === 'object' && 'prevForm' in context) {
-        const prevContext = context as {
+        const previous = context as {
           prevForm: typeof form;
-          prevMedicationForm: typeof medicationForm;
-          prevVitalForm: typeof vitalForm;
-          prevScaleForm: typeof scaleForm;
+          prevMedicationForm: MedicationFormState;
+          prevVitalForm: VitalFormState;
+          prevScaleForm: ScaleFormState;
           prevMedicationImagePreview: string | null;
         };
-        
-        setForm(prevContext.prevForm);
-        setMedicationForm(prevContext.prevMedicationForm);
-        setVitalForm(prevContext.prevVitalForm);
-        setScaleForm(prevContext.prevScaleForm);
-        setMedicationImagePreview(prevContext.prevMedicationImagePreview);
+        setForm(previous.prevForm);
+        setMedicationForm(previous.prevMedicationForm);
+        setVitalForm(previous.prevVitalForm);
+        setScaleForm(previous.prevScaleForm);
+        setMedicationImagePreview(previous.prevMedicationImagePreview);
       }
-      
       setSaveError(error);
       setSaved(false);
-      alert(`Failed to save: ${error.message}`);
+      alert(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
     },
-    onSettled: () => {
+    onSettled: async () => {
       setSubmitting(false);
     },
     retry: true,
-    maxRetries: 3
-  });
+    maxRetries: 3,
+  };
 
-  // Handle form submission to backend
+  // Handle form submission to backend.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
-    await submitDailyLog({
-      personId,
-      caregiverId,
-      medications: form.medications,
-      vitals: form.vitals,
-      scales: form.scales,
-      notes: form.notes
-    });
+    if (loadingCaregivers || !caregiverId) {
+      setSaveError(new Error('A valid caregiver must be linked to this person before saving.'));
+      setSaved(false);
+      return;
+    }
+
+    setSubmitting(true);
+    setSaved(false);
+    try {
+      await submitDailyLog(dailyLogMutationOptions, {
+        personId,
+        caregiverId,
+        medications: form.medications,
+        vitals: form.vitals,
+        scales: form.scales,
+        notes: form.notes,
+      });
+    } catch {
+      // The mutation's onError handler retains the draft and displays the error.
+    }
   };
 
   // Helper to render medication items
@@ -613,10 +607,10 @@ export default function StructuredDailyCapture() {
             fontSize: '12px', 
             padding: '2px 6px', 
             borderRadius: '4px', 
-            backgroundColor: vital.is_out_of_range ? 'var(--error-soft)' : 'var(--success-soft)', 
-            color: vital.is_out_of_range ? 'var(--error)' : 'var(--success)' 
+            backgroundColor: 'var(--surface-soft)', 
+            color: 'var(--text-secondary)' 
           }}>
-            {vital.is_out_of_range ? 'Out of range' : 'Normal'}
+            Recorded
           </span>
         </div>
         
@@ -730,6 +724,12 @@ export default function StructuredDailyCapture() {
         </p>
       </div>
       
+      {caregiverError && (
+        <div role="alert" style={{ color: 'var(--error)', marginBottom: '12px', fontSize: '13px' }}>
+          {caregiverError}
+        </div>
+      )}
+
       {/* Saved indicator */}
       {saved && (
         <div style={{ 
@@ -746,7 +746,7 @@ export default function StructuredDailyCapture() {
       )}
       
       {/* Save error indicator */}
-      {saveError && !saved && (
+      {Boolean(saveError) && !saved && (
         <div style={{ 
           background: 'var(--error-soft)', 
           border: '1px solid var(--error)', 
@@ -777,7 +777,7 @@ export default function StructuredDailyCapture() {
       
       {/* Medications section */}
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h1>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h2>
         
         {/* Medication form */}
         <div style={{ 
@@ -985,12 +985,13 @@ export default function StructuredDailyCapture() {
                     </button>
                     <input
                       type="file"
+                      id="medication-image-input"
                       accept="image/*"
                       onChange={handleMedicationImageUpload}
                       className='medication-file-input'
                       disabled={submitting || medicationUploading}
                     />
-                    <label className='medication-file-label'>
+                    <label htmlFor="medication-image-input" className='medication-file-label'>
                       or upload from device
                     </label>
                   </div>
@@ -1152,6 +1153,7 @@ export default function StructuredDailyCapture() {
                   }}
                 />
               </div>
+            </div>
               
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
@@ -1278,6 +1280,7 @@ export default function StructuredDailyCapture() {
                   }}
                 />
               </div>
+            </div>
               
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
@@ -1345,7 +1348,7 @@ export default function StructuredDailyCapture() {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={submittingMutation}
+            disabled={submittingMutation || loadingCaregivers || !caregiverId}
             style={{ 
               fontSize: '16px', 
               fontWeight: '600', 

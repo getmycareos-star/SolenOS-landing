@@ -67,19 +67,21 @@ export default function Dashboard() {
   const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
 
     useEffect(() => {
         async function load() {
             try {
+                setLoadError(null);
                 const [evts, inss, trendData, reasoningData, intelData, actionsData] = await Promise.all([
                     getJSON(`/events/${getPersonId()}?limit=5`),
                     getJSON(`/insights/${getPersonId()}?limit=3`),
                     getJSON(`/observations/${getPersonId()}/trends`).catch(() => []),
                     getJSON(`/reasoning/${getPersonId()}/summary`).catch(() => null),
                     getJSON(`/daily-intelligence/${getPersonId()}`).catch(() => null),
-                    getJSON(`/actions/${getPersonId()}?status=active`), // Get active actions
+                    getJSON(`/actions/actions/${getPersonId()}?status=active`), // Get active actions
                 ]);
                 
                 setEvents(evts);
@@ -89,24 +91,14 @@ export default function Dashboard() {
                 setDailyIntel(intelData);
                 setActions(actionsData as Action[]);
             } catch (e) {
-                console.error(e);
-                // Use mock data for demonstration
-                setActions([
-                    {
-                        id: 'action-1',
-                        title: 'Schedule medication review with pharmacist',
-                        description: 'Review current medications for potential interactions',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-                    },
-                    {
-                        id: 'action-2',
-                        title: 'Arrange home safety assessment',
-                        description: 'Evaluate fall risks and recommend safety modifications',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 1 * 3600000).toISOString(),
-                    }
-                ]);
+                console.error('Failed to load the Living Care Record:', e);
+                setLoadError('Your care record could not be loaded. Check your connection or sign in again. No sample care data has been substituted.');
+                setEvents([]);
+                setInsights([]);
+                setTrends([]);
+                setReasoning(null);
+                setDailyIntel(null);
+                setActions([]);
             } finally {
                 setLoading(false);
             }
@@ -123,10 +115,10 @@ export default function Dashboard() {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return '${diffMins}m ago';
-    if (diffHours < 24) return '${diffHours}h ago';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return '${diffDays}d ago';
+    if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -134,7 +126,7 @@ export default function Dashboard() {
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
         // Mark action as complete
-        await postJSON('/actions/${actionId}/complete', {
+        await postJSON(`/actions/actions/${actionId}/complete`, {
           evidence: {
             description: 'Completed via dashboard',
             confirmed_by: getPersonId()
@@ -165,6 +157,12 @@ export default function Dashboard() {
         Quickly record changes, symptoms, behaviors, or observations from today.
       </p>
 
+      {loadError && (
+        <div role="alert" style={{ padding: '12px 14px', marginBottom: '16px', border: '1px solid var(--error)', borderRadius: '8px', color: 'var(--error)', background: 'var(--error-soft)' }}>
+          {loadError}
+        </div>
+      )}
+
       <div style={{
         background: 'var(--trust-soft)', border: '1px solid var(--trust)',
         borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
@@ -189,7 +187,7 @@ export default function Dashboard() {
         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
           Active Actions
         </h2>
-        {actions.length === 0 && (
+        {actions.length === 0 && !loading && !loadError && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
             No active actions. Actions will appear here when created from situations or insights.
           </p>
@@ -326,7 +324,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/timeline" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View full timeline â†’
@@ -387,7 +385,7 @@ export default function Dashboard() {
                     {reasoning.open_questions.map((q, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{q.key}: {JSON.stringify(q.value)}</p>
                     ))}
-                  </div
+                  </div>
                 )}
                 {reasoning.preferences.length > 0 && (
                   <div style={{ background: 'var(--accent-soft)', borderRadius: '12px', padding: '16px 20px' }}>
@@ -397,7 +395,7 @@ export default function Dashboard() {
                     {reasoning.preferences.map((pref, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{pref.key}: {JSON.stringify(pref.value)}</p>
                     ))}
-                  </div
+                  </div>
                 )}
               </div>
             </section>
@@ -440,7 +438,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/insights" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View all insights â†’
@@ -458,7 +456,6 @@ export default function Dashboard() {
           <Link to="/daily-care" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Daily care form</Link>
           <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Role switch</Link>
         </div>
-      </div>
     </div>
   );
 }

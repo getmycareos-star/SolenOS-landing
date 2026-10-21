@@ -34,7 +34,8 @@ export const useLocationPermission = () => {
         });
       });
 
-      const { latitude, longitude, accuracy, timestamp } = position.coords;
+      const { latitude, longitude, accuracy } = position.coords;
+      const { timestamp } = position;
       setState({
         status: 'granted',
         latitude,

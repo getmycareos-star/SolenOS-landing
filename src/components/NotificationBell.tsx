@@ -19,9 +19,9 @@ const NotificationBell: React.FC = () => {
 
     const fetchUnreadCount = async () => {
       try {
-        const response = await getJSON<{ unread_count: number }>(
+        const response = await getJSON(
           `/person/${personId}/notifications/unread-count`
-        );
+        ) as { unread_count: number };
         setUnreadCount(response.unread_count);
       } catch (error) {
         console.error('Failed to fetch unread count:', error);

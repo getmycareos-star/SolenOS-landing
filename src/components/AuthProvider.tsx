@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { useNavigate, useLocation, Outlet, Navigate } from 'react-router-dom'
+import { useLocation, Navigate } from 'react-router-dom'
 import { checkAuthState, subscribeToAuthState, startTokenRefresh, stopTokenRefresh } from '../api/client'
 
 interface SessionInfo {
@@ -27,8 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false)
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
-  const location = useLocation()
 
   useEffect(() => {
     let mounted = true
