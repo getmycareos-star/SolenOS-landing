@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - repair/phase1-build-deployment
+    paths-ignore:
+      - package-lock.json
   pull_request:
     branches:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: phase1-build-${{ github.ref }}
