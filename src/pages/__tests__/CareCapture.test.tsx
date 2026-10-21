@@ -103,7 +103,7 @@ describe('DailyCare durable capture contract', () => {
     });
     await screen.findByRole('option', { name: 'Test Caregiver' });
 
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'Calm' } });
+    fireEvent.change(screen.getByDisplayValue('Select mood'), { target: { value: 'Calm' } });
     fireEvent.change(screen.getByPlaceholderText('Anything else worth noting...'), {
       target: { value: 'Hydration was better today.' },
     });
