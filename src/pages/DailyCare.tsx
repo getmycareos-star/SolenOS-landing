@@ -10,11 +10,13 @@ interface Caregiver {
 
 const MOOD_OPTIONS = ['Calm', 'Content', 'Anxious', 'Restless', 'Agitated', 'Aggressive', 'Confused', 'Other']
 const AGITATION_OPTIONS = ['None', 'Mild', 'Moderate', 'Severe', 'Extreme']
+const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight']
 
 export default function DailyCare() {
   const [saved, setSaved] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [caregiverError, setCaregiverError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
    const [form, setForm] = useState({
      mood: '',
@@ -38,19 +40,35 @@ export default function DailyCare() {
 
   useEffect(() => {
     async function loadCaregivers() {
+      if (!personId) {
+        setCaregivers([])
+        setCaregiverId('')
+        setCaregiverError('Sign in and select an authorized care record first.')
+        setLoadingCaregivers(false)
+        return
+      }
+
       try {
         const data = await getJSON(`/caregivers/${personId}`)
+        if (!Array.isArray(data)) throw new Error('Unexpected caregiver response.')
         setCaregivers(data)
-        if (data.length > 0) setCaregiverId(data[0].id)
-      } catch (e) {
-        console.error(e)
-        setCaregiverError('Could not load caregiver list. Using demo-default.')
-        setCaregiverId('demo-caregiver')
+        if (data.length > 0) {
+          setCaregiverId(data[0].id)
+          setCaregiverError(null)
+        } else {
+          setCaregiverId('')
+          setCaregiverError('No caregiver is linked to this care record. Link a caregiver before saving.')
+        }
+      } catch (error) {
+        console.error('Could not load caregivers:', error)
+        setCaregivers([])
+        setCaregiverId('')
+        setCaregiverError('Could not load caregivers. Check sign-in and care-record access.')
       } finally {
         setLoadingCaregivers(false)
       }
     }
-    loadCaregivers()
+    void loadCaregivers()
   }, [personId])
 
    const updateField = (field: string, value: any) => {
@@ -75,35 +93,77 @@ export default function DailyCare() {
    };
 
    const addVital = () => {
-     const key = prompt('Vital name (e.g. bp_systolic, heart_rate, oxygen_sat):')
-     if (key) {
-       const val = prompt(`Value for ${key}:`)
-       if (val !== null) setForm({ ...form, vitals: { ...form.vitals, [key]: val } })
+     setFormError(null)
+     const keyInput = prompt(`Vital type (${VITAL_TYPES.join(', ')}):`)
+     if (!keyInput) return
+     const key = keyInput.trim().toLowerCase()
+     if (!VITAL_TYPES.includes(key)) {
+       setFormError(`Unsupported vital type. Choose one of: ${VITAL_TYPES.join(', ')}.`)
+       return
      }
+
+     const valueInput = prompt(`Numeric value for ${key}:`)
+     if (valueInput === null) return
+     const value = valueInput.trim()
+     if (!value || !Number.isFinite(Number(value))) {
+       setFormError('Enter a valid numeric value for the vital.')
+       return
+     }
+     setForm(prev => ({ ...prev, vitals: { ...prev.vitals, [key]: value } }))
    }
 
    const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault()
-     setSubmitting(true)
      setSaved(false)
+     setFormError(null)
 
-     const caregiver = loadingCaregivers ? caregiverId : (caregiverId || 'demo-caregiver')
+     if (!personId || !caregiverId) {
+       setFormError('Sign in and select an authorized caregiver and care record before saving.')
+       return
+     }
+
+     const vitalEntries = Object.entries(form.vitals)
+     const hasInvalidVital = vitalEntries.some(([key, value]) =>
+       !VITAL_TYPES.includes(key) || !value.trim() || !Number.isFinite(Number(value))
+     )
+     if (hasInvalidVital) {
+       setFormError('Every vital must have a supported type and a valid numeric value.')
+       return
+     }
+
+     setSubmitting(true)
+     const recordedAt = new Date().toISOString()
+     const scales: Array<{ axis: string; score: number; observed_at: string; note: string | null }> = [
+       ...(form.mood ? [{ axis: 'mood', score: form.mood_scale, observed_at: recordedAt, note: null }] : []),
+       { axis: 'agitation', score: form.agitation_scale, observed_at: recordedAt, note: form.agitation_level || null },
+       { axis: 'wellbeing_stress', score: form.wellbeing_stress, observed_at: recordedAt, note: form.wellbeing_notes.trim() || null },
+     ]
+     const noteSections = [
+       { label: 'Behavior', value: form.behavior_notes },
+       { label: 'Sleep', value: form.sleep_notes },
+       { label: 'Eating/appetite', value: form.eating_notes },
+       { label: 'Wellbeing', value: form.wellbeing_notes },
+       { label: 'General', value: form.general_notes },
+     ]
+     const notes = noteSections
+       .filter(section => section.value.trim())
+       .map(section => `${section.label}: ${section.value.trim()}`)
+       .join('\n')
 
      try {
-       await postJSON('/daily-care/entries', {
+       await postJSON('/daily/log', {
          person_id: personId,
-         caregiver_id: caregiver,
-         mood: form.mood || undefined,
-         mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
-         agitation_level: form.agitation_level,
-         agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
-         vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
-         behavior_notes: form.behavior_notes || undefined,
-         sleep_notes: form.sleep_notes || undefined,
-         eating_notes: form.eating_notes || undefined,
-         wellbeing_stress: form.wellbeing_stress !== 3 ? form.wellbeing_stress : undefined,
-         wellbeing_notes: form.wellbeing_notes || undefined,
-         general_notes: form.general_notes || undefined,
+         caregiver_id: caregiverId,
+         medications: [],
+         vitals: vitalEntries.map(([vital_type, value]) => ({
+           vital_type,
+           value: Number(value),
+           measured_at: recordedAt,
+           unit: null,
+           note: null,
+         })),
+         scales,
+         notes,
          location: form.location ? {
            latitude: form.location.latitude,
            longitude: form.location.longitude,
@@ -127,9 +187,9 @@ export default function DailyCare() {
          general_notes: '',
          location: null,
        })
-     } catch (e: any) {
+     } catch (error) {
        setSaved(false)
-       alert(`Failed to save: ${e.message}`)
+       setFormError(error instanceof Error ? error.message : 'Failed to save daily care entry.')
      } finally {
        setSubmitting(false)
      }
@@ -186,8 +246,8 @@ export default function DailyCare() {
                 fontSize: '14px'
               }}
             >
+              <option value="">Select caregiver</option>
               {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              <option value="demo-caregiver">Demo Caregiver</option>
             </select>
           )}
           {caregiverError && <p style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>{caregiverError}</p>}
@@ -238,7 +298,7 @@ export default function DailyCare() {
                 <div key={k} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <code style={{ fontSize: '12px', background: 'var(--accent-soft)', padding: '4px 8px', borderRadius: '4px' }}>{k}</code>
                   <input
-                    type="text" value={v}
+                    type="number" step="any" value={v}
                     onChange={e => updateField('vitals', { ...form.vitals, [k]: e.target.value })}
                     style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px' }}
                   />
@@ -421,6 +481,11 @@ export default function DailyCare() {
              </div>
            )}
          </section>
+         {formError && (
+           <p role="alert" style={{ color: 'var(--error)', fontSize: '13px' }}>
+             {formError}
+           </p>
+         )}
          <button
           type="submit"
           disabled={submitting}
