@@ -48,6 +48,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [contextName, setContextName] = useState('')
+  const [invitationToken, setInvitationToken] = useState('')
   const [contexts, setContexts] = useState<CareContext[]>([])
   const [selectedPersonId, setSelectedPersonId] = useState('')
   const [account, setAccount] = useState<Account | null>(null)
@@ -121,37 +122,29 @@ export default function Login() {
 
   const handleSetupCaregiver = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!account || !selectedPersonId) {
-      setError('Sign in and select a care record before setting up caregiver access.')
+    const token = invitationToken.trim()
+    if (!account || !token) {
+      setError('Sign in and enter the invitation token issued to your account email.')
       return
     }
     setBusy(true)
     setError('')
     try {
-      const caregiver = await postJSON('/caregivers', {
-        name: account.display_name?.trim() || account.email.split('@')[0],
-        email: account.email,
-        relationship: 'family caregiver',
-        person_id: selectedPersonId,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      }) as { id: string }
-      if (!caregiver?.id) throw new Error('The backend did not return a caregiver ID.')
-
-      const invitation = await postJSON('/auth/caregiver-invitations', {
-        person_id: selectedPersonId,
-        caregiver_id: caregiver.id,
-        permissions: ['read', 'write'],
-      }) as { invitation_token: string }
-      if (!invitation?.invitation_token) throw new Error('The backend did not return an invitation token.')
-
-      await postJSON('/auth/caregiver-invitations/accept', { token: invitation.invitation_token })
-      setPersonId(selectedPersonId)
-      setCaregiverId(caregiver.id)
+      const accepted = await postJSON('/auth/caregiver-invitations/accept', { token }) as {
+        person_id: string
+        caregiver_id: string
+      }
+      if (!accepted?.person_id || !accepted?.caregiver_id) {
+        throw new Error('The backend did not confirm the care-circle membership.')
+      }
+      setPersonId(accepted.person_id)
+      setCaregiverId(accepted.caregiver_id)
+      setInvitationToken('')
       navigate('/')
     } catch (cause) {
       setError(cause instanceof Error
         ? cause.message
-        : 'Could not link your caregiver identity. If a caregiver record already uses this email, ask its owner to issue an invitation.')
+        : 'Could not accept this invitation. Verify the token and the email on your account.')
     } finally {
       setBusy(false)
     }
@@ -240,19 +233,33 @@ export default function Login() {
                 style={fieldStyle} placeholder="Name" />
             </label>
             <button type="submit" disabled={busy} style={primaryButtonStyle}>{busy ? 'Creating…' : 'Create care record'}</button>
+            <button type="button" onClick={() => { setStage('setup-caregiver'); setError('') }} disabled={busy}
+              style={{ ...primaryButtonStyle, marginTop: '10px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+              I have an invitation token
+            </button>
           </form>
         )}
 
         {stage === 'setup-caregiver' && (
           <form onSubmit={handleSetupCaregiver}>
-            <h2 style={sectionHeadingStyle}>Set up caregiver access</h2>
+            <h2 style={sectionHeadingStyle}>Accept a care-circle invitation</h2>
             <p style={helpTextStyle}>
               {selectedContext
-                ? `Your account has access to “${selectedContext.name}”, but no caregiver identity is linked to it yet.`
-                : 'Your care record is created. Set up your caregiver identity to record care under your account.'}
+                ? 'Your account has a care context, but your caregiver membership must be confirmed by an invitation.'
+                : 'Enter the invitation token shared by a caregiver who already has permission to invite you.'}
             </p>
-            <p style={helpTextStyle}>SolenOS will create a caregiver record for your account and link it to this care record. If your email is already assigned to an existing caregiver record, the backend may require an invitation instead.</p>
-            <button type="submit" disabled={busy} style={primaryButtonStyle}>{busy ? 'Setting up…' : 'Set up my caregiver access'}</button>
+            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text)', marginBottom: '18px' }}>
+              Invitation token
+              <input required value={invitationToken} onChange={event => setInvitationToken(event.target.value)}
+                autoComplete="off" maxLength={256} style={fieldStyle} placeholder="Paste your invitation token" />
+            </label>
+            <button type="submit" disabled={busy || !invitationToken.trim()} style={primaryButtonStyle}>
+              {busy ? 'Verifying invitation…' : 'Accept invitation'}
+            </button>
+            <button type="button" onClick={() => { setStage(contexts.length ? 'choose-context' : 'create-context'); setError('') }}
+              disabled={busy} style={{ ...primaryButtonStyle, marginTop: '10px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+              Back
+            </button>
           </form>
         )}
 
