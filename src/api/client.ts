@@ -9,7 +9,7 @@ declare global {
 
 // Most backend endpoints are mounted at /api/v1. Netlify proxies /api/* to
 // Railway, and Vite proxies /api/* to localhost:8000 during development.
-const API_BASE = (import.meta.env.VITE_API_BASE || '/api/v1').replace(/\/$/, '')
+const API_BASE = ((import.meta.env || {}).VITE_API_BASE || '/api/v1').replace(/\/$/, '')
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
