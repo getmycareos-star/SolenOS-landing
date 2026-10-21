@@ -119,6 +119,7 @@ export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
   const [communityError, setCommunityError] = useState<string | null>(null)
+  const [communityUnavailable, setCommunityUnavailable] = useState(true)
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerText, setComposerText] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -147,9 +148,11 @@ export default function Community() {
         const data = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
         setPosts(data.posts ?? [])
         setCommunityError(null)
+        setCommunityUnavailable(false)
       } catch (e) {
         console.error(e)
         setPosts([])
+        setCommunityUnavailable(true)
         setCommunityError('Community service is not available right now. No sample or invented caregiver posts are shown.')
       } finally {
         setLoading(false)
@@ -167,6 +170,7 @@ export default function Community() {
       })
     } catch (e) {
       console.error(e)
+      setCommunityUnavailable(true)
       setCommunityError('Your reaction was not saved. The community service is unavailable.')
       return
     }
@@ -206,6 +210,7 @@ export default function Community() {
       }
     } catch {
       setWisdomMatches([])
+      setCommunityUnavailable(true)
       setCommunityError('Shared-experience search is unavailable because the community service is not connected.')
     } finally {
       setLoadingWisdom(false)
@@ -231,6 +236,7 @@ export default function Community() {
       setPosts(response.posts ?? [])
     } catch (e) {
       console.error(e)
+      setCommunityUnavailable(true)
       setCommunityError('Your post was not published. The community service is unavailable; your draft has been kept.')
     } finally {
       setSubmitting(false)
@@ -279,6 +285,7 @@ export default function Community() {
             type="text"
             value={wisdomQuery}
             onChange={(e) => setWisdomQuery(e.target.value)}
+            disabled={communityUnavailable}
             placeholder="e.g. wandering overnight, evening agitation, medication refusal"
             style={{
               flex: 1, padding: '8px 12px', borderRadius: '8px',
@@ -288,10 +295,10 @@ export default function Community() {
           />
           <button
             onClick={fetchWisdom}
-            disabled={loadingWisdom || !wisdomQuery.trim()}
+            disabled={communityUnavailable || loadingWisdom || !wisdomQuery.trim()}
             style={{
               padding: '8px 16px', borderRadius: '8px', border: 'none',
-              background: loadingWisdom || !wisdomQuery.trim()
+              background: communityUnavailable || loadingWisdom || !wisdomQuery.trim()
                 ? 'var(--text-secondary)' : 'var(--accent)',
               color: 'white', fontSize: '13px', cursor: 'default',
             }}
@@ -318,6 +325,7 @@ export default function Community() {
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setComposerOpen(!composerOpen)}
+          disabled={communityUnavailable}
           style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: '12px', padding: '12px 20px', fontSize: '13px',
@@ -387,12 +395,12 @@ export default function Community() {
             </span>
             <button
               onClick={handleSubmit}
-              disabled={submitting || !composerText.trim()}
+              disabled={communityUnavailable || submitting || !composerText.trim()}
               style={{
                 background: 'var(--trust-soft)', border: '1px solid var(--trust)',
                 borderRadius: '8px', padding: '8px 16px', fontSize: '13px',
                 cursor: 'pointer', color: 'var(--trust)', fontWeight: 500,
-                opacity: submitting || !composerText.trim() ? 0.5 : 1
+                opacity: communityUnavailable || submitting || !composerText.trim() ? 0.5 : 1
               }}
             >
               {submitting ? 'Sharing...' : 'Share'}
@@ -532,6 +540,7 @@ export default function Community() {
                 }}>
                   <button
                     onClick={() => handleReaction(post.id, 'like')}
+                    disabled={communityUnavailable}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       border: 'none', background: 'transparent',
@@ -544,6 +553,7 @@ export default function Community() {
                   </button>
                   <button
                     onClick={() => handleReaction(post.id, 'thank_you')}
+                    disabled={communityUnavailable}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       border: 'none', background: 'transparent',
@@ -556,6 +566,7 @@ export default function Community() {
                   </button>
                   <button
                     onClick={() => handleReaction(post.id, 'support')}
+                    disabled={communityUnavailable}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       border: 'none', background: 'transparent',
