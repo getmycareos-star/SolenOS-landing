@@ -67,52 +67,58 @@ export default function Dashboard() {
   const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
 
-    useEffect(() => {
-        async function load() {
-            try {
-                const [evts, inss, trendData, reasoningData, intelData, actionsData] = await Promise.all([
-                    getJSON(`/events/${getPersonId()}?limit=5`),
-                    getJSON(`/insights/${getPersonId()}?limit=3`),
-                    getJSON(`/observations/${getPersonId()}/trends`).catch(() => []),
-                    getJSON(`/reasoning/${getPersonId()}/summary`).catch(() => null),
-                    getJSON(`/daily-intelligence/${getPersonId()}`).catch(() => null),
-                    getJSON(`/actions/${getPersonId()}?status=active`), // Get active actions
-                ]);
-                
-                setEvents(evts);
-                setInsights(inss);
-                setTrends(trendData.slice(0, 5));
-                setReasoning(reasoningData);
-                setDailyIntel(intelData);
-                setActions(actionsData as Action[]);
-            } catch (e) {
-                console.error(e);
-                // Use mock data for demonstration
-                setActions([
-                    {
-                        id: 'action-1',
-                        title: 'Schedule medication review with pharmacist',
-                        description: 'Review current medications for potential interactions',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-                    },
-                    {
-                        id: 'action-2',
-                        title: 'Arrange home safety assessment',
-                        description: 'Evaluate fall risks and recommend safety modifications',
-                        status: 'active',
-                        created_at: new Date(Date.now() - 1 * 3600000).toISOString(),
-                    }
-                ]);
-            } finally {
-                setLoading(false);
-            }
-        }
-        load();
-    }, []);
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const results = await Promise.allSettled([
+        getJSON(`/events/${getPersonId()}?limit=5`),
+        getJSON(`/insights/${getPersonId()}?limit=3`),
+        getJSON(`/observations/${getPersonId()}/trends`),
+        getJSON(`/reasoning/${getPersonId()}/summary`),
+        getJSON(`/daily-intelligence/${getPersonId()}`),
+        getJSON(`/actions/${getPersonId()}?status=active`),
+      ]);
+
+      const [evts, inss, trendData, reasoningData, intelData, actionsData] = results;
+      setEvents(evts.status === 'fulfilled' && Array.isArray(evts.value) ? evts.value as Event[] : []);
+      setInsights(inss.status === 'fulfilled' && Array.isArray(inss.value) ? inss.value as Insight[] : []);
+      setTrends(trendData.status === 'fulfilled' && Array.isArray(trendData.value) ? (trendData.value as ObservationTrend[]).slice(0, 5) : []);
+      setReasoning(reasoningData.status === 'fulfilled' ? reasoningData.value as ReasoningSummary : null);
+      setDailyIntel(intelData.status === 'fulfilled' ? intelData.value as DailyIntelligence : null);
+
+      if (actionsData.status === 'fulfilled' && Array.isArray(actionsData.value)) {
+        setActions((actionsData.value as Array<Record<string, unknown>>).map(action => ({
+          id: String(action.id ?? ''),
+          title: String(action.normalized_action || action.action_object || action.original_text || 'Untitled action'),
+          description: typeof action.condition_text === 'string' ? action.condition_text : undefined,
+          status: action.status === 'completed' ? 'completed' : 'active',
+          created_at: String(action.created_at ?? ''),
+        })));
+      } else {
+        setActions([]);
+      }
+
+      const failedSections = results
+        .map((result, index) => result.status === 'rejected'
+          ? ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'][index]
+          : null)
+        .filter((section): section is string => section !== null);
+      setLoadError(failedSections.length
+        ? `Some dashboard data could not be loaded: ${failedSections.join(', ')}. Check the API connection and try again.`
+        : null);
+      setLoading(false);
+    }
+
+    void load().catch(error => {
+      console.error('Failed to load dashboard:', error);
+      setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
+      setLoading(false);
+    });
+  }, []);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -123,10 +129,10 @@ export default function Dashboard() {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return '${diffMins}m ago';
-    if (diffHours < 24) return '${diffHours}h ago';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return '${diffDays}d ago';
+    if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -134,11 +140,10 @@ export default function Dashboard() {
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
         // Mark action as complete
-        await postJSON('/actions/${actionId}/complete', {
-          evidence: {
-            description: 'Completed via dashboard',
-            confirmed_by: getPersonId()
-          }
+        await postJSON(`/actions/${actionId}/complete`, {
+          evidence_ids: [],
+          completion_confidence: 0,
+          notes: 'Marked complete by the caregiver in the dashboard; no supporting evidence was attached.'
         });
         
         // Update local state optimistically (handled by hook)
@@ -180,6 +185,12 @@ export default function Dashboard() {
       <div style={{ marginBottom: '24px' }}>
         <CareCapture personId={getPersonId()} />
       </div>
+
+      {loadError && (
+        <p role="alert" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '16px' }}>
+          {loadError}
+        </p>
+      )}
 
       {/* Action List Section */}
       <div style={{
