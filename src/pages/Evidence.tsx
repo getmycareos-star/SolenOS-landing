@@ -40,7 +40,11 @@ export default function Evidence() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read image preview.'));
+    reader.onload = (event) => {
+      const result = reader.result ?? (event?.target as FileReader | null)?.result;
+      if (typeof result === 'string') resolve(result);
+      else reject(new Error('Could not read image preview.'));
+    };
     reader.onerror = () => reject(new Error('Could not read image preview.'));
     reader.readAsDataURL(file);
   });
