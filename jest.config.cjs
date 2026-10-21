@@ -2,7 +2,16 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: {
+        module: 'CommonJS',
+        moduleResolution: 'Node',
+        jsx: 'react-jsx',
+        esModuleInterop: true,
+      },
+    }],
+  },
   testMatch: [
     '<rootDir>/src/**/*.test.ts',
     '<rootDir>/src/**/*.test.tsx',
