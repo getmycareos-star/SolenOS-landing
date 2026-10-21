@@ -105,7 +105,7 @@ export function useOptimisticMutation<TData, TVariables>(
 /**
  * Specialized optimistic mutation for toggling boolean states (like completion)
  */
-export function useOptimisticToggle<TId>() {
+export function useOptimisticToggle<TId extends string | number | symbol>() {
   const [toggledIds, setToggledIds] = useState<Set<TId>>(new Set());
   const [loadingIds, setLoadingIds] = useState<Set<TId>>(new Set());
   const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({});
