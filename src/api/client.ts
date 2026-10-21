@@ -1,15 +1,7 @@
-declare global {
-  interface ImportMetaEnv {
-    VITE_API_BASE?: string
-  }
-  interface ImportMeta {
-    readonly env: ImportMetaEnv
-  }
-}
-
-// Production uses Netlify's same-origin proxy. Keep the API base relative so
-// browser requests go through the deployed site's /api/* rewrite.
-const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
+// Use the same-origin API proxy in both Vite development and Netlify production.
+// vite.config.ts and netlify.toml forward /api/* to the backend, so the browser
+// never needs a hard-coded backend hostname or import.meta.env in Jest.
+const API_BASE = '/api/v1'
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
