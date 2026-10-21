@@ -123,10 +123,10 @@ export default function Dashboard() {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return '${diffMins}m ago';
-    if (diffHours < 24) return '${diffHours}h ago';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return '${diffDays}d ago';
+    if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -134,7 +134,7 @@ export default function Dashboard() {
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
         // Mark action as complete
-        await postJSON('/actions/${actionId}/complete', {
+        await postJSON(`/actions/${actionId}/complete`, {
           evidence: {
             description: 'Completed via dashboard',
             confirmed_by: getPersonId()
@@ -458,7 +458,6 @@ export default function Dashboard() {
           <Link to="/daily-care" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Daily care form</Link>
           <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Role switch</Link>
         </div>
-      </div>
     </div>
   );
 }
