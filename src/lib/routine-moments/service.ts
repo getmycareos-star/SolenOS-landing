@@ -10,7 +10,7 @@ function calendarDaysBetween(first: Date, last: Date): number {
 function timeOfDayMilliseconds(observation: RoutineMomentRecord): number {
   const explicitTime = observation.observation_data?.time;
   if (typeof explicitTime === 'string') {
-    const match = explicitTime.match(/^(\\d{1,2}):(\\d{2})$/);
+    const match = explicitTime.match(/^(\d{1,2}):(\d{2})$/);
     if (match) {
       const hours = Number(match[1]);
       const minutes = Number(match[2]);
