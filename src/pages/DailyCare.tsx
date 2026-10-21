@@ -55,7 +55,7 @@ export default function DailyCare() {
   }, [personId])
 
    const updateField = (field: string, value: any) => {
-     setForm({ ...form, [field]: value })
+     setForm(previous => ({ ...previous, [field]: value }))
      setSaved(false)
    }
 
