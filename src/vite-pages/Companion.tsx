@@ -29,13 +29,14 @@ export default function Companion() {
   }, [messages])
 
   const sendMessage = async () => {
-    if (!input.trim()) return
+    const textToSend = input.trim()
+    if (!textToSend) return
     setLoading(true)
     setEmergency(false)
 
     const userMsg: Message = {
       role: 'user',
-      text: input,
+      text: textToSend,
       timestamp: new Date(),
     }
     setMessages(prev => [...prev, userMsg])
@@ -43,7 +44,7 @@ export default function Companion() {
     try {
       const response = await postJSON('/conversation/message', {
         person_id: personId,
-        text: input,
+        text: textToSend,
         session_id: sessionId,
       }) as any
 
@@ -63,14 +64,20 @@ export default function Companion() {
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-    } catch (e: any) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: `Error: ${e.message}`,
-        timestamp: new Date(),
-      }])
-    } finally {
       setInput('')
+    } catch (e: any) {
+      const detail = String(e?.message || 'Unknown request failure')
+      setMessages(prev => [
+        ...prev.filter(message => message !== userMsg),
+        {
+          role: 'assistant',
+          text: /404|not found/i.test(detail)
+            ? 'The Companion service is not connected to the backend yet. No AI response was generated. Your message remains in the input so you can retry when the service is available.'
+            : `Message not sent: ${detail}. Your message remains in the input so you can retry.`,
+          timestamp: new Date(),
+        },
+      ])
+    } finally {
       setLoading(false)
     }
   }
