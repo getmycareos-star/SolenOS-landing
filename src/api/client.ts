@@ -9,16 +9,16 @@ const API_BASE = viteApiBase || nextApiBase || (isProduction ? '/api/v1' : 'http
 export const ACCESS_TOKEN_STORAGE_KEY = 'solenos_access_token'
 
 export function getAccessToken(): string | null {
-  return typeof localStorage === 'undefined' ? null : localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
+  return typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
 }
 
 export function setAccessToken(token: string): void {
-  localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)
+  sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenos:auth-changed'))
 }
 
 export function clearAccessToken(): void {
-  if (typeof localStorage !== 'undefined') localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+  if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenos:auth-changed'))
 }
 
