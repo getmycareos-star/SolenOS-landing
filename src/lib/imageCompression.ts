@@ -18,6 +18,12 @@ export async function compressImage(
     rotate?: boolean;
   } = {}
 ): Promise<File> {
+  // Reject invalid inputs before the fallback handler so callers can distinguish
+  // invalid files from recoverable compression failures.
+  if (!file.type.startsWith('image/')) {
+    throw new Error('File is not an image');
+  }
+
   // Dynamically import the library to avoid bundling issues if not used
   try {
     const { default: imageCompression } = await import('browser-image-compression');
@@ -31,11 +37,6 @@ export async function compressImage(
       rotate: true, // Auto-rotate based on EXIF orientation
       ...options
     };
-
-    // Validate that the file is an image
-    if (!file.type.startsWith('image/')) {
-      throw new Error('File is not an image');
-    }
 
     // Compress the image
     const compressedFile = await imageCompression(file, defaultOptions);
