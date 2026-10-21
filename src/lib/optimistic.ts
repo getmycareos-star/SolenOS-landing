@@ -1,113 +1,97 @@
 import { useState, useCallback, useRef } from 'react';
 
 /**
- * Interface for optimistic mutation options
+ * Configuration for a mutation and its lifecycle callbacks.
  */
 interface OptimisticMutationOptions<TData, TVariables> {
-  /** Function to perform the mutation */
   mutationFn: (variables: TVariables) => Promise<TData>;
-  /** Function to update the optimistic state */
   onMutate: (variables: TVariables) => Promise<unknown> | unknown;
-  /** Function to apply the mutation result */
   onSuccess: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Function to handle errors and rollback */
   onError: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Function to clean up */
   onSettled: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Whether to retry on failure */
   retry?: boolean;
-  /** Maximum number of retries */
   maxRetries?: number;
 }
 
 /**
- * Hook for performing optimistic mutations
- * 
- * @returns Object with mutate function and state
+ * Supports both configured usage (useOptimisticMutation(options), mutate(variables))
+ * and per-call usage (useOptimisticMutation(), mutate(options, variables)).
  */
-export function useOptimisticMutation<TData, TVariables>() {
+export function useOptimisticMutation<TData = unknown, TVariables = unknown>(
+  configuredOptions?: OptimisticMutationOptions<TData, TVariables>
+) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const [data, setData] = useState<TData | null>(null);
-  
-  // Ref to store the rollback data
   const snapshotRef = useRef<unknown>(null);
-  
-  // Ref to prevent race conditions
   const requestIdRef = useRef(0);
-  
-  const mutate = useCallback(
-    async (options: OptimisticMutationOptions<TData, TVariables>, variables: TVariables) => {
-      // Prevent multiple concurrent mutations
-      if (loading) {
-        if (options.retry) {
-          // Wait for current request to complete before retrying
-          return new Promise((resolve, reject) => {
-            const checkComplete = () => {
-              if (!loading) {
-                mutate(options, variables).then(resolve).catch(reject);
-              } else {
-                setTimeout(checkComplete, 100);
-              }
-            };
-            checkComplete();
-          });
-        }
-        return Promise.reject(new Error('Mutation already in progress'));
-      }
-      
-      setLoading(true);
-      setError(null);
-      
-      // Generate a unique request ID to prevent race conditions
-      const requestId = ++requestIdRef.current;
-      
-      let resultData: TData | undefined
-      let mutationError: unknown | null = null
 
-      try {
-        // 1. Capture snapshot for potential rollback
-        const snapshot = await options.onMutate(variables);
-        snapshotRef.current = snapshot;
-        
-        // 2. Perform the mutation
-        const result = await options.mutationFn(variables)
-        resultData = result;
-        
-        // 3. Check if this is still the latest request
-        if (requestId !== requestIdRef.current) {
-          // A newer request has been made, ignore this result
-          return;
+  const mutate = useCallback(async (
+    optionsOrVariables: OptimisticMutationOptions<TData, TVariables> | TVariables,
+    maybeVariables?: TVariables
+  ): Promise<TData> => {
+    const options = configuredOptions ?? optionsOrVariables as OptimisticMutationOptions<TData, TVariables>;
+    const variables = configuredOptions
+      ? optionsOrVariables as TVariables
+      : maybeVariables as TVariables;
+
+    if (!configuredOptions && maybeVariables === undefined) {
+      throw new Error('Mutation variables are required when options are supplied per call.');
+    }
+    if (loading) {
+      throw new Error('Mutation already in progress');
+    }
+
+    setLoading(true);
+    setError(null);
+    const requestId = ++requestIdRef.current;
+    let resultData: TData | undefined;
+    let mutationError: unknown | null = null;
+    let snapshot: unknown = null;
+
+    try {
+      snapshot = await options.onMutate(variables);
+      snapshotRef.current = snapshot;
+
+      const maxRetries = options.retry ? Math.max(0, options.maxRetries ?? 0) : 0;
+      let attempt = 0;
+      let result: TData;
+      while (true) {
+        try {
+          result = await options.mutationFn(variables);
+          break;
+        } catch (err) {
+          if (attempt >= maxRetries) throw err;
+          attempt += 1;
         }
-        
-        // 4. Apply success update
+      }
+      resultData = result;
+
+      if (requestId === requestIdRef.current) {
         await options.onSuccess(result, variables, snapshot);
         setData(result);
-        
-        return result;
-      } catch (err) {
-        // 5. Handle error and rollback. Keep the original mutation error even if
-        // an error callback itself fails.
-        mutationError = err
-        setError(err)
+      }
+      return result;
+    } catch (err) {
+      mutationError = err;
+      setError(err);
+      try {
+        await options.onError(err, variables, snapshot);
+      } catch (callbackError) {
+        console.error('Optimistic mutation onError callback failed:', callbackError);
+      }
+      throw err;
+    } finally {
+      if (requestId === requestIdRef.current) {
         try {
-          await options.onError(err, variables, snapshotRef.current)
-        } catch (callbackError) {
-          console.error('Optimistic mutation onError callback failed:', callbackError)
-        }
-        throw err
-      } finally {
-        // 6. Clean up
-        if (requestId === requestIdRef.current) {
-          // Only settle if this is still the latest request
-          await options.onSettled(resultData, mutationError, variables, snapshotRef.current)
-          setLoading(false)
+          await options.onSettled(resultData, mutationError, variables, snapshot);
+        } finally {
+          setLoading(false);
         }
       }
-    },
-    [loading, data, error]
-  );
-  
+    }
+  }, [configuredOptions, loading]);
+
   return {
     mutate,
     loading,
@@ -126,10 +110,10 @@ export function useOptimisticMutation<TData, TVariables>() {
 /**
  * Specialized optimistic mutation for toggling boolean states (like completion)
  */
-export function useOptimisticToggle<TId>() {
+export function useOptimisticToggle<TId extends string | number | symbol>() {
   const [toggledIds, setToggledIds] = useState<Set<TId>>(new Set());
   const [loadingIds, setLoadingIds] = useState<Set<TId>>(new Set());
-  const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({});
+  const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({} as Record<TId, unknown>);
   
   const toggle = useCallback(
     async (id: TId, options: {
