@@ -17,8 +17,9 @@ const { default: StructuredDailyCapture } = await import('../StructuredDailyCapt
 function installFetchMock() {
   const fetchMock = jest.fn(async (url: unknown, _options?: RequestInit) => {
     const path = String(url);
+    const jsonResponse = (data: unknown) => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => data, text: async () => JSON.stringify(data) });
     if (path.startsWith('blob:')) {
-      return { ok: true, blob: async () => new Blob(['compressed image'], { type: 'image/png' }) };
+      return { ok: true, headers: { get: () => 'application/octet-stream' }, blob: async () => new Blob(['compressed image'], { type: 'image/png' }) };
     }
     let body: unknown = [];
     if (path.includes('/caregivers/person/')) {
