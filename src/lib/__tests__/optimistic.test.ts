@@ -1,175 +1,103 @@
+import { jest } from '@jest/globals';
 import { renderHook, act } from '@testing-library/react';
-import { useOptimisticMutation } from './optimistic';
-
-// Mock the API client functions
-jest.mock('../api/client', () => ({
-  postJSON: jest.fn(),
-  patchJSON: jest.fn(),
-  getJSON: jest.fn(),
-}));
+import { useOptimisticMutation } from '../optimistic';
 
 describe('useOptimisticMutation', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  const defaultOptions = {
+    mutationFn: async (value: unknown) => value,
+    onMutate: () => undefined,
+    onSuccess: () => undefined,
+    onError: () => undefined,
+    onSettled: () => undefined,
+  };
 
-  it('should initialize with correct default values', () => {
-    const { result } = renderHook(() => useOptimisticMutation());
-    
+  it('initializes with idle state', () => {
+    const { result } = renderHook(() => useOptimisticMutation(defaultOptions));
+
     expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe(null);
-    expect(result.current.data).toBe(null);
+    expect(result.current.error).toBeNull();
+    expect(result.current.data).toBeNull();
   });
 
-  it('should handle successful mutation', async () => {
+  it('runs a successful mutation and reports its result', async () => {
     const mockData = { id: '123', name: 'Test' };
-    (require('../api/client').postJSON as jest.Mock).mockResolvedValue(mockData);
-    
     const mutationFn = jest.fn().mockResolvedValue(mockData);
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
     const onSuccess = jest.fn();
     const onError = jest.fn();
     const onSettled = jest.fn();
-    
-    const { result } = renderHook(() => 
-      useOptimisticMutation()
-    );
-    
+    const options = { mutationFn, onMutate, onSuccess, onError, onSettled };
+    const { result } = renderHook(() => useOptimisticMutation(options));
+
     await act(async () => {
-      result.current.mutate(
-        {
-          mutationFn,
-          onMutate,
-          onSuccess,
-          onError,
-          onSettled,
-        },
-        { test: 'variable' }
-      );
+      await result.current.mutate({ test: 'variable' });
     });
-    
-    // Check loading state
-    expect(result.current.loading).toBe(true);
-    
-    // Wait for mutation to complete
-    await act(async () => {
-      // Wait a bit for the async operations
-      return new Promise(resolve => setTimeout(resolve, 10));
-    });
-    
-    // Check that loading is finished
+
     expect(result.current.loading).toBe(false);
     expect(result.current.data).toEqual(mockData);
+    expect(result.current.error).toBeNull();
     expect(onMutate).toHaveBeenCalledWith({ test: 'variable' });
     expect(mutationFn).toHaveBeenCalledWith({ test: 'variable' });
     expect(onSuccess).toHaveBeenCalledWith(mockData, { test: 'variable' }, { snapshot: 'test' });
     expect(onError).not.toHaveBeenCalled();
-    expect(onSettled).toHaveBeenCalled();
+    expect(onSettled).toHaveBeenCalledWith(mockData, null, { test: 'variable' }, { snapshot: 'test' });
   });
 
-  it('should handle mutation error', async () => {
+  it('reports mutation errors and runs settlement callbacks', async () => {
     const mockError = new Error('Test error');
-    (require('../api/client').postJSON as jest.Mock).mockRejectedValue(mockError);
-    
     const mutationFn = jest.fn().mockRejectedValue(mockError);
     const onMutate = jest.fn().mockResolvedValue({ snapshot: 'test' });
     const onSuccess = jest.fn();
     const onError = jest.fn();
     const onSettled = jest.fn();
-    
-    const { result } = renderHook(() => 
-      useOptimisticMutation()
-    );
-    
+    const options = { mutationFn, onMutate, onSuccess, onError, onSettled };
+    const { result } = renderHook(() => useOptimisticMutation(options));
+
     await act(async () => {
-      try {
-        await result.current.mutate(
-          {
-            mutationFn,
-            onMutate,
-            onSuccess,
-            onError,
-            onSettled,
-          },
-          { test: 'variable' }
-        );
-      } catch (e) {
-        // Expected error
-      }
+      await expect(result.current.mutate({ test: 'variable' })).rejects.toBe(mockError);
     });
-    
-    // Check loading state
+
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe(mockError);
     expect(onMutate).toHaveBeenCalledWith({ test: 'variable' });
     expect(mutationFn).toHaveBeenCalledWith({ test: 'variable' });
     expect(onError).toHaveBeenCalledWith(mockError, { test: 'variable' }, { snapshot: 'test' });
     expect(onSuccess).not.toHaveBeenCalled();
-    expect(onSettled).toHaveBeenCalled();
+    expect(onSettled).toHaveBeenCalledWith(undefined, mockError, { test: 'variable' }, { snapshot: 'test' });
   });
 
-  it('should prevent concurrent mutations', async () => {
-    const mutationFn = jest.fn().mockImplementation(() => 
-      new Promise(resolve => setTimeout(resolve, 100))
-    );
-    const onMutate = jest.fn().mockResolvedValue({});
-    const onSuccess = jest.fn();
-    const onError = jest.fn();
-    const onSettled = jest.fn();
-    
-    const { result } = renderHook(() => 
-      useOptimisticMutation()
-    );
-    
-    // Start first mutation
-    let firstPromise: Promise<void>;
+  it('rejects concurrent mutations instead of running both', async () => {
+    let resolveMutation!: (value: string) => void;
+    const mutationFn = jest.fn(() => new Promise<string>((resolve) => {
+      resolveMutation = resolve;
+    }));
+    const options = {
+      mutationFn,
+      onMutate: () => ({}),
+      onSuccess: () => undefined,
+      onError: () => undefined,
+      onSettled: () => undefined,
+    };
+    const { result } = renderHook(() => useOptimisticMutation(options));
+
+    let firstPromise!: Promise<string>;
     act(() => {
-      firstPromise = result.current.mutate(
-        {
-          mutationFn,
-          onMutate,
-          onSuccess,
-          onError,
-          onSettled,
-        },
-        { test: 'variable1' }
-      ) as Promise<void>;
+      firstPromise = result.current.mutate({ id: 'first' });
     });
-    
-    // Try to start second mutation while first is pending
-    let secondPromise: Promise<void>;
-    act(() => {
-      secondPromise = result.current.mutate(
-        {
-          mutationFn,
-          onMutate,
-          onSuccess,
-          onError,
-          onSettled,
-          retry: true, // Enable retry to test waiting behavior
-        },
-        { test: 'variable2' }
-      ) as Promise<void>;
-    });
-    
-    // First mutation should still be pending
     expect(result.current.loading).toBe(true);
-    
-    // Wait for first mutation to complete
+
     await act(async () => {
+      await expect(result.current.mutate({ id: 'second' })).rejects.toThrow('Mutation already in progress');
+    });
+    expect(mutationFn).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveMutation('done');
       await firstPromise;
     });
-    
-    // Second mutation should have started after first completed
-    expect(result.current.loading).toBe(true);
-    
-    // Wait for second mutation to complete
-    await act(async () => {
-      await secondPromise;
-    });
-    
-    // Both mutations should have completed
+
     expect(result.current.loading).toBe(false);
-    expect(mutationFn).toHaveBeenCalledTimes(2);
+    expect(result.current.data).toBe('done');
+    expect(mutationFn).toHaveBeenCalledTimes(1);
   });
 });
