@@ -4,6 +4,7 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
+      useESM: false,
       tsconfig: {
         module: 'CommonJS',
         moduleResolution: 'Node',
@@ -17,8 +18,8 @@ module.exports = {
     '<rootDir>/src/**/*.test.tsx',
     '<rootDir>/src/lib/routine-moments/test.ts',
   ],
-  moduleNameMapper: { '^@/(.*)
-};
-: '<rootDir>/src/$1' },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   testPathIgnorePatterns: ['/node_modules/', '/tests/'],
 };
