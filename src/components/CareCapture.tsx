@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { useEffect, useState } from 'react'
+import { getJSON, postJSON, getPersonId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface SimilarExperience {
@@ -37,7 +37,30 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const [text, setText] = useState('')
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
   const [saved, setSaved] = useState(false)
+  const [caregiverId, setCaregiverId] = useState('')
+  const [caregiverLoading, setCaregiverLoading] = useState(true)
+  const [caregiverError, setCaregiverError] = useState<string | null>(null)
   const personId = pid || getPersonId()
+
+  useEffect(() => {
+    let active = true
+    setCaregiverLoading(true)
+    setCaregiverError(null)
+    getJSON(`/caregivers/person/${personId}`)
+      .then((caregivers: Array<{ id: string; name: string }>) => {
+        if (!active) return
+        const caregiver = caregivers[0]
+        setCaregiverId(caregiver?.id || '')
+        if (!caregiver) setCaregiverError('No caregiver is linked to this person yet.')
+      })
+      .catch(() => {
+        if (active) setCaregiverError('Could not load caregivers. Check the connection and try again.')
+      })
+      .finally(() => {
+        if (active) setCaregiverLoading(false)
+      })
+    return () => { active = false }
+  }, [personId])
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
     any, 
@@ -80,9 +103,11 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const handleSubmit = async () => {
     if (!text.trim()) return
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    if (!caregiverId) {
+      setCaregiverError('A valid caregiver must be linked to this person before recording care.')
+      return
+    }
+
     await submitSituation({
       caregiverId,
       personId,
@@ -120,6 +145,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           }}>
             Saving...
           </span>
+        )}
+        {caregiverError && (
+          <span style={{ fontSize: '11px', color: 'var(--error)' }}>{caregiverError}</span>
         )}
         {submitError && !saved && (
           <span style={{
@@ -174,7 +202,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
         <button
           onClick={handleSubmit}
-          disabled={submitting || !text.trim()}
+          disabled={submitting || caregiverLoading || !caregiverId || !text.trim()}
           style={{
             flex: 1, padding: '10px 20px', borderRadius: '8px', border: 'none',
             background: submitting || !text.trim()
