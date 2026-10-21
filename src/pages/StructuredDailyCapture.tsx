@@ -257,8 +257,10 @@ export default function StructuredDailyCapture() {
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
         
+        const accessToken = getAccessToken();
         const uploadResponse = await fetch(`${((import.meta.env || {}).VITE_API_BASE || '/api/v1').replace(/\/$/, '')}/upload`, {
           method: 'POST',
+          ...(accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}),
           body: formData,
         });
         
