@@ -68,7 +68,7 @@ describe('Evidence Component Image Compression Integration', () => {
     expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
-    const submitButton = screen.getByRole('button', { name: /create evidence/i });
+    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find((button) => button.getAttribute('type') === 'submit')!;
     fireEvent.click(submitButton);
 
     // Wait for submission to complete
@@ -166,7 +166,7 @@ describe('Evidence Component Image Compression Integration', () => {
     expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
-    const submitButton = screen.getByRole('button', { name: /create evidence/i });
+    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find((button) => button.getAttribute('type') === 'submit')!;
     fireEvent.click(submitButton);
 
     // Wait for submission to complete (should use original image due to fallback)
