@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { postJSON, getCaregiverId, getPersonId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface SimilarExperience {
@@ -35,6 +35,7 @@ const CAPTURE_HINTS = [
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
+  const [identityError, setIdentityError] = useState<string | null>(null)
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
   const personId = pid || getPersonId()
   
@@ -52,15 +53,22 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
       return { caregiverId, personId, rawInput };
     },
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (_data, variables, _context) => {
       // On success, fetch the community experience
-      const experienceData = await postJSON('/community/experience', {
-        observation: variables.rawInput,
-      }) as ExperienceResult
-      setExperiences(experienceData)
+      try {
+        const experienceData = await postJSON('/community/experience', {
+          observation: variables.rawInput,
+        }) as ExperienceResult
+        setExperiences(experienceData)
+      } catch (error) {
+        // Community matching is optional; a failed community request must not
+        // turn a successfully saved care situation into a failed capture.
+        console.warn('Community matching is unavailable:', error)
+        setExperiences(null)
+      }
       onCapture?.(variables.rawInput)
     },
-    onError: async (error, variables, context) => {
+    onError: async (error, _variables, _context) => {
       // On error, we could show a failed state, but for simplicity we'll just let the error propagate
       // The UI will still show the text was processed optimistically
       console.error('Failed to save situation:', error)
@@ -76,9 +84,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const handleSubmit = async () => {
     if (!text.trim()) return
     
-    // Get caregiver ID from auth context or use demo
-    const caregiverId = 'demo-caregiver' // In a real app, this would come from auth context
-    
+    const caregiverId = getCaregiverId()
+    if (!caregiverId || !personId || personId === 'demo-person-id') {
+      setIdentityError('Sign in and link a caregiver identity before saving a care change.')
+      return
+    }
+    setIdentityError(null)
+
     await submitSituation({
       caregiverId,
       personId,
@@ -117,7 +129,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {submitError && !experiences && (
+        {Boolean(submitError) && !experiences && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -127,6 +139,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         )}
       </div>
 
+      {identityError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginBottom: '10px' }}>{identityError}</p>}
       <p style={{
         fontSize: '12px', color: 'var(--text-secondary)',
         marginBottom: '12px', lineHeight: 1.5
