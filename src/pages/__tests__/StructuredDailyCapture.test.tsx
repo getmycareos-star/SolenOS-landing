@@ -22,7 +22,7 @@ function installFetchMock() {
       return { ok: true, headers: { get: () => 'application/octet-stream' }, blob: async () => new Blob(['compressed image'], { type: 'image/png' }) };
     }
     let body: unknown = [];
-    if (path.includes('/caregivers/person/')) {
+    if (path.includes('/caregivers/')) {
       body = [{ id: 'test-caregiver', name: 'Test Caregiver' }];
     } else if (path.includes('/upload')) {
       body = { evidence_id: 'test-evidence-id', file_id: 'test-file-id' };
