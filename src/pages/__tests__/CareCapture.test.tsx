@@ -37,6 +37,7 @@ function installFetchMock(caregivers: Array<{ id: string; name: string }>) {
 describe('CareCapture caregiver workflow', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     jest.clearAllMocks();
   });
 
