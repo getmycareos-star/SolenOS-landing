@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc --noEmit -p tsconfig.vite.json && vite build",
     "preview": "vite preview",
     "test": "jest",
     "android": "capacitor copy android && capacitor open android",
