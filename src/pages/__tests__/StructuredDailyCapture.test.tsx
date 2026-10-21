@@ -187,7 +187,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
 
     // Wait for submission to complete (should use original image due to fallback)
     await waitFor(() => {
-      expect(submitMedicationButton).toHaveTextContent('Add Medication');
+      expect(screen.getByText('Test Medication')).toBeInTheDocument();
     });
 
     // Verify that fetch was still called (fallback to original image worked)
