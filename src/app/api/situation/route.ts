@@ -11,8 +11,9 @@ import { upsertTrackedSituationFromCareInput } from "@/lib/resolution-engine/car
 
 export const runtime = "nodejs";
 
-function resolveCaregiverId(input: { caregiver_id?: string; care_session_id?: string }): string {
-  return input.caregiver_id ?? input.care_session_id ?? "default_caregiver";
+function resolveCaregiverId(input: { caregiver_id?: string; care_session_id?: string }): string | null {
+  const candidate = input.caregiver_id ?? input.care_session_id;
+  return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null;
 }
 
 export async function GET(request: Request) {
@@ -22,6 +23,12 @@ export async function GET(request: Request) {
     care_session_id: url.searchParams.get("care_session_id") ?? undefined,
   });
   const offerReturnInvite = url.searchParams.get("offer_return_invite") === "1";
+  if (!caregiverId) {
+    return NextResponse.json(
+      { error: "caregiver_identity_required", note: "Select an authorized care context before reading care data." },
+      { status: 400 },
+    );
+  }
 
   const context = getCareContextRoot(caregiverId);
   const hasContextRoot = Boolean(context && context.events.length > 0);
@@ -75,6 +82,12 @@ export async function POST(request: Request) {
       caregiver_id: typeof body.caregiver_id === "string" ? body.caregiver_id : undefined,
       care_session_id: typeof body.care_session_id === "string" ? body.care_session_id : undefined,
     });
+    if (!caregiverId) {
+      return NextResponse.json(
+        { error: "caregiver_identity_required", note: "Select an authorized care context before writing care data." },
+        { status: 400 },
+      );
+    }
 
     if (!rawInput && (!Array.isArray(body.documents) || body.documents.length === 0)) {
       return NextResponse.json(
