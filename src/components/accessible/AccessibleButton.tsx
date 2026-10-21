@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { ARIA, Keyboard, Focus } from '../lib/accessibility';
+import { ARIA, Keyboard, Focus } from '../../lib/accessibility';
 
 interface AccessibleButtonProps {
   /** Button text content */
