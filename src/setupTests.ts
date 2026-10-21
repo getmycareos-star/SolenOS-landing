@@ -13,3 +13,9 @@ Object.defineProperty(URL, 'revokeObjectURL', {
   writable: true,
   value: jest.fn(),
 });
+
+Object.defineProperty(window, 'alert', {
+  configurable: true,
+  writable: true,
+  value: jest.fn(),
+});
