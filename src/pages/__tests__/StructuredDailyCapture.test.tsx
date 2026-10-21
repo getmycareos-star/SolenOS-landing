@@ -29,7 +29,19 @@ function installFetchMock() {
     if (path.includes('/daily/log')) {
       return { ok: true, json: async () => ({ id: 'test-daily-log' }) };
     }
-    return { ok: true, json: async () => [] };
+    const body = path.includes('/caregivers/person/')
+      ? [{ id: 'test-caregiver', name: 'Test Caregiver' }]
+      : path.includes('/upload')
+        ? { evidence_id: 'test-evidence-id', file_id: 'test-file-id' }
+        : path.includes('/daily/log')
+          ? { id: 'test-daily-log' }
+          : [];
+    return {
+      ok: true,
+      headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
+      text: async () => JSON.stringify(body),
+      json: async () => body,
+    };
   });
   global.fetch = fetchMock as unknown as typeof fetch;
   return fetchMock;
