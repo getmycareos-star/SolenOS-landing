@@ -926,6 +926,7 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
                         padding: '6px 10px', 
                         borderRadius: '4px' 
                       }}
+                      aria-label="Remove preview"
                     >
                       Remove Preview
                     </button>
