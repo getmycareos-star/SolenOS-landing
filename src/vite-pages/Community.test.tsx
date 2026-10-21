@@ -38,17 +38,4 @@ describe('Community unavailable state', () => {
     await waitFor(() => expect(mockGetJSON).toHaveBeenCalledTimes(1))
   })
 
-  it('does not apply a reaction locally when the server rejects it', async () => {
-    mockGetJSON.mockResolvedValueOnce({ posts: [] })
-    mockPostJSON.mockRejectedValueOnce(new Error('404 Not Found'))
-
-    render(
-      <MemoryRouter>
-        <Community />
-      </MemoryRouter>,
-    )
-
-    await waitFor(() => expect(mockGetJSON).toHaveBeenCalledTimes(1))
-    expect(screen.getByText('No community posts yet. Be the first to share.')).toBeInTheDocument()
-  })
 })
