@@ -17,6 +17,7 @@ export default function Companion() {
   const [loading, setLoading] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [chatUnavailable] = useState(true)
   const [emergency, setEmergency] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const personId = getPersonId()
@@ -31,6 +32,10 @@ export default function Companion() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return
+    if (chatUnavailable) {
+      setRequestError('Companion messaging is not connected to a backend endpoint yet. Your text has not been sent or saved.')
+      return
+    }
     if (!personId) {
       setRequestError('Select a care recipient before starting a care conversation.')
       return
@@ -170,13 +175,13 @@ export default function Companion() {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px' }}>
+      {chatUnavailable && <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Backend route missing: <code>/api/v1/conversation/message</code>. Draft text is not submitted.</p>}\n      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px' }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Type a message (Enter to send, Shift+Enter for new line)..."
-          disabled={loading}
+          disabled={loading || chatUnavailable}
           rows={Math.max(1, Math.floor(input.length / 50) + 1)}
           style={{
             flex: 1, padding: '10px 14px', borderRadius: '16px', border: '1px solid var(--border)',
@@ -186,14 +191,14 @@ export default function Companion() {
         />
         <button
           onClick={sendMessage}
-          disabled={loading || !input.trim()}
+          disabled={chatUnavailable || loading || !input.trim()}
           style={{
             padding: '10px 20px', borderRadius: '16px', border: 'none',
             background: loading || !input.trim() ? 'var(--text-secondary)' : 'var(--trust)',
             color: 'white', fontSize: '13px', cursor: loading || !input.trim() ? 'default' : 'pointer',
           }}
         >
-          {loading ? '...' : 'Send'}
+          {chatUnavailable ? 'Unavailable' : loading ? '...' : 'Send'}
         </button>
       </div>
     </div>
