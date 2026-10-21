@@ -112,7 +112,6 @@ export default function CareCircle() {
       setError(cause instanceof Error ? cause.message : 'Could not add the caregiver.')
     } finally {
       setSubmitting(false)
-      await fetchCaregivers()
     }
   }
 
