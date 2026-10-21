@@ -182,7 +182,7 @@ export function useOptimisticToggle<TId extends string | number | symbol>() {
     reset: () => {
       setToggledIds(new Set());
       setLoadingIds(new Set());
-      setErrorIds({});
+      setErrorIds({} as Record<TId, unknown>);
     }
   };
 }
