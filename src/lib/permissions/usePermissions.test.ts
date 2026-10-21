@@ -18,8 +18,8 @@ describe('useLocationPermission', () => {
     mockMediaDevices.getUserMedia.mockReset();
     
     // Restore the original navigator after each test
-    Object.defineProperty(navigator, 'geolocation', { value: undefined, configurable: true });
-    Object.defineProperty(navigator, 'mediaDevices', { value: undefined, configurable: true });
+    Object.defineProperty(navigator, 'geolocation', { value: mockGeolocation, configurable: true });
+    Object.defineProperty(navigator, 'mediaDevices', { value: mockMediaDevices, configurable: true });
   });
 
   it('should return unknown state initially', () => {
@@ -112,7 +112,7 @@ describe('useCameraPermission', () => {
     mockMediaDevices.getUserMedia.mockReset();
     
     // Restore the original navigator after each test
-    delete navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', { value: mockMediaDevices, configurable: true });
   });
 
   it('should return unknown state initially', () => {
