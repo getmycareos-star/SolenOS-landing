@@ -7,7 +7,10 @@ declare global {
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'
+// Production defaults to the same-origin Netlify proxy (/api/*); Vite's dev
+// server also proxies /api to localhost:8000. Set VITE_API_BASE only when a
+// deployment intentionally needs to call a different API origin.
+const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 
 export function getPersonId(): string {
   return localStorage.getItem('solenos_person_id') || 'demo-person-id'
@@ -69,9 +72,7 @@ export async function getJSON(path: string) {
   return handleResponse(res)
 }
 
-// Downloads a binary response, e.g. the care summary PDF. Kept here so the API
-// base is resolved in one place rather than reconstructed by a caller that would
-// otherwise hardcode a second copy of the localhost default.
+// Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
   const res = await fetch(`${API_BASE}${interpolatePersonId(path)}`)
   if (!res.ok) {
