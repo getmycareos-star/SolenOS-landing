@@ -33,6 +33,15 @@ function interpolatePersonId(path: string): string {
   return path.replace(/demo-person-id/g, personId)
 }
 
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 async function handleResponse(res: Response) {
   if (res.status === 204) return null
   const contentType = res.headers?.get?.('content-type') || ''
@@ -54,7 +63,7 @@ async function handleResponse(res: Response) {
       const text = await res.text()
       message = text || message
     }
-    throw new Error(message)
+    throw new ApiError(message, res.status)
   }
 
   if (!isJson) {
