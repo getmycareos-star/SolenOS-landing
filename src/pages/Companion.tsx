@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -17,10 +17,10 @@ export default function Companion() {
   const [loading, setLoading] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [chatUnavailable] = useState(true)
   const [emergency, setEmergency] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const personId = getPersonId()
+  const caregiverId = getCaregiverId() || ''
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -32,12 +32,8 @@ export default function Companion() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return
-    if (chatUnavailable) {
-      setRequestError('Companion messaging is not connected to a backend endpoint yet. Your text has not been sent or saved.')
-      return
-    }
-    if (!personId) {
-      setRequestError('Select a care recipient before starting a care conversation.')
+    if (!personId || !caregiverId) {
+      setRequestError('Select a care recipient and sign in with a linked caregiver account before sending a message.')
       return
     }
     setRequestError(null)
@@ -50,12 +46,24 @@ export default function Companion() {
       timestamp: new Date(),
     }
     try {
-      const response = await postJSON('/conversation/message', {
+      const response = await postJSON<{
+        session_id: string
+        person_id: string
+        reply: string
+        guard_verdict: string
+        safety_note: string | null
+        confidence: number | null
+        evidence_ids: string[]
+      }>('/conversation/message', {
         person_id: personId,
-        text: input,
+        caregiver_id: caregiverId,
+        text: input.trim(),
         session_id: sessionId,
-      }) as any
+      })
 
+      if (!response?.session_id || response.person_id !== personId || typeof response.reply !== 'string' || !response.reply.trim()) {
+        throw new Error('The backend did not confirm a saved conversation response. Your message remains available to retry.')
+      }
       if (!sessionId) setSessionId(response.session_id)
 
       const isEmergency = response.guard_verdict === 'blocked' || response.safety_note?.includes('emergency') || response.safety_note?.includes('immediate')
@@ -175,13 +183,14 @@ export default function Companion() {
         <div ref={bottomRef} />
       </div>
 
-      {chatUnavailable && <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Backend route missing: <code>/api/v1/conversation/message</code>. Draft text is not submitted.</p>}\n      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px' }}>
+      {(!personId || !caregiverId) && <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Select a care recipient and sign in with its linked caregiver account to send a message. Draft text stays on this screen until you send it.</p>}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px' }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Type a message (Enter to send, Shift+Enter for new line)..."
-          disabled={loading || chatUnavailable}
+          disabled={loading}
           rows={Math.max(1, Math.floor(input.length / 50) + 1)}
           style={{
             flex: 1, padding: '10px 14px', borderRadius: '16px', border: '1px solid var(--border)',
@@ -191,14 +200,14 @@ export default function Companion() {
         />
         <button
           onClick={sendMessage}
-          disabled={chatUnavailable || loading || !input.trim()}
+          disabled={loading || !input.trim() || !personId || !caregiverId}
           style={{
             padding: '10px 20px', borderRadius: '16px', border: 'none',
             background: loading || !input.trim() ? 'var(--text-secondary)' : 'var(--trust)',
             color: 'white', fontSize: '13px', cursor: loading || !input.trim() ? 'default' : 'pointer',
           }}
         >
-          {chatUnavailable ? 'Unavailable' : loading ? '...' : 'Send'}
+          {loading ? '...' : 'Send'}
         </button>
       </div>
     </div>
