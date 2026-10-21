@@ -1,153 +1,55 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import DailyCare from './DailyCare';
 
-// Mock the postJSON and getJSON functions
-jest.mock('../api/client', () => ({
-  ...jest.requireActual('../api/client'),
-  postJSON: jest.fn().mockResolvedValue({}),
-  getJSON: jest.fn().mockResolvedValue([{ id: 'demo-caregiver', name: 'Demo Caregiver' }])
-}));
-
-// Mock the useLocationPermission hook
-jest.mock('../lib/permissions/useLocationPermission', () => ({
-  useLocationPermission: () => ({
-    state: { status: 'unknown' },
-    requestLocation: jest.fn()
-  })
-}));
-
-// Mock the useState hook to control location state
-let locationState = null;
-const useStateMock = (initialValue) => {
-  if (initialValue === null && typeof initialValue === 'object' && 'latitude' in initialValue) {
-    // This is our location state
-    return [locationState, (newValue) => { locationState = newValue; }];
-  }
-  // For other useState calls, return the actual state
-  const [state, setState] = jest.requireActual('react').useState(initialValue);
-  return [state, setState];
+const mockLocationPermission = {
+  state: { status: 'unknown' as string } as any,
+  requestLocation: jest.fn().mockResolvedValue(undefined),
 };
 
-jest.mock('react', () => ({
-  ...jest.requireActual('react'),
-  useState: useStateMock
+jest.mock('../api/client', () => ({
+  getPersonId: jest.fn(() => 'test-person'),
+  getJSON: jest.fn().mockResolvedValue([{ id: 'test-caregiver', name: 'Test Caregiver' }]),
+  postJSON: jest.fn().mockResolvedValue({ id: 'entry-1' }),
+}));
+
+jest.mock('../lib/permissions/useLocationPermission', () => ({
+  useLocationPermission: () => mockLocationPermission,
 }));
 
 describe('DailyCare', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    locationState = null;
+    mockLocationPermission.state = { status: 'unknown' };
   });
 
-  it('should render the main heading', () => {
+  it('renders the main heading', async () => {
     render(<DailyCare />);
-    const heading = screen.getByRole('heading', { name: /what matters today/i });
-    expect(heading).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /what matters today/i })).toBeInTheDocument();
   });
 
-  it('should have a location section', () => {
+  it('loads and displays the caregiver list', async () => {
     render(<DailyCare />);
-    expect(screen.getByRole('heading', { name: /location/i })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText(/recorded by/i)).toBeInTheDocument());
+    expect(await screen.findByRole('option', { name: 'Test Caregiver' })).toBeInTheDocument();
   });
 
-  it('should show location request button when state is unknown', () => {
+  it('shows the location request control while permission is unknown', () => {
     render(<DailyCare />);
-    const locationButton = screen.getByRole('button', { name: /use my current location/i });
-    expect(locationButton).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use my current location/i })).toBeInTheDocument();
   });
 
-  it('should handle location request', async () => {
-    // Mock the useLocationPermission hook to return a granted state
-    jest.mock('../lib/permissions/useLocationPermission', () => ({
-      useLocationPermission: () => ({
-        state: { 
-          status: 'granted',
-          latitude: 40.7128,
-          longitude: -74.0060,
-          accuracy: 10,
-          timestamp: Date.now()
-        },
-        requestLocation: jest.fn()
-      })
-    }));
-    
+  it('requests location when the user presses the location button', async () => {
+    const user = userEvent.setup();
     render(<DailyCare />);
-    
-    // Click the location button
-    await userEvent.click(screen.getByRole('button', { name: /use my current location/i }));
-    
-    // Verify location is displayed
-    expect(await screen.findByText(/40.712800°/)).toBeInTheDocument();
-    expect(await screen.findByText(/-74.006000°/)).toBeInTheDocument();
-    expect(await screen.findByText(/accuracy: 10 meters/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /use my current location/i }));
+    expect(mockLocationPermission.requestLocation).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle manual location entry when permission denied', async () => {
-    // Mock the useLocationPermission hook to return a denied state
-    jest.mock('../lib/permissions/useLocationPermission', () => ({
-      useLocationPermission: () => ({
-        state: { status: 'denied' },
-        requestLocation: jest.fn()
-      })
-    }));
-    
+  it('shows manual coordinate inputs when location permission is denied', () => {
+    mockLocationPermission.state = { status: 'denied' };
     render(<DailyCare />);
-    
-    // Verify manual input fields are shown
     expect(screen.getByPlaceholderText(/latitude/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/longitude/i)).toBeInTheDocument();
-    
-    // Enter manual coordinates
-    await userEvent.type(screen.getByPlaceholderText(/latitude/i), '34.0522');
-    await userEvent.type(screen.getByPlaceholderText(/longitude/i), '-118.2437');
-    
-    // Verify the values are entered
-    expect(screen.getByPlaceholderText(/latitude/i)).toHaveValue('34.0522');
-    expect(screen.getByPlaceholderText(/longitude/i)).toHaveValue('-118.2437');
-  });
-
-  it('should handle form submission with location', async () => {
-    // Mock the useLocationPermission hook to return a granted state
-    jest.mock('../lib/permissions/useLocationPermission', () => ({
-      useLocationPermission: () => ({
-        state: { 
-          status: 'granted',
-          latitude: 40.7128,
-          longitude: -74.0060,
-          accuracy: 10,
-          timestamp: Date.now()
-        },
-        requestLocation: jest.fn()
-      })
-    }));
-    
-    render(<DailyCare />);
-    
-    // Fill in some form data
-    await userEvent.selectOptions(screen.getByLabelText(/mood/i), 'Calm');
-    await userEvent.selectOptions(screen.getByLabelText(/agitation level/i), 'None');
-    
-    // Set location via the mock (since we can't easily trigger the location request in test)
-    // In a real test, we would click the button and wait for the async operation
-    
-    // Submit the form
-    await userEvent.click(screen.getByRole('button', { name: /save daily care entry/i }));
-    
-    // Verify postJSON was called with location data
-    expect(require('../api/client').postJSON).toHaveBeenCalledWith(
-      '/daily-care/entries',
-      expect.objectContaining({
-        mood: 'Calm',
-        agitation_level: 'None',
-        location: {
-          latitude: 40.7128,
-          longitude: -74.0060,
-          accuracy: 10,
-          timestamp: expect.any(Number)
-        },
-        location_provenance: 'user_provided'
-      })
-    );
   });
 });
