@@ -1,10 +1,11 @@
-// Use the same-origin API proxy in both Vite development and Netlify production.
-// vite.config.ts and netlify.toml forward /api/* to the backend, so the browser
-// never needs a hard-coded backend hostname or import.meta.env in Jest.
+// All browser requests use the same-origin proxy. Netlify forwards /api/* to
+// Railway; Vite development uses the proxy in vite.config.ts.
 const API_BASE = '/api/v1'
+const REQUEST_TIMEOUT_MS = 15_000
+const RETRYABLE_GET_STATUSES = new Set([502, 503, 504])
 
 export function getPersonId(): string {
-  // Do not invent a care-record identifier: callers must handle an unset ID.
+  // Never fabricate a care-recipient ID. Callers must handle an unset ID.
   return localStorage.getItem('solenos_person_id') || ''
 }
 
@@ -26,8 +27,7 @@ function interpolatePersonId(path: string): string {
 function resolveApiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
 
-  // The backend exposes situation capture at /api/situation (outside /api/v1).
-  // All other calls using this client use the /api/v1 router.
+  // This endpoint is mounted at /api/situation, not /api/v1/situation.
   if (normalized === '/situation' || normalized.startsWith('/situation?')) {
     return `/api${normalized}`
   }
@@ -35,59 +35,107 @@ function resolveApiUrl(path: string): string {
   return `${API_BASE.replace(/\/$/, '')}${normalized}`
 }
 
-async function handleResponse(res: Response) {
-  const contentType = res.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
-
-  if (!res.ok) {
-    let message = `API ${res.status}`
-    if (isJson) {
-      try {
-        const err = await res.json()
-        message = err.detail || err.message || message
-      } catch {
-        // keep generic message
+function getErrorMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === 'string' && payload.trim()) return payload.trim()
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>
+    for (const key of ['detail', 'message', 'error']) {
+      const value = record[key]
+      if (typeof value === 'string' && value.trim()) return value.trim()
+      if (Array.isArray(value)) {
+        const parts = value.map((item) => {
+          if (item && typeof item === 'object' && 'msg' in item) {
+            return String((item as { msg: unknown }).msg)
+          }
+          return String(item)
+        })
+        if (parts.length) return parts.join('; ')
       }
-    } else {
-      const text = await res.text()
-      message = text || message
     }
-    throw new Error(message)
   }
-
-  if (!isJson) {
-    throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
-  }
-
-  const text = await res.text()
-  if (!text) {
-    throw new Error('Empty response from server')
-  }
-
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new Error('Invalid JSON response from server')
-  }
+  return fallback
 }
 
-export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
+async function handleResponse(res: Response): Promise<unknown> {
+  const contentType = res.headers.get('content-type') || ''
+  const raw = await res.text()
+  let payload: unknown = raw
+
+  if (raw && (contentType.includes('application/json') || contentType.includes('+json'))) {
+    try {
+      payload = JSON.parse(raw)
+    } catch {
+      if (res.ok) throw new Error('The server returned malformed JSON.')
+      payload = raw
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(getErrorMessage(payload, `Request failed (HTTP ${res.status}).`))
+  }
+
+  // 204 and empty successful responses are valid HTTP responses.
+  if (res.status === 204 || raw.length === 0) return null
+
+  // Preserve non-JSON success responses instead of rejecting them blindly.
+  return payload
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
+async function request(path: string, init: RequestInit = {}): Promise<Response> {
+  const method = (init.method || 'GET').toUpperCase()
+  const canRetry = method === 'GET'
+  const url = resolveApiUrl(path)
+  const attempts = canRetry ? 2 : 1
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal })
+      if (canRetry && attempt === 0 && RETRYABLE_GET_STATUSES.has(response.status)) {
+        // Only retry safe reads. Never automatically retry create/update requests.
+        await response.body?.cancel()
+        continue
+      }
+      return response
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds. Check your connection and try again.`)
+      }
+      if (!canRetry || attempt === attempts - 1) {
+        throw new Error('Unable to reach SolenOS. Check your connection and try again.')
+      }
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+  throw new Error('Unable to complete the request.')
+}
+
+export async function getJSON(path: string): Promise<unknown> {
+  const res = await request(interpolatePersonId(path))
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
+  const res = await request(interpolatePersonId(path))
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`)
+    const message = await handleResponse(res).catch((error: unknown) =>
+      error instanceof Error ? error.message : `Request failed (HTTP ${res.status}).`,
+    )
+    throw new Error(String(message))
   }
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown, personId?: boolean) {
+export async function postJSON(path: string, body: unknown, personId?: boolean): Promise<unknown> {
   const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+  const res = await request(resolvedPath, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -95,9 +143,9 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
   return handleResponse(res)
 }
 
-export async function patchJSON(path: string, body: unknown, personId?: boolean) {
+export async function patchJSON(path: string, body: unknown, personId?: boolean): Promise<unknown> {
   const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+  const res = await request(resolvedPath, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -105,19 +153,13 @@ export async function patchJSON(path: string, body: unknown, personId?: boolean)
   return handleResponse(res)
 }
 
-
-// Multipart upload helper. Do not set Content-Type manually: the browser must
-// add the multipart boundary for FormData requests.
-export async function postFormData(path: string, body: FormData) {
-  const res = await fetch(resolveApiUrl(path), {
-    method: 'POST',
-    body,
-  })
+// Multipart uploads must let the browser set the Content-Type boundary.
+export async function postFormData(path: string, body: FormData): Promise<unknown> {
+  const res = await request(path, { method: 'POST', body })
   return handleResponse(res)
 }
 
-// Caregiver identity is only accepted when explicitly stored by the current
-// frontend session. Never fabricate a caregiver ID for a care record.
+// Caregiver identity is accepted only when explicitly stored by this session.
 export function getCaregiverId(): string | null {
   return localStorage.getItem('solenos_caregiver_id')
 }
@@ -143,7 +185,6 @@ export async function checkAuthState(): Promise<{ authenticated: boolean; sessio
 export function subscribeToAuthState(
   _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
-  // No backend session event stream exists yet.
   return () => undefined
 }
 
