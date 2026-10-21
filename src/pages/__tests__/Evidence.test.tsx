@@ -2,6 +2,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Evidence from '../Evidence';
 import { compressImage } from '../../lib/imageCompression';
 
+const jsonResponse = (data: unknown) => ({
+  ok: true,
+  headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
+  text: async () => JSON.stringify(data),
+  json: async () => data,
+});
+
 // Mock the compression library
 jest.mock('../../lib/imageCompression', () => ({
   ...jest.requireActual('../../lib/imageCompression'),
@@ -25,18 +32,12 @@ describe('Evidence Component Image Compression Integration', () => {
     // Mock the API calls
     global.fetch = jest.fn().mockImplementation(async (url, options) => {
       if (url.includes('/upload')) {
-        return {
-          ok: true,
-          json: async () => ({ evidence_id: 'test-evidence-id' })
-        };
+        return jsonResponse({ evidence_id: 'test-evidence-id' });
       }
       if (url.includes('/evidence')) {
-        return {
-          ok: true,
-          json: async () => []
-        };
+        return jsonResponse([]);
       }
-      return { ok: true, json: async () => ({}) };
+      return jsonResponse({});
     });
 
     // Render the component
@@ -126,18 +127,12 @@ describe('Evidence Component Image Compression Integration', () => {
     // Mock the API calls
     global.fetch = jest.fn().mockImplementation(async (url, options) => {
       if (url.includes('/upload')) {
-        return {
-          ok: true,
-          json: async () => ({ evidence_id: 'test-evidence-id' })
-        };
+        return jsonResponse({ evidence_id: 'test-evidence-id' });
       }
       if (url.includes('/evidence')) {
-        return {
-          ok: true,
-          json: async () => []
-        };
+        return jsonResponse([]);
       }
-      return { ok: true, json: async () => ({}) };
+      return jsonResponse({});
     });
 
     render(<Evidence />);
