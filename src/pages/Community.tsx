@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { getJSON, postJSON, getCaregiverId } from '../api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
-type ReactionType = 'like' | 'thank_you' | 'support'
+type ReactionType = 'support' | 'helpful' | 'relate' | 'heart'
 type CareStage = 'early' | 'moderate' | 'late' | 'unspecified'
 type Visibility = 'public' | 'circle' | 'anonymous'
 
@@ -26,9 +26,24 @@ interface CommunityPost {
   user_reaction: ReactionType | null
 }
 
+interface ApiCommunityPost {
+  id: string
+  author_type: string
+  author_label: string
+  post_type?: string
+  content: string
+  care_stage?: string | null
+  tags?: string[]
+  visibility?: string
+  moderation_status?: string
+  created_at?: string | null
+  reaction_counts?: Record<string, number>
+  user_reaction?: string | null
+}
+
 interface CommunityPostSummary {
-  identity: string
-  posts: CommunityPost[]
+  count: number
+  posts: ApiCommunityPost[]
 }
 
 interface ExperienceMatch {
@@ -40,7 +55,46 @@ interface ExperienceMatch {
 }
 
 interface ExperienceResult {
-  matches: ExperienceMatch[]
+  matches: { post: ApiCommunityPost; matched_terms?: string[]; match_type?: string }[]
+}
+
+function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
+  const validStage = post.care_stage === 'early' || post.care_stage === 'moderate' || post.care_stage === 'late'
+    ? post.care_stage
+    : 'unspecified'
+  const validAuthor: AuthorType = post.author_type === 'solenos_verified'
+    || post.author_type === 'professional'
+    || post.author_type === 'professional_pending'
+    ? post.author_type
+    : 'peer_caregiver'
+  const counts = post.reaction_counts || {}
+  const userReaction = post.user_reaction === 'support' || post.user_reaction === 'helpful'
+    || post.user_reaction === 'relate' || post.user_reaction === 'heart'
+    ? post.user_reaction
+    : null
+  return {
+    id: post.id,
+    author_type: validAuthor,
+    author_label: post.author_label || 'Anonymous caregiver',
+    author_avatar_seed: '🧑',
+    title: post.post_type === 'question' ? 'Community question' : null,
+    body: post.content,
+    media: [],
+    visibility: post.visibility === 'private' ? 'circle' : 'public',
+    care_stage: validStage,
+    tags: Array.isArray(post.tags) ? post.tags : [],
+    created_at: post.created_at || '',
+    updated_at: null,
+    provenance_source: 'caregiver-submitted',
+    reaction_counts: {
+      support: counts.support || 0,
+      helpful: counts.helpful || 0,
+      relate: counts.relate || 0,
+      heart: counts.heart || 0,
+    },
+    comment_count: 0,
+    user_reaction: userReaction,
+  }
 }
 
 const STAGE_LABELS: Record<CareStage, string> = {
