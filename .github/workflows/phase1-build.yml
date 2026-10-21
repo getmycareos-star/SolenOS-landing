@@ -4,14 +4,12 @@ on:
   push:
     branches:
       - repair/phase1-build-deployment
-    paths-ignore:
-      - package-lock.json
   pull_request:
     branches:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: phase1-build-${{ github.ref }}
@@ -23,29 +21,11 @@ jobs:
     steps:
       - name: Check out repair branch
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Rebuild malformed lockfile from package.json
-        run: |
-          rm -f package-lock.json
-          npm install --package-lock-only --ignore-scripts --legacy-peer-deps --force --no-audit --no-fund
-      - name: Commit lockfile reconciliation on repair branch
-        if: github.event_name == 'push'
-        run: |
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "build: synchronize npm lockfile"
-            git pull --rebase origin "${GITHUB_REF_NAME}"
-            git push
-          fi
       - name: Install clean dependency tree
         run: npm ci --legacy-peer-deps
       - name: Type-check and build production assets
