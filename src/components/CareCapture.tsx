@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { postJSON, getPersonId, getCaregiverId } from '../api/client'
+import { postJSON, getCaregiverId, getPersonId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface SimilarExperience {
@@ -35,9 +35,8 @@ const CAPTURE_HINTS = [
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
-  const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
-  const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
+  const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -54,22 +53,30 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
       return { caregiverId, personId, rawInput };
     },
-    onSuccess: async (data, variables) => {
-      // The backend currently returns a saved situation, not community matches.
-      // Do not call the nonexistent /community/experience endpoint or invent matches.
-      setExperiences(null)
-      setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
-      setIdentityError(null)
-      setText('')
+    onSuccess: async (_data, variables, _context) => {
+      // On success, fetch the community experience
+      try {
+        const experienceData = await postJSON('/community/experience', {
+          observation: variables.rawInput,
+        }) as ExperienceResult
+        setExperiences(experienceData)
+      } catch (error) {
+        // Community matching is optional; a failed community request must not
+        // turn a successfully saved care situation into a failed capture.
+        console.warn('Community matching is unavailable:', error)
+        setExperiences(null)
+      }
       onCapture?.(variables.rawInput)
     },
-    onError: async (error, variables, context) => {
+    onError: async (error, _variables, _context) => {
       // On error, we could show a failed state, but for simplicity we'll just let the error propagate
       // The UI will still show the text was processed optimistically
       console.error('Failed to save situation:', error)
     },
-    onSettled: () => {
-      // Preserve the user's text on failure so it can be corrected and retried.
+    onSettled: (_data, error) => {
+      // Keep the caregiver's draft if the backend did not persist it.
+      // Clear only after a confirmed successful save.
+      if (!error) setText('')
     },
     retry: true,
     maxRetries: 3
@@ -79,18 +86,22 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     if (!text.trim()) return
     
     const caregiverId = getCaregiverId()
-    if (!caregiverId) {
-      setIdentityError('A signed-in caregiver is required to save this care update.')
+    if (!caregiverId || !personId || personId === 'demo-person-id') {
+      setIdentityError('Sign in and link a caregiver identity before saving a care change.')
       return
     }
     setIdentityError(null)
-    setSavedMessage(null)
 
-    await submitSituation({
-      caregiverId,
-      personId,
-      rawInput: text.trim()
-    })
+    try {
+      await submitSituation({
+        caregiverId,
+        personId,
+        rawInput: text.trim()
+      })
+    } catch {
+      // The mutation exposes the failure state; preserve the draft for correction/retry
+      // and avoid an unhandled rejected promise from this event handler.
+    }
   }
 
   const clearExperiences = () => setExperiences(null)
@@ -108,7 +119,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {(experiences || savedMessage) && (
+        {experiences && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -116,7 +127,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && !savedMessage && (
+        {submitting && !experiences && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -124,16 +135,17 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {Boolean(submitError || identityError) && !experiences && (
+        {Boolean(submitError) && !experiences && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
-            {identityError || 'Failed to save'}
+            Failed to save
           </span>
         )}
       </div>
 
+      {identityError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginBottom: '10px' }}>{identityError}</p>}
       <p style={{
         fontSize: '12px', color: 'var(--text-secondary)',
         marginBottom: '12px', lineHeight: 1.5
@@ -144,11 +156,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       <textarea
         value={text}
-        onChange={(e) => {
-          setText(e.target.value)
-          setSavedMessage(null)
-          setIdentityError(null)
-        }}
+        onChange={(e) => setText(e.target.value)}
         placeholder="Dad wandered at 2 AM and was confused about where he was..."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
@@ -193,12 +201,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           {submitting ? 'Saving...' : 'Save what changed →'}
         </button>
       </div>
-
-      {savedMessage && !experiences && (
-        <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
-          {savedMessage}
-        </p>
-      )}
 
       {experiences && (
         <div style={{

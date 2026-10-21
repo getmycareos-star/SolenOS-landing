@@ -9,7 +9,6 @@ interface Perspective {
   content: string;
   confidence: number;
   promoted?: boolean;
-  promotedToInsight?: boolean;
 }
 
 interface Insight {
@@ -128,11 +127,11 @@ export default function PerspectivePromotion() {
     });
   };
 
-  const eligiblePerspectives = perspectives.filter(p => p.promoted && !p.promotedToInsight);
-
   if (loading) {
     return <div aria-live="polite">Loading perspectives...</div>;
   }
+
+  const eligiblePerspectives = perspectives.filter(p => p.promoted && !p.promotedToInsight);
 
   return (
     <div>
