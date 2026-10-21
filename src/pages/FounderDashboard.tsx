@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../components/AuthProvider';
 import { getJSON } from '../api/client';
-import { RequireAuth } from '../components/AuthProvider';
 
 
 export default function FounderDashboard() {
@@ -127,8 +126,7 @@ export default function FounderDashboard() {
   }
 
   return (
-    <RequireAuth>
-      <div className='p-6'>
+    <div className='p-6'>
         <header className='flex justify-between items-center mb-6'>
           <h1 className='text-2xl font-bold text-trust'>
             SolenOS Founder Dashboard
