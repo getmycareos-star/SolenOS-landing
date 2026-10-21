@@ -1,291 +1,204 @@
-import { useEffect, useState } from 'react'
-import { getJSON, postJSON, patchJSON, getPersonId } from '../api/client'
+import { useCallback, useEffect, useState } from 'react'
+import { getJSON, postJSON, getPersonId } from '../api/client'
 
-interface CareCircle {
+interface Caregiver {
   id: string
   person_id: string
   name: string
-  description: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
+  email: string
+  relationship: string
+  timezone: string
+  created_at?: string
 }
 
-interface CareCircleMembership {
-  id: string
-  care_circle_id: string
-  member_person_id: string | null
-  member_account_id: string | null
-  role: string
-  role_description: string | null
-  access_level: string
-  can_view_information: boolean
-  can_contribute_information: boolean
-  can_receive_notifications: boolean
-  can_participate_in_decisions: boolean
-  relationship_to_person: string | null
-  contact_information: any
-  invitation_status: string
-  joined_at: string
-  left_at: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
-}
-
-interface CreateCareCircleData {
-  name: string
-  description: string | null
-}
-
-interface AddMemberToCircleData {
-  member_person_id: string | null
-  member_account_id: string | null
-  role: string
-  role_description: string | null
-  access_level: string
-  relationship_to_person: string | null
-  contact_information: any
+interface CaregiverInvitation {
+  invitation_token: string
+  caregiver_id: string
+  person_id: string
+  permissions: string[]
+  expires_at: string
 }
 
 export default function CareCircle() {
-  const [careCircles, setCareCircles] = useState<CareCircle[]>([])
-  const [selectedCircle, setSelectedCircle] = useState<CareCircle | null>(null)
-  const [circleMembers, setCircleMembers] = useState<CareCircleMembership[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const personId = getPersonId()
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [invitation, setInvitation] = useState<(CaregiverInvitation & { caregiver_name: string }) | null>(null)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [relationship, setRelationship] = useState('family caregiver')
+  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
 
-  useEffect(() => {
-    fetchCareCircles()
+  const fetchCaregivers = useCallback(async () => {
+    if (!personId) {
+      setCaregivers([])
+      setError('Sign in and select an authorized care record to manage its care circle.')
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await getJSON(`/caregivers/person/${encodeURIComponent(personId)}`)
+      if (!Array.isArray(result)) throw new Error('The backend returned an invalid caregiver list.')
+      setCaregivers(result as Caregiver[])
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not load caregivers.')
+    } finally {
+      setLoading(false)
+    }
   }, [personId])
 
-  const fetchCareCircles = async () => {
-    setLoading(true)
+  useEffect(() => {
+    void fetchCaregivers()
+  }, [fetchCaregivers])
+
+  const issueInvitation = async (caregiver: Caregiver) => {
+    setSubmitting(true)
     setError(null)
+    setNotice(null)
+    setInvitation(null)
     try {
-      const data = await getJSON(`/care-circle/person/${personId}`)
-      setCareCircles(data as CareCircle[])
-    } catch (err: any) {
-      console.error('Failed to fetch care circles:', err)
-      setError(err.message || 'Failed to load care circles')
+      const result = await postJSON('/auth/caregiver-invitations', {
+        person_id: personId,
+        caregiver_id: caregiver.id,
+        permissions: ['read', 'write'],
+      }) as CaregiverInvitation
+
+      if (!result?.invitation_token) throw new Error('The backend did not return an invitation token.')
+      setInvitation({ ...result, caregiver_name: caregiver.name })
+      setNotice(`Invitation created for ${caregiver.name}. Share the token using a trusted channel.`)
+    } catch (cause) {
+      setError(cause instanceof Error
+        ? cause.message
+        : 'Could not create the caregiver invitation. You may need care-record owner permissions.')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
-  const createCareCircle = async (data: CreateCareCircleData) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const newCircle = await postJSON(`/care-circle/`, data)
-      setCareCircles(prev => [...prev, newCircle as CareCircle])
-    } catch (err: any) {
-      console.error('Failed to create care circle:', err)
-      setError(err.message || 'Failed to create care circle')
-    } finally {
-      setLoading(false)
+  const createCaregiver = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!personId) {
+      setError('Sign in and select an authorized care record before adding a caregiver.')
+      return
     }
-  }
 
-  const addMemberToCircle = async (circleId: string, data: AddMemberToCircleData) => {
-    setLoading(true)
+    setSubmitting(true)
     setError(null)
+    setNotice(null)
     try {
-      const membership = await postJSON(`/care-circle/${circleId}/members`, data)
-      setCircleMembers(prev => [...prev, membership as CareCircleMembership])
-    } catch (err: any) {
-      console.error('Failed to add member to circle:', err)
-      setError(err.message || 'Failed to add member to circle')
+      const created = await postJSON('/caregivers', {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        relationship: relationship.trim(),
+        person_id: personId,
+        timezone,
+      }) as Caregiver
+
+      if (!created?.id) throw new Error('The backend did not return a caregiver ID.')
+      setCaregivers(previous => [...previous, created])
+      setName('')
+      setEmail('')
+      setRelationship('family caregiver')
+      setShowForm(false)
+      await issueInvitation(created)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not add the caregiver.')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
+      await fetchCaregivers()
     }
   }
 
   if (loading) {
-    return (
-      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '20px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          Loading care circles...
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: '24px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '20px', color: 'var(--error)', marginBottom: '16px' }}>
-          {error}
-        </div>
-        <button
-          onClick={fetchCareCircles}
-          style={{
-            padding: '8px 16px', borderRadius: '8px', border: 'none',
-            background: 'var(--trust)', color: 'white', fontSize: '13px',
-            cursor: 'pointer'
-          }}
-        >
-          Retry
-        </button>
-      </div>
-    )
+    return <div style={{ padding: '24px' }} role="status">Loading care circle…</div>
   }
 
   return (
-    <div style={{ padding: '24px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Care Circle Management</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-          Manage family and support networks around the person receiving care.
-        </p>
-        <button
-          onClick={() => {
-            // In a real implementation, this would open a modal to create a new care circle
-            alert('Create care circle functionality would be implemented here')
-          }}
-          style={{
-            padding: '8px 16px', borderRadius: '8px', border: 'none',
-            background: 'var(--trust)', color: 'white', fontSize: '13px',
-            cursor: 'pointer'
-          }}
-        >
-          New Care Circle
-        </button>
-      </div>
-      
-      {/* Care Circles List */}
-      <section style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '12px' }}>Your Care Circles</h2>
-        {careCircles.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-            No care circles created yet. Click "New Care Circle" to get started.
+    <main style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 650, margin: '0 0 8px' }}>Care Circle</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>
+            Manage caregiver identities and create secure invitations to this care record.
           </p>
+        </div>
+        <button type="button" onClick={() => { setShowForm(value => !value); setError(null) }} disabled={!personId || submitting}
+          style={{ padding: '10px 16px', border: 0, borderRadius: '8px', background: 'var(--trust)', color: 'white', cursor: 'pointer' }}>
+          {showForm ? 'Cancel' : 'Add caregiver'}
+        </button>
+      </header>
+
+      {error && <p role="alert" style={{ color: 'var(--error)', marginBottom: '16px' }}>{error}</p>}
+      {notice && <p role="status" style={{ color: 'var(--trust)', marginBottom: '16px' }}>{notice}</p>}
+
+      {invitation && (
+        <section aria-labelledby="care-circle-invitation" style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '24px', background: 'var(--surface)' }}>
+          <h2 id="care-circle-invitation" style={{ fontSize: '16px', marginTop: 0 }}>Invitation for {invitation.caregiver_name}</h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            This token expires {new Date(invitation.expires_at).toLocaleString()}. Share it privately with the intended caregiver only.
+          </p>
+          <code style={{ display: 'block', overflowWrap: 'anywhere', padding: '12px', borderRadius: '8px', background: 'var(--bg)' }}>
+            {invitation.invitation_token}
+          </code>
+          <button type="button" onClick={() => setInvitation(null)} style={{ marginTop: '12px' }}>Hide invitation token</button>
+        </section>
+      )}
+
+      {showForm && (
+        <form onSubmit={createCaregiver} style={{ display: 'grid', gap: '12px', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '24px', background: 'var(--surface)' }}>
+          <h2 style={{ fontSize: '16px', margin: 0 }}>Add caregiver</h2>
+          <label style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
+            Full name
+            <input required maxLength={200} value={name} onChange={event => setName(event.target.value)} autoComplete="name" />
+          </label>
+          <label style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
+            Email address
+            <input required type="email" maxLength={254} value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" />
+          </label>
+          <label style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
+            Relationship to the person receiving care
+            <input required maxLength={120} value={relationship} onChange={event => setRelationship(event.target.value)} />
+          </label>
+          <label style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
+            Time zone
+            <input required maxLength={100} value={timezone} onChange={event => setTimezone(event.target.value)} />
+          </label>
+          <button type="submit" disabled={submitting || !name.trim() || !email.trim() || !relationship.trim()}>
+            {submitting ? 'Saving…' : 'Add caregiver and create invitation'}
+          </button>
+        </form>
+      )}
+
+      <section aria-labelledby="care-circle-caregivers">
+        <h2 id="care-circle-caregivers" style={{ fontSize: '18px', marginBottom: '12px' }}>Caregivers ({caregivers.length})</h2>
+        {caregivers.length === 0 ? (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No caregivers are linked to this care record yet.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {careCircles.map(circle => (
-              <div key={circle.id} style={{
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: '12px', padding: '16px 20px',
-                cursor: 'pointer'
-              }}
-              onClick={() => {
-                setSelectedCircle(circle)
-                // In a real implementation, this would also fetch the circle members
-                alert(`Fetching members for circle: ${circle.name}`)
-              }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {caregivers.map(caregiver => (
+              <article key={caregiver.id} style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', background: 'var(--surface)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   <div>
-                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{circle.name}</div>
-                    {circle.description && (
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        {circle.description}
-                      </div>
-                    )}
+                    <h3 style={{ fontSize: '16px', margin: '0 0 4px' }}>{caregiver.name}</h3>
+                    <p style={{ fontSize: '13px', margin: '0 0 4px', color: 'var(--text-secondary)' }}>{caregiver.email}</p>
+                    <p style={{ fontSize: '13px', margin: 0 }}>{caregiver.relationship}</p>
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    {circle.is_active ? 'Active' : 'Inactive'}
-                  </div>
+                  <button type="button" disabled={submitting || !personId} onClick={() => void issueInvitation(caregiver)}>
+                    Create invitation
+                  </button>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
       </section>
-      
-      {/* Selected Circle Details */}
-      {selectedCircle && (
-        <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
-                {selectedCircle.name}
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
-                {selectedCircle.description || 'No description provided'}
-              </p>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Created:</div>
-                  <div style={{ fontSize: '13px' }}>
-                    {new Date(selectedCircle.created_at).toLocaleString()}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Status:</div>
-                  <div style={{ fontSize: '13px', fontWeight: 500 }}>
-                    {selectedCircle.is_active ? 'Active' : 'Inactive'}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedCircle(null)}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--text-secondary)',
-                  cursor: 'pointer', fontSize: '20px'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-          
-          {/* Circle Members */}
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Members ({circleMembers.length})</h3>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
-              {circleMembers.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-                  No members yet. Add members using the "Add Member" functionality.
-                </p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {circleMembers.map((member, index) => (
-                    <div key={index} style={{ 
-                      background: 'var(--surface-soft)', borderRadius: '8px', padding: '12px 16px',
-                      marginBottom: index < circleMembers.length - 1 ? 8 : 0
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                            {member.member_person_id || member.member_account_id ? 
-                              'Member' : 'Unknown'}
-                          </div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                            {member.role.replace(/_/g, ' ')}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                          {member.can_view_information ? '👁️' : '🚫'} 
-                          {member.can_contribute_information ? '📝' : '🚫'}
-                          {member.can_receive_notifications ? '🔔' : '🚫'}
-                          {member.can_participate_in_decisions ? '🗳️' : '🚫'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div style={{ marginTop: '16px', textAlign: 'right' }}>
-              <button
-                onClick={() => {
-                  // In a real implementation, this would open a modal to add a member
-                  alert('Add member functionality would be implemented here')
-                }}
-                style={{
-                  padding: '8px 16px', borderRadius: '8px', border: 'none',
-                  background: 'var(--trust)', color: 'white', fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-              >
-                Add Member to Circle
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-    </div>
+    </main>
   )
 }
