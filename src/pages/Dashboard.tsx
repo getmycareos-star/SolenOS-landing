@@ -157,6 +157,12 @@ export default function Dashboard() {
         Quickly record changes, symptoms, behaviors, or observations from today.
       </p>
 
+      {loadError && (
+        <div role="alert" style={{ padding: '12px 14px', marginBottom: '16px', border: '1px solid var(--error)', borderRadius: '8px', color: 'var(--error)', background: 'var(--error-soft)' }}>
+          {loadError}
+        </div>
+      )}
+
       <div style={{
         background: 'var(--trust-soft)', border: '1px solid var(--trust)',
         borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
@@ -181,7 +187,7 @@ export default function Dashboard() {
         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
           Active Actions
         </h2>
-        {actions.length === 0 && (
+        {actions.length === 0 && !loading && !loadError && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
             No active actions. Actions will appear here when created from situations or insights.
           </p>
