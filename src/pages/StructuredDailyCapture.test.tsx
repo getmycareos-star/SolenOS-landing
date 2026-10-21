@@ -5,8 +5,14 @@ import StructuredDailyCapture from './StructuredDailyCapture';
 // Mock the postJSON function
 jest.mock('../api/client', () => ({
   getPersonId: () => 'test-person-id',
+  getCaregiverId: () => 'demo-caregiver',
   getJSON: jest.fn().mockResolvedValue([]),
   postJSON: jest.fn().mockResolvedValue({}),
+  postFormData: async (path: string, body: FormData) => {
+    const response = await fetch(path, { method: 'POST', body });
+    if (!response.ok) throw new Error('Failed to upload image');
+    return response.json();
+  },
 }));
 
 describe('StructuredDailyCapture', () => {
