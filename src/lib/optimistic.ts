@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-import { postJSON, patchJSON, getJSON } from './client';
 
 /**
  * Interface for optimistic mutation options
@@ -41,20 +40,9 @@ export function useOptimisticMutation<TData, TVariables>() {
     async (options: OptimisticMutationOptions<TData, TVariables>, variables: TVariables) => {
       // Prevent multiple concurrent mutations
       if (loading) {
-        if (options.retry) {
-          // Wait for current request to complete before retrying
-          return new Promise((resolve, reject) => {
-            const checkComplete = () => {
-              if (!loading) {
-                mutate(options, variables).then(resolve).catch(reject);
-              } else {
-                setTimeout(checkComplete, 100);
-              }
-            };
-            checkComplete();
-          });
-        }
-        return Promise.reject(new Error('Mutation already in progress'));
+        // Never spin on a stale render closure. Callers should disable duplicate
+        // submits while a mutation is pending; a second request fails explicitly.
+        throw new Error('Mutation already in progress');
       }
       
       setLoading(true);
@@ -63,6 +51,9 @@ export function useOptimisticMutation<TData, TVariables>() {
       // Generate a unique request ID to prevent race conditions
       const requestId = ++requestIdRef.current;
       
+      let resultData: TData | undefined;
+      let mutationError: unknown | null = null;
+
       try {
         // 1. Capture snapshot for potential rollback
         const snapshot = await options.onMutate(variables);
@@ -70,6 +61,7 @@ export function useOptimisticMutation<TData, TVariables>() {
         
         // 2. Perform the mutation
         const result = await options.mutationFn(variables);
+        resultData = result;
         
         // 3. Check if this is still the latest request
         if (requestId !== requestIdRef.current) {
@@ -83,6 +75,7 @@ export function useOptimisticMutation<TData, TVariables>() {
         
         return result;
       } catch (err) {
+        mutationError = err;
         // 5. Handle error and rollback
         await options.onError(err, variables, snapshotRef.current);
         setError(err);
@@ -91,8 +84,11 @@ export function useOptimisticMutation<TData, TVariables>() {
         // 6. Clean up
         if (requestId === requestIdRef.current) {
           // Only settle if this is still the latest request
-          await options.onSettled(data, error, variables, snapshotRef.current);
-          setLoading(false);
+          try {
+            await options.onSettled(resultData, mutationError, variables, snapshotRef.current);
+          } finally {
+            setLoading(false);
+          }
         }
       }
     },
@@ -117,10 +113,10 @@ export function useOptimisticMutation<TData, TVariables>() {
 /**
  * Specialized optimistic mutation for toggling boolean states (like completion)
  */
-export function useOptimisticToggle<TId>() {
+export function useOptimisticToggle<TId extends string | number | symbol>() {
   const [toggledIds, setToggledIds] = useState<Set<TId>>(new Set());
   const [loadingIds, setLoadingIds] = useState<Set<TId>>(new Set());
-  const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({});
+  const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({} as Record<TId, unknown>);
   
   const toggle = useCallback(
     async (id: TId, options: {
@@ -189,7 +185,7 @@ export function useOptimisticToggle<TId>() {
     reset: () => {
       setToggledIds(new Set());
       setLoadingIds(new Set());
-      setErrorIds({});
+      setErrorIds({} as Record<TId, unknown>);
     }
   };
 }
