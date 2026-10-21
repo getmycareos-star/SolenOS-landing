@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface CareCaptureProps {
@@ -20,6 +20,7 @@ const CAPTURE_HINTS = [
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [saved, setSaved] = useState(false)
+  const [identityError, setIdentityError] = useState<string | null>(null)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -30,9 +31,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const handleSubmit = async () => {
     if (!text.trim()) return
 
-    // TODO: obtain caregiver identity from the authenticated server session.
-    // Do not trust this client-supplied identifier for authorization.
-    const caregiverId = 'demo-caregiver'
+    const caregiverId = getCaregiverId()
+    if (!personId || !caregiverId) {
+      setSaved(false)
+      setIdentityError('Sign in and select an authorized care record before saving.')
+      return
+    }
+    setIdentityError(null)
     const variables = { caregiverId, personId, rawInput: text.trim() }
 
     await submitSituation({
@@ -91,7 +96,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {Boolean(submitError) && !saved && (
+        {(Boolean(submitError) || Boolean(identityError)) && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -108,6 +113,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         Capture one thing that changed — a behavior, a symptom, a moment.
         SolenOS will keep this observation available for future care review.
       </p>
+
+      {(identityError || submitError) && !saved && (
+        <p role="alert" style={{ color: 'var(--error)', fontSize: '12px', margin: '8px 0' }}>
+          {identityError || (submitError instanceof Error ? submitError.message : 'Failed to save this care entry. Please retry.')}
+        </p>
+      )}
 
       <textarea
         value={text}
