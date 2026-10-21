@@ -8,11 +8,6 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# Cache installed dependencies between deploys.
-[[build.cache]]
-  path = "node_modules"
-  ttl = "7"
-
 [dev]
   command = "npm run dev"
   port = 5173
