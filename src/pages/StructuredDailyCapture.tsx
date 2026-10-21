@@ -234,7 +234,7 @@ export default function StructuredDailyCapture() {
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1'}/upload`, {
+        const uploadResponse = await fetch(`${((import.meta.env || {}).VITE_API_BASE || '/api/v1')}/upload`, {
           method: 'POST',
           body: formData,
         });
