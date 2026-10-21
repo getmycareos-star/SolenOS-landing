@@ -5,100 +5,79 @@ import { postJSON, patchJSON, getJSON } from '../api/client';
  * Interface for optimistic mutation options
  */
 interface OptimisticMutationOptions<TData, TVariables> {
-  /** Function to perform the mutation */
   mutationFn: (variables: TVariables) => Promise<TData>;
-  /** Function to update the optimistic state */
   onMutate: (variables: TVariables) => Promise<unknown> | unknown;
-  /** Function to apply the mutation result */
   onSuccess: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Function to handle errors and rollback */
   onError: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Function to clean up */
   onSettled: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
-  /** Whether to retry on failure */
   retry?: boolean;
-  /** Maximum number of retries */
   maxRetries?: number;
 }
 
 /**
- * Hook for performing optimistic mutations
- * 
- * @returns Object with mutate function and state
+ * Runs mutations with rollback hooks and a ref-backed in-flight lock.
+ * The ref prevents duplicate requests even before React has rerendered.
  */
 export function useOptimisticMutation<TData, TVariables>() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const [data, setData] = useState<TData | null>(null);
-  
-  // Ref to store the rollback data
+  const inFlightRef = useRef<Promise<unknown> | null>(null);
   const snapshotRef = useRef<unknown>(null);
-  
-  // Ref to prevent race conditions
-  const requestIdRef = useRef(0);
-  
-  const mutate = useCallback(
-    async (options: OptimisticMutationOptions<TData, TVariables>, variables: TVariables) => {
-      // Prevent multiple concurrent mutations
-      if (loading) {
-        if (options.retry) {
-          // Wait for current request to complete before retrying
-          return new Promise((resolve, reject) => {
-            const checkComplete = () => {
-              if (!loading) {
-                mutate(options, variables).then(resolve).catch(reject);
-              } else {
-                setTimeout(checkComplete, 100);
-              }
-            };
-            checkComplete();
-          });
-        }
-        return Promise.reject(new Error('Mutation already in progress'));
+
+  const mutate = useCallback(async (
+    options: OptimisticMutationOptions<TData, TVariables>,
+    variables: TVariables,
+  ): Promise<TData | undefined> => {
+    const existing = inFlightRef.current;
+    if (existing) {
+      if (!options.retry) {
+        throw new Error('Mutation already in progress');
       }
-      
-      setLoading(true);
-      setError(null);
-      
-      // Generate a unique request ID to prevent race conditions
-      const requestId = ++requestIdRef.current;
-      
+      // Retry means queue this mutation behind the current one; do not poll
+      // React state or reuse a stale closure.
+      await existing.catch(() => undefined);
+      return mutate(options, variables);
+    }
+
+    setLoading(true);
+    setError(null);
+    let context: unknown;
+    let result: TData | undefined;
+    let mutationError: unknown | null = null;
+
+    const operation = (async () => {
       try {
-        // 1. Capture snapshot for potential rollback
-        const snapshot = await options.onMutate(variables);
-        snapshotRef.current = snapshot;
-        
-        // 2. Perform the mutation
-        const result = await options.mutationFn(variables);
-        
-        // 3. Check if this is still the latest request
-        if (requestId !== requestIdRef.current) {
-          // A newer request has been made, ignore this result
-          return;
-        }
-        
-        // 4. Apply success update
-        await options.onSuccess(result, variables, snapshot);
+        context = await options.onMutate(variables);
+        snapshotRef.current = context;
+        result = await options.mutationFn(variables);
+        await options.onSuccess(result, variables, context);
         setData(result);
-        
         return result;
       } catch (err) {
-        // 5. Handle error and rollback
-        await options.onError(err, variables, snapshotRef.current);
+        mutationError = err;
+        await options.onError(err, variables, context);
         setError(err);
         throw err;
       } finally {
-        // 6. Clean up
-        if (requestId === requestIdRef.current) {
-          // Only settle if this is still the latest request
-          await options.onSettled(data, error, variables, snapshotRef.current);
+        try {
+          await options.onSettled(result, mutationError, variables, context);
+        } finally {
           setLoading(false);
         }
       }
-    },
-    [loading, data, error]
-  );
-  
+    })();
+
+    inFlightRef.current = operation;
+    try {
+      return await operation;
+    } finally {
+      if (inFlightRef.current === operation) {
+        inFlightRef.current = null;
+      }
+    }
+  }, []);
+
   return {
     mutate,
     loading,
@@ -109,8 +88,8 @@ export function useOptimisticMutation<TData, TVariables>() {
       setError(null);
       setData(null);
       snapshotRef.current = null;
-      requestIdRef.current = 0;
-    }
+      inFlightRef.current = null;
+    },
   };
 }
 
