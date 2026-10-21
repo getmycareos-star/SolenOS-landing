@@ -1,26 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "noEmit": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "incremental": false,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "types": ["vite/client"]
+    "noEmit": true
   },
-  "include": [
-    "src/main.tsx",
-    "src/vite-env.d.ts"
-  ],
+  "include": ["src/main.tsx"],
   "exclude": [
-    "node_modules",
+    "src/app/**",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
-    "src/**/__tests__/**",
-    "src/app/**"
+    "src/**/__tests__/**"
   ]
 }
