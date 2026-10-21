@@ -73,7 +73,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
 
     // Wait for submission to complete
     await waitFor(() => {
-      expect(submitMedicationButton).toHaveTextContent('Add Medication');
+      expect(screen.queryByLabelText(/remove preview/i)).not.toBeInTheDocument();
     });
 
     // Verify that compressImage was called
@@ -174,7 +174,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
 
     // Wait for submission to complete (should use original image due to fallback)
     await waitFor(() => {
-      expect(submitMedicationButton).toHaveTextContent('Add Medication');
+      expect(screen.queryByLabelText(/remove preview/i)).not.toBeInTheDocument();
     });
 
     // Verify that fetch was still called (fallback to original image worked)
