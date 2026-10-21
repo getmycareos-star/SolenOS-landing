@@ -326,7 +326,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/timeline" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View full timeline â†’
@@ -387,7 +387,7 @@ export default function Dashboard() {
                     {reasoning.open_questions.map((q, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{q.key}: {JSON.stringify(q.value)}</p>
                     ))}
-                  </div
+                  </div>
                 )}
                 {reasoning.preferences.length > 0 && (
                   <div style={{ background: 'var(--accent-soft)', borderRadius: '12px', padding: '16px 20px' }}>
@@ -397,7 +397,7 @@ export default function Dashboard() {
                     {reasoning.preferences.map((pref, i) => (
                       <p key={i} style={{ fontSize: '13px', color: 'var(--text)' }}>{pref.key}: {JSON.stringify(pref.value)}</p>
                     ))}
-                  </div
+                  </div>
                 )}
               </div>
             </section>
@@ -440,7 +440,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
+              ))}
             </div>
             <Link to="/insights" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
               View all insights â†’
