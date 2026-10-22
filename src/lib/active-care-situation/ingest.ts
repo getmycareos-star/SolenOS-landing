@@ -372,9 +372,10 @@ export function projectActiveSituationTurn(
     (situation.observations.length <= 1 ? "opens_new" : "updates_active");
 
   const latest = situation.observations[situation.observations.length - 1];
-  const crsKey =
-    situation.care_recipient_id ??
-    realityKey(situation.caregiver_id);
+  const crsKey = situation.care_recipient_id?.trim();
+  if (!crsKey || crsKey === "default" || crsKey === "default_caregiver") {
+    throw new Error("Care-recipient identity is required to project the active situation.");
+  }
   if (!latest) {
     const crs = getCareRealityState(crsKey);
     return attachCareRealityFields(
@@ -423,7 +424,7 @@ export function projectActiveSituationTurn(
   const crs =
     getCareRealityState(crsKey) ??
     updateCareRealityState({
-      caregiverId: crsKey,
+      caregiverId: situation.caregiver_id,
       turn: baseTurn,
       situation,
       relation: resolved,
