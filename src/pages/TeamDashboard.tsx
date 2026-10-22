@@ -147,8 +147,8 @@ export default function TeamDashboard() {
         {report.limitations.map(item => <p key={item} style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 10 }}>{item}</p>)}
       </section>}
       <section style={panel}>
-        <h2 style={{ fontSize: 16, fontWeight: 600 }}>Community moderation queue ({posts.length})</h2>
-        {!error && posts.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 10 }}>No posts awaiting review.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{posts.map(post => <article key={post.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600 }}>{error ? 'Community moderation queue' : `Community moderation queue (${posts.length})`}</h2>
+        {error ? <p role="alert" style={{ fontSize: 13, color: 'var(--error)', marginTop: 10 }}>Moderation queue unavailable. No empty-queue state is inferred.</p> : posts.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 10 }}>No posts awaiting review.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{posts.map(post => <article key={post.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}><strong>{post.post_type === 'question' ? 'Question' : 'Caregiver experience'}</strong><span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{post.moderation_status}</span></div>
           <p style={{ marginTop: 8, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{post.content}</p>
           <p style={{ marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>{post.author_label} · {post.care_stage || 'Stage not specified'} · {(post.tags || []).join(', ')}</p>
