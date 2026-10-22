@@ -41,4 +41,14 @@ describe('Phase 4 production data-integrity guardrails', () => {
     expect(source('src/pages/DailyCare.tsx')).not.toMatch(/mood_scale:\s*3|agitation_level:\s*'None'|wellbeing_stress:\s*3/)
     expect(source('src/pages/StructuredDailyCapture.tsx')).not.toMatch(/status:\s*'given'|score:\s*3/)
   })
+  it('keeps unavailable record views distinct from confirmed empty states', () => {
+    expect(source('src/pages/Record.tsx')).toContain('!loadError && items.length === 0')
+    expect(source('src/pages/Memory.tsx')).toContain('!loading && !loadError')
+    expect(source('src/pages/Timeline.tsx')).toContain('!loading && !loadError && events.length === 0')
+    expect(source('src/pages/Insights.tsx')).toContain('!loading && !loadError && insights.length === 0')
+    expect(source('src/pages/Evidence.tsx')).toContain('!loading && !listError && items.length === 0')
+    expect(source('src/pages/Appointments.tsx')).toContain('appointmentsLoadError ?')
+    expect(source('src/pages/TeamDashboard.tsx')).toContain('Moderation queue unavailable. No empty-queue state is inferred.')
+  })
+
 })
