@@ -203,25 +203,29 @@ export async function trySaveGraphEvent(
   event: JourneyGraphEvent,
   relationships: JourneyRelationship[],
 ): Promise<boolean> {
-  if (!process.env.DATABASE_URL) return false;
+  if (!process.env.DATABASE_URL?.trim()) return false;
   try {
     const pool = await getPool();
     await saveGraphEventToPostgres(pool, event, relationships);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    throw new Error(
+      `Care journey graph persistence failed; the server did not confirm the write: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
 export async function tryLoadGraphForCaregiver(
   caregiverId: string,
 ): Promise<CareJourneyGraph | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     const pool = await getPool();
-    return loadGraphFromPostgres(pool, caregiverId);
-  } catch {
-    return null;
+    return await loadGraphFromPostgres(pool, caregiverId);
+  } catch (error) {
+    throw new Error(
+      `Care journey graph could not be loaded from the configured database: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 

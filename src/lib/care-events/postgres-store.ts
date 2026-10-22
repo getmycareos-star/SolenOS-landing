@@ -156,13 +156,15 @@ async function getPool(): Promise<Pool> {
 export async function tryPersistCareEvent(
   input: CreateCareEventInput,
 ): Promise<CareEventRecord | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     const pool = await getPool();
     const { care_event } = await persistCareEventToPostgres(pool, input);
     return care_event;
-  } catch {
-    return null;
+  } catch (error) {
+    throw new Error(
+      `Care event persistence failed; the server did not confirm the write: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
@@ -229,11 +231,13 @@ export async function loadCareEventsForCaregiverFromPostgres(
 export async function tryLoadCareEventsForCaregiver(
   caregiverId: string,
 ): Promise<CareEventRecord[] | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     const pool = await getPool();
-    return loadCareEventsForCaregiverFromPostgres(pool, caregiverId);
-  } catch {
-    return null;
+    return await loadCareEventsForCaregiverFromPostgres(pool, caregiverId);
+  } catch (error) {
+    throw new Error(
+      `Care-event history could not be loaded from the configured database: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }

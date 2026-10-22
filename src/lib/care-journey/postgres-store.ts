@@ -127,24 +127,28 @@ async function getPool(): Promise<Pool> {
 export async function trySaveCareJourneyEvent(
   input: CreateCareJourneyEventInput,
 ): Promise<CareJourneyEvent | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     const pool = await getPool();
-    return saveCareJourneyEventToPostgres(pool, input);
-  } catch {
-    return null;
+    return await saveCareJourneyEventToPostgres(pool, input);
+  } catch (error) {
+    throw new Error(
+      `Care journey persistence failed; the server did not confirm the write: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
 export async function tryLoadCareJourneyEvents(
   caregiverId: string,
 ): Promise<CareJourneyEvent[] | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     const pool = await getPool();
-    return loadCareJourneyEventsFromPostgres(pool, caregiverId);
-  } catch {
-    return null;
+    return await loadCareJourneyEventsFromPostgres(pool, caregiverId);
+  } catch (error) {
+    throw new Error(
+      `Care journey history could not be loaded from the configured database: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
