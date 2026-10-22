@@ -67,7 +67,13 @@ export default function ProfessionalDashboard() {
     setLoading(true)
     setError(null)
     try {
-      const data = await getJSON(`/professional-dashboard/?timeframe_days=${timeframeDays}`)
+      const data = await getJSON(`/professional-dashboard/?timeframe_days=${timeframeDays}`) as any
+      if (
+        !data || typeof data !== 'object' || Array.isArray(data) ||
+        typeof data.total_patients !== 'number' ||
+        typeof data.active_patients_today !== 'number' ||
+        !Array.isArray(data.alerts) || !Array.isArray(data.patients)
+      ) throw new Error('Professional dashboard response was incomplete.')
       setDashboard(data as ProfessionalDashboard)
     } catch (err: any) {
       console.error('Failed to fetch professional dashboard:', err)
