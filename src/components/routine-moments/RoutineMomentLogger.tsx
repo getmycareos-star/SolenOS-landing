@@ -195,7 +195,7 @@ export const RoutineMomentLogger: React.FC<RoutineMomentLoggerProps> = ({ person
               <li key={index}>
                 <strong>{change.field}</strong>: changed from {change.previous_value} to {change.current_value} (
                   {change.change_type}
-                ) [Confidence: {change.confidence.toFixed(2)}]
+                ) [Confidence: {change.confidence === null ? 'unavailable (not calibrated)' : change.confidence.toFixed(2)}]
                 <br />
                 Detected at: {new Date(change.detected_at).toLocaleString()}
               </li>
