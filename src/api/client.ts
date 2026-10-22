@@ -9,7 +9,7 @@ function isPlaceholderIdentifier(value: string | null | undefined): boolean {
 }
 
 export function getAccessToken(): string | null {
-  const token = localStorage.getItem(TOKEN_KEY)?.trim()
+  const token = sessionStorage.getItem(TOKEN_KEY)?.trim()
   return token || null
 }
 
