@@ -190,14 +190,19 @@ const required = [
   "src/lib/voice-observation/transcribe.ts",
   "src/lib/voice-observation/speech-language.ts",
   "src/lib/voice-observation/voice-mode.ts",
-  "src/app/api/observations/voice/route.ts",
-  "src/app/api/tts/synthesize/route.ts",
-  "db/migrations/013_voice_observation_tts.sql",
 ];
 for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
-console.log("✓ module + API + migration files");
+// Voice server endpoints and the advertised migration are not currently present.
+for (const futurePath of [
+  "src/app/api/observations/voice/route.ts",
+  "src/app/api/tts/synthesize/route.ts",
+  "db/migrations/013_voice_observation_tts.sql",
+]) {
+  assert(!fs.existsSync(path.join(root, futurePath)), `${futurePath} must remain absent until voice persistence is implemented`);
+}
+console.log("✓ future voice libraries exist; server routes/migration are explicitly unavailable");
 
 assert(
   VOICE_OBSERVATION_MVP.successKpi === "observations_per_caregiver_per_week",
