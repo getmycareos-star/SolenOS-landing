@@ -67,7 +67,7 @@ export default function StructuredDailyCapture() {
     unit: string | null;
     note: string | null;
   }>({
-    vital_type: 'bp_systolic',
+    vital_type: '',
     value: 0,
     measured_at: new Date().toISOString(),
     unit: null,
@@ -81,7 +81,7 @@ export default function StructuredDailyCapture() {
     observed_at: string;
     note: string | null;
   }>({
-    axis: 'mood',
+    axis: '',
     score: 0,
     observed_at: new Date().toISOString(),
     note: null,
@@ -315,8 +315,12 @@ export default function StructuredDailyCapture() {
         measured_at: new Date(vitalForm.measured_at).toISOString(),
       };
       
-      // Validate required fields
-      if (isNaN(vitalData.value) || vitalData.value === 0) {
+      // Require the caregiver to identify what was actually measured.
+      if (!vitalData.vital_type) {
+        alert('Select the actual vital type before adding this entry.');
+        return;
+      }
+      if (!Number.isFinite(vitalData.value) || vitalData.value <= 0) {
         alert('Please enter a valid value');
         return;
       }
@@ -329,7 +333,7 @@ export default function StructuredDailyCapture() {
       
       // Reset vitals form
       setVitalForm({
-        vital_type: 'bp_systolic',
+        vital_type: '',
         value: 0,
         measured_at: new Date().toISOString(),
         unit: null,
@@ -347,6 +351,10 @@ export default function StructuredDailyCapture() {
     e.preventDefault();
     
     try {
+      if (!scaleForm.axis.trim()) {
+        alert('Select the actual scale before adding this entry.');
+        return;
+      }
       if (!Number.isInteger(scaleForm.score) || scaleForm.score < 1 || scaleForm.score > 5) {
         alert('Enter the observed score from 1 to 5 before adding this entry.');
         return;
@@ -364,7 +372,7 @@ export default function StructuredDailyCapture() {
       
       // Reset scale form
       setScaleForm({
-        axis: 'mood',
+        axis: '',
         score: 0,
         observed_at: new Date().toISOString(),
         note: null,
@@ -465,7 +473,7 @@ export default function StructuredDailyCapture() {
       
       // Reset vitals form
       setVitalForm({
-        vital_type: 'bp_systolic',
+        vital_type: '',
         value: 0,
         measured_at: new Date().toISOString(),
         unit: null,
@@ -474,7 +482,7 @@ export default function StructuredDailyCapture() {
       
       // Reset scale form
       setScaleForm({
-        axis: 'mood',
+        axis: '',
         score: 0,
         observed_at: new Date().toISOString(),
         note: null,
@@ -1103,6 +1111,7 @@ export default function StructuredDailyCapture() {
                   fontSize: '14px' 
                 }}
               >
+                <option value="">Select vital type</option>
                 {VITAL_TYPES.map(type => (
                   <option key={type} value={type}>
                     {type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -1249,6 +1258,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
+                  <option value="">Select scale</option>
                   {SCALE_AXES.map(axis => (
                     <option key={axis} value={axis}>
                       {axis.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -1265,7 +1275,7 @@ export default function StructuredDailyCapture() {
                   type="number"
                   min={1}
                   max={5}
-                  value={scaleForm.score}
+                  value={scaleForm.score || ''}
                   onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? 0 : Number(e.target.value) }))}
                   placeholder="Enter score"
                   style={{ 
