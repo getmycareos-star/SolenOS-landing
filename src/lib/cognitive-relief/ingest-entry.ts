@@ -1,4 +1,4 @@
-import { DEFAULT_CAREGIVER_ID } from "./contract-constants";
+import { requireCaregiverId } from "../care-identity";
 import type { IngestEntryResult } from "./types";
 import { tryLoadProfile, trySaveProfile } from "./care-recipient-profile/postgres-store";
 import { ensureDefaultLocations } from "./modules/location-index";
@@ -22,7 +22,7 @@ export type IngestCareEntryParams = {
  * Ingest a caregiver entry — update living care record, auto-tag, surface pattern context.
  */
 export async function ingestCareEntry(params: IngestCareEntryParams): Promise<IngestEntryResult> {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = requireCaregiverId(params.caregiver_id);
   const caseId = params.case_id ?? null;
   const capturedAt = params.captured_at ?? new Date().toISOString();
 
