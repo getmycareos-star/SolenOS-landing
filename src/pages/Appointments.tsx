@@ -18,6 +18,22 @@ function displayDate(value: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+function isAppointment(value: unknown): value is Appointment {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return typeof item.id === 'string' && Boolean(item.id) &&
+    typeof item.person_id === 'string' && typeof item.title === 'string' &&
+    typeof item.scheduled_at === 'string' && Number.isFinite(new Date(item.scheduled_at).getTime()) &&
+    typeof item.status === 'string' && typeof item.created_by_caregiver_id === 'string'
+}
+
+function isCaregiver(value: unknown): value is Caregiver {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return typeof item.id === 'string' && Boolean(item.id) &&
+    typeof item.name === 'string' && typeof item.person_id === 'string'
+}
+
 export default function Appointments() {
   const personId = getPersonId()
   const [caregivers, setCaregivers] = useState<Caregiver[]>([])
@@ -58,14 +74,14 @@ export default function Appointments() {
       getJSON<unknown>('/appointments/' + encodeURIComponent(personId)),
       getJSON<unknown>('/caregivers/' + encodeURIComponent(personId)),
     ])
-    if (results[0].status === 'fulfilled' && Array.isArray(results[0].value)) {
+    if (results[0].status === 'fulfilled' && Array.isArray(results[0].value) && results[0].value.every(isAppointment)) {
       setAppointments(results[0].value as Appointment[])
     } else {
       const detail = results[0].status === 'rejected' && results[0].reason instanceof Error ? results[0].reason.message : 'The server returned an invalid response.'
       setAppointmentsLoadError(`Appointment list unavailable: ${detail}`)
       setError('Appointments could not be verified. The list is not being treated as empty.')
     }
-    if (results[1].status === 'fulfilled' && Array.isArray(results[1].value)) {
+    if (results[1].status === 'fulfilled' && Array.isArray(results[1].value) && results[1].value.every(isCaregiver)) {
       const list = results[1].value as Caregiver[]
       setCaregivers(list)
       setCaregiverId(current => list.some(c => c.id === current) ? current : list[0]?.id || '')
