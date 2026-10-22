@@ -15,7 +15,11 @@ export function emitOpsEventServer(input: {
     event_name: input.event_name,
     session_id: input.session_id?.trim() || `server_${Date.now()}`,
     metadata: input.metadata ?? {},
+  }).then((result) => {
+    if (result.persistence_status === "memory_only") {
+      console.warn("[solen_events] event is memory-only; durable telemetry was not confirmed.");
+    }
   }).catch(() => {
-    /* fail silently */
+    console.warn("[solen_events] event could not be recorded in the telemetry store.");
   });
 }

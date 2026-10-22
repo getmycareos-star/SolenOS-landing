@@ -10,7 +10,7 @@ import { getMemorySolenEvents } from "./insert-event";
 let poolPromise: Promise<Pool> | null = null;
 
 async function getPool(): Promise<Pool | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   if (!poolPromise) poolPromise = createPostgresPool();
   return poolPromise;
 }
@@ -25,7 +25,7 @@ async function querySafe<T extends Record<string, unknown>>(
     const result = await pool.query(sql, params);
     return result.rows as T[];
   } catch {
-    return [];
+    throw new Error("Ops dashboard query failed; the requested metrics are unavailable.");
   }
 }
 
@@ -242,6 +242,9 @@ export async function loadOpsDashboard(input?: {
   pageSize?: number;
 }): Promise<OpsDashboardData> {
   const pool = await getPool();
+  if (!pool && process.env.NODE_ENV === "production") {
+    throw new Error("Ops dashboard metrics are unavailable because durable database storage is not configured.");
+  }
   const page = Math.max(1, input?.page ?? 1);
   const pageSize = Math.min(100, Math.max(20, input?.pageSize ?? 50));
   const offset = (page - 1) * pageSize;
