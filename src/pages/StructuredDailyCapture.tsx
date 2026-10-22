@@ -1126,7 +1126,7 @@ export default function StructuredDailyCapture() {
                 <input
                   id="capture-vital-value"
                   type="number"
-                  value={vitalForm.value}
+                  value={vitalForm.value || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
                   placeholder="Enter value"
                   style={{ 
