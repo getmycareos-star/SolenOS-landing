@@ -191,7 +191,7 @@ export default function Dashboard() {
         </p>
       )}
 
-      {/* Action List Section */}
+      {!loading && !loadError && (
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
@@ -258,6 +258,7 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+      )}
 
       <div style={{
         background: 'var(--accent-soft)', border: '1px solid var(--accent)',
@@ -273,7 +274,7 @@ export default function Dashboard() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading ? (
+      {!loading && !loadError ? (
         <div>
           {dailyIntel && (
             <section style={{ marginBottom: '40px' }}>
