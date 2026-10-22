@@ -38,7 +38,7 @@ No branching, multi-step chains, parallel inference, or hidden paths on this rou
 | Provider | Env |
 |----------|-----|
 | Gemini | `GEMINI_API_KEY` |
-| Ollama | `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`) |
-| Override | `SOLENOS_LLM_PROVIDER=gemini\|ollama`, `SOLENOS_LLM_MODEL` |
+| Qwen via Railway Ollama | `OLLAMA_BASE_URL` (required; private `*.railway.internal` URL; no localhost default) |
+| Override | `SOLENOS_LLM_PROVIDER=gemini\|ollama` (legacy adapter; active Vite modules call the Railway backend), `SOLENOS_LLM_MODEL` |
 
 **Cost budget:** 1 LLM call ideal, **max 2 total** (1 retry on Zod failure only).
