@@ -50,7 +50,8 @@ export async function saveCareJourneyEventToPostgres(
   const now = new Date().toISOString();
   const description = input.description.trim();
   const category = input.category ?? inferCareJourneyCategory(description);
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required before database persistence.");
 
   const result = await pool.query<{
     event_id: string;
