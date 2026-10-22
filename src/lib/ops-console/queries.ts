@@ -4,7 +4,7 @@
  */
 
 import type { Pool } from "pg";
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import { getMemorySolenEvents } from "./insert-event";
 
 let poolPromise: Promise<Pool> | null = null;
