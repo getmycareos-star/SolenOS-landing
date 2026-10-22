@@ -18,12 +18,21 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     any, 
     { caregiverId: string; personId: string; rawInput: string }
   >({
-    mutationFn: ({ caregiverId, personId, rawInput }) => 
-      postJSON('/situation', {
+    mutationFn: async ({ caregiverId, personId, rawInput }) => {
+      const response = await postJSON('/situation', {
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: rawInput,
-      }),
+      }) as { ok?: boolean; message?: string };
+      if (response?.ok !== true) {
+        throw new Error(
+          typeof response?.message === 'string' && response.message.trim()
+            ? response.message
+            : 'The server did not confirm that this care update was saved.',
+        );
+      }
+      return response;
+    },
     onMutate: async ({ caregiverId, personId, rawInput }) => {
       // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
       return { caregiverId, personId, rawInput };
@@ -108,7 +117,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
-            {identityError || 'Failed to save'}
+            {identityError || (submitError instanceof Error ? submitError.message : 'Failed to save')}
           </span>
         )}
       </div>
@@ -160,7 +169,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       {Boolean(submitError) && !identityError && (
         <p role="alert" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--error)' }}>
-          The save could not be confirmed. Your text remains in the field; check the connection and retry.
+          The save could not be confirmed{submitError instanceof Error && submitError.message ? `: ${submitError.message}` : ''}. Your text remains in the field; check the connection and retry.
         </p>
       )}
 
