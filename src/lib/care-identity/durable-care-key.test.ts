@@ -8,7 +8,9 @@ import { getOrCreateProfile } from "../cognitive-relief/care-recipient-profile/s
 import { recordObservation, getObservationExport, resetObservationStore } from "../observation-intelligence";
 import { captureVoiceObservation } from "../voice-observation/whisper";
 import { getOrCreateGraph, getGraphForCaregiver, resetCareJourneyGraphStore } from "../care-journey-graph/graph-store";
-import { createCareEvent, resetCareEventStore } from "../care-events/store";
+import { createCareEvent, resetCareEventStore, listCareEventsForCaregiver } from "../care-events/store";
+import { recordCareEvent } from "../care-events/record-care-event";
+import { retrieveHistoricalContext } from "../care-record/retrieve";
 import { tryLoadCaregiverSelfProfile } from "../capacity-self/caregiver-profile/postgres-store";
 import { tryLoadProfile } from "../cognitive-relief/care-recipient-profile/postgres-store";
 import { recordCareJourneyEvent } from "../care-journey/server";
@@ -98,4 +100,30 @@ describe("identity isolation boundaries", () => {
       if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = originalDatabaseUrl;
     }
+  });
+
+  it("does not report an in-memory care event as durably recorded", async () => {
+    const originalDatabaseUrl = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    try {
+      await expect(
+        recordCareEvent({
+          content: "verification care event",
+          created_by: "cg_no_database",
+          provenance: { input_type: "text" },
+        }),
+      ).rejects.toThrow(/DATABASE_URL is not configured/i);
+      expect(listCareEventsForCaregiver("cg_no_database")).toHaveLength(0);
+    } finally {
+      if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = originalDatabaseUrl;
+    }
+  });
+
+  it("does not label an empty historical result as evidence-backed", () => {
+    expect(retrieveHistoricalContext([], "caregiver query")).toMatchObject({
+      matches: [],
+      evidence_backed: false,
+      status: "no_matches",
+    });
   });
