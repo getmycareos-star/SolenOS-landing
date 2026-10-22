@@ -70,7 +70,7 @@ function authorizationHeaders(): Record<string, string> {
 }
 
 /** Create the anonymous record only when the caregiver first submits care input. */
-export async function ensureAnonymousSession(): Promise<AnonymousSession> {
+async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
   if (typeof window === "undefined") {
     throw new Error("Anonymous care sessions can only be created in the browser.");
   }
@@ -154,6 +154,18 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, created.expires_at);
   setPersonId(created.person.id);
   return created;
+}
+
+let anonymousSessionPromise: Promise<AnonymousSession> | null = null;
+
+/** Share one in-flight bootstrap/refresh across concurrent components. */
+export function ensureAnonymousSession(): Promise<AnonymousSession> {
+  if (!anonymousSessionPromise) {
+    anonymousSessionPromise = ensureAnonymousSessionInternal().finally(() => {
+      anonymousSessionPromise = null;
+    });
+  }
+  return anonymousSessionPromise;
 }
 
 async function handleResponse(res: Response) {
