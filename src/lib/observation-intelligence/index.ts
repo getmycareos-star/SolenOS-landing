@@ -86,6 +86,7 @@ export {
 } from "./export-report";
 
 import type { ObservationSource } from "./stores/observation-store";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { extractObservations } from "./extract-observation";
 import { buildSystemAggregation } from "./aggregate-output";
 import {
@@ -112,13 +113,11 @@ export type RecordObservationResult = {
   observations_this_week: number;
 };
 
-const DEFAULT_CAREGIVER_ID = "default_caregiver";
-
 /**
  * Record a caregiver observation — extraction + storage + aggregation.
  */
 export function recordObservation(input: RecordObservationInput): RecordObservationResult {
-  const caregiverId = input.caregiver_id || DEFAULT_CAREGIVER_ID;
+  const caregiverId = requireCaregiverId(input.caregiver_id);
   const source = input.source ?? "text";
   const extraction = extractObservations(input.raw_text);
 
@@ -145,12 +144,14 @@ export function recordObservation(input: RecordObservationInput): RecordObservat
   };
 }
 
-export function getObservationWeeklySummary(caregiverId = DEFAULT_CAREGIVER_ID) {
+export function getObservationWeeklySummary(caregiverId: string) {
+  caregiverId = requireCaregiverId(caregiverId);
   const history = listStructuredForCaregiver(caregiverId);
   return generateWeeklySummary(history);
 }
 
-export function getObservationExport(caregiverId = DEFAULT_CAREGIVER_ID) {
+export function getObservationExport(caregiverId: string) {
+  caregiverId = requireCaregiverId(caregiverId);
   const observations = listObservationsForCaregiver(caregiverId);
   const history = listStructuredForCaregiver(caregiverId);
   const weekly = generateWeeklySummary(history);
