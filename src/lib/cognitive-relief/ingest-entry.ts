@@ -1,4 +1,4 @@
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import type { IngestEntryResult } from "./types";
 import { tryLoadProfile, trySaveProfile } from "./care-recipient-profile/postgres-store";
 import { ensureDefaultLocations } from "./modules/location-index";
