@@ -121,29 +121,24 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
-    const refreshed = (await handleResponse(refreshResponse)) as {
-      session_id: string;
-      person_id: string;
-      caregiver_id: string;
-      access_token: string;
-      token_type: "Bearer";
-      expires_at: string;
-      expires_in_seconds: number;
-    };
+    const refreshed = (await handleResponse(refreshResponse)) as AnonymousSession;
+    // Match the backend's actual response contract: nested person/caregiver objects.
+    // Treat a malformed response as a failed refresh; never persist "undefined" IDs.
+    if (
+      !refreshed.session_id ||
+      !refreshed.person?.id ||
+      !refreshed.caregiver?.id ||
+      !refreshed.access_token ||
+      !refreshed.expires_at
+    ) {
+      throw new Error("The server returned an incomplete anonymous-session refresh. Existing local session data was preserved.");
+    }
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
-    window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
-    window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
+    window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person.id);
+    window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver.id);
     window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
-    setPersonId(refreshed.person_id);
-    return {
-      session_id: refreshed.session_id,
-      person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
-      caregiver: { id: refreshed.caregiver_id, name: "Caregiver", relationship: "Family" },
-      access_token: refreshed.access_token,
-      token_type: "Bearer",
-      expires_at: refreshed.expires_at,
-      expires_in_seconds: refreshed.expires_in_seconds,
-    };
+    setPersonId(refreshed.person.id);
+    return refreshed;
   }
 
   // Existing record IDs without the bearer secret are not proof of ownership.
