@@ -51,7 +51,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     medication_name: '',
-    status: 'given', // default to given
+    status: ''
     dose: null,
     scheduled_for: null,
     administered_at: null,
@@ -68,7 +68,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     vital_type: 'bp_systolic',
-    value: 0,
+    value: Number.NaN,
     measured_at: new Date().toISOString(),
     unit: null,
     note: null,
@@ -82,7 +82,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     axis: 'mood',
-    score: 3,
+    score: Number.NaN,
     observed_at: new Date().toISOString(),
     note: null,
   });
@@ -269,6 +269,11 @@ export default function StructuredDailyCapture() {
         setMedicationUploading(false);
         return;
       }
+      if (!medicationData.status) {
+        alert('Select the actual medication status before adding this record.');
+        setMedicationUploading(false);
+        return;
+      }
       
       // Optimistically add to medications list
       setForm(prev => ({
@@ -279,7 +284,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -311,7 +316,7 @@ export default function StructuredDailyCapture() {
       };
       
       // Validate required fields
-      if (isNaN(vitalData.value) || vitalData.value === 0) {
+      if (!Number.isFinite(vitalData.value) || vitalData.value <= 0) {
         alert('Please enter a valid value');
         return;
       }
@@ -325,7 +330,7 @@ export default function StructuredDailyCapture() {
       // Reset vitals form
       setVitalForm({
         vital_type: 'bp_systolic',
-        value: 0,
+        value: Number.NaN,
         measured_at: new Date().toISOString(),
         unit: null,
         note: null,
@@ -346,6 +351,10 @@ export default function StructuredDailyCapture() {
         ...scaleForm,
         observed_at: new Date(scaleForm.observed_at).toISOString(),
       };
+      if (!Number.isInteger(scaleData.score) || scaleData.score < 1 || scaleData.score > 5) {
+        alert('Select the observed score before adding this record.');
+        return;
+      }
       
       // Optimistically add to scales list
       setForm(prev => ({
@@ -356,7 +365,7 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: 3,
+        score: Number.NaN,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -439,7 +448,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -450,7 +459,7 @@ export default function StructuredDailyCapture() {
       // Reset vitals form
       setVitalForm({
         vital_type: 'bp_systolic',
-        value: 0,
+        value: Number.NaN,
         measured_at: new Date().toISOString(),
         unit: null,
         note: null,
@@ -459,7 +468,7 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: 3,
+        score: Number.NaN,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -823,6 +832,7 @@ export default function StructuredDailyCapture() {
                 <select
                   id="capture-medication-status"
                   value={medicationForm.status}
+                  required
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
                   style={{ 
                     width: '100%', 
@@ -833,6 +843,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
+                  <option value="">Select actual status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
