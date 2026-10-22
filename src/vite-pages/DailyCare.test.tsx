@@ -17,8 +17,8 @@ const { default: DailyCare } = await import('./DailyCare');
 describe('DailyCare', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.setItem('solenos_person_id', 'test-person-id');
-    localStorage.setItem('solenos_caregiver_id', 'test-caregiver-id');
+    localStorage.setItem('solenos_person_id', '11111111-1111-4111-8111-111111111111');
+    localStorage.setItem('solenos_caregiver_id', '22222222-2222-4222-8222-222222222222');
     mockLocationState = { status: 'unknown' };
     mockRequestLocation = jest.fn();
     global.fetch = jest.fn().mockResolvedValue({
