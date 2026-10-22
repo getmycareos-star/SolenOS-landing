@@ -32,7 +32,7 @@ describe('FirstUseJourney', () => {
     expect(screen.getByRole('heading', { name: /keep the care story connected/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /start daily capture/i })).toHaveAttribute('href', '/daily-care');
     expect(screen.getByRole('link', { name: /open companion/i })).toHaveAttribute('href', '/companion');
-    expect(screen.getByRole('link', { name: /open documents and record/i })).toHaveAttribute('href', '/record');
+    expect(screen.getByRole('link', { name: /add a text document/i })).toHaveAttribute('href', '/record');
     expect(screen.getByRole('link', { name: /community/i })).toHaveAttribute('href', '/community');
 
     await waitFor(() => {
