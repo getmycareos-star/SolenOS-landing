@@ -39,7 +39,9 @@ export default function TeamDashboard() {
   const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>([])
   const [report, setReport] = useState<StateReport | null>(null)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
+  const [dashboardLoading, setDashboardLoading] = useState(true)
   const [reportError, setReportError] = useState<string | null>(null)
+  const [reportLoading, setReportLoading] = useState(true)
   const [metricsError, setMetricsError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'report' | 'monitoring'>('overview')
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null)
@@ -58,6 +60,7 @@ export default function TeamDashboard() {
 
   const fetchDashboard = async () => {
     setDashboardError(null)
+    setDashboardLoading(true)
     try {
       const data = await getJSON('/team/dashboard') as any
       if (!Array.isArray(data?.caregivers_at_risk) || !Array.isArray(data?.posts_to_review)) {
@@ -69,11 +72,14 @@ export default function TeamDashboard() {
       setRiskCaregivers([])
       setPostsToReview([])
       setDashboardError('Team dashboard data could not be loaded. No demo records are shown.')
+    } finally {
+      setDashboardLoading(false)
     }
   }
 
   const fetchReport = async () => {
     setReportError(null)
+    setReportLoading(true)
     try {
       const data = await getJSON('/team/state-report') as any
       if (
@@ -92,6 +98,8 @@ export default function TeamDashboard() {
     } catch (error) {
       setReport(null)
       setReportError('Report data could not be loaded. Metrics are unavailable until a valid server response is received.')
+    } finally {
+      setReportLoading(false)
     }
   }
 
@@ -206,8 +214,9 @@ export default function TeamDashboard() {
         </div>
       </div>
 
-      {activeTab === 'overview' && dashboardError && <p role="alert" style={{ color: 'var(--error)' }}>{dashboardError}</p>}
-      {activeTab === 'overview' && !dashboardError && (
+      {activeTab === 'overview' && dashboardLoading && <p role="status" style={{ color: 'var(--text-secondary)' }}>Loading team dashboard data…</p>}
+      {activeTab === 'overview' && !dashboardLoading && dashboardError && <p role="alert" style={{ color: 'var(--error)' }}>{dashboardError}</p>}
+      {activeTab === 'overview' && !dashboardLoading && !dashboardError && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Caregivers Needing Attention</h2>
@@ -255,8 +264,9 @@ export default function TeamDashboard() {
         </div>
       )}
 
-      {activeTab === 'review' && dashboardError && <p role="alert" style={{ color: 'var(--error)' }}>{dashboardError}</p>}
-      {activeTab === 'review' && !dashboardError && (
+      {activeTab === 'review' && dashboardLoading && <p role="status" style={{ color: 'var(--text-secondary)' }}>Loading moderation queue…</p>}
+      {activeTab === 'review' && !dashboardLoading && dashboardError && <p role="alert" style={{ color: 'var(--error)' }}>{dashboardError}</p>}
+      {activeTab === 'review' && !dashboardLoading && !dashboardError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <p role="status" style={{ color: 'var(--warning)', fontSize: '13px' }}>Moderation actions are disabled until verified team authentication and server-side authorization are available.</p>
           {postsToReview.length === 0 ? (
