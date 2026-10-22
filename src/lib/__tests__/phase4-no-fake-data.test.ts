@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { normalizeCommunityPost } from '../../pages/Community'
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(resolve(process.cwd(), dir), { withFileTypes: true }).flatMap((entry) => {
@@ -197,3 +198,27 @@ describe('Phase 4 production data-integrity guardrails', () => {
       expect(text).not.toMatch(/(?:\?\?|\|\|)\s*["']default_care_recipient["']/)
     }
   })
+
+
+it('rejects a Community post when any reaction count is missing instead of inventing zero', () => {
+  const validPost = {
+    id: 'post-test-1',
+    author_type: 'peer_caregiver',
+    author_label: 'Caregiver',
+    content: 'A real API-provided community post.',
+    visibility: 'public',
+    care_stage: 'early',
+    tags: [],
+    created_at: '2026-10-22T10:00:00Z',
+    reaction_counts: { support: 2, helpful: 1, relate: 0, heart: 0 },
+    user_reaction: null,
+  }
+
+  expect(normalizeCommunityPost(validPost).reaction_counts).toEqual({
+    support: 2, helpful: 1, relate: 0, heart: 0,
+  })
+  expect(() => normalizeCommunityPost({
+    ...validPost,
+    reaction_counts: { support: 2, helpful: 1, relate: 0 },
+  })).toThrow(/heart reaction count; zero was not inferred/i)
+})
