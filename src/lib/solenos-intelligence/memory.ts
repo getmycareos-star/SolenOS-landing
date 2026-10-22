@@ -14,7 +14,6 @@ import type {
 } from "../situation-entry";
 import { getCareRealityState } from "../care-reality-state";
 import { getActiveCareSituation } from "../active-care-situation";
-import { getCareContextRoot } from "../situation-entry/context-store";
 import { detectContinuity } from "../care-identity/continuity-detection";
 import { tryLoadCareEventsForCaregiver } from "../care-events/postgres-store";
 import type { CareEventRecord } from "../care-events/types";
@@ -41,14 +40,15 @@ function readCanonicalEvent(record: CareEventRecord): CanonicalCareEvent | null 
 }
 
 export async function retrieveMemory(input: SolenOSInput): Promise<SolenOSMemory> {
-  const careRecipientId = input.careRecipientId?.trim();
+  // Active situations are keyed by authenticated caregiver identity in this store.
+  const activeSituation: ActiveCareSituation | null = getActiveCareSituation(input.caregiverId);
+  const careRecipientId =
+    input.careRecipientId?.trim() || activeSituation?.care_recipient_id?.trim();
   if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") {
     throw new Error("Care-recipient identity is required for memory retrieval; caregiver identity is not a substitute.");
   }
 
   const careRealityState: CareRealityState | null = getCareRealityState(careRecipientId);
-  // Active situations are keyed by authenticated caregiver identity in this store.
-  const activeSituation: ActiveCareSituation | null = getActiveCareSituation(input.caregiverId);
 
   const continuityDecision: ContinuityDecision | null = detectContinuity({
     caregiverId: input.caregiverId,
@@ -56,7 +56,6 @@ export async function retrieveMemory(input: SolenOSInput): Promise<SolenOSMemory
     rawText: input.raw,
   });
 
-  const contextRoot = getCareContextRoot(input.caregiverId);
   const persistedEvents = await tryLoadCareEventsForCaregiver(input.caregiverId);
   const recentEvents = persistedEvents
     .slice()
@@ -71,10 +70,6 @@ export async function retrieveMemory(input: SolenOSInput): Promise<SolenOSMemory
       : recentEvents.length === persistedEvents.slice(0, 20).length
         ? "available"
         : "partial";
-
-  // Context root is read here to ensure the store is reachable; the pipeline
-  // separately refuses to create a synthetic root when it is absent.
-  void contextRoot;
 
   return {
     careRealityState,
