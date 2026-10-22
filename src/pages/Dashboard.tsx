@@ -109,10 +109,17 @@ export default function Dashboard() {
         setActions([]);
       }
 
+      const sectionNames = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'];
       const failedSections = results
-        .map((result, index) => result.status === 'rejected'
-          ? ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'][index]
-          : null)
+        .map((result, index) => {
+          if (result.status === 'rejected') return sectionNames[index];
+          const value = result.value;
+          const expectsArray = index === 0 || index === 1 || index === 2 || index === 5;
+          const validShape = expectsArray
+            ? Array.isArray(value)
+            : value !== null && typeof value === 'object' && !Array.isArray(value);
+          return validShape ? null : sectionNames[index];
+        })
         .filter((section): section is string => section !== null);
       setLoadError(failedSections.length
         ? `Some dashboard data could not be loaded: ${failedSections.join(', ')}. Check the API connection and try again.`
