@@ -34,11 +34,19 @@ export function sanitizeDurableCareKey(careKey: string): string {
 
 export function readDurableJson<T>(filePath: string): T | null {
   if (isBrowser) return null;
+  let exists: boolean;
   try {
-    if (!existsSync(filePath)) return null;
+    exists = existsSync(filePath);
+  } catch {
+    throw new Error("Durable care record availability could not be checked.");
+  }
+  if (!exists) return null;
+  try {
     return JSON.parse(readFileSync(filePath, "utf8")) as T;
   } catch {
-    return null;
+    throw new Error(
+      "A durable care record exists but could not be read or parsed; it was not treated as missing.",
+    );
   }
 }
 
@@ -48,38 +56,59 @@ export function writeDurableJson(filePath: string, value: unknown): void {
     mkdirSync(join(filePath, ".."), { recursive: true });
     writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
   } catch {
-    // Non-fatal — cache remains for this process.
+    throw new Error(
+      "The durable care record could not be written; persistence was not confirmed.",
+    );
   }
 }
 
 export function deleteDurableFile(filePath: string): void {
   if (isBrowser) return;
+  let exists: boolean;
   try {
-    if (existsSync(filePath)) rmSync(filePath, { force: true });
+    exists = existsSync(filePath);
   } catch {
-    // Non-fatal
+    throw new Error("The durable care record could not be checked before deletion.");
+  }
+  if (!exists) return;
+  try {
+    rmSync(filePath, { force: true });
+  } catch {
+    throw new Error("The durable care record could not be deleted.");
   }
 }
 
 export function clearDurableDirectory(dirPath: string): void {
   if (isBrowser) return;
+  let exists: boolean;
   try {
-    if (!existsSync(dirPath)) return;
+    exists = existsSync(dirPath);
+  } catch {
+    throw new Error("The durable care directory could not be checked.");
+  }
+  if (!exists) return;
+  try {
     for (const name of readdirSync(dirPath)) {
       rmSync(join(dirPath, name), { force: true, recursive: true });
     }
   } catch {
-    // Non-fatal
+    throw new Error("The durable care directory could not be cleared completely.");
   }
 }
 
 /** List basename files in a durable data directory (server only). */
 export function listDurableDirectory(dirPath: string): string[] {
   if (isBrowser) return [];
+  let exists: boolean;
   try {
-    if (!existsSync(dirPath)) return [];
+    exists = existsSync(dirPath);
+  } catch {
+    throw new Error("The durable care directory could not be checked.");
+  }
+  if (!exists) return [];
+  try {
     return readdirSync(dirPath);
   } catch {
-    return [];
+    throw new Error("The durable care directory could not be read.");
   }
 }
