@@ -1,45 +1,56 @@
-// Use the same-origin API proxy in both Vite development and Netlify production.
-// vite.config.ts and netlify.toml forward /api/* to the backend, so the browser
-// never needs a hard-coded backend hostname or import.meta.env in Jest.
-const API_BASE = '/api/v1'
+import { getAccessToken, clearAccessToken, authHeaders, getPersonId } from './authSession';
 
-export function getPersonId(): string {
-  // Do not invent a care-record identifier: callers must handle an unset ID.
-  return localStorage.getItem('solenos_person_id') || ''
-}
+const configuredBase = import.meta.env.VITE_API_BASE?.trim()
+const isProduction = import.meta.env.PROD === true
+const invalidConfiguredBase = Boolean(
+  configuredBase && /your-solenos-backend-domain\.com|localhost:8000/i.test(configuredBase),
+)
+// Use Netlify's same-origin proxy in production; only local development defaults to localhost.
+const API_BASE = configuredBase && !invalidConfiguredBase
+  ? configuredBase.replace(/\/+$/, '')
+  : isProduction
+    ? '/api/v1'
+    : 'http://localhost:8000/api/v1'
 
-export function setPersonId(id: string): void {
-  localStorage.setItem('solenos_person_id', id)
-  window.dispatchEvent(new Event('personIdChanged'))
-}
-
-export function subscribeToPersonId(callback: (id: string) => void): () => void {
-  const handler = () => callback(getPersonId())
-  window.addEventListener('personIdChanged', handler)
-  return () => window.removeEventListener('personIdChanged', handler)
-}
+export {
+  ACCESS_TOKEN_STORAGE_KEY,
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken,
+  authHeaders,
+  getPersonId,
+  setPersonId,
+  getCaregiverId,
+  setCaregiverId,
+  clearCareContext,
+  subscribeToPersonId,
+} from './authSession';
 
 function interpolatePersonId(path: string): string {
-  return path.replace(/demo-person-id/g, getPersonId())
+  if (!path.includes('demo-person-id')) return path
+  const personId = getPersonId()
+  if (!personId) throw new Error('Select an authorized care record before loading or changing care data.')
+  return path.replace(/demo-person-id/g, personId)
 }
 
-function resolveApiUrl(path: string): string {
-  const normalized = path.startsWith('/') ? path : `/${path}`
-
-  // The backend exposes situation capture at /api/situation (outside /api/v1).
-  // All other calls using this client use the /api/v1 router.
-  if (normalized === '/situation' || normalized.startsWith('/situation?')) {
-    return `/api${normalized}`
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
   }
-
-  return `${API_BASE.replace(/\/$/, '')}${normalized}`
 }
 
 async function handleResponse(res: Response) {
-  const contentType = res.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
+  if (res.status === 204) return null
+  const contentType = res.headers?.get?.('content-type') || ''
+  const isJson = contentType.includes('application/json') || (typeof res.text !== 'function' && typeof res.json === 'function')
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAccessToken()
+    }
     let message = `API ${res.status}`
     if (isJson) {
       try {
@@ -52,18 +63,16 @@ async function handleResponse(res: Response) {
       const text = await res.text()
       message = text || message
     }
-    throw new Error(message)
+    throw new ApiError(message, res.status)
   }
 
   if (!isJson) {
     throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
   }
 
+  if (typeof res.text !== 'function') return res.json()
   const text = await res.text()
-  if (!text) {
-    throw new Error('Empty response from server')
-  }
-
+  if (!text) throw new Error('Empty response from server')
   try {
     return JSON.parse(text)
   } catch {
@@ -71,86 +80,45 @@ async function handleResponse(res: Response) {
   }
 }
 
+function resolveApiUrl(path: string, interpolate = false): string {
+  const resolvedPath = interpolate ? interpolatePersonId(path) : path
+  return resolvedPath.startsWith('/api/') ? resolvedPath : `${API_BASE}${resolvedPath}`
+}
+
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
+  const res = await fetch(resolveApiUrl(path, true), { headers: authHeaders() })
   return handleResponse(res)
 }
 
-// Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`)
-  }
+  const res = await fetch(resolveApiUrl(path, true), { headers: authHeaders() })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.blob()
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+  const res = await fetch(resolveApiUrl(path, Boolean(personId)), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+  const res = await fetch(resolveApiUrl(path, Boolean(personId)), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
-
-// Multipart upload helper. Do not set Content-Type manually: the browser must
-// add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
+    headers: authHeaders(),
     body,
   })
   return handleResponse(res)
-}
-
-// Caregiver identity is only accepted when explicitly stored by the current
-// frontend session. Never fabricate a caregiver ID for a care record.
-export function getCaregiverId(): string | null {
-  return localStorage.getItem('solenos_caregiver_id')
-}
-
-// The backend currently has no implemented authentication/session endpoints.
-// Fail closed rather than treating a client-side role choice as authentication.
-export interface AuthSessionInfo {
-  authenticated: boolean
-  account_id: string | null
-  session_type: string
-  authorized_person_ids: string[]
-  caregiver_roles: Record<string, string>
-  professional_roles: Record<string, string>
-  anonymous_session_id: string | null
-  expires_at: string
-  mfa_verified: boolean
-}
-
-export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
-}
-
-export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
-): () => void {
-  // No backend session event stream exists yet.
-  return () => undefined
-}
-
-export function startTokenRefresh(): void {
-  // No backend-issued token exists to refresh until authentication is implemented.
-}
-
-export function stopTokenRefresh(): void {
-  // No active token-refresh task exists.
 }
