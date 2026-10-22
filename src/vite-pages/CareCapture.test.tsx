@@ -35,7 +35,7 @@ describe('CareCapture persistence behavior', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
-  it('clears the draft only after the care situation is saved, even if optional community matching is unavailable', async () => {
+  it('clears the draft only after the care situation is saved without making a second optional request', async () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(jsonResponse(200, { success: true }))
       .mockResolvedValueOnce(jsonResponse(404, { detail: 'Not Found' }))
@@ -51,6 +51,6 @@ describe('CareCapture persistence behavior', () => {
       expect(onCapture).toHaveBeenCalledWith(draft)
     })
     expect(screen.getByRole('textbox')).toHaveValue('')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
