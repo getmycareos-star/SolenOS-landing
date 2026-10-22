@@ -56,6 +56,8 @@ function buildSourceMetadata(provenance: InputProvenance): Record<string, unknow
 }
 
 export function createCareEvent(input: CreateCareEventInput): CreateCareEventResult {
+  const caregiverId = input.created_by?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver attribution is required; care event was not stored.");
   const now = new Date().toISOString();
   const content = input.content.trim();
   const provenance = input.provenance;
@@ -88,7 +90,7 @@ export function createCareEvent(input: CreateCareEventInput): CreateCareEventRes
     source_type: sourceType,
     confidence: deriveConfidence(provenance),
     uncertainty_level: deriveUncertaintyLevel(provenance),
-    created_by: input.created_by ?? null,
+    created_by: caregiverId,
     metadata: {
       ...buildSourceMetadata(provenance),
       ...(input.metadata ?? {}),
