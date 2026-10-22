@@ -97,7 +97,7 @@ function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
   if (!Array.isArray(post.tags) || !post.tags.every((tag) => typeof tag === 'string')) {
     throw new Error('The server omitted or malformed Community tags; an empty tag list was not inferred.');
   }
-  const userReaction = post.user_reaction;
+  const userReaction = post.user_reaction as ReactionType | null;
 
   return {
     id: post.id,
