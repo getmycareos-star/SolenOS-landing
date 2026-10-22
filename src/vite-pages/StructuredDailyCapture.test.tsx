@@ -7,8 +7,8 @@ describe('StructuredDailyCapture', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }) as unknown as typeof fetch;
-    localStorage.setItem("solenos_person_id", "test-person-id");
-    localStorage.setItem("solenos_caregiver_id", "test-caregiver-id");
+    localStorage.setItem("solenos_person_id", "11111111-1111-4111-8111-111111111111");
+    localStorage.setItem("solenos_caregiver_id", "22222222-2222-4222-8222-222222222222");
   });
 
   it('should render the main heading', () => {
