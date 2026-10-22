@@ -29,6 +29,7 @@ const primaryActions = [
 ];
 
 const secondaryAreas = [
+  { to: '/dashboard', title: 'Dashboard overview', detail: 'Review existing events, available insights, and active actions.' },
   { to: '/record', title: 'Living Care Record', detail: 'Review saved evidence and the evolving care account.' },
   { to: '/community', title: 'Community', detail: 'Explore peer experiences separately from this person’s record.' },
   { to: '/timeline', title: 'Timeline', detail: 'Review recorded events in time order.' },
