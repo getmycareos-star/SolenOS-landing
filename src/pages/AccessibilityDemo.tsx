@@ -320,9 +320,7 @@ export default function AccessibilityDemo() {
           <p className="text-sm text-muted-foreground mb-4">
             This is the enhanced CareCapture component with accessibility improvements.
           </p>
-          <CareCapture 
-            personId="demo-person-123"
-            caregiverId="demo-caregiver-456"
+          <CareCapture
             onCapture={(text) => {
               console.log('Care captured:', text);
               alert(`Care captured: ${text}`);
