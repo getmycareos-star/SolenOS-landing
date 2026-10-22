@@ -21,7 +21,7 @@ export async function runConsistencyGate(
   // Spec §3: SAVE RAW EVIDENCE → CONFIRM PERSISTENCE → START EXTRACTION
   // Raw evidence must be persisted BEFORE any AI extraction begins.
   const evidenceStore = getRawEvidenceStore();
-  const { evidence: savedEvidence } = await evidenceStore.save({
+  const saveResult = await evidenceStore.save({
     id: evidenceId,
     caregiver_id: input.caregiver_id,
     input_type: "text",
@@ -30,12 +30,39 @@ export async function runConsistencyGate(
     metadata: { raw_input_id: input.raw_input_id },
   });
 
-  logger.info("raw evidence persisted", {
+  logger.info("raw evidence persistence result", {
     evidence_id: evidenceId,
-    persisted: !!savedEvidence,
+    persistence_status: saveResult.persistence_status,
+    persisted: saveResult.persisted,
   });
 
-  // Extraction only begins AFTER raw evidence is confirmed persisted.
+  // Extraction must not begin if evidence exists only in process memory.
+  if (!saveResult.persisted) {
+    const error = "Raw evidence could not be durably persisted; extraction was not started.";
+    logger.error("raw evidence persistence unavailable", { evidence_id: evidenceId });
+    return {
+      success: false,
+      persistence_status: "memory_only",
+      reconciliation: createEmptyReconciliation(evidenceId),
+      run_a: {
+        run_id: "not-started",
+        claims: [],
+        raw_output: "",
+        success: false,
+        error,
+      },
+      run_b: {
+        run_id: "not-started",
+        claims: [],
+        raw_output: "",
+        success: false,
+        error,
+      },
+      error,
+    };
+  }
+
+  // Extraction only begins AFTER the store confirms PostgreSQL or local-queue persistence.
   const { runA, runB } = await runParallelExtractions(input, signal);
 
   logger.logExtractionRun(runA.run_id, runA.success, runA.claims.length, runA.error);
@@ -46,6 +73,7 @@ export async function runConsistencyGate(
     logger.error("both runs failed", { evidence_id: evidenceId, error });
     return {
       success: false,
+      persistence_status: saveResult.persistence_status,
       reconciliation: createEmptyReconciliation(evidenceId),
       run_a: runA,
       run_b: runB,
