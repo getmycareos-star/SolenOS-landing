@@ -169,7 +169,6 @@ export function createEmptyBaseline(routineName: string, personId: string): Rout
     routine_name: routineName,
     person_id: personId,
     frequency_per_week: 0,
-    average_time_of_day: '00:00',
     assistance_level_distribution: {},
     participation_level_distribution: {},
     consistency_score: null,
