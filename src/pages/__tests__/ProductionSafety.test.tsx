@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { MemoryRouter } from 'react-router-dom'
 import Community from '../Community'
@@ -61,7 +61,7 @@ describe('Phase 4 production data safety', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/save could not be confirmed/i)
     expect(input).toHaveValue(note)
-    expect(screen.queryByRole('status')).not.toHaveTextContent('Care update saved.')
+    expect(screen.queryByText('Care update saved.')).not.toBeInTheDocument()
   })
 
   it('does not report a valid empty record when the record API fails', async () => {
