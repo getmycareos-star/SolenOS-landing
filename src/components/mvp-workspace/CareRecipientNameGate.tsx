@@ -1,6 +1,7 @@
 "use client";
 
 import { apiUrl, safeJson } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import { useState } from "react";
 
 type Props = {
@@ -35,13 +36,16 @@ export function CareRecipientNameGate({
     setSaving(true);
     setError(null);
     try {
+      const session = await ensureAnonymousSession();
       const res = await fetch(apiUrl("/api/situation"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
-          action: "set_care_recipient_display_name",
-          caregiver_id: caregiverId,
-          care_session_id: careSessionId,
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
           display_name: trimmed,
         }),
       });
