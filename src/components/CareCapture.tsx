@@ -139,7 +139,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         marginBottom: '12px', lineHeight: 1.5
       }}>
         Capture one thing that changed — a behavior, a symptom, a moment.
-        SolenOS will remember it for your next appointment and find similar experiences from other caregivers.
+        SolenOS saves this update to the care record so you can review it alongside other recorded events.
       </p>
 
       <textarea
