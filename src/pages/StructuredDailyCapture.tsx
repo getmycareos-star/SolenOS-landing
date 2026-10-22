@@ -10,6 +10,7 @@ const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [analysisWarning, setAnalysisWarning] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<unknown | null>(null);
   
   // Form state
@@ -434,6 +435,7 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
+      setAnalysisWarning(data?.analysis_status === 'complete' ? null : (data?.analysis_error || 'The entry was saved, but derived analysis could not be confirmed.'));
       // On success, reset the form
       setForm({
         medications: [],
@@ -757,6 +759,11 @@ export default function StructuredDailyCapture() {
             Saved. {form.notes || 'Entry recorded.'}
           </span>
         </div>
+      )}
+      {analysisWarning && (
+        <p role="status" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '24px' }}>
+          {analysisWarning}
+        </p>
       )}
       
       {/* Save error indicator */}
