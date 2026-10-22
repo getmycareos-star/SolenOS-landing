@@ -11,6 +11,7 @@ function inferRisk(facts: ExtractedCaseFacts, fallback: CaseRiskLevel = "low"): 
   const fromEvents = facts.events.map((e) => e.riskLevel).filter(Boolean) as CaseRiskLevel[];
   if (fromEvents.includes("high")) return "high";
   if (fromEvents.includes("medium")) return "medium";
+  if (fromEvents.includes("low")) return "low";
   return fallback;
 }
 
