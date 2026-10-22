@@ -1,4 +1,4 @@
-import { requireCaregiverId } from "../../care-identity";
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfileRecord } from "../types";
 
 const profiles = new Map<string, CareRecipientProfileRecord>();
