@@ -1001,7 +1001,7 @@ export async function processSituationInput(
     arbitration.edge_state_layer,
   );
 
-  const finalized = finalizeSituationResponse(withMvpLayer, final_output, architectural_boundaries_layer);
+  const finalized = finalizeSituationResponse(withMvpLayer, final_output, architectural_boundaries_layer, caregiverId);
   recordSessionVisit({
     caregiver_id: caregiverId,
     care_recipient_id: finalized.context.care_recipient_id,
@@ -1864,7 +1864,7 @@ export async function processSituationRecompile(input: {
     arbitration.edge_state_layer,
   );
 
-  return finalizeSituationResponse(withMvpLayer, final_output, architectural_boundaries_layer);
+  return finalizeSituationResponse(withMvpLayer, final_output, architectural_boundaries_layer, input.caregiver_id);
 }
 
 export function getSituationTimeline(caregiverId: string) {
@@ -1966,7 +1966,7 @@ export async function processSessionReentry(input: {
     arbitration.edge_state_layer,
   );
 
-  const finalized = finalizeSituationResponse(withMvp, enforced, architectural_boundaries_layer);
+  const finalized = finalizeSituationResponse(withMvp, enforced, architectural_boundaries_layer, input.caregiver_id);
   recordSessionVisit({
     caregiver_id: input.caregiver_id,
     care_recipient_id: finalized.context.care_recipient_id,
@@ -2055,7 +2055,7 @@ function buildInitializationSituationResponse(
     arbitration.edge_state_layer,
   );
 
-  return finalizeSituationResponse(withMvp, enforced, architectural_boundaries_layer);
+  return finalizeSituationResponse(withMvp, enforced, architectural_boundaries_layer, caregiverId);
 }
 
 function buildForbiddenOutputSurfaces(
