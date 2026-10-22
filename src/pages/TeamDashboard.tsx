@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getJSON, postJSON } from '../api/client'
+import { getJSON } from '../api/client'
 
 interface CaregiverAtRisk {
   caregiver_id: string
@@ -40,7 +40,6 @@ export default function TeamDashboard() {
   const [report, setReport] = useState<StateReport | null>(null)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [reportError, setReportError] = useState<string | null>(null)
-  const [moderationError, setModerationError] = useState<string | null>(null)
   const [metricsError, setMetricsError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'report' | 'monitoring'>('overview')
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null)
@@ -131,7 +130,7 @@ export default function TeamDashboard() {
       moderate: { bg: 'var(--warning-soft)', color: 'var(--warning)', label: 'ðŸŸ¨ MODERATE' },
       mild: { bg: 'var(--success-soft)', color: 'var(--success)', label: 'ðŸŸ© MILD' },
     }
-    const c = config[level] || config.mild
+    const c = config[level] || { bg: 'var(--surface)', color: 'var(--text-secondary)', label: 'UNKNOWN' }
     return (
       <span style={{
         fontSize: '10px', fontWeight: 700, padding: '2px 6px',
@@ -259,7 +258,7 @@ export default function TeamDashboard() {
       {activeTab === 'review' && dashboardError && <p role="alert" style={{ color: 'var(--error)' }}>{dashboardError}</p>}
       {activeTab === 'review' && !dashboardError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {moderationError && <p role="alert" style={{ color: 'var(--error)' }}>{moderationError}</p>}
+          <p role="status" style={{ color: 'var(--warning)', fontSize: '13px' }}>Moderation actions are disabled until verified team authentication and server-side authorization are available.</p>
           {postsToReview.length === 0 ? (
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No posts need moderation right now.</p>
           ) : (
@@ -283,7 +282,8 @@ export default function TeamDashboard() {
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>By {post.author_label}</p>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                   <button
-                    onClick={() => approvePost(post.id)}
+                    disabled
+                    title="Requires verified team authentication"
                     style={{
                       padding: '6px 16px', borderRadius: '8px', border: 'none',
                       background: 'var(--success)', color: 'white',
@@ -292,7 +292,7 @@ export default function TeamDashboard() {
                   >
                     Approve
                   </button>
-                  <button style={{
+                  <button disabled title="Requires verified team authentication" style={{
                     padding: '6px 16px', borderRadius: '8px', border: '1px solid var(--border)',
                     background: 'var(--surface)', fontSize: '12px', color: 'var(--text-secondary)',
                     cursor: 'pointer',
