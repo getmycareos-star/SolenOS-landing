@@ -86,7 +86,8 @@ export type HistoricalContextMatch = {
 export type HistoricalContextResult = {
   query: string;
   matches: HistoricalContextMatch[];
-  evidence_backed: true;
+  evidence_backed: boolean;
+  status: "available" | "no_matches" | "unavailable";
 };
 
 export type RecordOutcomeInput = {
