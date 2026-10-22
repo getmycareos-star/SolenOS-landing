@@ -1,7 +1,7 @@
 import type { Pool } from "pg";
 
 import { SystemEventInsertSchema, type SystemEventInsert } from "./events";
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 
 const memorySystemEvents: SystemEventInsert[] = [];
 let eventPoolPromise: Promise<Pool> | null = null;
