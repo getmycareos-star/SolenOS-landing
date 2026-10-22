@@ -5,6 +5,7 @@ import {
 } from "../observation-intelligence/stores/observation-store";
 import { ingestCareEntry } from "../cognitive-relief/ingest-entry";
 import { processCapacitySelfSession } from "../capacity-self/process-session";
+import { linkCaregiverToRecipient, resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
 
 describe("production caregiver identity guards", () => {
   it("rejects the legacy shared identity before recording observations", () => {
@@ -41,6 +42,19 @@ describe("production caregiver identity guards", () => {
         input: "identity isolation regression",
       }),
     ).rejects.toThrow(/distinct caregiver identity/i);
+  });
+
+
+  it("rejects the legacy shared care-recipient placeholder", () => {
+    expect(() => resolveCareRealityStoreKey("default_care_recipient")).toThrow(
+      /distinct care-recipient or linked contributor identity/i,
+    );
+    expect(() =>
+      linkCaregiverToRecipient("caregiver-real-1", "default_care_recipient"),
+    ).toThrow(/distinct care-recipient identity/i);
+    expect(() =>
+      linkCaregiverToRecipient("default_caregiver", "cr_recipient-real-1"),
+    ).toThrow(/distinct contributor identity/i);
   });
 
   it("rejects missing identities in all three production entry points", async () => {
