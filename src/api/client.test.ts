@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
 import { authHeaders, clearAccessToken, getAccessToken, setAccessToken, setCaregiverId } from './authSession'
-import { getJSON } from './client'
+import { resolveApiPath } from './apiPath'
 
 describe('authenticated API client', () => {
   beforeEach(() => {
@@ -27,18 +27,15 @@ describe('authenticated API client', () => {
     window.removeEventListener('personIdChanged', changed)
     expect(changed).toHaveBeenCalledTimes(1)
   })
-  it('rejects demo care-record identifiers before making a network request', async () => {
-    const originalFetch = global.fetch
-    const fetchMock = jest.fn()
-    global.fetch = fetchMock as unknown as typeof fetch
-    try {
-      await expect(getJSON('/events/demo-person-id')).rejects.toThrow(
-        'A demo care-record identifier was detected',
-      )
-      expect(fetchMock).not.toHaveBeenCalled()
-    } finally {
-      global.fetch = originalFetch
-    }
+  it('rejects placeholder care-record identifiers instead of substituting a fake identity', () => {
+    expect(() => resolveApiPath('/events/demo-person-id', '/api/v1')).toThrow(
+      'A demo care-record identifier was detected',
+    )
+  })
+
+  it('preserves explicit API routes and prefixes versioned routes consistently', () => {
+    expect(resolveApiPath('/events/person-123', '/api/v1')).toBe('/api/v1/events/person-123')
+    expect(resolveApiPath('/api/situation', '/api/v1')).toBe('/api/situation')
   })
 
 })
