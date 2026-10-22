@@ -7,11 +7,11 @@ import {
   interpretQuestion,
   reasonThroughContext,
 } from "../src/lib/care-context";
-import { EXAMPLE_CAREGIVER_QUESTION } from "../src/data/example-caregiver-question";
+import { EXAMPLE_CAREGIVER_QUESTION } from "./fixtures/example-caregiver-question";
 import {
   HIRE_HELP_QUESTION,
   SAMPLE_CARE_CONTEXT,
-} from "../src/data/sample-care-context";
+} from "./fixtures/sample-care-context";
 
 const referenceDate = "2026-07-13T09:00:00";
 
