@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getCaregiverId, getJSON, postJSON, getPersonId } from '../api/client'
+import { getCaregiverId, getJSON, postJSON, getPersonId, subscribeToPersonId } from '../api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -134,8 +134,13 @@ export default function Community() {
   const [wisdomMatches, setWisdomMatches] = useState<ExperienceMatch[]>([])
   const [loadingWisdom, setLoadingWisdom] = useState(false)
 
-  const personId = getPersonId()
-  const caregiverId = getCaregiverId()
+  const [personId, setPersonIdState] = useState(getPersonId())
+  const [caregiverId, setCaregiverIdState] = useState(getCaregiverId())
+
+  useEffect(() => subscribeToPersonId(() => {
+    setPersonIdState(getPersonId())
+    setCaregiverIdState(getCaregiverId())
+  }), [])
 
   useEffect(() => {
     const saved = localStorage.getItem('solenos_saved_posts')
