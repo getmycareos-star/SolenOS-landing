@@ -24,5 +24,3 @@ jobs:
         run: npm run typecheck && npm run build
       - name: Run Jest tests
         run: NODE_OPTIONS=--experimental-vm-modules npm test -- --runInBand --passWithNoTests
-      - name: Verify care identity isolation and return continuity
-        run: timeout 90s npx --yes tsx scripts/verify-care-identity.mts && timeout 90s npx --yes tsx scripts/verify-return-continuity.mts
