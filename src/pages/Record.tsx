@@ -187,7 +187,7 @@ export default function Record() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Living Care Record</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5, maxWidth: '500px' }}>
-             Upload documents, notes, photos, messages, and care information. SolenOS remembers and connects these over time.
+             Add supported text documents and review saved source evidence. This intake currently accepts .txt, .md, .csv, .json, and .log files; photos and PDF/scanned-image OCR are not available here.
            </p>
          </div>
          <div>
@@ -311,7 +311,7 @@ export default function Record() {
         padding: '8px 12px', background: 'var(--bg)', borderRadius: '8px', border: '1px dashed var(--border)'
       }}>
         <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Examples:</span>
-        {['Doctor\'s note', 'Hospital discharge paper', 'Medication list', 'Family message', 'Photo of document'].map(ex => (
+        {['Pasted doctor note', 'Text discharge summary', 'Medication list in text', 'Family message saved as text'].map(ex => (
           <span key={ex} style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>• {ex}</span>
         ))}
       </div>
