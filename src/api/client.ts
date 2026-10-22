@@ -69,7 +69,7 @@ function authorizationHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-/** Create the anonymous record only when the caregiver first submits care input. */
+/** Create or refresh a scoped anonymous session without account registration. */
 async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
   if (typeof window === "undefined") {
     throw new Error("Anonymous care sessions can only be created in the browser.");
