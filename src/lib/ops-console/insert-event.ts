@@ -19,7 +19,7 @@ let poolPromise: Promise<Pool> | null = null;
 let idCounter = 1;
 
 async function getPool(): Promise<Pool | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   if (!poolPromise) poolPromise = createPostgresPool();
   return poolPromise;
 }
@@ -34,14 +34,21 @@ export function resetSolenEventsMemoryForTests(): void {
   poolPromise = null;
 }
 
+export type SolenEventPersistenceStatus = "server_persisted" | "memory_only";
+
 export async function insertSolenEvent(input: {
   user_id: string | null;
   event_name: string;
   session_id: string;
   metadata?: Record<string, unknown>;
-}): Promise<{ success: true }> {
+}): Promise<{ success: true; persistence_status: SolenEventPersistenceStatus }> {
   const metadata = input.metadata ?? {};
-  const pool = await getPool();
+  let pool: Pool | null = null;
+  try {
+    pool = await getPool();
+  } catch {
+    // Telemetry is non-blocking; the explicit result below records memory-only status.
+  }
 
   if (pool) {
     try {
@@ -55,9 +62,9 @@ export async function insertSolenEvent(input: {
           JSON.stringify(metadata),
         ],
       );
-      return { success: true };
-    } catch (error) {
-      console.warn("[solen_events] insert failed — falling back to memory:", error);
+      return { success: true, persistence_status: "server_persisted" };
+    } catch {
+      // Preserve non-blocking telemetry, but never represent the event as durable.
     }
   }
 
@@ -69,5 +76,5 @@ export async function insertSolenEvent(input: {
     session_id: input.session_id,
     metadata,
   });
-  return { success: true };
+  return { success: true, persistence_status: "memory_only" };
 }
