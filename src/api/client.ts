@@ -237,12 +237,23 @@ async function resolveSignedInAccount(
   // If an old account's selected ID is stale but this account has exactly one
   // authorized care record, safely use that sole record instead.
   const context = preferred || contexts[0]
+  if (context.role !== accountRole) {
+    throw new Error('The selected care context role does not match the authenticated account.')
+  }
   const links = await getJSON<CaregiverLink[]>(
     '/auth/my-caregiver-links?person_id=' + encodeURIComponent(context.person_id),
   )
   const link = Array.isArray(links)
-    ? links.find(item => item.person_id === context.person_id)
+    ? links.find(item =>
+        item.person_id === context.person_id &&
+        item.account_id === backendAccount.id &&
+        typeof item.caregiver_id === 'string' &&
+        item.caregiver_id.length > 0
+      )
     : undefined
+  if (!link) {
+    throw new Error('The backend did not confirm an account-owned caregiver link for the selected care record.')
+  }
 
   const role = context.role
   if (!['caregiver', 'professional', 'team'].includes(role)) {
