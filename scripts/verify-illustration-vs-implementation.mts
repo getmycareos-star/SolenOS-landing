@@ -101,7 +101,7 @@ for (const root of SCAN_ROOTS) {
     // are rejected. Never let those assertions create a false production hit.
     if (
       /(^|[\\/])__tests__([\\/])/.test(rel) ||
-      /\\.(test|spec)\\.[jt]sx?$/.test(file) ||
+      /\.(test|spec)\.[jt]sx?$/.test(file) ||
       SKIP_PATH_FRAGMENTS.some((s) => rel.includes(s) || file.includes(s))
     ) {
       continue;
@@ -120,13 +120,13 @@ for (const root of SCAN_ROOTS) {
     // metrics. This is a static guard against accidental reintroduction;
     // synthetic examples remain allowed only in isolated tests/dev fixtures.
     const forbiddenProductionData = [
-      /\\bSAMPLE_POSTS\\b/,
-      /\\bDEMO_(?:RISK|REVIEW|REPORT|CAREGIVERS)\\b/,
-      /\\bdemo-person-id\\b/i,
-      /\\bAlex Johnson\\b/,
-      /\\bSam Johnson\\b/,
-      /\\b142 caregivers\\b/i,
-      /\\b4\\.2 helpfulness\\b/i,
+      /\bSAMPLE_POSTS\b/,
+      /\bDEMO_(?:RISK|REVIEW|REPORT|CAREGIVERS)\b/,
+      /\bdemo-person-id\b/i,
+      /\bAlex Johnson\b/,
+      /\bSam Johnson\b/,
+      /\b142 caregivers\b/i,
+      /\b4\.2 helpfulness\b/i,
     ];
     if (
       containsIllustrationAsProduct(body) ||
