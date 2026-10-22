@@ -51,7 +51,7 @@ function AnonymousSessionGate({ children }: { children: ReactNode }) {
       <main style={{ padding: 24, maxWidth: 560, margin: '0 auto' }}>
         <h1>Could not open your care record</h1>
         <p role="alert">{error}</p>
-        <p>Your care data was not replaced with a new record. Check your connection and retry.</p>
+        <p>If this browser already held care notes, keep its storage intact while access is recovered. SolenOS will not silently switch to a different care record.</p>
         <button type="button" onClick={() => void initializeSession()}>Retry</button>
       </main>
     );
