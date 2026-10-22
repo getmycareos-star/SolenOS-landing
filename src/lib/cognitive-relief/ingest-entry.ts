@@ -23,8 +23,8 @@ export type IngestCareEntryParams = {
  */
 export async function ingestCareEntry(params: IngestCareEntryParams): Promise<IngestEntryResult> {
   const caregiverId = params.caregiver_id?.trim();
-  if (!caregiverId) {
-    throw new Error("Caregiver identity is required; entry was not persisted.");
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required; entry was not persisted.");
   }
   const caseId = params.case_id ?? null;
   const capturedAt = params.captured_at ?? new Date().toISOString();
