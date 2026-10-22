@@ -155,13 +155,15 @@ async function resolveSignedInAccount(
   const preferred = preferredPersonId
     ? contexts.find(context => context.person_id === preferredPersonId)
     : undefined
-  if (preferredPersonId && !preferred) {
-    throw new Error('The previously selected care record is not accessible to this account. Select a care record you are authorized to access.')
-  }
   if (!preferred && contexts.length > 1) {
+    if (preferredPersonId) {
+      throw new Error('The previously selected care record is not accessible to this account. Select a care record you are authorized to access.')
+    }
     throw new Error('This account has multiple care records. Select the correct care record before continuing; SolenOS will not choose one automatically.')
   }
 
+  // If an old account's selected ID is stale but this account has exactly one
+  // authorized care record, safely use that sole record instead.
   const context = preferred || contexts[0]
   const links = await getJSON<CaregiverLink[]>(
     '/auth/my-caregiver-links?person_id=' + encodeURIComponent(context.person_id),
