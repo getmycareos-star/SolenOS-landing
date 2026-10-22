@@ -52,8 +52,9 @@ export async function loadProfileFromPostgres(
             last_checkin_at, checkin_period, optional_budget, created_at, updated_at
      FROM care_recipient_profiles
      WHERE caregiver_id = $1
+       AND case_id IS NOT DISTINCT FROM $2::uuid
      LIMIT 1`,
-    [caregiverId],
+    [caregiverId, caseId],
   );
 
   const row = result.rows[0];
@@ -88,6 +89,12 @@ export async function saveProfileToPostgres(
   record: CareRecipientProfileRecord,
 ): Promise<CareRecipientProfileRecord> {
   const id = record.id.startsWith("crp_") ? randomUUID() : record.id;
+  // Separate the default/no-case profile from each named care case. These
+  // targets require migration 049's partial unique indexes; without the
+  // migration, PostgreSQL fails visibly rather than overwriting another case.
+  const conflictTarget = record.case_id === null
+    ? "ON CONFLICT (caregiver_id) WHERE case_id IS NULL"
+    : "ON CONFLICT (caregiver_id, case_id) WHERE case_id IS NOT NULL";
   const result = await pool.query<{
     id: string;
     created_at: string;
@@ -98,7 +105,7 @@ export async function saveProfileToPostgres(
        last_checkin_at, checkin_period, optional_budget, updated_at
      )
      VALUES ($1, $2::uuid, $3, $4::jsonb, $5, $6::jsonb, $7, $8, $9, NOW())
-     ON CONFLICT (caregiver_id)
+     ${conflictTarget}
      DO UPDATE SET
        profile = EXCLUDED.profile,
        care_context = EXCLUDED.care_context,
