@@ -159,11 +159,11 @@ export async function captureVoiceObservation(params: {
     source: "voice",
   });
 
-  if (observation.persistence_status !== "persisted") {
+  if (!isObservationDurablyPersisted(observation.persistence_status)) {
     return {
       ok: false,
       code: "PERSISTENCE_UNAVAILABLE",
-      error: observation.persistence_message ?? "Observation persistence is unavailable; voice input was not durably saved.",
+      error: observation.persistence_message ?? OBSERVATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
     };
   }
 
