@@ -132,12 +132,14 @@ export default function Dashboard() {
           typeof item.count === 'number' && Number.isFinite(item.count) &&
           typeof item.trend === 'string'
         );
+        const reasoningValue = values[3];
+        const dailyIntelValue = values[4];
         const reasoningKeys = ['confirmed_facts', 'open_questions', 'preferences', 'rejected_assumptions', 'care_patterns', 'coordination_decisions'];
-        const validReasoning = isRecord(values[3]) && reasoningKeys.every(key => Array.isArray(values[3][key]));
-        const validDailyIntel = values[4] === null || (
-          isRecord(values[4]) &&
-          typeof values[4].daily_summary === 'string' &&
-          ['overdue_items', 'upcoming_items', 'active_windows', 'expired_windows'].every(key => Array.isArray(values[4][key]))
+        const validReasoning = isRecord(reasoningValue) && reasoningKeys.every(key => Array.isArray(reasoningValue[key]));
+        const validDailyIntel = dailyIntelValue === null || (
+          isRecord(dailyIntelValue) &&
+          typeof dailyIntelValue.daily_summary === 'string' &&
+          ['overdue_items', 'upcoming_items', 'active_windows', 'expired_windows'].every(key => Array.isArray(dailyIntelValue[key]))
         );
         if (!validEvents || !validInsights || !validTrends || !validReasoning || !validDailyIntel || !Array.isArray(values[5])) {
           throw new Error('The server returned incomplete dashboard data. No missing fields or empty states were guessed.');
@@ -145,15 +147,21 @@ export default function Dashboard() {
 
         const nextActions = (values[5] as Array<Record<string, unknown>>).map(action => {
           const title = action.normalized_action || action.action_object || action.original_text;
-          if (typeof action.id !== 'string' || !action.id || typeof title !== 'string' || !title.trim()) {
+          if (
+            typeof action.id !== 'string' || !action.id ||
+            typeof title !== 'string' || !title.trim() ||
+            !['active', 'completed'].includes(String(action.status)) ||
+            typeof action.created_at !== 'string' ||
+            !Number.isFinite(new Date(action.created_at).getTime())
+          ) {
             throw new Error('The server returned an action without a valid ID or description. The dashboard data was not treated as complete.');
           }
           return {
             id: action.id,
             title,
             description: typeof action.condition_text === 'string' ? action.condition_text : undefined,
-            status: action.status === 'completed' ? 'completed' as const : 'active' as const,
-            created_at: typeof action.created_at === 'string' ? action.created_at : '',
+            status: action.status as 'active' | 'completed',
+            created_at: action.created_at as string,
           };
         });
 
