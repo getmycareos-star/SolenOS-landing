@@ -43,7 +43,7 @@ assert(CARE_CONTINUITY_PROHIBITED.length >= 5, "prohibited behaviors documented"
 assert(CARE_CONTINUITY_MVP_PILLARS.length === 52, "fifty-two MVP pillars");
 console.log("✓ core system contract");
 
-const status = getCareContinuitySystemStatus("default_caregiver", null, root);
+const status = getCareContinuitySystemStatus("cg_verify_identity", null, root);
 assert(status.all_pillars_present, `all pillars present: ${JSON.stringify(status.pillars)}`);
 console.log("✓ all 52 MVP pillars implemented");
 
