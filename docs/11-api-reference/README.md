@@ -11,10 +11,9 @@
 - **Behavior:** Full analyze-pipeline; returns clarity fields + optional layers (trust, safety, confidence, crisis, delegation, load, continuity, …).
 - **Errors:** 422 pipeline/validation; 503 missing LLM key.
 
-### `POST /api/observations`
-- Body: `{ raw_text, caregiver_id, source?: "text"|"voice" }`
-- Records observation intelligence (heuristic). `caregiver_id` is required; requests without an explicit identity are rejected.
-- MVP product path: **text** (`source: "text"`). Voice source is FUTURE (ADR-018).
+### `POST /api/observations` — NOT IMPLEMENTED
+
+No mounted FastAPI route currently exposes this endpoint, and the observation module's Postgres adapter is not wired. Its in-process extraction result explicitly reports `persistence_status: "unavailable"`; it must not be used as a durable production care-record API. The voice path also returns `PERSISTENCE_UNAVAILABLE` rather than reporting success.
 
 ### `POST /api/observations/voice` — FUTURE
 - Multipart: `audio`|`file`, optional `caregiver_id`, `language_hint`, `edited_transcript`, `preview_only`
