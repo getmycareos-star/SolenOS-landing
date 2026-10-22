@@ -131,6 +131,7 @@ export default function FirstUseJourney() {
               borderRadius: '8px', padding: '10px 12px', textDecoration: 'none',
               background: 'var(--trust)', color: 'white', fontSize: '12px', fontWeight: 600,
             }}>{item.action} →</Link>
+            {item.to === '/daily-care' && <Link to="/structured-daily-capture" style={{ display: 'inline-block', marginTop: '10px', fontSize: '11px', color: 'var(--trust)', textDecoration: 'none' }}>Use structured capture for medications, vitals and scales →</Link>}
           </article>
         ))}
       </div>
