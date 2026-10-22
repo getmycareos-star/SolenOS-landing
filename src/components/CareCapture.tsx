@@ -18,7 +18,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     { caregiverId: string; personId: string; rawInput: string }
   >({
     mutationFn: ({ caregiverId, personId, rawInput }) => 
-      postJSON('/situation', {
+      postJSON('/api/situation', {
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: rawInput,
