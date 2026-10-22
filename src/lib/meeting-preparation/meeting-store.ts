@@ -50,7 +50,8 @@ export function createMeeting(input: CreateMeetingInput): CaregivingMeeting {
 
 export function createProposedMeeting(input: ProposedMeetingInput): CaregivingMeeting {
   const now = new Date().toISOString();
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required; proposed meeting was not stored.");
   const meeting: CaregivingMeeting = {
     id: createMeetingId(),
     title: input.title.trim(),
