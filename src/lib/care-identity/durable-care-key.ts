@@ -38,16 +38,9 @@ export function resolveDurableCareKey(params: {
   const fromCaregiver = params.caregiver_id?.trim();
   if (fromCaregiver && fromCaregiver !== "default_caregiver") return fromCaregiver;
 
-  const fromLegacySession = params.care_session_id?.trim();
-  if (
-    fromLegacySession &&
-    !isInteractionSessionId(fromLegacySession) &&
-    fromLegacySession !== "default_caregiver"
-  ) {
-    return fromLegacySession;
-  }
-
-  throw new Error("A valid caregiver identity is required; shared fallback identities are not allowed.");
+  // Never reinterpret a session identifier as a caregiver identity. Older clients
+  // occasionally sent a durable key in this field; fail closed instead of guessing.
+  throw new Error("An explicit caregiver identity is required; session IDs cannot identify care records.");
 }
 
 /**
@@ -62,18 +55,9 @@ export function requireCareKeyFromRequest(params: {
     return { ok: true, careKey: fromCaregiver };
   }
 
-  const fromLegacySession = params.care_session_id?.trim();
-  if (
-    fromLegacySession &&
-    !isInteractionSessionId(fromLegacySession) &&
-    fromLegacySession !== "default_caregiver"
-  ) {
-    return { ok: true, careKey: fromLegacySession };
-  }
-
   return {
     ok: false,
-    error: "A valid caregiver identity is required; shared fallback identities are not allowed.",
+    error: "An explicit caregiver identity is required; session IDs cannot identify care records.",
   };
 }
 
