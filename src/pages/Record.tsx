@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, getPersonId } from '../api/client'
+import { getJSON, getPersonId, postJSON } from '../api/client'
 
 interface Evidence {
   id: string
@@ -15,6 +15,10 @@ export default function Record() {
   const [items, setItems] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [lcrExplanation, setLcrExplanation] = useState<string | null>(null)
+  const [lcrProviderStatus, setLcrProviderStatus] = useState<string | null>(null)
+  const [lcrError, setLcrError] = useState<string | null>(null)
+  const [explainingLcr, setExplainingLcr] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -42,6 +46,33 @@ export default function Record() {
     return () => { cancelled = true }
   }, [])
 
+  async function explainRecord() {
+    const personId = getPersonId()
+    if (!personId) {
+      setLcrError('No authorized care record is selected.')
+      return
+    }
+    setExplainingLcr(true)
+    setLcrError(null)
+    setLcrExplanation(null)
+    setLcrProviderStatus(null)
+    try {
+      const result = await postJSON('/lcr/explain', {
+        person_id: personId,
+        question: 'Explain the currently recorded care situation. Separate recorded facts from uncertainty and missing information, identify any supported changes, and suggest useful questions to clarify. Do not diagnose or invent facts.',
+      }) as { explanation?: string; provider_status?: string; ai_generated?: boolean; evidence_ids?: string[] }
+      if (typeof result.explanation !== 'string' || !result.explanation.trim()) {
+        throw new Error('The Qwen explanation response was incomplete.')
+      }
+      setLcrExplanation(result.explanation)
+      setLcrProviderStatus(result.provider_status || 'unknown')
+    } catch {
+      setLcrError('Qwen could not provide a verified explanation. The existing care record has not been changed.')
+    } finally {
+      setExplainingLcr(false)
+    }
+  }
+
   const typeIcon: Record<string, string> = {
     document: '📄',
     note: '📝',
@@ -67,6 +98,34 @@ export default function Record() {
            </Link>
          </div>
        </div>
+
+      <section style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '10px', padding: '12px 14px', marginBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <strong style={{ fontSize: '13px' }}>Qwen LCR explanation</strong>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+              Read-only explanation grounded in this authorized record. It does not change recorded facts.
+            </p>
+          </div>
+          <button onClick={explainRecord} disabled={explainingLcr} style={{
+            padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)',
+            background: explainingLcr ? 'var(--bg)' : 'var(--accent)', color: explainingLcr ? 'var(--text-secondary)' : 'white',
+            fontSize: '12px', cursor: explainingLcr ? 'default' : 'pointer'
+          }}>
+            {explainingLcr ? 'Asking Qwen…' : 'Explain current record'}
+          </button>
+        </div>
+        {lcrProviderStatus && (
+          <p role="status" style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            Qwen provider status: {lcrProviderStatus}
+          </p>
+        )}
+        {lcrExplanation && <p style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginTop: '8px' }}>{lcrExplanation}</p>}
+        {lcrError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{lcrError}</p>}
+      </section>
 
       <div style={{
         background: 'var(--accent-soft)', border: '1px solid var(--accent)',
