@@ -201,6 +201,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
       await patchJSON(`/care-continuity/assertions/${encodeURIComponent(assertion.id)}/status`, {
         person_id: personId,
         assertion_status: 'accepted',
+        updated_by_caregiver_id: getCaregiverId() || undefined,
       })
       setNotice('Marked as caregiver-reviewed. This is not independent clinical verification.')
       await load()
