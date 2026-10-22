@@ -10,6 +10,7 @@ interface CareCaptureProps {
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
   const personId = pid || getPersonId()
   
@@ -31,6 +32,10 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // The backend currently returns a saved situation, not community matches.
       // Do not call the nonexistent /community/experience endpoint or invent matches.
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
+      setQwenAnalysis({
+        status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
+        candidates: data?.qwen_candidates ?? null,
+      })
       setIdentityError(null)
       setText('')
       onCapture?.(variables.rawInput)
@@ -121,6 +126,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         onChange={(e) => {
           setText(e.target.value)
           setSavedMessage(null)
+          setQwenAnalysis(null)
           setIdentityError(null)
         }}
         placeholder="Describe what you observed, when it happened, and what remains uncertain."
@@ -162,6 +168,41 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
           {savedMessage}
         </p>
+      )}
+
+      {savedMessage && qwenAnalysis && (
+        <section aria-label="Qwen capture analysis" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+          <strong style={{ fontSize: '12px' }}>Qwen analysis: {qwenAnalysis.status}</strong>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+            AI output is an unverified candidate, not an established Living Care Record fact.
+          </p>
+          {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
+            <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
+              {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => (
+                <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                  <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
+                  <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              No verified Qwen candidates are available. The saved input remains preserved.
+            </p>
+          )}
+          {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
+            <div style={{ marginTop: '8px' }}>
+              <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
+              <ul style={{ paddingLeft: '18px', marginTop: '4px' }}>
+                {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
+                  <li key={index} style={{ fontSize: '12px', marginBottom: '4px' }}>{question}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
       )}
 
     </div>
