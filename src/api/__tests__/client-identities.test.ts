@@ -1,4 +1,4 @@
-import { getCaregiverId, getPersonId, setPersonId } from '../client'
+import { clearAuthSession, getAccessToken, getCaregiverId, getPersonId, setPersonId } from '../client'
 
 describe('care-record identity storage integrity', () => {
   beforeEach(() => {
@@ -29,5 +29,21 @@ describe('care-record identity storage integrity', () => {
     setPersonId('person-real-123')
     expect(getPersonId()).toBe('person-real-123')
     expect(localStorage.getItem('solenos_person_id')).toBe('person-real-123')
+  })
+
+  it('clears the previous account identity on logout or failed account resolution', () => {
+    localStorage.setItem('solenos_access_token', 'old-token')
+    localStorage.setItem('solenos_caregiver_id', 'old-caregiver')
+    localStorage.setItem('solenos_person_id', 'old-person')
+    localStorage.setItem('solenos_identifier', 'old@example.invalid')
+    localStorage.setItem('solenos_user_role', 'caregiver')
+
+    clearAuthSession()
+
+    expect(getAccessToken()).toBe('')
+    expect(getCaregiverId()).toBeNull()
+    expect(getPersonId()).toBe('')
+    expect(localStorage.getItem('solenos_identifier')).toBeNull()
+    expect(localStorage.getItem('solenos_user_role')).toBeNull()
   })
 })
