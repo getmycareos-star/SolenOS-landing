@@ -30,10 +30,7 @@ async function querySafe<T extends Record<string, unknown>>(
     const result = await pool.query(sql, params);
     return result.rows as T[];
   } catch {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("An operational database query failed; metrics cannot be verified.");
-    }
-    return [];
+    throw new Error("An operational database query failed; metrics cannot be verified.");
   }
 }
 
