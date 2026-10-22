@@ -68,7 +68,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     vital_type: 'bp_systolic',
-    value: Number.NaN,
+    value: 0,
     measured_at: new Date().toISOString(),
     unit: null,
     note: null,
@@ -82,7 +82,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     axis: 'mood',
-    score: Number.NaN,
+    score: 0,
     observed_at: new Date().toISOString(),
     note: null,
   });
@@ -221,14 +221,6 @@ export default function StructuredDailyCapture() {
       alert('A signed-in caregiver and care record are required to add medication.');
       return;
     }
-    if (!medicationForm.medication_name.trim()) {
-      alert('Medication name is required');
-      return;
-    }
-    if (!medicationForm.status) {
-      alert('Select the actual medication status before adding this record.');
-      return;
-    }
     setMedicationUploading(true);
     
     try {
@@ -271,7 +263,13 @@ export default function StructuredDailyCapture() {
         photo_evidence_id: evidenceId, // Set the photo evidence ID from upload
       };
       
-
+      // Validate required fields
+      if (!medicationData.medication_name || !medicationData.status) {
+        alert('Medication name and an explicitly selected status are required.');
+        setMedicationUploading(false);
+        return;
+      }
+      
       // Optimistically add to medications list
       setForm(prev => ({
         ...prev,
@@ -292,7 +290,7 @@ export default function StructuredDailyCapture() {
       // Reset image preview
       setMedicationImagePreview(null);
       
-      alert('Medication added successfully');
+      alert('Added to the unsaved draft. Save the full daily capture to persist this medication entry.');
     } catch (err: any) {
       setMedicationUploading(false);
       setMedicationCompressing(false);
@@ -313,7 +311,7 @@ export default function StructuredDailyCapture() {
       };
       
       // Validate required fields
-      if (!Number.isFinite(vitalData.value) || vitalData.value <= 0) {
+      if (isNaN(vitalData.value) || vitalData.value === 0) {
         alert('Please enter a valid value');
         return;
       }
@@ -327,13 +325,13 @@ export default function StructuredDailyCapture() {
       // Reset vitals form
       setVitalForm({
         vital_type: 'bp_systolic',
-        value: Number.NaN,
+        value: 0,
         measured_at: new Date().toISOString(),
         unit: null,
         note: null,
       });
       
-      alert('Vital added successfully');
+      alert('Added to the unsaved draft. Save the full daily capture to persist this vital.');
     } catch (err: any) {
       alert(`Failed to add vital: ${err.message}`);
     }
@@ -344,16 +342,17 @@ export default function StructuredDailyCapture() {
     e.preventDefault();
     
     try {
+      if (!Number.isInteger(scaleForm.score) || scaleForm.score < 1 || scaleForm.score > 5) {
+        setSaveError(new Error('Enter an explicit scale score from 1 to 5.'));
+        return;
+      }
+
       const scaleData = {
         ...scaleForm,
         observed_at: new Date(scaleForm.observed_at).toISOString(),
       };
-      if (!Number.isInteger(scaleData.score) || scaleData.score < 1 || scaleData.score > 5) {
-        alert('Select the observed score before adding this record.');
-        return;
-      }
       
-      // Optimistically add to scales list
+      // Add to the local draft; persistence occurs only when the full capture is saved.
       setForm(prev => ({
         ...prev,
         scales: [...prev.scales, scaleData]
@@ -362,12 +361,12 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: Number.NaN,
+        score: 0,
         observed_at: new Date().toISOString(),
         note: null,
       });
       
-      alert('Scale added successfully');
+      alert('Added to the unsaved draft. Save the full daily capture to persist this scale observation.');
     } catch (err: any) {
       alert(`Failed to add scale: ${err.message}`);
     }
@@ -456,7 +455,7 @@ export default function StructuredDailyCapture() {
       // Reset vitals form
       setVitalForm({
         vital_type: 'bp_systolic',
-        value: Number.NaN,
+        value: 0,
         measured_at: new Date().toISOString(),
         unit: null,
         note: null,
@@ -465,7 +464,7 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: Number.NaN,
+        score: 3,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -501,6 +500,8 @@ export default function StructuredDailyCapture() {
     onSettled: () => {
       setSubmitting(false);
     },
+    retry: false,
+    maxRetries: 0
   });
 
   // Handle form submission to backend
@@ -840,7 +841,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
-                  <option value="">Select actual status</option>
+                  <option value="">Select status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
@@ -922,132 +923,35 @@ export default function StructuredDailyCapture() {
               />
             </div>
             
-            {/* Image upload for medication */}
             <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg)', borderRadius: '6px' }}>
-              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Medication Photo (Optional)</h4>
-              
-              {medicationImagePreview ? (
-                <div>
-                  <div style={{ 
-                    width: '100%', 
-                    height: '200px', 
-                    backgroundColor: 'var(--surface)', 
-                    border: '1px solid var(--border)', 
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '12px'
-                  }}>
-                    <img 
-                      src={medicationImagePreview} 
-                      alt="Medication preview" 
-                      style={{ maxWidth: '100%', maxHeight: '100%' }} 
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      onClick={() => setMedicationImagePreview(null)}
-                      style={{ 
-                        fontSize: '12px', 
-                        color: '#dc2626', 
-                        background: 'none', 
-                        border: 'none', 
-                        cursor: 'pointer', 
-                        padding: '6px 10px', 
-                        borderRadius: '4px' 
-                      }}
-                    >
-                      Remove Preview
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleMedicationSubmit}
-                      disabled={medicationUploading || !medicationForm.medication_name.trim()}
-                      style={{ 
-                        fontSize: '13px', 
-                        fontWeight: '500', 
-                        color: 'white', 
-                        background: medicationUploading || !medicationForm.medication_name.trim() 
-                                   ? 'var(--text-secondary)' 
-                                   : 'var(--accent)', 
-                        padding: '8px 16px', 
-                        borderRadius: '6px', 
-                        cursor: medicationUploading || !medicationForm.medication_name.trim() 
-                               ? 'default' 
-                               : 'pointer' 
-                      }}
-                    >
-                      {medicationUploading ? 'Adding...' : 'Add Medication with Photo'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                    <button
-                      type="button"
-                      onClick={handleMedicationImageCapture}
-                      disabled={submitting || medicationUploading || cameraState.status === 'denied' || cameraState.status === 'unsupported' ? true : false}
-                      style={{ 
-                        fontSize: '12px', 
-                        padding: '8px 12px', 
-                        borderRadius: '4px', 
-                        border: '1px solid var(--border)', 
-                        background: cameraState.status === 'unknown' ? 'var(--accent)' : 'var(--text-secondary)', 
-                        color: 'white', 
-                        cursor: cameraState.status === 'unknown' ? 'pointer' : 'default' 
-                      }}
-                    >
-                      {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
-                    </button>
-                    <input
-                      id="medication-file-input"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleMedicationImageUpload}
-                      className='medication-file-input'
-                      disabled={submitting || medicationUploading}
-                    />
-                    <label htmlFor="medication-file-input" className='medication-file-label'>
-                      or upload from device
-                    </label>
-                  </div>
-                  {medicationUploading && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                      Uploading...
-                    </p>
-                  )}
-                  {medicationCompressing && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                      Compressing image...
-                    </p>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                    <button
-                      type="button"
-                      onClick={handleMedicationSubmit}
-                      disabled={medicationUploading || !medicationForm.medication_name.trim()}
-                      style={{ 
-                        fontSize: '13px', 
-                        fontWeight: '500', 
-                        color: 'white', 
-                        background: medicationUploading || !medicationForm.medication_name.trim() 
-                                   ? 'var(--text-secondary)' 
-                                   : 'var(--accent)', 
-                        padding: '8px 16px', 
-                        borderRadius: '6px', 
-                        cursor: medicationUploading || !medicationForm.medication_name.trim() 
-                               ? 'default' 
-                               : 'pointer' 
-                      }}
-                    >
-                      {medicationUploading ? 'Adding...' : 'Add Medication'}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <h4 style={{ marginTop: 0, marginBottom: '8px', fontSize: '16px', fontWeight: 600 }}>
+                Photo evidence unavailable
+              </h4>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Camera capture and photo attachment are disabled in this deployment because a verified
+                backend upload endpoint is not available. Medication details can still be recorded without a photo.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button
+                  type="submit"
+                  disabled={medicationUploading || !medicationForm.medication_name.trim()}
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: 'white',
+                    background: medicationUploading || !medicationForm.medication_name.trim()
+                      ? 'var(--text-secondary)'
+                      : 'var(--accent)',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: medicationUploading || !medicationForm.medication_name.trim()
+                      ? 'default'
+                      : 'pointer',
+                  }}
+                >
+                  {medicationUploading ? 'Adding...' : 'Add Medication'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -1107,9 +1011,8 @@ export default function StructuredDailyCapture() {
                 <input
                   id="capture-vital-value"
                   type="number"
-                  value={Number.isFinite(vitalForm.value) ? vitalForm.value : ''}
-                  required
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: e.target.value === '' ? Number.NaN : Number(e.target.value) }))}
+                  value={vitalForm.value}
+                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
                   placeholder="Enter value"
                   style={{ 
                     width: '100%', 
@@ -1256,9 +1159,8 @@ export default function StructuredDailyCapture() {
                   type="number"
                   min={1}
                   max={5}
-                  value={Number.isFinite(scaleForm.score) ? scaleForm.score : ''}
-                  required
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? Number.NaN : Number.parseInt(e.target.value, 10) }))}
+                  value={scaleForm.score || ''}
+                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: parseInt(e.target.value) || 0 }))}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 
