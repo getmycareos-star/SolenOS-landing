@@ -112,13 +112,12 @@ export type RecordObservationResult = {
   observations_this_week: number;
 };
 
-const DEFAULT_CAREGIVER_ID = "default_caregiver";
-
-/**
- * Record a caregiver observation — extraction + storage + aggregation.
- */
+/** Record a caregiver observation only under an explicit caregiver identity. */
 export function recordObservation(input: RecordObservationInput): RecordObservationResult {
-  const caregiverId = input.caregiver_id || DEFAULT_CAREGIVER_ID;
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId) {
+    throw new Error("Caregiver identity is required; observation was not persisted.");
+  }
   const source = input.source ?? "text";
   const extraction = extractObservations(input.raw_text);
 
@@ -145,14 +144,18 @@ export function recordObservation(input: RecordObservationInput): RecordObservat
   };
 }
 
-export function getObservationWeeklySummary(caregiverId = DEFAULT_CAREGIVER_ID) {
-  const history = listStructuredForCaregiver(caregiverId);
+export function getObservationWeeklySummary(caregiverId: string) {
+  const id = caregiverId?.trim();
+  if (!id) throw new Error("Caregiver identity is required to read observation history.");
+  const history = listStructuredForCaregiver(id);
   return generateWeeklySummary(history);
 }
 
-export function getObservationExport(caregiverId = DEFAULT_CAREGIVER_ID) {
-  const observations = listObservationsForCaregiver(caregiverId);
-  const history = listStructuredForCaregiver(caregiverId);
+export function getObservationExport(caregiverId: string) {
+  const id = caregiverId?.trim();
+  if (!id) throw new Error("Caregiver identity is required to export observation history.");
+  const observations = listObservationsForCaregiver(id);
+  const history = listStructuredForCaregiver(id);
   const weekly = generateWeeklySummary(history);
 
   const signalsByObservation = new Map<string, string[]>();
@@ -169,7 +172,7 @@ export function getObservationExport(caregiverId = DEFAULT_CAREGIVER_ID) {
   const aggregation = buildSystemAggregation(lastExtraction, history);
 
   return buildDoctorSummaryReport({
-    caregiverId,
+    caregiverId: id,
     observations,
     weeklySummary: weekly,
     aggregation,
