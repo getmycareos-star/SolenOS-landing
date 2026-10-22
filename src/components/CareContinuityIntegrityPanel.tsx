@@ -6,6 +6,7 @@ type Assertion = {
   field: string
   assertion_kind: 'current_state' | 'time_bound_observation'
   asserted_value: string
+  source_event_id?: string | null
   source_label: string
   source_text?: string | null
   evidence_ids: string[]
@@ -303,7 +304,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
               <span style={{ fontSize: 12 }}>{fresh?.status?.replace(/_/g, ' ') || 'freshness unknown'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status}
+              Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status} · event: {item.source_event_id || 'manual report'}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
@@ -348,7 +349,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
           const actionId = item.persisted_question_id || item.source_id
           return <article key={item.persisted_question_id || item.source_id || index} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <strong style={{ fontSize: 14 }}>{item.question}</strong>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Priority: {item.priority} · Trigger: {item.source_kind} · Evidence: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'No evidence IDs attached'}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Priority: {item.priority} · Trigger: {item.source_kind} · Evidence: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'No evidence IDs attached'} · linked records: {item.source_ids?.join(', ') || item.source_id}</p>
             <p style={{ fontSize: 12 }}>{item.reason}</p>
             <label style={{ display: 'block', fontSize: 12 }}>Correction (required only if recording “Corrected”)
               <textarea style={{ ...fieldStyle, minHeight: 50 }} value={corrections[actionId] || ''} onChange={(e) => setCorrections((current) => ({ ...current, [actionId]: e.target.value }))} />
