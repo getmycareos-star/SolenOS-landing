@@ -11,6 +11,7 @@ export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
+  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
   
   // Form state
   const [form, setForm] = useState({
@@ -434,6 +435,10 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
+      setQwenAnalysis({
+        status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
+        candidates: data?.qwen_candidates ?? null,
+      });
       // On success, reset the form
       setForm({
         medications: [],
@@ -759,6 +764,46 @@ export default function StructuredDailyCapture() {
         </div>
       )}
       
+      {saved && qwenAnalysis && (
+        <section aria-label="Qwen care analysis" style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: '8px', padding: '12px 16px', marginBottom: '24px'
+        }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Qwen care analysis</h2>
+          <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+            Extraction status: {qwenAnalysis.status}. Generated observations remain review candidates and do not automatically become established LCR facts.
+          </p>
+          {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
+            <ul style={{ margin: 0, paddingLeft: '18px' }}>
+              {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => (
+                <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                  <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
+                  <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Source: “{candidate.source_quote}” · Review: {candidate.review_status || 'pending_review'}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              {qwenAnalysis.status === 'pending_review'
+                ? 'Qwen returned no verifiable observation candidates.'
+                : 'No Qwen-generated candidates are available. The saved capture remains recorded; no substitute analysis was invented.'}
+            </p>
+          )}
+          {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
+              <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
+                {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
+                  <li key={index} style={{ fontSize: '12px', marginBottom: '4px' }}>{question}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Save error indicator */}
       {Boolean(saveError) && !saved && (
         <div style={{ 
