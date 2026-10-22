@@ -10,8 +10,11 @@ interface CareCaptureProps {
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
-  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null)
+  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId?: string | null } | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
+  const [reviewDrafts, setReviewDrafts] = useState<Record<number, string>>({})
+  const [reviewingCandidate, setReviewingCandidate] = useState<number | null>(null)
+  const [reviewFeedback, setReviewFeedback] = useState<string | null>(null)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -35,6 +38,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
+        analysisId: typeof data?.qwen_analysis_id === 'string' ? data.qwen_analysis_id : null,
       })
       setIdentityError(null)
       setText('')
@@ -48,6 +52,40 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Preserve the user's text on failure so it can be corrected and retried.
     },
   })
+
+  async function reviewCandidate(index: number, decision: 'accept' | 'correct' | 'reject') {
+    const analysisId = qwenAnalysis?.analysisId
+    if (!analysisId) {
+      setReviewFeedback('This extraction did not return a persistent review ID. The original report is saved, but this candidate cannot be reviewed until the backend returns that ID.')
+      return
+    }
+    const correctedObservation = reviewDrafts[index]?.trim()
+    if (decision === 'correct' && !correctedObservation) {
+      setReviewFeedback('Enter the corrected observation before saving a correction.')
+      return
+    }
+    setReviewingCandidate(index)
+    setReviewFeedback(null)
+    try {
+      const result = await postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {
+        candidate_index: index,
+        decision,
+        corrected_observation: decision === 'correct' ? correctedObservation : undefined,
+      }) as { candidate?: any; message?: string }
+      if (!result.candidate) throw new Error('The server did not return the saved review decision.')
+      setQwenAnalysis((current) => {
+        if (!current || !Array.isArray(current.candidates?.observations)) return current
+        const observations = [...current.candidates.observations]
+        observations[index] = result.candidate
+        return { ...current, candidates: { ...current.candidates, observations } }
+      })
+      setReviewFeedback(result.message || 'Review decision saved. The Living Care Record was not changed.')
+    } catch (error) {
+      setReviewFeedback(error instanceof Error ? error.message : 'The review decision could not be saved.')
+    } finally {
+      setReviewingCandidate(null)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!text.trim()) return
@@ -179,10 +217,26 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
               {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => (
-                <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                <li key={index} style={{ fontSize: '12px', marginBottom: '12px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
                   <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
                   <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                     Source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
+                  </div>
+                  <label style={{ display: 'block', marginTop: '8px', fontSize: '11px' }}>
+                    Correct the extracted wording (optional unless saving a correction)
+                    <textarea
+                      aria-label={`Corrected observation ${index + 1}`}
+                      value={reviewDrafts[index] || ''}
+                      onChange={(event) => setReviewDrafts((current) => ({ ...current, [index]: event.target.value }))}
+                      placeholder={candidate.observation}
+                      rows={2}
+                      style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '4px', padding: '8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', font: 'inherit' }}
+                    />
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                    <button type="button" disabled={reviewingCandidate !== null} onClick={() => void reviewCandidate(index, 'correct')} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: '11px' }}>Save correction</button>
+                    <button type="button" disabled={reviewingCandidate !== null} onClick={() => void reviewCandidate(index, 'accept')} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: '11px' }}>Mark reviewed</button>
+                    <button type="button" disabled={reviewingCandidate !== null} onClick={() => void reviewCandidate(index, 'reject')} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: '11px' }}>Reject candidate</button>
                   </div>
                 </li>
               ))}
@@ -192,6 +246,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
               No verified Qwen candidates are available. The saved input remains preserved.
             </p>
           )}
+          {reviewFeedback && <p role="status" style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '8px' }}>
               <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
