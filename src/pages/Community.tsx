@@ -298,14 +298,17 @@ export default function Community() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Community</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '500px' }}>
-            Shared experiences from caregivers like you. When you capture what changed in "What Matters Today," similar experiences surface here.
+            Shared experiences from caregivers like you. Use the search below to compare a care question with published peer experiences; another person’s experience is not a fact about your care recipient.
           </p>
           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.7, marginTop: '4px' }}>
             Shared experience is not medical advice — always confirm with a clinician.
           </p>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+            Community posts and reactions stay separate from the Living Care Record. To preserve your own observation, <Link to="/daily-care" style={{ color: 'var(--trust)' }}>open Daily Capture</Link>.
+          </p>
         </div>
-        <Link to="/" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-          ← Back to capture
+        <Link to="/daily-care" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+          ← Back to Daily Capture
         </Link>
       </div>
 
