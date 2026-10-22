@@ -50,6 +50,7 @@ const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
 
 export type AnonymousSession = {
+  session_id?: string;
   person: { id: string; name: string; date_of_birth: string | null };
   caregiver: { id: string; name: string; relationship: string };
   access_token: string;
@@ -78,21 +79,64 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
   const expiresAt = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
-  if (
-    token &&
-    personId &&
-    caregiverId &&
-    expiresAt &&
-    Date.parse(expiresAt) > Date.now() + 60_000
-  ) {
-    return {
-      person: { id: personId, name: "Care recipient", date_of_birth: null },
-      caregiver: { id: caregiverId, name: "Caregiver", relationship: "Family" },
-      access_token: token,
-      token_type: "Bearer",
-      expires_at: expiresAt,
-      expires_in_seconds: Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1000)),
+
+  if (token) {
+    if (expiresAt && Date.parse(expiresAt) <= Date.now()) {
+      throw new Error(
+        "This anonymous session has expired. SolenOS will not silently create a different care record."
+      );
+    }
+
+    if (
+      personId &&
+      caregiverId &&
+      expiresAt &&
+      Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
+    ) {
+      return {
+        person: { id: personId, name: "Care recipient", date_of_birth: null },
+        caregiver: { id: caregiverId, name: "Caregiver", relationship: "Family" },
+        access_token: token,
+        token_type: "Bearer",
+        expires_at: expiresAt,
+        expires_in_seconds: Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1000)),
+      };
+    }
+
+    const refreshResponse = await fetch("/api/v1/sessions/refresh", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const refreshed = (await handleResponse(refreshResponse)) as {
+      session_id: string;
+      person_id: string;
+      caregiver_id: string;
+      access_token: string;
+      token_type: "Bearer";
+      expires_at: string;
+      expires_in_seconds: number;
     };
+    window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
+    window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
+    window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
+    window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
+    return {
+      session_id: refreshed.session_id,
+      person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
+      caregiver: { id: refreshed.caregiver_id, name: "Caregiver", relationship: "Family" },
+      access_token: refreshed.access_token,
+      token_type: "Bearer",
+      expires_at: refreshed.expires_at,
+      expires_in_seconds: refreshed.expires_in_seconds,
+    };
+  }
+
+  // Existing record IDs without the bearer secret are not proof of ownership.
+  // Do not silently create a new record and make the prior one appear lost.
+  if (personId || caregiverId) {
+    throw new Error(
+      "This browser has a care-record ID but no session credential. SolenOS cannot safely restore that record automatically."
+    );
   }
 
   const response = await fetch("/api/v1/sessions/anonymous", {
