@@ -176,7 +176,7 @@ export default function Community() {
   async function handleReaction(postId: string, reactionType: ReactionType) {
     setActionError(null)
     if (!hasActiveCareSession() || !caregiverId) {
-      setActionError('Reactions are unavailable because SolenOS cannot verify this browser's active care session.')
+      setActionError('Reactions are unavailable because SolenOS cannot verify this browser’s active care session.')
       return
     }
     try {
@@ -250,7 +250,7 @@ export default function Community() {
     e.preventDefault()
     if (!composerText.trim()) return
     if (!hasActiveCareSession() || !caregiverId) {
-      setActionError('Posting is unavailable because SolenOS cannot verify this browser's active care session. Your text has been kept.')
+      setActionError('Posting is unavailable because SolenOS cannot verify this browser’s active care session. Your text has been kept.')
       return
     }
     setSubmitting(true)
