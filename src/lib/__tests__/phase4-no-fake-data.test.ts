@@ -141,3 +141,37 @@ describe('Phase 4 production data-integrity guardrails', () => {
   })
 
 })
+
+
+  it('rejects shared caregiver fallbacks across identity-sensitive production modules', () => {
+    const identitySensitiveSources = [
+      'src/lib/capacity-self/process-session.ts',
+      'src/lib/capacity-self/caregiver-profile/store.ts',
+      'src/lib/cognitive-relief/ingest-entry.ts',
+      'src/lib/cognitive-relief/care-recipient-profile/store.ts',
+      'src/lib/care-contexts/dementia/operations.ts',
+      'src/lib/observation-intelligence/index.ts',
+      'src/lib/care-journey/store.ts',
+      'src/lib/care-journey/postgres-store.ts',
+      'src/lib/continuity-graph/pipeline.ts',
+      'src/lib/care-journey-graph/pipeline.ts',
+      'src/lib/care-journey-graph/structure-event.ts',
+      'src/lib/care-journey-graph/graph-store.ts',
+      'src/lib/memory-reconstruction-engine/reconstruct.ts',
+      'src/lib/care-events/store.ts',
+      'src/lib/care-events/record-care-event.ts',
+      'src/lib/living-care-record-persistence/fs-store.ts',
+      'src/lib/meeting-preparation/meeting-store.ts',
+      'src/lib/universal-knowledge-extraction/store.ts',
+      'src/lib/care-identity/durable-care-key.ts',
+      'src/app/api/situation/route.ts',
+      'src/components/mvp-workspace/CognitiveWorkspace.tsx',
+      'src/components/ops-devtools/MemoryEpisodePanel.tsx',
+    ]
+    for (const path of identitySensitiveSources) {
+      const text = source(path)
+      expect(text).not.toMatch(/\\?\\?\\s*["']default_caregiver["']/)
+      expect(text).not.toMatch(/(?:^|\\s)DEFAULT_CAREGIVER_ID\\s*=\\s*["']default_caregiver["']/)
+      expect(text).not.toMatch(/(?:^|\\s)DEFAULT_DURABLE_CARE_KEY\\s*=\\s*["']default_caregiver["']/)
+    }
+  })
