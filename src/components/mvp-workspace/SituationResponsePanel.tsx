@@ -29,6 +29,20 @@ export function SituationResponsePanel({
   onAddUpdate,
   careKey = null,
 }: Props) {
+  if (!response.active_care_situation && !response.active_care_situation_turn) {
+    return (
+      <section className="panel panel-output situation-response" aria-label="Living Care Record" role="status">
+        <div className="workspace-panel-inner lcr-side">
+          <h3>Care record view unavailable</h3>
+          <p>
+            SolenOS did not return a persisted Active Care Situation for this response.
+            Refresh the record to verify saved information before submitting the same information again.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   const livingRecord = buildLivingCareRecordResponse({
     response,
     rawInput,
