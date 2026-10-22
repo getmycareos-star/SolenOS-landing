@@ -87,13 +87,140 @@ function isAbortError(error: unknown): boolean {
 
 const AUTH_TOKEN_KEY = 'solenos_access_token'
 const AUTH_EVENT = 'solenosAuthChanged'
-export interface AuthAccount { id: string; email: string; role: 'caregiver' | 'professional' | 'team'; caregiver_id: string; person_id: string }
-export interface AuthResult { access_token: string; token_type: 'bearer'; expires_in: number; account: AuthAccount }
-export function getAccessToken(): string { return localStorage.getItem(AUTH_TOKEN_KEY) || '' }
-export function clearAuthSession(): void { localStorage.removeItem(AUTH_TOKEN_KEY); localStorage.removeItem('solenos_caregiver_id'); localStorage.removeItem('solenos_identifier'); localStorage.removeItem('solenos_user_role'); window.dispatchEvent(new Event(AUTH_EVENT)) }
-function persistAuthSession(result: AuthResult): void { localStorage.setItem(AUTH_TOKEN_KEY, result.access_token); localStorage.setItem('solenos_caregiver_id', result.account.caregiver_id); localStorage.setItem('solenos_identifier', result.account.email); localStorage.setItem('solenos_user_role', result.account.role); setPersonId(result.account.person_id); window.dispatchEvent(new Event(AUTH_EVENT)) }
-export async function loginWithPassword(email: string, password: string): Promise<AuthAccount> { const result = await postJSON<AuthResult>('/auth/login', { email, password }); persistAuthSession(result); return result.account }
-export async function registerCaregiverAccount(input: { email: string; password: string; enrollment_key: string; name: string; person_name: string; relationship?: string }): Promise<AuthAccount> { const result = await postJSON<AuthResult>('/auth/register', input); persistAuthSession(result); return result.account }
+export interface AuthAccount {
+  id: string
+  email: string
+  role: 'caregiver' | 'professional' | 'team'
+  caregiver_id: string | null
+  person_id: string | null
+}
+
+interface BackendAccount {
+  id: string
+  email: string
+  display_name?: string | null
+}
+
+interface BackendLoginResponse {
+  access_token: string
+  token_type: 'bearer'
+  expires_at: string
+  account: BackendAccount
+}
+
+interface CareContext {
+  person_id: string
+  name: string
+  role: string
+  permissions: string[]
+}
+
+interface CaregiverLink {
+  person_id: string
+  caregiver_id: string
+  account_id: string
+  permissions: string[]
+}
+
+const AUTH_TOKEN_KEY = 'solenos_access_token'
+const AUTH_EVENT = 'solenosAuthChanged'
+
+export function getAccessToken(): string {
+  return localStorage.getItem(AUTH_TOKEN_KEY) || ''
+}
+
+export function clearAuthSession(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY)
+  localStorage.removeItem('solenos_caregiver_id')
+  localStorage.removeItem('solenos_identifier')
+  localStorage.removeItem('solenos_user_role')
+  window.dispatchEvent(new Event(AUTH_EVENT))
+}
+
+function persistAuthToken(result: BackendLoginResponse): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, result.access_token)
+  localStorage.setItem('solenos_identifier', result.account.email)
+  window.dispatchEvent(new Event(AUTH_EVENT))
+}
+
+async function resolveSignedInAccount(
+  backendAccount: BackendAccount,
+  preferredPersonId?: string | null,
+): Promise<AuthAccount> {
+  const contexts = await getJSON<CareContext[]>('/auth/care-contexts')
+  if (!Array.isArray(contexts) || contexts.length === 0) {
+    throw new Error('This account has no linked care record. Create a care record or accept a caregiver invitation before continuing.')
+  }
+
+  const preferred = preferredPersonId
+    ? contexts.find(context => context.person_id === preferredPersonId)
+    : undefined
+  if (preferredPersonId && !preferred) {
+    throw new Error('The previously selected care record is not accessible to this account. Select a care record you are authorized to access.')
+  }
+  if (!preferred && contexts.length > 1) {
+    throw new Error('This account has multiple care records. Select the correct care record before continuing; SolenOS will not choose one automatically.')
+  }
+
+  const context = preferred || contexts[0]
+  const links = await getJSON<CaregiverLink[]>(
+    '/auth/my-caregiver-links?person_id=' + encodeURIComponent(context.person_id),
+  )
+  const link = Array.isArray(links)
+    ? links.find(item => item.person_id === context.person_id)
+    : undefined
+
+  const role = context.role
+  if (!['caregiver', 'professional', 'team'].includes(role)) {
+    throw new Error('The backend returned an unsupported account role. Contact SolenOS support.')
+  }
+  const account: AuthAccount = {
+    id: backendAccount.id,
+    email: backendAccount.email,
+    role: role as AuthAccount['role'],
+    caregiver_id: link?.caregiver_id || null,
+    person_id: context.person_id,
+  }
+
+  if (account.caregiver_id) localStorage.setItem('solenos_caregiver_id', account.caregiver_id)
+  else localStorage.removeItem('solenos_caregiver_id')
+  localStorage.setItem('solenos_user_role', account.role)
+  setPersonId(context.person_id)
+  window.dispatchEvent(new Event(AUTH_EVENT))
+  return account
+}
+
+export async function loginWithPassword(email: string, password: string): Promise<AuthAccount> {
+  const result = await postJSON<BackendLoginResponse>('/auth/login', { email, password })
+  persistAuthToken(result)
+  return resolveSignedInAccount(result.account, localStorage.getItem('solenos_person_id'))
+}
+
+export async function registerCaregiverAccount(input: {
+  email: string
+  password: string
+  name: string
+  person_name: string
+  relationship?: string
+}): Promise<AuthAccount> {
+  await postJSON<{ account: BackendAccount }>('/auth/signup', {
+    email: input.email,
+    password: input.password,
+    display_name: input.name,
+  })
+  const result = await postJSON<BackendLoginResponse>('/auth/login', {
+    email: input.email,
+    password: input.password,
+  })
+  persistAuthToken(result)
+  await postJSON('/auth/care-contexts', {
+    name: input.person_name,
+    caregiver_name: input.name,
+    relationship: input.relationship || 'family caregiver',
+  })
+  return resolveSignedInAccount(result.account)
+}
+
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
   const method = (init.method || 'GET').toUpperCase()
   const canRetry = method === 'GET'
@@ -105,7 +232,7 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
       const headers = new Headers(init.headers || {})
-      const publicAuthRequest = path.endsWith('/auth/login') || path.endsWith('/auth/register') || path.endsWith('/auth/provision')
+      const publicAuthRequest = path.endsWith('/auth/login') || path.endsWith('/auth/signup') || path.endsWith('/auth/provision')
       const token = getAccessToken()
       if (token && !publicAuthRequest) headers.set('Authorization', 'Bearer ' + token)
       const response = await fetch(url, { ...init, headers, signal: controller.signal })
