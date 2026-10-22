@@ -85,8 +85,6 @@ function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError'
 }
 
-const AUTH_TOKEN_KEY = 'solenos_access_token'
-const AUTH_EVENT = 'solenosAuthChanged'
 export interface AuthAccount {
   id: string
   email: string
