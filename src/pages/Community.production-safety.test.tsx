@@ -106,6 +106,24 @@ describe('Keyword heuristics are disabled unless explicitly opted into in develo
   })
 
 
+
+  it('enables legacy heuristic inspection only with explicit development opt-in', () => {
+    const previousNodeEnv = process.env.NODE_ENV
+    const previousFlag = process.env.SOLENOS_DEV_KEYWORD_HEURISTICS
+    process.env.NODE_ENV = 'development'
+    process.env.SOLENOS_DEV_KEYWORD_HEURISTICS = 'true'
+    try {
+      expect(classifyCaregiverDemand('Dad has started wandering at night. Is it time for professional care?').demand_type).not.toBe('unknown')
+      expect(classifyFailureFromQuestion('Does Medicare cover dementia care?')).not.toBeNull()
+      expect(interpretQuestion('Dad has started wandering at night.').demandType).not.toBe('unknown')
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+      else process.env.NODE_ENV = previousNodeEnv
+      if (previousFlag === undefined) delete process.env.SOLENOS_DEV_KEYWORD_HEURISTICS
+      else process.env.SOLENOS_DEV_KEYWORD_HEURISTICS = previousFlag
+    }
+  })
+
   it('never enables keyword inference in production even when the development flag is set', () => {
     const previousNodeEnv = process.env.NODE_ENV
     const previousFlag = process.env.SOLENOS_DEV_KEYWORD_HEURISTICS
