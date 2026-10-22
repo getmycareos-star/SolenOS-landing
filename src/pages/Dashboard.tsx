@@ -142,8 +142,7 @@ export default function Dashboard() {
         // Mark action as complete
         await postJSON(`/actions/${actionId}/complete`, {
           evidence_ids: [],
-          completion_confidence: 0,
-          notes: 'Marked complete by the caregiver in the dashboard; no supporting evidence was attached.'
+          notes: 'Caregiver marked this action as complete. No separate supporting evidence was attached.'
         });
         
         // Update local state optimistically (handled by hook)
