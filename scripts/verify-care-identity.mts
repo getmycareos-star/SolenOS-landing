@@ -46,14 +46,16 @@ assert(
   resolveDurableCareKey({ caregiver_id: "cg_a", care_session_id: "other" }) === "cg_a",
   "caregiver_id wins as durable key",
 );
+let missingIdentityRejected = false;
+try {
+  resolveDurableCareKey({ caregiver_id: null, care_session_id: "sess_abc" });
+} catch {
+  missingIdentityRejected = true;
+}
+assert(missingIdentityRejected, "missing caregiver identity is rejected, not replaced by a shared key");
 assert(
-  resolveDurableCareKey({ caregiver_id: null, care_session_id: "sess_abc" }) ===
-    "default_caregiver",
-  "interaction session is not a care key",
-);
-assert(
-  ensureClientDurableCareKey("default_caregiver") === "default_caregiver",
-  "Locked A: stored default_caregiver identity is preserved (not reminted/orphaned)",
+  ensureClientDurableCareKey("cg_verify_identity").startsWith("care_"),
+  "legacy shared identity is discarded and replaced with a browser-local key",
 );
 assert(
   ensureClientDurableCareKey("care_stable") === "care_stable",
@@ -95,16 +97,16 @@ resetNormalizationStore();
 resetPolicyEngineStore();
 resetResolutionStoreForTests();
 resetActiveCareSituationStore();
-seedVerifyConsent("default_caregiver");
+seedVerifyConsent("cg_verify_identity");
 
 const first = await processSituationInput({
   raw_input: "Mom fell yesterday. We went to urgent care.",
-  caregiver_id: "default_caregiver",
+  caregiver_id: "cg_verify_identity",
   care_session_id: "sess_verify_1",
   timestamp: "2026-07-16T12:00:00.000Z",
 });
 
-assert(first.care_key === "default_caregiver", "response includes care_key");
+assert(first.care_key === "cg_verify_identity", "response includes care_key");
 const realityKey = first.context.care_recipient_id;
 assert(
   listSituationsForSession(realityKey).some((s) => s.status === "ACTIVE"),
@@ -113,7 +115,7 @@ assert(
 
 const second = await processSituationInput({
   raw_input: "She seemed unsteady walking after that.",
-  caregiver_id: "default_caregiver",
+  caregiver_id: "cg_verify_identity",
   care_session_id: "sess_verify_2",
   timestamp: "2026-07-16T13:00:00.000Z",
 });
@@ -123,22 +125,22 @@ assert(
   "same TrackedSituation across sessions",
 );
 assert(
-  getActiveCareSituation("default_caregiver")?.id === second.active_care_situation?.id,
+  getActiveCareSituation("cg_verify_identity")?.id === second.active_care_situation?.id,
   "same ACS across interaction sessions",
 );
 console.log("✓ subsequent write updates same TrackedSituation + server ACS");
 
-const beforePause = getActiveCareSituation("default_caregiver");
+const beforePause = getActiveCareSituation("cg_verify_identity");
 assert(beforePause != null, "ACS present before pause");
-const paused = pauseActiveCareSituationSession("default_caregiver");
+const paused = pauseActiveCareSituationSession("cg_verify_identity");
 assert(paused != null && paused.id === beforePause!.id, "Locked A: pause keeps ACS");
 assert(Boolean(paused?.interaction_paused_at), "pause stamps interaction_paused_at");
-assert(getActiveCareSituation("default_caregiver") != null, "pause does not clear ACS");
+assert(getActiveCareSituation("cg_verify_identity") != null, "pause does not clear ACS");
 console.log("✓ ACS pause preserves durable Care Reality (Locked A)");
 
 // Test teardown only — not product pause.
-clearActiveCareSituation("default_caregiver");
-assert(getActiveCareSituation("default_caregiver") === null, "test clear removes ACS");
+clearActiveCareSituation("cg_verify_identity");
+assert(getActiveCareSituation("cg_verify_identity") === null, "test clear removes ACS");
 
 resetResolutionStoreForTests();
 const hydrated = hydrateTrackedSituationsFromCareContext({
