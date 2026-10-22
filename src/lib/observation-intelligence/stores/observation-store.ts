@@ -39,6 +39,14 @@ const observations = new Map<string, ObservationRecord>();
 const structuredByObservation = new Map<string, StructuredObservationRecord[]>();
 const caregiverIndex = new Map<string, string[]>();
 
+function requireCaregiverIdentity(caregiverId: string): string {
+  const id = caregiverId?.trim();
+  if (!id || id === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required for observation storage.");
+  }
+  return id;
+}
+
 export function createObservationId(): string {
   return `obs_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -53,6 +61,7 @@ export function saveObservation(
   source: ObservationSource,
   structured: StructuredObservation[],
 ): { observation: ObservationRecord; structured: StructuredObservationRecord[] } {
+  caregiverId = requireCaregiverIdentity(caregiverId);
   const now = new Date().toISOString();
   const text = rawText.trim();
   const observation: ObservationRecord = {
@@ -92,7 +101,8 @@ export function getStructuredForObservation(id: string): StructuredObservationRe
 }
 
 export function listObservationsForCaregiver(caregiverId: string): ObservationRecord[] {
-  const ids = caregiverIndex.get(caregiverId) ?? [];
+  const id = requireCaregiverIdentity(caregiverId);
+  const ids = caregiverIndex.get(id) ?? [];
   return ids
     .map((id) => observations.get(id))
     .filter((r): r is ObservationRecord => r !== undefined)
@@ -126,8 +136,9 @@ function startOfWeek(date: Date): Date {
  * than pretending a no-op INSERT succeeded.
  */
 export async function persistObservations(
-  _caregiverId: string,
+  caregiverId: string,
 ): Promise<{ available: false; reason: string }> {
+  requireCaregiverIdentity(caregiverId);
   return {
     available: false,
     reason: "Observation database adapter is not configured; records are process-memory-only.",
