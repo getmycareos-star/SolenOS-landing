@@ -5,7 +5,8 @@ import {
 } from "./durable-care-key";
 import { getOrCreateCaregiverSelfProfile } from "../capacity-self/caregiver-profile/store";
 import { getOrCreateProfile } from "../cognitive-relief/care-recipient-profile/store";
-import { recordObservation, getObservationExport } from "../observation-intelligence";
+import { recordObservation, getObservationExport, resetObservationStore } from "../observation-intelligence";
+import { captureVoiceObservation } from "../voice-observation";
 import { getOrCreateGraph, getGraphForCaregiver, resetCareJourneyGraphStore } from "../care-journey-graph/graph-store";
 import { createCareEvent, resetCareEventStore } from "../care-events/store";
 
@@ -13,6 +14,7 @@ describe("identity isolation boundaries", () => {
   afterEach(() => {
     resetCareJourneyGraphStore();
     resetCareEventStore();
+    resetObservationStore();
   });
 
   it("never resolves a missing caregiver from a session ID", () => {
@@ -46,3 +48,20 @@ describe("identity isolation boundaries", () => {
     ).toThrow(/caregiver attribution/i);
   });
 });
+
+  it("does not report an observation as saved when durable persistence is not wired", async () => {
+    const result = recordObservation({
+      caregiver_id: "cg_persistence_test",
+      raw_text: "caregiver-entered verification note",
+    });
+    expect(result.persistence_status).toBe("unavailable");
+    expect(result.persistence_message).toMatch(/not durably saved/i);
+
+    const voice = await captureVoiceObservation({
+      audio: new Blob([]),
+      caregiverId: "cg_persistence_test",
+      editedTranscript: "caregiver-entered verification note",
+      record: recordObservation,
+    });
+    expect(voice).toMatchObject({ ok: false, code: "PERSISTENCE_UNAVAILABLE" });
+  });
