@@ -265,10 +265,12 @@ export default function Community() {
   async function fetchWisdom() {
     if (!wisdomQuery.trim()) return
     setActionError(null)
+    setWisdomMatches([])
     setLoadingWisdom(true)
     try {
       const data = await postJSON<ExperienceResult>('/community/experience', { observation: wisdomQuery.trim() })
-      if (data?.matches) {
+      if (!data || !Array.isArray(data.matches)) throw new Error('The server returned an invalid experience-match response.')
+      {
         setWisdomMatches(data.matches.slice(0, 4).map(match => ({
           post_id: match.post.id,
           author_label: match.post.author_label,
@@ -339,7 +341,7 @@ export default function Community() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Community</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '500px' }}>
-            Shared experiences from caregivers like you. When you capture what changed in "What Matters Today," similar experiences surface here.
+            Caregiver-submitted posts appear here after moderation. Matching is shown only when the backend returns published posts that match your query.
           </p>
           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.7, marginTop: '4px' }}>
             Shared experience is not medical advice — always confirm with a clinician.
