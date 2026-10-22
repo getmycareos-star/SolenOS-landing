@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client'
 import CareCapture from '../components/CareCapture'
 import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
@@ -20,7 +20,6 @@ export default function DailyCare() {
 
    const [form, setForm] = useState({
      mood: '',
-     mood_scale: 3,
      agitation_level: '',
      agitation_scale: 0,
      vitals: {} as Record<string, string>,
@@ -33,7 +32,8 @@ export default function DailyCare() {
    })
 
   const personId = getPersonId()
-  const [caregiverId, setCaregiverId] = useState('')
+  const sessionCaregiverId = getCaregiverId() ?? ''
+  const [caregiverId, setCaregiverId] = useState(sessionCaregiverId)
   const [caregivers, setCaregivers] = useState<Caregiver[]>([])
   const [loadingCaregivers, setLoadingCaregivers] = useState(true)
 
@@ -51,12 +51,13 @@ export default function DailyCare() {
         const data = await getJSON(`/caregivers/${personId}`)
         if (!Array.isArray(data)) throw new Error('Unexpected caregiver response.')
         setCaregivers(data)
-        if (data.length > 0) {
-          setCaregiverId(data[0].id)
+        const authenticatedCaregiver = data.find((caregiver: Caregiver) => caregiver.id === sessionCaregiverId)
+        if (authenticatedCaregiver) {
+          setCaregiverId(authenticatedCaregiver.id)
           setCaregiverError(null)
         } else {
           setCaregiverId('')
-          setCaregiverError('No caregiver is linked to this care record. Link a caregiver before saving.')
+          setCaregiverError('The signed-in caregiver is not linked to this care record. Re-select an authorized care record before saving.')
         }
       } catch (error) {
         console.error('Could not load caregivers:', error)
@@ -68,7 +69,7 @@ export default function DailyCare() {
       }
     }
     void loadCaregivers()
-  }, [personId])
+  }, [personId, sessionCaregiverId])
 
    const updateField = (field: string, value: any) => {
      setForm(prev => ({ ...prev, [field]: value }))
@@ -133,10 +134,10 @@ export default function DailyCare() {
      setSubmitting(true)
      const recordedAt = new Date().toISOString()
      const scales: Array<{ axis: string; score: number; observed_at: string; note: string | null }> = [
-       ...(form.mood ? [{ axis: 'mood', score: form.mood_scale, observed_at: recordedAt, note: null }] : []),
-       ...(form.agitation_level ? [{ axis: 'agitation', score: form.agitation_scale, observed_at: recordedAt, note: form.agitation_level }] : []),
+        ...(form.agitation_level ? [{ axis: 'agitation', score: form.agitation_scale, observed_at: recordedAt, note: form.agitation_level }] : []),
      ]
      const noteSections = [
+       { label: 'Mood', value: form.mood },
        { label: 'Behavior', value: form.behavior_notes },
        { label: 'Sleep', value: form.sleep_notes },
        { label: 'Eating/appetite', value: form.eating_notes },
@@ -173,7 +174,6 @@ export default function DailyCare() {
        setSaved(true)
        setForm({
          mood: '',
-         mood_scale: 3,
          agitation_level: '',
          agitation_scale: 0,
          vitals: {},
@@ -231,21 +231,11 @@ export default function DailyCare() {
             Recorded by
           </label>
           {loadingCaregivers ? (
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Loading caregivers...</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Loading authorized caregiver...</p>
           ) : (
-            <select
-              value={caregiverId}
-              onChange={e => setCaregiverId(e.target.value)}
-              required
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: '8px',
-                border: '1px solid var(--border)', background: 'var(--surface)',
-                fontSize: '14px'
-              }}
-            >
-              <option value="">Select caregiver</option>
-              {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              {caregivers.find(c => c.id === caregiverId)?.name || 'No authenticated caregiver is selected.'}
+            </p>
           )}
           {caregiverError && <p style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>{caregiverError}</p>}
         </section>
@@ -258,15 +248,12 @@ export default function DailyCare() {
           <select
             id="daily-care-mood"
             value={form.mood}
-            onChange={e => { updateField('mood', e.target.value); updateField('mood_scale', MOOD_OPTIONS.indexOf(e.target.value) + 1) }}
+            onChange={e => updateField('mood', e.target.value)}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
           >
             <option value="">Select mood</option>
             {MOOD_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
-          {form.mood && <label style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', display: 'block' }}>
-            Mood scale: {form.mood_scale}/5
-          </label>}
         </section>
 
         {/* Agitation */}
