@@ -93,7 +93,6 @@ import {
   listStructuredForCaregiver,
   saveObservation,
   countObservationsThisWeek,
-  persistObservations,
 } from "./stores/observation-store";
 import { generateWeeklySummary } from "./weekly-summary";
 import { buildDoctorSummaryReport } from "./export-report";
@@ -110,6 +109,8 @@ export type RecordObservationResult = {
   aggregation: ReturnType<typeof buildSystemAggregation>;
   weekly_summary_snippet: string;
   observations_this_week: number;
+  persistence_status: "unavailable";
+  persistence_message: string;
 };
 
 /** Record a caregiver observation only under an explicit caregiver identity. */
@@ -133,14 +134,14 @@ export function recordObservation(input: RecordObservationInput): RecordObservat
   const weekly = generateWeeklySummary(history);
   const observationsThisWeek = countObservationsThisWeek(caregiverId);
 
-  void persistObservations(caregiverId);
-
   return {
     observation_id: observation.id,
     structured: extraction.structured,
     aggregation,
     weekly_summary_snippet: weekly.headline,
     observations_this_week: observationsThisWeek,
+    persistence_status: "unavailable",
+    persistence_message: "Observation database adapter is not configured; this record is only in process memory and is not durably saved.",
   };
 }
 
