@@ -121,6 +121,18 @@ describe('Phase 4 production data-integrity guardrails', () => {
     expect(() => source('src/pages/RoutineMomentsDemo.tsx')).toThrow()
   })
 
+  it('does not turn ops database failures into zero or empty metrics', () => {
+    const queries = source('src/lib/ops-console/queries.ts')
+    expect(queries).toContain('An operational database query failed; metrics cannot be verified.')
+    expect(queries).not.toContain('totalRegistered || totalUsersEvent')
+    expect(queries).not.toContain('casesActive || careCasesEvent')
+    expect(queries).not.toContain('totalEvents || mem.length')
+    expect(queries).not.toContain('rawTotal || mem.length')
+    const page = source('src/app/ops/page.tsx')
+    expect(page).toContain('Operational dashboard unavailable')
+    expect(page).toContain('!data || !data.system.db_connected')
+  })
+
   it('keeps illustrative care fixtures outside the production source tree', () => {
     expect(source('scripts/fixtures/README.md')).toContain('must not be imported by `src/` application code')
     expect(() => source('src/data/sample-care-context.ts')).toThrow()
