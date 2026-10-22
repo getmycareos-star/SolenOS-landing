@@ -112,23 +112,20 @@ function realityKey(contributorOrRealityId: string): string {
 export function getActiveCareSituation(contributorId: string): ActiveCareSituation | null {
   const careRecipientId = realityKey(contributorId);
   const cached = acsCache().get(careRecipientId);
-  if (cached) return cached;
-
-  let durable = loadActiveCareSituationFromDurable(careRecipientId);
-  if (!durable && careRecipientId !== contributorId) {
-    durable = loadActiveCareSituationFromDurable(contributorId);
+  if (cached) {
+    if (cached.care_recipient_id !== careRecipientId) {
+      throw new Error("Cached Active Care Situation identity does not match the requested care recipient.");
+    }
+    return cached;
   }
+
+  const durable = loadActiveCareSituationFromDurable(careRecipientId);
   if (!durable) return null;
-
-  const normalized: ActiveCareSituation = {
-    ...durable,
-    care_recipient_id: durable.care_recipient_id ?? careRecipientId,
-  };
-  acsCache().set(careRecipientId, normalized);
-  if (!durable.care_recipient_id) {
-    persistActiveCareSituationToDurable(normalized);
+  if (durable.care_recipient_id !== careRecipientId) {
+    throw new Error("Persisted Active Care Situation is missing or mismatches its care-recipient identity.");
   }
-  return normalized;
+  acsCache().set(careRecipientId, durable);
+  return durable;
 }
 
 /**
@@ -137,16 +134,9 @@ export function getActiveCareSituation(contributorId: string): ActiveCareSituati
  */
 export function clearActiveCareSituation(contributorId: string): void {
   const careRecipientId = realityKey(contributorId);
-  acsCache().delete(careRecipientId);
   deleteActiveCareSituationDurable(careRecipientId);
-  if (careRecipientId !== contributorId) {
-    acsCache().delete(contributorId);
-    deleteActiveCareSituationDurable(contributorId);
-  }
+  acsCache().delete(careRecipientId);
   clearCareRealityState(careRecipientId);
-  if (careRecipientId !== contributorId) {
-    clearCareRealityState(contributorId);
-  }
 }
 
 /**
@@ -159,7 +149,8 @@ export function pauseActiveCareSituationSession(
 ): ActiveCareSituation | null {
   const current = getActiveCareSituation(contributorId);
   if (!current) return null;
-  const careRecipientId = current.care_recipient_id ?? realityKey(contributorId);
+  const careRecipientId = current.care_recipient_id;
+  if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") throw new Error("Active situation has no valid care-recipient identity.");
   const paused: ActiveCareSituation = {
     ...current,
     care_recipient_id: careRecipientId,
