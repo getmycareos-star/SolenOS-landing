@@ -74,12 +74,12 @@ export default function Companion() {
       setMessages(prev => [...prev, assistantMsg])
     } catch (e: unknown) {
       setMessages(prev => prev.filter(message => message !== userMsg))
-      const detail = e instanceof Error ? e.message : ''
-      const unavailable = /API 404|not found|conversation\/message/i.test(detail)
+      const detail = e instanceof Error ? e.message.trim() : ''
+      const unavailable = /\bAPI 404\b|^not found$/i.test(detail)
       setRequestError(
         unavailable
-          ? 'Companion is not available from the connected backend yet. Your message was not sent; the text remains in the input.'
-          : 'Your message could not be confirmed. It was not added to the conversation; the text remains in the input so you can retry.'
+          ? 'Companion is not available from the connected backend yet. The endpoint returned 404; your text remains in the input.'
+          : 'The server did not confirm whether it received this message. Your text remains in the input. Check the care record before retrying to avoid duplicates.'
       )
     } finally {
       setLoading(false)
