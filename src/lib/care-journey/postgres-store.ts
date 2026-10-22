@@ -3,6 +3,7 @@ import type { Pool } from "pg";
 import { createPostgresPool } from "../telemetry-persistence/postgres-store";
 import type { CareJourneyAttachment, CareJourneyEvent, CreateCareJourneyEventInput } from "./types";
 import { inferCareJourneyCategory, inferCareJourneyTitle } from "./classify";
+import { requireCaregiverId } from "../care-identity";
 
 function parseAttachments(raw: unknown): CareJourneyAttachment[] {
   if (!Array.isArray(raw)) return [];
@@ -50,7 +51,7 @@ export async function saveCareJourneyEventToPostgres(
   const now = new Date().toISOString();
   const description = input.description.trim();
   const category = input.category ?? inferCareJourneyCategory(description);
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(input.caregiver_id);
 
   const result = await pool.query<{
     event_id: string;
