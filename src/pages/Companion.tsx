@@ -61,8 +61,15 @@ export default function Companion() {
         session_id: sessionId,
       })
 
-      if (!response?.session_id || response.person_id !== personId || typeof response.reply !== 'string' || !response.reply.trim()) {
-        throw new Error('The backend did not confirm a saved conversation response. Your message remains available to retry.')
+      if (
+        !response?.session_id || response.person_id !== personId ||
+        typeof response.reply !== 'string' || !response.reply.trim() ||
+        typeof response.guard_verdict !== 'string' ||
+        !Array.isArray(response.evidence_ids) ||
+        !(response.safety_note === null || typeof response.safety_note === 'string') ||
+        !(response.confidence === null || (typeof response.confidence === 'number' && Number.isFinite(response.confidence)))
+      ) {
+        throw new Error('The backend returned an incomplete conversation response. Your message remains available; no missing safety or evidence fields were invented.')
       }
       if (!sessionId) setSessionId(response.session_id)
 
