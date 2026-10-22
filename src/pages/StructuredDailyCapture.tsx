@@ -864,7 +864,7 @@ export default function StructuredDailyCapture() {
                   id="medication-dose"
                   value={medicationForm.dose || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, dose: e.target.value || null }))}
-                  placeholder="Enter dose (e.g., 10mg)"
+                  placeholder="Enter the recorded dose"
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1138,7 +1138,7 @@ export default function StructuredDailyCapture() {
                   id="vital-unit"
                   value={vitalForm.unit || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, unit: e.target.value || null }))}
-                  placeholder="Enter unit (e.g., mmHg, bpm)"
+                  placeholder="Enter the recorded unit"
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
