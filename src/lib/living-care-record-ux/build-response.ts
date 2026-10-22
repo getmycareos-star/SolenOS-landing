@@ -192,9 +192,8 @@ function confidenceLabelFor(response: SituationResponse): HumanConfidenceLabel {
  */
 function resolveActiveSituationTurn(params: {
   response: SituationResponse;
-  sourceText: string;
 }): ActiveSituationTurn {
-  const { response, sourceText } = params;
+  const { response } = params;
   if (response.active_care_situation_turn) {
     return response.active_care_situation_turn;
   }
@@ -248,54 +247,11 @@ function resolveActiveSituationTurn(params: {
     };
   }
 
-  // Degraded display when pipeline omitted ACS (should be rare) — held shell only.
-  const disclosure_stage = "early" as const;
-  const disclosure_plan = buildDisclosurePlan(disclosure_stage);
-  const fact = sanitizeCaregiverDisplayText(sourceText).slice(0, 200);
-  return {
-    relation: "opens_new",
-    situation: {
-      id: "acs_degraded",
-      caregiver_id: response.context?.caregiver_id ?? response.care_key ?? "unknown_care_key",
-      opened_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      root_event_id: response.events_created[0]?.id ?? null,
-      subject_label: "they",
-      theme: "mixed",
-      observations: [],
-      open_questions: [],
-      asked_questions: [],
-      understanding_stage: "gathering",
-      connection_note: null,
-      synthesis: null,
-      what_matters_now: null,
-    },
-    confirmation_title: "Held in the Living Care Record",
-    confirmation_body: "This is preserved in the Living Care Record.",
-    understanding_heading: "What is understood about this situation",
-    understanding_stage: "gathering",
-    current_understanding: fact ? [fact.endsWith(".") ? fact : `${fact}.`] : [],
-    insufficiency_note: null,
-    connection_note: null,
-    what_needs_context: [],
-    what_will_be_remembered: ["Care timeline continuity"],
-    what_seems_happening: null,
-    what_matters_now: null,
-    what_can_wait: "Explaining every detail or answering questions you do not know yet.",
-    what_may_become_serious: null,
-    show_attention_sections: false,
-    what_changed_in_understanding: null,
-    understanding_effect: "opens_situation",
-    resolved_uncertainties: [],
-    pattern_label: null,
-    care_reality_state_id: null,
-    crs_observation_count: 0,
-    crs_revision: 1,
-    disclosure_stage,
-    disclosure_plan,
-    response_evolution: EMPTY_RESPONSE_EVOLUTION,
-    primary_screen_question: primaryScreenQuestionFor(disclosure_stage),
-  };
+  // Never synthesize an Active Care Situation, ID, timestamp, or "saved" claim.
+  // The caller must render an explicit unavailable state when no persisted ACS exists.
+  throw new Error(
+    "A persisted Active Care Situation is required to build the Living Care Record response.",
+  );
 }
 
 /**
@@ -309,10 +265,7 @@ export function buildLivingCareRecordResponse(params: {
 }): LivingCareRecordResponseView {
   const { response, rawInput } = params;
   const hasDocuments = (response.document_events_count ?? 0) > 0 || rawInput.includes("[Document:");
-  const turn = resolveActiveSituationTurn({
-    response,
-    sourceText: sanitizeCaregiverDisplayText(rawInput),
-  });
+  const turn = resolveActiveSituationTurn({ response });
 
   // G6 — when ACS grew from a thread split, compose against the latest fragment
   // (not the entire paste), so orientation matches what was just linked.
