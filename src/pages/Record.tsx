@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, getPersonId, postJSON } from '../api/client'
+import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
 
 interface Evidence {
   id: string
@@ -19,6 +19,10 @@ export default function Record() {
   const [lcrProviderStatus, setLcrProviderStatus] = useState<string | null>(null)
   const [lcrError, setLcrError] = useState<string | null>(null)
   const [explainingLcr, setExplainingLcr] = useState(false)
+  const [documentFile, setDocumentFile] = useState<File | null>(null)
+  const [processingDocument, setProcessingDocument] = useState(false)
+  const [documentError, setDocumentError] = useState<string | null>(null)
+  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -45,6 +49,61 @@ export default function Record() {
     load()
     return () => { cancelled = true }
   }, [])
+
+  async function submitTextDocument() {
+    const personId = getPersonId()
+    const caregiverId = getCaregiverId()
+    if (!personId || !caregiverId) {
+      setDocumentError('A valid authorized care session is required before processing a document.')
+      return
+    }
+    if (!documentFile) {
+      setDocumentError('Choose a supported text document first.')
+      return
+    }
+    if (documentFile.size > 5 * 1024 * 1024) {
+      setDocumentError('Text documents must be 5 MiB or smaller.')
+      return
+    }
+    const allowedExtensions = /\.(txt|md|csv|json|log)$/i
+    if (!allowedExtensions.test(documentFile.name)) {
+      setDocumentError('This intake currently supports .txt, .md, .csv, .json, and .log files. PDF/scanned-image OCR is not available yet.')
+      return
+    }
+    setProcessingDocument(true)
+    setDocumentError(null)
+    setDocumentResult(null)
+    try {
+      const extractedText = await documentFile.text()
+      if (!extractedText.trim()) throw new Error('The selected document contains no readable text.')
+      const result = await postJSON('/situation', {
+        caregiver_id: caregiverId,
+        person_id: personId,
+        raw_input: '',
+        documents: [{
+          id: documentFile.name + '-' + documentFile.lastModified,
+          name: documentFile.name,
+          extracted_text: extractedText,
+          mime_type: documentFile.type || 'text/plain',
+        }],
+        provenance: {
+          input_type: 'document',
+          entry_method: 'text_file_upload',
+          captured_at: new Date().toISOString(),
+          transcript_uncertain: false,
+        },
+      }) as { qwen_extraction_status?: string; qwen_candidates?: any; message?: string }
+      setDocumentResult({
+        status: typeof result.qwen_extraction_status === 'string' ? result.qwen_extraction_status : 'not_reported',
+        candidates: result.qwen_candidates ?? null,
+      })
+      setDocumentFile(null)
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
+    } finally {
+      setProcessingDocument(false)
+    }
+  }
 
   async function explainRecord() {
     const personId = getPersonId()
@@ -125,6 +184,62 @@ export default function Record() {
         )}
         {lcrExplanation && <p style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginTop: '8px' }}>{lcrExplanation}</p>}
         {lcrError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{lcrError}</p>}
+      </section>
+
+      <section style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '10px', padding: '12px 14px', marginBottom: '16px'
+      }}>
+        <strong style={{ fontSize: '13px' }}>Analyze a text document with Qwen</strong>
+        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '10px' }}>
+          Upload a text-bearing file to save it as source evidence and run Qwen extraction. PDF and scanned-image OCR are not available in this intake yet.
+        </p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            aria-label="Choose a text document"
+            type="file"
+            accept=".txt,.md,.csv,.json,.log,text/plain,text/markdown,text/csv,application/json"
+            disabled={processingDocument}
+            onChange={(event) => {
+              setDocumentFile(event.target.files?.[0] || null)
+              setDocumentError(null)
+              setDocumentResult(null)
+            }}
+          />
+          <button onClick={submitTextDocument} disabled={processingDocument || !documentFile} style={{
+            padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)',
+            background: processingDocument || !documentFile ? 'var(--bg)' : 'var(--accent)',
+            color: processingDocument || !documentFile ? 'var(--text-secondary)' : 'white',
+            fontSize: '12px', cursor: processingDocument || !documentFile ? 'default' : 'pointer'
+          }}>
+            {processingDocument ? 'Processing…' : 'Save and analyze'}
+          </button>
+        </div>
+        {documentError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{documentError}</p>}
+        {documentResult && (
+          <div role="status" style={{ marginTop: '10px' }}>
+            <strong style={{ fontSize: '12px' }}>Qwen document analysis: {documentResult.status}</strong>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Extracted observations are source-linked review candidates, not established LCR facts.
+            </p>
+            {Array.isArray(documentResult.candidates?.observations) && documentResult.candidates.observations.length > 0 ? (
+              <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
+                {documentResult.candidates.observations.map((candidate: any, index: number) => (
+                  <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                    <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                No Qwen candidates were returned. The document is still preserved as evidence.
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       <div style={{
