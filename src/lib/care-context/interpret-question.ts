@@ -1,4 +1,5 @@
 import type { CareEventType } from "../care-snapshot/types";
+import { isDevelopmentHeuristicModeEnabled } from "../dev-only-heuristics";
 import { classifyEventType } from "../care-snapshot/classify";
 import { cleanText, extractDate, splitIntoSentences } from "../care-snapshot/normalize";
 import type {
@@ -117,6 +118,17 @@ export function interpretQuestion(
   question: string,
   options: { referenceDate?: string } = {},
 ): QuestionInterpretation {
+  if (!isDevelopmentHeuristicModeEnabled()) {
+    return {
+      rawQuestion: question.trim(),
+      demandType: "unknown",
+      signalThemes: [],
+      proposedEvents: [],
+      engineActions: [],
+      uncertainties: ["Question interpretation is unavailable because no validated evidence-grounded classifier is configured."],
+      continuityFraming: "Unknown — no keyword-based interpretation was applied.",
+    };
+  }
   const referenceDate = options.referenceDate ?? new Date().toISOString();
   const signalThemes = detectSignalThemes(question);
   const demandType = classifyDemandType(question);

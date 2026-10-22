@@ -5,6 +5,7 @@ import {
   type ContinuityFailureTheme,
 } from "./demand-model";
 import type { DemandClassification } from "./types";
+import { isDevelopmentHeuristicModeEnabled } from "../dev-only-heuristics";
 
 /**
  * Classify caregiver input as continuity demand vs search demand.
@@ -12,6 +13,15 @@ import type { DemandClassification } from "./types";
  */
 export function classifyCaregiverDemand(rawInput: string): DemandClassification {
   const text = rawInput.trim();
+  if (!isDevelopmentHeuristicModeEnabled()) {
+    return {
+      demand_type: "unknown",
+      matched_themes: [],
+      underlying_needs: [],
+      build_engines_not_answers: [],
+      treat_as_product_signal: false,
+    };
+  }
   if (!text) {
     return {
       demand_type: "unknown",

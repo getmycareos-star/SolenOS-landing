@@ -1,4 +1,5 @@
-import type { SignalTheme } from "./types";
+import type { DemandType, SignalTheme } from "./types";
+import { isDevelopmentHeuristicModeEnabled } from "../dev-only-heuristics";
 
 export interface SignalDefinition {
   theme: SignalTheme;
@@ -62,6 +63,7 @@ export const SEARCH_DEMAND_PATTERNS: RegExp[] = [
 ];
 
 export function detectSignalThemes(text: string): SignalTheme[] {
+  if (!isDevelopmentHeuristicModeEnabled()) return [];
   const themes: SignalTheme[] = [];
   for (const def of SIGNAL_DEFINITIONS) {
     if (def.keywords.some((re) => re.test(text))) {
@@ -71,7 +73,8 @@ export function detectSignalThemes(text: string): SignalTheme[] {
   return themes;
 }
 
-export function classifyDemandType(text: string): "continuity" | "search" | "mixed" {
+export function classifyDemandType(text: string): DemandType {
+  if (!isDevelopmentHeuristicModeEnabled()) return "unknown";
   const hasContinuity = CONTINUITY_DEMAND_PATTERNS.some((re) => re.test(text));
   const hasSearch = SEARCH_DEMAND_PATTERNS.some((re) => re.test(text));
 
