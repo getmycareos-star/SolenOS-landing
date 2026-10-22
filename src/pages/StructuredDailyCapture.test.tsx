@@ -85,14 +85,14 @@ describe('StructuredDailyCapture', () => {
 
   it('saves a situation using the selected caregiver identity', async () => {
     render(<CareCapture />);
-    await userEvent.type(screen.getByPlaceholderText(/Dad wandered/i), 'Mum slept poorly');
+    await userEvent.type(screen.getByPlaceholderText(/Add any additional notes about the day/i), 'Sleep was disrupted');
     await userEvent.click(screen.getByRole('button', { name: /save what changed/i }));
 
     await waitFor(() => {
       expect(postJSON).toHaveBeenCalledWith('/api/situation', {
         caregiver_id: 'caregiver-123',
         person_id: 'test-person-id',
-        raw_input: 'Mum slept poorly',
+        raw_input: 'Sleep was disrupted',
       });
     });
   });
@@ -100,7 +100,7 @@ describe('StructuredDailyCapture', () => {
   it('does not submit a situation when caregiver context is missing', async () => {
     (getCaregiverId as jest.Mock).mockReturnValueOnce(null);
     render(<CareCapture />);
-    await userEvent.type(screen.getByPlaceholderText(/Dad wandered/i), 'Mum slept poorly');
+    await userEvent.type(screen.getByPlaceholderText(/Add any additional notes about the day/i), 'Sleep was disrupted');
     await userEvent.click(screen.getByRole('button', { name: /save what changed/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/sign in and select an authorized care record/i);
