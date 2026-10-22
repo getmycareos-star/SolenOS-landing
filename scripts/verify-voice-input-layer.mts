@@ -11,13 +11,8 @@ import {
   VOICE_INPUT_LANG,
   isVoiceInputAvailable,
 } from "../src/lib/voice-input";
-import {
-  createCareEvent,
-  resetCareEventStore,
-  careEventStoreSchema,
-  inferEventType,
-  deriveUncertaintyLevel,
-} from "../src/lib/care-events";
+import { createCareEvent, resetCareEventStore, careEventStoreSchema } from "../src/lib/care-events/store";
+import { inferEventType, deriveUncertaintyLevel } from "../src/lib/care-events";
 
 const root = process.cwd();
 
