@@ -131,15 +131,23 @@ export function detectChanges(
    const daysDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
    const weeksDiff = Math.max(daysDiff / 7, 0.1);
    const currentFrequency = observations.length / weeksDiff;
-   const frequencyChange = Math.abs(currentFrequency - baseline.frequency_per_week) / baseline.frequency_per_week;
-   if (frequencyChange > 0.2) { // 20% change threshold
+   const frequencyChange =
+     baseline.frequency_per_week > 0
+       ? Math.abs(currentFrequency - baseline.frequency_per_week) / baseline.frequency_per_week
+       : null;
+   // A relative percentage is undefined when the baseline is zero. In that case,
+   // report only that observed frequency is now nonzero, without a percentage claim.
+   if (
+     (frequencyChange !== null && frequencyChange > 0.2) ||
+     (baseline.frequency_per_week === 0 && currentFrequency > 0)
+   ) {
      changes.push({
        field: 'frequency_per_week',
        previous_value: baseline.frequency_per_week,
        current_value: currentFrequency,
        change_type: 'update',
        detected_at: new Date().toISOString(),
-       confidence: Math.min(0.9, frequencyChange), // Higher change -> higher confidence
+       confidence: null
      });
    }
 
@@ -166,7 +174,7 @@ export function detectChanges(
          current_value: currentTimeOfDay,
          change_type: 'update',
          detected_at: new Date().toISOString(),
-         confidence: Math.min(0.9, timeDiffMinutes / 60), // Scale confidence by hours difference
+         confidence: null
        });
      }
    }
@@ -202,7 +210,7 @@ export function detectChanges(
           current_value: currentVal,
           change_type: 'update',
           detected_at: new Date().toISOString(),
-          confidence: Math.min(0.9, change),
+          confidence: null
         });
      }
     });
@@ -267,7 +275,7 @@ export function detectChanges(
          current_value: currentConsistencyScore,
          change_type: 'update',
          detected_at: new Date().toISOString(),
-         confidence: Math.min(0.9, consistencyChange),
+         confidence: null
        });
     }
   }
