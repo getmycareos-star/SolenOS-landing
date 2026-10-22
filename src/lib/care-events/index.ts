@@ -17,10 +17,4 @@ export { inferEventType, deriveUncertaintyLevel, deriveConfidence } from "./clas
 
 /** In-memory care-event cache APIs are intentionally excluded from this production barrel. */
 
-export { recordCareEvent, recordCareEventWithContext } from "./record-care-event";
-
-export {
-  persistCareEventToPostgres,
-  tryPersistCareEvent,
-  tryLoadCareEventsForCaregiver,
-} from "./postgres-store";
+/** Server persistence APIs are intentionally not exported through this client-safe barrel. */
