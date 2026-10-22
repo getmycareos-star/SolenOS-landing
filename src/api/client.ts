@@ -78,6 +78,7 @@ function requestHeaders(extra?: HeadersInit): Headers {
 }
 
 async function handleResponse(res: Response) {
+  if (res.status === 204) return null
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
   if (!res.ok) {
