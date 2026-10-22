@@ -7,7 +7,7 @@ import {
   interpretQuestion,
   reasonThroughContext,
 } from "../src/lib/care-context";
-import { EXAMPLE_CAREGIVER_QUESTION } from "../src/data/example-caregiver-question";
+import { EXAMPLE_CAREGIVER_QUESTION } from "./fixtures/example-caregiver-question";
 import {
   HIRE_HELP_QUESTION,
   SAMPLE_CARE_CONTEXT,
