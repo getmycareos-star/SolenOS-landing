@@ -43,7 +43,7 @@ export default async function OpsPage({
   }
 
   const keyQ = encodeURIComponent(key!);
-  if (!data) {
+  if (!data || !data.system.db_connected) {
     return (
       <div className="ops-console">
         <header className="ops-header">
