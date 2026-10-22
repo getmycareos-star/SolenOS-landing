@@ -37,7 +37,7 @@ export type ActiveCareSituation = {
    * Care Reality scope (Locked B) — one Living Care Record per care recipient.
    * Durable ACS files are keyed by this id.
    */
-  care_recipient_id?: string;
+  care_recipient_id: string;
   /** Last / opening contributor on this Care Reality (attribution, not ownership). */
   caregiver_id: string;
   opened_at: string;
