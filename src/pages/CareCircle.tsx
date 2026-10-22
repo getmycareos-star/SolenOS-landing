@@ -71,6 +71,7 @@ export default function CareCircle() {
     setError(null)
     try {
       const data = await getJSON(`/care-circle/person/${encodeURIComponent(personId)}`)
+      if (!Array.isArray(data)) throw new Error('Care-circle response was incomplete.')
       setCareCircles(data as CareCircle[])
     } catch (err: any) {
       console.error('Failed to fetch care circles:', err)
