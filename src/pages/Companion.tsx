@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { postJSON, getPersonId } from '../api/client'
 
 interface Message {
@@ -171,6 +172,13 @@ export default function Companion() {
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: msg.role === 'user' ? 'right' : 'left', marginTop: '4px' }}>
               {msg.role === 'user' ? 'You' : 'SolenOS'} · {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
+            {msg.role === 'user' && (
+              <div style={{ textAlign: 'right', marginTop: '6px' }}>
+                <Link to={`/daily-care?draft=${encodeURIComponent(msg.text)}`} style={{ fontSize: '11px', color: 'var(--trust)', textDecoration: 'none' }}>
+                  Use my message as a capture draft →
+                </Link>
+              </div>
+            )}
           </div>
         ))}
         <div ref={bottomRef} />
