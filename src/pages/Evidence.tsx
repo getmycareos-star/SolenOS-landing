@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getJSON, postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
+import { getJSON, postJSON, postFormData, getPersonId, getCaregiverId, subscribeToPersonId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { formatDate, formatConfidence } from '../lib/utils';
 import { compressImage, dataURLtoFile } from '../lib/imageCompression';
@@ -27,8 +27,10 @@ export default function Evidence() {
     type: '',
     status: '',
   });
+  const [personId, setPersonIdState] = useState(getPersonId());
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
 
   // Form state for creating new evidence
@@ -103,24 +105,28 @@ export default function Evidence() {
         prevImagePreview: imagePreview
       };
     },
-    onSuccess: async (data, variables, context) => {
-      // On success, we want to refetch the evidence list to show the new evidence
-      // But we also optimistically added it, so we could add it to the list
-      // For simplicity, we'll refetch the list
-      try {
-        const freshData = await getJSON('/evidence/' + variables.person_id);
-        setItems(freshData);
-      } catch (err) {
-        console.error('Failed to refresh evidence list:', err);
+    onSuccess: async (data, variables) => {
+      if (!data || typeof data !== 'object' || typeof (data as Record<string, unknown>).id !== 'string' || !(data as Record<string, unknown>).id) {
+        throw new Error('The server did not return an evidence record ID. The save outcome is uncertain; the form has been preserved to prevent accidental data loss.');
       }
-      
-      // Reset form
-      setForm({
-        source_type: 'free_form_note',
-        source_text: '',
-      });
+      const savedPersonId = (data as Record<string, unknown>).person_id;
+      if (typeof savedPersonId === 'string' && savedPersonId !== variables.person_id) {
+        throw new Error('The server response refers to a different care record. The form has been preserved and the save must be investigated.');
+      }
+      setForm({ source_type: 'free_form_note', source_text: '' });
       setImagePreview(null);
       setSubmitError(null);
+      try {
+        const freshData = await getJSON<unknown>('/evidence/' + encodeURIComponent(variables.person_id));
+        if (!Array.isArray(freshData)) throw new Error('The server returned an invalid evidence-list response.');
+        setItems(freshData);
+        setListError(null);
+      } catch (err) {
+        setItems([]);
+        setListError(err instanceof Error
+          ? `Evidence was saved, but the list could not be refreshed: ${err.message}`
+          : 'Evidence was saved, but the list could not be refreshed. The current list is unavailable.');
+      }
     },
     onError: async (error, variables, context) => {
       // On error, rollback to previous state
@@ -141,32 +147,38 @@ export default function Evidence() {
       setSubmitting(false);
       setCompressing(false);
     },
-    retry: true,
-    maxRetries: 3
+    // Durable evidence writes are never automatically replayed.
   });
 
   // Camera permission hook
   const { state: cameraState, requestCamera: requestCam, stopCamera: stopCam } = useCameraPermission();
 
+  useEffect(() => subscribeToPersonId(setPersonIdState), []);
+
   useEffect(() => {
+    let cancelled = false;
     async function loadEvidence() {
-      const personId = getPersonId();
-      if (!personId) {
-        setItems([]);
+      setLoading(true);
+      setListError(null);
+      setItems([]);
+      if (!personId.trim()) {
+        setListError('Select an authorized care record to load evidence.');
         setLoading(false);
         return;
       }
       try {
-        const data = await getJSON('/evidence/' + personId);
-        setItems(data);
+        const data = await getJSON<unknown>('/evidence/' + encodeURIComponent(personId));
+        if (!Array.isArray(data)) throw new Error('The server returned an invalid evidence-list response.');
+        if (!cancelled) setItems(data);
       } catch (err) {
-        console.error(err);
+        if (!cancelled) setListError(err instanceof Error ? err.message : 'Evidence could not be loaded. Its contents are unknown.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    loadEvidence();
-  }, []);
+    void loadEvidence();
+    return () => { cancelled = true; };
+  }, [personId]);
 
   const handleImageCapture = async () => {
     try {
@@ -272,8 +284,8 @@ export default function Evidence() {
     setSubmitError(null);
     
     const caregiverId = getCaregiverId();
-    const personId = getPersonId();
-    if (!caregiverId || !personId) {
+    const currentPersonId = personId;
+    if (!caregiverId || !currentPersonId) {
       setSubmitError(new Error('A linked caregiver and selected care record are required to create evidence.'));
       setSubmitting(false);
       return;
@@ -286,7 +298,7 @@ export default function Evidence() {
       source_type: form.source_type,
       source_text: form.source_text,
       caregiver_id: caregiverId,
-      person_id: personId,
+      person_id: currentPersonId,
       image_preview: imagePreview
     });
   };
@@ -523,11 +535,12 @@ export default function Evidence() {
             
             {/* Evidence list */}
             <div className='evidence-list-items'>
-              {loading && <p className='evidence-list-loading'>Loading evidence...</p>}
-              {!loading && items.length === 0 && (
+              {loading && <p className='evidence-list-loading' role='status'>Loading evidence...</p>}
+              {!loading && listError && <div className='error-status' role='alert'>Evidence list unavailable: {listError}</div>}
+              {!loading && !listError && items.length === 0 && (
                 <p>No evidence found. Create your first evidence above.</p>
               )}
-              {!loading && items.length > 0 && (
+              {!loading && !listError && items.length > 0 && (
                 <div className='evidence-list-grid'>
                   {items.map((item: any) => {
                     const sc = statusColor[item.status as keyof typeof statusColor] || statusColor.ACTIVE;
