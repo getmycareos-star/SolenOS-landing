@@ -16,6 +16,7 @@ import {
   loadCareJourneyTimeline,
   searchCareJourney,
 } from "../src/lib/care-journey/server";
+import { resetCareJourneyStore } from "../src/lib/care-journey/store";
 
 const root = process.cwd();
 
