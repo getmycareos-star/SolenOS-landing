@@ -24,7 +24,8 @@ import type {
  * NOT search. NOT document retrieval. NOT chatbot Q&A.
  */
 export function reconstructMemory(params: ReconstructMemoryParams): MemoryReconstructionResult {
-  const caregiverId = params.caregiver_id ?? "default_caregiver";
+  const caregiverId = params.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required to reconstruct private care memory.");
   const parsed = parseMemoryQuery(params.query);
   const graph = getGraphForCaregiver(caregiverId, params.case_id ?? null);
   const allEvents = graph?.events ?? [];
