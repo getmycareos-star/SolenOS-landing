@@ -8,25 +8,13 @@ export function computeWhatChanged(
   baselineFacts: BaselineFact[] = [],
   baselineDeviations: BaselineDeviation[] = [],
 ): string[] {
-  const currentContext: CareContextRoot = priorContext
-    ? { ...priorContext, events: [...priorContext.events, ...newEvents] }
-    : {
-        id: "CareContextRoot",
-        care_recipient_id: "",
-        caregiver_id: "",
-        events: newEvents,
-        root_event_id: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        multi_caregiver: {
-          care_recipient_id: "",
-          care_recipient_label: null,
-          caregivers: [],
-          attribution_map: [],
-          source_confidence_profiles: [],
-          conflict_log: [],
-        },
-      };
+  if (!priorContext) {
+    throw new Error("Prior care context is unavailable; change detection cannot claim a baseline.");
+  }
+  const currentContext: CareContextRoot = {
+    ...priorContext,
+    events: [...priorContext.events, ...newEvents],
+  };
 
   const report = detectCareStateChanges({
     priorContext,
