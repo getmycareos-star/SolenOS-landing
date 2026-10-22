@@ -1,4 +1,9 @@
 import { useState, useEffect } from 'react'
+
+import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client'
+import CareCapture from '../components/CareCapture'
+import { useLocationPermission } from '../lib/permissions/useLocationPermission'
+
 interface QwenCandidate {
   subject: string
   observation: string
@@ -15,10 +20,6 @@ interface QwenCandidateBundle {
   possible_safety_flags: string[]
   rejected_unverifiable_candidates: number
 }
-
-import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client'
-import CareCapture from '../components/CareCapture'
-import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
 interface Caregiver {
   id: string
