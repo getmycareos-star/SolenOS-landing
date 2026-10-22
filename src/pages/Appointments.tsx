@@ -132,7 +132,7 @@ export default function Appointments() {
       <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 600 }}>Record an appointment</h2>
         <form onSubmit={createAppointment} style={{ display: 'grid', gap: 12, marginTop: 14 }}>
-          <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Appointment title<input required value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} placeholder="e.g. Neurology follow-up" /></label>
+          <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Appointment title<input required value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} placeholder="Enter the appointment title" /></label>
           <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Date and time<input required type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={inputStyle} /></label>
           <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Time zone<input value={timezone} onChange={e => setTimezone(e.target.value)} required style={inputStyle} /></label>
           <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Recorded by<select required value={caregiverId} onChange={e => setCaregiverId(e.target.value)} disabled={!caregivers.length} style={inputStyle}><option value="">Select linked caregiver</option>{caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
