@@ -9,6 +9,7 @@ import {
 import { trySaveGraphEvent } from "./postgres-store";
 import { extractPipelineFacts, structureJourneyEvent } from "./structure-event";
 import type { CareJourneyPipelineResult, IngestJourneyInputParams } from "./types";
+import { requireCaregiverId } from "../care-identity";
 
 /**
  * Mandatory Care Journey pipeline — update graph before reasoning.
@@ -19,7 +20,7 @@ import type { CareJourneyPipelineResult, IngestJourneyInputParams } from "./type
 export function processCareJourneyInput(
   input: IngestJourneyInputParams,
 ): CareJourneyPipelineResult {
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(input.caregiver_id);
   const caseId = input.case_id ?? null;
 
   const { facts_only_summary, completeness_status, missing_signals } = extractPipelineFacts(
