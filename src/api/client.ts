@@ -4,13 +4,34 @@ const API_BASE = '/api/v1'
 const REQUEST_TIMEOUT_MS = 15_000
 const RETRYABLE_GET_STATUSES = new Set([502, 503, 504])
 
+const LEGACY_PLACEHOLDER_IDS = new Set([
+  ['demo', 'person', 'id'].join('-'),
+  ['demo', 'caregiver'].join('-'),
+  ['current', 'user', 'id'].join('-'),
+])
+
+function readStoredIdentity(key: string): string {
+  const stored = localStorage.getItem(key)
+  const normalized = stored?.trim() || ''
+  if (!normalized || LEGACY_PLACEHOLDER_IDS.has(normalized.toLowerCase())) {
+    if (stored !== null) localStorage.removeItem(key)
+    return ''
+  }
+  return normalized
+}
+
 export function getPersonId(): string {
-  // Never fabricate a care-recipient ID. Callers must handle an unset ID.
-  return localStorage.getItem('solenos_person_id') || ''
+  // Clear legacy placeholder IDs left by older builds; never send them to the API.
+  return readStoredIdentity('solenos_person_id')
 }
 
 export function setPersonId(id: string): void {
-  localStorage.setItem('solenos_person_id', id)
+  const normalized = id.trim()
+  if (!normalized || LEGACY_PLACEHOLDER_IDS.has(normalized.toLowerCase())) {
+    localStorage.removeItem('solenos_person_id')
+  } else {
+    localStorage.setItem('solenos_person_id', normalized)
+  }
   window.dispatchEvent(new Event('personIdChanged'))
 }
 
@@ -189,7 +210,7 @@ async function resolveSignedInAccount(
 export async function loginWithPassword(email: string, password: string): Promise<AuthAccount> {
   const result = await postJSON<BackendLoginResponse>('/auth/login', { email, password })
   persistAuthToken(result)
-  return resolveSignedInAccount(result.account, localStorage.getItem('solenos_person_id'))
+  return resolveSignedInAccount(result.account, getPersonId())
 }
 
 export async function registerCaregiverAccount(input: {
@@ -297,7 +318,7 @@ export async function postFormData<T = any>(path: string, body: FormData): Promi
 
 // Caregiver identity is accepted only when explicitly stored by this session.
 export function getCaregiverId(): string | null {
-  return localStorage.getItem('solenos_caregiver_id')
+  return readStoredIdentity('solenos_caregiver_id') || null
 }
 
 export interface AuthSessionInfo {
