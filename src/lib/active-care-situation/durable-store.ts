@@ -27,28 +27,31 @@ export function acsCache(): Map<string, ActiveCareSituation> {
   return g[GLOBAL_KEY]!;
 }
 
-export function acsDurablePath(caregiverId: string): string {
+export function acsDurablePath(careRecipientId: string): string {
   return livingCareRecordDataDir(
     "active-care-situation",
-    `${sanitizeDurableCareKey(caregiverId)}.json`,
+    `${sanitizeDurableCareKey(careRecipientId)}.json`,
   );
 }
 
 export function loadActiveCareSituationFromDurable(
-  caregiverId: string,
+  careRecipientId: string,
 ): ActiveCareSituation | null {
-  return readDurableJson<ActiveCareSituation>(acsDurablePath(caregiverId));
+  return readDurableJson<ActiveCareSituation>(acsDurablePath(careRecipientId));
 }
 
 export function persistActiveCareSituationToDurable(
   situation: ActiveCareSituation,
 ): void {
-  const key = situation.care_recipient_id ?? situation.caregiver_id;
-  writeDurableJson(acsDurablePath(key), situation);
+  const careRecipientId = situation.care_recipient_id?.trim();
+  if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") {
+    throw new Error("Explicit care-recipient identity is required to persist Active Care Situation.");
+  }
+  writeDurableJson(acsDurablePath(careRecipientId), situation);
 }
 
-export function deleteActiveCareSituationDurable(caregiverId: string): void {
-  deleteDurableFile(acsDurablePath(caregiverId));
+export function deleteActiveCareSituationDurable(careRecipientId: string): void {
+  deleteDurableFile(acsDurablePath(careRecipientId));
 }
 
 /** Drop Map cache only — durable files remain (simulates process bounce). */
@@ -58,6 +61,6 @@ export function clearActiveCareSituationMemoryCache(): void {
 
 /** Clear cache + durable ACS files (verify / empty reset). */
 export function resetActiveCareSituationDurableStore(): void {
-  acsCache().clear();
   clearDurableDirectory(livingCareRecordDataDir("active-care-situation"));
+  acsCache().clear();
 }
