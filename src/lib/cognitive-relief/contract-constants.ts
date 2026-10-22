@@ -10,7 +10,6 @@ export const CHECKIN_CLOSING_TEMPLATE =
 export const RUNWAY_DISCLAIMER =
   "Soft estimate only — not accounting. Assumptions are shown; inputs may be incomplete.";
 
-export const DEFAULT_CAREGIVER_ID = "default_caregiver";
 
 export const SHARE_DEFAULT_EXCLUDED = ["financial_specifics", "medical_specifics"] as const;
 
