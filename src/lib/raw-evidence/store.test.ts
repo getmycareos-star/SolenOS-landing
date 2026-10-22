@@ -1,3 +1,4 @@
+import { join } from "path";
 import { createPostgresPool } from "../telemetry-persistence/postgres-store";
 import { RawEvidenceStore } from "./store";
 import type { RawEvidence } from "./types";
@@ -99,7 +100,7 @@ describe("raw evidence persistence truth", () => {
       urgency_signals: [],
       metadata: {},
     };
-    const baseDir = require("path").join(process.cwd(), ".data", "raw-evidence-queue");
+    const baseDir = join(process.cwd(), ".data", "raw-evidence-queue");
     fsMock.existsSync.mockImplementation((path: string) => path === baseDir);
     fsMock.readdirSync.mockImplementation((path: string) =>
       path === baseDir ? ["caregiver-1"] : ["evidence-restart.json"],
