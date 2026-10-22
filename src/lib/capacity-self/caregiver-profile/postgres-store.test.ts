@@ -1,4 +1,4 @@
-import { getCaregiverSelfProfilePersistenceStatus } from "./postgres-store";
+import { getCaregiverSelfProfileStorageMode } from "./postgres-store";
 
 describe("caregiver profile persistence status", () => {
   it("marks storage local-only when no database URL exists", () => {
@@ -7,6 +7,6 @@ describe("caregiver profile persistence status", () => {
   });
 
   it("marks configured database storage separately from local memory", () => {
-    expect(getCaregiverSelfProfilePersistenceStatus("postgres://configured")).toBe("server_persisted");
+    expect(getCaregiverSelfProfilePersistenceStatus("postgres://configured")).toBe("database_configured");
   });
 });
