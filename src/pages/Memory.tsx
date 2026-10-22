@@ -35,16 +35,17 @@ export default function Memory() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      if (!getPersonId()) {
+      const personId = getPersonId()
+      if (!personId) {
         setLoadError('No care record is selected. Select an authorized care record to continue.')
         setLoading(false)
         return
       }
       try {
         const [obs, mem, evts] = await Promise.all([
-          getJSON('/observations/demo-person-id'),
-          getJSON('/reasoning-memory/demo-person-id'),
-          getJSON('/learning-events/demo-person-id'),
+          getJSON(`/observations/${encodeURIComponent(personId)}`),
+          getJSON(`/reasoning-memory/${encodeURIComponent(personId)}`),
+          getJSON(`/learning-events/${encodeURIComponent(personId)}`),
         ])
         if (!Array.isArray(obs) || !Array.isArray(mem) || !Array.isArray(evts)) {
           throw new Error('The server response was incomplete.')
