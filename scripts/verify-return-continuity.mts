@@ -89,10 +89,10 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   assert.equal(ensureClientDurableCareKey(a), a, "reuse existing key");
   const b = ensureClientDurableCareKey(a);
   assert.equal(b, a, "stable across calls");
-  assert.equal(
+  assert.notEqual(
     ensureClientDurableCareKey("default_caregiver"),
     "default_caregiver",
-    "Locked A: do not orphan default_caregiver",
+    "legacy shared placeholder must never be reused as a care identity",
   );
   console.log("✓ durable care key reuse");
 }
