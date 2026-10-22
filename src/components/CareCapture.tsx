@@ -35,7 +35,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       setText('')
       onCapture?.(variables.rawInput)
     },
-    onError: async (error, variables, context) => {
+    onError: async (error) => {
       // The hook's error state drives the visible failure message; do not clear input.
       console.error('Failed to save situation:', error)
     },
