@@ -7,12 +7,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { recordCareEventWithContext } from "../src/lib/care-events";
+import { recordEventOutcome } from "../src/lib/care-record/outcome-linkage";
 import { resetCareEventStore, listCareEventsForCaregiver } from "../src/lib/care-events/store";
 import {
   structureCareInput,
   searchCareRecord,
   retrieveHistoricalContext,
-  recordEventOutcome,
   CARE_RECORD_IDENTITY,
 } from "../src/lib/care-record";
 
