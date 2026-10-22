@@ -15,15 +15,7 @@ export {
 
 export { inferEventType, deriveUncertaintyLevel, deriveConfidence } from "./classify";
 
-export {
-  createCareEvent,
-  getCareEvent,
-  listCareEventsForRecord,
-  listCareEventsForCaregiver,
-  updateCareEventMetadata,
-  resetCareEventStore,
-  careEventStoreSchema,
-} from "./store";
+/** In-memory care-event cache APIs are intentionally excluded from this production barrel. */
 
 export { recordCareEvent, recordCareEventWithContext } from "./record-care-event";
 
