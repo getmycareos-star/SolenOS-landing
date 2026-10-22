@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface Insight {
   id: string
@@ -14,19 +14,32 @@ interface Insight {
 export default function Insights() {
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      try {
-        const data = await getJSON('/insights/demo-person-id')
-        setInsights(data)
-      } catch (e) {
-        console.error(e)
-      } finally {
+      const personId = getPersonId()
+      if (!personId) {
+        setLoadError('Select an authorized care record before viewing its insights.')
         setLoading(false)
+        return
+      }
+      setLoading(true)
+      setLoadError(null)
+      try {
+        const data = await getJSON(`/insights/${encodeURIComponent(personId)}`)
+        if (!Array.isArray(data)) throw new Error('The insights service returned an invalid response.')
+        if (!cancelled) setInsights(data as Insight[])
+      } catch (e) {
+        console.error('Failed to load care insights:', e)
+        if (!cancelled) setLoadError('Care insights could not be loaded. This does not mean no insights exist. Check the connection and retry.')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    load()
+    void load()
+    return () => { cancelled = true }
   }, [])
 
   const typeLabel: Record<string, string> = {
@@ -47,11 +60,13 @@ export default function Insights() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading && insights.length === 0 && (
+      {loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
+
+      {!loading && !loadError && insights.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No insights yet.</p>
       )}
 
-      {!loading && (
+      {!loading && !loadError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {insights.map(ins => (
             <div key={ins.id} style={{
