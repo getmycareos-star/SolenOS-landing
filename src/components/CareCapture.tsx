@@ -99,7 +99,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           </span>
         )}
         {Boolean(submitError || identityError) && (
-          <span style={{
+          <span role="alert" style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
