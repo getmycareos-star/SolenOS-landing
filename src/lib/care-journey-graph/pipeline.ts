@@ -9,7 +9,7 @@ import {
 import { trySaveGraphEvent } from "./postgres-store";
 import { extractPipelineFacts, structureJourneyEvent } from "./structure-event";
 import type { CareJourneyPipelineResult, IngestJourneyInputParams } from "./types";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 
 /**
  * Mandatory Care Journey pipeline — update graph before reasoning.
