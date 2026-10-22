@@ -54,7 +54,7 @@ try {
 }
 assert(missingIdentityRejected, "missing caregiver identity is rejected, not replaced by a shared key");
 assert(
-  ensureClientDurableCareKey("cg_verify_identity").startsWith("care_"),
+  ensureClientDurableCareKey("default_caregiver").startsWith("care_"),
   "legacy shared identity is discarded and replaced with a browser-local key",
 );
 assert(
