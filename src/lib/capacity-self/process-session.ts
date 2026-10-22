@@ -1,4 +1,4 @@
-import { DEFAULT_CAREGIVER_ID } from "./contract-constants";
+import { requireCaregiverId } from "../care-identity";
 import type {
   CapacitySelfSessionResult,
   CapacityLevel,
@@ -33,7 +33,7 @@ export type ProcessCapacitySelfSessionParams = {
 export async function processCapacitySelfSession(
   params: ProcessCapacitySelfSessionParams = {},
 ): Promise<CapacitySelfSessionResult> {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = requireCaregiverId(params.caregiver_id);
 
   let selfRecord =
     (await tryLoadCaregiverSelfProfile(caregiverId)) ??
