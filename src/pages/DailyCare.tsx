@@ -72,6 +72,7 @@ export default function DailyCare() {
    const updateField = (field: string, value: any) => {
      setForm({ ...form, [field]: value })
      setSaved(false)
+     setAnalysisWarning(null)
    }
 
    // Location permission hook
@@ -83,7 +84,7 @@ export default function DailyCare() {
        const { latitude, longitude, accuracy, timestamp } = locationState;
        setForm(prev => ({ ...prev, location: { latitude, longitude, accuracy, timestamp } }));
        setSaved(false);
-     setAnalysisWarning(null);
+       setAnalysisWarning(null);
      }
    }, [locationState]);
 
@@ -103,6 +104,7 @@ export default function DailyCare() {
      e.preventDefault()
      setSubmitting(true)
      setSaved(false)
+     setAnalysisWarning(null)
 
      if (loadingCaregivers) {
       alert('Caregiver information is still loading. Please try again.')
@@ -157,7 +159,7 @@ export default function DailyCare() {
        })
      } catch (e: any) {
        setSaved(false)
-      setAnalysisWarning(null)
+       setAnalysisWarning(null)
        alert(`Failed to save: ${e.message}`)
      } finally {
        setSubmitting(false)
