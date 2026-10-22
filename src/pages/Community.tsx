@@ -218,20 +218,11 @@ export default function Community() {
     setWisdomProviderStatus(null)
     setWisdomNotice(null)
     try {
-      let data: ExperienceResult
-      try {
-        data = await postJSON('/community/experience/summary', { observation: wisdomQuery.trim() }) as ExperienceResult
-      } catch (error) {
-        // Keep the deployed UI usable while the backend PR is awaiting deployment.
-        // The legacy endpoint is literal search only; it is never labelled as Qwen output.
-        if (!(error instanceof Error) || !/API 404/i.test(error.message)) throw error
-        const legacy = await postJSON('/community/experience', { observation: wisdomQuery.trim() }) as { matches?: ExperienceMatch[] }
-        if (!Array.isArray(legacy?.matches)) throw new Error('Legacy experience response was incomplete.')
-        setWisdomMatches(legacy.matches.slice(0, 4))
-        setWisdomProviderStatus('not_configured')
-        setWisdomNotice('The Qwen Community endpoint is not deployed yet. These are literal peer-post matches, not an AI summary.')
-        return
-      }
+      // Fail closed when the Qwen endpoint is unavailable. Do not silently switch
+      // to a legacy endpoint whose behavior and provenance are not guaranteed.
+      const data = await postJSON('/community/experience/summary', {
+        observation: wisdomQuery.trim(),
+      }) as ExperienceResult
       if (!Array.isArray(data?.matches) || typeof data?.provider_status !== 'string') {
         throw new Error('Community Qwen response was incomplete.')
       }
