@@ -28,7 +28,7 @@ function parseUserState(row: Record<string, unknown>): ActivationUserState {
 export async function tryLoadUserStateFromPostgres(
   userId: string,
 ): Promise<ActivationUserState | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     const pool = await getPool();
     const result = await pool.query(
@@ -40,13 +40,15 @@ export async function tryLoadUserStateFromPostgres(
     const row = result.rows[0];
     if (!row) return null;
     return parseUserState(row);
-  } catch {
-    return null;
+  } catch (error) {
+    throw new Error(
+      `Activation state could not be loaded from the configured database: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
 export async function trySaveUserStateToPostgres(state: ActivationUserState): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+  if (!process.env.DATABASE_URL?.trim()) return;
   try {
     const pool = await getPool();
     await pool.query(
@@ -75,13 +77,15 @@ export async function trySaveUserStateToPostgres(state: ActivationUserState): Pr
         state.habit_hour,
       ],
     );
-  } catch {
-    // silent fallback
+  } catch (error) {
+    throw new Error(
+      `Activation state persistence failed; the server did not confirm the write: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
 export async function trySaveEventToPostgres(event: ActivationEvent): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+  if (!process.env.DATABASE_URL?.trim()) return;
   try {
     const pool = await getPool();
     await pool.query(
@@ -89,8 +93,10 @@ export async function trySaveEventToPostgres(event: ActivationEvent): Promise<vo
        VALUES ($1, $2, $3, $4::jsonb, $5)`,
       [event.id, event.user_id, event.event_type, JSON.stringify(event.payload), event.created_at],
     );
-  } catch {
-    // silent fallback
+  } catch (error) {
+    throw new Error(
+      `Activation event persistence failed; the server did not confirm the write: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
