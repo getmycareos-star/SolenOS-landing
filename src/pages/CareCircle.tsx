@@ -13,6 +13,28 @@ interface Handoff {
   is_completed: boolean; timestamp: string
 }
 
+function isCaregiverRecord(value: unknown): value is Caregiver {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return typeof item.id === 'string' && Boolean(item.id) && typeof item.name === 'string'
+}
+function isResponsibility(value: unknown): value is Responsibility {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return typeof item.id === 'string' && typeof item.caregiver_id === 'string' &&
+    typeof item.person_id === 'string' && typeof item.responsibility_type === 'string' &&
+    typeof item.status === 'string' && typeof item.acceptance_status === 'string' &&
+    typeof item.effective_start === 'string'
+}
+function isHandoff(value: unknown): value is Handoff {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return typeof item.id === 'string' && typeof item.from_caregiver_id === 'string' &&
+    typeof item.to_caregiver_id === 'string' && typeof item.person_id === 'string' &&
+    typeof item.responsibility_type === 'string' && typeof item.acceptance_status === 'string' &&
+    typeof item.is_completed === 'boolean' && typeof item.timestamp === 'string'
+}
+
 export default function CareCircle() {
   const personId = getPersonId()
   const [caregivers, setCaregivers] = useState<Caregiver[]>([])
@@ -55,7 +77,12 @@ export default function CareCircle() {
       getJSON<unknown>('/caregiver-handoffs/' + encodeURIComponent(personId)),
     ])
     const names = ['linked caregivers', 'responsibilities', 'handoffs']
-    const arrays = results.map(result => result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : null)
+    const validators = [isCaregiverRecord, isResponsibility, isHandoff]
+    const arrays = results.map((result, index) =>
+      result.status === 'fulfilled' && Array.isArray(result.value) && result.value.every(validators[index])
+        ? result.value
+        : null
+    )
     const nextErrors = {
       caregivers: arrays[0] ? null : `Linked caregivers could not be verified. ${results[0].status === 'rejected' && results[0].reason instanceof Error ? results[0].reason.message : 'The server returned an invalid response.'}`,
       responsibilities: arrays[1] ? null : `Responsibilities could not be verified. ${results[1].status === 'rejected' && results[1].reason instanceof Error ? results[1].reason.message : 'The server returned an invalid response.'}`,
