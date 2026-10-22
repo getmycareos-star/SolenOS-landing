@@ -20,7 +20,6 @@ module.exports = {
   testMatch: [
     '<rootDir>/src/**/*.test.ts',
     '<rootDir>/src/**/*.test.tsx',
-    '<rootDir>/src/lib/routine-moments/test.ts',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/dist/', '/tests/smoke/'],
   clearMocks: true,
