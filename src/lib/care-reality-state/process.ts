@@ -36,15 +36,11 @@ function realityKey(careRecipientId: string): string {
 
 export function getCareRealityState(careRecipientId: string): CareRealityState | null {
   const key = realityKey(careRecipientId);
-  const cached = crsCache().get(key);
-  if (cached) {
-    if (cached.care_recipient_id !== key) {
-      throw new Error("Cached Care Reality State identity does not match the requested care recipient.");
-    }
-    return normalizeCareRealityState(cached);
-  }
   const durable = loadCareRealityStateFromDurable(key);
-  if (!durable) return null;
+  if (!durable) {
+    crsCache().delete(key);
+    return null;
+  }
   if (durable.care_recipient_id !== key) {
     throw new Error("Persisted Care Reality State is missing or mismatches its care-recipient identity.");
   }
@@ -67,8 +63,8 @@ function normalizeCareRealityState(state: CareRealityState): CareRealityState {
 
 export function clearCareRealityState(careRecipientId: string): void {
   const key = realityKey(careRecipientId);
-  crsCache().delete(key);
   deleteCareRealityStateDurable(key);
+  crsCache().delete(key);
 }
 
 function newId(): string {
@@ -394,8 +390,8 @@ export function updateCareRealityState(
     })(),
   };
 
-  crsCache().set(careRecipientId, state);
   persistCareRealityStateToDurable(state);
+  crsCache().set(careRecipientId, state);
   return state;
 }
 
