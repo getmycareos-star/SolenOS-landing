@@ -47,7 +47,7 @@ export interface RoutineBaseline {
   average_time_of_day?: string; // ISO time string
   assistance_level_distribution: Record<string, number>;
   participation_level_distribution: Record<string, number>;
-  consistency_score: number;
+  consistency_score: number | null;
   last_updated: string; // ISO timestamp
   sample_size: number;
 }
