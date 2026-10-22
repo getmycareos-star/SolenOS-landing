@@ -24,7 +24,7 @@ const primaryActions = [
     eyebrow: '03 · ADD CONTEXT',
     title: 'Add a care document',
     description: 'The current document intake reads text files (.txt, .md, .csv, .json, .log). PDF and scanned-image OCR are not available in this workflow yet.',
-    action: 'Open documents and record',
+    action: 'Add a text document',
   },
 ];
 
