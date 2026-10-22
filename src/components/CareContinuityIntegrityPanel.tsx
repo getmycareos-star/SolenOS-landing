@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { getJSON, postJSON, patchJSON, getCaregiverId } from '../api/client'
 
 type Assertion = {
@@ -60,7 +60,7 @@ type PanelData = {
 }
 
 const emptyData: PanelData = { assertions: [], freshness: [], questions: [], revisions: [], outcomes: [] }
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   border: '1px solid var(--border)', borderRadius: 10, padding: 14,
   background: 'var(--surface)', marginTop: 12,
 }
@@ -121,7 +121,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
     [data.freshness],
   )
 
-  async function submitAssertion(event: React.FormEvent) {
+  async function submitAssertion(event: FormEvent) {
     event.preventDefault()
     if (!field.trim() || !value.trim() || !source.trim() || !reviewDays) {
       setError('Field, reported value, source, and review window are required.')
@@ -256,10 +256,10 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
               <strong>{item.field}: {item.asserted_value}</strong>
-              <span style={{ fontSize: 12 }}>{fresh?.status?.replaceAll('_', ' ') || 'freshness unknown'}</span>
+              <span style={{ fontSize: 12 }}>{fresh?.status? .replace(/_/g, ' ') || 'freshness unknown'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Source: {item.source_label} · {item.assertion_kind.replaceAll('_', ' ')} · status: {item.assertion_status}
+              Source: {item.source_label} · {item.assertion_kind .replace(/_/g, ' ')} · status: {item.assertion_status}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
@@ -312,7 +312,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Recorded outcomes and corrections</h3>
         {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No outcomes recorded yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
-            <strong>{item.outcome_status.replaceAll('_', ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
+            <strong>{item.outcome_status .replace(/_/g, ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
             {item.notes && <p>{item.notes}</p>}
           </div>
         )}
