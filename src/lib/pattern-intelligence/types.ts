@@ -36,6 +36,8 @@ export type PatternIntelligenceResult = {
   analyzed_at: string;
   events_analyzed: number;
   low_confidence_note: string | null;
+  care_history_status: "available" | "no_recorded_events" | "unavailable";
+  appointment_signals_status: "available" | "unavailable";
 };
 
 export type PatternIntelligenceLayerPayload = {
