@@ -12,7 +12,7 @@ import type {
 import { DEFAULT_CAREGIVER_SELF_PROFILE } from "../types";
 
 function parseProfile(raw: unknown): CaregiverSelfProfileData {
-  if (!raw || typeof raw !== "object") return { ...DEFAULT_CAREGIVER_SELF_PROFILE };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Persisted caregiver profile is invalid; refusing to replace it with an empty profile.");
   const obj = raw as Record<string, unknown>;
   return {
     caregiver_basics: typeof obj.caregiver_basics === "string" ? obj.caregiver_basics : "",
@@ -43,7 +43,7 @@ async function getPool(): Promise<Pool> {
 export async function tryLoadCaregiverSelfProfile(
   caregiverId: string,
 ): Promise<CaregiverSelfProfileRecord | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL) throw new Error("Caregiver profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     const result = await pool.query<{
@@ -73,14 +73,14 @@ export async function tryLoadCaregiverSelfProfile(
       updated_at: row.updated_at,
     };
   } catch {
-    return null;
+    throw new Error("Unable to load caregiver profile from Postgres; in-memory fallback is prohibited.");
   }
 }
 
 export async function trySaveCaregiverSelfProfile(
   record: CaregiverSelfProfileRecord,
 ): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+  if (!process.env.DATABASE_URL) throw new Error("Caregiver profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     const id = record.id.startsWith("csp_") ? randomUUID() : record.id;
@@ -101,7 +101,7 @@ export async function trySaveCaregiverSelfProfile(
       ],
     );
   } catch {
-    // in-memory fallback
+    throw new Error("Unable to persist caregiver profile to Postgres; save was not confirmed.");
   }
 }
 
