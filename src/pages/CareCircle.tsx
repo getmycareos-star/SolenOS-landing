@@ -27,31 +27,49 @@ export default function CareCircle() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadErrors, setLoadErrors] = useState<{ caregivers: string | null; responsibilities: string | null; handoffs: string | null }>({ caregivers: null, responsibilities: null, handoffs: null })
   const [notice, setNotice] = useState<string | null>(null)
   const [professionalId, setProfessionalId] = useState('')
   const [organization, setOrganization] = useState('')
 
   async function load() {
+    setLoading(true)
+    setError(null)
+    setNotice(null)
+    setCaregivers([])
+    setResponsibilities([])
+    setHandoffs([])
+    setLoadErrors({ caregivers: null, responsibilities: null, handoffs: null })
+
     if (!personId) {
-      setCaregivers([]); setResponsibilities([]); setHandoffs([])
-      setError('Select a care recipient before managing care coordination.')
+      const message = 'Select a care recipient before loading coordination records.'
+      setLoadErrors({ caregivers: message, responsibilities: message, handoffs: message })
+      setError(message)
+      setLoading(false)
       return
     }
-    setLoading(true); setError(null); setNotice(null)
+
     const results = await Promise.allSettled([
-      getJSON('/caregivers/' + encodeURIComponent(personId)),
-      getJSON('/caregiver-responsibilities/' + encodeURIComponent(personId)),
-      getJSON('/caregiver-handoffs/' + encodeURIComponent(personId)),
+      getJSON<unknown>('/caregivers/' + encodeURIComponent(personId)),
+      getJSON<unknown>('/caregiver-responsibilities/' + encodeURIComponent(personId)),
+      getJSON<unknown>('/caregiver-handoffs/' + encodeURIComponent(personId)),
     ])
-    const labels = ['linked caregivers', 'responsibilities', 'handoffs']
-    const errors = results.flatMap((result, i) => result.status === 'rejected' ? [labels[i]] : [])
-    setCaregivers(results[0].status === 'fulfilled' && Array.isArray(results[0].value) ? results[0].value as Caregiver[] : [])
-    setResponsibilities(results[1].status === 'fulfilled' && Array.isArray(results[1].value) ? results[1].value as Responsibility[] : [])
-    setHandoffs(results[2].status === 'fulfilled' && Array.isArray(results[2].value) ? results[2].value as Handoff[] : [])
-    if (errors.length) setError('Could not load: ' + errors.join(', ') + '. Only successfully retrieved backend records are shown.')
-    const validCaregivers = results[0].status === 'fulfilled' && Array.isArray(results[0].value) ? results[0].value as Caregiver[] : []
-    setFromId(current => validCaregivers.some(c => c.id === current) ? current : validCaregivers[0]?.id || '')
-    setToId(current => validCaregivers.some(c => c.id === current) ? current : validCaregivers.find(c => c.id !== validCaregivers[0]?.id)?.id || '')
+    const names = ['linked caregivers', 'responsibilities', 'handoffs']
+    const arrays = results.map(result => result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : null)
+    const nextErrors = {
+      caregivers: arrays[0] ? null : `Linked caregivers could not be verified. ${results[0].status === 'rejected' && results[0].reason instanceof Error ? results[0].reason.message : 'The server returned an invalid response.'}`,
+      responsibilities: arrays[1] ? null : `Responsibilities could not be verified. ${results[1].status === 'rejected' && results[1].reason instanceof Error ? results[1].reason.message : 'The server returned an invalid response.'}`,
+      handoffs: arrays[2] ? null : `Handoffs could not be verified. ${results[2].status === 'rejected' && results[2].reason instanceof Error ? results[2].reason.message : 'The server returned an invalid response.'}`,
+    }
+    const nextCaregivers = (arrays[0] || []) as Caregiver[]
+    setCaregivers(nextCaregivers)
+    setResponsibilities((arrays[1] || []) as Responsibility[])
+    setHandoffs((arrays[2] || []) as Handoff[])
+    setLoadErrors(nextErrors)
+    const failed = names.filter((_, index) => arrays[index] === null)
+    if (failed.length) setError(`Could not verify ${failed.join(', ')}. Affected sections are marked unavailable, not empty.`)
+    setFromId(current => nextCaregivers.some(c => c.id === current) ? current : nextCaregivers[0]?.id || '')
+    setToId(current => nextCaregivers.some(c => c.id === current) ? current : nextCaregivers.find(c => c.id !== nextCaregivers[0]?.id)?.id || '')
     setLoading(false)
   }
 
@@ -143,8 +161,8 @@ export default function CareCircle() {
       {loading && <p style={{ marginTop: 20, color: 'var(--text-secondary)' }}>Loading coordination records…</p>}
       {!loading && personId && <>
         <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600 }}>Linked caregivers ({caregivers.length})</h2>
-          {caregivers.length === 0 ? <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 13 }}>No linked caregivers returned. Handoffs require real linked caregiver records.</p> : <ul style={{ marginTop: 10, paddingLeft: 20 }}>{caregivers.map(c => <li key={c.id} style={{ marginBottom: 6 }}>{c.name}{c.relationship ? ' · ' + c.relationship : ''}</li>)}</ul>}
+          <h2 style={{ fontSize: 16, fontWeight: 600 }}>{loadErrors.caregivers ? 'Linked caregivers' : `Linked caregivers (${caregivers.length})`}</h2>
+          {loadErrors.caregivers ? <p role="alert" style={{ marginTop: 8, color: 'var(--error)', fontSize: 13 }}>{loadErrors.caregivers}</p> : caregivers.length === 0 ? <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 13 }}>No linked caregivers returned. Handoffs require real linked caregiver records.</p> : <ul style={{ marginTop: 10, paddingLeft: 20 }}>{caregivers.map(c => <li key={c.id} style={{ marginBottom: 6 }}>{c.name}{c.relationship ? ' · ' + c.relationship : ''}</li>)}</ul>}
         </section>
 
         <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
@@ -176,8 +194,8 @@ export default function CareCircle() {
         </section>
 
         <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600 }}>Current responsibilities ({responsibilities.length})</h2>
-          {responsibilities.length === 0 ? <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 13 }}>No responsibilities returned by the backend.</p> : <ul style={{ marginTop: 10, paddingLeft: 20 }}>{responsibilities.map(r => <li key={r.id} style={{ marginBottom: 8 }}>{r.responsibility_type} — {caregiverName(r.caregiver_id)} · {r.status} · acceptance: {r.acceptance_status}{r.scope ? ' · ' + r.scope : ''}</li>)}</ul>}
+          <h2 style={{ fontSize: 16, fontWeight: 600 }}>{loadErrors.responsibilities ? 'Current responsibilities' : `Current responsibilities (${responsibilities.length})`}</h2>
+          {loadErrors.responsibilities ? <p role="alert" style={{ marginTop: 8, color: 'var(--error)', fontSize: 13 }}>{loadErrors.responsibilities}</p> : responsibilities.length === 0 ? <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 13 }}>No responsibilities returned by the backend.</p> : <ul style={{ marginTop: 10, paddingLeft: 20 }}>{responsibilities.map(r => <li key={r.id} style={{ marginBottom: 8 }}>{r.responsibility_type} — {caregiverName(r.caregiver_id)} · {r.status} · acceptance: {r.acceptance_status}{r.scope ? ' · ' + r.scope : ''}</li>)}</ul>}
         </section>
 
 
@@ -196,8 +214,8 @@ export default function CareCircle() {
         </section>
 
         <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600 }}>Handoff history ({handoffs.length})</h2>
-          {handoffs.length === 0 ? <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 13 }}>No handoffs returned by the backend.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{handoffs.map(h => <article key={h.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600 }}>{loadErrors.handoffs ? 'Handoff history' : `Handoff history (${handoffs.length})`}</h2>
+          {loadErrors.handoffs ? <p role="alert" style={{ marginTop: 8, color: 'var(--error)', fontSize: 13 }}>{loadErrors.handoffs}</p> : handoffs.length === 0 ? <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 13 }}>No handoffs returned by the backend.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{handoffs.map(h => <article key={h.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
             <div style={{ fontWeight: 600 }}>{h.responsibility_type}</div>
             <p style={{ marginTop: 5, fontSize: 13 }}>{caregiverName(h.from_caregiver_id)} → {caregiverName(h.to_caregiver_id)}</p>
             {h.scope && <p style={{ marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>{h.scope}</p>}
