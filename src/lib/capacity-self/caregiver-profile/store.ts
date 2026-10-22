@@ -1,4 +1,4 @@
-import { requireCaregiverId } from "../../care-identity";
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import {
   DEFAULT_CAREGIVER_SELF_PROFILE,
   type CaregiverSelfProfileData,
