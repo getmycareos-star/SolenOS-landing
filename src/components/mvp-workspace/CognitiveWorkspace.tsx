@@ -591,15 +591,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     };
 
     try {
-      const res = await fetch(apiUrl("/api/situation"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "pause_active_care_situation",
-          caregiver_id: caregiverId,
-          care_session_id: interactionSessionId(),
-        }),
-      });
+      const existingToken = getAnonymousAccessToken();
+      if (!existingToken) throw new Error("No server-issued care session exists yet.");
+      const session = await ensureAnonymousSession();
+      const res = await fetch(
+        apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=0`),
+        { headers: { Authorization: `Bearer ${session.access_token}` } },
+      );
       if (res.ok) {
         const data = (await safeJson(res)) as {
           situations?: Situation[];
@@ -632,6 +630,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           try {
             const inviteRes = await fetch(
               apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=1`),
+              { headers: { Authorization: `Bearer ${session.access_token}` } },
             );
             if (inviteRes.ok) {
               const inviteData = (await safeJson(inviteRes)) as {
