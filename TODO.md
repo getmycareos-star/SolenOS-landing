@@ -25,11 +25,7 @@
        single-entry via `/api/situation`) instead of reading the removed route file.
 - [x] 3. Grep src/ for localhost/127.0.0.1 and debug console.log leakage. Fix if any
        reach client-exposed paths.
-       VERIFIED: Only matches are server-side-only tooling defaults —
-       solenos-langchain-adapter/model.ts (Ollama 127.0.0.1:11434) and
-       tika-extractor/index.ts (Tika 127.0.0.1:9998). Both imported only by server-side
-       LLM orchestration (analyze-pipeline, gemini-contract), never client workspace.
-       Not client-exposed. No debug console.logs in tracked diff.
+       UPDATED: the Ollama model adapter no longer defaults to localhost and now rejects non-Railway-private Ollama URLs. The Tika localhost default remains in legacy server-side tooling; active Vite workspace components do not import that Next/server-only pipeline.
 - [x] 4. `npm run build` passes (no TS/ESLint blocking errors, all routes compile).
        VERIFIED: BUILD=0. Compiled successfully in 57s, type-check passed, all routes
        generated including /workspace, /workspace/documents, /workspace/settings,
