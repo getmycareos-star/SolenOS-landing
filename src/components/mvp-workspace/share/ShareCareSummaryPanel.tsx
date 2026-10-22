@@ -27,6 +27,7 @@ import {
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import type { SituationResponse } from "@/lib/situation-entry";
+import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
 
 /* ------------------------------------------------------------------ */
 /*  Share request state machine                                        */
@@ -82,10 +83,16 @@ export function ShareCareSummaryPanel({
   const isOffline = useMemo(() => typeof navigator !== "undefined" && !navigator.onLine, []);
 
   const fetchCareData = useCallback(async (): Promise<any> => {
+    if (!getAnonymousAccessToken()) {
+      throw new Error("This browser has no server-issued care session. Open the saved care record before sharing.");
+    }
+    const session = await ensureAnonymousSession();
     const url = apiUrl(
       `/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(careSessionId)}`,
     );
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
     if (!res.ok) throw new Error("Could not load care information.");
     const data = await safeJson(res);
     return data;
