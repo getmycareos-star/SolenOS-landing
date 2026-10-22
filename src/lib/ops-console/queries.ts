@@ -5,7 +5,6 @@
 
 import type { Pool } from "pg";
 import { createPostgresPool } from "../telemetry-persistence/postgres-store";
-import { getMemorySolenEvents } from "./insert-event";
 
 let poolPromise: Promise<Pool> | null = null;
 
@@ -170,11 +169,6 @@ export type InvestorDashboardData = {
   };
 };
 
-function memoryEventCounts() {
-  const events = getMemorySolenEvents();
-  return events;
-}
-
 async function buildFunnel(pool: Pool | null): Promise<FunnelStep[]> {
   const steps: Array<{ step: string; event_name: string; filter?: string }> = [
     { step: "Landing", event_name: "page_view" },
@@ -198,31 +192,21 @@ async function buildFunnel(pool: Pool | null): Promise<FunnelStep[]> {
       counts.push(await scalar(pool, sql, s.filter ? [] : [s.event_name]));
     }
   } else {
-    const mem = memoryEventCounts();
-    for (const s of steps) {
-      if (s.filter) {
-        counts.push(
-          mem.filter(
-            (e) =>
-              e.event_name === "step_completed" &&
-              e.metadata?.step_name === "step3",
-          ).length,
-        );
-      } else {
-        counts.push(mem.filter((e) => e.event_name === s.event_name).length);
-      }
-    }
+    // No persisted event store means no measured funnel counts.
+    counts.push(...steps.map(() => 0));
   }
 
   return steps.map((s, i) => {
     const count = counts[i] ?? 0;
     const prev = i === 0 ? null : counts[i - 1] ?? 0;
     const conversion_pct =
-      i === 0 || prev == null || prev === 0
-        ? i === 0
+      i === 0
+        ? count > 0
           ? 100
           : null
-        : Math.round((count / prev) * 1000) / 10;
+        : prev == null || prev === 0
+          ? null
+          : Math.round((count / prev) * 1000) / 10;
     const dropoff_pct =
       conversion_pct == null ? null : Math.round((100 - conversion_pct) * 10) / 10;
     return {
@@ -498,26 +482,11 @@ export async function loadOpsDashboard(input?: {
     `SELECT timestamp::text AS timestamp FROM solen_events ORDER BY timestamp DESC LIMIT 1`,
   );
 
-  // Memory fallback when DB empty
-  const mem = memoryEventCounts();
-  const useMemory = !pool || (totalEvents === 0 && mem.length > 0);
-
+  // Only persisted database rows count as operational evidence.
   let rawEvents: RawEventRow[] = [];
   let rawTotal = 0;
 
-  if (useMemory) {
-    let filtered = [...mem].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
-    if (input?.eventFilter) {
-      filtered = filtered.filter((e) => e.event_name === input.eventFilter);
-    }
-    if (input?.userSearch) {
-      filtered = filtered.filter((e) => (e.user_id ?? "").includes(input.userSearch!));
-    }
-    rawTotal = filtered.length;
-    rawEvents = filtered.slice(offset, offset + pageSize);
-  } else {
+  if (pool) {
     const clauses: string[] = [];
     const params: unknown[] = [];
     if (input?.eventFilter) {
@@ -556,9 +525,7 @@ export async function loadOpsDashboard(input?: {
     }));
   }
 
-  const lastEvent =
-    lastEventRows[0]?.timestamp ??
-    (mem.length > 0 ? mem[mem.length - 1]!.timestamp : null);
+  const lastEvent = lastEventRows[0]?.timestamp ?? null;
 
   let ingestion: "healthy" | "warning" | "unknown" = "unknown";
   if (lastEvent) {
@@ -572,8 +539,8 @@ export async function loadOpsDashboard(input?: {
 
   return {
     founder: {
-      users: totalRegistered || totalUsersEvent,
-      active_care_cases: casesActive || careCasesEvent,
+      users: totalRegistered,
+      active_care_cases: casesActive,
       returning_users: returningUsers,
       retention_7d: retention7d,
       care_records_reopened: careRecordsReopened,
@@ -648,7 +615,7 @@ export async function loadOpsDashboard(input?: {
       sample_error_message: e.sample_error_message ?? "",
     })),
     system: {
-      total_events: totalEvents || mem.length,
+      total_events: totalEvents,
       events_24h: events24h,
       last_event_received: lastEvent,
       ingestion_health: ingestion,
@@ -656,7 +623,7 @@ export async function loadOpsDashboard(input?: {
       query_latency_ms: queryLatency,
     },
     raw_events: rawEvents,
-    raw_total: rawTotal || mem.length,
+    raw_total: rawTotal,
   };
 }
 

@@ -1,53 +1,51 @@
-// Use the same-origin API proxy in both Vite development and Netlify production.
-// vite.config.ts and netlify.toml forward /api/* to the backend, so the browser
-// never needs a hard-coded backend hostname or import.meta.env in Jest.
-const API_BASE = '/api/v1'
+import { getAccessToken, getAccessTokenExpiresAt, clearAccessToken, clearCareContext, authHeaders } from './authSession';
+import { resolveApiPath } from './apiPath';
 
-function isPlaceholderIdentifier(value: string | null | undefined): boolean {
-  if (!value?.trim()) return true
-  return /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(value.trim())
-}
+const configuredBase = import.meta.env.VITE_API_BASE?.trim()
+const isProduction = import.meta.env.PROD === true
+const invalidConfiguredBase = Boolean(
+  configuredBase && /your-solenos-backend-domain\.com|localhost:8000/i.test(configuredBase),
+)
+// Use Netlify's same-origin proxy in production; only local development defaults to localhost.
+const API_BASE = configuredBase && !invalidConfiguredBase
+  ? configuredBase.replace(/\/+$/, '')
+  : isProduction
+    ? '/api/v1'
+    : 'http://localhost:8000/api/v1'
 
-export function getPersonId(): string {
-  // Older builds may have persisted a demo ID in localStorage. Never send it
-  // to the API as if it identified a real care recipient.
-  const id = localStorage.getItem('solenos_person_id')?.trim() || ''
-  return isPlaceholderIdentifier(id) ? '' : id
-}
+export {
+  ACCESS_TOKEN_STORAGE_KEY,
+  getAccessToken,
+  getAccessTokenExpiresAt,
+  setAccessToken,
+  clearAccessToken,
+  authHeaders,
+  getPersonId,
+  setPersonId,
+  getCaregiverId,
+  setCaregiverId,
+  clearCareContext,
+  subscribeToPersonId,
+} from './authSession';
 
-export function setPersonId(id: string): void {
-  const normalized = id.trim()
-  if (isPlaceholderIdentifier(normalized)) {
-    localStorage.removeItem('solenos_person_id')
-  } else {
-    localStorage.setItem('solenos_person_id', normalized)
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
   }
-  window.dispatchEvent(new Event('personIdChanged'))
-}
-
-export function subscribeToPersonId(callback: (id: string) => void): () => void {
-  const handler = () => callback(getPersonId())
-  window.addEventListener('personIdChanged', handler)
-  return () => window.removeEventListener('personIdChanged', handler)
-}
-
-function resolveApiUrl(path: string): string {
-  const normalized = path.startsWith('/') ? path : `/${path}`
-
-  // The backend exposes situation capture at /api/situation (outside /api/v1).
-  // All other calls using this client use the /api/v1 router.
-  if (normalized === '/situation' || normalized.startsWith('/situation?')) {
-    return `/api${normalized}`
-  }
-
-  return `${API_BASE.replace(/\/$/, '')}${normalized}`
 }
 
 async function handleResponse(res: Response) {
-  const contentType = res.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
+  if (res.status === 204) return null
+  const contentType = res.headers?.get?.('content-type') || ''
+  const isJson = contentType.includes('application/json') || (typeof res.text !== 'function' && typeof res.json === 'function')
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAccessToken()
+    }
     let message = `API ${res.status}`
     if (isJson) {
       try {
@@ -60,18 +58,16 @@ async function handleResponse(res: Response) {
       const text = await res.text()
       message = text || message
     }
-    throw new Error(message)
+    throw new ApiError(message, res.status)
   }
 
   if (!isJson) {
     throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
   }
 
+  if (typeof res.text !== 'function') return res.json()
   const text = await res.text()
-  if (!text) {
-    throw new Error('Empty response from server')
-  }
-
+  if (!text) throw new Error('Empty response from server')
   try {
     return JSON.parse(text)
   } catch {
@@ -79,58 +75,47 @@ async function handleResponse(res: Response) {
   }
 }
 
+function resolveApiUrl(path: string): string {
+  return resolveApiPath(path, API_BASE)
+}
+
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path))
+  const res = await fetch(resolveApiUrl(path), { headers: authHeaders() })
   return handleResponse(res)
 }
 
-// Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path))
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`)
-  }
+  const res = await fetch(resolveApiUrl(path), { headers: authHeaders() })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown) {
+export async function postJSON(path: string, body: unknown, personId?: boolean) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
-export async function patchJSON(path: string, body: unknown) {
+export async function patchJSON(path: string, body: unknown, personId?: boolean) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
-
-// Multipart upload helper. Do not set Content-Type manually: the browser must
-// add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
+    headers: authHeaders(),
     body,
   })
   return handleResponse(res)
 }
-
-// Caregiver identity is only accepted when explicitly stored by the current
-// frontend session. Never fabricate a caregiver ID for a care record.
-export function getCaregiverId(): string | null {
-  const id = localStorage.getItem('solenos_caregiver_id')?.trim() || ''
-  return isPlaceholderIdentifier(id) ? null : id
-}
-
-// The backend currently has no implemented authentication/session endpoints.
-// Fail closed rather than treating a client-side role choice as authentication.
 export interface AuthSessionInfo {
   authenticated: boolean
   account_id: string | null
@@ -144,20 +129,60 @@ export interface AuthSessionInfo {
 }
 
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (!getAccessToken()) return { authenticated: false, sessionInfo: null }
+  try {
+    const account = await getJSON('/auth/me') as { id?: string; account_id?: string }
+    const contexts = await getJSON('/auth/care-contexts') as Array<{ person_id?: string; role?: string }>
+    if (!account || !Array.isArray(contexts)) {
+      return { authenticated: false, sessionInfo: null }
+    }
+    const accountId = account.id || account.account_id || null
+    if (!accountId) return { authenticated: false, sessionInfo: null }
+    const caregiverRoles: Record<string, string> = {}
+    for (const context of contexts) {
+      if (context.person_id) caregiverRoles[context.person_id] = context.role || 'caregiver'
+    }
+    return {
+      authenticated: true,
+      sessionInfo: {
+        authenticated: true,
+        account_id: accountId,
+        session_type: 'caregiver',
+        authorized_person_ids: contexts.flatMap(context => context.person_id ? [context.person_id] : []),
+        caregiver_roles: caregiverRoles,
+        professional_roles: {},
+        anonymous_session_id: null,
+        expires_at: getAccessTokenExpiresAt() || '',
+        mfa_verified: false,
+      },
+    }
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      clearAccessToken()
+      clearCareContext()
+    }
+    return { authenticated: false, sessionInfo: null }
+  }
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
+  callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
-  // No backend session event stream exists yet.
-  return () => undefined
+  const update = () => {
+    void checkAuthState().then(({ authenticated, sessionInfo }) => callback(authenticated, sessionInfo))
+  }
+  window.addEventListener('solenos:auth-changed', update)
+  window.addEventListener('solenos:auth-expired', update)
+  window.addEventListener('personIdChanged', update)
+  return () => {
+    window.removeEventListener('solenos:auth-changed', update)
+    window.removeEventListener('solenos:auth-expired', update)
+    window.removeEventListener('personIdChanged', update)
+  }
 }
 
-export function startTokenRefresh(): void {
-  // No backend-issued token exists to refresh until authentication is implemented.
-}
+// The backend has no token-refresh endpoint. Expired server sessions are rejected
+// by the API and cleared; do not simulate refresh locally.
+export function startTokenRefresh(): void {}
+export function stopTokenRefresh(): void {}
 
-export function stopTokenRefresh(): void {
-  // No active token-refresh task exists.
-}

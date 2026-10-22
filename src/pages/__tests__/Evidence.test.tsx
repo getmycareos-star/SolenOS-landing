@@ -2,12 +2,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Evidence from '../Evidence';
 import { compressImage } from '../../lib/imageCompression';
 
-const jsonResponse = (data: unknown) => ({
-  ok: true,
-  headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
-  text: async () => JSON.stringify(data),
-  json: async () => data,
-});
+jest.mock('../../api/client', () => ({
+  getPersonId: () => 'test-person-id',
+  getCaregiverId: () => 'demo-caregiver',
+  getJSON: jest.fn().mockResolvedValue([]),
+  postJSON: jest.fn().mockResolvedValue({}),
+  postFormData: async (path: string, body: FormData) => {
+    const response = await fetch(path, { method: 'POST', body });
+    if (!response.ok) throw new Error('Failed to upload image');
+    return response.json();
+  },
+}));
 
 // Mock the compression library
 jest.mock('../../lib/imageCompression', () => ({
@@ -24,20 +29,24 @@ describe('Evidence Component Image Compression Integration', () => {
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
-    localStorage.setItem('solenos_person_id', '550e8400-e29b-41d4-a716-446655440000');
-    localStorage.setItem('solenos_caregiver_id', '550e8400-e29b-41d4-a716-446655440001');
   });
 
   it('should compress image before upload when using gallery upload', async () => {
     // Mock the API calls
     global.fetch = jest.fn().mockImplementation(async (url, options) => {
       if (url.includes('/upload')) {
-        return jsonResponse({ evidence_id: 'test-evidence-id' });
+        return {
+          ok: true,
+          json: async () => ({ evidence_id: 'test-evidence-id' })
+        };
       }
       if (url.includes('/evidence')) {
-        return jsonResponse([]);
+        return {
+          ok: true,
+          json: async () => []
+        };
       }
-      return jsonResponse({});
+      return { ok: true, json: async () => ({}) };
     });
 
     // Render the component
@@ -54,7 +63,7 @@ describe('Evidence Component Image Compression Integration', () => {
       onload: null,
       readAsDataURL: jest.fn((file) => {
         // Simulate FileReader.onload being called with a data URL
-        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -69,12 +78,12 @@ describe('Evidence Component Image Compression Integration', () => {
     expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
-    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find((button) => button.getAttribute('type') === 'submit')!;
+    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find(button => button.getAttribute('type') === 'submit')!;
     fireEvent.click(submitButton);
 
     // Wait for submission to complete
     await waitFor(() => {
-      expect(submitButton).toHaveTextContent('Create Evidence');
+      expect(screen.queryByAltText('Preview')).not.toBeInTheDocument();
     });
 
     // Verify that compressImage was called
@@ -105,7 +114,7 @@ describe('Evidence Component Image Compression Integration', () => {
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -127,12 +136,18 @@ describe('Evidence Component Image Compression Integration', () => {
     // Mock the API calls
     global.fetch = jest.fn().mockImplementation(async (url, options) => {
       if (url.includes('/upload')) {
-        return jsonResponse({ evidence_id: 'test-evidence-id' });
+        return {
+          ok: true,
+          json: async () => ({ evidence_id: 'test-evidence-id' })
+        };
       }
       if (url.includes('/evidence')) {
-        return jsonResponse([]);
+        return {
+          ok: true,
+          json: async () => []
+        };
       }
-      return jsonResponse({});
+      return { ok: true, json: async () => ({}) };
     });
 
     render(<Evidence />);
@@ -146,7 +161,7 @@ describe('Evidence Component Image Compression Integration', () => {
     const fileReaderMock = {
       onload: null,
       readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
         setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
       })
     };
@@ -161,12 +176,12 @@ describe('Evidence Component Image Compression Integration', () => {
     expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
 
     // Find and click submit button
-    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find((button) => button.getAttribute('type') === 'submit')!;
+    const submitButton = screen.getAllByRole('button', { name: /create evidence/i }).find(button => button.getAttribute('type') === 'submit')!;
     fireEvent.click(submitButton);
 
     // Wait for submission to complete (should use original image due to fallback)
     await waitFor(() => {
-      expect(submitButton).toHaveTextContent('Create Evidence');
+      expect(screen.queryByAltText('Preview')).not.toBeInTheDocument();
     });
 
     // Verify that fetch was still called (fallback to original image worked)

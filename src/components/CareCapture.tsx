@@ -18,7 +18,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     { caregiverId: string; personId: string; rawInput: string }
   >({
     mutationFn: ({ caregiverId, personId, rawInput }) => 
-      postJSON('/situation', {
+      postJSON('/api/situation', {
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: rawInput,
@@ -99,7 +99,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           </span>
         )}
         {Boolean(submitError || identityError) && (
-          <span style={{
+          <span role="alert" style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
