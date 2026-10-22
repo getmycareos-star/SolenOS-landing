@@ -42,7 +42,32 @@ function AnonymousSessionGate({ children }: { children: ReactNode }) {
   }, []);
 
   if (status === 'loading') {
-    return <main role="status" aria-live="polite" style={{ padding: 24 }}>Preparing your private care record…</main>;
+    const startingPoints = [
+      { title: 'Daily Capture', detail: 'Record an observation or event in your own words.' },
+      { title: 'AI Companion', detail: 'Ask a care-related question; conversation is not automatically saved as a care fact.' },
+      { title: 'Documents and Living Care Record', detail: 'Add a supported text document or review the source evidence that builds continuity.' },
+    ];
+    return (
+      <main aria-labelledby="session-start-title" style={{ padding: 'clamp(20px, 5vw, 36px)', maxWidth: 760, margin: '0 auto' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--trust)' }}>SOLENOS · LIVING CARE RECORD</p>
+        <h1 id="session-start-title" style={{ fontSize: 'clamp(26px, 5vw, 36px)', lineHeight: 1.15, margin: '10px 0 12px' }}>Keep the care story connected.</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.65, marginBottom: 20 }}>
+          SolenOS helps family caregivers bring daily observations, questions, and supported care documents together over time—while keeping original reports distinct from AI interpretations and unconfirmed information.
+        </p>
+        <h2 style={{ fontSize: 14, marginBottom: 10 }}>Choose a starting point</h2>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {startingPoints.map((item) => (
+            <div key={item.title} aria-disabled="true" style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', opacity: 0.78 }}>
+              <strong style={{ fontSize: 13 }}>{item.title}</strong>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.5, marginTop: 4 }}>{item.detail}</p>
+            </div>
+          ))}
+        </div>
+        <p role="status" aria-live="polite" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 18 }}>
+          Preparing your private care record. Actions will be available once the server confirms this session.
+        </p>
+      </main>
+    );
   }
 
   if (status === 'error') {
