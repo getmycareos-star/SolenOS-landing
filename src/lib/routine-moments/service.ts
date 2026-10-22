@@ -247,7 +247,7 @@ export function detectChanges(
          current_value: currentVal,
          change_type: 'update',
          detected_at: new Date().toISOString(),
-         confidence: Math.min(0.9, change),
+         confidence: null,
        });
     }
   });
