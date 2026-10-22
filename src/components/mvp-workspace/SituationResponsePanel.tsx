@@ -48,9 +48,23 @@ export function SituationResponsePanel({
     rawInput,
     entryIntent,
   });
+  const activeProjection = response.active_care_situation as
+    | (NonNullable<SituationResponse["active_care_situation"]> & {
+        persistence_source?: string;
+        reasoning_state_persisted?: boolean;
+      })
+    | undefined;
+  const isReconstructedProjection =
+    activeProjection?.persistence_source === "relational_evidence_and_events_projection" &&
+    activeProjection.reasoning_state_persisted === false;
 
   return (
     <section className="panel panel-output situation-response" aria-label="Living Care Record">
+      {isReconstructedProjection && (
+        <p className="workspace-status-warning" role="status">
+          This view is reconstructed from saved evidence and events. A separate situation-reasoning state has not been persisted.
+        </p>
+      )}
       <div className="workspace-panel-inner lcr-side">
         <LivingCareRecordPanel
           view={livingRecord}
