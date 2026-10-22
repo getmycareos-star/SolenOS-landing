@@ -51,7 +51,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     medication_name: '',
-    status: 'given', // default to given
+    status: '',
     dose: null,
     scheduled_for: null,
     administered_at: null,
@@ -82,7 +82,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     axis: 'mood',
-    score: 3,
+    score: 0,
     observed_at: new Date().toISOString(),
     note: null,
   });
@@ -269,6 +269,11 @@ export default function StructuredDailyCapture() {
         setMedicationUploading(false);
         return;
       }
+      if (!['given', 'refused', 'missed'].includes(medicationData.status)) {
+        alert('Select the actual medication status before adding this entry.');
+        setMedicationUploading(false);
+        return;
+      }
       
       // Optimistically add to medications list
       setForm(prev => ({
@@ -279,7 +284,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -342,6 +347,10 @@ export default function StructuredDailyCapture() {
     e.preventDefault();
     
     try {
+      if (!Number.isInteger(scaleForm.score) || scaleForm.score < 1 || scaleForm.score > 5) {
+        alert('Enter the observed score from 1 to 5 before adding this entry.');
+        return;
+      }
       const scaleData = {
         ...scaleForm,
         observed_at: new Date(scaleForm.observed_at).toISOString(),
@@ -356,7 +365,7 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: 3,
+        score: 0,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -439,7 +448,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -459,7 +468,7 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: 3,
+        score: 0,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -495,8 +504,7 @@ export default function StructuredDailyCapture() {
     onSettled: () => {
       setSubmitting(false);
     },
-    retry: true,
-    maxRetries: 3
+    // Daily capture is a durable write and is never automatically replayed.
   });
 
   // Handle form submission to backend
@@ -835,6 +843,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
+                  <option value="">Select actual status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
@@ -1250,7 +1259,7 @@ export default function StructuredDailyCapture() {
                   min={1}
                   max={5}
                   value={scaleForm.score}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: parseInt(e.target.value) || 3 }))}
+                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? 0 : Number(e.target.value) }))}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 
