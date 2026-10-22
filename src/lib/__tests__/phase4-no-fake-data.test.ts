@@ -5,7 +5,7 @@ function sourceFiles(dir: string): string[] {
   return readdirSync(resolve(process.cwd(), dir), { withFileTypes: true }).flatMap((entry) => {
     const relativePath = `${dir}/${entry.name}`
     if (entry.isDirectory()) return sourceFiles(relativePath)
-    return /\\.(ts|tsx|js|jsx)$/.test(entry.name) ? [relativePath] : []
+    return /\.(ts|tsx|js|jsx)$/.test(entry.name) ? [relativePath] : []
   })
 }
 
@@ -144,7 +144,7 @@ describe('Phase 4 production data-integrity guardrails', () => {
 
   it('never imports illustrative fixtures into the production source tree', () => {
     for (const path of sourceFiles('src')) {
-      expect(source(path)).not.toMatch(/(?:from\\s*|import\\s*\\()\\s*["'][^"']*(?:scripts|tests)\\/fixtures/)
+      expect(source(path)).not.toMatch(/(?:from\s*|import\s*\()\s*["'][^"']*(?:scripts|tests)\/fixtures/)
     }
   })
 
