@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { getCaregiverId, getJSON, postJSON, getPersonId } from '../api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -135,6 +135,7 @@ export default function Community() {
   const [loadingWisdom, setLoadingWisdom] = useState(false)
 
   const personId = getPersonId()
+  const caregiverId = getCaregiverId()
 
   useEffect(() => {
     const saved = localStorage.getItem('solenos_saved_posts')
@@ -148,7 +149,13 @@ export default function Community() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
+        if (!personId || !caregiverId) {
+          setPosts([])
+          setCommunityUnavailable(true)
+          setCommunityError('Select an authenticated caregiver identity and authorized care record before using Community.')
+          return
+        }
+        const data = await getJSON(`/community?caregiver_id=${encodeURIComponent(caregiverId)}`) as CommunityPostSummary
         setPosts(data.posts ?? [])
         setCommunityError(null)
         setCommunityUnavailable(false)
@@ -163,12 +170,12 @@ export default function Community() {
     }
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personId])
+  }, [personId, caregiverId])
 
   async function handleReaction(postId: string, reactionType: ReactionType) {
     try {
       await postJSON(`/community/${postId}/reactions`, {
-        caregiver_id: personId,
+        caregiver_id: caregiverId,
         reaction_type: reactionType,
       })
     } catch (e) {
@@ -243,7 +250,7 @@ export default function Community() {
     setSubmitting(true)
     try {
       await postJSON('/community', {
-        caregiver_id: personId,
+        caregiver_id: caregiverId,
         author_type: 'peer_caregiver',
         author_label: 'Anonymous caregiver',
         post_type: postType,
@@ -252,7 +259,7 @@ export default function Community() {
       })
       setComposerText('')
       setComposerOpen(false)
-      const response = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
+      const response = await getJSON(`/community?caregiver_id=${encodeURIComponent(caregiverId || '')}`) as CommunityPostSummary
       setPosts(response.posts ?? [])
     } catch (e) {
       console.error(e)
