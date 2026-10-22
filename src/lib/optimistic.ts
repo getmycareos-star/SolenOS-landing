@@ -40,9 +40,7 @@ export function useOptimisticMutation<TData, TVariables>(
       throw new Error('Mutation options must be provided either to the hook or mutate().')
     }
     if (inFlightRef.current) {
-      const concurrentError = new Error('A save is already in progress. Wait for it to finish before trying again.')
-      setError(concurrentError)
-      throw concurrentError
+      throw new Error('A save is already in progress. Wait for it to finish before trying again.')
     }
 
     setLoading(true)
@@ -56,7 +54,13 @@ export function useOptimisticMutation<TData, TVariables>(
         context = await options.onMutate?.(variables)
         result = await options.mutationFn(variables)
         setData(result)
-        await options.onSuccess?.(result, variables, context)
+        try {
+          await options.onSuccess?.(result, variables, context)
+        } catch (callbackError) {
+          // The server write already succeeded. A UI callback failure must not
+          // misreport the write itself as failed or trigger rollback.
+          console.error('Mutation onSuccess callback failed after server success:', callbackError)
+        }
         return result
       } catch (err) {
         mutationError = err
