@@ -46,7 +46,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
   const handleSubmit = async () => {
     if (!text.trim()) return
-    if (!personId || /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(personId.trim())) {
+    if (!personId.trim() || /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(personId.trim())) {
       setIdentityError('Select a real care record before saving this care update.')
       return
     }
