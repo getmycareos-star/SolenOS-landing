@@ -12,13 +12,14 @@ jest.mock('../api/client', () => ({
   getJSON: jest.fn(),
   postJSON: jest.fn(),
   getCaregiverId: jest.fn(() => 'caregiver-from-local-storage'),
-  checkAuthState: jest.fn(async () => ({ authenticated: false, sessionInfo: null })),
+  hasActiveCareSession: jest.fn(() => false),
 }))
 
-import { getJSON, postJSON } from '../api/client'
+import { getJSON, postJSON, hasActiveCareSession } from '../api/client'
 
 const mockedGetJSON = getJSON as jest.Mock
 const mockedPostJSON = postJSON as jest.Mock
+const mockedHasActiveCareSession = hasActiveCareSession as jest.Mock
 
 describe('Community production data integrity', () => {
   beforeEach(() => {
@@ -49,11 +50,36 @@ describe('Community production data integrity', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^share$/i }))
 
-    expect(await screen.findByText(/cannot verify an authenticated caregiver session/i)).toBeInTheDocument()
+    expect(await screen.findByText(/cannot verify this browser's active care session/i)).toBeInTheDocument()
     expect(screen.getByDisplayValue(draft)).toBeInTheDocument()
     expect(mockedPostJSON).not.toHaveBeenCalled()
   })
 })
+
+  it('allows an active anonymous caregiver session to post peer content without writing to the LCR', async () => {
+    mockedHasActiveCareSession.mockReturnValue(true)
+    mockedGetJSON.mockResolvedValue({ identity: 'anonymous', posts: [] })
+    mockedPostJSON.mockResolvedValue({ ok: true })
+
+    render(<MemoryRouter><Community /></MemoryRouter>)
+
+    fireEvent.click(screen.getByRole('button', { name: /share what worked/i }))
+    const draft = 'A peer experience shared by this caregiver'
+    fireEvent.change(screen.getByPlaceholderText(/share a tip, routine/i), {
+      target: { value: draft },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^share$/i }))
+
+    await waitFor(() => {
+      expect(mockedPostJSON).toHaveBeenCalledWith('/community', expect.objectContaining({
+        caregiver_id: 'caregiver-from-local-storage',
+        author_type: 'peer_caregiver',
+        content: draft,
+        visibility: 'public',
+      }))
+    })
+    expect(mockedPostJSON).not.toHaveBeenCalledWith('/situation', expect.anything())
+  })
 
 describe('Care-finance estimates remain evidence-bound', () => {
   it('does not infer money or caregiver-time depletion from keywords', () => {
