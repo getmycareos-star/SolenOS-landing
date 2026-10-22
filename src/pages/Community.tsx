@@ -88,6 +88,11 @@ function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
       throw new Error('The server returned invalid Community reaction counts.');
     }
   }
+  for (const type of validReactionTypes) {
+    if (typeof counts[type] !== 'number' || !Number.isFinite(counts[type]) || counts[type] < 0) {
+      throw new Error(`The server omitted or malformed the Community ${type} reaction count; zero was not inferred.`);
+    }
+  }
   if (post.user_reaction !== null && !validReactionTypes.includes(post.user_reaction as ReactionType)) {
     throw new Error('The server returned an unsupported Community reaction state.');
   }
@@ -113,10 +118,10 @@ function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
     created_at: post.created_at,
     updated_at: null,
     reaction_counts: {
-      support: counts.support ?? 0,
-      helpful: counts.helpful ?? 0,
-      relate: counts.relate ?? 0,
-      heart: counts.heart ?? 0,
+      support: counts.support,
+      helpful: counts.helpful,
+      relate: counts.relate,
+      heart: counts.heart,
     },
     user_reaction: userReaction,
   }
