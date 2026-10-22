@@ -18,14 +18,12 @@ export default function DailyCare() {
 
    const [form, setForm] = useState({
      mood: '',
-     mood_scale: 3,
-     agitation_level: 'None',
-     agitation_scale: 1,
+     agitation_level: '',
+     agitation_scale: 0,
      vitals: {} as Record<string, string>,
      behavior_notes: '',
      sleep_notes: '',
      eating_notes: '',
-     wellbeing_stress: 3,
      wellbeing_notes: '',
      general_notes: '',
      location: null as { latitude: number; longitude: number; accuracy: number; timestamp: number } | null,
@@ -117,14 +115,12 @@ export default function DailyCare() {
          person_id: personId,
          caregiver_id: caregiverId,
          mood: form.mood || undefined,
-         mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
          agitation_level: form.agitation_level,
          agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
          vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
          behavior_notes: form.behavior_notes || undefined,
          sleep_notes: form.sleep_notes || undefined,
          eating_notes: form.eating_notes || undefined,
-         wellbeing_stress: form.wellbeing_stress !== 3 ? form.wellbeing_stress : undefined,
          wellbeing_notes: form.wellbeing_notes || undefined,
          general_notes: form.general_notes || undefined,
          location: form.location ? {
@@ -138,14 +134,12 @@ export default function DailyCare() {
        setSaved(true)
        setForm({
          mood: '',
-         mood_scale: 3,
-         agitation_level: 'None',
-         agitation_scale: 1,
+         agitation_level: '',
+         agitation_scale: 0,
          vitals: {},
          behavior_notes: '',
          sleep_notes: '',
          eating_notes: '',
-         wellbeing_stress: 3,
          wellbeing_notes: '',
          general_notes: '',
          location: null,
@@ -225,15 +219,12 @@ export default function DailyCare() {
           </label>
           <select
             value={form.mood}
-            onChange={e => { updateField('mood', e.target.value); updateField('mood_scale', MOOD_OPTIONS.indexOf(e.target.value) + 1) }}
+            onChange={e => updateField('mood', e.target.value)}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
           >
             <option value="">Select mood</option>
             {MOOD_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
-          <label style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', display: 'block' }}>
-            Mood scale: {form.mood_scale}/5
-          </label>
         </section>
 
         {/* Agitation */}
@@ -246,6 +237,7 @@ export default function DailyCare() {
             onChange={e => { updateField('agitation_level', e.target.value); updateField('agitation_scale', AGITATION_OPTIONS.indexOf(e.target.value) + 1) }}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
           >
+            <option value="">Not recorded</option>
             {AGITATION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         </section>
