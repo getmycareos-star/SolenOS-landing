@@ -9,6 +9,7 @@ jest.unstable_mockModule('../api/client', () => ({
   getJSON: mockGetJSON,
   postJSON: mockPostJSON,
   getPersonId: () => 'care-record-1',
+  getCaregiverId: () => 'caregiver-1',
 }))
 
 const { default: Community } = await import('./Community')
@@ -38,7 +39,8 @@ describe('Community unavailable state', () => {
     expect(screen.queryByText('No community posts yet. Be the first to share.')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Share what worked/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Find wisdom' })).toBeDisabled()
-    await waitFor(() => expect(mockGetJSON).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(mockGetJSON).toHaveBeenCalledWith('/community?caregiver_id=caregiver-1'))
+    expect(mockGetJSON).toHaveBeenCalledTimes(1)
   })
 
   it('does not increase a reaction count when the API rejects the reaction', async () => {
@@ -70,6 +72,7 @@ describe('Community unavailable state', () => {
       </MemoryRouter>,
     )
 
+    await waitFor(() => expect(mockGetJSON).toHaveBeenCalledWith('/community?caregiver_id=caregiver-1'))
     const likeButton = await screen.findByRole('button', { name: /👍 3/ })
     likeButton.click()
 
