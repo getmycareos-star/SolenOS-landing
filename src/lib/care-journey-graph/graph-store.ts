@@ -74,6 +74,26 @@ export function addEventToGraph(
   return updated;
 }
 
+
+/** Restore the previous in-memory snapshot after a failed durable write. */
+export function restoreGraphForCaregiver(
+  caregiverId: string,
+  caseId: string | null,
+  previousGraph: CareJourneyGraph | null,
+): void {
+  if (!caregiverId?.trim() || caregiverId === "default_caregiver") {
+    throw new Error("Valid caregiver identity is required to restore graph state.");
+  }
+  const key = journeyKey(caregiverId.trim(), caseId);
+  const currentId = caregiverIndex.get(key);
+  if (currentId) graphs.delete(currentId);
+  caregiverIndex.delete(key);
+  if (previousGraph) {
+    graphs.set(previousGraph.journey_id, previousGraph);
+    caregiverIndex.set(key, previousGraph.journey_id);
+  }
+}
+
 export function resetCareJourneyGraphStore(): void {
   graphs.clear();
   caregiverIndex.clear();
