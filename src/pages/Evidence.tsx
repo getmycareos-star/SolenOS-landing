@@ -118,7 +118,10 @@ export default function Evidence() {
       setSubmitError(null);
       try {
         const freshData = await getJSON<unknown>('/evidence/' + encodeURIComponent(variables.person_id));
-        if (!Array.isArray(freshData)) throw new Error('The server returned an invalid evidence-list response.');
+        if (!Array.isArray(freshData) || !freshData.every(item =>
+          item && typeof item.id === 'string' && typeof item.type === 'string' &&
+          typeof item.source_text === 'string' && typeof item.uploaded_at === 'string'
+        )) throw new Error('The server returned an invalid evidence-list response.');
         setItems(freshData);
         setListError(null);
       } catch (err) {
@@ -168,7 +171,10 @@ export default function Evidence() {
       }
       try {
         const data = await getJSON<unknown>('/evidence/' + encodeURIComponent(personId));
-        if (!Array.isArray(data)) throw new Error('The server returned an invalid evidence-list response.');
+        if (!Array.isArray(data) || !data.every(item =>
+          item && typeof item.id === 'string' && typeof item.type === 'string' &&
+          typeof item.source_text === 'string' && typeof item.uploaded_at === 'string'
+        )) throw new Error('The server returned an invalid evidence-list response.');
         if (!cancelled) setItems(data);
       } catch (err) {
         if (!cancelled) setListError(err instanceof Error ? err.message : 'Evidence could not be loaded. Its contents are unknown.');
