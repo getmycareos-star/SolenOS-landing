@@ -20,12 +20,12 @@ interface PostNeedsReview {
 interface TrendingTopic {
   tag: string
   count: number
-  growth: string
+  growth: string | null
 }
 
 interface StateReport {
   total_caregivers: number
-  avg_helpfulness: number
+  avg_helpfulness: number | null
   top_concerns: string[]
   trending_tags: TrendingTopic[]
 }
@@ -37,7 +37,7 @@ interface MetricsData {
 export default function TeamDashboard() {
   const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>([])
   const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>([])
-  const [report, setReport] = useState<StateReport>({ total_caregivers: 0, avg_helpfulness: 0, top_concerns: [], trending_tags: [] })
+  const [report, setReport] = useState<StateReport>({ total_caregivers: 0, avg_helpfulness: null, top_concerns: [], trending_tags: [] })
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [reportError, setReportError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'report' | 'monitoring'>('overview')
@@ -74,14 +74,14 @@ export default function TeamDashboard() {
       const data = await getJSON('/team/state-report') as any
       setReport({
         total_caregivers: Number.isFinite(data?.total_caregivers) ? data.total_caregivers : 0,
-        avg_helpfulness: Number.isFinite(data?.avg_helpfulness) ? data.avg_helpfulness : 0,
+        avg_helpfulness: typeof data?.avg_helpfulness === 'number' && Number.isFinite(data.avg_helpfulness) ? data.avg_helpfulness : null,
         top_concerns: Array.isArray(data?.top_concerns) ? data.top_concerns : [],
         trending_tags: Array.isArray(data?.trending_tags) ? data.trending_tags : [],
       })
       setReportError(null)
     } catch (error) {
       console.error('Failed to fetch report:', error)
-      setReport({ total_caregivers: 0, avg_helpfulness: 0, top_concerns: [], trending_tags: [] })
+      setReport({ total_caregivers: 0, avg_helpfulness: null, top_concerns: [], trending_tags: [] })
       setReportError('Report data is unavailable. No sample statistics are being shown.')
     }
   }
@@ -205,6 +205,9 @@ export default function TeamDashboard() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Caregivers Needing Attention</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {riskCaregivers.length === 0 && !dashboardError && (
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No caregiver-risk records are available.</p>
+              )}
               {riskCaregivers.map((c) => (
                 <div key={c.caregiver_id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -238,7 +241,7 @@ export default function TeamDashboard() {
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', minWidth: '48px', textAlign: 'right' }}>
                     {t.count}
                   </span>
-                  <span style={{ fontSize: '10px', color: 'var(--success)', }}>{t.growth}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--success)', }}>{t.growth ?? 'Not measured'}</span>
                 </div>
               ))}
             </div>
@@ -281,13 +284,6 @@ export default function TeamDashboard() {
                   >
                     Approve
                   </button>
-                  <button style={{
-                    padding: '6px 16px', borderRadius: '8px', border: '1px solid var(--border)',
-                    background: 'var(--surface)', fontSize: '12px', color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                  }}>
-                    Request Edit
-                  </button>
                 </div>
               </div>
             ))
@@ -307,7 +303,7 @@ export default function TeamDashboard() {
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Active Caregivers</div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--success)' }}>{report.avg_helpfulness.toFixed(1)}</div>
+                <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--success)' }}>{report.avg_helpfulness === null ? 'Not measured' : report.avg_helpfulness.toFixed(1)}</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Avg Helpfulness</div>
               </div>
             </div>
