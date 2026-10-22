@@ -16,7 +16,8 @@ import {
 } from "../src/lib/care-continuity-system";
 import { reconstructMemory } from "../src/lib/memory-reconstruction-engine";
 import { processUniversalKnowledgeExtraction } from "../src/lib/universal-knowledge-extraction";
-import { createMeeting, generatePreparationPack } from "../src/lib/meeting-preparation";
+import { createMeeting } from "../src/lib/meeting-preparation/meeting-store";
+import { generatePreparationPack } from "../src/lib/meeting-preparation/generate-pack";
 import { runDecisionGate } from "../src/lib/risk-uncertainty-engine/decision-gate";
 import { checkInformationCompleteness } from "../src/lib/risk-uncertainty-engine/completeness-check";
 import {
