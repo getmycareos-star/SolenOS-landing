@@ -19,6 +19,7 @@ import {
   observationCareFact,
 } from "../care-epistemics";
 import { projectOpenUncertaintiesForState } from "../progressive-understanding/uncertainty-lifecycle";
+import { resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
 
 export function resetCareRealityStateStore(): void {
   resetCareRealityStateDurableStore();
@@ -186,6 +187,10 @@ export function updateCareRealityState(
 ): CareRealityState {
   const nowIso = input.nowIso ?? new Date().toISOString();
   const careRecipientId = realityKey(input.situation.care_recipient_id);
+  const authorizedRecipientId = resolveCareRealityStoreKey(input.caregiverId);
+  if (authorizedRecipientId !== careRecipientId) {
+    throw new Error("Caregiver is not linked to this care recipient; Care Reality State update was rejected.");
+  }
   const prior = getCareRealityState(careRecipientId);
   const { turn, situation, relation } = input;
 
