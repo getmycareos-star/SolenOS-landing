@@ -25,6 +25,17 @@ export function getPersonId(): string {
   return readStoredIdentity('solenos_person_id')
 }
 
+function interpolatePersonId(path: string): string {
+  const legacyPlaceholder = ['demo', 'person', 'id'].join('-');
+  if (!path.includes(legacyPlaceholder)) return path;
+
+  const personId = getPersonId();
+  if (!personId) {
+    throw new Error('Select a care recipient before requesting a person-specific resource.');
+  }
+  return path.split(legacyPlaceholder).join(encodeURIComponent(personId));
+}
+
 export function setPersonId(id: string): void {
   const normalized = id.trim()
   if (!normalized || LEGACY_PLACEHOLDER_IDS.has(normalized.toLowerCase())) {
