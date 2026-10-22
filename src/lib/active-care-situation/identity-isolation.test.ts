@@ -8,7 +8,7 @@ import {
 } from "./ingest";
 import { persistActiveCareSituationToDurable } from "./durable-store";
 
-const RECIPIENT = "recipient_acs_identity_isolation_test";
+const RECIPIENT = "cr_acs_identity_isolation_test";
 const CAREGIVER = "caregiver_acs_identity_isolation_test";
 
 afterEach(() => {
