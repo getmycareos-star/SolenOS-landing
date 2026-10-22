@@ -1,4 +1,5 @@
 import { apiUrl } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import type { ISpeechInput } from "../interfaces/speech-input";
 import type { ISpeechOutput } from "../interfaces/speech-output";
 import type {
@@ -38,11 +39,16 @@ const DEFAULT_ANALYZE: VoiceConversationAnalyzeFn = async ({
   priorInputRaw,
 }) => {
   // Care Reality path — never ops /api/analyze as primary voice product (CRI).
+  const session = await ensureAnonymousSession();
   const res = await fetch(apiUrl("/api/situation"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
     body: JSON.stringify({
       raw_input: input,
+      person_id: session.person.id,
       caregiver_id: telemetryUserId ?? "voice_caregiver",
       care_session_id: careSessionId ?? telemetryUserId ?? "voice_session",
       ...(languagePreference ? { language_preference: languagePreference } : {}),
