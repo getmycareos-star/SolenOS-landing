@@ -3,13 +3,25 @@
 // never needs a hard-coded backend hostname or import.meta.env in Jest.
 const API_BASE = '/api/v1'
 
+function isPlaceholderIdentifier(value: string | null | undefined): boolean {
+  if (!value?.trim()) return true
+  return /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(value.trim())
+}
+
 export function getPersonId(): string {
-  // Do not invent a care-record identifier: callers must handle an unset ID.
-  return localStorage.getItem('solenos_person_id') || ''
+  // Older builds may have persisted a demo ID in localStorage. Never send it
+  // to the API as if it identified a real care recipient.
+  const id = localStorage.getItem('solenos_person_id')?.trim() || ''
+  return isPlaceholderIdentifier(id) ? '' : id
 }
 
 export function setPersonId(id: string): void {
-  localStorage.setItem('solenos_person_id', id)
+  const normalized = id.trim()
+  if (isPlaceholderIdentifier(normalized)) {
+    localStorage.removeItem('solenos_person_id')
+  } else {
+    localStorage.setItem('solenos_person_id', normalized)
+  }
   window.dispatchEvent(new Event('personIdChanged'))
 }
 
@@ -113,7 +125,8 @@ export async function postFormData(path: string, body: FormData) {
 // Caregiver identity is only accepted when explicitly stored by the current
 // frontend session. Never fabricate a caregiver ID for a care record.
 export function getCaregiverId(): string | null {
-  return localStorage.getItem('solenos_caregiver_id')
+  const id = localStorage.getItem('solenos_caregiver_id')?.trim() || ''
+  return isPlaceholderIdentifier(id) ? null : id
 }
 
 // The backend currently has no implemented authentication/session endpoints.
