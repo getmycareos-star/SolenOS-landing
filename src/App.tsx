@@ -66,7 +66,8 @@ export default function App() {
       <div className="app-container">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<><FirstUseJourney /><Dashboard /></>} />
+          <Route path="/" element={<FirstUseJourney />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily-care" element={<DailyCare />} />
           <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
           <Route path="/timeline" element={<Timeline />} />
