@@ -8,8 +8,8 @@ export type SolenOSLLMProvider = "gemini" | "openai";
 export type MvpLLMProvider = "gemini" | "ollama";
 
 const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
-const DEFAULT_OLLAMA_MODEL = "llama3.2";
-const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
+const DEFAULT_OLLAMA_MODEL = "qwen2.5:1.5b";
+const DEFAULT_OLLAMA_BASE_URL = "";
 
 export function resolveMvpLLMProvider(): MvpLLMProvider | null {
   const explicit = process.env.SOLENOS_LLM_PROVIDER?.toLowerCase();
@@ -51,6 +51,26 @@ export function createOllamaChatModel(): BaseChatModel {
     process.env.OLLAMA_HOST ??
     DEFAULT_OLLAMA_BASE_URL
   ).replace(/\/$/, "");
+  if (!baseURL) {
+    throw new Error(
+      "Direct Ollama invocation is disabled by default. Configure the private Railway Qwen service URL; desktop localhost is not supported."
+    );
+  }
+  let parsedURL: URL;
+  try {
+    parsedURL = new URL(baseURL);
+  } catch {
+    throw new Error("OLLAMA_BASE_URL must be a valid Railway private service URL.");
+  }
+  if (
+    parsedURL.protocol !== "http:" ||
+    !parsedURL.hostname.toLowerCase().endsWith(".railway.internal") ||
+    parsedURL.hostname === "localhost" ||
+    parsedURL.hostname === "127.0.0.1" ||
+    parsedURL.hostname === "::1"
+  ) {
+    throw new Error("SolenOS accepts only a private Railway Qwen service URL; local/public Ollama URLs are rejected.");
+  }
 
   return new ChatOpenAI({
     model: process.env.SOLENOS_LLM_MODEL ?? DEFAULT_OLLAMA_MODEL,
