@@ -261,7 +261,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         </button>
       </div>
 
-      {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 13, marginTop: 10 }}>{error}</p>}
+      {error && <p role="status" aria-live="polite" style={{ color: 'var(--error)', fontSize: 13, marginTop: 10 }}>{error}</p>}
       {notice && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>{notice}</p>}
 
       <form onSubmit={submitAssertion} style={cardStyle}>
