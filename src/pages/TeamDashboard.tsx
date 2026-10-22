@@ -25,12 +25,13 @@ export default function TeamDashboard() {
   const [report, setReport] = useState<StateReport | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setLoadError(null);
     setNotice(null);
     // Clear prior values before refresh. A failed request must never leave old
     // values looking like current operational data.
@@ -98,7 +99,7 @@ export default function TeamDashboard() {
       setMetrics(null);
       setReport(null);
       setPosts([]);
-      setError(e instanceof Error ? e.message : 'Team dashboard data could not be verified.');
+      setLoadError(e instanceof Error ? e.message : 'Team dashboard data could not be verified.');
     } finally {
       setLoading(false);
     }
@@ -107,14 +108,14 @@ export default function TeamDashboard() {
   useEffect(() => { void load() }, [load])
 
   async function moderate(postId: string, moderation_status: 'published' | 'hidden' | 'removed') {
-    setError(null); setNotice(null)
+    setActionError(null); setNotice(null)
     try {
       const result = await patchJSON<{ id: string; moderation_status: string }>('/team/moderation/' + encodeURIComponent(postId), { moderation_status })
       if (result.id !== postId || result.moderation_status !== moderation_status) throw new Error('Backend did not confirm the moderation update.')
       setNotice('Moderation status saved.')
       await load()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Moderation update could not be confirmed.')
+      setActionError(e instanceof Error ? e.message : 'Moderation update could not be confirmed.')
     }
   }
 
@@ -124,7 +125,8 @@ export default function TeamDashboard() {
         <div><h1 style={{ fontSize: 24, fontWeight: 650 }}>SolenOS Team Dashboard</h1><p style={{ marginTop: 6, color: 'var(--text-secondary)', fontSize: 13 }}>Database-backed operational aggregates and Community moderation. Not population-level research statistics.</p></div>
         <button onClick={() => void load()} disabled={loading} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)' }}>{loading ? 'Refreshing…' : 'Refresh'}</button>
       </div>
-      {error && <p role="alert" style={{ marginTop: 14, color: 'var(--error)', fontSize: 13 }}>{error}</p>}
+      {loadError && <p role="alert" style={{ marginTop: 14, color: 'var(--error)', fontSize: 13 }}>{loadError}</p>}
+      {actionError && <p role="alert" style={{ marginTop: 14, color: 'var(--error)', fontSize: 13 }}>{actionError}</p>}
       {notice && <p role="status" style={{ marginTop: 14, color: 'var(--trust)', fontSize: 13 }}>{notice}</p>}
       {metrics && <section style={panel}>
         <h2 style={{ fontSize: 16, fontWeight: 600 }}>Live database counts</h2>
@@ -147,8 +149,8 @@ export default function TeamDashboard() {
         {report.limitations.map(item => <p key={item} style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 10 }}>{item}</p>)}
       </section>}
       <section style={panel}>
-        <h2 style={{ fontSize: 16, fontWeight: 600 }}>{error ? 'Community moderation queue' : `Community moderation queue (${posts.length})`}</h2>
-        {error ? <p role="alert" style={{ fontSize: 13, color: 'var(--error)', marginTop: 10 }}>Moderation queue unavailable. No empty-queue state is inferred.</p> : posts.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 10 }}>No posts awaiting review.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{posts.map(post => <article key={post.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600 }}>{loadError ? 'Community moderation queue' : `Community moderation queue (${posts.length})`}</h2>
+        {loadError ? <p role="alert" style={{ fontSize: 13, color: 'var(--error)', marginTop: 10 }}>Moderation queue unavailable. No empty-queue state is inferred.</p> : posts.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 10 }}>No posts awaiting review.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{posts.map(post => <article key={post.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}><strong>{post.post_type === 'question' ? 'Question' : 'Caregiver experience'}</strong><span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{post.moderation_status}</span></div>
           <p style={{ marginTop: 8, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{post.content}</p>
           <p style={{ marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>{post.author_label} · {post.care_stage || 'Stage not specified'} · {(post.tags || []).join(', ')}</p>
