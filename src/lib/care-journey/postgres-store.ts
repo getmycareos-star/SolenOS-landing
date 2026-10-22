@@ -3,7 +3,7 @@ import type { Pool } from "pg";
 import { createPostgresPool } from "../telemetry-persistence/postgres-store";
 import type { CareJourneyAttachment, CareJourneyEvent, CreateCareJourneyEventInput } from "./types";
 import { inferCareJourneyCategory, inferCareJourneyTitle } from "./classify";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 
 function parseAttachments(raw: unknown): CareJourneyAttachment[] {
   if (!Array.isArray(raw)) return [];
