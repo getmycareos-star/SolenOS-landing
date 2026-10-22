@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface Event {
   id: string
@@ -16,19 +16,32 @@ interface Event {
 export default function Timeline() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      try {
-        const data = await getJSON('/events/demo-person-id')
-        setEvents(data)
-      } catch (e) {
-        console.error(e)
-      } finally {
+      const personId = getPersonId()
+      if (!personId) {
+        setLoadError('Select an authorized care record before viewing its timeline.')
         setLoading(false)
+        return
+      }
+      setLoading(true)
+      setLoadError(null)
+      try {
+        const data = await getJSON(`/events/${encodeURIComponent(personId)}`)
+        if (!Array.isArray(data)) throw new Error('The events service returned an invalid response.')
+        if (!cancelled) setEvents(data as Event[])
+      } catch (e) {
+        console.error('Failed to load the care timeline:', e)
+        if (!cancelled) setLoadError('The care timeline could not be loaded. No conclusion can be drawn about whether events exist. Check the connection and retry.')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    load()
+    void load()
+    return () => { cancelled = true }
   }, [])
 
   const formatDate = (d: string) => {
@@ -64,11 +77,13 @@ export default function Timeline() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading && events.length === 0 && (
+      {loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
+
+      {!loading && !loadError && events.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No events recorded yet.</p>
       )}
 
-      {!loading && Object.entries(grouped).map(([day, dayEvents]) => (
+      {!loading && !loadError && Object.entries(grouped).map(([day, dayEvents]) => (
         <div key={day} style={{ marginBottom: '32px' }}>
           <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
             {formatDate(dayEvents[0].occurred_at)}
