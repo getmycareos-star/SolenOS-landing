@@ -6,11 +6,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  resetCareEventStore,
-  recordCareEventWithContext,
-  listCareEventsForCaregiver,
-} from "../src/lib/care-events";
+import { recordCareEventWithContext } from "../src/lib/care-events";
+import { resetCareEventStore, listCareEventsForCaregiver } from "../src/lib/care-events/store";
 import {
   structureCareInput,
   searchCareRecord,
