@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getJSON, getPersonId, subscribeToPersonId } from '../api/client'
 
 interface Caregiver {
@@ -16,12 +16,16 @@ export default function CareCircle() {
   const [caregivers, setCaregivers] = useState<Caregiver[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestGeneration = useRef(0)
 
   useEffect(() => subscribeToPersonId(setPersonIdState), [])
 
   const loadCaregivers = useCallback(async () => {
+    const generation = ++requestGeneration.current
+    // Clear the previous record's network immediately; never leave it visible
+    // while the newly selected record is loading.
+    setCaregivers([])
     if (!personId) {
-      setCaregivers([])
       setError('Select an authorized care record to view its caregiver network.')
       setLoading(false)
       return
@@ -31,19 +35,28 @@ export default function CareCircle() {
     setError(null)
     try {
       const result = await getJSON(`/caregivers/person/${encodeURIComponent(personId)}`)
+      // A slower response for an earlier care record must not overwrite the
+      // currently selected record's network.
+      if (generation !== requestGeneration.current) return
       if (!Array.isArray(result)) {
         throw new Error('The server returned an unexpected caregiver list.')
       }
       setCaregivers(result as Caregiver[])
     } catch (err) {
+      if (generation !== requestGeneration.current) return
       setError(err instanceof Error ? err.message : 'Could not load caregivers.')
     } finally {
-      setLoading(false)
+      if (generation === requestGeneration.current) setLoading(false)
     }
   }, [personId])
 
   useEffect(() => {
     void loadCaregivers()
+    return () => {
+      // Invalidate in-flight work when the selected record changes or the
+      // component unmounts.
+      requestGeneration.current += 1
+    }
   }, [loadCaregivers])
 
   return (
