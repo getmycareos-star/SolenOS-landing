@@ -508,6 +508,7 @@ export default function StructuredDailyCapture() {
   // Handle form submission to backend
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAnalysisWarning(null);
     
     if (!personId || !caregiverId) {
       const error = new Error('A signed-in caregiver and care record are required to save daily capture.');
