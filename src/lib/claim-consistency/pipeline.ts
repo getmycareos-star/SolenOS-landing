@@ -87,6 +87,7 @@ export async function runConsistencyGate(
     logger.error("one run failed", { evidence_id: evidenceId, failed_run: failedRun, error: failedError });
     return {
       success: false,
+      persistence_status: saveResult.persistence_status,
       reconciliation: createEmptyReconciliation(evidenceId),
       run_a: runA,
       run_b: runB,
@@ -116,6 +117,7 @@ export async function runConsistencyGate(
 
   return {
     success: true,
+    persistence_status: saveResult.persistence_status,
     reconciliation,
     run_a: runA,
     run_b: runB,
