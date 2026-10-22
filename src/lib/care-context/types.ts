@@ -64,7 +64,7 @@ export type SignalTheme =
   | "emotional_burden"
   | "decision_making";
 
-export type DemandType = "continuity" | "search" | "mixed";
+export type DemandType = "continuity" | "search" | "mixed" | "unknown";
 
 export type EngineAction =
   | "create_care_events"
