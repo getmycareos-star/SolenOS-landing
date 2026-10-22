@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { getJSON, postJSON, getCaregiverId, checkAuthState } from '../api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -132,7 +132,7 @@ export default function Community() {
   const [loadingWisdom, setLoadingWisdom] = useState(false)
   const [wisdomError, setWisdomError] = useState<string | null>(null)
 
-  const personId = getPersonId()
+  const caregiverId = getCaregiverId()
 
   useEffect(() => {
     const saved = localStorage.getItem('solenos_saved_posts')
@@ -146,16 +146,10 @@ export default function Community() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      if (!personId) {
-        setPosts([])
-        setLoadError('Select a care record before loading community posts.')
-        setLoading(false)
-        return
-      }
       setLoading(true)
       setLoadError(null)
       try {
-        const data = await getJSON(`/community?caregiver_id=${encodeURIComponent(personId)}`) as CommunityPostSummary
+        const data = await getJSON('/community') as CommunityPostSummary
         if (!data || !Array.isArray(data.posts)) throw new Error('The community response was incomplete.')
         if (!cancelled) setPosts(data.posts)
       } catch (e) {
@@ -169,13 +163,18 @@ export default function Community() {
     }
     load()
     return () => { cancelled = true }
-  }, [personId])
+  }, [])
 
   async function handleReaction(postId: string, reactionType: ReactionType) {
     setActionError(null)
+    const auth = await checkAuthState()
+    if (!auth.authenticated || !auth.sessionInfo || !caregiverId) {
+      setActionError('Reactions are unavailable because SolenOS cannot verify an authenticated caregiver session.')
+      return
+    }
     try {
       await postJSON(`/community/${encodeURIComponent(postId)}/reactions`, {
-        caregiver_id: personId,
+        caregiver_id: caregiverId,
         reaction_type: reactionType,
       })
     } catch {
@@ -183,7 +182,7 @@ export default function Community() {
       return
     }
     try {
-      const refreshed = await getJSON(`/community?caregiver_id=${encodeURIComponent(personId)}`) as CommunityPostSummary
+      const refreshed = await getJSON('/community') as CommunityPostSummary
       if (!Array.isArray(refreshed?.posts)) throw new Error('Community response was incomplete.')
       setPosts(refreshed.posts)
     } catch {
@@ -222,15 +221,16 @@ export default function Community() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!composerText.trim()) return
-    setSubmitting(true)
-    if (!personId) {
-      setActionError('Select a care record before posting.')
+    const auth = await checkAuthState()
+    if (!auth.authenticated || !auth.sessionInfo || !caregiverId) {
+      setActionError('Posting is unavailable because SolenOS cannot verify an authenticated caregiver session. Your text has been kept.')
       return
     }
+    setSubmitting(true)
     setActionError(null)
     try {
       await postJSON('/community', {
-        caregiver_id: personId,
+        caregiver_id: caregiverId,
         author_type: 'peer_caregiver',
         author_label: 'Anonymous caregiver',
         post_type: postType,
@@ -248,7 +248,7 @@ export default function Community() {
     setComposerText('')
     setComposerOpen(false)
     try {
-      const response = await getJSON(`/community?caregiver_id=${encodeURIComponent(personId)}`) as CommunityPostSummary
+      const response = await getJSON('/community') as CommunityPostSummary
       if (!Array.isArray(response?.posts)) throw new Error('Community response was incomplete.')
       setPosts(response.posts)
       setActionError(null)

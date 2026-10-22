@@ -90,8 +90,11 @@ console.log("✓ asymmetric narrow sharing");
 
 const runway = computePoolRunway(profile, 2400, ["property tax due", "roof repair"]);
 assert(runway.disclaimer.toLowerCase().includes("not accounting") || runway.disclaimer.includes("Soft estimate"), "runway disclaimer");
-assert(runway.runways.some((r) => r.assumptions_used.length > 0), "runway shows assumptions");
-console.log("✓ runway soft signal with assumptions");
+assert(runway.runways.length === 2, "money and caregiver-time status returned");
+assert(runway.runways.every((r) => r.estimated_depletion_window.toLowerCase().includes("unknown")), "runway remains unknown without verified inputs");
+assert(!JSON.stringify(runway).includes("$150") && !JSON.stringify(runway).includes("$200") && !JSON.stringify(runway).includes("$300"), "no placeholder spending rates");
+assert(runway.runways.every((r) => r.assumptions_used.length > 0), "unknown states explain missing evidence");
+console.log("✓ runway refuses fabricated money and caregiver-time estimates");
 
 const required = [
   "src/lib/cognitive-relief/index.ts",

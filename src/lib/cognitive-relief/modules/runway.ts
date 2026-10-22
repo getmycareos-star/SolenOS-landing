@@ -1,96 +1,49 @@
 import { RUNWAY_DISCLAIMER } from "../contract-constants";
 import type { CareRecipientProfileData, PoolRunwayEntry, PoolRunwayView } from "../types";
 
-const RECURRING_COST_HINTS: { pattern: RegExp; label: string; monthlyEstimate: number }[] = [
-  { pattern: /\bproperty tax|taxes due\b/i, label: "Property tax", monthlyEstimate: 0 },
-  { pattern: /\b(medication|prescription|denture|dental)\b/i, label: "Medical/dental costs", monthlyEstimate: 200 },
-  { pattern: /\b(roof|plumb|electrical|repair)\b/i, label: "Home repair reserve", monthlyEstimate: 300 },
-];
-
-function seasonFromMonths(months: number): string {
-  if (months <= 1) return "within the next few weeks";
-  if (months <= 3) return "around early fall";
-  if (months <= 6) return "in the next several months";
-  return "beyond the next season — highly uncertain";
-}
-
 /**
- * Soft runway signal — not budgeting. Shows assumptions explicitly.
+ * Deliberately does not infer spending rates or caregiver capacity from free text.
+ * A budget without verified recurring-cost amounts is not enough to calculate a
+ * depletion window. Return explicit unknowns rather than plausible-looking
+ * estimates derived from keywords or placeholder dollar amounts.
  */
 export function computePoolRunway(
-  profile: CareRecipientProfileData,
+  _profile: CareRecipientProfileData,
   optionalBudget: number | null,
-  openItemDescriptions: string[] = [],
+  _openItemDescriptions: string[] = [],
 ): PoolRunwayView {
-  const generated_at = new Date().toISOString();
-  const runways: PoolRunwayEntry[] = [];
-  const hay = [
-    ...openItemDescriptions,
-    ...profile.tagged_event_log.slice(-10).map((e) => e.tag),
-  ].join(" ");
-
-  const assumptions: string[] = [];
-  let monthlyBurn = 0;
-
-  for (const hint of RECURRING_COST_HINTS) {
-    if (hint.pattern.test(hay)) {
-      if (hint.label === "Property tax") {
-        assumptions.push("Property tax treated as annual lump — timing approximate");
-        monthlyBurn += 200;
-      } else {
-        monthlyBurn += hint.monthlyEstimate;
-        assumptions.push(`${hint.label} estimated at ~$${hint.monthlyEstimate}/month (rough)`);
-      }
-    }
-  }
-
-  if (monthlyBurn === 0) {
-    monthlyBurn = 150;
-    assumptions.push("No cost tags detected — using minimal placeholder burn rate");
-  }
-
-  if (optionalBudget != null && optionalBudget > 0) {
-    const months = optionalBudget / monthlyBurn;
-    runways.push({
+  const runways: PoolRunwayEntry[] = [
+    {
       pool: "money",
-      estimated_depletion_window: seasonFromMonths(months),
-      confidence: months < 2 ? "medium" : "low",
-      assumptions_used: [
-        `Caregiver-entered budget: $${optionalBudget}`,
-        `Estimated monthly draw: ~$${Math.round(monthlyBurn)}`,
-        ...assumptions,
-      ],
-    });
-  } else {
-    runways.push({
-      pool: "money",
-      estimated_depletion_window: "unknown without a rough budget figure",
+      estimated_depletion_window:
+        optionalBudget != null && optionalBudget > 0
+          ? "unknown — verified recurring-cost amounts are not available"
+          : "unknown — no caregiver-entered budget is available",
       confidence: "low",
       assumptions_used: [
-        "No caregiver budget entered — cannot estimate depletion window",
-        ...assumptions,
-        "Add an optional budget figure for a soft range",
+        ...(optionalBudget != null && optionalBudget > 0
+          ? [`Caregiver-entered budget: $${optionalBudget}`]
+          : ["No caregiver-entered budget was supplied"]),
+        "No verified recurring-cost amounts were supplied",
+        "No depletion estimate has been calculated",
       ],
-    });
-  }
-
-  runways.push({
-    pool: "caregiver_time",
-    estimated_depletion_window:
-      openItemDescriptions.some((d) => /repair|full time|no backup/i.test(d))
-        ? "tight within the next few weeks"
-        : "moderate — monitor if repair labor continues",
-    confidence: "low",
-    assumptions_used: [
-      "Based on open items mentioning repair labor, full-time work, or no backup",
-      "Time runway is qualitative — not hour accounting",
-    ],
-  });
+    },
+    {
+      pool: "caregiver_time",
+      estimated_depletion_window:
+        "unknown — structured workload and available-support data are not available",
+      confidence: "low",
+      assumptions_used: [
+        "Free-text descriptions are not converted into a time-capacity estimate",
+        "No caregiver-time depletion estimate has been calculated",
+      ],
+    },
+  ];
 
   return {
     runways,
     optional_budget: optionalBudget,
-    generated_at,
+    generated_at: new Date().toISOString(),
     disclaimer: RUNWAY_DISCLAIMER,
   };
 }
