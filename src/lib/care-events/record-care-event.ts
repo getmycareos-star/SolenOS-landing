@@ -35,6 +35,8 @@ function enrichWithStructured(input: CreateCareEventInput): CreateCareEventInput
  * Record a CareEvent — structured for continuous care record, in-memory + Postgres.
  */
 export async function recordCareEvent(input: CreateCareEventInput): Promise<CreateCareEventResult> {
+  const caregiverId = input.created_by?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Authenticated caregiver attribution is required; care event was not recorded.");
   const enriched = enrichWithStructured(input);
   const inMemory = createCareEvent(enriched);
 
@@ -58,7 +60,8 @@ export async function recordCareEventWithContext(
   const { listCareEventsForCaregiver } = await import("./store");
   const { retrieveHistoricalContext } = await import("../care-record/retrieve");
 
-  const caregiverId = input.created_by ?? "default_caregiver";
+  const caregiverId = input.created_by?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Authenticated caregiver attribution is required to retrieve historical context.");
   const prior = listCareEventsForCaregiver(caregiverId).filter(
     (e) => e.id !== result.care_event.id,
   );
