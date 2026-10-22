@@ -27,9 +27,15 @@ function hydrateLinks(): void {
   const durable = readDurableJson<LinkMap>(linksPath());
   if (!durable) return;
   for (const [contributorId, careRecipientId] of Object.entries(durable)) {
-    if (contributorId && careRecipientId) {
-      caregiverToRecipient.set(contributorId, careRecipientId);
+    if (
+      !contributorId ||
+      !careRecipientId ||
+      ["default", "default_caregiver", "default_care_recipient"].includes(contributorId) ||
+      ["default", "default_caregiver", "default_care_recipient"].includes(careRecipientId)
+    ) {
+      throw new Error("Stored caregiver-to-recipient mapping contains a reserved identity; private care data is unavailable until the mapping is repaired.");
     }
+    caregiverToRecipient.set(contributorId, careRecipientId);
   }
 }
 
