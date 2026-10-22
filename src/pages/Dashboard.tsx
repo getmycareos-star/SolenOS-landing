@@ -68,6 +68,7 @@ export default function Dashboard() {
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [captureRevision, setCaptureRevision] = useState(0);
   const personId = getPersonId();
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
@@ -132,7 +133,7 @@ export default function Dashboard() {
       setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
       setLoading(false);
     });
-  }, [personId]);
+  }, [personId, captureRevision]);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -194,7 +195,10 @@ export default function Dashboard() {
       </div>
 
       <div style={{ marginBottom: '24px' }}>
-        <CareCapture personId={personId} />
+        <CareCapture
+          personId={personId}
+          onCapture={() => setCaptureRevision((revision) => revision + 1)}
+        />
       </div>
 
       {loadError && (
