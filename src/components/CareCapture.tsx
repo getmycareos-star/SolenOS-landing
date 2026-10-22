@@ -152,7 +152,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         </button>
       </div>
 
-      {submitError && !identityError && (
+      {Boolean(submitError) && !identityError && (
         <p role="alert" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--error)' }}>
           The save could not be confirmed. Your text remains in the field; check the connection and retry.
         </p>
