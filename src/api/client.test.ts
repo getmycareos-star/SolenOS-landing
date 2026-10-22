@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals'
 import { authHeaders, clearAccessToken, getAccessToken, setAccessToken, setCaregiverId } from './authSession'
+import { getJSON } from './client'
 
 describe('authenticated API client', () => {
   beforeEach(() => {
@@ -26,4 +27,18 @@ describe('authenticated API client', () => {
     window.removeEventListener('personIdChanged', changed)
     expect(changed).toHaveBeenCalledTimes(1)
   })
+  it('rejects demo care-record identifiers before making a network request', async () => {
+    const originalFetch = global.fetch
+    const fetchMock = jest.fn()
+    global.fetch = fetchMock as unknown as typeof fetch
+    try {
+      await expect(getJSON('/events/demo-person-id')).rejects.toThrow(
+        'A demo care-record identifier was detected',
+      )
+      expect(fetchMock).not.toHaveBeenCalled()
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
 })
