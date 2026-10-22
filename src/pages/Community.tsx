@@ -56,7 +56,7 @@ interface ExperienceResult {
   matches: { post: ApiCommunityPost; matched_terms?: string[]; match_type?: string }[]
 }
 
-function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
+export function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
   if (!post || typeof post.id !== 'string' || !post.id ||
       typeof post.content !== 'string' || !post.content.trim() ||
       typeof post.author_label !== 'string' || !post.author_label.trim() ||
