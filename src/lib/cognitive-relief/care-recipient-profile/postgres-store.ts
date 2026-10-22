@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../../db/postgres-pool";
 import type { CareContextType } from "../../care-contexts/types";
 import { parseDementiaContext } from "../../care-contexts/dementia/validate";
 import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfileRecord } from "../types";
