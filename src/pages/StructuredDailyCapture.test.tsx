@@ -6,7 +6,7 @@ import { getCaregiverId, postJSON } from '../api/client';
 
 // Mock the postJSON function
 jest.mock('../api/client', () => ({
-  getPersonId: () => 'test-person-id',
+  getPersonId: () => 'person-123',
   getCaregiverId: jest.fn().mockReturnValue('caregiver-123'),
   getJSON: jest.fn().mockResolvedValue([]),
   postJSON: jest.fn().mockResolvedValue({}),
@@ -91,7 +91,7 @@ describe('StructuredDailyCapture', () => {
     await waitFor(() => {
       expect(postJSON).toHaveBeenCalledWith('/api/situation', {
         caregiver_id: 'caregiver-123',
-        person_id: 'test-person-id',
+        person_id: 'person-123',
         raw_input: 'Sleep was disrupted',
       });
     });
