@@ -1,20 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { ensureAnonymousSession } from './api/client'
+import RestrictedRolePage from './components/RestrictedRolePage'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
 import Companion from './pages/Companion'
 import Community from './pages/Community'
-import ProfessionalDashboard from './pages/ProfessionalDashboard'
-import TeamDashboard from './pages/TeamDashboard'
 import Insights from './pages/Insights'
 import Timeline from './pages/Timeline'
 import Record from './pages/Record'
 import Memory from './pages/Memory'
 import CareCircle from './pages/CareCircle'
 import Login from './pages/Login'
-import InvestorDashboard from './pages/InvestorDashboard'
 
 function AnonymousSessionGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -77,9 +75,9 @@ export default function App() {
         <Route path="/companion" element={<Companion />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/community" element={<Community />} />
-        <Route path="/professional" element={<ProfessionalDashboard />} />
-        <Route path="/team" element={<TeamDashboard />} />
-        <Route path="/investor/dashboard" element={<InvestorDashboard />} />
+        <Route path="/professional" element={<RestrictedRolePage role="Professional" />} />
+        <Route path="/team" element={<RestrictedRolePage role="SolenOS team" />} />
+        <Route path="/investor/dashboard" element={<RestrictedRolePage role="Investor dashboard" />} />
        </Routes>
     </div>
     </AnonymousSessionGate>
