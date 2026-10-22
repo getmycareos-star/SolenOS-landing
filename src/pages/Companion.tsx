@@ -172,6 +172,11 @@ export default function Companion() {
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: msg.role === 'user' ? 'right' : 'left', marginTop: '4px' }}>
               {msg.role === 'user' ? 'You' : 'SolenOS'} · {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
+            {msg.role === 'assistant' && (
+              <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                Conversation response only · not automatically saved as a Living Care Record fact.
+              </p>
+            )}
             {msg.role === 'user' && (
               <div style={{ textAlign: 'right', marginTop: '6px' }}>
                 <Link to={`/daily-care?draft=${encodeURIComponent(msg.text)}`} style={{ fontSize: '11px', color: 'var(--trust)', textDecoration: 'none' }}>
