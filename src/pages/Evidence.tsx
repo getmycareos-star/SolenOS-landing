@@ -82,7 +82,7 @@ export default function Evidence() {
           formData.append('caregiver_id', caregiver_id);
           formData.append('person_id', person_id);
           formData.append('type', source_type);
-          formData.append('source_text', source_text.trim() || 'Image upload');
+          formData.append('source_text', source_text.trim());
           return await postFormData('/upload', formData);
         } finally {
           setCompressing(false);
