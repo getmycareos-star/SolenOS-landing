@@ -253,15 +253,13 @@ export default function Community() {
     try {
       const data = await postJSON<ExperienceResult>('/community/experience', { observation: wisdomQuery.trim() })
       if (!data || !Array.isArray(data.matches)) throw new Error('The server returned an invalid experience-match response.')
-      {
-        setWisdomMatches(data.matches.slice(0, 4).map(match => ({
+      setWisdomMatches(data.matches.slice(0, 4).map(match => ({
           post_id: match.post.id,
           author_label: match.post.author_label,
           author_type: match.post.author_type,
           content: match.post.content,
           tags: Array.isArray(match.post.tags) ? match.post.tags : [],
-        })))
-      }
+      })))
     } catch (e) {
       setWisdomMatches([])
       setActionError(e instanceof Error ? e.message : 'Shared experiences could not be retrieved.')
