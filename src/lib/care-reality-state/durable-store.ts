@@ -49,6 +49,6 @@ export function clearCareRealityStateMemoryCache(): void {
 }
 
 export function resetCareRealityStateDurableStore(): void {
-  memory.clear();
   clearDurableDirectory(livingCareRecordDataDir("care-reality-state"));
+  memory.clear();
 }
