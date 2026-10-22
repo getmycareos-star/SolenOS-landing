@@ -71,18 +71,33 @@ function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
   if (post.visibility !== 'public' && post.visibility !== 'private' && post.visibility !== 'anonymous') {
     throw new Error('The server returned an unsupported Community visibility value. The post was not shown.');
   }
-  const validStage = post.care_stage === 'early' || post.care_stage === 'moderate' || post.care_stage === 'late'
-    ? post.care_stage
-    : 'unspecified';
+  const validStageValues = ['early', 'moderate', 'late'] as const;
+  const validStage = post.care_stage == null
+    ? 'unspecified'
+    : validStageValues.includes(post.care_stage as typeof validStageValues[number])
+      ? post.care_stage as typeof validStageValues[number]
+      : (() => { throw new Error('The server returned an unsupported Community care stage. It was not guessed.'); })();
   const validAuthor = post.author_type as AuthorType;
   const counts = post.reaction_counts;
-  if (counts !== undefined && (!counts || typeof counts !== 'object' || Array.isArray(counts))) {
-    throw new Error('The server returned invalid Community reaction counts.');
+  if (!counts || typeof counts !== 'object' || Array.isArray(counts)) {
+    throw new Error('The server omitted Community reaction counts; zero reactions were not inferred.');
   }
-  const userReaction = post.user_reaction === 'support' || post.user_reaction === 'helpful'
-    || post.user_reaction === 'relate' || post.user_reaction === 'heart'
-    ? post.user_reaction
-    : null;
+  const validReactionTypes: ReactionType[] = ['support', 'helpful', 'relate', 'heart'];
+  for (const [type, count] of Object.entries(counts)) {
+    if (!validReactionTypes.includes(type as ReactionType) || typeof count !== 'number' || !Number.isFinite(count) || count < 0) {
+      throw new Error('The server returned invalid Community reaction counts.');
+    }
+  }
+  if (post.user_reaction !== null && !validReactionTypes.includes(post.user_reaction as ReactionType)) {
+    throw new Error('The server returned an unsupported Community reaction state.');
+  }
+  if (post.user_reaction === undefined) {
+    throw new Error('The server omitted the current user reaction state; it was not inferred.');
+  }
+  if (!Array.isArray(post.tags) || !post.tags.every((tag) => typeof tag === 'string')) {
+    throw new Error('The server omitted or malformed Community tags; an empty tag list was not inferred.');
+  }
+  const userReaction = post.user_reaction;
 
   return {
     id: post.id,
@@ -94,14 +109,14 @@ function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
     media: [],
     visibility: post.visibility === 'private' ? 'circle' : post.visibility,
     care_stage: validStage,
-    tags: Array.isArray(post.tags) ? post.tags : [],
+    tags: post.tags,
     created_at: post.created_at,
     updated_at: null,
     reaction_counts: {
-      support: typeof counts?.support === 'number' && counts.support >= 0 ? counts.support : 0,
-      helpful: typeof counts?.helpful === 'number' && counts.helpful >= 0 ? counts.helpful : 0,
-      relate: typeof counts?.relate === 'number' && counts.relate >= 0 ? counts.relate : 0,
-      heart: typeof counts?.heart === 'number' && counts.heart >= 0 ? counts.heart : 0,
+      support: counts.support ?? 0,
+      helpful: counts.helpful ?? 0,
+      relate: counts.relate ?? 0,
+      heart: counts.heart ?? 0,
     },
     user_reaction: userReaction,
   }
