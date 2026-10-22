@@ -197,7 +197,11 @@ export default function DailyCare() {
             Recorded by
           </label>
           {loadingCaregivers ? (
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Loading caregivers...</p>
+            <p role="status" style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Loading caregivers...</p>
+          ) : caregiverError ? (
+            <p role="alert" style={{ fontSize: '13px', color: 'var(--error)', marginTop: '4px' }}>{caregiverError}</p>
+          ) : caregivers.length === 0 ? (
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No linked caregivers are recorded for this care record.</p>
           ) : (
             <select
               value={caregiverId}
@@ -209,14 +213,9 @@ export default function DailyCare() {
                 fontSize: '14px'
               }}
             >
-              {caregivers.length === 0 ? (
-                <option value="">No linked caregivers available</option>
-              ) : (
-                caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
-              )}
+              {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
-          {caregiverError && <p style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>{caregiverError}</p>}
         </section>
 
         {/* Mood */}
