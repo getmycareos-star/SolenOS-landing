@@ -239,7 +239,9 @@ export async function postFormData(path: string, body: FormData) {
 // Caregiver identity is only accepted when explicitly stored by the current
 // frontend session. Never fabricate a caregiver ID for a care record.
 export function getCaregiverId(): string | null {
-  const id = localStorage.getItem('solenos_caregiver_id')?.trim() || ''
+  // Only the backend-issued caregiver ID is suitable for API attribution.
+  // The durable client care key is a separate continuity key, not identity.
+  const id = localStorage.getItem(ANONYMOUS_CAREGIVER_KEY)?.trim() || ''
   return isPlaceholderIdentifier(id) ? null : id
 }
 
