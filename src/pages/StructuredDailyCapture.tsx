@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+
+import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
+import { useCameraPermission } from '../lib/permissions/useCameraPermission';
+import { compressImage, dataURLtoFile } from '../lib/imageCompression';
+import { useOptimisticMutation } from '../lib/optimistic';
+
 interface QwenCandidate {
   subject: string
   observation: string
@@ -15,11 +21,6 @@ interface QwenCandidateBundle {
   possible_safety_flags: string[]
   rejected_unverifiable_candidates: number
 }
-
-import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
-import { useCameraPermission } from '../lib/permissions/useCameraPermission';
-import { compressImage, dataURLtoFile } from '../lib/imageCompression';
-import { useOptimisticMutation } from '../lib/optimistic';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
