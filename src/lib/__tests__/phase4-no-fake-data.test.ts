@@ -63,6 +63,10 @@ describe('Phase 4 production data-integrity guardrails', () => {
     expect(source('src/pages/DailyCare.tsx')).not.toContain(['wellbeing_stress:', '3'].join(' '))
     expect(source('src/pages/StructuredDailyCapture.tsx')).not.toContain(['status:', "'given'"].join(' '))
     expect(source('src/pages/StructuredDailyCapture.tsx')).not.toContain(['score:', '3'].join(' '))
+    expect(source('src/pages/StructuredDailyCapture.tsx')).not.toContain(['vital_type:', "'bp_systolic'"].join(' '))
+    expect(source('src/pages/StructuredDailyCapture.tsx')).not.toContain(['axis:', "'mood'"].join(' '))
+    expect(source('src/pages/StructuredDailyCapture.tsx')).toContain("value={vitalForm.value || ''}")
+    expect(source('src/pages/StructuredDailyCapture.tsx')).toContain("value={scaleForm.score || ''}")
   })
   it('keeps unavailable record views distinct from confirmed empty states', () => {
     expect(source('src/pages/Record.tsx')).toContain('!loadError && items.length === 0')
