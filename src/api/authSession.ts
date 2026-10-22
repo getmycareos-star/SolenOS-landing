@@ -1,4 +1,5 @@
 export const ACCESS_TOKEN_STORAGE_KEY = 'solenos_access_token'
+export const ACCESS_TOKEN_EXPIRES_AT_KEY = 'solenos_access_token_expires_at'
 
 export function isPlaceholderIdentifier(value: string | null | undefined): boolean {
   if (!value?.trim()) return true
@@ -9,22 +10,30 @@ export function getAccessToken(): string | null {
   return typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
 }
 
-export function setAccessToken(token: string): void {
+export function setAccessToken(token: string, expiresAt?: string): void {
   const normalized = token.trim()
   if (!normalized) {
     clearAccessToken()
     return
   }
   sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, normalized)
+  if (expiresAt?.trim()) sessionStorage.setItem(ACCESS_TOKEN_EXPIRES_AT_KEY, expiresAt.trim())
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenos:auth-changed'))
 }
 
 export function clearAccessToken(): void {
-  if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+    sessionStorage.removeItem(ACCESS_TOKEN_EXPIRES_AT_KEY)
+  }
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('solenos:auth-changed'))
     window.dispatchEvent(new Event('solenos:auth-expired'))
   }
+}
+
+export function getAccessTokenExpiresAt(): string | null {
+  return typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(ACCESS_TOKEN_EXPIRES_AT_KEY)
 }
 
 export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
