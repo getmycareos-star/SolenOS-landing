@@ -156,8 +156,8 @@ export function pauseActiveCareSituationSession(
     care_recipient_id: careRecipientId,
     interaction_paused_at: new Date().toISOString(),
   };
-  acsCache().set(careRecipientId, paused);
   persistActiveCareSituationToDurable(paused);
+  acsCache().set(careRecipientId, paused);
   return paused;
 }
 
@@ -171,8 +171,8 @@ export function resumeActiveCareSituationSession(contributorId: string): void {
     care_recipient_id: careRecipientId,
     interaction_paused_at: null,
   };
-  acsCache().set(careRecipientId, resumed);
   persistActiveCareSituationToDurable(resumed);
+  acsCache().set(careRecipientId, resumed);
 }
 
 const EMPTY_RESPONSE_EVOLUTION: ResponseEvolutionEvaluation = {
@@ -444,8 +444,8 @@ function ingestReinforcementExisting(params: {
     updated_at: params.nowIso,
     observations,
   };
-  acsCache().set(params.careRecipientId, situation);
   persistActiveCareSituationToDurable(situation);
+  acsCache().set(params.careRecipientId, situation);
   return projectActiveSituationTurn(situation, "updates_active");
 }
 
@@ -550,8 +550,8 @@ function ingestMemoryCorrection(params: {
   const whatChanged =
     "Prior understanding was corrected — earlier evidence kept as disputed.";
 
-  acsCache().set(params.careRecipientId, situation);
   persistActiveCareSituationToDurable(situation);
+  acsCache().set(params.careRecipientId, situation);
 
   const progressiveOriented = {
     ...progressive,
@@ -1181,8 +1181,8 @@ export function ingestActiveCareObservation(params: {
     familiarity_baseline: familiarityLines,
   };
 
-  acsCache().set(careRecipientId, situation);
   persistActiveCareSituationToDurable(situation);
+  acsCache().set(careRecipientId, situation);
 
   clearSoftInviteWhenUncertaintyGone({
     careKey: params.caregiverId,
