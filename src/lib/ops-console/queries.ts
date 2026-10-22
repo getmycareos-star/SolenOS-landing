@@ -201,11 +201,13 @@ async function buildFunnel(pool: Pool | null): Promise<FunnelStep[]> {
     const count = counts[i] ?? 0;
     const prev = i === 0 ? null : counts[i - 1] ?? 0;
     const conversion_pct =
-      i === 0 || prev == null || prev === 0
-        ? i === 0
+      i === 0
+        ? count > 0
           ? 100
           : null
-        : Math.round((count / prev) * 1000) / 10;
+        : prev == null || prev === 0
+          ? null
+          : Math.round((count / prev) * 1000) / 10;
     const dropoff_pct =
       conversion_pct == null ? null : Math.round((100 - conversion_pct) * 10) / 10;
     return {
