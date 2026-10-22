@@ -172,7 +172,7 @@ export function createEmptyBaseline(routineName: string, personId: string): Rout
     average_time_of_day: '00:00',
     assistance_level_distribution: {},
     participation_level_distribution: {},
-    consistency_score: 0,
+    consistency_score: null,
     last_updated: new Date().toISOString(),
     sample_size: 0,
   };
@@ -205,7 +205,9 @@ export function mergeBaselines(
     average_time_of_day: baseline2.average_time_of_day, // Use the newer one for simplicity
     assistance_level_distribution: {},
     participation_level_distribution: {},
-    consistency_score: baseline1.consistency_score * (1 - weight) + baseline2.consistency_score * weight,
+    consistency_score: baseline1.consistency_score !== null && baseline2.consistency_score !== null
+      ? baseline1.consistency_score * (1 - weight) + baseline2.consistency_score * weight
+      : baseline2.consistency_score ?? baseline1.consistency_score,
     last_updated: new Date().toISOString(),
     sample_size: baseline1.sample_size + baseline2.sample_size,
   };
