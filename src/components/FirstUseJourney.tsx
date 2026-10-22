@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getJSON, getPersonId } from '../api/client';
+import { ensureAnonymousSession, getJSON, getPersonId } from '../api/client';
 
 type RecordState = 'loading' | 'empty' | 'existing' | 'unknown';
 
@@ -138,15 +138,27 @@ export default function FirstUseJourney() {
   useEffect(() => {
     let active = true;
     async function inspectRecord() {
-      if (!personId) {
+      setRecordState('loading');
+      const names = ['care events', 'saved evidence and documents', 'recorded actions', 'change assessments', 'open questions', 'unresolved contradictions', 'open information gaps'];
+      let authorizedPersonId = personId;
+      try {
+        // The browser's person ID is not proof of access. Establish or refresh
+        // the server-issued, person-scoped capability before requesting records.
+        const session = await ensureAnonymousSession();
+        authorizedPersonId = session.person?.id || getPersonId();
+      } catch {
+        if (!active) return;
+        setSnapshot({ events: [], evidence: [], actions: [], changes: [], questions: [], contradictions: [], gaps: [], failedSections: ['authorised care-record session'] });
+        setRecordState('unknown');
+        return;
+      }
+      if (!authorizedPersonId) {
+        if (!active) return;
         setSnapshot({ events: [], evidence: [], actions: [], changes: [], questions: [], contradictions: [], gaps: [], failedSections: ['care-record identity'] });
         setRecordState('unknown');
         return;
       }
-
-      setRecordState('loading');
-      const names = ['care events', 'saved evidence and documents', 'recorded actions', 'change assessments', 'open questions', 'unresolved contradictions', 'open information gaps'];
-      const encodedPersonId = encodeURIComponent(personId);
+      const encodedPersonId = encodeURIComponent(authorizedPersonId);
       const results = await Promise.allSettled([
         getJSON('/events/' + encodedPersonId + '?limit=5'),
         getJSON('/evidence/' + encodedPersonId),
