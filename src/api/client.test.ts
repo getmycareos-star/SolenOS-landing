@@ -7,10 +7,14 @@ const backendAccount = {
 }
 
 function jsonResponse(payload: unknown, status = 200): Response {
-  return new Response(JSON.stringify(payload), {
+  const raw = JSON.stringify(payload)
+  return {
+    ok: status >= 200 && status < 300,
     status,
-    headers: { 'Content-Type': 'application/json' },
-  })
+    headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null },
+    text: async () => raw,
+    body: { cancel: jest.fn() },
+  } as unknown as Response
 }
 
 describe('SolenOS authentication API contract', () => {
