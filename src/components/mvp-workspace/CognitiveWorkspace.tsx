@@ -13,6 +13,10 @@ import {
   trackClientActivationEvent,
 } from "@/lib/activation-system/client";
 import type { SituationResponse } from "@/lib/situation-entry";
+import {
+  normalizeBackendSituationResponse,
+  type WorkspaceSituationResponse,
+} from "@/lib/situation-entry/backend-response";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import {
   CARE_RECIPIENT_ID_STORAGE,
@@ -123,7 +127,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   }, []);
   const [prefs] = useState<AccessibilityPrefs>(DEFAULT_ACCESSIBILITY);
   const [transitionKey, setTransitionKey] = useState(0);
-  const [situationResponse, setSituationResponse] = useState<SituationResponse | null>(null);
+  const [situationResponse, setSituationResponse] = useState<WorkspaceSituationResponse | null>(null);
   const [hasContextRoot, setHasContextRoot] = useState(false);
   const [entryMode, setEntryMode] = useState<"initial" | "update">("initial");
   /** This browser session shared at least one note — gates Continuity / dual pane. */
@@ -378,7 +382,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         throw new Error(err.error ?? "Could not structure situation");
       }
 
-      const situationData = (await safeJson(situationRes)) as SituationResponse & {
+      const situationData = normalizeBackendSituationResponse(
+        await safeJson(situationRes),
+      ) as WorkspaceSituationResponse & {
         policy_engine_layer?: {
           consent_required?: boolean;
           ingestion?: { allowed?: boolean; blocked_reason?: string | null };
@@ -873,25 +879,41 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                 </article>
               </div>
             </section>
-            <SituationResponsePanel
-              response={situationResponse}
-              rawInput={lastSharedDisplay || rawInput}
-              careKey={caregiverId}
-              entryIntent={
-                (situationResponse.active_care_situation?.observations?.length ?? 0) > 1
-                  ? "update"
-                  : "initial"
-              }
-              onAddUpdate={() => {
-                setRawInput("");
-                setDocuments([]);
-                const obs =
-                  situationResponse.active_care_situation?.observations?.length ?? 0;
-                setEntryMode(obs > 1 ? "update" : "initial");
-                go("REAL_MOMENT");
-              }}
-              onContinue={handleDoneForNow}
-            />
+            {situationResponse.analysis_status === "partial" && (
+              <p className="workspace-status-warning" role="status">
+                {situationResponse.analysis_warning ||
+                  "Care input was saved, but change and situation analysis could not be completed. The recorded evidence remains available."}
+              </p>
+            )}
+            {situationResponse.ok === true && !situationResponse.active_care_situation ? (
+              <section className="panel panel-response" role="status" aria-live="polite">
+                <h3>Care record view unavailable</h3>
+                <p>
+                  The server accepted this capture but did not return a persisted care-record view.
+                  Refresh the record to verify what was saved before submitting the same information again.
+                </p>
+              </section>
+            ) : (
+              <SituationResponsePanel
+                response={situationResponse}
+                rawInput={lastSharedDisplay || rawInput}
+                careKey={caregiverId}
+                entryIntent={
+                  (situationResponse.active_care_situation?.observations?.length ?? 0) > 1
+                    ? "update"
+                    : "initial"
+                }
+                onAddUpdate={() => {
+                  setRawInput("");
+                  setDocuments([]);
+                  const obs =
+                    situationResponse.active_care_situation?.observations?.length ?? 0;
+                  setEntryMode(obs > 1 ? "update" : "initial");
+                  go("REAL_MOMENT");
+                }}
+                onContinue={handleDoneForNow}
+              />
+            )}
             <button
               type="button"
               className="care-reality-fab"
