@@ -11,6 +11,7 @@ export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [analysisWarning, setAnalysisWarning] = useState<string | null>(null);
+  const [qwenStatus, setQwenStatus] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<unknown | null>(null);
   
   // Form state
@@ -436,6 +437,7 @@ export default function StructuredDailyCapture() {
     },
     onSuccess: async (data, variables, context) => {
       setAnalysisWarning(data?.analysis_status === 'complete' ? null : (data?.analysis_error || 'The entry was saved, but derived analysis could not be confirmed.'));
+      setQwenStatus(typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_configured');
       // On success, reset the form
       setForm({
         medications: [],
@@ -509,6 +511,7 @@ export default function StructuredDailyCapture() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAnalysisWarning(null);
+    setQwenStatus(null);
     
     if (!personId || !caregiverId) {
       const error = new Error('A signed-in caregiver and care record are required to save daily capture.');
@@ -764,6 +767,14 @@ export default function StructuredDailyCapture() {
       {analysisWarning && (
         <p role="status" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '24px' }}>
           {analysisWarning}
+        </p>
+      )}
+      {qwenStatus && (
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '24px' }}>
+          {qwenStatus === 'pending_review' ? 'Qwen prepared review-only extraction candidates. They have not been written to the Living Care Record.' :
+            qwenStatus === 'not_configured' ? 'Qwen extraction is not configured; the recorded entry remains saved.' :
+            qwenStatus === 'failed' ? 'Qwen extraction failed; the recorded entry remains saved.' :
+            `Qwen extraction status: ${qwenStatus}.`}
         </p>
       )}
       
