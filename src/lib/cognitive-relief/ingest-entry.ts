@@ -1,4 +1,3 @@
-import { DEFAULT_CAREGIVER_ID } from "./contract-constants";
 import type { IngestEntryResult } from "./types";
 import { tryLoadProfile, trySaveProfile } from "./care-recipient-profile/postgres-store";
 import { ensureDefaultLocations } from "./modules/location-index";
@@ -20,9 +19,13 @@ export type IngestCareEntryParams = {
 
 /**
  * Ingest a caregiver entry — update living care record, auto-tag, surface pattern context.
+ * Identity is mandatory: an absent caregiver ID must never share a global fallback record.
  */
 export async function ingestCareEntry(params: IngestCareEntryParams): Promise<IngestEntryResult> {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = params.caregiver_id?.trim();
+  if (!caregiverId) {
+    throw new Error("Caregiver identity is required; entry was not persisted.");
+  }
   const caseId = params.case_id ?? null;
   const capturedAt = params.captured_at ?? new Date().toISOString();
 
