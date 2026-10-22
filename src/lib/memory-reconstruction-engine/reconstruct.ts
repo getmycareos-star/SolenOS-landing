@@ -1,5 +1,5 @@
 import { getGraphForCaregiver } from "../care-journey-graph/graph-store";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { parseMemoryQuery } from "./parse-query";
 import {
   aggregateRelevantEvents,
