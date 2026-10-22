@@ -61,8 +61,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     onSettled: () => {
       // Preserve the user's text on failure so it can be corrected and retried.
     },
-    retry: true,
-    maxRetries: 3
   })
 
   const handleSubmit = async () => {
