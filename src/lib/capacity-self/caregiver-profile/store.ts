@@ -75,6 +75,17 @@ export function addResolvedItem(
   return updated;
 }
 
+export function replaceCaregiverSelfProfileRecord(record: CaregiverSelfProfileRecord): void {
+  const caregiverId = record.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("Valid caregiver identity is required.");
+  }
+  if (!record.id || !record.profile || !Array.isArray(record.resolved_items)) {
+    throw new Error("A complete caregiver profile record is required.");
+  }
+  profiles.set(caregiverId, record);
+}
+
 export function resetCaregiverSelfProfileStore(): void {
   profiles.clear();
 }
