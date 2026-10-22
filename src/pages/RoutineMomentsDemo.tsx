@@ -1,25 +1,34 @@
-// src/pages/RoutineMomentsDemo.tsx
-import React from 'react';
-import { RoutineMomentLogger } from '../components/routine-moments/RoutineMomentLogger';
-import { getPersonId } from '../api/client';
+import React from 'react'
+import { RoutineMomentLogger } from '../components/routine-moments/RoutineMomentLogger'
+import { getPersonId } from '../api/client'
 
 export const RoutineMomentsDemo: React.FC = () => {
-  const personId = getPersonId();
+  if (!import.meta.env.DEV) {
+    return (
+      <main role="status" style={{ padding: '24px', color: 'var(--text-secondary)' }}>
+        This development-only page is disabled in production.
+      </main>
+    )
+  }
+
+  const personId = getPersonId()
+  if (!personId) {
+    return (
+      <main role="alert" style={{ padding: '24px', color: 'var(--text-secondary)' }}>
+        Select an authorized care record before testing routine-moment capture.
+      </main>
+    )
+  }
 
   return (
-    <div className="routine-moments-demo">
+    <main className="routine-moments-demo">
       <header>
-        <h1>Routine Moments Demo</h1>
-        <p>
-          This demo demonstrates the Routine Moments feature, which allows logging
-          observations of routines and detecting changes over time.
-        </p>
+        <h1>Routine Moments — development test</h1>
+        <p>This development-only screen uses the selected care record. It does not contain seeded caregiver stories.</p>
       </header>
-      <main>
-        <RoutineMomentLogger personId={personId} />
-      </main>
-    </div>
-  );
-};
+      <RoutineMomentLogger personId={personId} />
+    </main>
+  )
+}
 
-export default RoutineMomentsDemo;
+export default RoutineMomentsDemo
