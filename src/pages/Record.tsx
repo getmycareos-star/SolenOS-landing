@@ -80,16 +80,6 @@ export default function Record() {
         </p>
       </div>
 
-      <div style={{
-        display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px',
-        padding: '8px 12px', background: 'var(--bg)', borderRadius: '8px', border: '1px dashed var(--border)'
-      }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Examples:</span>
-        {['Doctor\'s note', 'Hospital discharge paper', 'Medication list', 'Family message', 'Photo of document'].map(ex => (
-          <span key={ex} style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>• {ex}</span>
-        ))}
-      </div>
-
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
       {loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
