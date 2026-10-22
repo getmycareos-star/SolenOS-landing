@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '../lib/imageCompression';
@@ -10,6 +11,7 @@ const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedSummary, setSavedSummary] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<unknown | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId?: string | null } | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, string>>({});
@@ -472,6 +474,15 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
+      const summaryParts = [
+        variables.notes.trim(),
+        variables.medications.length ? variables.medications.map((item) => `${item.medication_name}: ${item.status}`).join(', ') : '',
+        variables.vitals.length ? variables.vitals.map((item) => `${item.vital_type}: ${item.value}${item.unit ? ' ' + item.unit : ''}`).join(', ') : '',
+        variables.scales.length ? variables.scales.map((item) => `${item.axis}: ${item.score}/10`).join(', ') : '',
+      ].filter(Boolean);
+      setSavedSummary(summaryParts.join(' · ') || 'Structured care entry recorded.');
+      setReviewFeedback(null);
+      setReviewDrafts({});
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
@@ -797,9 +808,13 @@ export default function StructuredDailyCapture() {
           marginBottom: '24px' 
         }}>
           <span style={{ fontSize: '13px', color: 'var(--trust)', fontWeight: '500' }}>
-            Saved. {form.notes || 'Entry recorded.'}
+            Saved. {savedSummary || 'Entry recorded.'}
           </span>
         </div>
+      )}
+      
+      {saved && (
+        <p style={{ fontSize: '12px', marginTop: '-14px', marginBottom: '20px' }}><Link to="/record" style={{ color: 'var(--trust)' }}>Review the Living Care Record →</Link></p>
       )}
       
       {saved && qwenAnalysis && (
