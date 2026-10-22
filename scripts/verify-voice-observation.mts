@@ -122,23 +122,17 @@ const captured = await captureVoiceObservation({
   editedTranscript: "Dad wandered outside at 2am",
   record: recordObservation,
 });
-assert(captured.ok === true, "captureVoiceObservation ok");
-if (captured.ok) {
-  assert(captured.transcript.includes("wandered"), "transcript set");
-  assert(
-    (captured.observation.structured as { signal: string }[]).some(
-      (s) => s.signal === "wandering",
-    ),
-    "voice path extracts wandering",
-  );
-  assert(captured.observation.observations_this_week >= 1, "KPI increments");
+assert(captured.ok === false && captured.code === "PERSISTENCE_UNAVAILABLE", "voice capture must not report success without durable persistence");
+if (!captured.ok) {
+  assert(captured.code === "PERSISTENCE_UNAVAILABLE", "voice transcript must not be reported as a saved observation");
 }
 const voiceRec = recordObservation({
   caregiver_id: "cg_voice2",
   raw_text: "Mom asked where Dad was seven times today",
   source: "voice",
 });
-assert(voiceRec.observations_this_week >= 1, "voice source_type path");
+assert(voiceRec.observations_this_week >= 1, "voice source_type extraction runs in process memory");
+assert(voiceRec.persistence_status === "unavailable", "in-memory observation is not durable");
 console.log("✓ STT→observation path (mocked server STT via edited transcript)");
 
 // ─── STT provider routing ────────────────────────────────────────────────────
