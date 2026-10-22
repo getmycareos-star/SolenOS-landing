@@ -3,6 +3,8 @@ import { MemoryRouter } from 'react-router-dom';
 import FirstUseJourney from './FirstUseJourney';
 import { getJSON, getPersonId } from '../api/client';
 
+// Regression coverage for persisted returning-caregiver context and failure honesty.
+
 jest.mock('../api/client', () => ({
   getJSON: jest.fn(),
   getPersonId: jest.fn(),
