@@ -916,132 +916,35 @@ export default function StructuredDailyCapture() {
               />
             </div>
             
-            {/* Image upload for medication */}
             <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg)', borderRadius: '6px' }}>
-              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Medication Photo (Optional)</h4>
-              
-              {medicationImagePreview ? (
-                <div>
-                  <div style={{ 
-                    width: '100%', 
-                    height: '200px', 
-                    backgroundColor: 'var(--surface)', 
-                    border: '1px solid var(--border)', 
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '12px'
-                  }}>
-                    <img 
-                      src={medicationImagePreview} 
-                      alt="Medication preview" 
-                      style={{ maxWidth: '100%', maxHeight: '100%' }} 
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      onClick={() => setMedicationImagePreview(null)}
-                      style={{ 
-                        fontSize: '12px', 
-                        color: '#dc2626', 
-                        background: 'none', 
-                        border: 'none', 
-                        cursor: 'pointer', 
-                        padding: '6px 10px', 
-                        borderRadius: '4px' 
-                      }}
-                    >
-                      Remove Preview
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleMedicationSubmit}
-                      disabled={medicationUploading || !medicationForm.medication_name.trim()}
-                      style={{ 
-                        fontSize: '13px', 
-                        fontWeight: '500', 
-                        color: 'white', 
-                        background: medicationUploading || !medicationForm.medication_name.trim() 
-                                   ? 'var(--text-secondary)' 
-                                   : 'var(--accent)', 
-                        padding: '8px 16px', 
-                        borderRadius: '6px', 
-                        cursor: medicationUploading || !medicationForm.medication_name.trim() 
-                               ? 'default' 
-                               : 'pointer' 
-                      }}
-                    >
-                      {medicationUploading ? 'Adding...' : 'Add Medication with Photo'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                    <button
-                      type="button"
-                      onClick={handleMedicationImageCapture}
-                      disabled={submitting || medicationUploading || cameraState.status === 'denied' || cameraState.status === 'unsupported' ? true : false}
-                      style={{ 
-                        fontSize: '12px', 
-                        padding: '8px 12px', 
-                        borderRadius: '4px', 
-                        border: '1px solid var(--border)', 
-                        background: cameraState.status === 'unknown' ? 'var(--accent)' : 'var(--text-secondary)', 
-                        color: 'white', 
-                        cursor: cameraState.status === 'unknown' ? 'pointer' : 'default' 
-                      }}
-                    >
-                      {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
-                    </button>
-                    <input
-                      id="medication-file-input"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleMedicationImageUpload}
-                      className='medication-file-input'
-                      disabled={submitting || medicationUploading}
-                    />
-                    <label htmlFor="medication-file-input" className='medication-file-label'>
-                      or upload from device
-                    </label>
-                  </div>
-                  {medicationUploading && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                      Uploading...
-                    </p>
-                  )}
-                  {medicationCompressing && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                      Compressing image...
-                    </p>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                    <button
-                      type="button"
-                      onClick={handleMedicationSubmit}
-                      disabled={medicationUploading || !medicationForm.medication_name.trim()}
-                      style={{ 
-                        fontSize: '13px', 
-                        fontWeight: '500', 
-                        color: 'white', 
-                        background: medicationUploading || !medicationForm.medication_name.trim() 
-                                   ? 'var(--text-secondary)' 
-                                   : 'var(--accent)', 
-                        padding: '8px 16px', 
-                        borderRadius: '6px', 
-                        cursor: medicationUploading || !medicationForm.medication_name.trim() 
-                               ? 'default' 
-                               : 'pointer' 
-                      }}
-                    >
-                      {medicationUploading ? 'Adding...' : 'Add Medication'}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <h4 style={{ marginTop: 0, marginBottom: '8px', fontSize: '16px', fontWeight: 600 }}>
+                Photo evidence unavailable
+              </h4>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Camera capture and photo attachment are disabled in this deployment because a verified
+                backend upload endpoint is not available. Medication details can still be recorded without a photo.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button
+                  type="submit"
+                  disabled={medicationUploading || !medicationForm.medication_name.trim()}
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: 'white',
+                    background: medicationUploading || !medicationForm.medication_name.trim()
+                      ? 'var(--text-secondary)'
+                      : 'var(--accent)',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: medicationUploading || !medicationForm.medication_name.trim()
+                      ? 'default'
+                      : 'pointer',
+                  }}
+                >
+                  {medicationUploading ? 'Adding...' : 'Add Medication'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
