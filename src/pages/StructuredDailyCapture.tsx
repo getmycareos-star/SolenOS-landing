@@ -51,7 +51,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     medication_name: '',
-    status: ''
+    status: '',
     dose: null,
     scheduled_for: null,
     administered_at: null,
