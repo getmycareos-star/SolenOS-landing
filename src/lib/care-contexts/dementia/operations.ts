@@ -1,4 +1,4 @@
-import { DEFAULT_CAREGIVER_ID } from "@/lib/cognitive-relief/contract-constants";
+import { requireCaregiverId } from "@/lib/care-identity";
 import {
   getOrCreateProfile,
   patchProfileRecord,
@@ -38,7 +38,7 @@ async function resolveRecord(params: {
   caregiver_id?: string;
   case_id?: string | null;
 }): Promise<CareRecipientProfileRecord> {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = requireCaregiverId(params.caregiver_id);
   const caseId = params.case_id ?? null;
   return (
     (await tryLoadProfile(caregiverId, caseId)) ??
