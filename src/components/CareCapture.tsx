@@ -2,22 +2,6 @@ import { useState } from 'react'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
-interface SimilarExperience {
-  post_id: string
-  author_label: string
-  author_type: string
-  content: string
-  tags: string[]
-  relevance_score: number
-}
-
-interface ExperienceResult {
-  trigger_observation: string
-  matched_keywords: string[]
-  matches: SimilarExperience[]
-  community_pattern: string | null
-}
-
 interface CareCaptureProps {
   personId?: string
   onCapture?: (text: string) => void
@@ -35,65 +19,53 @@ const CAPTURE_HINTS = [
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
-  const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
-  const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
   const [identityError, setIdentityError] = useState<string | null>(null)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
-    any, 
+    any,
     { caregiverId: string; personId: string; rawInput: string }
-  >({
-    mutationFn: ({ caregiverId, personId, rawInput }) => 
-      postJSON('/situation', {
-        caregiver_id: caregiverId,
-        person_id: personId,
-        raw_input: rawInput,
-      }),
-    onMutate: async ({ caregiverId, personId, rawInput }) => {
-      // Return snapshot for potential rollback (we're not storing previous state since this is a creation)
-      return { caregiverId, personId, rawInput };
-    },
-    onSuccess: async (data, variables) => {
-      // The backend currently returns a saved situation, not community matches.
-      // Do not call the nonexistent /community/experience endpoint or invent matches.
-      setExperiences(null)
-      setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
-      setIdentityError(null)
-      setText('')
-      onCapture?.(variables.rawInput)
-    },
-    onError: async (error, variables, context) => {
-      // On error, we could show a failed state, but for simplicity we'll just let the error propagate
-      // The UI will still show the text was processed optimistically
-      console.error('Failed to save situation:', error)
-    },
-    onSettled: () => {
-      // Preserve the user's text on failure so it can be corrected and retried.
-    },
-    retry: true,
-    maxRetries: 3
-  })
+  >()
 
   const handleSubmit = async () => {
     if (!text.trim()) return
-    
+
     const caregiverId = getCaregiverId()
-    if (!caregiverId) {
-      setIdentityError('A signed-in caregiver is required to save this care update.')
+    if (!personId || !caregiverId) {
+      setSaved(false)
+      setIdentityError('Sign in and select an authorized care record before saving.')
       return
     }
     setIdentityError(null)
-    setSavedMessage(null)
+    const variables = { caregiverId, personId, rawInput: text.trim() }
 
     await submitSituation({
-      caregiverId,
-      personId,
-      rawInput: text.trim()
-    })
+      mutationFn: ({ caregiverId, personId, rawInput }) =>
+        postJSON('/api/situation', {
+          caregiver_id: caregiverId,
+          person_id: personId,
+          raw_input: rawInput,
+        }),
+      onMutate: async ({ caregiverId, personId, rawInput }) => ({
+        caregiverId, personId, rawInput,
+      }),
+      onSuccess: async (_data, mutationVariables) => {
+        // Only report success after the backend confirms the situation was saved.
+        setSaved(true)
+        onCapture?.(mutationVariables.rawInput)
+      },
+      onError: async (error) => {
+        console.error('Failed to save situation:', error)
+      },
+      onSettled: (_data, error) => {
+        // Preserve the caregiver's text when saving fails so it can be retried.
+        if (!error) setText('')
+      },
+      retry: false,
+      maxRetries: 0,
+    }, variables)
   }
-
-  const clearExperiences = () => setExperiences(null)
 
   return (
     <div style={{
@@ -102,13 +74,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
-        marginBottom: experiences ? '12px' : '8px',
+        marginBottom: saved ? '12px' : '8px',
       }}>
         <span style={{ fontSize: '20px' }}>📝</span>
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {(experiences || savedMessage) && (
+        {saved && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -116,7 +88,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && !savedMessage && (
+        {submitting && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -124,12 +96,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {Boolean(submitError || identityError) && !experiences && (
+        {(Boolean(submitError) || Boolean(identityError)) && !saved && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
-            {identityError || 'Failed to save'}
+            Failed to save
           </span>
         )}
       </div>
@@ -139,16 +111,18 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         marginBottom: '12px', lineHeight: 1.5
       }}>
         Capture one thing that changed — a behavior, a symptom, a moment.
-        SolenOS saves this update to the care record so you can review it alongside other recorded events.
+        SolenOS will keep this observation available for future care review.
       </p>
+
+      {(Boolean(identityError) || Boolean(submitError)) && !saved && (
+        <p role="alert" style={{ color: 'var(--error)', fontSize: '12px', margin: '8px 0' }}>
+          {identityError || (submitError instanceof Error ? submitError.message : 'Failed to save this care entry. Please retry.')}
+        </p>
+      )}
 
       <textarea
         value={text}
-        onChange={(e) => {
-          setText(e.target.value)
-          setSavedMessage(null)
-          setIdentityError(null)
-        }}
+        onChange={(e) => { setText(e.target.value); setSaved(false) }}
         placeholder="Dad wandered at 2 AM and was confused about where he was..."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
@@ -194,72 +168,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         </button>
       </div>
 
-      {savedMessage && !experiences && (
-        <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
-          {savedMessage}
-        </p>
-      )}
-
-      {experiences && (
-        <div style={{
-          marginTop: '16px', padding: '12px 16px',
-          background: 'var(--accent-soft)', border: '1px solid var(--accent)',
-          borderRadius: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '14px' }}>💡</span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
-              Similar caregiver experiences
-            </span>
-            <span
-              onClick={clearExperiences}
-              style={{
-                marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </span>
-          </div>
-
-          {experiences.community_pattern && (
-            <p style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '8px' }}>
-              {experiences.community_pattern}
-            </p>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {experiences.matches.map(m => (
-              <div key={m.post_id} style={{
-                padding: '8px 12px', background: 'var(--surface)',
-                borderRadius: '8px', border: '1px solid var(--border)'
-              }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text)' }}>
-                    {m.author_label}
-                  </span>
-                  {m.author_type === 'solenos_verified' && (
-                    <span style={{ fontSize: '10px', color: 'var(--trust)', background: 'var(--trust-soft)', padding: '1px 6px', borderRadius: '4px' }}>
-                      SolenOS verified
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {m.content}
-                </p>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  {m.tags.map(t => (
-                    <span key={t} style={{
-                      fontSize: '10px', padding: '1px 6px', borderRadius: '4px',
-                      background: 'var(--bg)', color: 'var(--text-secondary)',
-                    }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

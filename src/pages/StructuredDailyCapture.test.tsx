@@ -1,13 +1,20 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
+import CareCapture from '../components/CareCapture';
+import { getCaregiverId, postJSON } from '../api/client';
 
 // Mock the postJSON function
 jest.mock('../api/client', () => ({
-  ...jest.requireActual('../api/client'),
+  getPersonId: () => 'test-person-id',
+  getCaregiverId: jest.fn().mockReturnValue('caregiver-123'),
+  getJSON: jest.fn().mockResolvedValue([]),
   postJSON: jest.fn().mockResolvedValue({}),
-  getPersonId: jest.fn(() => 'test-person'),
-  getCaregiverId: jest.fn(() => 'test-caregiver')
+  postFormData: async (path: string, body: FormData) => {
+    const response = await fetch(path, { method: 'POST', body });
+    if (!response.ok) throw new Error('Failed to upload image');
+    return response.json();
+  },
 }));
 
 describe('StructuredDailyCapture', () => {
@@ -57,7 +64,7 @@ describe('StructuredDailyCapture', () => {
     await userEvent.click(screen.getByRole('button', { name: /add vital/i }));
     
     // Verify vital is added to the list
-    expect((await screen.findAllByText(/heart rate/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByRole('heading', { name: /heart rate/i })).toBeInTheDocument();
     expect(await screen.findByText(/72 bpm/i)).toBeInTheDocument();
   });
 
@@ -66,16 +73,38 @@ describe('StructuredDailyCapture', () => {
     
     // Fill in scale form
     await userEvent.selectOptions(screen.getByLabelText(/scale type/i), 'mood');
-    const scoreInput = screen.getByLabelText(/score \(1-5\)/i);
-    await userEvent.clear(scoreInput);
-    await userEvent.type(scoreInput, '4');
+    fireEvent.change(screen.getByLabelText(/score \(1-5\)/i), { target: { value: '4' } });
     
     // Submit scale form
     await userEvent.click(screen.getByRole('button', { name: /add scale/i }));
     
     // Verify scale is added to the list
-    expect((await screen.findAllByText(/mood/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByRole('heading', { name: /mood/i })).toBeInTheDocument();
     expect(await screen.findByText(/4\/5/i)).toBeInTheDocument();
+  });
+
+  it('saves a situation using the selected caregiver identity', async () => {
+    render(<CareCapture />);
+    await userEvent.type(screen.getByPlaceholderText(/Dad wandered/i), 'Mum slept poorly');
+    await userEvent.click(screen.getByRole('button', { name: /save what changed/i }));
+
+    await waitFor(() => {
+      expect(postJSON).toHaveBeenCalledWith('/api/situation', {
+        caregiver_id: 'caregiver-123',
+        person_id: 'test-person-id',
+        raw_input: 'Mum slept poorly',
+      });
+    });
+  });
+
+  it('does not submit a situation when caregiver context is missing', async () => {
+    (getCaregiverId as jest.Mock).mockReturnValueOnce(null);
+    render(<CareCapture />);
+    await userEvent.type(screen.getByPlaceholderText(/Dad wandered/i), 'Mum slept poorly');
+    await userEvent.click(screen.getByRole('button', { name: /save what changed/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/sign in and select an authorized care record/i);
+    expect(postJSON).not.toHaveBeenCalled();
   });
 
   it('should handle form submission', async () => {

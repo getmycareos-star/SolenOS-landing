@@ -1,91 +1,107 @@
 import { useState, useCallback, useRef } from 'react';
-import { postJSON, patchJSON, getJSON } from '../api/client';
 
 interface OptimisticMutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>;
-  onMutate?: (variables: TVariables) => Promise<unknown> | unknown;
-  onSuccess?: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
-  onError?: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
-  onSettled?: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
+  onMutate: (variables: TVariables) => Promise<unknown> | unknown;
+  onSuccess: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
+  onError: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
+  onSettled: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
   retry?: boolean;
   maxRetries?: number;
 }
 
 /**
- * Supports both established call patterns:
- * 1) useOptimisticMutation(options) followed by mutate(variables)
- * 2) useOptimisticMutation() followed by mutate(options, variables)
+ * Supports configured usage (useOptimisticMutation(options), mutate(variables))
+ * and per-call usage (useOptimisticMutation(), mutate(options, variables)).
+ * Calls that opt into retry are queued behind an in-flight mutation.
  */
-export function useOptimisticMutation<TData, TVariables>(
-  defaultOptions?: OptimisticMutationOptions<TData, TVariables>,
+export function useOptimisticMutation<TData = unknown, TVariables = unknown>(
+  configuredOptions?: OptimisticMutationOptions<TData, TVariables>
 ) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const [data, setData] = useState<TData | null>(null);
-  const inFlightRef = useRef<Promise<unknown> | null>(null);
   const snapshotRef = useRef<unknown>(null);
+  const requestIdRef = useRef(0);
+  const inFlightRef = useRef(false);
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
 
-  const mutate = useCallback(async (
+  const mutate = useCallback((
     optionsOrVariables: OptimisticMutationOptions<TData, TVariables> | TVariables,
-    maybeVariables?: TVariables,
-  ): Promise<TData | undefined> => {
-    const options = maybeVariables === undefined
-      ? defaultOptions
-      : optionsOrVariables as OptimisticMutationOptions<TData, TVariables>;
-    const variables = maybeVariables === undefined
+    maybeVariables?: TVariables
+  ): Promise<TData> => {
+    const options = configuredOptions ?? optionsOrVariables as OptimisticMutationOptions<TData, TVariables>;
+    const variables = configuredOptions
       ? optionsOrVariables as TVariables
-      : maybeVariables;
+      : maybeVariables as TVariables;
 
-    if (!options) {
-      throw new Error('Mutation options must be provided either to the hook or mutate().');
+    if (!configuredOptions && maybeVariables === undefined) {
+      return Promise.reject(new Error('Mutation variables are required when options are supplied per call.'));
+    }
+    if (inFlightRef.current && !options.retry) {
+      return Promise.reject(new Error('Mutation already in progress'));
     }
 
-    const existing = inFlightRef.current;
-    if (existing) {
-      if (!options.retry) {
-        throw new Error('Mutation already in progress');
-      }
-      await existing.catch(() => undefined);
-      return mutate(optionsOrVariables, maybeVariables as TVariables);
-    }
+    const execute = async (): Promise<TData> => {
+      inFlightRef.current = true;
+      setLoading(true);
+      setError(null);
+      const requestId = ++requestIdRef.current;
+      let resultData: TData | undefined;
+      let mutationError: unknown | null = null;
+      let snapshot: unknown = null;
 
-    setLoading(true);
-    setError(null);
-    let context: unknown;
-    let result: TData | undefined;
-    let mutationError: unknown | null = null;
-
-    const operation = (async () => {
       try {
-        context = await options.onMutate?.(variables);
-        snapshotRef.current = context;
-        result = await options.mutationFn(variables);
-        await options.onSuccess?.(result, variables, context);
-        setData(result);
+        snapshot = await options.onMutate(variables);
+        snapshotRef.current = snapshot;
+
+        const maxRetries = options.retry ? Math.max(0, options.maxRetries ?? 0) : 0;
+        let attempt = 0;
+        let result: TData;
+        while (true) {
+          try {
+            result = await options.mutationFn(variables);
+            break;
+          } catch (err) {
+            if (attempt >= maxRetries) throw err;
+            attempt += 1;
+          }
+        }
+        resultData = result;
+        if (requestId === requestIdRef.current) {
+          await options.onSuccess(result, variables, snapshot);
+          setData(result);
+        }
         return result;
       } catch (err) {
         mutationError = err;
-        await options.onError?.(err, variables, context);
         setError(err);
+        try {
+          await options.onError(err, variables, snapshot);
+        } catch (callbackError) {
+          console.error('Optimistic mutation onError callback failed:', callbackError);
+        }
         throw err;
       } finally {
         try {
-          await options.onSettled?.(result, mutationError, variables, context);
+          await options.onSettled(resultData, mutationError, variables, snapshot);
         } finally {
           setLoading(false);
+          inFlightRef.current = false;
         }
       }
-    })();
+    };
 
-    inFlightRef.current = operation;
-    try {
-      return await operation;
-    } finally {
-      if (inFlightRef.current === operation) {
-        inFlightRef.current = null;
-      }
+    if (inFlightRef.current) {
+      const queued = queueRef.current.catch(() => undefined).then(execute);
+      queueRef.current = queued;
+      return queued as Promise<TData>;
     }
-  }, [defaultOptions]);
+
+    const current = execute();
+    queueRef.current = current;
+    return current;
+  }, [configuredOptions]);
 
   return {
     mutate,
@@ -97,8 +113,8 @@ export function useOptimisticMutation<TData, TVariables>(
       setError(null);
       setData(null);
       snapshotRef.current = null;
-      inFlightRef.current = null;
-    },
+      requestIdRef.current = 0;
+    }
   };
 }
 
@@ -108,7 +124,7 @@ export function useOptimisticMutation<TData, TVariables>(
 export function useOptimisticToggle<TId extends string | number | symbol>() {
   const [toggledIds, setToggledIds] = useState<Set<TId>>(new Set());
   const [loadingIds, setLoadingIds] = useState<Set<TId>>(new Set());
-  const [errorIds, setErrorIds] = useState<Partial<Record<TId, unknown>>>({});
+  const [errorIds, setErrorIds] = useState<Record<TId, unknown>>({} as Record<TId, unknown>);
   
   const toggle = useCallback(
     async (id: TId, options: {
@@ -177,7 +193,7 @@ export function useOptimisticToggle<TId extends string | number | symbol>() {
     reset: () => {
       setToggledIds(new Set());
       setLoadingIds(new Set());
-      setErrorIds({});
+      setErrorIds({} as Record<TId, unknown>);
     }
   };
 }
