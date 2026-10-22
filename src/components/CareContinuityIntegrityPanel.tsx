@@ -85,7 +85,15 @@ const buttonStyle: React.CSSProperties = {
   background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer',
 }
 
-export default function CareContinuityIntegrityPanel({ personId }: { personId: string }) {
+type EvidenceSource = { id: string; type: string; source_text: string; uploaded_at: string }
+
+export default function CareContinuityIntegrityPanel({
+  personId,
+  evidenceItems = [],
+}: {
+  personId: string
+  evidenceItems?: EvidenceSource[]
+}) {
   const [data, setData] = useState<PanelData>(emptyData)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -101,6 +109,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
   const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({})
   const [kind, setKind] = useState<'current_state' | 'time_bound_observation'>('current_state')
   const [reviewDays, setReviewDays] = useState('')
+  const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([])
   const [corrections, setCorrections] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
@@ -157,7 +166,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         asserted_value: value.trim(),
         source_label: source.trim(),
         source_text: sourceText.trim() || undefined,
-        evidence_ids: [],
+        evidence_ids: selectedEvidenceIds,
         observed_at: kind === 'time_bound_observation' ? new Date().toISOString() : undefined,
         review_after_days: Number(reviewDays),
         created_by_caregiver_id: getCaregiverId() || undefined,
@@ -165,6 +174,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
       setField('')
       setValue('')
       setSourceText('')
+      setSelectedEvidenceIds([])
       setNotice('Report saved. It remains unreviewed until explicitly confirmed.')
       await load()
     } catch (reason) {
@@ -299,6 +309,28 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Source excerpt or context (optional)
           <textarea style={{ ...fieldStyle, minHeight: 64, resize: 'vertical' }} value={sourceText} onChange={(e) => setSourceText(e.target.value)} placeholder="Keep the source wording faithful; do not enter an AI-generated conclusion as source evidence." />
         </label>
+        <fieldset style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginTop: 10 }}>
+          <legend style={{ fontSize: 12 }}>Link existing evidence (optional)</legend>
+          {evidenceItems.length === 0
+            ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No existing evidence is available to link. You can still record the report with its source label and excerpt.</p>
+            : <div style={{ display: 'grid', gap: 7, maxHeight: 180, overflowY: 'auto' }}>
+                {evidenceItems.map((evidence) => (
+                  <label key={evidence.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedEvidenceIds.includes(evidence.id)}
+                      onChange={(event) => setSelectedEvidenceIds((current) =>
+                        event.target.checked
+                          ? [...current, evidence.id]
+                          : current.filter((id) => id !== evidence.id)
+                      )}
+                    />
+                    <span><strong>{evidence.type || 'Evidence'}</strong> · {evidence.source_text?.slice(0, 180) || 'No source text'} <span style={{ color: 'var(--text-secondary)' }}>({evidence.id})</span></span>
+                  </label>
+                ))}
+              </div>}
+          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 0 }}>Selected evidence IDs are validated by the backend against this care record before saving.</p>
+        </fieldset>
         <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving…' : 'Save report'}</button>
       </form>
 
