@@ -165,7 +165,8 @@ export function pauseActiveCareSituationSession(
 export function resumeActiveCareSituationSession(contributorId: string): void {
   const current = getActiveCareSituation(contributorId);
   if (!current?.interaction_paused_at) return;
-  const careRecipientId = current.care_recipient_id ?? realityKey(contributorId);
+  const careRecipientId = current.care_recipient_id;
+  if (!careRecipientId || careRecipientId !== realityKey(contributorId)) throw new Error("Active situation care-recipient identity does not match the authenticated contributor mapping.");
   const resumed: ActiveCareSituation = {
     ...current,
     care_recipient_id: careRecipientId,
@@ -520,7 +521,7 @@ function ingestMemoryCorrection(params: {
 
   const situation: ActiveCareSituation = {
     ...params.prior,
-    care_recipient_id: params.prior.care_recipient_id ?? params.careRecipientId,
+    care_recipient_id: params.prior.care_recipient_id,
     caregiver_id: params.contributorId,
     updated_at: params.nowIso,
     observations: [...observations, observation],
@@ -902,7 +903,7 @@ export function ingestActiveCareObservation(params: {
   } else {
     draft = {
       ...prior,
-      care_recipient_id: prior.care_recipient_id ?? careRecipientId,
+      care_recipient_id: prior.care_recipient_id,
       caregiver_id: contributorId,
       updated_at: nowIso,
       root_event_id: prior.root_event_id ?? params.rootEventId ?? eventIds[0] ?? null,
@@ -1167,7 +1168,7 @@ export function ingestActiveCareObservation(params: {
 
   const situation: ActiveCareSituation = {
     ...draft,
-    care_recipient_id: draft.care_recipient_id ?? careRecipientId,
+    care_recipient_id: draft.care_recipient_id,
     theme: progressive.theme,
     understanding_stage: progressive.understanding_stage,
     open_questions: known_unknowns,
