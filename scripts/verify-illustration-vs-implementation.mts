@@ -76,6 +76,8 @@ const SCAN_ROOTS = [
   join(process.cwd(), "src/components"),
   join(process.cwd(), "src/app"),
   join(process.cwd(), "src/data"),
+  join(process.cwd(), "src/pages"),
+  join(process.cwd(), "src/api"),
 ];
 
 const SKIP_PATH_FRAGMENTS = [
@@ -95,7 +97,13 @@ for (const root of SCAN_ROOTS) {
   }
   for (const file of files) {
     const rel = relative(process.cwd(), file);
-    if (SKIP_PATH_FRAGMENTS.some((s) => rel.includes(s) || file.includes(s))) {
+    // Test code may intentionally mention forbidden examples to prove they
+    // are rejected. Never let those assertions create a false production hit.
+    if (
+      /(^|[\\/])__tests__([\\/])/.test(rel) ||
+      /\\.(test|spec)\\.[jt]sx?$/.test(file) ||
+      SKIP_PATH_FRAGMENTS.some((s) => rel.includes(s) || file.includes(s))
+    ) {
       continue;
     }
     const body = readFileSync(file, "utf8");
@@ -108,7 +116,22 @@ for (const root of SCAN_ROOTS) {
     ) {
       continue;
     }
-    if (containsIllustrationAsProduct(body)) {
+    // Explicitly forbid known fabricated runtime records and dashboard
+    // metrics. This is a static guard against accidental reintroduction;
+    // synthetic examples remain allowed only in isolated tests/dev fixtures.
+    const forbiddenProductionData = [
+      /\\bSAMPLE_POSTS\\b/,
+      /\\bDEMO_(?:RISK|REVIEW|REPORT|CAREGIVERS)\\b/,
+      /\\bdemo-person-id\\b/i,
+      /\\bAlex Johnson\\b/,
+      /\\bSam Johnson\\b/,
+      /\\b142 caregivers\\b/i,
+      /\\b4\\.2 helpfulness\\b/i,
+    ];
+    if (
+      containsIllustrationAsProduct(body) ||
+      forbiddenProductionData.some((pattern) => pattern.test(body))
+    ) {
       hits.push(rel);
     }
   }
