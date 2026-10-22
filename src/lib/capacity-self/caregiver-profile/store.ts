@@ -1,4 +1,3 @@
-import { DEFAULT_CAREGIVER_ID } from "../contract-constants";
 import {
   DEFAULT_CAREGIVER_SELF_PROFILE,
   type CaregiverSelfProfileData,
@@ -13,7 +12,10 @@ export function createCaregiverSelfProfileId(): string {
   return `csp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function getOrCreateCaregiverSelfProfile(caregiverId = DEFAULT_CAREGIVER_ID): CaregiverSelfProfileRecord {
+export function getOrCreateCaregiverSelfProfile(caregiverId: string): CaregiverSelfProfileRecord {
+  const normalizedId = caregiverId?.trim();
+  if (!normalizedId || normalizedId === "default_caregiver") throw new Error("Valid caregiver identity is required.");
+  caregiverId = normalizedId;
   const existing = profiles.get(caregiverId);
   if (existing) return existing;
 
