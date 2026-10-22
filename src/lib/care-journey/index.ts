@@ -16,15 +16,7 @@ export {
   CATEGORY_LABELS,
 } from "./classify";
 
-export {
-  createCareJourneyEvent,
-  getCareJourneyEvent,
-  listCareJourneyEventsForCaregiver,
-  listCareJourneyEventsForCase,
-  searchCareJourneyEvents,
-  resetCareJourneyStore,
-  attachmentsFromDocumentRefs,
-} from "./store";
+/** In-memory store APIs are intentionally not exported from the client-safe production barrel. */
 
 /**
  * Client-safe barrel only.
