@@ -120,6 +120,7 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
     window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
     window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
     window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
+    setPersonId(refreshed.person_id);
     return {
       session_id: refreshed.session_id,
       person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
@@ -133,7 +134,8 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
 
   // Existing record IDs without the bearer secret are not proof of ownership.
   // Do not silently create a new record and make the prior one appear lost.
-  if (personId || caregiverId) {
+  const legacyPersonId = window.localStorage.getItem("solenos_person_id")?.trim() || "";
+  if (personId || caregiverId || (legacyPersonId && !isPlaceholderIdentifier(legacyPersonId))) {
     throw new Error(
       "This browser has a care-record ID but no session credential. SolenOS cannot safely restore that record automatically."
     );
@@ -149,6 +151,7 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
   window.localStorage.setItem(ANONYMOUS_PERSON_KEY, created.person.id);
   window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, created.caregiver.id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, created.expires_at);
+  setPersonId(created.person.id);
   return created;
 }
 
