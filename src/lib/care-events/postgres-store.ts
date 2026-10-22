@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import { deriveConfidence, deriveUncertaintyLevel, inferEventType } from "./classify";
 import type { CareEventRecord, CreateCareEventInput, EventSourceRecord } from "./types";
 
