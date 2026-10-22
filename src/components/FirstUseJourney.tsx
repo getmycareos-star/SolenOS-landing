@@ -395,7 +395,7 @@ export default function FirstUseJourney() {
             </div>
           )}
 
-          {snapshot.events.length === 0 && (
+          {snapshot.events.length === 0 && !snapshot.failedSections.includes('care events') && (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               No care events were returned by the event endpoint. The other saved information shown here may still be useful; absence of events is not evidence that care needs have remained unchanged.
             </p>
