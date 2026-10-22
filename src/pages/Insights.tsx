@@ -26,7 +26,7 @@ export default function Insights() {
         return
       }
       try {
-        const data = await getJSON('/insights/demo-person-id')
+        const data = await getJSON(`/insights/${encodeURIComponent(personId)}`)
         if (!Array.isArray(data)) throw new Error('The server response was incomplete.')
         if (!cancelled) setInsights(data)
       } catch {
