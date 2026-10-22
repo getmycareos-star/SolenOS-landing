@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { renderHook, act } from '@testing-library/react';
 import { useLocationPermission } from './useLocationPermission';
 import { useCameraPermission } from './useCameraPermission';
@@ -18,8 +19,8 @@ describe('useLocationPermission', () => {
     mockMediaDevices.getUserMedia.mockReset();
     
     // Restore the original navigator after each test
-    Object.defineProperty(navigator, 'geolocation', { value: mockGeolocation, configurable: true });
-    Object.defineProperty(navigator, 'mediaDevices', { value: mockMediaDevices, configurable: true });
+    delete navigator.geolocation;
+    delete navigator.mediaDevices;
   });
 
   it('should return unknown state initially', () => {
@@ -35,6 +36,7 @@ describe('useLocationPermission', () => {
     });
 
     const { result } = renderHook(() => useLocationPermission());
+    act(() => { void result.current.requestLocation(); });
     expect(result.current.state.status).toBe('unsupported');
   });
 
@@ -49,9 +51,9 @@ describe('useLocationPermission', () => {
       coords: {
         latitude: 40.7128,
         longitude: -74.0060,
-        accuracy: 10,
-        timestamp: Date.now()
-      }
+        accuracy: 10
+      },
+      timestamp: 1700000000000
     };
 
     mockGeolocation.getCurrentPosition.mockImplementation((success) => {
@@ -72,6 +74,7 @@ describe('useLocationPermission', () => {
         expect(result.current.state.latitude).toBe(40.7128);
         expect(result.current.state.longitude).toBe(-74.0060);
         expect(result.current.state.accuracy).toBe(10);
+        expect(result.current.state.timestamp).toBe(1700000000000);
         resolve();
       }, 100);
     });
@@ -112,7 +115,7 @@ describe('useCameraPermission', () => {
     mockMediaDevices.getUserMedia.mockReset();
     
     // Restore the original navigator after each test
-    Object.defineProperty(navigator, 'mediaDevices', { value: mockMediaDevices, configurable: true });
+    delete navigator.mediaDevices;
   });
 
   it('should return unknown state initially', () => {
@@ -128,6 +131,7 @@ describe('useCameraPermission', () => {
     });
 
     const { result } = renderHook(() => useCameraPermission());
+    act(() => { void result.current.requestCamera(); });
     expect(result.current.state.status).toBe('unsupported');
   });
 
@@ -189,9 +193,8 @@ describe('useCameraPermission', () => {
 
   it('should clean up media stream on unmount', () => {
     // Mock mediaDevices support
-    const mockStream = { getTracks: jest.fn().mockReturnValue([]) } as unknown as MediaStream;
     const getTracksMock = jest.fn().mockReturnValue([{ stop: jest.fn() }]);
-    mockStream.getTracks = getTracksMock;
+    const mockStream = { getTracks: getTracksMock } as unknown as MediaStream;
     
     Object.defineProperty(navigator, 'mediaDevices', {
       value: mockMediaDevices,

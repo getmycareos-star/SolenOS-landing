@@ -1,32 +1,29 @@
-
-# SolenOS frontend — Vite + React deployment on Netlify
-
+# SolenOS-landing currently builds as a Vite + React single-page application.
 [build]
   command = "npm run build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--legacy-peer-deps --no-audit --no-fund"
 
 [dev]
   command = "npm run dev"
   port = 5173
 
-# Forward API requests to the SolenOS backend.
+# Proxy backend API calls before the SPA fallback. This preserves /api/v1/*.
 [[redirects]]
   from = "/api/*"
   to = "https://solenosbackend-production-8773.up.railway.app/api/:splat"
   status = 200
   force = true
 
-# Allow React Router routes to work on direct navigation and page refresh.
-# Keep this after the API redirect so API requests match first.
+# Client-side routes are handled by React Router.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Security headers.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -34,7 +31,6 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# Cache built assets that have hashed filenames.
 [[headers]]
   for = "/assets/*"
   [headers.values]
