@@ -51,15 +51,19 @@ function parseResolvedItems(raw: unknown): ResolvedItemRecord[] {
   const validSubjects = new Set(["care_recipient", "caregiver"]);
   const validContexts = new Set(["phone_call", "home_repair", "medical", "financial", "errand", "other"]);
   for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error("Persisted resolved-item history contains invalid records.");
+    }
+    const row = item as Record<string, unknown>;
     if (
-      !item ||
-      typeof item !== "object" ||
-      typeof item.id !== "string" ||
-      typeof item.description !== "string" ||
-      !validSubjects.has(item.subject) ||
-      !validContexts.has(item.context_type) ||
-      typeof item.resolved_at !== "string" ||
-      !(item.raw_entry_id === null || typeof item.raw_entry_id === "string")
+      typeof row.id !== "string" ||
+      typeof row.description !== "string" ||
+      typeof row.subject !== "string" ||
+      !validSubjects.has(row.subject) ||
+      typeof row.context_type !== "string" ||
+      !validContexts.has(row.context_type) ||
+      typeof row.resolved_at !== "string" ||
+      !(row.raw_entry_id === null || typeof row.raw_entry_id === "string")
     ) {
       throw new Error("Persisted resolved-item history contains invalid records.");
     }
