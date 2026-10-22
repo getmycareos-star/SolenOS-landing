@@ -105,6 +105,8 @@ export type CapacitySelfSessionResult = {
   factual_reflection: FactualReflection | null;
   caregiver_items: CareItem[];
   care_recipient_items: CareItem[];
+  /** Explicitly distinguishes durable server storage from process-local memory. */
+  persistence_status: "server_persisted" | "local_only";
 };
 
 export const DEFAULT_CAREGIVER_SELF_PROFILE: CaregiverSelfProfileData = {
