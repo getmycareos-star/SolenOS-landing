@@ -15,6 +15,15 @@ describe('Phase 4 production data-integrity guardrails', () => {
       'src/pages/Timeline.tsx',
       'src/pages/Insights.tsx',
       'src/components/PersonSelector.tsx',
+      'src/pages/DailyCare.tsx',
+      'src/pages/StructuredDailyCapture.tsx',
+      'src/pages/Community.tsx',
+      'src/pages/TeamDashboard.tsx',
+      'src/pages/CareCircle.tsx',
+      'src/pages/Appointments.tsx',
+      'src/pages/Companion.tsx',
+      'src/pages/ProfessionalDashboard.tsx',
+      'src/pages/InvestorDashboard.tsx',
     ]
     for (const path of paths) {
       expect(source(path)).not.toContain('demo-person-id')
@@ -49,6 +58,14 @@ describe('Phase 4 production data-integrity guardrails', () => {
     expect(source('src/pages/Evidence.tsx')).toContain('!loading && !listError && items.length === 0')
     expect(source('src/pages/Appointments.tsx')).toContain('appointmentsLoadError ?')
     expect(source('src/pages/TeamDashboard.tsx')).toContain('Moderation queue unavailable. No empty-queue state is inferred.')
+  })
+
+  it('does not ship canned clinical scenarios or synthetic routine metrics', () => {
+    expect(source('src/pages/DailyCare.tsx')).not.toMatch(/Examples?:\s*refused medication|wandering overnight|new confusion/i)
+    expect(source('src/pages/Community.tsx')).not.toMatch(/wandering overnight|evening agitation|medication refusal|const TAG_COLORS:/i)
+    expect(source('src/lib/routine-moments/service.ts')).not.toContain('consistencyScore = 0.5')
+    expect(source('src/lib/routine-moments/builder.ts')).not.toContain("average_time_of_day: '00:00'")
+    expect(source('src/lib/routine-moments/builder.ts')).toContain('consistency_score: null')
   })
 
 })
