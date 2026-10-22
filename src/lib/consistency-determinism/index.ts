@@ -44,7 +44,6 @@ export {
   checkPromptRegression,
   PROMPT_REGRESSION_GOLDENS,
   clearPromptRegressionGoldens,
-  VERIFY_PROMPT_REGRESSION_GOLDENS,
   checkPromptRegressionWithGoldens,
 } from "./prompt-regression";
 export { runDeterminismGate, type DeterminismGateResult } from "./gate";
