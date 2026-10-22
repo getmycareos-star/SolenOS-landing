@@ -505,7 +505,8 @@ export async function loadOpsDashboard(input?: {
 
   // Memory fallback when DB empty
   const mem = memoryEventCounts();
-  const useMemory = !pool || (totalEvents === 0 && mem.length > 0);
+  // In-memory telemetry is a development fallback only. Never substitute it for a connected database that reports zero rows.
+  const useMemory = !pool && process.env.NODE_ENV !== 'production';
 
   let rawEvents: RawEventRow[] = [];
   let rawTotal = 0;
@@ -563,7 +564,7 @@ export async function loadOpsDashboard(input?: {
 
   const lastEvent =
     lastEventRows[0]?.timestamp ??
-    (mem.length > 0 ? mem[mem.length - 1]!.timestamp : null);
+    (!pool && process.env.NODE_ENV !== 'production' && mem.length > 0 ? mem[mem.length - 1]!.timestamp : null);
 
   let ingestion: "healthy" | "warning" | "unknown" = "unknown";
   if (lastEvent) {
@@ -577,8 +578,8 @@ export async function loadOpsDashboard(input?: {
 
   return {
     founder: {
-      users: totalRegistered || totalUsersEvent,
-      active_care_cases: casesActive || careCasesEvent,
+      users: totalRegistered,
+      active_care_cases: casesActive,
       returning_users: returningUsers,
       retention_7d: retention7d,
       care_records_reopened: careRecordsReopened,
@@ -653,7 +654,7 @@ export async function loadOpsDashboard(input?: {
       sample_error_message: e.sample_error_message ?? "",
     })),
     system: {
-      total_events: totalEvents || mem.length,
+      total_events: totalEvents,
       events_24h: events24h,
       last_event_received: lastEvent,
       ingestion_health: ingestion,
@@ -661,7 +662,7 @@ export async function loadOpsDashboard(input?: {
       query_latency_ms: queryLatency,
     },
     raw_events: rawEvents,
-    raw_total: rawTotal || mem.length,
+    raw_total: rawTotal,
   };
 }
 
