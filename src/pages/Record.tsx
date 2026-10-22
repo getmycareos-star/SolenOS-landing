@@ -23,6 +23,7 @@ export default function Record() {
   const [items, setItems] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadVersion, setReloadVersion] = useState(0)
 
   useEffect(() => subscribeToPersonId(setPersonIdState), [])
 
@@ -55,7 +56,7 @@ export default function Record() {
 
     void load()
     return () => { cancelled = true }
-  }, [personId])
+  }, [personId, reloadVersion])
 
   const typeIcon: Record<string, string> = {
     document: '📄',
@@ -84,7 +85,7 @@ export default function Record() {
         <section role="alert" style={{ border: '1px solid var(--error)', borderRadius: 10, padding: 16, color: 'var(--error)' }}>
           <strong>Living Care Record could not be confirmed.</strong>
           <p style={{ marginTop: 8 }}>{loadError}</p>
-          <button type="button" onClick={() => setPersonIdState(getPersonId())} style={{ marginTop: 10 }}>Retry</button>
+          <button type="button" onClick={() => setReloadVersion(version => version + 1)} style={{ marginTop: 10 }}>Retry</button>
         </section>
       )}
 
