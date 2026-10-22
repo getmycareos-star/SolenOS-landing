@@ -7,10 +7,30 @@ interface CareCaptureProps {
   onCapture?: (text: string) => void
 }
 
+interface QwenCandidate {
+  subject: string
+  observation: string
+  time_expression: string | null
+  certainty: 'reported' | 'uncertain' | 'unclear'
+  source_quote: string
+  evidence_ids: string[]
+  review_status: string
+}
+
+interface QwenCandidateBundle {
+  observations: QwenCandidate[]
+  open_questions: string[]
+  possible_safety_flags: string[]
+  rejected_unverifiable_candidates: number
+}
+
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
+  const [analysisWarning, setAnalysisWarning] = useState<string | null>(null)
+  const [qwenStatus, setQwenStatus] = useState<string | null>(null)
+  const [qwenCandidates, setQwenCandidates] = useState<QwenCandidateBundle | null>(null)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -31,6 +51,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // The backend currently returns a saved situation, not community matches.
       // Do not call the nonexistent /community/experience endpoint or invent matches.
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
+      setAnalysisWarning(data?.analysis_status === 'complete' ? null : (data?.analysis_error || 'The report was saved, but deterministic analysis could not be confirmed.'))
+      setQwenStatus(typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_configured')
+      setQwenCandidates(data?.qwen_candidates && typeof data.qwen_candidates === 'object' ? data.qwen_candidates as QwenCandidateBundle : null)
       setIdentityError(null)
       setText('')
       onCapture?.(variables.rawInput)
@@ -57,6 +80,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }
     setIdentityError(null)
     setSavedMessage(null)
+    setAnalysisWarning(null)
+    setQwenStatus(null)
+    setQwenCandidates(null)
 
     try {
       await submitSituation({
@@ -121,6 +147,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         onChange={(e) => {
           setText(e.target.value)
           setSavedMessage(null)
+          setAnalysisWarning(null)
+          setQwenStatus(null)
+          setQwenCandidates(null)
           setIdentityError(null)
         }}
         placeholder="Describe what you observed, when it happened, and what remains uncertain."
@@ -161,6 +190,47 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       {savedMessage && (
         <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
           {savedMessage}
+        </p>
+      )}
+
+      {analysisWarning && (
+        <p role="status" style={{ marginTop: '10px', fontSize: '12px', color: 'var(--warning)' }}>
+          {analysisWarning}
+        </p>
+      )}
+
+      {qwenStatus === 'pending_review' && qwenCandidates && (
+        <section aria-label="Qwen extraction candidates" style={{ marginTop: '14px', padding: '12px', border: '1px solid var(--border)', borderRadius: '10px' }}>
+          <p style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Qwen draft extraction — review required</p>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+            These are model-generated candidates, not confirmed facts. They have not been added as new Living Care Record facts.
+          </p>
+          {qwenCandidates.observations.length === 0 ? (
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No source-verified candidate observations were returned.</p>
+          ) : qwenCandidates.observations.map((candidate, index) => (
+            <div key={index} style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '8px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 600 }}>{candidate.subject || 'Observation'} · {candidate.certainty}</p>
+              <p style={{ fontSize: '12px', marginTop: '3px' }}>{candidate.observation}</p>
+              {candidate.time_expression && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '3px' }}>Time as reported: {candidate.time_expression}</p>}
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Source: “{candidate.source_quote}”</p>
+              {candidate.evidence_ids?.length > 0 && <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '3px' }}>Evidence: {candidate.evidence_ids.join(', ')}</p>}
+            </div>
+          ))}
+          {qwenCandidates.open_questions?.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 600 }}>Questions to clarify</p>
+              <ul>{qwenCandidates.open_questions.map((question, index) => <li key={index} style={{ fontSize: '12px', marginTop: '3px' }}>{question}</li>)}</ul>
+            </div>
+          )}
+        </section>
+      )}
+
+      {qwenStatus && qwenStatus !== 'pending_review' && (
+        <p role="status" style={{ marginTop: '10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+          {qwenStatus === 'not_configured' ? 'Qwen extraction is not configured on the backend. The original report is saved; no AI extraction was produced.' :
+            qwenStatus === 'failed' ? 'Qwen extraction failed. The original report remains saved; no AI candidates were accepted.' :
+            qwenStatus === 'no_source_evidence' ? 'Qwen extraction was skipped because text-bearing source evidence was unavailable.' :
+            `Qwen extraction status: ${qwenStatus}.`}
         </p>
       )}
 
