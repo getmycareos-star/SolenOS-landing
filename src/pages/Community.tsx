@@ -40,7 +40,12 @@ interface ExperienceMatch {
 }
 
 interface ExperienceResult {
+  summary: string | null
   matches: ExperienceMatch[]
+  post_ids: string[]
+  provider_status: 'connected' | 'not_configured' | 'error' | 'not_needed'
+  ai_generated: boolean
+  notice: string
 }
 
 const STAGE_LABELS: Record<CareStage, string> = {
@@ -129,6 +134,9 @@ export default function Community() {
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set())
   const [wisdomQuery, setWisdomQuery] = useState('')
   const [wisdomMatches, setWisdomMatches] = useState<ExperienceMatch[]>([])
+  const [wisdomSummary, setWisdomSummary] = useState<string | null>(null)
+  const [wisdomProviderStatus, setWisdomProviderStatus] = useState<string | null>(null)
+  const [wisdomNotice, setWisdomNotice] = useState<string | null>(null)
   const [loadingWisdom, setLoadingWisdom] = useState(false)
   const [wisdomError, setWisdomError] = useState<string | null>(null)
 
@@ -206,13 +214,21 @@ export default function Community() {
     setLoadingWisdom(true)
     setWisdomError(null)
     setWisdomMatches([])
+    setWisdomSummary(null)
+    setWisdomProviderStatus(null)
+    setWisdomNotice(null)
     try {
-      const data = await postJSON('/community/experience', { observation: wisdomQuery.trim() }) as ExperienceResult
-      if (!Array.isArray(data?.matches)) throw new Error('Experience response was incomplete.')
+      const data = await postJSON('/community/experience/summary', { observation: wisdomQuery.trim() }) as ExperienceResult
+      if (!Array.isArray(data?.matches) || typeof data?.provider_status !== 'string') {
+        throw new Error('Community Qwen response was incomplete.')
+      }
       setWisdomMatches(data.matches.slice(0, 4))
+      setWisdomSummary(data.ai_generated && typeof data.summary === 'string' ? data.summary : null)
+      setWisdomProviderStatus(data.provider_status)
+      setWisdomNotice(typeof data.notice === 'string' ? data.notice : null)
     } catch {
       setWisdomMatches([])
-      setWisdomError('Similar experiences could not be loaded. No sample stories are shown.')
+      setWisdomError('Community Qwen assistance could not be confirmed. No generated summary or sample stories are shown.')
     } finally {
       setLoadingWisdom(false)
     }
@@ -323,8 +339,20 @@ export default function Community() {
         </div>
 
         {wisdomError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px' }}>{wisdomError}</p>}
+        {!loadingWisdom && !wisdomError && wisdomProviderStatus && !wisdomSummary && wisdomProviderStatus !== 'not_needed' && (
+          <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+            Qwen summary unavailable ({wisdomProviderStatus}). Showing only published peer posts below; no AI summary was substituted.
+          </p>
+        )}
+        {wisdomSummary && (
+          <div style={{ padding: '12px 14px', marginBottom: '10px', background: 'var(--accent-soft)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Qwen summary of published peer experiences</div>
+            <p style={{ fontSize: '13px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{wisdomSummary}</p>
+            {wisdomNotice && <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '8px' }}>{wisdomNotice}</p>}
+          </div>
+        )}
         {!loadingWisdom && !wisdomError && wisdomMatches.length === 0 && wisdomQuery.trim() && (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>No matching community experiences were returned.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>No matching published community experiences were returned.</p>
         )}
         {wisdomMatches.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
