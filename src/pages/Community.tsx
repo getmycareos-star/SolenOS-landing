@@ -177,11 +177,16 @@ export default function Community() {
         caregiver_id: personId,
         reaction_type: reactionType,
       })
+    } catch {
+      setActionError('Your reaction could not be confirmed by the server.')
+      return
+    }
+    try {
       const refreshed = await getJSON(`/community?caregiver_id=${encodeURIComponent(personId)}`) as CommunityPostSummary
       if (!Array.isArray(refreshed?.posts)) throw new Error('Community response was incomplete.')
       setPosts(refreshed.posts)
     } catch {
-      setActionError('Your reaction could not be saved. The displayed counts have not been changed.')
+      setActionError('The reaction request succeeded, but updated community counts could not be loaded. Refresh before relying on the displayed counts.')
     }
   }
 
@@ -229,13 +234,23 @@ export default function Community() {
         content: composerText.trim(),
         visibility: 'public',
       })
+    } catch {
+      setActionError('The post could not be confirmed by the server. Your text has been kept so you can retry.')
+      setSubmitting(false)
+      return
+    }
+
+    // The write is confirmed. Clear the submitted text before refreshing the list
+    // so a refresh failure cannot imply that the original post failed.
+    setComposerText('')
+    setComposerOpen(false)
+    try {
       const response = await getJSON(`/community?caregiver_id=${encodeURIComponent(personId)}`) as CommunityPostSummary
       if (!Array.isArray(response?.posts)) throw new Error('Community response was incomplete.')
       setPosts(response.posts)
-      setComposerText('')
-      setComposerOpen(false)
+      setActionError(null)
     } catch {
-      setActionError('The post could not be confirmed. Your text has been kept so you can retry.')
+      setActionError('Your post was submitted, but the community list could not be refreshed. Reload to see the saved post.')
     } finally {
       setSubmitting(false)
     }
