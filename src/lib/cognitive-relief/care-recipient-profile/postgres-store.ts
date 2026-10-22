@@ -9,24 +9,35 @@ import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfi
 import { createProfileId } from "./store";
 
 function parseProfileData(raw: unknown): CareRecipientProfileData {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Persisted care-recipient profile is invalid; refusing to replace it with an empty profile.");
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Persisted care-recipient profile is invalid; refusing to replace it with an empty profile.");
+  }
   const obj = raw as Record<string, unknown>;
+  const arrayFields = [
+    "known_conditions",
+    "current_medications",
+    "key_dates",
+    "care_team",
+    "tagged_event_log",
+    "location_index",
+  ];
+  if (typeof obj.care_recipient_basics !== "string" || arrayFields.some((field) => !Array.isArray(obj[field]))) {
+    throw new Error("Persisted care-recipient profile is incomplete; refusing to silently substitute empty fields.");
+  }
+  if (
+    (obj.known_conditions as unknown[]).some((value) => typeof value !== "string") ||
+    (obj.current_medications as unknown[]).some((value) => typeof value !== "string")
+  ) {
+    throw new Error("Persisted care-recipient profile contains invalid field values.");
+  }
   return {
-    care_recipient_basics: typeof obj.care_recipient_basics === "string" ? obj.care_recipient_basics : "",
-    known_conditions: Array.isArray(obj.known_conditions)
-      ? obj.known_conditions.filter((x): x is string => typeof x === "string")
-      : [],
-    current_medications: Array.isArray(obj.current_medications)
-      ? obj.current_medications.filter((x): x is string => typeof x === "string")
-      : [],
-    key_dates: Array.isArray(obj.key_dates) ? (obj.key_dates as CareRecipientProfileData["key_dates"]) : [],
-    care_team: Array.isArray(obj.care_team) ? (obj.care_team as CareRecipientProfileData["care_team"]) : [],
-    tagged_event_log: Array.isArray(obj.tagged_event_log)
-      ? (obj.tagged_event_log as CareRecipientProfileData["tagged_event_log"])
-      : [],
-    location_index: Array.isArray(obj.location_index)
-      ? (obj.location_index as CareRecipientProfileData["location_index"])
-      : [],
+    care_recipient_basics: obj.care_recipient_basics,
+    known_conditions: obj.known_conditions as string[],
+    current_medications: obj.current_medications as string[],
+    key_dates: obj.key_dates as CareRecipientProfileData["key_dates"],
+    care_team: obj.care_team as CareRecipientProfileData["care_team"],
+    tagged_event_log: obj.tagged_event_log as CareRecipientProfileData["tagged_event_log"],
+    location_index: obj.location_index as CareRecipientProfileData["location_index"],
   };
 }
 
