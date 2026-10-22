@@ -34,37 +34,14 @@ interface MetricsData {
   [key: string]: any
 }
 
-const DEMO_RISK: CaregiverAtRisk[] = [
-  { caregiver_id: 'caregiver-1', label: 'M. Johnson', risk_level: 'high', distress_signals: 3, last_active: '2h ago' },
-  { caregiver_id: 'caregiver-2', label: 'R. Chen', risk_level: 'moderate', distress_signals: 2, last_active: '1d ago' },
-  { caregiver_id: 'caregiver-3', label: 'A. Rodriguez', risk_level: 'mild', distress_signals: 1, last_active: '3d ago' },
-]
-
-const DEMO_REVIEW: PostNeedsReview[] = [
-  {
-    id: 'post-5',
-    content: 'Has anyone tried giving their loved one CBD oil for anxiety? My doctor said it might help but I want to hear real experiences.',
-    author_label: 'Anonymous caregiver',
-    reason: 'medication-discussion',
-    tags: ['anxiety', 'medication'],
-  },
-]
-
-const DEMO_REPORT: StateReport = {
-  total_caregivers: 142,
-  avg_helpfulness: 4.2,
-  top_concerns: ['sleep', 'medication-management', 'hallucinations'],
-  trending_tags: [
-    { tag: 'mealtime-challenges', count: 42, growth: '+12%' },
-    { tag: 'wandering', count: 31, growth: '+8%' },
-    { tag: 'communication', count: 28, growth: '+5%' },
-  ],
-}
-
 export default function TeamDashboard() {
-  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>(DEMO_RISK)
-  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>(DEMO_REVIEW)
-  const [report, setReport] = useState<StateReport>(DEMO_REPORT)
+  const [riskCaregivers, setRiskCaregivers] = useState<CaregiverAtRisk[]>([])
+  const [postsToReview, setPostsToReview] = useState<PostNeedsReview[]>([])
+  const [report, setReport] = useState<StateReport | null>(null)
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
+  const [moderationError, setModerationError] = useState<string | null>(null)
+  const [metricsError, setMetricsError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'review' | 'report' | 'monitoring'>('overview')
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null)
   const [metricsLoading, setMetricsLoading] = useState<boolean>(true)
@@ -81,33 +58,47 @@ export default function TeamDashboard() {
   }, [activeTab])
 
   const fetchDashboard = async () => {
+    setDashboardError(null)
     try {
       const data = await getJSON('/team/dashboard') as any
-      if (data?.caregivers_at_risk) setRiskCaregivers(data.caregivers_at_risk)
-      if (data?.posts_to_review) setPostsToReview(data.posts_to_review)
+      if (!Array.isArray(data?.caregivers_at_risk) || !Array.isArray(data?.posts_to_review)) {
+        throw new Error('Dashboard response is incomplete.')
+      }
+      setRiskCaregivers(data.caregivers_at_risk)
+      setPostsToReview(data.posts_to_review)
     } catch (error) {
-      console.error('Failed to fetch dashboard:', error)
+      setRiskCaregivers([])
+      setPostsToReview([])
+      setDashboardError('Team dashboard data could not be loaded. No demo records are shown.')
     }
   }
 
   const fetchReport = async () => {
+    setReportError(null)
     try {
       const data = await getJSON('/team/state-report') as any
-      if (data) {
-        setReport({
-          total_caregivers: data.total_caregivers || DEMO_REPORT.total_caregivers,
-          avg_helpfulness: data.avg_helpfulness || DEMO_REPORT.avg_helpfulness,
-          top_concerns: data.top_concerns || DEMO_REPORT.top_concerns,
-          trending_tags: data.trending_tags || DEMO_REPORT.trending_tags,
-        })
-      }
+      if (
+        !data ||
+        typeof data.total_caregivers !== 'number' ||
+        typeof data.avg_helpfulness !== 'number' ||
+        !Array.isArray(data.top_concerns) ||
+        !Array.isArray(data.trending_tags)
+      ) throw new Error('Report response is incomplete.')
+      setReport({
+        total_caregivers: data.total_caregivers,
+        avg_helpfulness: data.avg_helpfulness,
+        top_concerns: data.top_concerns,
+        trending_tags: data.trending_tags,
+      })
     } catch (error) {
-      console.error('Failed to fetch report:', error)
+      setReport(null)
+      setReportError('Report data could not be loaded. Metrics are unavailable until a valid server response is received.')
     }
   }
 
   const fetchMetrics = async () => {
     setMetricsLoading(true)
+    setMetricsError(null)
     try {
       const data = await getJSON('/metrics') as any
       // The /metrics endpoint returns Prometheus format text, not JSON.
@@ -121,19 +112,17 @@ export default function TeamDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch metrics:', error)
-      setMetricsData({ error: 'Failed to load metrics' } as MetricsData)
+      setMetricsData(null)
+      setMetricsError('System metrics could not be loaded.')
     } finally {
       setMetricsLoading(false)
     }
   }
 
-  const approvePost = async (postId: string) => {
-    try {
-      await postJSON(`/community/${postId}/moderate`, { status: 'approved', caregiver_id: 'team-moderator' })
-      setPostsToReview(prev => prev.filter(p => p.id !== postId))
-    } catch (error) {
-      console.error('Failed to approve post:', error)
-    }
+  const approvePost = async (_postId: string) => {
+    // No verified team session exists in the current frontend API contract.
+    // Never impersonate a moderator with a hard-coded client-side identity.
+    setModerationError('Moderation is disabled because a verified team session is not available.')
   }
 
   const RiskBadge = ({ level }: { level: string }) => {
@@ -218,12 +207,15 @@ export default function TeamDashboard() {
         </div>
       </div>
 
-      {activeTab === 'overview' && (
+      {activeTab === 'overview' && dashboardError && <p role="alert" style={{ color: 'var(--error)' }}>{dashboardError}</p>}
+      {activeTab === 'overview' && !dashboardError && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Caregivers Needing Attention</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {riskCaregivers.map((c) => (
+              {riskCaregivers.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No caregiver risk records were returned by the server.</p>
+              ) : riskCaregivers.map((c) => (
                 <div key={c.caregiver_id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '12px 16px', borderRadius: '8px', background: 'var(--bg)',
@@ -244,7 +236,7 @@ export default function TeamDashboard() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Trending Topics</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {report.trending_tags.map((t) => (
+              {!report ? <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{reportError || 'Report data is unavailable.'}</p> : report.trending_tags.length === 0 ? <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No trending-topic data was returned.</p> : report.trending_tags.map((t) => (
                 <div key={t.tag} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '12px', minWidth: '160px', color: 'var(--text)' }}>{t.tag}</span>
                   <div style={{ flex: 1, height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -264,8 +256,10 @@ export default function TeamDashboard() {
         </div>
       )}
 
-      {activeTab === 'review' && (
+      {activeTab === 'review' && dashboardError && <p role="alert" style={{ color: 'var(--error)' }}>{dashboardError}</p>}
+      {activeTab === 'review' && !dashboardError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {moderationError && <p role="alert" style={{ color: 'var(--error)' }}>{moderationError}</p>}
           {postsToReview.length === 0 ? (
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No posts need moderation right now.</p>
           ) : (
@@ -354,6 +348,8 @@ export default function TeamDashboard() {
                 <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
                   Loading metrics...
                 </div>
+              ) : metricsError ? (
+                <p role="alert" style={{ color: 'var(--error)' }}>{metricsError}</p>
               ) : metricsData ? (
                 <div>
                   {/* If we have raw Prometheus text, display it in a pre block */}
