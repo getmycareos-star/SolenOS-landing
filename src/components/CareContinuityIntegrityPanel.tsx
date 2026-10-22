@@ -44,6 +44,15 @@ type Revision = {
   changed_at: string
   evidence_ids: string[]
 }
+type Contradiction = {
+  id: string
+  field: string
+  description: string
+  resolution_status: string
+  resolution_notes?: string | null
+  evidence_ids: string[]
+  source_assertion_ids?: string[] | null
+}
 type Outcome = {
   id: string
   action_id: string
@@ -57,9 +66,10 @@ type PanelData = {
   questions: Question[]
   revisions: Revision[]
   outcomes: Outcome[]
+  contradictions: Contradiction[]
 }
 
-const emptyData: PanelData = { assertions: [], freshness: [], questions: [], revisions: [], outcomes: [] }
+const emptyData: PanelData = { assertions: [], freshness: [], questions: [], revisions: [], outcomes: [], contradictions: [] }
 const cardStyle: CSSProperties = {
   border: '1px solid var(--border)', borderRadius: 10, padding: 14,
   background: 'var(--surface)', marginTop: 12,
@@ -83,6 +93,9 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
   const [value, setValue] = useState('')
   const [source, setSource] = useState('Caregiver report')
   const [sourceText, setSourceText] = useState('')
+  const [subjectType, setSubjectType] = useState('care_record')
+  const [subjectId, setSubjectId] = useState(personId)
+  const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({})
   const [kind, setKind] = useState<'current_state' | 'time_bound_observation'>('current_state')
   const [reviewDays, setReviewDays] = useState('')
   const [corrections, setCorrections] = useState<Record<string, string>>({})
@@ -96,17 +109,18 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
     setLoading(true)
     setError('')
     try {
-      const [assertions, freshness, revisions, outcomes, questions] = await Promise.all([
+      const [assertions, freshness, revisions, outcomes, questions, contradictions] = await Promise.all([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(personId)}`),
         getJSON(`/care-continuity/freshness/${encodeURIComponent(personId)}`),
         getJSON(`/care-continuity/revisions/${encodeURIComponent(personId)}`),
         getJSON(`/care-continuity/outcomes/${encodeURIComponent(personId)}`),
         postJSON(`/care-continuity/next-questions/${encodeURIComponent(personId)}`, {}),
+        getJSON(`/care-continuity/contradictions/${encodeURIComponent(personId)}`),
       ])
-      if (![assertions, freshness, revisions, outcomes, questions].every(Array.isArray)) {
+      if (![assertions, freshness, revisions, outcomes, questions, contradictions].every(Array.isArray)) {
         throw new Error('The care-continuity API returned an incomplete response.')
       }
-      setData({ assertions, freshness, revisions, outcomes, questions })
+      setData({ assertions, freshness, revisions, outcomes, questions, contradictions })
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Care continuity could not be loaded.')
     } finally {
@@ -114,7 +128,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
     }
   }, [personId])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { setSubjectId(personId); void load() }, [load, personId])
 
   const freshnessById = useMemo(
     () => new Map(data.freshness.map((item) => [item.assertion_id, item])),
@@ -123,7 +137,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
 
   async function submitAssertion(event: FormEvent) {
     event.preventDefault()
-    if (!field.trim() || !value.trim() || !source.trim() || !reviewDays) {
+    if (!field.trim() || !value.trim() || !source.trim() || !subjectType.trim() || !(subjectId.trim() || personId) || !reviewDays) {
       setError('Field, reported value, source, and review window are required.')
       return
     }
@@ -133,8 +147,8 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
     try {
       await postJSON('/care-continuity/assertions', {
         person_id: personId,
-        subject_type: 'care_record',
-        subject_id: personId,
+        subject_type: subjectType.trim(),
+        subject_id: subjectId.trim() || personId,
         field: field.trim(),
         assertion_kind: kind,
         asserted_value: value.trim(),
@@ -154,6 +168,29 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
       setError(reason instanceof Error ? reason.message : 'The report could not be saved.')
     } finally {
       setSaving(false)
+    }
+  }
+
+
+  async function resolveContradiction(item: Contradiction, status: 'resolved' | 'qualified' | 'superseded') {
+    const notes = (resolutionNotes[item.id] || '').trim()
+    if (notes.length < 3) {
+      setError('Add a short note explaining how this conflict was reviewed before resolving it.')
+      return
+    }
+    setError('')
+    setNotice('')
+    try {
+      await patchJSON(`/care-continuity/contradictions/${encodeURIComponent(item.id)}/resolution`, {
+        person_id: personId,
+        resolution_status: status,
+        resolution_notes: notes,
+        resolved_by_caregiver_id: getCaregiverId() || undefined,
+      })
+      setNotice('Contradiction review saved. The original reports remain preserved.')
+      await load()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The contradiction review could not be saved.')
     }
   }
 
@@ -224,6 +261,12 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
           Use current state for information intended to describe what is true now (for example, a reported medication dose). Use time-bound observation for something observed at a particular time (for example, mood or appetite). Review window means “ask again after this many days,” not a clinical validity rule.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+          <label style={{ fontSize: 12 }}>Subject type
+            <input style={fieldStyle} value={subjectType} onChange={(e) => setSubjectType(e.target.value)} placeholder="e.g. medication" required />
+          </label>
+          <label style={{ fontSize: 12 }}>Subject identifier
+            <input style={fieldStyle} value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="Use a stable identifier" required />
+          </label>
           <label style={{ fontSize: 12 }}>Field
             <input style={fieldStyle} value={field} onChange={(e) => setField(e.target.value)} placeholder="e.g. medication dose" required />
           </label>
@@ -269,6 +312,34 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         })}
       </div>
 
+
+      <div style={cardStyle}>
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>Competing reports</h3>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>SolenOS preserves competing reports and does not pick a winner. Resolution requires a human explanation; resolving the conflict does not delete the source reports.</p>
+        {data.contradictions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No contradiction records returned.</p> : data.contradictions.map((item) =>
+          <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+              <strong>{item.field}</strong><span style={{ fontSize: 12 }}>{item.resolution_status.replace(/_/g, ' ')}</span>
+            </div>
+            <p style={{ fontSize: 13 }}>{item.description}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+              Source assertion IDs: {(item.source_assertion_ids || []).join(', ') || 'Not linked'} · Evidence IDs: {(item.evidence_ids || []).join(', ') || 'None attached'}
+            </p>
+            {item.resolution_notes && <p style={{ fontSize: 12 }}>Review note: {item.resolution_notes}</p>}
+            {item.resolution_status === 'unresolved' && <>
+              <label style={{ display: 'block', fontSize: 12 }}>How was this conflict reviewed?
+                <textarea style={{ ...fieldStyle, minHeight: 54 }} value={resolutionNotes[item.id] || ''} onChange={(e) => setResolutionNotes((current) => ({ ...current, [item.id]: e.target.value }))} />
+              </label>
+              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
+                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'resolved')}>Resolve with note</button>
+                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'qualified')}>Qualify / retain uncertainty</button>
+                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'superseded')}>Superseded by new evidence</button>
+              </div>
+            </>}
+          </article>
+        )}
+      </div>
+
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Next questions</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Questions are linked to recorded uncertainty, unresolved reports, or missing information. They do not diagnose or resolve a conflict.</p>
@@ -312,7 +383,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Recorded outcomes and corrections</h3>
         {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No outcomes recorded yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
-            <strong>{item.outcome_status .replace(/_/g, ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
+            <strong>{item.outcome_status.replace(/_/g, ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
             {item.notes && <p>{item.notes}</p>}
           </div>
         )}
