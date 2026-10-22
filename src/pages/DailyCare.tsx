@@ -18,14 +18,14 @@ export default function DailyCare() {
 
    const [form, setForm] = useState({
      mood: '',
-     mood_scale: 3,
-     agitation_level: 'None',
-     agitation_scale: 1,
+     mood_scale: 0,
+      agitation_level: '',
+      agitation_scale: 0,
      vitals: {} as Record<string, string>,
      behavior_notes: '',
      sleep_notes: '',
      eating_notes: '',
-     wellbeing_stress: 3,
+
      wellbeing_notes: '',
      general_notes: '',
      location: null as { latitude: number; longitude: number; accuracy: number; timestamp: number } | null,
@@ -117,14 +117,14 @@ export default function DailyCare() {
          person_id: personId,
          caregiver_id: caregiverId,
          mood: form.mood || undefined,
-         mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
-         agitation_level: form.agitation_level,
-         agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
+         mood_scale: form.mood ? form.mood_scale : undefined,
+         agitation_level: form.agitation_level || undefined,
+         agitation_scale: form.agitation_level ? form.agitation_scale : undefined,
          vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
          behavior_notes: form.behavior_notes || undefined,
          sleep_notes: form.sleep_notes || undefined,
          eating_notes: form.eating_notes || undefined,
-         wellbeing_stress: form.wellbeing_stress !== 3 ? form.wellbeing_stress : undefined,
+
          wellbeing_notes: form.wellbeing_notes || undefined,
          general_notes: form.general_notes || undefined,
          location: form.location ? {
