@@ -85,7 +85,7 @@ export default function Login() {
         throw new Error('The authentication response was incomplete.')
       }
       clearCareContext()
-      setAccessToken(session.access_token)
+      setAccessToken(session.access_token, session.expires_at)
       setAccount(session.account)
       const availableContexts = await getJSON('/auth/care-contexts') as CareContext[]
       setContexts(availableContexts)
