@@ -42,7 +42,6 @@ import { applyRealCaregiverTestComposeGate } from "../real-caregiver-test";
 import { ensureContributorCareReality } from "../multi-caregiver-context-model";
 import { getCareContextRoot, appendEventsToContext } from "../situation-entry/context-store";
 import type {
-  ActiveCareSituation,
   ActiveSituationTurn,
   CareRealityState,
   ContinuityDecision,
@@ -196,7 +195,7 @@ export async function runIntelligencePipeline(
   const stages: IntelligenceResult["stages"] = [];
 
   // Stage 0: Normalize input
-  const caregiverId = rawInput.caregiver_id?.trim() || rawInput.contributor_id?.trim();
+  const caregiverId = rawInput.caregiver_id?.trim();
   if (!caregiverId || caregiverId === "default" || caregiverId === "default_caregiver") {
     throw new Error("Authenticated caregiver identity is required; no default identity is permitted.");
   }
@@ -211,7 +210,7 @@ export async function runIntelligencePipeline(
   };
 
   // Stage 1: Memory Retrieval
-  const memory = retrieveMemory(input);
+  const memory = await retrieveMemory(input);
   stages.push({
     name: "memory_retrieval",
     durationMs: Date.now() - startTime,
