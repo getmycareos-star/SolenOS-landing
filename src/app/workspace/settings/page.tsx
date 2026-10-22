@@ -156,7 +156,7 @@ function ProfileCard() {
           className="mobile-settings-input"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Mom, Dad, Mary…"
+          placeholder="Enter care recipient name"
         />
       </div>
       <div className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.4rem" }}>
@@ -168,7 +168,7 @@ function ProfileCard() {
           className="mobile-settings-input"
           value={relationship}
           onChange={(e) => setRelationship(e.target.value)}
-          placeholder="Daughter, son, partner…"
+          placeholder="Enter relationship"
         />
       </div>
       <div className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.4rem" }}>
@@ -180,7 +180,7 @@ function ProfileCard() {
           className="mobile-settings-input"
           value={condition}
           onChange={(e) => setCondition(e.target.value)}
-          placeholder="e.g. early-stage dementia"
+          placeholder="Enter care context if known"
         />
       </div>
       <div className="mobile-settings-actions">
