@@ -34,11 +34,13 @@ function parseProfile(raw: unknown): CaregiverSelfProfileData {
 }
 
 export type CaregiverSelfProfilePersistenceStatus = "server_persisted" | "local_only";
+export type CaregiverSelfProfileStorageMode = "database_configured" | "local_only";
 
-export function getCaregiverSelfProfilePersistenceStatus(
+export function getCaregiverSelfProfileStorageMode(
   databaseUrl: string | undefined = process.env.DATABASE_URL,
-): CaregiverSelfProfilePersistenceStatus {
-  return databaseUrl?.trim() ? "server_persisted" : "local_only";
+): CaregiverSelfProfileStorageMode {
+  // Configuration alone is not proof that a write reached the database.
+  return databaseUrl?.trim() ? "database_configured" : "local_only";
 }
 
 let poolPromise: Promise<Pool> | null = null;
