@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface ContinuityInsight {
   id: string
@@ -26,27 +26,32 @@ export default function ContinuityInsights() {
   const [insights, setInsights] = useState<ContinuityInsight[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const personId = getPersonId()
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      try {
-        const personId = getPersonId()
-        if (personId === null) {
-          // Handle missing person ID - show empty state or redirect to onboarding
-          setInsights([])
-          return
-        }
-        const data = await getJSON('/continuity/' + personId + '/insights', personId)
-        setInsights(data)
-      } catch (e) {
-        console.error(e)
-        setError('Failed to load continuity insights')
-      } finally {
+      setLoading(true)
+      setError(null)
+      if (!personId) {
+        setError('Select an authorized care record before viewing continuity insights.')
         setLoading(false)
+        return
+      }
+      try {
+        const data = await getJSON(`/continuity/${encodeURIComponent(personId)}/insights`)
+        if (!Array.isArray(data)) throw new Error('The continuity service returned an invalid response.')
+        if (!cancelled) setInsights(data as ContinuityInsight[])
+      } catch (e) {
+        console.error('Failed to load continuity insights:', e)
+        if (!cancelled) setError('Continuity insights could not be loaded. This does not mean no insights exist.')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    load()
-  }, [])
+    void load()
+    return () => { cancelled = true }
+  }, [personId])
 
   const relationshipTypeLabels: Record<string, string> = {
     observed: 'Observed',
@@ -77,7 +82,7 @@ export default function ContinuityInsights() {
 
       {error && <p style={{ color: '#dc2626', fontSize: '13px' }}>{error}</p>}
 
-      {!loading && insights.length === 0 && (
+      {!loading && !error && insights.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
           No continuity insights yet. Record some events to see connections emerge.
         </p>
