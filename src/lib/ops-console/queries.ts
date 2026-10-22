@@ -503,7 +503,7 @@ export async function loadOpsDashboard(input?: {
     `SELECT timestamp::text AS timestamp FROM solen_events ORDER BY timestamp DESC LIMIT 1`,
   );
 
-  // Memory fallback when DB empty
+  // Read in-memory events only for the explicit non-production/no-pool fallback below.
   const mem = memoryEventCounts();
   // In-memory telemetry is a development fallback only. Never substitute it for a connected database that reports zero rows.
   const useMemory = !pool && process.env.NODE_ENV !== 'production';
