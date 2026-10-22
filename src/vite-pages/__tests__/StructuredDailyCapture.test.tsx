@@ -14,8 +14,8 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
-    localStorage.setItem('solenos_person_id', 'test-person-id');
-    localStorage.setItem('solenos_caregiver_id', 'test-caregiver-id');
+    localStorage.setItem('solenos_person_id', '11111111-1111-4111-8111-111111111111');
+    localStorage.setItem('solenos_caregiver_id', '22222222-2222-4222-8222-222222222222');
   });
 
   it('should compress medication image before upload when using gallery upload', async () => {
