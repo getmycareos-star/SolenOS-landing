@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { ensureAnonymousSession } from './api/client'
+import RestrictedRolePage from './components/RestrictedRolePage'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
@@ -12,20 +13,6 @@ import Record from './pages/Record'
 import Memory from './pages/Memory'
 import CareCircle from './pages/CareCircle'
 import Login from './pages/Login'
-
-function RestrictedRolePage({ role }: { role: string }) {
-  return (
-    <main style={{ padding: 24, maxWidth: 600, margin: '0 auto' }}>
-      <h1>{role} access is not available yet</h1>
-      <p role="alert">
-        SolenOS has not verified a server-issued identity and permissions for this role.
-        This route is blocked rather than showing an unverified or demo dashboard.
-      </p>
-      <p>Caregiver access remains available through the private anonymous care session.</p>
-      <a href="/" style={{ color: 'var(--trust)' }}>Return to caregiver workspace</a>
-    </main>
-  )
-}
 
 function AnonymousSessionGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
