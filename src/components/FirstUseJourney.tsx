@@ -35,7 +35,6 @@ const secondaryAreas = [
   { to: '/timeline', title: 'Timeline', detail: 'Review recorded events in time order.' },
   { to: '/insights', title: 'Insights', detail: 'Review available derived observations with appropriate caution.' },
   { to: '/memory', title: 'Care memory', detail: 'Review available remembered care context.' },
-  { to: '/care-circle', title: 'Care circle', detail: 'Explore existing care coordination features.' },
 ];
 
 export default function FirstUseJourney() {
