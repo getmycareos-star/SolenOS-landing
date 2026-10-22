@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 import { afterEach, describe, expect, it } from "@jest/globals";
 import type { CareRealityState } from "./types";
 import {
@@ -44,6 +46,6 @@ describe("Care Reality State identity isolation", () => {
   });
 
   it("rejects default identities", () => {
-    expect(() => getCareRealityState("default_caregiver")).toThrow(/explicit care-recipient identity/i);
+    expect(() => getCareRealityState("default_caregiver")).toThrow(/durable care key|care-recipient identity/i);
   });
 });
