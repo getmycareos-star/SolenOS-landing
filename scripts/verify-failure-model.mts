@@ -11,7 +11,7 @@ import {
 import {
   HIRE_HELP_QUESTION,
   SAMPLE_CARE_CONTEXT,
-} from "../src/data/sample-care-context";
+} from "./fixtures/sample-care-context";
 
 console.log("=== PRODUCT INVARIANT ===\n");
 console.log(PRODUCT_INVARIANT);
