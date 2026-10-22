@@ -20,9 +20,7 @@ interface CommunityPost {
   tags: string[]
   created_at: string
   updated_at: string | null
-  provenance_source: string
   reaction_counts: Record<ReactionType, number>
-  comment_count: number
   user_reaction: ReactionType | null
 }
 
@@ -59,40 +57,52 @@ interface ExperienceResult {
 }
 
 function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
+  if (!post || typeof post.id !== 'string' || !post.id ||
+      typeof post.content !== 'string' || !post.content.trim() ||
+      typeof post.author_label !== 'string' || !post.author_label.trim() ||
+      typeof post.created_at !== 'string' || !Number.isFinite(new Date(post.created_at).getTime())) {
+    throw new Error('The server returned a Community post with missing identity, content, or timestamp. It was not displayed.');
+  }
+
+  const validAuthors: AuthorType[] = ['peer_caregiver', 'solenos_verified', 'professional', 'professional_pending'];
+  if (!validAuthors.includes(post.author_type as AuthorType)) {
+    throw new Error('The server returned an unsupported Community author type. It was not guessed.');
+  }
+  if (post.visibility !== 'public' && post.visibility !== 'private' && post.visibility !== 'anonymous') {
+    throw new Error('The server returned an unsupported Community visibility value. The post was not shown.');
+  }
   const validStage = post.care_stage === 'early' || post.care_stage === 'moderate' || post.care_stage === 'late'
     ? post.care_stage
-    : 'unspecified'
-  const validAuthor: AuthorType = post.author_type === 'solenos_verified'
-    || post.author_type === 'professional'
-    || post.author_type === 'professional_pending'
-    ? post.author_type
-    : 'peer_caregiver'
-  const counts = post.reaction_counts || {}
+    : 'unspecified';
+  const validAuthor = post.author_type as AuthorType;
+  const counts = post.reaction_counts;
+  if (counts !== undefined && (!counts || typeof counts !== 'object' || Array.isArray(counts))) {
+    throw new Error('The server returned invalid Community reaction counts.');
+  }
   const userReaction = post.user_reaction === 'support' || post.user_reaction === 'helpful'
     || post.user_reaction === 'relate' || post.user_reaction === 'heart'
     ? post.user_reaction
-    : null
+    : null;
+
   return {
     id: post.id,
     author_type: validAuthor,
-    author_label: post.author_label || 'Anonymous caregiver',
+    author_label: post.author_label,
     author_avatar_seed: '🧑',
     title: post.post_type === 'question' ? 'Community question' : null,
     body: post.content,
     media: [],
-    visibility: post.visibility === 'private' ? 'circle' : 'public',
+    visibility: post.visibility === 'private' ? 'circle' : post.visibility,
     care_stage: validStage,
     tags: Array.isArray(post.tags) ? post.tags : [],
-    created_at: post.created_at || '',
+    created_at: post.created_at,
     updated_at: null,
-    provenance_source: 'caregiver-submitted',
     reaction_counts: {
-      support: counts.support || 0,
-      helpful: counts.helpful || 0,
-      relate: counts.relate || 0,
-      heart: counts.heart || 0,
+      support: typeof counts?.support === 'number' && counts.support >= 0 ? counts.support : 0,
+      helpful: typeof counts?.helpful === 'number' && counts.helpful >= 0 ? counts.helpful : 0,
+      relate: typeof counts?.relate === 'number' && counts.relate >= 0 ? counts.relate : 0,
+      heart: typeof counts?.heart === 'number' && counts.heart >= 0 ? counts.heart : 0,
     },
-    comment_count: 0,
     user_reaction: userReaction,
   }
 }
