@@ -1,4 +1,4 @@
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import type {
   CapacitySelfSessionResult,
   CapacityLevel,
