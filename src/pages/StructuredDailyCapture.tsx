@@ -221,6 +221,14 @@ export default function StructuredDailyCapture() {
       alert('A signed-in caregiver and care record are required to add medication.');
       return;
     }
+    if (!medicationForm.medication_name.trim()) {
+      alert('Medication name is required');
+      return;
+    }
+    if (!medicationForm.status) {
+      alert('Select the actual medication status before adding this record.');
+      return;
+    }
     setMedicationUploading(true);
     
     try {
@@ -263,18 +271,7 @@ export default function StructuredDailyCapture() {
         photo_evidence_id: evidenceId, // Set the photo evidence ID from upload
       };
       
-      // Validate required fields
-      if (!medicationData.medication_name) {
-        alert('Medication name is required');
-        setMedicationUploading(false);
-        return;
-      }
-      if (!medicationData.status) {
-        alert('Select the actual medication status before adding this record.');
-        setMedicationUploading(false);
-        return;
-      }
-      
+
       // Optimistically add to medications list
       setForm(prev => ({
         ...prev,
