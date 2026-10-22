@@ -6,7 +6,7 @@ import {
 import { getOrCreateCaregiverSelfProfile } from "../capacity-self/caregiver-profile/store";
 import { getOrCreateProfile } from "../cognitive-relief/care-recipient-profile/store";
 import { recordObservation, getObservationExport, resetObservationStore } from "../observation-intelligence";
-import { captureVoiceObservation } from "../voice-observation";
+import { captureVoiceObservation } from "../voice-observation/whisper";
 import { getOrCreateGraph, getGraphForCaregiver, resetCareJourneyGraphStore } from "../care-journey-graph/graph-store";
 import { createCareEvent, resetCareEventStore } from "../care-events/store";
 
