@@ -6,7 +6,7 @@ import { createPostgresPool } from "../../telemetry-persistence/postgres-store";
 import type { CareContextType } from "../../care-contexts/types";
 import { parseDementiaContext } from "../../care-contexts/dementia/validate";
 import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfileRecord } from "../types";
-import { createProfileId } from "./store";
+import { cacheProfileRecord, createProfileId } from "./store";
 
 function parseProfileData(raw: unknown): CareRecipientProfileData {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_PROFILE };
@@ -61,7 +61,7 @@ export async function loadProfileFromPostgres(
 
   const careContext = row.care_context as CareContextType;
 
-  return {
+  const record: CareRecipientProfileRecord = {
     id: row.id,
     case_id: row.case_id,
     caregiver_id: row.caregiver_id,
@@ -77,6 +77,10 @@ export async function loadProfileFromPostgres(
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+
+  // Existing update helpers operate on the in-memory index. Cache the DB row
+  // before returning it so subsequent changes mutate the loaded record.
+  return cacheProfileRecord(record);
 }
 
 export async function saveProfileToPostgres(
@@ -135,19 +139,29 @@ export async function tryLoadProfile(
   if (!process.env.DATABASE_URL) return null;
   try {
     const pool = await getPool();
-    return loadProfileFromPostgres(pool, caregiverId, caseId);
-  } catch {
-    return null;
+    return await loadProfileFromPostgres(pool, caregiverId, caseId);
+  } catch (error) {
+    throw new Error(
+      `Care-recipient profile could not be loaded from the configured database: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
-export async function trySaveProfile(record: CareRecipientProfileRecord): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+export type CareRecipientProfilePersistenceStatus = "server_persisted" | "local_only";
+
+export async function trySaveProfile(
+  record: CareRecipientProfileRecord,
+): Promise<CareRecipientProfilePersistenceStatus> {
+  if (!process.env.DATABASE_URL?.trim()) return "local_only";
   try {
     const pool = await getPool();
-    await saveProfileToPostgres(pool, record);
-  } catch {
-    // silent fallback to in-memory
+    const saved = await saveProfileToPostgres(pool, record);
+    cacheProfileRecord(saved);
+    return "server_persisted";
+  } catch (error) {
+    throw new Error(
+      `Care-recipient profile persistence failed; the server did not confirm the save: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
