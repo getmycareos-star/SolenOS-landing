@@ -180,7 +180,7 @@ export default function CareCircle() {
               </select>
             </label>
             <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Responsibility being handed off
-              <input required value={responsibilityType} onChange={e => setResponsibilityType(e.target.value)} placeholder="e.g. evening routine, appointment transport" style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)' }} />
+              <input required value={responsibilityType} onChange={e => setResponsibilityType(e.target.value)} placeholder="Describe the responsibility being handed off" style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)' }} />
             </label>
             <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Scope (optional)
               <input value={scope} onChange={e => setScope(e.target.value)} placeholder="Specific tasks or boundaries" style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)' }} />
