@@ -124,6 +124,9 @@ export interface AuthAccount {
 interface BackendAccount {
   id: string
   email: string
+  role?: 'caregiver' | 'professional' | 'team'
+  caregiver_id?: string | null
+  person_id?: string | null
   display_name?: string | null
 }
 
@@ -176,8 +179,34 @@ async function resolveSignedInAccount(
   preferredPersonId?: string | null,
 ): Promise<AuthAccount> {
   const contexts = await getJSON<CareContext[]>('/auth/care-contexts')
-  if (!Array.isArray(contexts) || contexts.length === 0) {
-    throw new Error('This account has no linked care record. Create a care record or accept a caregiver invitation before continuing.')
+  if (!Array.isArray(contexts)) {
+    throw new Error('The backend returned an invalid care-context list; no identity was selected.')
+  }
+  if (!['caregiver', 'professional', 'team'].includes(backendAccount.role || '')) {
+    throw new Error('The backend did not return a supported account role.')
+  }
+  const accountRole = backendAccount.role as AuthAccount['role']
+
+  // Team accounts have no patient context. Professionals with no active grants,
+  // or multiple grants, must not be assigned an arbitrary patient at sign-in.
+  if (contexts.length === 0 && (accountRole === 'team' || accountRole === 'professional')) {
+    const account: AuthAccount = {
+      id: backendAccount.id,
+      email: backendAccount.email,
+      role: accountRole,
+      caregiver_id: accountRole === 'professional' ? backendAccount.caregiver_id || null : null,
+      person_id: null,
+    }
+    if (account.caregiver_id) localStorage.setItem('solenos_caregiver_id', account.caregiver_id)
+    else localStorage.removeItem('solenos_caregiver_id')
+    localStorage.setItem('solenos_user_role', account.role)
+    setPersonId('')
+    window.dispatchEvent(new Event(AUTH_EVENT))
+    return account
+  }
+
+  if (contexts.length === 0) {
+    throw new Error('This caregiver account has no linked care record. Create a care record or accept a caregiver invitation before continuing.')
   }
 
   const preferred = preferredPersonId
@@ -186,6 +215,21 @@ async function resolveSignedInAccount(
   if (!preferred && contexts.length > 1) {
     if (preferredPersonId) {
       throw new Error('The previously selected care record is not accessible to this account. Select a care record you are authorized to access.')
+    }
+    if (accountRole === 'professional') {
+      const account: AuthAccount = {
+        id: backendAccount.id,
+        email: backendAccount.email,
+        role: accountRole,
+        caregiver_id: backendAccount.caregiver_id || null,
+        person_id: null,
+      }
+      if (account.caregiver_id) localStorage.setItem('solenos_caregiver_id', account.caregiver_id)
+      else localStorage.removeItem('solenos_caregiver_id')
+      localStorage.setItem('solenos_user_role', account.role)
+      setPersonId('')
+      window.dispatchEvent(new Event(AUTH_EVENT))
+      return account
     }
     throw new Error('This account has multiple care records. Select the correct care record before continuing; SolenOS will not choose one automatically.')
   }
