@@ -4,7 +4,7 @@ import { getJSON } from '../api/client';
 
 export default function InvestorDashboard() {
   const navigate = useNavigate();
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<Record<string, string | number | boolean | null> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,8 +13,18 @@ export default function InvestorDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const data = await getJSON('/investor/metrics');
-        setMetrics(data);
+        const data = await getJSON<unknown>('/investor/metrics');
+        if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
+          throw new Error('The backend returned no verifiable investor metrics. The dashboard is unavailable, not empty.');
+        }
+        const entries = Object.entries(data as Record<string, unknown>);
+        if (entries.some(([, value]) =>
+          !(value === null || typeof value === 'string' || typeof value === 'boolean' ||
+            (typeof value === 'number' && Number.isFinite(value)))
+        )) {
+          throw new Error('The backend returned unsupported or incomplete metric values. They were not displayed.');
+        }
+        setMetrics(Object.fromEntries(entries) as Record<string, string | number | boolean | null>);
       } catch (err: any) {
         setError(err.message || 'Failed to load metrics');
       } finally {
@@ -76,7 +86,7 @@ export default function InvestorDashboard() {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })
-                  : String(value)
+                  : value === null || value === undefined ? 'Unavailable' : String(value)
                 }
               </div>
             </div>
