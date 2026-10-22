@@ -104,7 +104,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       personId &&
       caregiverId &&
       expiresAt &&
-      Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.now() + 5 * 60 * 1000
     ) {
       setPersonId(personId);
       return {
