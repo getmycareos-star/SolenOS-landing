@@ -25,8 +25,11 @@ export function livingCareRecordDataDir(...parts: string[]): string {
 }
 
 export function sanitizeDurableCareKey(careKey: string): string {
-  const cleaned = careKey.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120);
-  return cleaned || "default_caregiver";
+  const normalized = careKey?.trim();
+  if (!normalized || normalized === "default_caregiver") throw new Error("Valid durable care key is required; shared fallback storage is prohibited.");
+  const cleaned = normalized.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120);
+  if (!cleaned) throw new Error("Durable care key is invalid.");
+  return cleaned;
 }
 
 export function readDurableJson<T>(filePath: string): T | null {
