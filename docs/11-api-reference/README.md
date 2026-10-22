@@ -21,12 +21,13 @@ No mounted FastAPI route currently exposes this endpoint, and the observation mo
 - **Not an MVP product surface** (ADR-018). Prefer text observation via `POST /api/observations`.
 - No server STT keys → **503** with `client_stt_hint`.
 
-### `GET /api/observations/weekly-summary`
-- Query: `caregiver_id?` → weekly pattern JSON (counts, recurring, emotional/memory incidents, changes).
+### `GET /api/observations/weekly-summary` — NOT IMPLEMENTED
 
-### `GET /api/observations/export`
-- Query: `caregiver_id?`, `format=html|text|json|pdf` → export report.
-- `pdf` is HTML print stub (`X-SolenOS-Pdf-Path: html_print_stub`) until pdfkit.
+No mounted production route. The underlying module requires an explicit, distinct caregiver ID and must not be presented as durable or server-authoritative; no shared default identity is permitted.
+
+### `GET /api/observations/export` — NOT IMPLEMENTED
+
+No mounted production route. Any internal export must use an explicit, distinct caregiver identity. The PDF print stub is not a production PDF export.
 
 ### `POST /api/tts/synthesize` — FUTURE
 - Body: `{ text, language_preference?, voice_profile?: "female"|"male" }`
