@@ -22,7 +22,7 @@ export default function Record() {
   const [documentFile, setDocumentFile] = useState<File | null>(null)
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
-  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
+  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any; analysisId?: string | null } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -92,10 +92,11 @@ export default function Record() {
           captured_at: new Date().toISOString(),
           transcript_uncertain: false,
         },
-      }) as { qwen_extraction_status?: string; qwen_candidates?: any; message?: string }
+      }) as { qwen_extraction_status?: string; qwen_candidates?: any; qwen_analysis_id?: string; message?: string }
       setDocumentResult({
         status: typeof result.qwen_extraction_status === 'string' ? result.qwen_extraction_status : 'not_reported',
         candidates: result.qwen_candidates ?? null,
+        analysisId: typeof result.qwen_analysis_id === 'string' ? result.qwen_analysis_id : null,
       })
       setDocumentFile(null)
     } catch (error) {
@@ -105,6 +106,39 @@ export default function Record() {
     }
   }
 
+  async function reviewDocumentCandidate(index: number, decision: 'accept' | 'correct' | 'reject') {
+    const analysisId = documentResult?.analysisId
+    if (!analysisId) {
+      setDocumentReviewFeedback('This extraction did not return a persistent review ID. The document is saved, but candidate review is unavailable until the backend returns that ID.')
+      return
+    }
+    const correctedObservation = documentReviewDrafts[index]?.trim()
+    if (decision === 'correct' && !correctedObservation) {
+      setDocumentReviewFeedback('Enter the corrected observation before saving a correction.')
+      return
+    }
+    setDocumentReviewingIndex(index)
+    setDocumentReviewFeedback(null)
+    try {
+      const result = await postJSON('/capture/analyses/' + encodeURIComponent(analysisId) + '/review', {
+        candidate_index: index,
+        decision,
+        corrected_observation: decision === 'correct' ? correctedObservation : undefined,
+      }) as { candidate?: any; message?: string }
+      if (!result.candidate) throw new Error('The server did not return the saved review decision.')
+      setDocumentResult((current) => {
+        if (!current || !Array.isArray(current.candidates?.observations)) return current
+        const observations = [...current.candidates.observations]
+        observations[index] = result.candidate
+        return { ...current, candidates: { ...current.candidates, observations } }
+      })
+      setDocumentReviewFeedback(result.message || 'Review decision saved. The Living Care Record was not changed.')
+    } catch (error) {
+      setDocumentReviewFeedback(error instanceof Error ? error.message : 'The review decision could not be saved.')
+    } finally {
+      setDocumentReviewingIndex(null)
+    }
+  }
   async function explainRecord() {
     const personId = getPersonId()
     if (!personId) {
@@ -225,10 +259,19 @@ export default function Record() {
             {Array.isArray(documentResult.candidates?.observations) && documentResult.candidates.observations.length > 0 ? (
               <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
                 {documentResult.candidates.observations.map((candidate: any, index: number) => (
-                  <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                  <li key={index} style={{ fontSize: '12px', marginBottom: '12px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
                     <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
                     <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                       Source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
+                    </div>
+                    <label style={{ display: 'block', marginTop: '8px', fontSize: '11px' }}>
+                      Correct extracted wording
+                      <textarea aria-label={'Corrected document observation ' + (index + 1)} value={documentReviewDrafts[index] || ''} onChange={(event) => setDocumentReviewDrafts((current) => ({ ...current, [index]: event.target.value }))} placeholder={candidate.observation} rows={2} style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '4px', padding: '8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', font: 'inherit' }} />
+                    </label>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                      <button type="button" disabled={documentReviewingIndex !== null} onClick={() => void reviewDocumentCandidate(index, 'correct')}>Save correction</button>
+                      <button type="button" disabled={documentReviewingIndex !== null} onClick={() => void reviewDocumentCandidate(index, 'accept')}>Mark reviewed</button>
+                      <button type="button" disabled={documentReviewingIndex !== null} onClick={() => void reviewDocumentCandidate(index, 'reject')}>Reject candidate</button>
                     </div>
                   </li>
                 ))}
@@ -238,6 +281,7 @@ export default function Record() {
                 No Qwen candidates were returned. The document is still preserved as evidence.
               </p>
             )}
+            {documentReviewFeedback && <p role="status" style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-secondary)' }}>{documentReviewFeedback}</p>}
           </div>
         )}
       </section>
