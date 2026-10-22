@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 import { afterEach, describe, expect, it } from "@jest/globals";
 import type { ActiveCareSituation } from "./types";
 import {
@@ -29,6 +31,6 @@ describe("Active Care Situation identity isolation", () => {
   });
 
   it("does not accept a default recipient key", () => {
-    expect(() => getActiveCareSituation("default_caregiver")).toThrow(/invalid|explicit|identity/i);
+    expect(() => getActiveCareSituation("default_caregiver")).toThrow(/durable care key|identity/i);
   });
 });
