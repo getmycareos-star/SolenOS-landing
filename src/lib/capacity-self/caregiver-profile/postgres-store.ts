@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../../db/postgres-pool";
 import type {
   CaregiverSelfProfileData,
   CaregiverSelfProfileRecord,
