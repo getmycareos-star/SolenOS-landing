@@ -13,6 +13,10 @@ import {
   trackClientActivationEvent,
 } from "@/lib/activation-system/client";
 import type { SituationResponse } from "@/lib/situation-entry";
+import {
+  normalizeBackendSituationResponse,
+  type WorkspaceSituationResponse,
+} from "@/lib/situation-entry/backend-response";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import {
   CARE_RECIPIENT_ID_STORAGE,
@@ -71,15 +75,6 @@ function interactionSessionId(forceNew = false): string {
 }
 
 type SubmitPhase = "idle" | "acknowledged" | "processing" | "done";
-
-type WorkspaceSituationResponse = SituationResponse & {
-  ok?: boolean;
-  message?: string;
-  analysis_status?: "complete" | "partial";
-  analysis_warning?: string | null;
-  care_recipient_id?: string;
-  total_events?: number;
-};
 
 /** Build caregiver-facing + LCR display text from typed note and/or ready documents. */
 function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string {
@@ -387,13 +382,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         throw new Error(err.error ?? "Could not structure situation");
       }
 
-      const serverResponse = (await safeJson(situationRes)) as Partial<SituationResponse> & {
-        ok?: boolean;
-        message?: string;
-        analysis_status?: "complete" | "partial";
-        analysis_warning?: string | null;
-        care_recipient_id?: string;
-        total_events?: number;
+      const situationData = normalizeBackendSituationResponse(
+        await safeJson(situationRes),
+      ) as WorkspaceSituationResponse & {
         policy_engine_layer?: {
           consent_required?: boolean;
           ingestion?: { allowed?: boolean; blocked_reason?: string | null };
@@ -402,33 +393,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         care_session_id?: string;
         ui_situations?: Situation[];
         situations?: Situation[];
-        active_care_situation?: SituationResponse["active_care_situation"];
-        active_care_situation_turn?: SituationResponse["active_care_situation_turn"];
       };
-      const rawWhatChanged = (serverResponse as { what_changed?: unknown }).what_changed;
-      const situationData = {
-        ...serverResponse,
-        // The FastAPI capture DTO is not the old in-process SituationResponse DTO.
-        // Normalize only absent presentation fields; never synthesize events or facts.
-        what_i_understood: serverResponse.what_i_understood ?? [],
-        what_is_uncertain: serverResponse.what_is_uncertain ?? [],
-        what_needs_clarification: serverResponse.what_needs_clarification ?? [],
-        what_will_be_tracked: serverResponse.what_will_be_tracked ?? [],
-        what_changed: Array.isArray(rawWhatChanged)
-          ? rawWhatChanged.filter((item): item is string => typeof item === "string")
-          : typeof rawWhatChanged === "string" && rawWhatChanged.trim()
-            ? [rawWhatChanged]
-            : [],
-        what_merged_or_split: serverResponse.what_merged_or_split ?? [],
-        events_created: serverResponse.events_created ?? [],
-        // Backend's hydration turn is a minimal projection, not the richer local
-        // ActiveSituationTurn contract. Rebuild the display turn from the saved
-        // active-care-situation observations instead.
-        active_care_situation_turn:
-          serverResponse.ok === true ? undefined : serverResponse.active_care_situation_turn,
-        analysis_status: serverResponse.analysis_status ?? "complete",
-        analysis_warning: serverResponse.analysis_warning ?? null,
-      } as WorkspaceSituationResponse;
 
       if (situationData.policy_engine_layer?.consent_required) {
         setShowSoftPrivacyNote(true);
