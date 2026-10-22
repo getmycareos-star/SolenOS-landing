@@ -259,15 +259,15 @@ export default function FirstUseJourney() {
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '8px', marginBottom: '14px' }}>
             <div style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '10px' }}>
-              <strong style={{ display: 'block', fontSize: '20px' }}>{snapshot.events.length}</strong>
+              <strong style={{ display: 'block', fontSize: '20px' }}>{snapshot.failedSections.includes('care events') ? '—' : snapshot.events.length}</strong>
               <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>Events returned</span>
             </div>
             <div style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '10px' }}>
-              <strong style={{ display: 'block', fontSize: '20px' }}>{snapshot.evidence.length}</strong>
+              <strong style={{ display: 'block', fontSize: '20px' }}>{snapshot.failedSections.includes('saved evidence and documents') ? '—' : snapshot.evidence.length}</strong>
               <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>Evidence items returned</span>
             </div>
             <div style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '10px' }}>
-              <strong style={{ display: 'block', fontSize: '20px' }}>{snapshot.actions.length}</strong>
+              <strong style={{ display: 'block', fontSize: '20px' }}>{snapshot.failedSections.includes('recorded actions') ? '—' : snapshot.actions.length}</strong>
               <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>Active actions returned</span>
             </div>
           </div>
