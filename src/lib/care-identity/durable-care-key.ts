@@ -29,9 +29,19 @@ export const INTERACTION_SESSION_STORAGE = "solenos_care_session_id";
 
 
 function isEmptyKey(value: string | null | undefined): boolean {
-
   return !value?.trim();
+}
 
+function isSharedPlaceholderKey(value: string | null | undefined): boolean {
+  return value?.trim().toLowerCase() === DEFAULT_DURABLE_CARE_KEY;
+}
+
+function assertDurableCareKey(value: string, source: string): string {
+  const normalized = value.trim();
+  if (!normalized || isSharedPlaceholderKey(normalized) || isInteractionSessionId(normalized)) {
+    throw new Error(`A real durable care key is required; rejected ${source} fallback.`);
+  }
+  return normalized;
 }
 
 
@@ -82,7 +92,7 @@ export function isInteractionSessionId(value: string | null | undefined): boolea
 
  * Resolve an existing care key for API/server paths.
 
- * Does not mint — returns DEFAULT only when nothing is provided (legacy helpers).
+ * Does not mint. Missing, shared-placeholder, or session-only identity fails closed.
 
  */
 
@@ -95,16 +105,13 @@ export function resolveDurableCareKey(params: {
 }): string {
 
   const fromCaregiver = params.caregiver_id?.trim();
-
-  if (fromCaregiver) return fromCaregiver;
+  if (fromCaregiver) return assertDurableCareKey(fromCaregiver, "caregiver_id");
 
   const fromSession = params.care_session_id?.trim();
-
   // Interaction sessions are not care reality keys (Locked A).
+  if (fromSession) return assertDurableCareKey(fromSession, "care_session_id");
 
-  if (fromSession && !isInteractionSessionId(fromSession)) return fromSession;
-
-  return DEFAULT_DURABLE_CARE_KEY;
+  throw new Error("A durable care key is required; no shared default identity is permitted.");
 
 }
 
@@ -132,13 +139,15 @@ export function requireCareKeyFromRequest(params: {
 
   const fromCaregiver = params.caregiver_id?.trim();
 
-  if (fromCaregiver) return { ok: true, careKey: fromCaregiver };
+  if (fromCaregiver && !isSharedPlaceholderKey(fromCaregiver) && !isInteractionSessionId(fromCaregiver)) {
+    return { ok: true, careKey: fromCaregiver };
+  }
 
 
 
   const fromSession = params.care_session_id?.trim();
 
-  if (fromSession && !isInteractionSessionId(fromSession)) {
+  if (fromSession && !isSharedPlaceholderKey(fromSession) && !isInteractionSessionId(fromSession)) {
 
     return { ok: true, careKey: fromSession };
 
@@ -164,14 +173,15 @@ export function requireCareKeyFromRequest(params: {
 
  * Locked A: never remint on Begin — same identity keeps Care Reality.
 
- * `default_caregiver` is a valid stored identity (demo/verify); do not orphan it.
+ * Legacy shared placeholder keys are invalidated and replaced with a per-browser key.
 
  */
 
 export function ensureClientDurableCareKey(stored: string | null | undefined): string {
 
-  if (!isEmptyKey(stored)) return stored!.trim();
-
+  if (!isEmptyKey(stored) && !isSharedPlaceholderKey(stored) && !isInteractionSessionId(stored)) {
+    return stored!.trim();
+  }
   return mintDurableCareKey();
 
 }
