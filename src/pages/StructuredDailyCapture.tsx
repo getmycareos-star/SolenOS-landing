@@ -1,4 +1,21 @@
 import React, { useState, useEffect } from 'react';
+interface QwenCandidate {
+  subject: string
+  observation: string
+  time_expression?: string | null
+  certainty: 'reported' | 'uncertain' | 'unclear'
+  source_quote: string
+  evidence_ids: string[]
+  review_status: string
+}
+
+interface QwenCandidateBundle {
+  observations: QwenCandidate[]
+  open_questions: string[]
+  possible_safety_flags: string[]
+  rejected_unverifiable_candidates: number
+}
+
 import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '../lib/imageCompression';
@@ -12,6 +29,7 @@ export default function StructuredDailyCapture() {
   const [saved, setSaved] = useState(false);
   const [analysisWarning, setAnalysisWarning] = useState<string | null>(null);
   const [qwenStatus, setQwenStatus] = useState<string | null>(null);
+  const [qwenCandidates, setQwenCandidates] = useState<QwenCandidateBundle | null>(null);
   const [saveError, setSaveError] = useState<unknown | null>(null);
   
   // Form state
@@ -438,6 +456,7 @@ export default function StructuredDailyCapture() {
     onSuccess: async (data, variables, context) => {
       setAnalysisWarning(data?.analysis_status === 'complete' ? null : (data?.analysis_error || 'The entry was saved, but derived analysis could not be confirmed.'));
       setQwenStatus(typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_configured');
+      setQwenCandidates(data?.qwen_candidates && typeof data.qwen_candidates === 'object' ? data.qwen_candidates as QwenCandidateBundle : null);
       // On success, reset the form
       setForm({
         medications: [],
@@ -512,6 +531,7 @@ export default function StructuredDailyCapture() {
     e.preventDefault();
     setAnalysisWarning(null);
     setQwenStatus(null);
+    setQwenCandidates(null);
     
     if (!personId || !caregiverId) {
       const error = new Error('A signed-in caregiver and care record are required to save daily capture.');
@@ -768,6 +788,37 @@ export default function StructuredDailyCapture() {
         <p role="status" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '24px' }}>
           {analysisWarning}
         </p>
+      )}
+      {qwenStatus === 'pending_review' && qwenCandidates && (
+        <section aria-label="Qwen extraction candidates" style={{ marginBottom: '20px', padding: '14px', border: '1px solid var(--border)', borderRadius: '10px' }}>
+          <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Qwen draft extraction — review required</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+            These are unverified candidates linked to source evidence. They have not been written as authoritative Living Care Record facts.
+          </p>
+          {qwenCandidates.observations.length === 0 ? (
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No source-verified candidate observations were returned.</p>
+          ) : qwenCandidates.observations.map((candidate, index) => (
+            <div key={index} style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '8px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 600 }}>{candidate.subject || 'Observation'} · {candidate.certainty}</p>
+              <p style={{ fontSize: '12px', marginTop: '3px' }}>{candidate.observation}</p>
+              {candidate.time_expression && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '3px' }}>Time as reported: {candidate.time_expression}</p>}
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Source: “{candidate.source_quote}”</p>
+              {candidate.evidence_ids?.length > 0 && <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '3px' }}>Evidence: {candidate.evidence_ids.join(', ')}</p>}
+            </div>
+          ))}
+          {qwenCandidates.open_questions?.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 600 }}>Questions to clarify</p>
+              <ul>{qwenCandidates.open_questions.map((question, index) => <li key={index} style={{ fontSize: '12px', marginTop: '3px' }}>{question}</li>)}</ul>
+            </div>
+          )}
+          {qwenCandidates.possible_safety_flags?.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 600 }}>Potential safety flags — verify promptly</p>
+              <ul>{qwenCandidates.possible_safety_flags.map((flag, index) => <li key={index} style={{ fontSize: '12px', marginTop: '3px' }}>{flag}</li>)}</ul>
+            </div>
+          )}
+        </section>
       )}
       {qwenStatus && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '24px' }}>
