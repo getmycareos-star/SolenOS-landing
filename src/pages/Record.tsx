@@ -305,7 +305,7 @@ export default function Record() {
           ))}
         </div>
       )}
-      <CareContinuityIntegrityPanel personId={careContinuityPersonId} />
+      <CareContinuityIntegrityPanel personId={careContinuityPersonId} evidenceItems={items} />
     </div>
   )
 }
