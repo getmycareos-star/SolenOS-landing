@@ -171,7 +171,7 @@ describe('Phase 4 production data-integrity guardrails', () => {
     for (const path of identitySensitiveSources) {
       const text = source(path)
       expect(text).not.toMatch(/\?\?\s*["']default_caregiver["']/)
-      expect(text).not.toMatch(/\?\?\s*["']default_caregiver["']/)
-      expect(text).not.toMatch(/\?\?\s*["']default_caregiver["']/)
+      expect(text).not.toMatch(/\|\|\s*["']default_caregiver["']/)
+      expect(text).not.toMatch(/(?:caregiver(?:Id|_id)|contributorId)\s*[:=]\s*["']default_caregiver["']/)
     }
   })
