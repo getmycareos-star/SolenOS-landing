@@ -65,6 +65,7 @@ export default function App() {
     <div className="app-container">
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/workspace" element={<Dashboard />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="/daily-care" element={<DailyCare />} />
         <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
