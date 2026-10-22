@@ -268,7 +268,7 @@ export default function Dashboard() {
           ðŸ“š Living Care Record system model
         </p>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
-          Today's Change â†’ Living Care Record â†’ Timeline â†’ Insights â†’ Community Wisdom
+          Today's change → Living Care Record → Timeline → Insights → Care review
         </p>
       </div>
 
