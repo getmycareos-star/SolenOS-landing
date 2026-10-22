@@ -177,7 +177,7 @@ export default function CareCircle() {
 
       <section aria-labelledby="care-circle-caregivers">
         <h2 id="care-circle-caregivers" style={{ fontSize: '18px', marginBottom: '12px' }}>Caregivers ({caregivers.length})</h2>
-        {caregivers.length === 0 ? (
+        {caregivers.length === 0 && !error ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No caregivers are linked to this care record yet.</p>
         ) : (
           <div style={{ display: 'grid', gap: '12px' }}>
