@@ -1,5 +1,13 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(resolve(process.cwd(), dir), { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = `${dir}/${entry.name}`
+    if (entry.isDirectory()) return sourceFiles(relativePath)
+    return /\\.(ts|tsx|js|jsx)$/.test(entry.name) ? [relativePath] : []
+  })
+}
 
 function source(path: string): string {
   return readFileSync(resolve(process.cwd(), path), 'utf8')
@@ -131,6 +139,13 @@ describe('Phase 4 production data-integrity guardrails', () => {
     const page = source('src/app/ops/page.tsx')
     expect(page).toContain('Operational dashboard unavailable')
     expect(page).toContain('!data || !data.system.db_connected')
+  })
+
+
+  it('never imports illustrative fixtures into the production source tree', () => {
+    for (const path of sourceFiles('src')) {
+      expect(source(path)).not.toMatch(/(?:from\\s*|import\\s*\\()\\s*["'][^"']*(?:scripts|tests)\\/fixtures/)
+    }
   })
 
   it('keeps illustrative care fixtures outside the production source tree', () => {
