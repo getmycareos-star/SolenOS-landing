@@ -6,7 +6,7 @@ The deployed Vite entry is `src/main.tsx` → `src/App.tsx` → React Router pag
 
 ### Implemented
 
-- `src/App.tsx` now gates care pages on `ensureAnonymousSession()`. No account or email is required. Session setup errors are visible, retryable, and do not silently mint a replacement when a prior record ID exists without its bearer secret.
+- `src/App.tsx` now gates care pages on `ensureAnonymousSession()`. No account or email is required. Session setup errors are visible; transient failures are retryable, while missing/expired credentials do not offer a futile retry. The app does not silently mint a replacement when a prior record ID exists without its bearer secret.
 - `src/api/client.ts` sends the bearer capability on `getJSON`, `getBlob`, `postJSON`, `patchJSON`, and `postFormData`; it now deduplicates concurrent session bootstrap/refresh calls and returns the server-issued caregiver ID from `getCaregiverId()`.
 - `src/components/CareCapture.tsx` uses `postJSON('/situation')`, so it now runs after the app session gate and carries the bearer token through the shared client.
 - Direct `/api/situation` requests in `CognitiveWorkspace.tsx`, `workspace-context.tsx`, `CareRecipientNameGate.tsx`, `voice-controller/conversation-controller.ts`, and `ShareCareSummaryPanel.tsx` now send the bearer capability. The unsupported pause-as-POST call was replaced with a scoped GET of saved state.
@@ -35,3 +35,5 @@ Further inspection confirmed that `src/main.tsx` loads `src/App.tsx`, whose Reac
 - Anonymous-session wording in capture UI: [commit](https://github.com/getmycareos-star/SolenOS-landing/commit/147b5b788f019c269b4c6b12776e583948a5ac72)
 
 The app gate creates the anonymous backend record when the app opens, not only after the first note, because the current React Router pages require a server-issued person ID to load their record-scoped data. It does not require registration or email.
+
+- Recovery-state UI refinement: [commit](https://github.com/getmycareos-star/SolenOS-landing/commit/b750a643fe50a8d05cb2d3eee6434a2e7942f309).
