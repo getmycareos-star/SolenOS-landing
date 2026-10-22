@@ -64,6 +64,19 @@ export function getAnonymousAccessToken(): string | null {
   return window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
 }
 
+/** True only when this browser holds an unexpired server-issued anonymous care session. */
+export function hasActiveCareSession(): boolean {
+  if (typeof window === 'undefined') return false
+  const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY)
+  const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY)
+  const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY)
+  const expiresAt = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY)
+  return Boolean(
+    token && personId && caregiverId && expiresAt &&
+    Number.isFinite(Date.parse(expiresAt)) && Date.parse(expiresAt) > Date.now()
+  )
+}
+
 function authorizationHeaders(): Record<string, string> {
   const token = getAnonymousAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
