@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
@@ -9,7 +9,14 @@ interface CareCaptureProps {
 }
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
-  const [text, setText] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [text, setText] = useState(() => searchParams.get('draft') ?? '')
+  useEffect(() => {
+    if (!searchParams.has('draft')) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('draft')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId?: string | null } | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
