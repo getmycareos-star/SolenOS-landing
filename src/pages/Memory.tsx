@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface Observation {
   id: string
@@ -30,25 +30,43 @@ export default function Memory() {
   const [memories, setMemories] = useState<ReasoningMemory[]>([])
   const [events, setEvents] = useState<LearningEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
+      if (!getPersonId()) {
+        setLoadError('No care record is selected. Select an authorized care record to continue.')
+        setLoading(false)
+        return
+      }
       try {
         const [obs, mem, evts] = await Promise.all([
           getJSON('/observations/demo-person-id'),
           getJSON('/reasoning-memory/demo-person-id'),
-          getJSON('/learning-events/demo-person-id').catch(() => []),
+          getJSON('/learning-events/demo-person-id'),
         ])
-        setObservations(obs)
-        setMemories(mem)
-        setEvents(evts.slice(0, 20))
-      } catch (e) {
-        console.error(e)
+        if (!Array.isArray(obs) || !Array.isArray(mem) || !Array.isArray(evts)) {
+          throw new Error('The server response was incomplete.')
+        }
+        if (!cancelled) {
+          setObservations(obs)
+          setMemories(mem)
+          setEvents(evts.slice(0, 20))
+        }
+      } catch {
+        if (!cancelled) {
+          setObservations([])
+          setMemories([])
+          setEvents([])
+          setLoadError('Memory information could not be loaded. Try again when the service is available.')
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => { cancelled = true }
   }, [])
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -73,7 +91,9 @@ export default function Memory() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading && (
+      {!loading && loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
+
+      {!loading && !loadError && (
         <>
           <section style={{ marginBottom: '40px' }}>
             <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
