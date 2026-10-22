@@ -84,6 +84,54 @@ describe('FirstUseJourney', () => {
     expect(screen.queryByText(/contain no saved entries yet/i)).not.toBeInTheDocument();
   });
 
+  it('surfaces persisted changes, questions, conflicts, and information gaps without resolving them', async () => {
+    mockedGetJSON
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{
+        id: 'change-1',
+        change_type: 'sleep_duration',
+        change_direction: 'increased',
+        previous_state: 'about 6 hours',
+        current_state: 'about 3 hours',
+        explanation: 'Caregiver observations report shorter sleep.',
+        evidence_ids: ['evidence-1'],
+        is_active: true,
+      }])
+      .mockResolvedValueOnce([{
+        id: 'question-1',
+        question: 'Has the sleep change happened for several nights?',
+        priority: 'important',
+        status: 'open',
+        asked_at: '2026-10-21T12:00:00Z',
+      }])
+      .mockResolvedValueOnce([{
+        id: 'conflict-1',
+        field: 'eating',
+        description: 'One caregiver reported low intake; another reported a normal meal.',
+        resolution_status: 'unresolved',
+        evidence_ids: ['evidence-2', 'evidence-3'],
+      }])
+      .mockResolvedValueOnce([{
+        id: 'gap-1',
+        field: 'hydration',
+        description: 'Fluid intake has not been recorded for the recent period.',
+        priority: 'important',
+        lifecycle_status: 'open',
+      }]);
+
+    renderJourney();
+
+    await waitFor(() => {
+      expect(screen.getByText(/persisted change assessments/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/has the sleep change happened for several nights/i)).toBeInTheDocument();
+    expect(screen.getByText(/one caregiver reported low intake/i)).toBeInTheDocument();
+    expect(screen.getByText(/fluid intake has not been recorded/i)).toBeInTheDocument();
+    expect(screen.getByText(/does not choose which account is true/i)).toBeInTheDocument();
+  });
+
   it('does not assert emptiness when no care-record identity is available', async () => {
     mockedGetPersonId.mockReturnValue('');
     renderJourney();
