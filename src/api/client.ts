@@ -167,7 +167,10 @@ export async function checkAuthState(): Promise<{ authenticated: boolean; sessio
     const personIds = Array.isArray(contexts)
       ? contexts.map((item: any) => item?.person_id).filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
       : []
-    if (!getPersonId() && personIds.length > 0) setPersonId(personIds[0])
+    const storedPersonId = getPersonId()
+    if (!storedPersonId || !personIds.includes(storedPersonId)) {
+      setPersonId(personIds[0] || '')
+    }
     const links = await getJSON('/auth/my-caregiver-links')
     const selectedPerson = getPersonId()
     const linkedCaregiver = Array.isArray(links)
