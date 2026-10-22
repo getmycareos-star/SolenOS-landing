@@ -1,15 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import FirstUseJourney from './FirstUseJourney';
-import { getJSON, getPersonId } from '../api/client';
+import { ensureAnonymousSession, getJSON, getPersonId } from '../api/client';
 
 // Regression coverage for persisted returning-caregiver context and failure honesty.
 
 jest.mock('../api/client', () => ({
+  ensureAnonymousSession: jest.fn(),
   getJSON: jest.fn(),
   getPersonId: jest.fn(),
 }));
 
+const mockedEnsureAnonymousSession = ensureAnonymousSession as jest.MockedFunction<typeof ensureAnonymousSession>;
 const mockedGetJSON = getJSON as jest.MockedFunction<typeof getJSON>;
 const mockedGetPersonId = getPersonId as jest.MockedFunction<typeof getPersonId>;
 
@@ -24,6 +26,12 @@ function renderJourney() {
 describe('FirstUseJourney', () => {
   beforeEach(() => {
     mockedGetPersonId.mockReturnValue('person-real-1');
+    mockedEnsureAnonymousSession.mockReset();
+    mockedEnsureAnonymousSession.mockResolvedValue({
+      person: { id: 'person-real-1', name: 'Care recipient', date_of_birth: null },
+      caregiver: { id: 'caregiver-real-1', name: 'Caregiver', relationship: 'Family' },
+      access_token: 'test-token', token_type: 'Bearer', expires_at: '2099-01-01T00:00:00Z', expires_in_seconds: 1,
+    });
     mockedGetJSON.mockReset();
   });
 
@@ -136,9 +144,11 @@ describe('FirstUseJourney', () => {
 
   it('does not assert emptiness when no care-record identity is available', async () => {
     mockedGetPersonId.mockReturnValue('');
+    mockedEnsureAnonymousSession.mockRejectedValue(new Error('No authorised session available'));
     renderJourney();
 
-    expect(screen.getByText(/current record state could not be confirmed/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/current record state could not be confirmed/i)).toBeInTheDocument());
+    expect(screen.getByRole('alert')).toHaveTextContent(/authorised care-record session/i);
     expect(mockedGetJSON).not.toHaveBeenCalled();
   });
 });
