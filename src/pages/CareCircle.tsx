@@ -61,10 +61,16 @@ export default function CareCircle() {
   }, [personId])
 
   const fetchCareCircles = async () => {
+    if (!personId) {
+      setCareCircles([])
+      setError('No care record is selected. Select an authorized care record to view care circles.')
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
-      const data = await getJSON(`/care-circle/person/${personId}`)
+      const data = await getJSON(`/care-circle/person/${encodeURIComponent(personId)}`)
       setCareCircles(data as CareCircle[])
     } catch (err: any) {
       console.error('Failed to fetch care circles:', err)
