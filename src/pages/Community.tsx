@@ -357,6 +357,9 @@ export default function Community() {
             Qwen summary unavailable ({wisdomProviderStatus}). Showing only published peer posts below; no AI summary was substituted.
           </p>
         )}
+        {wisdomNotice && !wisdomSummary && (
+          <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '11px', marginBottom: '8px' }}>{wisdomNotice}</p>
+        )}
         {wisdomSummary && (
           <div style={{ padding: '12px 14px', marginBottom: '10px', background: 'var(--accent-soft)', border: '1px solid var(--border)', borderRadius: '8px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Qwen summary of published peer experiences</div>
