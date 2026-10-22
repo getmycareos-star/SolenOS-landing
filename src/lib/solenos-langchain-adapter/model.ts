@@ -8,7 +8,7 @@ export type SolenOSLLMProvider = "gemini" | "openai";
 export type MvpLLMProvider = "gemini" | "ollama";
 
 const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
-const DEFAULT_OLLAMA_MODEL = "llama3.2";
+const DEFAULT_OLLAMA_MODEL = "qwen2.5:7b";
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 
 export function resolveMvpLLMProvider(): MvpLLMProvider | null {
@@ -16,9 +16,9 @@ export function resolveMvpLLMProvider(): MvpLLMProvider | null {
   if (explicit === "gemini" || explicit === "ollama") {
     return explicit;
   }
-  if (process.env.GEMINI_API_KEY) return "gemini";
-  if (process.env.OLLAMA_BASE_URL || process.env.OLLAMA_HOST) return "ollama";
-  return null;
+  // Local Qwen via Ollama is the default. Hosted Gemini is used only when
+  // explicitly selected with SOLENOS_LLM_PROVIDER=gemini.
+  return "ollama";
 }
 
 /** @deprecated Use resolveMvpLLMProvider for /api/analyze. */
@@ -68,7 +68,7 @@ export function createMvpChatModel(): BaseChatModel {
   const provider = resolveMvpLLMProvider();
   if (!provider) {
     throw new Error(
-      "No MVP LLM configured. Set GEMINI_API_KEY or OLLAMA_BASE_URL.",
+      "No local Ollama Qwen model is configured. Start Ollama and ensure the configured model is installed.",
     );
   }
 
