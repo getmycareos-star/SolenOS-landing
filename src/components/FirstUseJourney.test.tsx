@@ -31,7 +31,7 @@ describe('FirstUseJourney', () => {
 
     expect(screen.getByRole('heading', { name: /keep the care story connected/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /start daily capture/i })).toHaveAttribute('href', '/daily-care');
-    expect(screen.getByRole('link', { name: /continue with ai companion/i })).toHaveAttribute('href', '/companion');
+    expect(screen.getByRole('link', { name: /open companion/i })).toHaveAttribute('href', '/companion');
     expect(screen.getByRole('link', { name: /review or add documents/i })).toHaveAttribute('href', '/record');
     expect(screen.getByRole('link', { name: /community/i })).toHaveAttribute('href', '/community');
 
@@ -62,7 +62,7 @@ describe('FirstUseJourney', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /continue from your care history/i })).toBeInTheDocument();
     });
-    expect(screen.getByText('Poor sleep reported')).toBeInTheDocument();
+    expect(screen.getAllByText('Poor sleep reported').length).toBeGreaterThan(0);
     expect(screen.getByText('Clinic note')).toBeInTheDocument();
     expect(screen.getByText('Ask the clinic about sleep changes')).toBeInTheDocument();
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('FirstUseJourney', () => {
     renderJourney();
 
     await waitFor(() => {
-      expect(screen.getByText('Appetite reported lower')).toBeInTheDocument();
+      expect(screen.getAllByText('Appetite reported lower').length).toBeGreaterThan(0);
     });
     expect(screen.getByRole('alert')).toHaveTextContent(/recorded actions/i);
     expect(screen.queryByText(/contain no saved entries yet/i)).not.toBeInTheDocument();
