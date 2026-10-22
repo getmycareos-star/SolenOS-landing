@@ -57,7 +57,7 @@ export function assembleDecisionSnapshot(params: {
           ? `Record and keep the condition on the case; act only on urgent new symptoms if present`
           : `Respond to the immediate situation described — no prior pattern match`,
       what_to_ask_next: "Is anyone injured, unsafe, or in immediate need of help right now?",
-      risk_level: facts.conditions.length > 0 && facts.events.every((e) => e.eventType === "condition_noted") ? "low" : risk,
+      risk_level: risk,
       what_can_wait: "Administrative tasks and non-urgent updates",
       follow_up_items: [
         "Stabilize the present moment using current observations only",
@@ -88,29 +88,28 @@ export function assembleDecisionSnapshot(params: {
 
   // State C — strong pattern → intervention compression (NOT history narration)
   const technique =
-    intervention?.technique ??
-    intervention?.label ??
-    caseEntity.understanding.successfulInterventions[0] ??
-    "previously successful intervention";
+    (intervention?.technique ??
+      intervention?.label ??
+      caseEntity.understanding.successfulInterventions[0])?.trim() || null;
 
   return {
     what_is_happening:
       primaryType === "wandering"
         ? `${name} is experiencing another nighttime wandering episode`
         : `${name} is experiencing another ${primaryType} episode`,
-    what_matters_now: `This matches a previously stabilized pattern where ${
-      /towel|grounding|redirect/i.test(technique)
-        ? "redirection using a familiar grounding object reduced agitation quickly"
-        : `${technique} reduced escalation quickly`
-    }`,
+    what_matters_now: technique
+      ? `A previously recorded approach (${technique}) is linked to this pattern. Confirm it still fits; past use does not establish that it will work now.`
+      : "A strong similarity to prior events was detected, but no previously successful intervention is recorded. Confirm immediate safety and ask what has helped before.",
     what_to_ask_next:
-      "Check if anything has changed in environment, lighting, or sleep routine since last successful intervention",
-    risk_level: risk === "low" ? "high" : risk,
+      "Has anything changed in the current environment or routine, and what has helped in similar situations before?",
+    risk_level: risk,
     what_can_wait: "Administrative tasks and non-urgent updates",
     follow_up_items: [
-      `Immediately apply previously successful intervention used in similar episodes (${technique})`,
-      "Prepare environment to reduce nighttime disorientation (lighting, noise, pathways)",
-      "Monitor response time and agitation reduction during this episode",
+      technique
+        ? `Consider whether the previously recorded approach (${technique}) still fits; confirm current safety first.`
+        : "Ask what, if anything, has helped in similar situations; do not assume an intervention is effective.",
+      "Check whether the current environment or routine differs from prior observations.",
+      "Monitor and record the observed response; effectiveness is not assumed.",
     ],
   };
 }
