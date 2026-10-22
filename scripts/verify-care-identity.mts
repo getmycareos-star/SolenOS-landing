@@ -46,14 +46,21 @@ assert(
   resolveDurableCareKey({ caregiver_id: "cg_a", care_session_id: "other" }) === "cg_a",
   "caregiver_id wins as durable key",
 );
+let missingKeyRejected = false;
+try {
+  resolveDurableCareKey({ caregiver_id: null, care_session_id: "sess_abc" });
+} catch {
+  missingKeyRejected = true;
+}
+assert(missingKeyRejected, "missing durable identity must fail closed rather than use a shared default");
 assert(
-  resolveDurableCareKey({ caregiver_id: null, care_session_id: "sess_abc" }) ===
-    "default_caregiver",
-  "interaction session is not a care key",
+  ensureClientDurableCareKey("default_caregiver") !== "default_caregiver" &&
+    ensureClientDurableCareKey("default_caregiver").startsWith("care_"),
+  "legacy shared identity is replaced by a per-browser durable key",
 );
 assert(
-  ensureClientDurableCareKey("default_caregiver") === "default_caregiver",
-  "Locked A: stored default_caregiver identity is preserved (not reminted/orphaned)",
+  requireCareKeyFromRequest({ caregiver_id: "default_caregiver" }).ok === false,
+  "API rejects the legacy shared identity",
 );
 assert(
   ensureClientDurableCareKey("care_stable") === "care_stable",
