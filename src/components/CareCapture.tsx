@@ -36,8 +36,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       onCapture?.(variables.rawInput)
     },
     onError: async (error, variables, context) => {
-      // On error, we could show a failed state, but for simplicity we'll just let the error propagate
-      // The UI will still show the text was processed optimistically
+      // The hook's error state drives the visible failure message; do not clear input.
       console.error('Failed to save situation:', error)
     },
     onSettled: () => {
@@ -47,7 +46,10 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
   const handleSubmit = async () => {
     if (!text.trim()) return
-    
+    if (!personId || /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(personId.trim())) {
+      setIdentityError('Select a real care record before saving this care update.')
+      return
+    }
     const caregiverId = getCaregiverId()
     if (!caregiverId) {
       setIdentityError('A signed-in caregiver is required to save this care update.')
@@ -56,11 +58,15 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     setIdentityError(null)
     setSavedMessage(null)
 
-    await submitSituation({
-      caregiverId,
-      personId,
-      rawInput: text.trim()
-    })
+    try {
+      await submitSituation({
+        caregiverId,
+        personId,
+        rawInput: text.trim()
+      })
+    } catch {
+      // The mutation hook exposes the failure; keep the user's text intact.
+    }
   }
 
   return (
@@ -145,6 +151,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           {submitting ? 'Saving...' : 'Save what changed →'}
         </button>
       </div>
+
+      {submitError && !identityError && (
+        <p role="alert" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--error)' }}>
+          The save could not be confirmed. Your text remains in the field; check the connection and retry.
+        </p>
+      )}
 
       {savedMessage && (
         <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
