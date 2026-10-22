@@ -22,7 +22,7 @@ import { checkInformationCompleteness } from "../src/lib/risk-uncertainty-engine
 import {
   resetCareJourneyGraphStore,
   } from "../src/lib/care-journey-graph";
-import { processCareJourneyInput } from "../src/lib/care-journey-graph/server";
+import { processCareJourneyInput } from "../src/lib/care-journey-graph/pipeline";
 import { resetMeetingStore } from "../src/lib/meeting-preparation/meeting-store";
 import { resetUniversalKnowledgeStore } from "../src/lib/universal-knowledge-extraction/store";
 
