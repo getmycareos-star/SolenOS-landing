@@ -11,7 +11,7 @@ type Assertion = {
   source_text?: string | null
   evidence_ids: string[]
   assertion_status: string
-  review_after_days: number
+  review_after_days?: number | null
   recorded_at: string
   observed_at?: string | null
 }
@@ -97,6 +97,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
   const [subjectType, setSubjectType] = useState('care_record')
   const [subjectId, setSubjectId] = useState(personId)
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({})
+  const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({})
   const [kind, setKind] = useState<'current_state' | 'time_bound_observation'>('current_state')
   const [reviewDays, setReviewDays] = useState('')
   const [corrections, setCorrections] = useState<Record<string, string>>({})
@@ -196,6 +197,11 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
   }
 
   async function markReviewed(assertion: Assertion) {
+    const reviewWindow = (reviewWindows[assertion.id] ?? String(assertion.review_after_days ?? '')).trim()
+    if (assertion.assertion_kind === 'current_state' && (!reviewWindow || !Number.isInteger(Number(reviewWindow)) || Number(reviewWindow) < 1 || Number(reviewWindow) > 3650)) {
+      setError('Set a review window from 1 to 3650 days before accepting a current-state report.')
+      return
+    }
     setError('')
     setNotice('')
     try {
@@ -203,6 +209,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         person_id: personId,
         assertion_status: 'accepted',
         updated_by_caregiver_id: getCaregiverId() || undefined,
+        review_after_days: reviewWindow ? Number(reviewWindow) : undefined,
       })
       setNotice('Marked as caregiver-reviewed. This is not independent clinical verification.')
       await load()
@@ -307,6 +314,15 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
               Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status} · event: {item.source_event_id || 'manual report'}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
+            <label style={{ display: 'block', fontSize: 12, margin: '7px 0' }}>
+              Review window in days {item.assertion_kind === 'current_state' ? '(required before acceptance)' : '(optional for observations)'}
+              <input
+                style={{ ...fieldStyle, maxWidth: 220 }}
+                type="number" min={1} max={3650}
+                value={reviewWindows[item.id] ?? String(item.review_after_days ?? '')}
+                onChange={(e) => setReviewWindows((current) => ({ ...current, [item.id]: e.target.value }))}
+              />
+            </label>
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' &&
               <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as caregiver-reviewed</button>}
