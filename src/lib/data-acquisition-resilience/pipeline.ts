@@ -1,4 +1,5 @@
 import { applyRepeatedSignalBoost } from "./confidence-evolution";
+import { requireCaregiverId } from "../care-identity";
 
 import { reconcileCrossDocument } from "./cross-document-reconcile";
 
@@ -165,7 +166,7 @@ function normalizedToValidated(
 
 export function ingestRawInput(params: IngestRawInputParams): DareIngestResult {
 
-  const caregiverId = params.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(params.caregiver_id);
 
   const now = params.captured_at ?? new Date().toISOString();
 
