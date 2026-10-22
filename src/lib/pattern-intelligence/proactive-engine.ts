@@ -13,6 +13,7 @@ import {
   detectRiskPatternAlert,
 } from "./proactive-triggers";
 import type { PatternIntelligenceResult } from "./types";
+import type { CaregivingMeeting } from "../meeting-preparation/types";
 
 const lastResults = new Map<string, PatternIntelligenceResult>();
 
@@ -27,9 +28,11 @@ export function runProactiveEngine(
   caregiverId: string,
   caseId: string | null = null,
   now: Date = new Date(),
+  meetings?: CaregivingMeeting[],
 ): PatternIntelligenceResult {
   const graph = getGraphForCaregiver(caregiverId, caseId);
   const events = graph?.events ?? [];
+  const careHistoryStatus = !graph ? "unavailable" : events.length ? "available" : "no_recorded_events";
 
   const patterns = runPatternEngine(caregiverId, caseId, now);
 
@@ -37,7 +40,7 @@ export function runProactiveEngine(
     detectInactivitySignal(events, now),
     ...detectFollowUpSignals(events, now),
     ...detectEventBasedSignals(events, now),
-    ...detectAppointmentNearSignals(caregiverId, now),
+    ...(meetings ? detectAppointmentNearSignals(meetings, now) : []),
     detectRiskPatternAlert(patterns, now),
   ].filter((s): s is NonNullable<typeof s> => !!s);
 
@@ -51,6 +54,8 @@ export function runProactiveEngine(
     analyzed_at: now.toISOString(),
     events_analyzed: events.length,
     low_confidence_note,
+    care_history_status: careHistoryStatus,
+    appointment_signals_status: meetings ? "available" : "unavailable",
   };
 
   lastResults.set(cacheKey(caregiverId, caseId), result);
@@ -82,6 +87,7 @@ export function runPatternIntelligence(
   caregiverId: string,
   caseId: string | null = null,
   now: Date = new Date(),
+  meetings?: CaregivingMeeting[],
 ): PatternIntelligenceResult {
-  return runProactiveEngine(caregiverId, caseId, now);
+  return runProactiveEngine(caregiverId, caseId, now, meetings);
 }
