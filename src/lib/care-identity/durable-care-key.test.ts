@@ -9,11 +9,17 @@ import { recordObservation, getObservationExport, resetObservationStore } from "
 import { captureVoiceObservation } from "../voice-observation/whisper";
 import { getOrCreateGraph, getGraphForCaregiver, resetCareJourneyGraphStore } from "../care-journey-graph/graph-store";
 import { createCareEvent, resetCareEventStore } from "../care-events/store";
+import { tryLoadCaregiverSelfProfile } from "../capacity-self/caregiver-profile/postgres-store";
+import { tryLoadProfile } from "../cognitive-relief/care-recipient-profile/postgres-store";
+import { recordCareJourneyEvent } from "../care-journey/server";
+import { resetCareJourneyStore, listCareJourneyEventsForCaregiver } from "../care-journey/store";
+import { processCareJourneyInputAsync } from "../care-journey-graph/server";
 
 describe("identity isolation boundaries", () => {
   afterEach(() => {
     resetCareJourneyGraphStore();
     resetCareEventStore();
+    resetCareJourneyStore();
     resetObservationStore();
   });
 
@@ -64,4 +70,31 @@ describe("identity isolation boundaries", () => {
       record: recordObservation,
     });
     expect(voice).toMatchObject({ ok: false, code: "PERSISTENCE_UNAVAILABLE" });
+  });
+
+  it("distinguishes database unavailable from an empty profile or timeline", async () => {
+    const originalDatabaseUrl = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    try {
+      await expect(tryLoadCaregiverSelfProfile("cg_db_unavailable")).rejects.toThrow(/DATABASE_URL is not configured/i);
+      await expect(tryLoadProfile("cg_db_unavailable", null)).rejects.toThrow(/DATABASE_URL is not configured/i);
+
+      await expect(
+        recordCareJourneyEvent({
+          caregiver_id: "cg_db_unavailable",
+          description: "verification record must not be memory-only",
+        }),
+      ).rejects.toThrow(/DATABASE_URL is not configured/i);
+      expect(listCareJourneyEventsForCaregiver("cg_db_unavailable")).toHaveLength(0);
+
+      await expect(
+        processCareJourneyInputAsync({
+          caregiver_id: "cg_db_unavailable",
+          description: "verification graph must not report a memory-only save",
+        }),
+      ).rejects.toThrow(/DATABASE_URL is not configured/i);
+    } finally {
+      if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = originalDatabaseUrl;
+    }
   });
