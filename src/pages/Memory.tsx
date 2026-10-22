@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface Observation {
   id: string
@@ -30,25 +30,43 @@ export default function Memory() {
   const [memories, setMemories] = useState<ReasoningMemory[]>([])
   const [events, setEvents] = useState<LearningEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      try {
-        const [obs, mem, evts] = await Promise.all([
-          getJSON('/observations/demo-person-id'),
-          getJSON('/reasoning-memory/demo-person-id'),
-          getJSON('/learning-events/demo-person-id').catch(() => []),
-        ])
-        setObservations(obs)
-        setMemories(mem)
-        setEvents(evts.slice(0, 20))
-      } catch (e) {
-        console.error(e)
-      } finally {
+      const personId = getPersonId()
+      if (!personId) {
+        setLoadError('Select an authorized care record before viewing its memory.')
         setLoading(false)
+        return
+      }
+      setLoading(true)
+      setLoadError(null)
+      try {
+        const encodedPersonId = encodeURIComponent(personId)
+        const [obs, mem, evts] = await Promise.all([
+          getJSON(`/observations/${encodedPersonId}`),
+          getJSON(`/reasoning-memory/${encodedPersonId}`),
+          getJSON(`/learning-events/${encodedPersonId}`),
+        ])
+        if (!Array.isArray(obs) || !Array.isArray(mem) || !Array.isArray(evts)) {
+          throw new Error('A memory service returned an invalid response.')
+        }
+        if (!cancelled) {
+          setObservations(obs as Observation[])
+          setMemories(mem as ReasoningMemory[])
+          setEvents((evts as LearningEvent[]).slice(0, 20))
+        }
+      } catch (e) {
+        console.error('Failed to load care memory:', e)
+        if (!cancelled) setLoadError('Care memory could not be loaded. Some sections may be unavailable; the displayed absence of data must not be treated as an empty record. Check the connection and retry.')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    load()
+    void load()
+    return () => { cancelled = true }
   }, [])
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -72,8 +90,9 @@ export default function Memory() {
       </p>
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
+      {loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
 
-      {!loading && (
+      {!loading && !loadError && (
         <>
           <section style={{ marginBottom: '40px' }}>
             <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
