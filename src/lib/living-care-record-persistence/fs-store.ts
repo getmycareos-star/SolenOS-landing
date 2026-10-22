@@ -16,7 +16,7 @@ import {
   writeFileSync,
 } from "fs";
 import { join } from "path";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 
 const isBrowser = typeof window !== "undefined";
 
