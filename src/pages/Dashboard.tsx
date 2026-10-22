@@ -114,8 +114,33 @@ export default function Dashboard() {
         }
 
         const values = results.map(result => (result as PromiseFulfilledResult<unknown>).value);
-        if (!Array.isArray(values[0]) || !Array.isArray(values[1]) || !Array.isArray(values[2]) || !Array.isArray(values[5])) {
-          throw new Error('The server returned an incomplete dashboard response. Dashboard data is unavailable until the response can be verified.');
+        const isRecord = (value: unknown): value is Record<string, unknown> =>
+          Boolean(value && typeof value === 'object' && !Array.isArray(value));
+        const validEvents = Array.isArray(values[0]) && values[0].every((item: unknown) =>
+          isRecord(item) && typeof item.id === 'string' && Boolean(item.id) &&
+          typeof item.title === 'string' &&
+          typeof item.occurred_at === 'string' && Number.isFinite(new Date(item.occurred_at).getTime())
+        );
+        const validInsights = Array.isArray(values[1]) && values[1].every((item: unknown) =>
+          isRecord(item) && typeof item.id === 'string' && Boolean(item.id) &&
+          typeof item.title === 'string' && typeof item.description === 'string' &&
+          typeof item.insight_type === 'string' &&
+          typeof item.confidence === 'number' && Number.isFinite(item.confidence)
+        );
+        const validTrends = Array.isArray(values[2]) && values[2].every((item: unknown) =>
+          isRecord(item) && typeof item.tag === 'string' &&
+          typeof item.count === 'number' && Number.isFinite(item.count) &&
+          typeof item.trend === 'string'
+        );
+        const reasoningKeys = ['confirmed_facts', 'open_questions', 'preferences', 'rejected_assumptions', 'care_patterns', 'coordination_decisions'];
+        const validReasoning = isRecord(values[3]) && reasoningKeys.every(key => Array.isArray(values[3][key]));
+        const validDailyIntel = values[4] === null || (
+          isRecord(values[4]) &&
+          typeof values[4].daily_summary === 'string' &&
+          ['overdue_items', 'upcoming_items', 'active_windows', 'expired_windows'].every(key => Array.isArray(values[4][key]))
+        );
+        if (!validEvents || !validInsights || !validTrends || !validReasoning || !validDailyIntel || !Array.isArray(values[5])) {
+          throw new Error('The server returned incomplete dashboard data. No missing fields or empty states were guessed.');
         }
 
         const nextActions = (values[5] as Array<Record<string, unknown>>).map(action => {
