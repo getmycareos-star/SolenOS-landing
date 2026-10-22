@@ -7,8 +7,8 @@ import {
   outputsAreIdentical,
   runDeterminismGate,
   verifyStructureDrift,
-  VERIFY_PROMPT_REGRESSION_GOLDENS,
 } from "../src/lib/consistency-determinism";
+import { VERIFY_PROMPT_REGRESSION_GOLDENS } from "./fixtures/prompt-regression-fixtures";
 import { validateAIResponse } from "../src/lib/response-validator";
 import {
   classifyConsistencyFailure,
