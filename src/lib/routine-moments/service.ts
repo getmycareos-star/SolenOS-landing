@@ -1,5 +1,5 @@
 // src/lib/routine-moments/service.ts
-import { RoutineMomentRecord, RoutineBaseline, RoutineMomentChange, ConfidenceLevel } from './types';
+import { RoutineMomentRecord, RoutineBaseline, RoutineMomentChange } from './types';
 
 /**
  * Establish a baseline for a routine from a list of observations.
