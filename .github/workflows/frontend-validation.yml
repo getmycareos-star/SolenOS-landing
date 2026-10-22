@@ -2,9 +2,9 @@ name: Frontend validation
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, "fix/**"]
   push:
-    branches: [main]
+    branches: [main, "fix/**"]
 
 permissions:
   contents: read
