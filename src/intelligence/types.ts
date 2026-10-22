@@ -35,6 +35,7 @@ export type ExtractionResult = {
   provisionalFromDare: string[];
   consistencyGate?: {
     success: boolean;
+    persistence_status: "server_persisted" | "local_queued" | "memory_only";
     reconciledClaims: import("../lib/claim-consistency").ReconciliationResult["reconciled_claims"];
     runAId: string;
     runBId: string;

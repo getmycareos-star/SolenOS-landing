@@ -189,6 +189,7 @@ export async function extractFromInput(input: ExtractionInput): Promise<Extracti
 
       consistencyGateResult = {
         success: gateResult.success,
+        persistence_status: gateResult.persistence_status,
         reconciledClaims: gateResult.reconciliation.reconciled_claims,
         runAId: gateResult.run_a.run_id,
         runBId: gateResult.run_b.run_id,
@@ -197,6 +198,7 @@ export async function extractFromInput(input: ExtractionInput): Promise<Extracti
     } catch (err) {
       consistencyGateResult = {
         success: false,
+        persistence_status: "memory_only",
         reconciledClaims: [],
         runAId: "",
         runBId: "",

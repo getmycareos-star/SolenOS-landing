@@ -109,6 +109,7 @@ export type ConsistencyGateInput = {
 
 export type ConsistencyGateResult = {
   success: boolean;
+  persistence_status: "server_persisted" | "local_queued" | "memory_only";
   reconciliation: ReconciliationResult;
   run_a: ExtractionRunOutput;
   run_b: ExtractionRunOutput;

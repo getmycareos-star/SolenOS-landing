@@ -20,11 +20,14 @@ import {
 } from "fs";
 import { join } from "path";
 import type { Pool } from "pg";
+import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { detectUrgencyLevel } from "../urgency-detection";
 import type {
   RawEvidence,
   SaveRawEvidenceInput,
   RawEvidenceStoreOptions,
+  SaveRawEvidenceResult,
   RawEvidenceInputType,
   UrgencyRiskLevel,
 } from "./types";
@@ -42,7 +45,9 @@ function hashContent(content: string): string {
 }
 
 function dataDir(caregiverId: string): string {
-  const cleaned = caregiverId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80) || "default";
+  const validated = requireCaregiverId(caregiverId);
+  const cleaned = validated.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
+  if (!cleaned) throw new Error("A valid caregiver identity is required for the raw-evidence queue.");
   return join(process.cwd(), ".data", "raw-evidence-queue", cleaned);
 }
 
@@ -53,7 +58,7 @@ function queueFile(evidence: RawEvidence): string {
 export class RawEvidenceStore {
   private readonly memory = new Map<string, RawEvidence>();
   private readonly index = new Map<string, string[]>();
-  private readonly pool: Pool | null;
+  private pool: Pool | null;
   private readonly now: () => Date;
   private readonly syncQueue: RawEvidence[] = [];
 
@@ -62,7 +67,15 @@ export class RawEvidenceStore {
     this.now = options.opts?.now ?? (() => new Date());
   }
 
-  async save(input: SaveRawEvidenceInput): Promise<{ evidence: RawEvidence; persisted: boolean }> {
+  private async resolvePool(): Promise<Pool | null> {
+    if (this.pool) return this.pool;
+    if (!process.env.DATABASE_URL?.trim()) return null;
+    this.pool = await createPostgresPool();
+    return this.pool;
+  }
+
+  async save(input: SaveRawEvidenceInput): Promise<SaveRawEvidenceResult> {
+    const caregiverId = requireCaregiverId(input.caregiver_id);
     const content = input.content.trim();
     if (content.length === 0) {
       throw new Error("raw evidence content must not be empty");
@@ -72,7 +85,7 @@ export class RawEvidenceStore {
 
     const evidence: RawEvidence = {
       id: input.id ?? createEvidenceId(),
-      caregiver_id: input.caregiver_id,
+      caregiver_id: caregiverId,
       person_id: input.person_id ?? null,
       input_type: (input.input_type ?? "text") as RawEvidenceInputType,
       content,
@@ -91,26 +104,37 @@ export class RawEvidenceStore {
     ids.push(evidence.id);
     this.index.set(evidence.caregiver_id, ids);
 
+    let filePersisted = false;
     if (typeof writeFileSync === "function") {
       try {
         const dir = dataDir(evidence.caregiver_id);
         mkdirSync(dir, { recursive: true });
         writeFileSync(queueFile(evidence), JSON.stringify(evidence, null, 2), "utf8");
+        filePersisted = true;
       } catch {
-        // File failure is non-fatal — memory cache remains source of truth for this process
+        // The caller receives memory_only unless PostgreSQL confirms the write.
       }
     }
 
-    let persisted = false;
-    if (this.pool) {
+    let serverPersisted = false;
+    let persistence_error: string | undefined;
+    let activePool: Pool | null = null;
+    try {
+      activePool = await this.resolvePool();
+    } catch (error) {
+      persistence_error = "PostgreSQL storage could not be confirmed.";
+    }
+
+    if (activePool) {
       try {
-        await this.pool.query(
+        await activePool.query(
           `INSERT INTO raw_evidence (
              id, caregiver_id, person_id, input_type, content, content_hash,
              ocr_confidence, document_id, document_name, captured_at,
              urgency_risk_level, urgency_signals, metadata
            )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           ON CONFLICT (id) DO NOTHING`,
           [
             evidence.id,
             evidence.caregiver_id,
@@ -127,13 +151,32 @@ export class RawEvidenceStore {
             evidence.metadata,
           ],
         );
-        persisted = true;
-      } catch (err) {
-        this.syncQueue.push(evidence);
+        serverPersisted = true;
+        const queuedIndex = this.syncQueue.findIndex((queued) => queued.id === evidence.id);
+        if (queuedIndex >= 0) this.syncQueue.splice(queuedIndex, 1);
+        try {
+          rmSync(queueFile(evidence), { force: true });
+        } catch {
+          // The database is confirmed; a stale local queue file is harmless because inserts are idempotent.
+        }
+      } catch (error) {
+        persistence_error = "PostgreSQL storage could not be confirmed.";
+        if (!this.syncQueue.some((queued) => queued.id === evidence.id)) this.syncQueue.push(evidence);
       }
     }
 
-    return { evidence, persisted: persisted || true };
+    const persistence_status = serverPersisted
+      ? "server_persisted"
+      : filePersisted
+        ? "local_queued"
+        : "memory_only";
+
+    return {
+      evidence,
+      persisted: persistence_status !== "memory_only",
+      persistence_status,
+      ...(persistence_error ? { persistence_error } : {}),
+    };
   }
 
   getById(id: string): RawEvidence | undefined {
@@ -181,21 +224,42 @@ export class RawEvidenceStore {
     return items.sort((a, b) => (a.captured_at < b.captured_at ? 1 : -1));
   }
 
-  /** Retry queued items that failed to sync to Postgres. */
+  /** Retry both in-memory failures and files left by a prior process. */
   async syncToPostgres(): Promise<{ synced: number; remaining: number }> {
-    if (!this.pool) return { synced: 0, remaining: 0 };
+    const pool = await this.resolvePool();
+    if (!pool) return { synced: 0, remaining: this.syncQueue.length };
+
+    const queuedById = new Map<string, RawEvidence>();
+    for (const evidence of this.syncQueue) queuedById.set(evidence.id, evidence);
+
+    const baseDir = join(process.cwd(), ".data", "raw-evidence-queue");
+    if (existsSync(baseDir)) {
+      for (const caregiverDir of readdirSync(baseDir)) {
+        const fullDir = join(baseDir, caregiverDir);
+        for (const file of readdirSync(fullDir).filter((name) => name.endsWith(".json"))) {
+          const raw = readFileSync(join(fullDir, file), "utf8");
+          const evidence = JSON.parse(raw) as RawEvidence;
+          requireCaregiverId(evidence.caregiver_id);
+          if (typeof evidence.id !== "string" || typeof evidence.content !== "string") {
+            throw new Error("A raw-evidence recovery queue entry is malformed; it was not discarded.");
+          }
+          queuedById.set(evidence.id, evidence);
+        }
+      }
+    }
+
     const failed: RawEvidence[] = [];
     let synced = 0;
-
-    for (const evidence of this.syncQueue) {
+    for (const evidence of queuedById.values()) {
       try {
-        await this.pool.query(
+        await pool.query(
           `INSERT INTO raw_evidence (
              id, caregiver_id, person_id, input_type, content, content_hash,
              ocr_confidence, document_id, document_name, captured_at,
              urgency_risk_level, urgency_signals, metadata
            )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           ON CONFLICT (id) DO NOTHING`,
           [
             evidence.id,
             evidence.caregiver_id,
@@ -213,6 +277,11 @@ export class RawEvidenceStore {
           ],
         );
         synced++;
+        try {
+          rmSync(queueFile(evidence), { force: true });
+        } catch {
+          // Leave the file for a later idempotent retry if cleanup is unavailable.
+        }
       } catch {
         failed.push(evidence);
       }

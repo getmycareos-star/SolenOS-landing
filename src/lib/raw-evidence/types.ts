@@ -53,9 +53,16 @@ export type SaveRawEvidenceInput = {
   metadata?: Record<string, unknown>;
 };
 
+export type RawEvidencePersistenceStatus =
+  | "server_persisted"
+  | "local_queued"
+  | "memory_only";
+
 export type SaveRawEvidenceResult = {
   evidence: RawEvidence;
+  /** True only when PostgreSQL or the local recovery queue accepted the record. */
   persisted: boolean;
+  persistence_status: RawEvidencePersistenceStatus;
 };
 
 export type RawEvidenceStoreOptions = {
