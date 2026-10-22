@@ -151,7 +151,7 @@ export default function Community() {
       } catch (e) {
         console.error('Failed to load community posts:', e)
         setPosts([])
-        setLoadError('Community posts could not be loaded. Check your connection and try again.')
+        setLoadError('Community posts are temporarily unavailable.')
       } finally {
         setLoading(false)
       }
@@ -458,7 +458,13 @@ export default function Community() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading community posts...</p>
           )}
 
-          {!loading && filteredPosts.length === 0 && (
+          {!loading && loadError && (
+            <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+              {loadError}
+            </p>
+          )}
+
+          {!loading && !loadError && filteredPosts.length === 0 && (
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
               {activeTag || activeStage
                 ? 'No posts match your filters. Try clearing them.'
