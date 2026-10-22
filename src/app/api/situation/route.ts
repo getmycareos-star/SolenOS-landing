@@ -12,11 +12,13 @@ import { buildReturnContinuityProjection } from "@/lib/return-continuity";
 import { upsertTrackedSituationFromCareInput, trackedSituationToUiSituation } from "@/lib/resolution-engine/care-context-sync";
 import { toActiveSituation } from "@/lib/ui-runtime/situation-store";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime/open-situations";
+import { requireCareKeyFromRequest } from "@/lib/care-identity";
 
 export const runtime = "nodejs";
 
-function resolveCaregiverId(input: { caregiver_id?: string; care_session_id?: string }): string {
-  return input.caregiver_id ?? input.care_session_id ?? "default_caregiver";
+function resolveCaregiverId(input: { caregiver_id?: string; care_session_id?: string }): string | null {
+  const result = requireCareKeyFromRequest(input);
+  return result.ok ? result.careKey : null;
 }
 
 export async function GET(request: Request) {
@@ -25,6 +27,12 @@ export async function GET(request: Request) {
     caregiver_id: url.searchParams.get("caregiver_id") ?? undefined,
     care_session_id: url.searchParams.get("care_session_id") ?? undefined,
   });
+  if (!caregiverId) {
+    return NextResponse.json(
+      { error: "care_key_required", message: "A valid care-record identity is required." },
+      { status: 400 },
+    );
+  }
   const offerReturnInvite = url.searchParams.get("offer_return_invite") === "1";
 
   const context = getCareContextRoot(caregiverId);
@@ -79,6 +87,12 @@ export async function POST(request: Request) {
       caregiver_id: typeof body.caregiver_id === "string" ? body.caregiver_id : undefined,
       care_session_id: typeof body.care_session_id === "string" ? body.care_session_id : undefined,
     });
+    if (!caregiverId) {
+      return NextResponse.json(
+        { error: "care_key_required", message: "A valid care-record identity is required." },
+        { status: 400 },
+      );
+    }
 
     if (!rawInput && (!Array.isArray(body.documents) || body.documents.length === 0)) {
       return NextResponse.json(
