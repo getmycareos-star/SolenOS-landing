@@ -89,7 +89,7 @@ export async function getJSON(path: string) {
 }
 
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path, true), { headers: authHeaders() })
+  const res = await fetch(resolveApiUrl(path), { headers: authHeaders() })
   if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.blob()
 }
@@ -104,7 +104,7 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(resolveApiUrl(path, Boolean(personId)), {
+  const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
