@@ -52,7 +52,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }
     const caregiverId = getCaregiverId()
     if (!caregiverId) {
-      setIdentityError('A signed-in caregiver is required to save this care update.')
+      setIdentityError('A secure care session is required to save this care update. Retry session setup before saving.')
       return
     }
     setIdentityError(null)
