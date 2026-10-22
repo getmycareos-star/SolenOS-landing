@@ -1,5 +1,5 @@
 import { processCareJourneyInput } from "../care-journey-graph/pipeline";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import type { CareJourneyPipelineResult } from "../care-journey-graph/types";
 import type { SolenOSDocument } from "../document-intelligence/types";
 import type { ExtractedKnowledgeItem } from "./types";
