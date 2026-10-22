@@ -20,10 +20,6 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
   return () => window.removeEventListener('personIdChanged', handler)
 }
 
-function interpolatePersonId(path: string): string {
-  return path.replace(/demo-person-id/g, getPersonId())
-}
-
 function resolveApiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
 
