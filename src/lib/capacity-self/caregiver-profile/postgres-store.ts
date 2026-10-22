@@ -33,6 +33,16 @@ function parseProfile(raw: unknown): CaregiverSelfProfileData {
   };
 }
 
+export type CaregiverSelfProfilePersistenceStatus = "server_persisted" | "local_only";
+export type CaregiverSelfProfileStorageMode = "database_configured" | "local_only";
+
+export function getCaregiverSelfProfileStorageMode(
+  databaseUrl: string | undefined = process.env.DATABASE_URL,
+): CaregiverSelfProfileStorageMode {
+  // Configuration alone is not proof that a write reached the database.
+  return databaseUrl?.trim() ? "database_configured" : "local_only";
+}
+
 let poolPromise: Promise<Pool> | null = null;
 
 async function getPool(): Promise<Pool> {
@@ -72,15 +82,19 @@ export async function tryLoadCaregiverSelfProfile(
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
-  } catch {
-    return null;
+  } catch (error) {
+    // A configured database that fails is not equivalent to "no saved profile".
+    // Propagate the failure so callers cannot mistake a storage outage for an empty record.
+    throw new Error(
+      `Caregiver profile could not be loaded from the configured database: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
 export async function trySaveCaregiverSelfProfile(
   record: CaregiverSelfProfileRecord,
-): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+): Promise<CaregiverSelfProfilePersistenceStatus> {
+  if (!process.env.DATABASE_URL?.trim()) return "local_only";
   try {
     const pool = await getPool();
     const id = record.id.startsWith("csp_") ? randomUUID() : record.id;
@@ -100,8 +114,12 @@ export async function trySaveCaregiverSelfProfile(
         JSON.stringify(record.resolved_items),
       ],
     );
-  } catch {
-    // in-memory fallback
+    return "server_persisted";
+  } catch (error) {
+    // Do not hide a failed database write behind an in-memory success path.
+    throw new Error(
+      `Caregiver profile persistence failed; the server did not confirm the save: ${error instanceof Error ? error.message : "unknown database error"}`,
+    );
   }
 }
 
