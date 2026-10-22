@@ -44,6 +44,29 @@ function parseProfile(raw: unknown): CaregiverSelfProfileData {
   };
 }
 
+function parseResolvedItems(raw: unknown): ResolvedItemRecord[] {
+  if (!Array.isArray(raw)) {
+    throw new Error("Persisted resolved-item history is invalid; refusing to substitute an empty history.");
+  }
+  const validSubjects = new Set(["care_recipient", "caregiver"]);
+  const validContexts = new Set(["phone_call", "home_repair", "medical", "financial", "errand", "other"]);
+  for (const item of raw) {
+    if (
+      !item ||
+      typeof item !== "object" ||
+      typeof item.id !== "string" ||
+      typeof item.description !== "string" ||
+      !validSubjects.has(item.subject) ||
+      !validContexts.has(item.context_type) ||
+      typeof item.resolved_at !== "string" ||
+      !(item.raw_entry_id === null || typeof item.raw_entry_id === "string")
+    ) {
+      throw new Error("Persisted resolved-item history contains invalid records.");
+    }
+  }
+  return raw as ResolvedItemRecord[];
+}
+
 let poolPromise: Promise<Pool> | null = null;
 
 async function getPool(): Promise<Pool> {
@@ -76,10 +99,13 @@ export async function tryLoadCaregiverSelfProfile(
       id: row.id,
       caregiver_id: row.caregiver_id,
       profile: parseProfile(row.profile),
-      session_capacity: row.session_capacity as CapacityLevel | null,
-      resolved_items: Array.isArray(row.resolved_items)
-        ? (row.resolved_items as ResolvedItemRecord[])
-        : [],
+      session_capacity:
+        row.session_capacity === null
+          ? null
+          : row.session_capacity === "low" || row.session_capacity === "medium" || row.session_capacity === "high"
+            ? row.session_capacity
+            : (() => { throw new Error("Persisted caregiver capacity is invalid."); })(),
+      resolved_items: parseResolvedItems(row.resolved_items),
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
