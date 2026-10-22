@@ -2082,8 +2082,11 @@ function finalizeSituationResponse(
   withMvpLayer: Omit<SituationResponse, "final_output" | "forbidden_build_zone_layer">,
   final_output: FinalOutputContract,
   architectural_boundaries_layer: SituationResponse["architectural_boundaries_layer"],
+  caregiverId: string,
 ): SituationResponse {
-  const caregiverId = withMvpLayer.context?.caregiver_id ?? "default_caregiver";
+  if (!caregiverId?.trim() || caregiverId === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required before finalizing a care response.");
+  }
   const policyApplied = applyPolicyToFinalOutput(caregiverId, final_output, {
     medical_advice_request:
       withMvpLayer.policy_engine_layer?.ingestion?.medical_advice_request === true,
