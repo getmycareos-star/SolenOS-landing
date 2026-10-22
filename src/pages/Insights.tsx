@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface Insight {
   id: string
@@ -14,19 +14,32 @@ interface Insight {
 export default function Insights() {
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
+      const personId = getPersonId()
+      if (!personId) {
+        setLoadError('No care record is selected. Select an authorized care record to continue.')
+        setLoading(false)
+        return
+      }
       try {
         const data = await getJSON('/insights/demo-person-id')
-        setInsights(data)
-      } catch (e) {
-        console.error(e)
+        if (!Array.isArray(data)) throw new Error('The server response was incomplete.')
+        if (!cancelled) setInsights(data)
+      } catch {
+        if (!cancelled) {
+          setInsights([])
+          setLoadError('This information could not be loaded. Try again when the service is available.')
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => { cancelled = true }
   }, [])
 
   const typeLabel: Record<string, string> = {
@@ -47,11 +60,13 @@ export default function Insights() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading && insights.length === 0 && (
+      {!loading && loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
+
+      {!loading && !loadError && insights.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No insights yet.</p>
       )}
 
-      {!loading && (
+      {!loading && !loadError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {insights.map(ins => (
             <div key={ins.id} style={{
