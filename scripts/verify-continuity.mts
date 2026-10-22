@@ -7,7 +7,7 @@ import {
   interpretQuestion,
   reasonThroughContext,
 } from "../src/lib/care-context";
-import { EXAMPLE_CAREGIVER_QUESTION } from "../src/data/example-caregiver-question";
+const EXAMPLE_CAREGIVER_QUESTION = "Dad has started wandering at night. I'm exhausted. How do I know if it's time for professional care?";
 import {
   HIRE_HELP_QUESTION,
   SAMPLE_CARE_CONTEXT,
