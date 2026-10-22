@@ -1,9 +1,22 @@
 import type { SolenOSResponse } from "../response-validator";
-import { checkPromptRegressionWithGoldens } from "./prompt-regression-fixtures";
+import { canonicalizeOutput } from "./canonicalize";
 import type { PromptRegressionCheckResult } from "./types";
 
-/** Runtime goldens empty — live API skips prompt regression (verify uses fixtures). */
+/** Runtime goldens are intentionally empty; illustrative caregiver scenarios live only in test fixtures. */
 export const PROMPT_REGRESSION_GOLDENS: Readonly<Record<string, SolenOSResponse>> = {};
+
+export function checkPromptRegressionWithGoldens(
+  normalizedInput: string,
+  output: SolenOSResponse,
+  goldens: Readonly<Record<string, SolenOSResponse>>,
+): PromptRegressionCheckResult {
+  const golden = goldens[normalizedInput.trim()];
+  if (!golden) return { ok: true, skipped: true };
+  if (canonicalizeOutput(output) !== canonicalizeOutput(golden)) {
+    return { ok: false, failure_type: "PROMPT_REGRESSION_FAILURE" };
+  }
+  return { ok: true, skipped: false };
+}
 
 export function checkPromptRegression(
   normalizedInput: string,
@@ -13,10 +26,5 @@ export function checkPromptRegression(
 }
 
 export function clearPromptRegressionGoldens(): void {
-  // Static module; symmetry hook for verify scripts.
+  // Static runtime goldens are empty; this remains a symmetry hook for callers.
 }
-
-export {
-  VERIFY_PROMPT_REGRESSION_GOLDENS,
-  checkPromptRegressionWithGoldens,
-} from "./prompt-regression-fixtures";
