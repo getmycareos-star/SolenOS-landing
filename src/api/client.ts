@@ -43,6 +43,71 @@ function resolveApiUrl(path: string): string {
   return `${API_BASE.replace(/\/$/, '')}${normalized}`
 }
 
+
+const ANONYMOUS_TOKEN_KEY = "solenos_anonymous_access_token";
+const ANONYMOUS_PERSON_KEY = "solenos_backend_person_id";
+const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
+const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
+
+export type AnonymousSession = {
+  person: { id: string; name: string; date_of_birth: string | null };
+  caregiver: { id: string; name: string; relationship: string };
+  access_token: string;
+  token_type: "Bearer";
+  expires_at: string;
+  expires_in_seconds: number;
+};
+
+export function getAnonymousAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
+}
+
+function authorizationHeaders(): Record<string, string> {
+  const token = getAnonymousAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/** Create the anonymous record only when the caregiver first submits care input. */
+export async function ensureAnonymousSession(): Promise<AnonymousSession> {
+  if (typeof window === "undefined") {
+    throw new Error("Anonymous care sessions can only be created in the browser.");
+  }
+
+  const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
+  const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
+  const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
+  const expiresAt = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
+  if (
+    token &&
+    personId &&
+    caregiverId &&
+    expiresAt &&
+    Date.parse(expiresAt) > Date.now() + 60_000
+  ) {
+    return {
+      person: { id: personId, name: "Care recipient", date_of_birth: null },
+      caregiver: { id: caregiverId, name: "Caregiver", relationship: "Family" },
+      access_token: token,
+      token_type: "Bearer",
+      expires_at: expiresAt,
+      expires_in_seconds: Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1000)),
+    };
+  }
+
+  const response = await fetch("/api/v1/sessions/anonymous", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ caregiver_name: "Caregiver" }),
+  });
+  const created = (await handleResponse(response)) as AnonymousSession;
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, created.access_token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, created.person.id);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, created.caregiver.id);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, created.expires_at);
+  return created;
+}
+
 async function handleResponse(res: Response) {
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
@@ -80,7 +145,7 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path))
+  const res = await fetch(resolveApiUrl(path), { headers: authorizationHeaders() })
   return handleResponse(res)
 }
 
@@ -96,7 +161,7 @@ export async function getBlob(path: string): Promise<Blob> {
 export async function postJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
