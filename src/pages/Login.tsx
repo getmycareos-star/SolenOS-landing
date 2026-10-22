@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   clearAuthSession,
@@ -62,7 +63,7 @@ export default function Login() {
     setError('Your account is signed in but has no care record yet. Enter the care recipient’s name to create one, or sign out if you are using the wrong account.')
   }
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
@@ -182,7 +183,7 @@ export default function Login() {
   )
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   display: 'block',
   boxSizing: 'border-box',
   width: '100%',
