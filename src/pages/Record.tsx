@@ -100,8 +100,13 @@ export default function Record() {
         analysisId: typeof result.qwen_analysis_id === 'string' ? result.qwen_analysis_id : null,
       })
       setDocumentFile(null)
-      const refreshedEvidence = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
-      if (Array.isArray(refreshedEvidence)) setItems(refreshedEvidence as Evidence[])
+      try {
+        const refreshedEvidence = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+        if (Array.isArray(refreshedEvidence)) setItems(refreshedEvidence as Evidence[])
+        else setDocumentError('The document was saved, but the record refresh returned an unexpected response. Reload the record to verify the saved evidence.')
+      } catch {
+        setDocumentError('The document was saved, but the record list could not refresh. Reload the record to verify the saved evidence.')
+      }
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
