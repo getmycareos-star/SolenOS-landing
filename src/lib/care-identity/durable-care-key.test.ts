@@ -93,6 +93,7 @@ describe("identity isolation boundaries", () => {
           description: "verification graph must not report a memory-only save",
         }),
       ).rejects.toThrow(/DATABASE_URL is not configured/i);
+      expect(getGraphForCaregiver("cg_db_unavailable")).toBeUndefined();
     } finally {
       if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = originalDatabaseUrl;
