@@ -1,5 +1,5 @@
 import { applyRepeatedSignalBoost } from "./confidence-evolution";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 
 import { reconcileCrossDocument } from "./cross-document-reconcile";
 
