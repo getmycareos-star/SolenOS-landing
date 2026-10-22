@@ -12,8 +12,8 @@
 - **Errors:** 422 pipeline/validation; 503 missing LLM key.
 
 ### `POST /api/observations`
-- Body: `{ raw_text, caregiver_id?, source?: "text"|"voice" }`
-- Records observation intelligence (heuristic). Default caregiver `default_caregiver`.
+- Body: `{ raw_text, caregiver_id, source?: "text"|"voice" }`
+- Records observation intelligence (heuristic). `caregiver_id` is required; requests without an explicit identity are rejected.
 - MVP product path: **text** (`source: "text"`). Voice source is FUTURE (ADR-018).
 
 ### `POST /api/observations/voice` — FUTURE
