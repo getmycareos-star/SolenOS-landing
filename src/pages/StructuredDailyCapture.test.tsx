@@ -103,7 +103,7 @@ describe('StructuredDailyCapture', () => {
     await userEvent.type(screen.getByPlaceholderText(/Describe what you observed, when it happened, and what remains uncertain/i), 'Sleep was disrupted');
     await userEvent.click(screen.getByRole('button', { name: /save what changed/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/sign in and select an authorized care record/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/a signed-in caregiver is required to save this care update/i);
     expect(postJSON).not.toHaveBeenCalled();
   });
 
