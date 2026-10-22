@@ -679,14 +679,21 @@ export async function runAnalyzePipelineWithObservability(
     };
   }
 
-  // Step 2d: CARE JOURNEY GRAPH — update structured journey before any reasoning
-  const careJourneyGraphProcessed = processCareJourneyInput({
-    description: structuredInput.raw_input,
-    caregiver_id: params.telemetry_user_id ?? "default_caregiver",
-    case_id: params.care_session_id ?? null,
-    source: params.source_type === "document" ? "document" : "text",
-  });
-  const careJourneyGraphLayer = toCareJourneyGraphLayerPayload(careJourneyGraphProcessed);
+  // Step 2d: CARE JOURNEY GRAPH — only write when an explicit, non-shared
+  // identity is supplied. Telemetry/session IDs are not authentication credentials.
+  const telemetryCaregiverId = params.telemetry_user_id?.trim();
+  const careJourneyGraphProcessed =
+    telemetryCaregiverId && telemetryCaregiverId !== "default_caregiver"
+      ? processCareJourneyInput({
+          description: structuredInput.raw_input,
+          caregiver_id: telemetryCaregiverId,
+          case_id: params.care_session_id ?? null,
+          source: params.source_type === "document" ? "document" : "text",
+        })
+      : null;
+  const careJourneyGraphLayer = careJourneyGraphProcessed
+    ? toCareJourneyGraphLayerPayload(careJourneyGraphProcessed)
+    : undefined;
 
   // Step 2c: RISK & UNCERTAINTY GATE — blocks priority/urgency when safety context insufficient
   const riskUncertaintyProcessed = processRiskUncertainty(structuredInput.raw_input);
