@@ -126,8 +126,8 @@ if (/2026-04-15.*2026-0[5-9]/i.test(follow) || (follow.match(/\b2026-\d{2}-\d{2}
 if (!/another nighttime wandering/i.test(again.snapshot.what_is_happening)) {
   throw new Error("State C what_is_happening should be minimal history (another episode)");
 }
-if (!/previously stabilized pattern|grounding object|reduced agitation/i.test(again.snapshot.what_matters_now)) {
-  throw new Error("State C what_matters_now should carry intervention logic");
+if (!/previously recorded approach/i.test(again.snapshot.what_matters_now) || /reduced agitation quickly|reduced escalation quickly|grounding object reduced/i.test(again.snapshot.what_matters_now)) {
+  throw new Error("State C must reference recorded intervention provenance without inventing efficacy");
 }
 if (!again.guarantee.ok) {
   throw new Error(`State C guarantee failed: ${again.guarantee.violations.join("; ")}`);
