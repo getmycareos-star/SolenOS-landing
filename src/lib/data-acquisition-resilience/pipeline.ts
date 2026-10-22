@@ -165,7 +165,10 @@ function normalizedToValidated(
 
 export function ingestRawInput(params: IngestRawInputParams): DareIngestResult {
 
-  const caregiverId = params.caregiver_id ?? "default_caregiver";
+  const caregiverId = params.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required before raw input can be ingested.");
+  }
 
   const now = params.captured_at ?? new Date().toISOString();
 
