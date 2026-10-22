@@ -6,15 +6,26 @@ import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
 import Companion from './pages/Companion'
 import Community from './pages/Community'
-import ProfessionalDashboard from './pages/ProfessionalDashboard'
-import TeamDashboard from './pages/TeamDashboard'
 import Insights from './pages/Insights'
 import Timeline from './pages/Timeline'
 import Record from './pages/Record'
 import Memory from './pages/Memory'
 import CareCircle from './pages/CareCircle'
 import Login from './pages/Login'
-import InvestorDashboard from './pages/InvestorDashboard'
+
+function RestrictedRolePage({ role }: { role: string }) {
+  return (
+    <main style={{ padding: 24, maxWidth: 600, margin: '0 auto' }}>
+      <h1>{role} access is not available yet</h1>
+      <p role="alert">
+        SolenOS has not verified a server-issued identity and permissions for this role.
+        This route is blocked rather than showing an unverified or demo dashboard.
+      </p>
+      <p>Caregiver access remains available through the private anonymous care session.</p>
+      <a href="/" style={{ color: 'var(--trust)' }}>Return to caregiver workspace</a>
+    </main>
+  )
+}
 
 function AnonymousSessionGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -77,9 +88,9 @@ export default function App() {
         <Route path="/companion" element={<Companion />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/community" element={<Community />} />
-        <Route path="/professional" element={<ProfessionalDashboard />} />
-        <Route path="/team" element={<TeamDashboard />} />
-        <Route path="/investor/dashboard" element={<InvestorDashboard />} />
+        <Route path="/professional" element={<RestrictedRolePage role="Professional" />} />
+        <Route path="/team" element={<RestrictedRolePage role="SolenOS team" />} />
+        <Route path="/investor/dashboard" element={<RestrictedRolePage role="Investor dashboard" />} />
        </Routes>
     </div>
     </AnonymousSessionGate>
