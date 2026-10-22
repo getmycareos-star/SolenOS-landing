@@ -56,13 +56,14 @@ describe('anonymous care session contract', () => {
     localStorage.setItem('solenos_backend_person_id', 'person-valid');
     localStorage.setItem('solenos_backend_caregiver_id', 'caregiver-valid');
     localStorage.setItem('solenos_anonymous_session_expires_at', new Date(Date.now() + 10 * 60 * 1000).toISOString());
+    global.fetch = jest.fn();
 
     const session = await ensureAnonymousSession();
 
     expect(session.person.id).toBe('person-valid');
     expect(getCaregiverId()).toBe('caregiver-valid');
     expect(getAnonymousAccessToken()).toBe('valid-token');
-    expect(global.fetch).toBeUndefined();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('refreshes using the backend nested response shape without writing undefined IDs', async () => {
