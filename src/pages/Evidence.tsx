@@ -141,8 +141,6 @@ export default function Evidence() {
       setSubmitting(false);
       setCompressing(false);
     },
-    retry: true,
-    maxRetries: 3
   });
 
   // Camera permission hook
