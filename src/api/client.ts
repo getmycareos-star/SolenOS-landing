@@ -1,4 +1,4 @@
-import { getAccessToken, clearAccessToken, authHeaders, getPersonId } from './authSession';
+import { getAccessToken, clearAccessToken, authHeaders } from './authSession';
 
 const configuredBase = import.meta.env.VITE_API_BASE?.trim()
 const isProduction = import.meta.env.PROD === true
@@ -26,13 +26,11 @@ export {
   subscribeToPersonId,
 } from './authSession';
 
-function interpolatePersonId(path: string): string {
-  if (!path.includes('demo-person-id')) return path
-  const personId = getPersonId()
-  if (!personId) throw new Error('Select an authorized care record before loading or changing care data.')
-  return path.replace(/demo-person-id/g, personId)
+function rejectDemoIdentity(path: string): void {
+  if (/(^|\\/)demo-person-id(?:[/?#]|$)/i.test(path)) {
+    throw new Error('A demo care-record identifier was detected. Select a real authorized care record before continuing.');
+  }
 }
-
 export class ApiError extends Error {
   status: number
   constructor(message: string, status: number) {
@@ -80,13 +78,13 @@ async function handleResponse(res: Response) {
   }
 }
 
-function resolveApiUrl(path: string, interpolate = false): string {
-  const resolvedPath = interpolate ? interpolatePersonId(path) : path
-  return resolvedPath.startsWith('/api/') ? resolvedPath : `${API_BASE}${resolvedPath}`
+function resolveApiUrl(path: string): string {
+  rejectDemoIdentity(path)
+  return path.startsWith('/api/') ? path : `${API_BASE}${path}`
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path, true), { headers: authHeaders() })
+  const res = await fetch(resolveApiUrl(path), { headers: authHeaders() })
   return handleResponse(res)
 }
 
@@ -97,7 +95,7 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const res = await fetch(resolveApiUrl(path, Boolean(personId)), {
+  const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
