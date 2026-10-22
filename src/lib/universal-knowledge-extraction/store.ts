@@ -1,5 +1,5 @@
 import type { DocumentKnowledgeResult } from "./types";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 
 const resultsByDocument = new Map<string, DocumentKnowledgeResult>();
 const caregiverIndex = new Map<string, string[]>();
