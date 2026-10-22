@@ -1,10 +1,11 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { MemoryRouter } from 'react-router-dom'
 import Community from '../Community'
 import Memory from '../Memory'
 import TeamDashboard from '../TeamDashboard'
 import CareCapture from '../../components/CareCapture'
+import Dashboard from '../Dashboard'
 import { getJSON, getCaregiverId, getPersonId, postJSON } from '../../api/client'
 
 jest.mock('../../api/client', () => ({
@@ -63,6 +64,78 @@ describe('Phase 4 production data safety', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/save could not be confirmed/i)
     expect(input).toHaveValue(note)
     expect(screen.queryByText('Care update saved.')).not.toBeInTheDocument()
+  })
+
+  it('does not mark a 200 response as saved unless the backend confirms capture success', async () => {
+    mockedPostJSON.mockResolvedValueOnce({
+      ok: false,
+      message: 'The capture was not accepted.',
+    } as never);
+
+    render(<CareCapture personId="person-real-1" />);
+
+    const note = 'The caregiver noticed a change, but the time is uncertain.';
+    const input = screen.getByPlaceholderText(/describe what you observed/i);
+    fireEvent.change(input, { target: { value: note } });
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/capture was not accepted/i);
+    expect(input).toHaveValue(note);
+    expect(screen.queryByText('Saved')).not.toBeInTheDocument();
+  })
+
+  it('reloads dashboard sections after a care capture is confirmed saved', async () => {
+    mockedGetJSON.mockImplementation(async (path: string) => {
+      if (path.startsWith('/events/')) return [];
+      if (path.startsWith('/insights/')) return [];
+      if (path.includes('/trends')) return [];
+      if (path.includes('/reasoning/')) {
+        return {
+          confirmed_facts: [],
+          open_questions: [],
+          preferences: [],
+          rejected_assumptions: [],
+          care_patterns: [],
+          coordination_decisions: [],
+        };
+      }
+      if (path.startsWith('/daily-intelligence/')) {
+        return {
+          id: 'daily-1',
+          intelligence_date: '2026-10-22',
+          overdue_items: [],
+          upcoming_items: [],
+          active_windows: [],
+          expired_windows: [],
+          daily_summary: '',
+        };
+      }
+      if (path.startsWith('/actions/')) return [];
+      throw new Error(`Unexpected dashboard endpoint: ${path}`);
+    });
+    mockedPostJSON.mockResolvedValueOnce({
+      ok: true,
+      message: 'Care input recorded successfully.',
+      analysis_status: 'complete',
+    } as never);
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+
+    const note = 'Breakfast was mostly uneaten; exact start time is uncertain.';
+    const input = await screen.findByPlaceholderText(/describe what you observed/i);
+    fireEvent.change(input, { target: { value: note } });
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }));
+
+    expect(await screen.findByText('Care input recorded successfully.')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        mockedGetJSON.mock.calls.filter(([path]) => String(path).startsWith('/events/')).length,
+      ).toBe(2);
+    });
   })
 
   it('does not report a valid empty record when the record API fails', async () => {
