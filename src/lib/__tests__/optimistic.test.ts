@@ -103,7 +103,7 @@ describe('useOptimisticMutation', () => {
       resolveMutation = resolve;
     }));
     const onMutate = jest.fn().mockResolvedValue({});
-    const { result } = renderHook(() => useOptimisticMutation());
+    const { result } = renderHook(() => useOptimisticMutation<{ id: string }, { test: string }>());
 
     let firstPromise!: Promise<{ id: string } | undefined>;
     act(() => {
