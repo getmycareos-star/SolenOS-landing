@@ -914,25 +914,41 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                 </article>
               </div>
             </section>
-            <SituationResponsePanel
-              response={situationResponse}
-              rawInput={lastSharedDisplay || rawInput}
-              careKey={caregiverId}
-              entryIntent={
-                (situationResponse.active_care_situation?.observations?.length ?? 0) > 1
-                  ? "update"
-                  : "initial"
-              }
-              onAddUpdate={() => {
-                setRawInput("");
-                setDocuments([]);
-                const obs =
-                  situationResponse.active_care_situation?.observations?.length ?? 0;
-                setEntryMode(obs > 1 ? "update" : "initial");
-                go("REAL_MOMENT");
-              }}
-              onContinue={handleDoneForNow}
-            />
+            {situationResponse.analysis_status === "partial" && (
+              <p className="workspace-status-warning" role="status">
+                {situationResponse.analysis_warning ||
+                  "Care input was saved, but change and situation analysis could not be completed. The recorded evidence remains available."}
+              </p>
+            )}
+            {situationResponse.ok === true && !situationResponse.active_care_situation ? (
+              <section className="panel panel-response" role="status" aria-live="polite">
+                <h3>Care record view unavailable</h3>
+                <p>
+                  The server accepted this capture but did not return a persisted care-record view.
+                  Refresh the record to verify what was saved before submitting the same information again.
+                </p>
+              </section>
+            ) : (
+              <SituationResponsePanel
+                response={situationResponse}
+                rawInput={lastSharedDisplay || rawInput}
+                careKey={caregiverId}
+                entryIntent={
+                  (situationResponse.active_care_situation?.observations?.length ?? 0) > 1
+                    ? "update"
+                    : "initial"
+                }
+                onAddUpdate={() => {
+                  setRawInput("");
+                  setDocuments([]);
+                  const obs =
+                    situationResponse.active_care_situation?.observations?.length ?? 0;
+                  setEntryMode(obs > 1 ? "update" : "initial");
+                  go("REAL_MOMENT");
+                }}
+                onContinue={handleDoneForNow}
+              />
+            )}
             <button
               type="button"
               className="care-reality-fab"
