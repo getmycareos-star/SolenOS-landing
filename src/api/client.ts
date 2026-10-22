@@ -93,6 +93,7 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
       expiresAt &&
       Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
     ) {
+      setPersonId(personId);
       return {
         person: { id: personId, name: "Care recipient", date_of_birth: null },
         caregiver: { id: caregiverId, name: "Caregiver", relationship: "Family" },
