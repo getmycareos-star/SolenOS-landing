@@ -81,7 +81,7 @@ export async function getBlob(path: string): Promise<Blob> {
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown, personId?: boolean) {
+export async function postJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -90,7 +90,7 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
   return handleResponse(res)
 }
 
-export async function patchJSON(path: string, body: unknown, personId?: boolean) {
+export async function patchJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
