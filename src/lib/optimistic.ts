@@ -7,8 +7,6 @@ interface OptimisticMutationOptions<TData, TVariables> {
   onSuccess?: (data: TData, variables: TVariables, context: unknown) => Promise<void> | void;
   onError?: (error: unknown, variables: TVariables, context: unknown) => Promise<void> | void;
   onSettled?: (data: TData | undefined, error: unknown | null, variables: TVariables, context: unknown) => Promise<void> | void;
-  retry?: boolean;
-  maxRetries?: number;
 }
 
 /**
@@ -23,7 +21,6 @@ export function useOptimisticMutation<TData, TVariables>(
   const [error, setError] = useState<unknown | null>(null);
   const [data, setData] = useState<TData | null>(null);
   const inFlightRef = useRef<Promise<unknown> | null>(null);
-  const snapshotRef = useRef<unknown>(null);
 
   const mutate = useCallback(async (
     optionsOrVariables: OptimisticMutationOptions<TData, TVariables> | TVariables,
@@ -40,13 +37,10 @@ export function useOptimisticMutation<TData, TVariables>(
       throw new Error('Mutation options must be provided either to the hook or mutate().');
     }
 
-    const existing = inFlightRef.current;
-    if (existing) {
-      if (!options.retry) {
-        throw new Error('Mutation already in progress');
-      }
-      await existing.catch(() => undefined);
-      return mutate(optionsOrVariables, maybeVariables as TVariables);
+    // Never queue or replay a second mutation behind an in-flight request.
+    // A timed-out durable write may already have reached the server.
+    if (inFlightRef.current) {
+      throw new Error('A mutation is already in progress. Wait for its outcome before trying again.');
     }
 
     setLoading(true);
@@ -58,7 +52,6 @@ export function useOptimisticMutation<TData, TVariables>(
     const operation = (async () => {
       try {
         context = await options.onMutate?.(variables);
-        snapshotRef.current = context;
         result = await options.mutationFn(variables);
         await options.onSuccess?.(result, variables, context);
         setData(result);
@@ -95,9 +88,7 @@ export function useOptimisticMutation<TData, TVariables>(
     reset: () => {
       setLoading(false);
       setError(null);
-      setData(null);
-      snapshotRef.current = null;
-      inFlightRef.current = null;
+      if (!inFlightRef.current) setData(null);
     },
   };
 }
