@@ -437,7 +437,14 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
-      // On success, reset the form
+      // Only a persisted event ID is enough to show a saved state or clear care input.
+      if (!data || typeof data !== 'object' ||
+          (data as Record<string, unknown>).success !== true ||
+          typeof (data as Record<string, unknown>).id !== 'string' ||
+          !(data as Record<string, unknown>).id) {
+        throw new Error('The server did not confirm a persisted daily-care event. The form has been preserved; check the Living Care Record before retrying to avoid a duplicate.');
+      }
+      // On confirmed persistence, reset the form
       setForm({
         medications: [],
         vitals: [],
