@@ -31,7 +31,7 @@ import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { ensureAnonymousSession } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
 import {
   IN_APP_IMPROVING_NOTICE,
   EMERGENCY_BOUNDARY,
@@ -200,11 +200,26 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       void trackClientActivationEvent({ event_type: "RETURN_SESSION" });
     }
 
+    // Hydrate only an existing server-issued session. A fresh visitor does not
+    // create an empty care record merely by opening the workspace.
+    const existingToken = getAnonymousAccessToken();
+    if (!existingToken) {
+      setDisplayName("");
+      return;
+    }
+
     // Mount hydrate must not consume soft invite — Done path offers once (Locked B).
-    void fetch(
-      apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
-    )
-      .then((r) => r.json())
+    void ensureAnonymousSession()
+      .then((session) =>
+        fetch(
+          apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
+          { headers: { Authorization: `Bearer ${session.access_token}` } },
+        ),
+      )
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Situation hydration failed (${r.status})`);
+        return r.json();
+      })
       .then(
         (data: {
           has_context_root?: boolean;
