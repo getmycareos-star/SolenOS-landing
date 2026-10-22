@@ -46,6 +46,20 @@ export function getOrCreateProfile(params: {
   return record;
 }
 
+/**
+ * Cache a record loaded from durable storage so existing immutable update
+ * helpers operate on the same current record rather than a detached DB object.
+ * Reconcile an older in-memory ID for the same caregiver/case key.
+ */
+export function cacheProfileRecord(record: CareRecipientProfileRecord): CareRecipientProfileRecord {
+  const key = profileKey(record.caregiver_id, record.case_id);
+  const priorId = caregiverIndex.get(key);
+  if (priorId && priorId !== record.id) profiles.delete(priorId);
+  profiles.set(record.id, record);
+  caregiverIndex.set(key, record.id);
+  return record;
+}
+
 export function getProfileById(id: string): CareRecipientProfileRecord | undefined {
   return profiles.get(id);
 }
