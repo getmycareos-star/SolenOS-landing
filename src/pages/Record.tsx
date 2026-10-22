@@ -26,7 +26,7 @@ export default function Record() {
         return
       }
       try {
-        const data = await getJSON('/evidence/demo-person-id')
+        const data = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
         if (!Array.isArray(data)) throw new Error('The server response was incomplete.')
         if (!cancelled) setItems(data)
       } catch {
