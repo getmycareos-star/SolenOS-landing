@@ -59,8 +59,6 @@ export default function PreferenceDemo() {
           onSettled: (data, err, variables, context) => {
             setLoading(false);
           },
-          retry: true,
-          maxRetries: 3
         },
         {
           userId: 'current-user-id', // In reality, this would come from auth context
