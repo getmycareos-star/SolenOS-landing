@@ -1,196 +1,58 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from '../StructuredDailyCapture';
-import { compressImage } from '../../lib/imageCompression';
+import { postFormData, postJSON } from '../../api/client';
 
 jest.mock('../../api/client', () => ({
   getPersonId: () => 'test-person-id',
-  getCaregiverId: () => 'demo-caregiver',
+  getCaregiverId: () => 'test-caregiver-id',
   getJSON: jest.fn().mockResolvedValue([]),
-  postJSON: jest.fn().mockResolvedValue({}),
-  postFormData: async (path: string, body: FormData) => {
-    const response = await fetch(path, { method: 'POST', body });
-    if (!response.ok) throw new Error('Failed to upload image');
-    return response.json();
-  },
+  postJSON: jest.fn().mockResolvedValue({ success: true, id: 'test-event-id' }),
+  postFormData: jest.fn(),
 }));
 
-// Mock the compression library
-jest.mock('../../lib/imageCompression', () => ({
-  ...jest.requireActual('../../lib/imageCompression'),
-  compressImage: jest.fn().mockImplementation(async (file) => {
-    // Return a smaller file for testing
-    return new File([file.slice(0, Math.floor(file.size / 2))], file.name, { 
-      type: file.type 
-    });
-  })
-}));
-
-describe('StructuredDailyCapture Component Image Compression Integration', () => {
+describe('StructuredDailyCapture photo evidence boundary', () => {
   beforeEach(() => {
-    // Clear localStorage before each test
-    localStorage.clear();
+    jest.clearAllMocks();
   });
 
-  it('should compress medication image before upload when using gallery upload', async () => {
-    // Mock the API calls
-    global.fetch = jest.fn().mockImplementation(async (url, options) => {
-      if (url.includes('/upload')) {
-        return {
-          ok: true,
-          json: async () => ({ evidence_id: 'test-evidence-id' })
-        };
-      }
-      if (url.includes('/daily/log')) {
-        return {
-          ok: true,
-          json: async () => ({ success: true })
-        };
-      }
-      return { ok: true, json: async () => ({}) };
-    });
-
-    // Render the component
+  it('clearly states that photo evidence is unavailable and does not expose upload controls', () => {
     render(<StructuredDailyCapture />);
 
-    // Find and interact with file input
-    const fileInput = screen.getByLabelText(/or upload from device/i);
-    const testFile = new File(['dummy image content', 'dummy image content'], 'medication.png', { 
-      type: 'image/png' 
-    });
-    
-    // Mock the FileReader
-    const fileReaderMock = {
-      onload: null,
-      readAsDataURL: jest.fn((file) => {
-        // Simulate FileReader.onload being called with a data URL
-        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
-        setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
-      })
-    };
-    global.FileReader = jest.fn(() => fileReaderMock);
+    expect(screen.getByText(/photo evidence unavailable/i)).toBeInTheDocument();
+    expect(screen.getByText(/verified backend upload endpoint is not available/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/upload from device/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /take photo/i })).not.toBeInTheDocument();
+  });
 
-    // Trigger file selection
-    fireEvent.change(fileInput, {
-      target: { files: [testFile] }
-    });
+  it('allows medication details to be saved without making an unsupported upload request', async () => {
+    const user = userEvent.setup();
+    render(<StructuredDailyCapture />);
 
-    // Wait for image preview to appear
-    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/medication name/i), 'Test Medication');
+    await user.selectOptions(screen.getByLabelText(/status/i), 'given');
+    await user.type(screen.getByLabelText(/dose/i), '10mg');
+    await user.click(screen.getByRole('button', { name: /^add medication$/i }));
 
-    // Fill medication form and submit
-    const medicationInput = screen.getByPlaceholderText(/enter medication name/i);
-    fireEvent.change(medicationInput, { target: { value: 'Test Medication' } });
-    
-    const submitMedicationButton = screen.getByRole('button', { name: /add medication/i });
-    fireEvent.click(submitMedicationButton);
+    expect(await screen.findByText(/test medication/i)).toBeInTheDocument();
 
-    // Wait for submission to complete
+    await user.click(screen.getByRole('button', { name: /save daily capture/i }));
+
     await waitFor(() => {
-      expect(screen.getByText('Test Medication')).toBeInTheDocument();
+      expect(postJSON).toHaveBeenCalledWith(
+        '/daily/log',
+        expect.objectContaining({
+          person_id: 'test-person-id',
+          caregiver_id: 'test-caregiver-id',
+          medications: expect.arrayContaining([
+            expect.objectContaining({
+              medication_name: 'Test Medication',
+              photo_evidence_id: null,
+            }),
+          ]),
+        }),
+      );
     });
-
-    // Verify that compressImage was called
-    expect(compressImage).toHaveBeenCalled();
-    
-    // Verify that the compressed file was sent in the upload request
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/upload'),
-      expect.objectContaining({
-        method: 'POST',
-        body: expect.any(FormData)
-      })
-    );
-  });
-
-  it('should show compression status during medication image processing', async () => {
-    render(<StructuredDailyCapture />);
-
-    // Initially, compression status should not be visible
-    expect(screen.queryByText(/compressing image/i)).not.toBeInTheDocument();
-
-    // Mock file input and FileReader
-    const fileInput = screen.getByLabelText(/or upload from device/i);
-    const testFile = new File(['dummy image content'], 'medication.png', { 
-      type: 'image/png' 
-    });
-    
-    const fileReaderMock = {
-      onload: null,
-      readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
-        setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
-      })
-    };
-    global.FileReader = jest.fn(() => fileReaderMock);
-
-    // Trigger file selection - this should start compression
-    fireEvent.change(fileInput, {
-      target: { files: [testFile] }
-    });
-
-    // Compression status should be visible during processing
-    expect(await screen.findByText(/compressing image/i)).toBeInTheDocument();
-  });
-
-  it('should handle medication compression errors gracefully', async () => {
-    // Mock compressImage to throw an error
-    (compressImage as jest.Mock).mockRejectedValueOnce(new Error('Compression failed'));
-
-    // Mock the API calls
-    global.fetch = jest.fn().mockImplementation(async (url, options) => {
-      if (url.includes('/upload')) {
-        return {
-          ok: true,
-          json: async () => ({ evidence_id: 'test-evidence-id' })
-        };
-      }
-      if (url.includes('/daily/log')) {
-        return {
-          ok: true,
-          json: async () => ({ success: true })
-        };
-      }
-      return { ok: true, json: async () => ({}) };
-    });
-
-    render(<StructuredDailyCapture />);
-
-    // Mock file input and FileReader
-    const fileInput = screen.getByLabelText(/or upload from device/i);
-    const testFile = new File(['dummy image content'], 'medication.png', { 
-      type: 'image/png' 
-    });
-    
-    const fileReaderMock = {
-      onload: null,
-      readAsDataURL: jest.fn((file) => {
-        const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p6sAAAAASUVORK5CYII=';
-        setTimeout(() => fileReaderMock.onload?.({ target: { result: dataURL } }), 0);
-      })
-    };
-    global.FileReader = jest.fn(() => fileReaderMock);
-
-    // Trigger file selection
-    fireEvent.change(fileInput, {
-      target: { files: [testFile] }
-    });
-
-    // Wait for image preview to appear
-    expect(await screen.findByRole('button', { name: /remove preview/i })).toBeInTheDocument();
-
-    // Fill medication form and submit
-    const medicationInput = screen.getByPlaceholderText(/enter medication name/i);
-    fireEvent.change(medicationInput, { target: { value: 'Test Medication' } });
-    
-    const submitMedicationButton = screen.getByRole('button', { name: /add medication/i });
-    fireEvent.click(submitMedicationButton);
-
-    // Wait for submission to complete (should use original image due to fallback)
-    await waitFor(() => {
-      expect(screen.getByText('Test Medication')).toBeInTheDocument();
-    });
-
-    // Verify that fetch was still called (fallback to original image worked)
-    expect(fetch).toHaveBeenCalled();
+    expect(postFormData).not.toHaveBeenCalled();
   });
 });
