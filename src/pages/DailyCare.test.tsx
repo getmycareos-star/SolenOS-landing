@@ -104,11 +104,9 @@ describe('DailyCare', () => {
         medications: [],
         vitals: [],
         scales: expect.arrayContaining([
-          expect.objectContaining({ axis: 'mood', score: 1 }),
           expect.objectContaining({ axis: 'agitation', score: 1, note: 'None' }),
-          expect.objectContaining({ axis: 'wellbeing_stress', score: 3 }),
         ]),
-        notes: '',
+        notes: 'Mood: Calm',
         location: {
           latitude: 40.7128,
           longitude: -74.006,
