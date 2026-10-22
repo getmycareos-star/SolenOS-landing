@@ -13,6 +13,7 @@ const AGITATION_OPTIONS = ['None', 'Mild', 'Moderate', 'Severe', 'Extreme']
 
 export default function DailyCare() {
   const [saved, setSaved] = useState(false)
+  const [analysisWarning, setAnalysisWarning] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [caregiverError, setCaregiverError] = useState<string | null>(null)
 
@@ -75,6 +76,7 @@ export default function DailyCare() {
        const { latitude, longitude, accuracy, timestamp } = locationState;
        setForm(prev => ({ ...prev, location: { latitude, longitude, accuracy, timestamp } }));
        setSaved(false);
+     setAnalysisWarning(null);
      }
    }, [locationState]);
 
@@ -112,7 +114,7 @@ export default function DailyCare() {
     }
 
      try {
-       await postJSON('/daily-care/entries', {
+       const result = await postJSON('/daily-care/entries', {
          person_id: personId,
          caregiver_id: caregiverId,
          mood: form.mood || undefined,
@@ -133,6 +135,7 @@ export default function DailyCare() {
          location_provenance: form.location ? 'user_provided' : undefined,
        })
        setSaved(true)
+       setAnalysisWarning(result?.analysis_status === 'complete' ? null : (result?.analysis_error || 'The entry was saved, but derived analysis could not be confirmed.'))
        setForm({
          mood: '',
          agitation_level: '',
@@ -147,6 +150,7 @@ export default function DailyCare() {
        })
      } catch (e: any) {
        setSaved(false)
+      setAnalysisWarning(null)
        alert(`Failed to save: ${e.message}`)
      } finally {
        setSubmitting(false)
@@ -183,6 +187,11 @@ export default function DailyCare() {
             Saved. {form.general_notes || 'Entry recorded.'}
           </span>
         </div>
+      )}
+      {analysisWarning && (
+        <p role="status" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '20px' }}>
+          {analysisWarning}
+        </p>
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
