@@ -31,6 +31,7 @@ import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import {
   IN_APP_IMPROVING_NOTICE,
   EMERGENCY_BOUNDARY,
@@ -323,9 +324,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         payload: { entry: "add_situation", has_documents: readyDocs.length > 0 },
       });
 
+      const anonymousSession = await ensureAnonymousSession();
       const situationRes = await fetch(apiUrl("/api/situation"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${anonymousSession.access_token}`,
+        },
         body: JSON.stringify({
           raw_input: text,
           caregiver_id: caregiverId,
