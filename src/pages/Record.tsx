@@ -12,8 +12,14 @@ interface Evidence {
 }
 
 function requireEvidenceArray(value: unknown): Evidence[] {
-  if (!Array.isArray(value)) {
-    throw new Error('The server returned an invalid Living Care Record response. No empty state has been assumed.')
+  if (!Array.isArray(value) || !value.every(item =>
+    item && typeof item.id === 'string' &&
+    typeof item.type === 'string' &&
+    typeof item.source_text === 'string' &&
+    typeof item.uploaded_at === 'string' &&
+    Number.isFinite(new Date(item.uploaded_at).getTime())
+  )) {
+    throw new Error('The server returned an invalid or incomplete Living Care Record response. No empty state has been assumed.')
   }
   return value as Evidence[]
 }
