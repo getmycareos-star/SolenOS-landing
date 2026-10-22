@@ -79,6 +79,14 @@ export default function AccessibilityDemo() {
     }
   ];
 
+  if (!import.meta.env.DEV) {
+    return (
+      <main role="status" style={{ padding: '24px', color: 'var(--text-secondary)' }}>
+        This development-only accessibility showcase is disabled in production.
+      </main>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background p-6">
       {/* Skip to main content link */}
