@@ -1,4 +1,5 @@
 import { structureCareInput } from "../care-record/structure-input";
+import { requireCaregiverId } from "../care-identity";
 import { inferEventType } from "./classify";
 import { tryPersistCareEvent } from "./postgres-store";
 import { createCareEvent, getCareEvent, updateCareEventMetadata } from "./store";
@@ -58,7 +59,7 @@ export async function recordCareEventWithContext(
   const { listCareEventsForCaregiver } = await import("./store");
   const { retrieveHistoricalContext } = await import("../care-record/retrieve");
 
-  const caregiverId = input.created_by ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(input.created_by, "created_by");
   const prior = listCareEventsForCaregiver(caregiverId).filter(
     (e) => e.id !== result.care_event.id,
   );
