@@ -7,7 +7,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  resetCareJourneyStore,
   inferCareJourneyCategory,
   CARE_JOURNEY_CATEGORIES,
   CARE_JOURNEY_IDENTITY,
