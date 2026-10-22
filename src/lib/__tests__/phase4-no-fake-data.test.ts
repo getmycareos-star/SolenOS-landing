@@ -164,6 +164,7 @@ describe('Phase 4 production data-integrity guardrails', () => {
       'src/lib/meeting-preparation/meeting-store.ts',
       'src/lib/universal-knowledge-extraction/store.ts',
       'src/lib/care-identity/durable-care-key.ts',
+      'src/lib/multi-caregiver-context-model/store.ts',
       'src/app/api/situation/route.ts',
       'src/components/mvp-workspace/CognitiveWorkspace.tsx',
       'src/components/ops-devtools/MemoryEpisodePanel.tsx',
@@ -173,5 +174,7 @@ describe('Phase 4 production data-integrity guardrails', () => {
       expect(text).not.toMatch(/\?\?\s*["']default_caregiver["']/)
       expect(text).not.toMatch(/\|\|\s*["']default_caregiver["']/)
       expect(text).not.toMatch(/(?:caregiver(?:Id|_id)|contributorId)\s*[:=]\s*["']default_caregiver["']/)
+      expect(text).not.toMatch(/DEFAULT_CAREGIVER_ID|DEFAULT_CARE_RECIPIENT_ID/)
+      expect(text).not.toMatch(/(?:\?\?|\|\|)\s*["']default_care_recipient["']/)
     }
   })
