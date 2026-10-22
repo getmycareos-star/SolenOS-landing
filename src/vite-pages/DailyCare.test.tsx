@@ -97,8 +97,8 @@ describe('DailyCare', () => {
     expect(call).toBeDefined();
     const body = JSON.parse(call![1].body as string);
     expect(body).toEqual(expect.objectContaining({
-      person_id: 'test-person-id',
-      caregiver_id: 'test-caregiver-id',
+      person_id: '11111111-1111-4111-8111-111111111111',
+      caregiver_id: '22222222-2222-4222-8222-222222222222',
       medications: [],
       notes: expect.stringContaining('Mood selected: Calm'),
       scales: expect.arrayContaining([expect.objectContaining({ axis: 'agitation', score: 1 })]),
