@@ -23,16 +23,6 @@ interface CareCaptureProps {
   onCapture?: (text: string) => void
 }
 
-const CAPTURE_HINTS = [
-  { emoji: '🌙', text: 'Wandering overnight' },
-  { emoji: '💊', text: 'Refused medication' },
-  { emoji: '💤', text: 'Sleep got worse' },
-  { emoji: '🍽️', text: 'Eating less' },
-  { emoji: '😕', text: 'New confusion' },
-  { emoji: '😠', text: 'Increased agitation' },
-  { emoji: '⚖️', text: 'Weight loss' },
-]
-
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
@@ -149,7 +139,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           setSavedMessage(null)
           setIdentityError(null)
         }}
-        placeholder="Dad wandered at 2 AM and was confused about where he was..."
+        placeholder="Describe what you observed, when it happened, and what remains uncertain."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
         style={{
@@ -161,22 +151,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         }}
       />
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-        {CAPTURE_HINTS.map(hint => (
-          <button
-            key={hint.text}
-            type="button"
-            onClick={() => setText(hint.emoji + ' ' + hint.text + ' — ')}
-            style={{
-              padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)',
-              background: 'var(--bg)', fontSize: '11px', color: 'var(--text-secondary)',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
-            {hint.emoji} {hint.text}
-          </button>
-        ))}
-      </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
         <button
