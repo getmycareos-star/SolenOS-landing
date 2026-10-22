@@ -60,6 +60,7 @@ type Outcome = {
   outcome_status: string
   created_at: string
   notes?: string | null
+  correction_text?: string | null
 }
 type PanelData = {
   assertions: Assertion[]
@@ -218,7 +219,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
     }
   }
 
-  async function recordOutcome(question: Question, status: 'useful' | 'unresolved' | 'not_useful' | 'corrected') {
+  async function recordOutcome(question: Question, status: 'useful' | 'completed' | 'unresolved' | 'not_useful' | 'corrected') {
     const actionId = question.persisted_question_id || question.source_id
     const correction = (corrections[actionId] || '').trim()
     if (status === 'corrected' && !correction) {
@@ -372,6 +373,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
             </label>
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
               <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'useful')}>Useful</button>
+              <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'completed')}>Completed</button>
               <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'unresolved')}>Still unresolved</button>
               <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'not_useful')}>Not useful</button>
               <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'corrected')}>Record correction</button>
@@ -402,7 +404,7 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
         {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No outcomes recorded yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
             <strong>{item.outcome_status.replace(/_/g, ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
-            {item.notes && <p>{item.notes}</p>}
+            {item.notes && <p>{item.notes}</p>}{item.correction_text && <p><strong>Recorded correction:</strong> {item.correction_text}</p>}
           </div>
         )}
       </div>
