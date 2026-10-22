@@ -8,6 +8,7 @@ interface Message {
   safety_note?: string | null
   confidence?: number | null
   evidence_ids?: string[]
+  provider_status?: string
   timestamp: Date
 }
 
@@ -69,6 +70,7 @@ export default function Companion() {
         safety_note: response.safety_note,
         confidence: response.confidence,
         evidence_ids: response.evidence_ids,
+        provider_status: response.provider_status,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
@@ -126,8 +128,8 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Ask SolenOS anything about care needs, behavior patterns, or to surface a concern.
-            Responses are backed by local evidence and reasoning.
+            Ask about care needs, recorded changes, or general questions. When Qwen is configured,
+            Companion uses the selected care record as context. Messages are not silently added to the Living Care Record.
           </div>
         )}
         {messages.map((msg, i) => (
@@ -141,6 +143,13 @@ export default function Companion() {
               border: '1px solid var(--border)',
             }}>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+              {msg.role === 'assistant' && msg.provider_status && msg.provider_status !== 'connected' && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                  {msg.provider_status === 'not_configured' ? 'AI provider not configured' :
+                    msg.provider_status === 'error' ? 'AI provider unavailable' :
+                    msg.provider_status === 'safety_override' ? 'Safety override' : msg.provider_status}
+                </p>
+              )}
               {msg.safety_note && (
                 <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '6px', fontStyle: 'italic' }}>
                   Safety: {msg.safety_note}
