@@ -49,7 +49,8 @@ export function structureJourneyEvent(params: {
   const description = params.input.description.trim();
   const eventType = classifyJourneyEventType(description);
   const now = new Date().toISOString();
-  const caregiverId = params.input.caregiver_id ?? "default_caregiver";
+  const caregiverId = params.input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required to structure a care event.");
 
   return {
     id: params.event_id,
