@@ -1,5 +1,5 @@
 import { structureCareInput } from "../care-record/structure-input";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { inferEventType } from "./classify";
 import { tryPersistCareEvent } from "./postgres-store";
 import { createCareEvent, getCareEvent, updateCareEventMetadata } from "./store";
