@@ -130,6 +130,7 @@ export default function Community() {
   const [wisdomQuery, setWisdomQuery] = useState('')
   const [wisdomMatches, setWisdomMatches] = useState<ExperienceMatch[]>([])
   const [loadingWisdom, setLoadingWisdom] = useState(false)
+  const [wisdomError, setWisdomError] = useState<string | null>(null)
 
   const personId = getPersonId()
 
@@ -204,13 +205,15 @@ export default function Community() {
   async function fetchWisdom() {
     if (!wisdomQuery.trim()) return
     setLoadingWisdom(true)
+    setWisdomError(null)
+    setWisdomMatches([])
     try {
       const data = await postJSON('/community/experience', { observation: wisdomQuery.trim() }) as ExperienceResult
-      if (data?.matches) {
-        setWisdomMatches(data.matches.slice(0, 4))
-      }
+      if (!Array.isArray(data?.matches)) throw new Error('Experience response was incomplete.')
+      setWisdomMatches(data.matches.slice(0, 4))
     } catch {
       setWisdomMatches([])
+      setWisdomError('Similar experiences could not be loaded. No sample stories are shown.')
     } finally {
       setLoadingWisdom(false)
     }
@@ -319,6 +322,10 @@ export default function Community() {
           </button>
         </div>
 
+        {wisdomError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px' }}>{wisdomError}</p>}
+        {!loadingWisdom && !wisdomError && wisdomMatches.length === 0 && wisdomQuery.trim() && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>No matching community experiences were returned.</p>
+        )}
         {wisdomMatches.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {wisdomMatches.map(m => (
