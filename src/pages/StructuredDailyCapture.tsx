@@ -1107,8 +1107,9 @@ export default function StructuredDailyCapture() {
                 <input
                   id="capture-vital-value"
                   type="number"
-                  value={vitalForm.value}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
+                  value={Number.isFinite(vitalForm.value) ? vitalForm.value : ''}
+                  required
+                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: e.target.value === '' ? Number.NaN : Number(e.target.value) }))}
                   placeholder="Enter value"
                   style={{ 
                     width: '100%', 
@@ -1255,8 +1256,9 @@ export default function StructuredDailyCapture() {
                   type="number"
                   min={1}
                   max={5}
-                  value={scaleForm.score}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: parseInt(e.target.value) || 3 }))}
+                  value={Number.isFinite(scaleForm.score) ? scaleForm.score : ''}
+                  required
+                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? Number.NaN : Number.parseInt(e.target.value, 10) }))}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 
