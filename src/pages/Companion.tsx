@@ -17,6 +17,7 @@ export default function Companion() {
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
+  const [requestError, setRequestError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const personId = getPersonId()
 
@@ -30,6 +31,11 @@ export default function Companion() {
 
   const sendMessage = async () => {
     if (!input.trim()) return
+    if (!personId) {
+      setRequestError('No care record is selected. Select an authorized care record before starting a conversation.')
+      return
+    }
+    setRequestError(null)
     setLoading(true)
     setEmergency(false)
 
@@ -41,11 +47,14 @@ export default function Companion() {
     setMessages(prev => [...prev, userMsg])
 
     try {
+      const submittedText = input
       const response = await postJSON('/conversation/message', {
         person_id: personId,
-        text: input,
+        text: submittedText,
         session_id: sessionId,
       }) as any
+      if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
+      setInput('')
 
       if (!sessionId) setSessionId(response.session_id)
 
@@ -64,13 +73,9 @@ export default function Companion() {
       }
       setMessages(prev => [...prev, assistantMsg])
     } catch (e: any) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: `Error: ${e.message}`,
-        timestamp: new Date(),
-      }])
+      setMessages(prev => prev.filter(message => message !== userMsg))
+      setRequestError('Your message could not be confirmed. The text remains in the input so you can retry.')
     } finally {
-      setInput('')
       setLoading(false)
     }
   }
@@ -99,6 +104,8 @@ export default function Companion() {
           New conversation
         </button>
       </div>
+
+      {requestError && <p role="alert" style={{ color: 'var(--error)', fontSize: '13px', marginBottom: '12px' }}>{requestError}</p>}
 
       {emergency && (
         <div style={{
