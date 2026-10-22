@@ -29,6 +29,7 @@ export default function Evidence() {
   });
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
+  const [listError, setListError] = useState<string | null>(null);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
 
   // Form state for creating new evidence
@@ -108,10 +109,12 @@ export default function Evidence() {
       // But we also optimistically added it, so we could add it to the list
       // For simplicity, we'll refetch the list
       try {
-        const freshData = await getJSON('/evidence/' + variables.person_id);
+        const freshData = await getJSON('/evidence/' + encodeURIComponent(variables.person_id));
+        if (!Array.isArray(freshData)) throw new Error('Evidence response was incomplete.');
         setItems(freshData);
-      } catch (err) {
-        console.error('Failed to refresh evidence list:', err);
+        setListError(null);
+      } catch {
+        setListError('Evidence was saved, but the list could not be refreshed. Reload the list before relying on its displayed contents.');
       }
       
       // Reset form
@@ -151,14 +154,18 @@ export default function Evidence() {
       const personId = getPersonId();
       if (!personId) {
         setItems([]);
+        setListError('No care record is selected. Select an authorized care record to view evidence.');
         setLoading(false);
         return;
       }
       try {
-        const data = await getJSON('/evidence/' + personId);
+        const data = await getJSON('/evidence/' + encodeURIComponent(personId));
+        if (!Array.isArray(data)) throw new Error('Evidence response was incomplete.');
         setItems(data);
-      } catch (err) {
-        console.error(err);
+        setListError(null);
+      } catch {
+        setItems([]);
+        setListError('Evidence could not be loaded. The empty list must not be treated as proof that no evidence exists.');
       } finally {
         setLoading(false);
       }
@@ -522,10 +529,11 @@ export default function Evidence() {
             {/* Evidence list */}
             <div className='evidence-list-items'>
               {loading && <p className='evidence-list-loading'>Loading evidence...</p>}
-              {!loading && items.length === 0 && (
+              {!loading && listError && <p role="alert" style={{ color: 'var(--error)' }}>{listError}</p>}
+              {!loading && !listError && items.length === 0 && (
                 <p>No evidence found. Create your first evidence above.</p>
               )}
-              {!loading && items.length > 0 && (
+              {!loading && !listError && items.length > 0 && (
                 <div className='evidence-list-grid'>
                   {items.map((item: any) => {
                     const sc = statusColor[item.status as keyof typeof statusColor] || statusColor.ACTIVE;
