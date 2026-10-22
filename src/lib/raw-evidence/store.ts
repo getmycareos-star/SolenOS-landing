@@ -122,7 +122,7 @@ export class RawEvidenceStore {
     try {
       activePool = await this.resolvePool();
     } catch (error) {
-      persistence_error = error instanceof Error ? error.message : "Database pool could not be created";
+      persistence_error = "PostgreSQL storage could not be confirmed.";
     }
 
     if (activePool) {
@@ -160,7 +160,7 @@ export class RawEvidenceStore {
           // The database is confirmed; a stale local queue file is harmless because inserts are idempotent.
         }
       } catch (error) {
-        persistence_error = error instanceof Error ? error.message : "Database write failed";
+        persistence_error = "PostgreSQL storage could not be confirmed.";
         if (!this.syncQueue.some((queued) => queued.id === evidence.id)) this.syncQueue.push(evidence);
       }
     }
