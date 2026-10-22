@@ -51,6 +51,7 @@ export default function DailyCare() {
         setCaregivers(data)
         const verifiedCaregiverId = getCaregiverId()
         if (verifiedCaregiverId && data.some((item: Caregiver) => item.id === verifiedCaregiverId)) {
+          setCaregiverError(null)
           setCaregiverId(verifiedCaregiverId)
         } else {
           setCaregiverId('')
