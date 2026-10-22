@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { getJSON, postJSON, getCaregiverId } from '../api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
-type ReactionType = 'like' | 'thank_you' | 'support'
+type ReactionType = 'support' | 'helpful' | 'relate' | 'heart'
 type CareStage = 'early' | 'moderate' | 'late' | 'unspecified'
 type Visibility = 'public' | 'circle' | 'anonymous'
 
@@ -26,9 +26,24 @@ interface CommunityPost {
   user_reaction: ReactionType | null
 }
 
+interface ApiCommunityPost {
+  id: string
+  author_type: string
+  author_label: string
+  post_type?: string
+  content: string
+  care_stage?: string | null
+  tags?: string[]
+  visibility?: string
+  moderation_status?: string
+  created_at?: string | null
+  reaction_counts?: Record<string, number>
+  user_reaction?: string | null
+}
+
 interface CommunityPostSummary {
-  identity: string
-  posts: CommunityPost[]
+  count: number
+  posts: ApiCommunityPost[]
 }
 
 interface ExperienceMatch {
@@ -40,7 +55,46 @@ interface ExperienceMatch {
 }
 
 interface ExperienceResult {
-  matches: ExperienceMatch[]
+  matches: { post: ApiCommunityPost; matched_terms?: string[]; match_type?: string }[]
+}
+
+function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
+  const validStage = post.care_stage === 'early' || post.care_stage === 'moderate' || post.care_stage === 'late'
+    ? post.care_stage
+    : 'unspecified'
+  const validAuthor: AuthorType = post.author_type === 'solenos_verified'
+    || post.author_type === 'professional'
+    || post.author_type === 'professional_pending'
+    ? post.author_type
+    : 'peer_caregiver'
+  const counts = post.reaction_counts || {}
+  const userReaction = post.user_reaction === 'support' || post.user_reaction === 'helpful'
+    || post.user_reaction === 'relate' || post.user_reaction === 'heart'
+    ? post.user_reaction
+    : null
+  return {
+    id: post.id,
+    author_type: validAuthor,
+    author_label: post.author_label || 'Anonymous caregiver',
+    author_avatar_seed: '🧑',
+    title: post.post_type === 'question' ? 'Community question' : null,
+    body: post.content,
+    media: [],
+    visibility: post.visibility === 'private' ? 'circle' : 'public',
+    care_stage: validStage,
+    tags: Array.isArray(post.tags) ? post.tags : [],
+    created_at: post.created_at || '',
+    updated_at: null,
+    provenance_source: 'caregiver-submitted',
+    reaction_counts: {
+      support: counts.support || 0,
+      helpful: counts.helpful || 0,
+      relate: counts.relate || 0,
+      heart: counts.heart || 0,
+    },
+    comment_count: 0,
+    user_reaction: userReaction,
+  }
 }
 
 const STAGE_LABELS: Record<CareStage, string> = {
@@ -115,102 +169,11 @@ function tagColor(tag: string) {
   return TAG_COLORS[tag] ?? DEFAULT_TAG_COLORS
 }
 
-const SAMPLE_POSTS: CommunityPost[] = [
-  {
-    id: 'sample-1',
-    author_type: 'peer_caregiver',
-    author_label: 'Sarah M.',
-    author_avatar_seed: 'sm',
-    title: 'Managing sundowning evenings',
-    body: 'Dad starts getting agitated around 5pm — pacing, asking where Mom is. The thing that finally helps is dimming lights 30 minutes before, playing his old jazz playlist, and quietly redirecting with a simple task like folding towels. It\'s not perfect, but the episodes dropped from daily to 2-3 times a week.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['sundowning', 'behavior', 'activities', 'sleep'],
-    created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 34, thank_you: 18, support: 12 },
-    comment_count: 5,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-2',
-    author_type: 'peer_caregiver',
-    author_label: 'Robert & Maria',
-    author_avatar_seed: 'rm',
-    title: 'Medication adherence hack',
-    body: 'Mom refused her evening meds for three days straight — we tried pill organizers, reminders, everything. Finally worked: mixing the small pill in a tiny bit of applesauce she loves. Not medical advice, just sharing what got us past this particular hurdle.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['medication', 'behavior'],
-    created_at: new Date(Date.now() - 5 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 52, thank_you: 28, support: 7 },
-    comment_count: 9,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-3',
-    author_type: 'solenos_verified',
-    author_label: 'SolenOS',
-    author_avatar_seed: 'so',
-    title: 'Before your next appointment',
-    body: 'Based on your care record, here are the top items to discuss with the neurologist: (1) recent weight trend — noted 3 lb loss over 2 weeks, (2) wandering episodes increased to 4x this week, (3) new sleep pattern — waking 2-3 hours earlier. Other dementia caregivers flagged tracking daily weight as important before visits.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['medication', 'wandering', 'nutrition', 'appointments'],
-    created_at: new Date(Date.now() - 8 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:solenos_verified',
-    reaction_counts: { like: 15, thank_you: 9, support: 3 },
-    comment_count: 2,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-4',
-    author_type: 'peer_caregiver',
-    author_label: 'Elena R.',
-    author_avatar_seed: 'er',
-    title: 'Safe home setup — what worked for wandering',
-    body: 'Installed door alarms and removed keys from his pocket (he kept trying to leave). Also put a motion sensor nightlight in the hallway. The alarms are loud but they give me enough time to redirect before he reaches the door. Still not foolproof, but safer.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'late',
-    tags: ['wandering', 'safety', 'mobility'],
-    created_at: new Date(Date.now() - 22 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 28, thank_you: 14, support: 19 },
-    comment_count: 6,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-5',
-    author_type: 'peer_caregiver',
-    author_label: 'David K.',
-    author_avatar_seed: 'dk',
-    title: 'Calming techniques for agitation',
-    body: 'When Dad gets combative or confused, I\'ve learned NOT to argue or correct him. Instead: validate his emotion ("I can see you\'re upset"), offer physical comfort (hand on shoulder), and redirect to a familiar activity (looking at photo albums). It doesn\'t eliminate agitation but reduces its intensity.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['behavior', 'communication', 'activities'],
-    created_at: new Date(Date.now() - 3 * 24 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 41, thank_you: 23, support: 16 },
-    comment_count: 8,
-    user_reaction: null,
-  },
-]
-
 export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerText, setComposerText] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -222,7 +185,33 @@ export default function Community() {
   const [wisdomMatches, setWisdomMatches] = useState<ExperienceMatch[]>([])
   const [loadingWisdom, setLoadingWisdom] = useState(false)
 
-  const personId = getPersonId()
+  const caregiverId = getCaregiverId() || ''
+  const [notice, setNotice] = useState<string | null>(null)
+
+  async function loadPosts() {
+    if (!caregiverId) {
+      setPosts([])
+      setLoadError('Sign in with a caregiver account to access the community.')
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const response = await getJSON<CommunityPostSummary>(
+        '/community?caregiver_id=' + encodeURIComponent(caregiverId),
+      )
+      if (!response || !Array.isArray(response.posts)) {
+        throw new Error('The backend returned an unexpected community-feed response.')
+      }
+      setPosts(response.posts.map(normalizeCommunityPost))
+    } catch (error) {
+      setPosts([])
+      setLoadError(error instanceof Error ? error.message : 'Community posts could not be loaded.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem('solenos_saved_posts')
@@ -234,43 +223,22 @@ export default function Community() {
   }, [])
 
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
-        setPosts(data.posts ?? [])
-      } catch (e) {
-        console.error(e)
-        setPosts(SAMPLE_POSTS)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personId])
+    void loadPosts()
+  }, [caregiverId])
 
   async function handleReaction(postId: string, reactionType: ReactionType) {
+    setActionError(null)
     try {
       await postJSON(`/community/${postId}/reactions`, {
-        caregiver_id: personId,
+        caregiver_id: caregiverId,
         reaction_type: reactionType,
       })
+      // Refresh server-confirmed counts; repeated clicks replace the reaction.
+      await loadPosts()
     } catch (e) {
       console.error(e)
+      setActionError(e instanceof Error ? e.message : 'Your reaction was not saved.')
     }
-    setPosts(prev => prev.map(p => {
-      if (p.id !== postId) return p
-      const counts = { ...p.reaction_counts }
-      if (p.user_reaction === reactionType) {
-        counts[reactionType] = Math.max(0, counts[reactionType] - 1)
-        return { ...p, reaction_counts: counts, user_reaction: null }
-      }
-      if (p.user_reaction) {
-        counts[p.user_reaction] = Math.max(0, counts[p.user_reaction] - 1)
-      }
-      counts[reactionType] = counts[reactionType] + 1
-      return { ...p, reaction_counts: counts, user_reaction: reactionType }
-    }))
   }
 
   function toggleSave(postId: string) {
@@ -286,14 +254,22 @@ export default function Community() {
 
   async function fetchWisdom() {
     if (!wisdomQuery.trim()) return
+    setActionError(null)
     setLoadingWisdom(true)
     try {
-      const data = await postJSON('/community/experience', { observation: wisdomQuery.trim() }) as ExperienceResult
+      const data = await postJSON<ExperienceResult>('/community/experience', { observation: wisdomQuery.trim() })
       if (data?.matches) {
-        setWisdomMatches(data.matches.slice(0, 4))
+        setWisdomMatches(data.matches.slice(0, 4).map(match => ({
+          post_id: match.post.id,
+          author_label: match.post.author_label,
+          author_type: match.post.author_type,
+          content: match.post.content,
+          tags: Array.isArray(match.post.tags) ? match.post.tags : [],
+        })))
       }
-    } catch {
+    } catch (e) {
       setWisdomMatches([])
+      setActionError(e instanceof Error ? e.message : 'Shared experiences could not be retrieved.')
     } finally {
       setLoadingWisdom(false)
     }
@@ -301,28 +277,44 @@ export default function Community() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!composerText.trim()) return
+    const content = composerText.trim()
+    if (!content || submitting) return
+    if (!caregiverId) {
+      setActionError('Sign in with a caregiver account before sharing a post.')
+      return
+    }
+    setActionError(null)
+    setNotice(null)
     setSubmitting(true)
     try {
-      await postJSON('/community', {
-        caregiver_id: personId,
+      const created = await postJSON<ApiCommunityPost>('/community', {
+        caregiver_id: caregiverId,
         author_type: 'peer_caregiver',
         author_label: 'Anonymous caregiver',
         post_type: postType,
-        content: composerText.trim(),
+        content,
         visibility: 'public',
       })
-      setComposerText('')
-      setComposerOpen(false)
-      const response = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
-      setPosts(response.posts ?? [])
+      if (!created?.id || created.moderation_status !== 'pending') {
+        throw new Error('The backend did not confirm that the post was saved for moderation.')
+      }
     } catch (e) {
+      // A timeout can leave the server outcome unknown. Preserve the draft and
+      // tell the caregiver to check the feed before attempting another create.
       console.error(e)
-      setComposerText('')
-      setComposerOpen(false)
-    } finally {
+      setActionError(e instanceof Error
+        ? 'The server did not confirm the post. Refresh the feed to check whether it was saved before retrying. Details: ' + e.message
+        : 'The server did not confirm the post. Refresh the feed to check whether it was saved before retrying.')
       setSubmitting(false)
+      return
     }
+
+    // A successful create returns a pending post; it is not public until review.
+    setComposerText('')
+    setComposerOpen(false)
+    setNotice('Your post was saved and is awaiting moderation. It will appear in the public feed after review.')
+    await loadPosts()
+    setSubmitting(false)
   }
 
   const filteredPosts = posts.filter(p => {
@@ -376,7 +368,7 @@ export default function Community() {
           />
           <button
             onClick={fetchWisdom}
-            disabled={loadingWisdom || !wisdomQuery.trim()}
+            disabled={loadingWisdom || !wisdomQuery.trim() || Boolean(loadError)}
             style={{
               padding: '8px 16px', borderRadius: '8px', border: 'none',
               background: loadingWisdom || !wisdomQuery.trim()
@@ -405,6 +397,8 @@ export default function Community() {
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button
+          disabled={Boolean(loadError)}
+          title={loadError ? 'Community backend is unavailable; posting is disabled until the connection is restored.' : undefined}
           onClick={() => setComposerOpen(!composerOpen)}
           style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
@@ -475,7 +469,7 @@ export default function Community() {
             </span>
             <button
               onClick={handleSubmit}
-              disabled={submitting || !composerText.trim()}
+              disabled={submitting || !composerText.trim() || Boolean(loadError)}
               style={{
                 background: 'var(--trust-soft)', border: '1px solid var(--trust)',
                 borderRadius: '8px', padding: '8px 16px', fontSize: '13px',
@@ -488,6 +482,9 @@ export default function Community() {
           </div>
         </div>
       )}
+
+      {notice && <p role="status" style={{ color: 'var(--trust)', fontSize: '13px', marginBottom: '12px' }}>{notice}</p>}
+      {actionError && <p role="alert" style={{ color: 'var(--error)', fontSize: '13px', marginBottom: '12px' }}>{actionError}</p>}
 
       <div style={{ display: 'flex', gap: '24px' }}>
         <aside style={{ minWidth: '200px', flexShrink: 0 }}>
@@ -547,7 +544,14 @@ export default function Community() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading community posts...</p>
           )}
 
-          {!loading && filteredPosts.length === 0 && (
+          {!loading && loadError && (
+            <div role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>
+              Community posts could not be loaded: {loadError}. No sample posts are being shown. Community posting and experience matching are disabled until the backend is reachable.
+              <button onClick={() => window.location.reload()} style={{ marginLeft: '8px' }}>Retry</button>
+            </div>
+          )}
+
+          {!loading && !loadError && filteredPosts.length === 0 && (
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
               {activeTag || activeStage
                 ? 'No posts match your filters. Try clearing them.'
@@ -555,7 +559,7 @@ export default function Community() {
             </p>
           )}
 
-          {!loading && filteredPosts.map(post => {
+          {!loading && !loadError && filteredPosts.map(post => {
             const badge = authorBadge(post.author_type)
             return (
               <div key={post.id} style={{
@@ -615,28 +619,28 @@ export default function Community() {
                   paddingTop: '8px', borderTop: '1px solid var(--border)'
                 }}>
                   <button
-                    onClick={() => handleReaction(post.id, 'like')}
+                    onClick={() => handleReaction(post.id, 'helpful')}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       border: 'none', background: 'transparent',
                       padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
-                      color: post.user_reaction === 'like' ? 'var(--trust)' : 'var(--text-secondary)',
+                      color: post.user_reaction === 'helpful' ? 'var(--trust)' : 'var(--text-secondary)',
                       fontSize: '13px',
                     }}
                   >
-                    👍 {post.reaction_counts.like > 0 && post.reaction_counts.like}
+                    👍 {post.reaction_counts.helpful > 0 && post.reaction_counts.helpful}
                   </button>
                   <button
-                    onClick={() => handleReaction(post.id, 'thank_you')}
+                    onClick={() => handleReaction(post.id, 'relate')}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       border: 'none', background: 'transparent',
                       padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
-                      color: post.user_reaction === 'thank_you' ? 'var(--trust)' : 'var(--text-secondary)',
+                      color: post.user_reaction === 'relate' ? 'var(--trust)' : 'var(--text-secondary)',
                       fontSize: '13px',
                     }}
                   >
-                    🙏 {post.reaction_counts.thank_you > 0 && post.reaction_counts.thank_you}
+                    🤝 {post.reaction_counts.relate > 0 && post.reaction_counts.relate}
                   </button>
                   <button
                     onClick={() => handleReaction(post.id, 'support')}

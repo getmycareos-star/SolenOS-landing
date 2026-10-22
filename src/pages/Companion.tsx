@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { postJSON, getPersonId } from '../api/client'
+import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -15,10 +15,12 @@ export default function Companion() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [requestError, setRequestError] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const personId = getPersonId()
+  const caregiverId = getCaregiverId() || ''
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -29,7 +31,12 @@ export default function Companion() {
   }, [messages])
 
   const sendMessage = async () => {
-    if (!input.trim()) return
+    if (!input.trim() || loading) return
+    if (!personId || !caregiverId) {
+      setRequestError('Select a care recipient and sign in with a linked caregiver account before sending a message.')
+      return
+    }
+    setRequestError(null)
     setLoading(true)
     setEmergency(false)
 
@@ -38,15 +45,25 @@ export default function Companion() {
       text: input,
       timestamp: new Date(),
     }
-    setMessages(prev => [...prev, userMsg])
-
     try {
-      const response = await postJSON('/conversation/message', {
+      const response = await postJSON<{
+        session_id: string
+        person_id: string
+        reply: string
+        guard_verdict: string
+        safety_note: string | null
+        confidence: number | null
+        evidence_ids: string[]
+      }>('/conversation/message', {
         person_id: personId,
-        text: input,
+        caregiver_id: caregiverId,
+        text: input.trim(),
         session_id: sessionId,
-      }) as any
+      })
 
+      if (!response?.session_id || response.person_id !== personId || typeof response.reply !== 'string' || !response.reply.trim()) {
+        throw new Error('The backend did not confirm a saved conversation response. Your message remains available to retry.')
+      }
       if (!sessionId) setSessionId(response.session_id)
 
       const isEmergency = response.guard_verdict === 'blocked' || response.safety_note?.includes('emergency') || response.safety_note?.includes('immediate')
@@ -62,15 +79,11 @@ export default function Companion() {
         evidence_ids: response.evidence_ids,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, assistantMsg])
-    } catch (e: any) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: `Error: ${e.message}`,
-        timestamp: new Date(),
-      }])
-    } finally {
+      setMessages(prev => [...prev, userMsg, assistantMsg])
       setInput('')
+    } catch (e: unknown) {
+      setRequestError(e instanceof Error ? e.message : 'SolenOS could not send this message. Your text is still available to retry.')
+    } finally {
       setLoading(false)
     }
   }
@@ -84,6 +97,7 @@ export default function Companion() {
 
   const startNewSession = () => {
     setMessages([])
+    setRequestError(null)
     setSessionId(null)
     setEmergency(false)
   }
@@ -99,6 +113,12 @@ export default function Companion() {
           New conversation
         </button>
       </div>
+
+      {requestError && (
+        <div role="alert" style={{ color: 'var(--error)', border: '1px solid var(--error)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', fontSize: '13px' }}>
+          Message was not confirmed as sent: {requestError}
+        </div>
+      )}
 
       {emergency && (
         <div style={{
@@ -119,8 +139,8 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Ask SolenOS anything about care needs, behavior patterns, or to surface a concern.
-            Responses are backed by local evidence and reasoning.
+            Ask SolenOS to review what is recorded about care needs, recent events, or appointments.
+            Replies retrieve existing care-record facts; they are not generated medical advice or diagnoses.
           </div>
         )}
         {messages.map((msg, i) => (
@@ -163,6 +183,7 @@ export default function Companion() {
         <div ref={bottomRef} />
       </div>
 
+      {(!personId || !caregiverId) && <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Select a care recipient and sign in with its linked caregiver account to send a message. Draft text stays on this screen until you send it.</p>}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px' }}>
         <textarea
           value={input}
@@ -179,7 +200,7 @@ export default function Companion() {
         />
         <button
           onClick={sendMessage}
-          disabled={loading || !input.trim()}
+          disabled={loading || !input.trim() || !personId || !caregiverId}
           style={{
             padding: '10px 20px', borderRadius: '16px', border: 'none',
             background: loading || !input.trim() ? 'var(--text-secondary)' : 'var(--trust)',

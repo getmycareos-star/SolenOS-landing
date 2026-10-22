@@ -113,7 +113,7 @@ export default function DailyCare() {
     }
 
      try {
-       await postJSON('/daily-care/entries', {
+       const response = await postJSON('/daily-care/entries', {
          person_id: personId,
          caregiver_id: caregiverId,
          mood: form.mood || undefined,
@@ -135,6 +135,9 @@ export default function DailyCare() {
          } : undefined,
          location_provenance: form.location ? 'user_provided' : undefined,
        })
+       if (response?.success !== true || typeof response?.id !== 'string' || !response.id) {
+         throw new Error('The server did not confirm the saved entry. Refresh the Living Care Record before retrying to avoid a duplicate.')
+       }
        setSaved(true)
        setForm({
          mood: '',
@@ -152,7 +155,7 @@ export default function DailyCare() {
        })
      } catch (e: any) {
        setSaved(false)
-       alert(`Failed to save: ${e.message}`)
+       alert(`Could not confirm the save. The entry may have been saved. Refresh the Living Care Record before retrying to avoid a duplicate. Details: ${e instanceof Error ? e.message : 'Unknown error'}`)
      } finally {
        setSubmitting(false)
      }

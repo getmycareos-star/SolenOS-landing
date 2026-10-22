@@ -55,6 +55,18 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       return { caregiverId, personId, rawInput };
     },
     onSuccess: async (data, variables) => {
+      // A 2xx response alone is not proof that the expected care record was saved.
+      // Validate the minimum persistence contract before showing a success state.
+      if (
+        data?.ok !== true ||
+        typeof data?.care_event_id !== 'string' ||
+        !data.care_event_id ||
+        typeof data?.evidence_id !== 'string' ||
+        !data.evidence_id ||
+        data?.person_id !== variables.personId
+      ) {
+        throw new Error('The server did not confirm the saved care record. Refresh the Living Care Record before retrying to avoid a duplicate entry.')
+      }
       // The backend currently returns a saved situation, not community matches.
       // Do not call the nonexistent /community/experience endpoint or invent matches.
       setExperiences(null)
@@ -71,16 +83,20 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     onSettled: () => {
       // Preserve the user's text on failure so it can be corrected and retried.
     },
-    retry: true,
-    maxRetries: 3
+    // Care capture creates durable records. Do not replay a timed-out POST:
+    // the server may have saved it even if the response was lost.
   })
 
   const handleSubmit = async () => {
     if (!text.trim()) return
     
+    if (!personId) {
+      setIdentityError('Select a care record before saving this care update.')
+      return
+    }
     const caregiverId = getCaregiverId()
     if (!caregiverId) {
-      setIdentityError('A signed-in caregiver is required to save this care update.')
+      setIdentityError('A linked caregiver is required to save this care update.')
       return
     }
     setIdentityError(null)

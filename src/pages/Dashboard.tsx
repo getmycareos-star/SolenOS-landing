@@ -467,6 +467,8 @@ export default function Dashboard() {
           <Link to="/community" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Community wisdom</Link>
           <Link to="/record" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Living Care Record</Link>
           <Link to="/daily-care" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Daily care form</Link>
+          <Link to="/appointments" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Appointments</Link>
+          <Link to="/care-circle" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Care coordination</Link>
           <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Role switch</Link>
         </div>
     </div>
