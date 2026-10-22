@@ -202,26 +202,25 @@ async function getPool(): Promise<Pool> {
 export async function trySaveGraphEvent(
   event: JourneyGraphEvent,
   relationships: JourneyRelationship[],
-): Promise<boolean> {
-  if (!process.env.DATABASE_URL) return false;
+): Promise<void> {
+  if (!process.env.DATABASE_URL) throw new Error("Care journey graph database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     await saveGraphEventToPostgres(pool, event, relationships);
-    return true;
   } catch {
-    return false;
+    throw new Error("Unable to persist care journey graph event; save was not confirmed.");
   }
 }
 
 export async function tryLoadGraphForCaregiver(
   caregiverId: string,
 ): Promise<CareJourneyGraph | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL) throw new Error("Care journey graph database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
-    return loadGraphFromPostgres(pool, caregiverId);
+    return await loadGraphFromPostgres(pool, caregiverId);
   } catch {
-    return null;
+    throw new Error("Unable to load care journey graph; unavailable storage cannot be treated as an empty graph.");
   }
 }
 
