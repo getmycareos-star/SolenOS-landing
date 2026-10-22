@@ -20,7 +20,6 @@ import {
   addResolvedItem,
 } from "./caregiver-profile/store";
 import {
-  getCaregiverSelfProfileStorageMode,
   tryLoadCaregiverSelfProfile,
   trySaveCaregiverSelfProfile,
 } from "./caregiver-profile/postgres-store";
