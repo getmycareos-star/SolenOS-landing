@@ -500,8 +500,6 @@ export default function StructuredDailyCapture() {
     onSettled: () => {
       setSubmitting(false);
     },
-    retry: false,
-    maxRetries: 0
   });
 
   // Handle form submission to backend
