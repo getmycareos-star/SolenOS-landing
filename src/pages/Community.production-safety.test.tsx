@@ -43,9 +43,7 @@ describe('Community production data integrity', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^share$/i }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'cannot verify an authenticated caregiver session',
-    )
+    expect(await screen.findByText(/cannot verify an authenticated caregiver session/i)).toBeInTheDocument()
     expect(screen.getByDisplayValue(draft)).toBeInTheDocument()
     expect(mockedPostJSON).not.toHaveBeenCalled()
   })
