@@ -89,11 +89,9 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   assert.equal(ensureClientDurableCareKey(a), a, "reuse existing key");
   const b = ensureClientDurableCareKey(a);
   assert.equal(b, a, "stable across calls");
-  assert.equal(
-    ensureClientDurableCareKey("default_caregiver"),
-    "default_caregiver",
-    "Locked A: do not orphan default_caregiver",
-  );
+  const migratedLegacyKey = ensureClientDurableCareKey("default_caregiver");
+  assert.notEqual(migratedLegacyKey, "default_caregiver", "legacy shared identity must be rejected");
+  assert.ok(migratedLegacyKey.startsWith("care_"), "legacy shared identity gets a unique per-browser key");
   console.log("✓ durable care key reuse");
 }
 
