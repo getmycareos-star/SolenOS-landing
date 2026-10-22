@@ -19,7 +19,7 @@ type Freshness = {
   assertion_id: string
   status: 'within_review_window' | 'needs_confirmation' | 'historical' | 'time_bound_observation'
   age_days?: number | null
-  review_after_days: number
+  review_after_days?: number | null
   explanation: string
 }
 type Question = {
