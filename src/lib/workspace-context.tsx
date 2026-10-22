@@ -26,6 +26,7 @@ import {
   markEnteredCareRecord,
 } from "@/lib/care-entry";
 import { hasCompletedOnboarding } from "@/lib/onboarding";
+import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
 
 const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 const CARE_SESSION_STORAGE_KEY = "solenos_care_session_id";
@@ -132,9 +133,30 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         .catch(() => {});
     }
 
-    void fetch(
-      `/api/situation?caregiver_id=${encodeURIComponent(key)}&care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
-    )
+    const existingToken = getAnonymousAccessToken();
+    if (!existingToken) {
+      const onboardingPending = !hasCompletedOnboarding();
+      if (
+        onboardingPending ||
+        hasEnteredCareRecord() ||
+        localSituations.length > 0 ||
+        Boolean(opsKey) ||
+        freshEnter
+      ) {
+        setEntryReady(true);
+      } else {
+        router.replace("/start");
+      }
+      return;
+    }
+
+    void ensureAnonymousSession()
+      .then((session) =>
+        fetch(
+          `/api/situation?caregiver_id=${encodeURIComponent(key)}&care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
+          { headers: { Authorization: `Bearer ${session.access_token}` } },
+        ),
+      )
       .then((r) => (r && r.ok ? r.json() : null))
       .then((data) => {
         const fromServer = openSituationsFromSituationApi(data);
