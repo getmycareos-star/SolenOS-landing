@@ -6,6 +6,7 @@ interface Evidence {
   id: string
   type: string
   source_text: string
+  original_file_path?: string | null
   uploaded_at: string
   time_provenance?: string
   location?: string
@@ -99,6 +100,8 @@ export default function Record() {
         analysisId: typeof result.qwen_analysis_id === 'string' ? result.qwen_analysis_id : null,
       })
       setDocumentFile(null)
+      const refreshedEvidence = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+      if (Array.isArray(refreshedEvidence)) setItems(refreshedEvidence as Evidence[])
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -332,6 +335,7 @@ export default function Record() {
                   {new Date(item.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               </div>
+              {item.original_file_path && <p style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>Source document: {item.original_file_path}</p>}
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
               {item.time_provenance && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
