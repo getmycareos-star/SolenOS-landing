@@ -34,10 +34,36 @@ type CareAction = {
   created_at?: string;
 };
 
+type ChangeRecord = {
+  id: string;
+  change_type?: string;
+  change_direction?: string;
+  previous_state?: string | null;
+  current_state?: string | null;
+  explanation?: string | null;
+  evidence_ids?: string[];
+  comparison_window_start?: string | null;
+  comparison_window_end?: string | null;
+  confidence?: number;
+  significance_verdict?: string | null;
+  attention_candidate?: boolean;
+  follow_up_candidate?: boolean;
+  is_active?: boolean;
+  created_at?: string;
+};
+
+type OpenQuestion = { id: string; question?: string; priority?: string; asked_at?: string; status?: string };
+type Contradiction = { id: string; field?: string; description?: string; resolution_status?: string; evidence_ids?: string[]; created_at?: string };
+type InformationGap = { id: string; field?: string; description?: string; priority?: string; lifecycle_status?: string; expected_by?: string | null };
+
 type RecordSnapshot = {
   events: CareEvent[];
   evidence: EvidenceRecord[];
   actions: CareAction[];
+  changes: ChangeRecord[];
+  questions: OpenQuestion[];
+  contradictions: Contradiction[];
+  gaps: InformationGap[];
   failedSections: string[];
 };
 
@@ -100,6 +126,10 @@ export default function FirstUseJourney() {
     events: [],
     evidence: [],
     actions: [],
+    changes: [],
+    questions: [],
+    contradictions: [],
+    gaps: [],
     failedSections: [],
   });
   const [retry, setRetry] = useState(0);
@@ -109,17 +139,22 @@ export default function FirstUseJourney() {
     let active = true;
     async function inspectRecord() {
       if (!personId) {
-        setSnapshot({ events: [], evidence: [], actions: [], failedSections: ['care-record identity'] });
+        setSnapshot({ events: [], evidence: [], actions: [], changes: [], questions: [], contradictions: [], gaps: [], failedSections: ['care-record identity'] });
         setRecordState('unknown');
         return;
       }
 
       setRecordState('loading');
-      const names = ['care events', 'saved evidence and documents', 'recorded actions'];
+      const names = ['care events', 'saved evidence and documents', 'recorded actions', 'change assessments', 'open questions', 'unresolved contradictions', 'open information gaps'];
+      const encodedPersonId = encodeURIComponent(personId);
       const results = await Promise.allSettled([
-        getJSON('/events/' + encodeURIComponent(personId) + '?limit=5'),
-        getJSON('/evidence/' + encodeURIComponent(personId)),
-        getJSON('/actions/' + encodeURIComponent(personId) + '?status=active'),
+        getJSON('/events/' + encodedPersonId + '?limit=5'),
+        getJSON('/evidence/' + encodedPersonId),
+        getJSON('/actions/' + encodedPersonId + '?status=active'),
+        getJSON('/change/changes/' + encodedPersonId),
+        getJSON('/uncertainty/questions/' + encodedPersonId + '?status=open'),
+        getJSON('/uncertainty/contradictions/' + encodedPersonId + '?resolution_status=unresolved'),
+        getJSON('/uncertainty/gaps/' + encodedPersonId + '?status=open'),
       ]);
       if (!active) return;
 
@@ -132,9 +167,13 @@ export default function FirstUseJourney() {
       const events = (arrays[0] || []) as CareEvent[];
       const evidence = (arrays[1] || []) as EvidenceRecord[];
       const actions = (arrays[2] || []) as CareAction[];
-      setSnapshot({ events, evidence, actions, failedSections });
+      const changes = (arrays[3] || []) as ChangeRecord[];
+      const questions = (arrays[4] || []) as OpenQuestion[];
+      const contradictions = (arrays[5] || []) as Contradiction[];
+      const gaps = (arrays[6] || []) as InformationGap[];
+      setSnapshot({ events, evidence, actions, changes, questions, contradictions, gaps, failedSections });
 
-      const hasSavedData = events.length > 0 || evidence.length > 0 || actions.length > 0;
+      const hasSavedData = events.length > 0 || evidence.length > 0 || actions.length > 0 || changes.length > 0 || questions.length > 0 || contradictions.length > 0 || gaps.length > 0;
       const allSourcesVerifiedEmpty = results.every((result) =>
         result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length === 0
       );
@@ -143,7 +182,7 @@ export default function FirstUseJourney() {
 
     void inspectRecord().catch(() => {
       if (active) {
-        setSnapshot({ events: [], evidence: [], actions: [], failedSections: ['care record'] });
+        setSnapshot({ events: [], evidence: [], actions: [], changes: [], questions: [], contradictions: [], gaps: [], failedSections: ['care record'] });
         setRecordState('unknown');
       }
     });
@@ -273,6 +312,83 @@ export default function FirstUseJourney() {
                   <li key={action.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '5px' }}>
                     {actionLabel(action)}
                     {action.deadline && <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>Recorded due date: {displayDate(action.deadline)}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {snapshot.changes.filter((item) => item.is_active !== false).length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Persisted change assessments</h3>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 7px' }}>
+                These are saved system assessments, not a fresh independent validation of the current situation.
+              </p>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {snapshot.changes.filter((item) => item.is_active !== false).slice(0, 3).map((item) => (
+                  <li key={item.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '7px' }}>
+                    <strong>{item.change_type || 'Recorded change'}</strong>
+                    {item.change_direction ? ' · ' + item.change_direction : ''}
+                    {item.previous_state || item.current_state ? (
+                      <span style={{ display: 'block' }}>
+                        {item.previous_state || 'Previous state not recorded'} → {item.current_state || 'Current state not recorded'}
+                      </span>
+                    ) : null}
+                    {item.explanation && <span style={{ display: 'block' }}>{item.explanation}</span>}
+                    <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
+                      Comparison window: {item.comparison_window_start ? displayDate(item.comparison_window_start) : 'start not recorded'} to {item.comparison_window_end ? displayDate(item.comparison_window_end) : 'end not recorded'} · Evidence references: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {snapshot.questions.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Open questions already recorded</h3>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {snapshot.questions.slice(0, 3).map((item) => (
+                  <li key={item.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
+                    {item.question || 'Open question text unavailable'}
+                    <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
+                      {item.priority ? 'Recorded priority: ' + item.priority + ' · ' : ''}Asked: {displayDate(item.asked_at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {snapshot.contradictions.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Unresolved conflicting reports</h3>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 7px' }}>
+                Competing accounts are shown as unresolved; this screen does not choose which account is true.
+              </p>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {snapshot.contradictions.slice(0, 3).map((item) => (
+                  <li key={item.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
+                    {item.field ? item.field + ': ' : ''}{item.description || 'Conflict description unavailable'}
+                    <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
+                      Status: {item.resolution_status || 'unresolved'} · Evidence references: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {snapshot.gaps.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Known information gaps</h3>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {snapshot.gaps.slice(0, 3).map((item) => (
+                  <li key={item.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
+                    {item.field ? item.field + ': ' : ''}{item.description || 'Information gap recorded'}
+                    <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
+                      {item.priority ? 'Recorded priority: ' + item.priority + ' · ' : ''}{item.lifecycle_status || 'open'}{item.expected_by ? ' · Expected by: ' + displayDate(item.expected_by) : ''}
+                    </span>
                   </li>
                 ))}
               </ul>
