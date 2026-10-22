@@ -106,10 +106,12 @@ export default function Evidence() {
       };
     },
     onSuccess: async (data, variables) => {
-      if (!data || typeof data !== 'object' || typeof (data as Record<string, unknown>).id !== 'string' || !(data as Record<string, unknown>).id) {
+      const responseRecord = data && typeof data === 'object' ? data as Record<string, unknown> : null;
+      const savedId = responseRecord?.id ?? responseRecord?.evidence_id;
+      if (typeof savedId !== 'string' || !savedId) {
         throw new Error('The server did not return an evidence record ID. The save outcome is uncertain; the form has been preserved to prevent accidental data loss.');
       }
-      const savedPersonId = (data as Record<string, unknown>).person_id;
+      const savedPersonId = responseRecord?.person_id;
       if (typeof savedPersonId === 'string' && savedPersonId !== variables.person_id) {
         throw new Error('The server response refers to a different care record. The form has been preserved and the save must be investigated.');
       }
