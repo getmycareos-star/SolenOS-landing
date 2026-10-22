@@ -9,7 +9,7 @@ import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfi
 import { createProfileId } from "./store";
 
 function parseProfileData(raw: unknown): CareRecipientProfileData {
-  if (!raw || typeof raw !== "object") return { ...DEFAULT_PROFILE };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Persisted care-recipient profile is invalid; refusing to replace it with an empty profile.");
   const obj = raw as Record<string, unknown>;
   return {
     care_recipient_basics: typeof obj.care_recipient_basics === "string" ? obj.care_recipient_basics : "",
@@ -132,24 +132,23 @@ export async function tryLoadProfile(
   caregiverId: string,
   caseId: string | null,
 ): Promise<CareRecipientProfileRecord | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL) throw new Error("Care-recipient profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     return loadProfileFromPostgres(pool, caregiverId, caseId);
   } catch {
-    return null;
+    throw new Error("Unable to load care-recipient profile from Postgres; in-memory fallback is prohibited.");
   }
 }
 
 export async function trySaveProfile(record: CareRecipientProfileRecord): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+  if (!process.env.DATABASE_URL) throw new Error("Care-recipient profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     await saveProfileToPostgres(pool, record);
   } catch {
-    // silent fallback to in-memory
-  }
-}
+    throw new Error("Unable to persist care-recipient profile to Postgres; save was not confirmed.");
+  }}
 
 export function resetCognitiveReliefPoolForTests(): void {
   poolPromise = null;
@@ -173,7 +172,7 @@ export async function createProfileInPostgres(
     created_at: now,
     updated_at: now,
   };
-  if (!process.env.DATABASE_URL) return record;
+  if (!process.env.DATABASE_URL) throw new Error("Care-recipient profile database is unavailable: DATABASE_URL is not configured.");
   const pool = await getPool();
   return saveProfileToPostgres(pool, record);
 }
