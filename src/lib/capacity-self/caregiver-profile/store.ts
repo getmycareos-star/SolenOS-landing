@@ -85,11 +85,11 @@ export function addResolvedItem(
   const record = getOrCreateCaregiverSelfProfile(caregiverId);
   const updated = {
     ...record,
-    resolved_items: [...record.resolved_items, item].slice(-200),
+    resolved_items: [...record.resolved_items, { ...item }].slice(-200),
     updated_at: new Date().toISOString(),
   };
-  profiles.set(caregiverId, updated);
-  return updated;
+  profiles.set(caregiverId, cloneRecord(updated));
+  return cloneRecord(updated);
 }
 
 export function replaceCaregiverSelfProfileRecord(record: CaregiverSelfProfileRecord): void {
