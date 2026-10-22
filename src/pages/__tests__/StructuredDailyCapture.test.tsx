@@ -19,6 +19,15 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     localStorage.clear();
     localStorage.setItem('solenos_person_id', '550e8400-e29b-41d4-a716-446655440000');
     localStorage.setItem('solenos_caregiver_id', '550e8400-e29b-41d4-a716-446655440001');
+    // These upload tests exercise authenticated API helpers, so model a
+    // server-issued anonymous session instead of legacy IDs without a token.
+    localStorage.setItem('solenos_anonymous_access_token', 'test-server-issued-token');
+    localStorage.setItem('solenos_backend_person_id', '550e8400-e29b-41d4-a716-446655440000');
+    localStorage.setItem('solenos_backend_caregiver_id', '550e8400-e29b-41d4-a716-446655440001');
+    localStorage.setItem(
+      'solenos_anonymous_session_expires_at',
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    );
   });
 
   it('should compress medication image before upload when using gallery upload', async () => {
