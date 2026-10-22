@@ -1,4 +1,3 @@
-import { DEFAULT_CAREGIVER_ID } from "./contract-constants";
 import type {
   CapacitySelfSessionResult,
   CapacityLevel,
@@ -33,9 +32,12 @@ export type ProcessCapacitySelfSessionParams = {
 export async function processCapacitySelfSession(
   params: ProcessCapacitySelfSessionParams = {},
 ): Promise<CapacitySelfSessionResult> {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = params.caregiver_id?.trim();
+  if (!caregiverId) {
+    throw new Error("Caregiver identity is required; no shared fallback identity is permitted.");
+  }
 
-  let selfRecord =
+  const selfRecord =
     (await tryLoadCaregiverSelfProfile(caregiverId)) ??
     getOrCreateCaregiverSelfProfile(caregiverId);
 
@@ -84,6 +86,7 @@ export async function setCaregiverCapacity(
   caregiverId: string,
   capacity: CapacityLevel,
 ): Promise<void> {
+  if (!caregiverId.trim()) throw new Error("Caregiver identity is required.");
   const record = setSessionCapacity(caregiverId, capacity);
   await trySaveCaregiverSelfProfile(record);
 }
@@ -95,6 +98,8 @@ export async function resolveCareItem(params: {
   context_type: ResolvedItemRecord["context_type"];
   raw_entry_id?: string | null;
 }): Promise<ResolvedItemRecord> {
+  const caregiverId = params.caregiver_id.trim();
+  if (!caregiverId) throw new Error("Caregiver identity is required.");
   const resolved: ResolvedItemRecord = {
     id: `resolved_${Date.now()}`,
     description: params.description,
@@ -103,7 +108,7 @@ export async function resolveCareItem(params: {
     resolved_at: new Date().toISOString(),
     raw_entry_id: params.raw_entry_id ?? null,
   };
-  const record = addResolvedItem(params.caregiver_id, resolved);
+  const record = addResolvedItem(caregiverId, resolved);
   await trySaveCaregiverSelfProfile(record);
   return resolved;
 }
