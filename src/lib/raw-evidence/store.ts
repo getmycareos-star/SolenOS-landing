@@ -25,6 +25,7 @@ import type {
   RawEvidence,
   SaveRawEvidenceInput,
   RawEvidenceStoreOptions,
+  SaveRawEvidenceResult,
   RawEvidenceInputType,
   UrgencyRiskLevel,
 } from "./types";
@@ -62,7 +63,7 @@ export class RawEvidenceStore {
     this.now = options.opts?.now ?? (() => new Date());
   }
 
-  async save(input: SaveRawEvidenceInput): Promise<{ evidence: RawEvidence; persisted: boolean }> {
+  async save(input: SaveRawEvidenceInput): Promise<SaveRawEvidenceResult> {
     const content = input.content.trim();
     if (content.length === 0) {
       throw new Error("raw evidence content must not be empty");
@@ -91,17 +92,19 @@ export class RawEvidenceStore {
     ids.push(evidence.id);
     this.index.set(evidence.caregiver_id, ids);
 
+    let filePersisted = false;
     if (typeof writeFileSync === "function") {
       try {
         const dir = dataDir(evidence.caregiver_id);
         mkdirSync(dir, { recursive: true });
         writeFileSync(queueFile(evidence), JSON.stringify(evidence, null, 2), "utf8");
+        filePersisted = true;
       } catch {
-        // File failure is non-fatal — memory cache remains source of truth for this process
+        // The caller receives memory_only unless PostgreSQL confirms the write.
       }
     }
 
-    let persisted = false;
+    let serverPersisted = false;
     if (this.pool) {
       try {
         await this.pool.query(
@@ -127,13 +130,23 @@ export class RawEvidenceStore {
             evidence.metadata,
           ],
         );
-        persisted = true;
+        serverPersisted = true;
       } catch (err) {
         this.syncQueue.push(evidence);
       }
     }
 
-    return { evidence, persisted: persisted || true };
+    const persistence_status = serverPersisted
+      ? "server_persisted"
+      : filePersisted
+        ? "local_queued"
+        : "memory_only";
+
+    return {
+      evidence,
+      persisted: persistence_status !== "memory_only",
+      persistence_status,
+    };
   }
 
   getById(id: string): RawEvidence | undefined {
