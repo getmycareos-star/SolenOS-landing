@@ -212,10 +212,10 @@ export default function Dashboard() {
         borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
       }}>
         <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '4px' }}>
-          Today's changes are automatically added to the Living Care Record.
+          A care update is added to the Living Care Record only after the server confirms it was saved.
         </p>
         <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
-          Record only what you observed; no example event is prefilled.
+          Use your own observations; no care event is prefilled.
         </p>
       </div>
 
