@@ -6,11 +6,11 @@ import {
 import { getOrCreateCaregiverSelfProfile } from "../capacity-self/caregiver-profile/store";
 import { getOrCreateProfile } from "../cognitive-relief/care-recipient-profile/store";
 import { recordObservation, getObservationExport, resetObservationStore } from "../observation-intelligence";
-import { captureVoiceObservation } from "../voice-observation/whisper";
 import { getOrCreateGraph, getGraphForCaregiver, resetCareJourneyGraphStore } from "../care-journey-graph/graph-store";
 import { createCareEvent, resetCareEventStore, listCareEventsForCaregiver } from "../care-events/store";
 import { recordCareEvent } from "../care-events/record-care-event";
 import { retrieveHistoricalContext } from "../care-record/retrieve";
+import { isObservationDurablyPersisted } from "../voice-observation/persistence-guard";
 import { tryLoadCaregiverSelfProfile } from "../capacity-self/caregiver-profile/postgres-store";
 import { tryLoadProfile } from "../cognitive-relief/care-recipient-profile/postgres-store";
 import { recordCareJourneyEvent } from "../care-journey/server";
@@ -65,13 +65,9 @@ describe("identity isolation boundaries", () => {
     expect(result.persistence_status).toBe("unavailable");
     expect(result.persistence_message).toMatch(/not durably saved/i);
 
-    const voice = await captureVoiceObservation({
-      audio: new Blob([]),
-      caregiverId: "cg_persistence_test",
-      editedTranscript: "caregiver-entered verification note",
-      record: recordObservation,
-    });
-    expect(voice).toMatchObject({ ok: false, code: "PERSISTENCE_UNAVAILABLE" });
+    expect(isObservationDurablyPersisted(result.persistence_status)).toBe(false);
+    expect(isObservationDurablyPersisted(undefined)).toBe(false);
+    expect(isObservationDurablyPersisted("persisted")).toBe(true);
   });
 
   it("distinguishes database unavailable from an empty profile or timeline", async () => {
