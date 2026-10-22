@@ -47,12 +47,13 @@ function AnonymousSessionGate({ children }: { children: ReactNode }) {
   }
 
   if (status === 'error') {
+    const recoveryUnavailable = /no session credential|session has expired/i.test(error);
     return (
       <main style={{ padding: 24, maxWidth: 560, margin: '0 auto' }}>
         <h1>Could not open your care record</h1>
         <p role="alert">{error}</p>
         <p>If this browser already held care notes, keep its storage intact while access is recovered. SolenOS will not silently switch to a different care record.</p>
-        <button type="button" onClick={() => void initializeSession()}>Retry</button>
+        {!recoveryUnavailable && <button type="button" onClick={() => void initializeSession()}>Retry</button>}
       </main>
     );
   }
