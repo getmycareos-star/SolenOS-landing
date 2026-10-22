@@ -1,6 +1,11 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
+import { MemoryRouter } from 'react-router-dom';
+
+function renderCapture() {
+  return render(<MemoryRouter><StructuredDailyCapture /></MemoryRouter>);
+}
 
 // Mock the postJSON function
 jest.mock('../api/client', () => ({
@@ -16,13 +21,13 @@ describe('StructuredDailyCapture', () => {
   });
 
   it('should render the main heading', () => {
-    render(<StructuredDailyCapture />);
+    renderCapture();
     const heading = screen.getByRole('heading', { name: /structured daily capture/i });
     expect(heading).toBeInTheDocument();
   });
 
   it('should have sections for medications, vitals, and scales', () => {
-    render(<StructuredDailyCapture />);
+    renderCapture();
     
     expect(screen.getByRole('heading', { name: /medications/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /vitals/i })).toBeInTheDocument();
@@ -30,7 +35,7 @@ describe('StructuredDailyCapture', () => {
   });
 
   it('should allow adding a medication', async () => {
-    render(<StructuredDailyCapture />);
+    renderCapture();
     
     // Fill in medication form
     await userEvent.type(screen.getByLabelText(/medication name/i), 'Aspirin');
@@ -46,7 +51,7 @@ describe('StructuredDailyCapture', () => {
   });
 
   it('should allow adding a vital', async () => {
-    render(<StructuredDailyCapture />);
+    renderCapture();
     
     // Fill in vital form
     await userEvent.selectOptions(screen.getByLabelText(/vital type/i), 'heart_rate');
@@ -62,7 +67,7 @@ describe('StructuredDailyCapture', () => {
   });
 
   it('should allow adding a scale observation', async () => {
-    render(<StructuredDailyCapture />);
+    renderCapture();
     
     // Fill in scale form
     await userEvent.selectOptions(screen.getByLabelText(/scale type/i), 'mood');
@@ -79,7 +84,7 @@ describe('StructuredDailyCapture', () => {
   });
 
   it('should handle form submission', async () => {
-    render(<StructuredDailyCapture />);
+    renderCapture();
     
     // Add a medication first
     await userEvent.type(screen.getByLabelText(/medication name/i), 'Aspirin');
