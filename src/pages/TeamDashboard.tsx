@@ -29,22 +29,80 @@ export default function TeamDashboard() {
   const [notice, setNotice] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null)
-    const results = await Promise.allSettled([
-      getJSON<DashboardMetrics>('/team/dashboard'),
-      getJSON<StateReport>('/team/state-report'),
-      getJSON<{ posts: Post[] }>('/team/moderation?status=pending'),
-      getJSON<{ counts: Record<string, number> }>('/metrics'),
-    ])
-    if (results[0].status === 'fulfilled') setMetrics(results[0].value)
-    else setError('Team metrics could not be retrieved from the backend.')
-    if (results[1].status === 'fulfilled') setReport(results[1].value)
-    else setError(current => [current, 'State report could not be retrieved.'].filter(Boolean).join(' '))
-    if (results[2].status === 'fulfilled') setPosts(Array.isArray(results[2].value.posts) ? results[2].value.posts : [])
-    else setError(current => [current, 'Moderation queue could not be retrieved.'].filter(Boolean).join(' '))
-    if (results[3].status === 'rejected') setError(current => [current, 'Service metrics endpoint could not be retrieved.'].filter(Boolean).join(' '))
-    setLoading(false)
-  }, [])
+    setLoading(true);
+    setError(null);
+    setNotice(null);
+    // Clear prior values before refresh. A failed request must never leave old
+    // values looking like current operational data.
+    setMetrics(null);
+    setReport(null);
+    setPosts([]);
+
+    try {
+      const results = await Promise.allSettled([
+        getJSON<unknown>('/team/dashboard'),
+        getJSON<unknown>('/team/state-report'),
+        getJSON<unknown>('/team/moderation?status=pending'),
+      ]);
+      const labels = ['team dashboard metrics', 'state report', 'moderation queue'];
+      const failures = results
+        .map((result, index) => result.status === 'rejected' ? labels[index] : null)
+        .filter((label): label is string => label !== null);
+      if (failures.length) {
+        throw new Error(`Could not verify ${failures.join(', ')}. Dashboard data is unavailable; empty results are not inferred from failed requests.`);
+      }
+
+      const [metricsValue, reportValue, moderationValue] = results.map(
+        result => (result as PromiseFulfilledResult<unknown>).value,
+      );
+      const nextMetrics = metricsValue as DashboardMetrics;
+      const nextReport = reportValue as StateReport;
+      const nextModeration = moderationValue as { posts: Post[] };
+
+      if (
+        !nextMetrics || typeof nextMetrics !== 'object' ||
+        !['people_count', 'caregiver_count', 'care_event_count', 'appointment_count', 'community_post_count', 'pending_moderation_count']
+          .every(key => typeof (nextMetrics as unknown as Record<string, unknown>)[key] === 'number'
+            && Number.isFinite((nextMetrics as unknown as Record<string, number>)[key])
+            && (nextMetrics as unknown as Record<string, number>)[key] >= 0) ||
+        typeof nextMetrics.generated_at !== 'string' || !nextMetrics.generated_at ||
+        typeof nextMetrics.data_source !== 'string' || !nextMetrics.data_source
+      ) {
+        throw new Error('The server returned incomplete dashboard metrics. They were not displayed as live data.');
+      }
+      if (
+        !nextReport || typeof nextReport !== 'object' ||
+        !Array.isArray(nextReport.care_events_by_type) ||
+        !Array.isArray(nextReport.appointments_by_status) ||
+        !Array.isArray(nextReport.community_posts_by_moderation_status) ||
+        !Array.isArray(nextReport.limitations) ||
+        typeof nextReport.generated_at !== 'string' || !nextReport.generated_at
+      ) {
+        throw new Error('The server returned an incomplete state report. It was not displayed as live data.');
+      }
+      if (!nextModeration || !Array.isArray(nextModeration.posts) || !nextModeration.posts.every(post =>
+        post && typeof post.id === 'string' && post.id &&
+        typeof post.content === 'string' &&
+        typeof post.author_label === 'string' &&
+        typeof post.post_type === 'string' &&
+        typeof post.moderation_status === 'string' &&
+        Array.isArray(post.tags)
+      )) {
+        throw new Error('The server returned an incomplete moderation queue. It was not treated as an empty queue.');
+      }
+
+      setMetrics(nextMetrics);
+      setReport(nextReport);
+      setPosts(nextModeration.posts);
+    } catch (e) {
+      setMetrics(null);
+      setReport(null);
+      setPosts([]);
+      setError(e instanceof Error ? e.message : 'Team dashboard data could not be verified.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => { void load() }, [load])
 
@@ -90,7 +148,7 @@ export default function TeamDashboard() {
       </section>}
       <section style={panel}>
         <h2 style={{ fontSize: 16, fontWeight: 600 }}>Community moderation queue ({posts.length})</h2>
-        {posts.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 10 }}>No posts awaiting review.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{posts.map(post => <article key={post.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
+        {!error && posts.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 10 }}>No posts awaiting review.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{posts.map(post => <article key={post.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}><strong>{post.post_type === 'question' ? 'Question' : 'Caregiver experience'}</strong><span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{post.moderation_status}</span></div>
           <p style={{ marginTop: 8, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{post.content}</p>
           <p style={{ marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>{post.author_label} · {post.care_stage || 'Stage not specified'} · {(post.tags || []).join(', ')}</p>
