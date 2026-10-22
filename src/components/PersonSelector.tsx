@@ -1,44 +1,30 @@
 import { useState, useEffect } from 'react'
-import { getPersonId, setPersonId, subscribeToPersonId } from '../api/client'
+import { getPersonId, subscribeToPersonId } from '../api/client'
 
 export default function PersonSelector() {
   const [personId, setPersonIdState] = useState(getPersonId())
 
-  useEffect(() => {
-    return subscribeToPersonId(setPersonIdState)
-  }, [])
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value || 'demo-person-id'
-    setPersonIdState(value)
-    setPersonId(value)
-  }
-
-  const isDemo = personId === 'demo-person-id'
+  useEffect(() => subscribeToPersonId(setPersonIdState), [])
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '8px',
-      background: isDemo ? 'var(--unknown-soft)' : 'var(--trust-soft)',
-      border: `1px solid ${isDemo ? 'var(--unknown)' : 'var(--trust)'}`,
-      borderRadius: '8px', padding: '6px 12px'
-    }}>
-      <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDemo ? 'var(--unknown)' : 'var(--trust)' }}>
-        Person:
+    <div
+      aria-live="polite"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '8px',
+        padding: '6px 12px',
+      }}
+    >
+      <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)' }}>
+        Care record:
       </span>
-      <input
-        type="text"
-        value={personId}
-        onChange={handleChange}
-        placeholder="person-id"
-        style={{
-          fontSize: '13px', background: 'transparent', border: 'none', outline: 'none',
-          width: '160px', color: isDemo ? 'var(--unknown)' : 'var(--trust)',
-        }}
-      />
-      {isDemo && (
-        <span style={{ fontSize: '10px', color: 'var(--unknown)', fontStyle: 'italic' }}>demo</span>
-      )}
+      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+        {personId ? personId : 'No authorized care record selected'}
+      </span>
     </div>
   )
 }
