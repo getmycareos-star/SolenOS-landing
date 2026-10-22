@@ -102,16 +102,16 @@ resetNormalizationStore();
 resetPolicyEngineStore();
 resetResolutionStoreForTests();
 resetActiveCareSituationStore();
-seedVerifyConsent("default_caregiver");
+seedVerifyConsent("care_verify_identity_001");
 
 const first = await processSituationInput({
   raw_input: "Mom fell yesterday. We went to urgent care.",
-  caregiver_id: "default_caregiver",
+  caregiver_id: "care_verify_identity_001",
   care_session_id: "sess_verify_1",
   timestamp: "2026-07-16T12:00:00.000Z",
 });
 
-assert(first.care_key === "default_caregiver", "response includes care_key");
+assert(first.care_key === "care_verify_identity_001", "response includes the explicit test care key");
 const realityKey = first.context.care_recipient_id;
 assert(
   listSituationsForSession(realityKey).some((s) => s.status === "ACTIVE"),
@@ -120,7 +120,7 @@ assert(
 
 const second = await processSituationInput({
   raw_input: "She seemed unsteady walking after that.",
-  caregiver_id: "default_caregiver",
+  caregiver_id: "care_verify_identity_001",
   care_session_id: "sess_verify_2",
   timestamp: "2026-07-16T13:00:00.000Z",
 });
@@ -130,22 +130,22 @@ assert(
   "same TrackedSituation across sessions",
 );
 assert(
-  getActiveCareSituation("default_caregiver")?.id === second.active_care_situation?.id,
+  getActiveCareSituation("care_verify_identity_001")?.id === second.active_care_situation?.id,
   "same ACS across interaction sessions",
 );
 console.log("✓ subsequent write updates same TrackedSituation + server ACS");
 
-const beforePause = getActiveCareSituation("default_caregiver");
+const beforePause = getActiveCareSituation("care_verify_identity_001");
 assert(beforePause != null, "ACS present before pause");
-const paused = pauseActiveCareSituationSession("default_caregiver");
+const paused = pauseActiveCareSituationSession("care_verify_identity_001");
 assert(paused != null && paused.id === beforePause!.id, "Locked A: pause keeps ACS");
 assert(Boolean(paused?.interaction_paused_at), "pause stamps interaction_paused_at");
-assert(getActiveCareSituation("default_caregiver") != null, "pause does not clear ACS");
+assert(getActiveCareSituation("care_verify_identity_001") != null, "pause does not clear ACS");
 console.log("✓ ACS pause preserves durable Care Reality (Locked A)");
 
 // Test teardown only — not product pause.
-clearActiveCareSituation("default_caregiver");
-assert(getActiveCareSituation("default_caregiver") === null, "test clear removes ACS");
+clearActiveCareSituation("care_verify_identity_001");
+assert(getActiveCareSituation("care_verify_identity_001") === null, "test clear removes ACS");
 
 resetResolutionStoreForTests();
 const hydrated = hydrateTrackedSituationsFromCareContext({
