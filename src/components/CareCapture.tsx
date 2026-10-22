@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
@@ -100,6 +101,8 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }
     setIdentityError(null)
     setSavedMessage(null)
+    setReviewFeedback(null)
+    setReviewDrafts({})
 
     try {
       await submitSituation({
@@ -205,6 +208,11 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       {savedMessage && (
         <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
           {savedMessage}
+        </p>
+      )}
+      {savedMessage && (
+        <p style={{ marginTop: '8px', fontSize: '12px' }}>
+          <Link to="/record" style={{ color: 'var(--trust)' }}>Review the Living Care Record →</Link>
         </p>
       )}
 
