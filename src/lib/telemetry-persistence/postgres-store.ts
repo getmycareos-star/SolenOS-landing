@@ -1,4 +1,6 @@
 import type { Pool } from "pg";
+import { createPostgresPool } from "../db/postgres-pool";
+export { createPostgresPool } from "../db/postgres-pool";
 
 import { coerceSolenOSLanguage } from "../multilingual-execution";
 import { parseSolenOSSettings } from "../settings-governance";
@@ -249,11 +251,4 @@ export class PostgresTelemetryStore implements TelemetryStore {
   }
 }
 
-export async function createPostgresPool(): Promise<Pool> {
-  const { Pool: PgPool } = await import("pg");
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is required for Postgres telemetry");
-  }
-  return new PgPool({ connectionString, max: 4 });
-}
+
