@@ -146,17 +146,16 @@ export default function CareCircle() {
           Manage family and support networks around the person receiving care.
         </p>
         <button
-          onClick={() => {
-            // In a real implementation, this would open a modal to create a new care circle
-            alert('Create care circle functionality would be implemented here')
-          }}
+          type="button"
+          disabled
+          title="Unavailable until the complete care-circle creation flow is implemented"
           style={{
-            padding: '8px 16px', borderRadius: '8px', border: 'none',
-            background: 'var(--trust)', color: 'white', fontSize: '13px',
-            cursor: 'pointer'
+            padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)',
+            background: 'var(--surface)', color: 'var(--text-secondary)', fontSize: '13px',
+            cursor: 'not-allowed'
           }}
         >
-          New Care Circle
+          Creation unavailable
         </button>
       </div>
       
@@ -165,7 +164,7 @@ export default function CareCircle() {
         <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '12px' }}>Your Care Circles</h2>
         {careCircles.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-            No care circles created yet. Click "New Care Circle" to get started.
+            No care circles are recorded for this care record.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
