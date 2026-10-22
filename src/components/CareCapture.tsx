@@ -18,6 +18,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const [savedText, setSavedText] = useState<string | null>(null)
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId?: string | null } | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, string>>({})
@@ -43,6 +44,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // The backend currently returns a saved situation, not community matches.
       // Do not call the nonexistent /community/experience endpoint or invent matches.
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
+      setSavedText(variables.rawInput)
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
@@ -174,6 +176,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         onChange={(e) => {
           setText(e.target.value)
           setSavedMessage(null)
+          setSavedText(null)
           setQwenAnalysis(null)
           setIdentityError(null)
         }}
@@ -216,6 +219,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
           {savedMessage}
         </p>
+      )}
+      {savedMessage && savedText && (
+        <div role="region" aria-label="Original captured report" style={{ marginTop: '10px', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--bg)' }}>
+          <strong style={{ fontSize: '11px' }}>Original report saved</strong>
+          <p style={{ fontSize: '12px', lineHeight: 1.55, whiteSpace: 'pre-wrap', marginTop: '5px' }}>{savedText}</p>
+        </div>
       )}
       {savedMessage && (
         <p style={{ marginTop: '8px', fontSize: '12px' }}>
