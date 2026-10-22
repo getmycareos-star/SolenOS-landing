@@ -15,8 +15,6 @@ import {
 } from "./items/build-care-items";
 import {
   getOrCreateCaregiverSelfProfile,
-  setSessionCapacity,
-  addResolvedItem,
   replaceCaregiverSelfProfileRecord,
 } from "./caregiver-profile/store";
 import { tryLoadCaregiverSelfProfile, trySaveCaregiverSelfProfile } from "./caregiver-profile/postgres-store";
