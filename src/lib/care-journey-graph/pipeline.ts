@@ -5,6 +5,8 @@ import {
   addEventToGraph,
   createGraphEventId,
   getOrCreateGraph,
+  getGraphForCaregiver,
+  restoreGraphForCaregiver,
 } from "./graph-store";
 import { trySaveGraphEvent } from "./postgres-store";
 import { extractPipelineFacts, structureJourneyEvent } from "./structure-event";
@@ -78,9 +80,20 @@ export function processCareJourneyInput(
 export async function processCareJourneyInputAsync(
   input: IngestJourneyInputParams,
 ): Promise<CareJourneyPipelineResult> {
-  const result = processCareJourneyInput(input);
-  await trySaveGraphEvent(result.event, result.new_relationships);
-  return result;
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("Valid caregiver identity is required; graph event was not persisted.");
+  }
+  const caseId = input.case_id ?? null;
+  const previousGraph = getGraphForCaregiver(caregiverId, caseId) ?? null;
+  try {
+    const result = processCareJourneyInput(input);
+    await trySaveGraphEvent(result.event, result.new_relationships);
+    return result;
+  } catch (error) {
+    restoreGraphForCaregiver(caregiverId, caseId, previousGraph);
+    throw error;
+  }
 }
 
 export function getCareJourneyGraphForCaregiver(
