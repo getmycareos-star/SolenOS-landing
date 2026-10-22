@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface Evidence {
   id: string
@@ -14,19 +14,32 @@ interface Evidence {
 export default function Record() {
   const [items, setItems] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      try {
-        const data = await getJSON('/evidence/demo-person-id')
-        setItems(data)
-      } catch (e) {
-        console.error(e)
-      } finally {
+      const personId = getPersonId()
+      if (!personId) {
+        setLoadError('Select an authorized care record before viewing its evidence.')
         setLoading(false)
+        return
+      }
+      setLoading(true)
+      setLoadError(null)
+      try {
+        const data = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+        if (!Array.isArray(data)) throw new Error('The evidence service returned an invalid response.')
+        if (!cancelled) setItems(data as Evidence[])
+      } catch (e) {
+        console.error('Failed to load the Living Care Record:', e)
+        if (!cancelled) setLoadError('The Living Care Record could not be loaded. Your records have not been declared empty. Check the connection and retry.')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    load()
+    void load()
+    return () => { cancelled = true }
   }, [])
 
   const typeIcon: Record<string, string> = {
@@ -79,11 +92,13 @@ export default function Record() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading && items.length === 0 && (
+      {loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
+
+      {!loading && !loadError && items.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No evidence recorded yet.</p>
       )}
 
-      {!loading && (
+      {!loading && !loadError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {items.map(item => (
             <div key={item.id} style={{
