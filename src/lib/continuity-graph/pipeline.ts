@@ -1,5 +1,5 @@
 import type { CareJourneyPipelineResult } from "../care-journey-graph/types";
-import { requireCaregiverId } from "../care-identity";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { getGraphForCaregiver } from "../care-journey-graph";
 import { processCareJourneyInput } from "../care-journey-graph/server";
 import { syncContinuityGraphFromJourney } from "./bridge-from-journey";
