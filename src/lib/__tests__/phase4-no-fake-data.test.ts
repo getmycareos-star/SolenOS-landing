@@ -96,6 +96,31 @@ describe('Phase 4 production data-integrity guardrails', () => {
     expect(source('src/lib/routine-moments/builder.ts')).toContain('consistency_score: null')
   })
 
+  it('removes canned clinical scenarios from legacy prototype inputs too', () => {
+    const legacyInputs = [
+      'src/app/workspace/settings/page.tsx',
+      'src/components/ops-devtools/RealMomentPanel.tsx',
+      'src/components/ops-devtools/DementiaCareRecordPanel.tsx',
+      'src/components/ops-devtools/MemoryReconstructionPanel.tsx',
+      'src/components/ops-devtools/CareRecordTimelinePanel.tsx',
+    ]
+    const forbiddenExamples = [
+      ['mom', 'confused', 'again'].join(' '),
+      ['Tried to leave', 'house at 8pm'].join(' '),
+      ['Unknown caller', 'requested account details'].join(' '),
+      ['Last fall?', 'Medication changes?'].join(' '),
+      ['Mom, Dad, Mary'].join(''),
+      ['early-stage', 'dementia'].join(' '),
+    ]
+    for (const path of legacyInputs) {
+      for (const example of forbiddenExamples) {
+        expect(source(path)).not.toContain(example)
+      }
+    }
+    expect(() => source('src/pages/AccessibilityDemo.tsx')).toThrow()
+    expect(() => source('src/pages/RoutineMomentsDemo.tsx')).toThrow()
+  })
+
   it('keeps illustrative care fixtures outside the production source tree', () => {
     expect(source('scripts/fixtures/README.md')).toContain('must not be imported by `src/` application code')
     expect(() => source('src/data/sample-care-context.ts')).toThrow()
