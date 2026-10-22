@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { MemoryRouter } from 'react-router-dom'
 import Community from '../Community'
+import Memory from '../Memory'
 import TeamDashboard from '../TeamDashboard'
 import CareCapture from '../../components/CareCapture'
 import { getJSON, getCaregiverId, getPersonId, postJSON } from '../../api/client'
@@ -76,5 +77,28 @@ describe('Phase 4 production data safety', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not be loaded/i)
     expect(screen.queryByText(/no evidence recorded yet/i)).not.toBeInTheDocument()
+  })
+
+  it('does not report empty memory when one of its data requests fails', async () => {
+    mockedGetJSON.mockRejectedValue(new Error('service unavailable'))
+
+    render(<Memory />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/memory information could not be loaded/i)
+    expect(screen.queryByText(/no reasoning memory yet/i)).not.toBeInTheDocument()
+  })
+
+  it('does not issue care-record requests when no record is selected', async () => {
+    mockedGetPersonId.mockReturnValue('')
+
+    const Record = (await import('../Record')).default
+    render(
+      <MemoryRouter>
+        <Record />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/no care record is selected/i)
+    expect(mockedGetJSON).not.toHaveBeenCalled()
   })
 })
