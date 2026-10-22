@@ -1,5 +1,6 @@
 import { structureCareInput } from "../care-record/structure-input";
 import { inferEventType } from "./classify";
+import { retrieveHistoricalContext } from "../care-record/retrieve";
 import { tryLoadCareEventsForCaregiver, tryPersistCareEvent } from "./postgres-store";
 import type { CreateCareEventInput, CreateCareEventResult } from "./types";
 
