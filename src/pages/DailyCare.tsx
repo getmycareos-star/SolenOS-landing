@@ -84,7 +84,7 @@ export default function DailyCare() {
    };
 
    const addVital = () => {
-     const key = prompt('Vital name (e.g. bp_systolic, heart_rate, oxygen_sat):')
+     const key = prompt('Enter the vital type as recorded by the caregiver or clinician:')
      if (key) {
        const val = prompt(`Value for ${key}:`)
        if (val !== null) setForm({ ...form, vitals: { ...form.vitals, [key]: val } })
@@ -172,10 +172,10 @@ export default function DailyCare() {
         borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
       }}>
         <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '2px' }}>
-          These entries automatically become part of your Living Care Record.
+          Entries appear in the Living Care Record after the server confirms the save.
         </p>
         <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
-          Examples: refused medication · wandering · sleep changes · appetite · new confusion
+          Record only observations that are relevant to this care record.
         </p>
       </div>
 
@@ -285,7 +285,7 @@ export default function DailyCare() {
           <textarea
             value={form.behavior_notes}
             onChange={e => updateField('behavior_notes', e.target.value)}
-            placeholder="Any notable behavior or interaction today..."
+            placeholder="Describe an observed behavior or interaction"
             rows={3}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
@@ -299,7 +299,7 @@ export default function DailyCare() {
           <textarea
             value={form.sleep_notes}
             onChange={e => updateField('sleep_notes', e.target.value)}
-            placeholder="Night rest, naps, sleep quality..."
+            placeholder="Describe sleep or rest observations"
             rows={2}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
@@ -313,7 +313,7 @@ export default function DailyCare() {
           <textarea
             value={form.eating_notes}
             onChange={e => updateField('eating_notes', e.target.value)}
-            placeholder="Meals, appetite, fluid intake..."
+            placeholder="Describe food or fluid observations"
             rows={2}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
@@ -327,7 +327,7 @@ export default function DailyCare() {
           <textarea
             value={form.general_notes}
             onChange={e => updateField('general_notes', e.target.value)}
-            placeholder="Anything else worth noting..."
+            placeholder="Add other observations"
             rows={2}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
