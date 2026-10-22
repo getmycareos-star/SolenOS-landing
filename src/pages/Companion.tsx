@@ -72,9 +72,15 @@ export default function Companion() {
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-    } catch (e: any) {
+    } catch (e: unknown) {
       setMessages(prev => prev.filter(message => message !== userMsg))
-      setRequestError('Your message could not be confirmed. The text remains in the input so you can retry.')
+      const detail = e instanceof Error ? e.message : ''
+      const unavailable = /API 404|not found|conversation\/message/i.test(detail)
+      setRequestError(
+        unavailable
+          ? 'Companion is not available from the connected backend yet. Your message was not sent; the text remains in the input.'
+          : 'Your message could not be confirmed. It was not added to the conversation; the text remains in the input so you can retry.'
+      )
     } finally {
       setLoading(false)
     }
@@ -126,8 +132,8 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Ask SolenOS anything about care needs, behavior patterns, or to surface a concern.
-            Responses are backed by local evidence and reasoning.
+            Companion responses are shown only after the connected backend returns a valid response.
+            Do not treat an unsent message as part of the care record.
           </div>
         )}
         {messages.map((msg, i) => (
