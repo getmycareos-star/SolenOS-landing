@@ -1,9 +1,9 @@
 /**
- * SolenOS Intelligence Layer — memory retrieval.
+ * SolenOS Intelligence Layer — durable memory retrieval.
  *
- * Before any new input is processed, SolenOS retrieves the relevant
- * prior care reality. This is the continuity boundary: every interaction
- * connects to prior understanding before generating anything new.
+ * Prior care events are loaded from Postgres. Database errors propagate; they
+ * are never converted into an empty history. In-memory state is not treated as
+ * the authoritative care record.
  */
 
 import type {
@@ -16,38 +16,71 @@ import { getCareRealityState } from "../care-reality-state";
 import { getActiveCareSituation } from "../active-care-situation";
 import { getCareContextRoot } from "../situation-entry/context-store";
 import { detectContinuity } from "../care-identity/continuity-detection";
-import { listCareEventsForCaregiver } from "../care-events/store";
+import { tryLoadCareEventsForCaregiver } from "../care-events/postgres-store";
+import type { CareEventRecord } from "../care-events/types";
 import type { SolenOSInput, SolenOSMemory } from "./types";
 
-export function retrieveMemory(input: SolenOSInput): SolenOSMemory {
-  const careRealityState = getCareRealityState(input.careRecipientId ?? input.caregiverId);
-  const activeSituation = getActiveCareSituation(
-    input.careRecipientId ?? input.caregiverId,
-  );
+function readCanonicalEvent(record: CareEventRecord): CanonicalCareEvent | null {
+  const value = record.metadata?.canonical_care_event;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.raw_input !== "string" ||
+    typeof candidate.extracted_type !== "string" ||
+    typeof candidate.source !== "string" ||
+    typeof candidate.ingestion_time !== "string" ||
+    !Array.isArray(candidate.entities) ||
+    !Array.isArray(candidate.uncertainty) ||
+    !candidate.attributes ||
+    typeof candidate.attributes !== "object"
+  ) {
+    return null;
+  }
+  return candidate as unknown as CanonicalCareEvent;
+}
 
-  let continuityDecision: ContinuityDecision | null = null;
-  if (input.careRecipientId) {
-    try {
-      continuityDecision = detectContinuity({
-        caregiverId: input.caregiverId,
-        careRecipientId: input.careRecipientId,
-        rawText: input.raw,
-      });
-    } catch {
-      continuityDecision = null;
-    }
+export async function retrieveMemory(input: SolenOSInput): Promise<SolenOSMemory> {
+  const careRecipientId = input.careRecipientId?.trim();
+  if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") {
+    throw new Error("Care-recipient identity is required for memory retrieval; caregiver identity is not a substitute.");
   }
 
+  const careRealityState: CareRealityState | null = getCareRealityState(careRecipientId);
+  // Active situations are keyed by authenticated caregiver identity in this store.
+  const activeSituation: ActiveCareSituation | null = getActiveCareSituation(input.caregiverId);
+
+  const continuityDecision: ContinuityDecision | null = detectContinuity({
+    caregiverId: input.caregiverId,
+    careRecipientId,
+    rawText: input.raw,
+  });
+
   const contextRoot = getCareContextRoot(input.caregiverId);
-  const recentEvents = listCareEventsForCaregiver(input.caregiverId)
+  const persistedEvents = await tryLoadCareEventsForCaregiver(input.caregiverId);
+  const recentEvents = persistedEvents
     .slice()
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 20);
+    .slice(0, 20)
+    .map(readCanonicalEvent)
+    .filter((event): event is CanonicalCareEvent => event !== null);
+
+  const recentEventsStatus =
+    persistedEvents.length === 0
+      ? "no_recorded_events"
+      : recentEvents.length === persistedEvents.slice(0, 20).length
+        ? "available"
+        : "partial";
+
+  // Context root is read here to ensure the store is reachable; the pipeline
+  // separately refuses to create a synthetic root when it is absent.
+  void contextRoot;
 
   return {
     careRealityState,
     activeSituation,
     continuityDecision,
-    recentEvents: recentEvents as any,
+    recentEvents,
+    recentEventsStatus,
   };
 }
