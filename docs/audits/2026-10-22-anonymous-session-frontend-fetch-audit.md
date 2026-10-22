@@ -24,3 +24,14 @@ The current FastAPI app mounts `/api/situation` plus `/api/v1/*`; those legacy p
 - Backend capture → GET hydration → token refresh → GET rehydration tests were added.
 - Frontend Vite build/tests and backend pytest suite have **not** been executed. GitHub returned no backend workflow runs/statuses for the commits; the frontend status endpoint reported Vercel build-rate-limit failures. The current execution environment cannot resolve `github.com` to clone the repositories and run the suites locally.
 - Live Railway migration, deployed API behavior, and a browser-level capture/read/refresh run remain unverified.
+
+
+## Active Vite entrypoint follow-up
+
+Further inspection confirmed that `src/main.tsx` loads `src/App.tsx`, whose React Router pages use `CareCapture.tsx` and the shared API client. Added `AnonymousSessionGate` in `src/App.tsx` so the active app establishes a server-issued anonymous session before pages read person/caregiver IDs or call protected `/api/v1/*` endpoints. Concurrent bootstrap/refresh calls now share one in-flight promise to avoid duplicate sessions. CareCapture messaging no longer implies that account sign-in is required.
+
+- App-level session gate: [commit](https://github.com/getmycareos-star/SolenOS-landing/commit/415859c852f96b38eebae548a84a60c5e41f3c3f)
+- Single-flight session initialization: [commit](https://github.com/getmycareos-star/SolenOS-landing/commit/e5a3af547a6e14e0e55af8e75f7ec7ed8dfcdd67)
+- Anonymous-session wording in capture UI: [commit](https://github.com/getmycareos-star/SolenOS-landing/commit/147b5b788f019c269b4c6b12776e583948a5ac72)
+
+The app gate creates the anonymous backend record when the app opens, not only after the first note, because the current React Router pages require a server-issued person ID to load their record-scoped data. It does not require registration or email.
