@@ -28,7 +28,7 @@ export default function Timeline() {
         return
       }
       try {
-        const data = await getJSON('/events/demo-person-id')
+        const data = await getJSON(`/events/${encodeURIComponent(personId)}`)
         if (!Array.isArray(data)) throw new Error('The server response was incomplete.')
         if (!cancelled) setEvents(data)
       } catch {
