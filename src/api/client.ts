@@ -19,10 +19,6 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
   return () => window.removeEventListener('personIdChanged', handler)
 }
 
-function interpolatePersonId(path: string): string {
-  return path.replace(/demo-person-id/g, getPersonId())
-}
-
 function resolveApiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
 
@@ -72,13 +68,13 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
+  const res = await fetch(resolveApiUrl(path))
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
+  const res = await fetch(resolveApiUrl(path))
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -86,8 +82,7 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+  const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -96,8 +91,7 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
 }
 
 export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+  const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
