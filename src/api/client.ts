@@ -1,4 +1,5 @@
 import { getAccessToken, clearAccessToken, authHeaders } from './authSession';
+import { resolveApiPath } from './apiPath';
 
 const configuredBase = import.meta.env.VITE_API_BASE?.trim()
 const isProduction = import.meta.env.PROD === true
@@ -26,11 +27,6 @@ export {
   subscribeToPersonId,
 } from './authSession';
 
-function rejectDemoIdentity(path: string): void {
-  if (/(^|\/)demo-person-id(?:[/?#]|$)/i.test(path)) {
-    throw new Error('A demo care-record identifier was detected. Select a real authorized care record before continuing.');
-  }
-}
 export class ApiError extends Error {
   status: number
   constructor(message: string, status: number) {
@@ -79,8 +75,7 @@ async function handleResponse(res: Response) {
 }
 
 function resolveApiUrl(path: string): string {
-  rejectDemoIdentity(path)
-  return path.startsWith('/api/') ? path : `${API_BASE}${path}`
+  return resolveApiPath(path, API_BASE)
 }
 
 export async function getJSON(path: string) {
