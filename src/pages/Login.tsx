@@ -1,116 +1,129 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import type { FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { createAccount, getJSON, loginAccount, postJSON, setPersonId } from '../api/client'
 
-type UserRole = 'caregiver' | 'professional' | 'team'
+type Mode = 'login' | 'signup'
 
 export default function Login() {
-  const [role, setRole] = useState<UserRole>('caregiver')
-  const [identifier, setIdentifier] = useState('')
+  const [mode, setMode] = useState<Mode>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [careRecordName, setCareRecordName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
-  const handleLogin = () => {
-    localStorage.setItem('solenos_user_role', role)
-    if (identifier) {
-      localStorage.setItem('solenos_identifier', identifier)
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+    setLoading(true)
+    try {
+      if (mode === 'signup') {
+        await createAccount(email, password, displayName)
+        // Creating a care record is explicit: it happens only when the user supplies a name.
+        if (careRecordName.trim()) {
+          await postJSON('/auth/care-contexts', { name: careRecordName.trim() })
+        }
+      } else {
+        await loginAccount(email, password)
+      }
+
+      const contexts = await getJSON('/auth/care-contexts')
+      if (Array.isArray(contexts) && contexts.length > 0 && typeof contexts[0]?.person_id === 'string') {
+        setPersonId(contexts[0].person_id)
+      } else {
+        setPersonId('')
+      }
+      navigate('/')
+    } catch (cause: unknown) {
+      setError(cause instanceof Error ? cause.message : 'Authentication could not be completed. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    if (role === 'caregiver') navigate('/')
-    else if (role === 'professional') navigate('/professional')
-    else navigate('/team')
   }
 
-  const roleInfo: Record<UserRole, { emoji: string; label: string; desc: string }> = {
-    caregiver: { emoji: '❤️', label: 'Caregiver Login', desc: 'Access your Living Care Record, daily care, appointments, and community.' },
-    professional: { emoji: '👩‍⚕️', label: 'Professional Login', desc: 'Access your professional dashboard: help requests, office hours, and impact metrics.' },
-    team: { emoji: '🛡️', label: 'SolenOS Team Login', desc: 'Access Mission Control: community health, moderation center, and State of Dementia Care reports.' },
+  const switchMode = (next: Mode) => {
+    setMode(next)
+    setError(null)
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ maxWidth: '480px', width: '100%', padding: '32px 24px' }}>
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <span style={{ fontSize: '48px', marginBottom: '16px', display: 'block' }}>🏠</span>
-        <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)' }}>
-          SolenOS — Three Login Paths
-        </h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '400px', margin: '8px auto 0' }}>
-          Are you a caregiver, healthcare professional, or part of the SolenOS team? Select your role below.
-          Caregivers can also start directly at the dashboard.
-        </p>
-      </div>
+    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <section style={{ maxWidth: '460px', width: '100%', padding: '32px 24px' }}>
+        <header style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <span aria-hidden="true" style={{ fontSize: '44px', display: 'block', marginBottom: '12px' }}>🏠</span>
+          <h1 style={{ fontSize: '24px', fontWeight: 650, color: 'var(--text)' }}>SolenOS</h1>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.5 }}>
+            Your Living Care Record, built around what changed, what matters, and what remains uncertain.
+          </p>
+        </header>
 
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <Link to="/" style={{ fontSize: '13px', color: 'var(--trust)', textDecoration: 'none' }}>
-          Skip login — go to dashboard as caregiver →
-        </Link>
-      </div>
-
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '16px', padding: '24px'
-        }}>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            {(['caregiver', 'professional', 'team'] as UserRole[]).map((r) => {
-              const info = roleInfo[r]
-              const selected = role === r
-              return (
-                <button
-                  key={r}
-                  onClick={() => setRole(r)}
-                  style={{
-                    flex: 1,
-                    background: selected ? 'var(--accent-soft)' : 'var(--bg)',
-                    border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
-                    borderRadius: '12px', padding: '16px 12px',
-                    cursor: 'pointer', textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: '28px', marginBottom: '6px' }}>{info.emoji}</div>
-                  <div style={{ fontSize: '13px', fontWeight: selected ? 600 : 500, color: selected ? 'var(--text)' : 'var(--text-secondary)' }}>
-                    {info.label}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          <div style={{
-            background: roleInfo[role].emoji === '🏥' ? 'var(--trust-soft)' : 'var(--accent-soft)',
-            borderRadius: '8px', padding: '12px 16px', marginBottom: '20px'
-          }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>{roleInfo[role].label}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{roleInfo[role].desc}</div>
-          </div>
-
-          <input
-            type="text"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            placeholder={role === 'professional' ? 'Professional ID or email' : role === 'team' ? 'Team access key' : 'Person ID'}
-            style={{
-              width: '100%', padding: '12px 16px', borderRadius: '8px',
-              border: '1px solid var(--border)', background: 'var(--bg)',
-              fontSize: '14px', outline: 'none', marginBottom: '20px',
-            }}
-          />
-
-          <button
-            onClick={handleLogin}
-            style={{
-              width: '100%', padding: '12px 20px', borderRadius: '12px',
-              border: 'none', background: 'var(--trust)', color: 'white',
-              fontSize: '14px', fontWeight: 500, cursor: 'pointer',
-            }}
-          >
-            Enter SolenOS as {roleInfo[role].label.split(' ')[0]}
-          </button>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <button type="button" onClick={() => switchMode('login')} aria-pressed={mode === 'login'} style={{
+            flex: 1, padding: '11px', borderRadius: '9px', border: `1px solid ${mode === 'login' ? 'var(--accent)' : 'var(--border)'}`,
+            background: mode === 'login' ? 'var(--accent-soft)' : 'var(--surface)', color: 'var(--text)', cursor: 'pointer',
+          }}>Sign in</button>
+          <button type="button" onClick={() => switchMode('signup')} aria-pressed={mode === 'signup'} style={{
+            flex: 1, padding: '11px', borderRadius: '9px', border: `1px solid ${mode === 'signup' ? 'var(--accent)' : 'var(--border)'}`,
+            background: mode === 'signup' ? 'var(--accent-soft)' : 'var(--surface)', color: 'var(--text)', cursor: 'pointer',
+          }}>Create account</button>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '24px' }}>
-          <Link to="/" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-            Continue as caregiver (default) →
+        <form onSubmit={handleSubmit} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px' }}>
+          {mode === 'signup' && (
+            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text)', marginBottom: '14px' }}>
+              Your name (optional)
+              <input value={displayName} onChange={event => setDisplayName(event.target.value)} autoComplete="name" maxLength={120}
+                style={{ display: 'block', boxSizing: 'border-box', width: '100%', marginTop: '6px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+            </label>
+          )}
+
+          <label style={{ display: 'block', fontSize: '13px', color: 'var(--text)', marginBottom: '14px' }}>
+            Email address
+            <input type="email" required value={email} onChange={event => setEmail(event.target.value)} autoComplete="email"
+              style={{ display: 'block', boxSizing: 'border-box', width: '100%', marginTop: '6px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+          </label>
+
+          <label style={{ display: 'block', fontSize: '13px', color: 'var(--text)', marginBottom: '14px' }}>
+            Password
+            <input type="password" required minLength={mode === 'signup' ? 12 : 1} maxLength={1024} value={password}
+              onChange={event => setPassword(event.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              style={{ display: 'block', boxSizing: 'border-box', width: '100%', marginTop: '6px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+            {mode === 'signup' && <span style={{ display: 'block', marginTop: '5px', fontSize: '11px', color: 'var(--text-secondary)' }}>Use at least 12 characters.</span>}
+          </label>
+
+          {mode === 'signup' && (
+            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text)', marginBottom: '14px' }}>
+              Care record name (optional)
+              <input value={careRecordName} onChange={event => setCareRecordName(event.target.value)} maxLength={200}
+                placeholder="For example, Mum's care record"
+                style={{ display: 'block', boxSizing: 'border-box', width: '100%', marginTop: '6px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+              <span style={{ display: 'block', marginTop: '5px', fontSize: '11px', color: 'var(--text-secondary)' }}>A record is created only if you enter a name.</span>
+            </label>
+          )}
+
+          {error && <p role="alert" style={{ color: 'var(--error)', fontSize: '13px', lineHeight: 1.5, marginBottom: '14px' }}>{error}</p>}
+
+          <button type="submit" disabled={loading} style={{
+            width: '100%', padding: '12px 20px', borderRadius: '10px', border: 'none',
+            background: 'var(--trust)', color: 'white', fontSize: '14px', fontWeight: 600,
+            cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1,
+          }}>
+            {loading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+          </button>
+        </form>
+
+        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          You can continue without an account. Cloud care-record features require a verified account session.
+        </p>
+        <div style={{ textAlign: 'center', marginTop: '8px' }}>
+          <Link to="/" style={{ fontSize: '13px', color: 'var(--trust)', textDecoration: 'none' }}>
+            Continue without an account →
           </Link>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }

@@ -43,6 +43,25 @@ function resolveApiUrl(path: string): string {
   return `${API_BASE.replace(/\/$/, '')}${normalized}`
 }
 
+const AUTH_TOKEN_KEY = 'solenos_access_token'
+
+function getAccessToken(): string | null {
+  try {
+    return sessionStorage.getItem(AUTH_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const token = getAccessToken()
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra
+}
+
+function notifyAuthStateChanged(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('solenosAuthStateChanged'))
+}
+
 async function handleResponse(res: Response) {
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
@@ -80,13 +99,13 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path))
+  const res = await fetch(resolveApiUrl(path), { headers: authHeaders() })
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path))
+  const res = await fetch(resolveApiUrl(path), { headers: authHeaders() })
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -96,7 +115,7 @@ export async function getBlob(path: string): Promise<Blob> {
 export async function postJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -105,7 +124,7 @@ export async function postJSON(path: string, body: unknown) {
 export async function patchJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -117,6 +136,7 @@ export async function patchJSON(path: string, body: unknown) {
 export async function postFormData(path: string, body: FormData) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
+    headers: authHeaders(),
     body,
   })
   return handleResponse(res)
@@ -129,8 +149,8 @@ export function getCaregiverId(): string | null {
   return isPlaceholderIdentifier(id) ? null : id
 }
 
-// The backend currently has no implemented authentication/session endpoints.
-// Fail closed rather than treating a client-side role choice as authentication.
+// Account sessions are issued by the backend. Anonymous browsing remains possible;
+// protected API calls are not treated as authenticated unless a server-issued token exists.
 export interface AuthSessionInfo {
   authenticated: boolean
   account_id: string | null
@@ -143,21 +163,110 @@ export interface AuthSessionInfo {
   mfa_verified: boolean
 }
 
+interface AuthAccount {
+  id: string
+  email: string
+  display_name?: string | null
+}
+
+export async function loginAccount(email: string, password: string): Promise<AuthAccount> {
+  const response = await postJSON('/auth/login', { email: email.trim().toLowerCase(), password })
+  if (typeof response?.access_token !== 'string' || !response.access_token) {
+    throw new Error('The backend did not issue a valid session token.')
+  }
+  sessionStorage.setItem(AUTH_TOKEN_KEY, response.access_token)
+  notifyAuthStateChanged()
+  const state = await checkAuthState()
+  if (!state.authenticated || !state.sessionInfo) {
+    throw new Error('The backend session could not be verified.')
+  }
+  return { id: state.sessionInfo.account_id || '', email: email.trim().toLowerCase() }
+}
+
+export async function createAccount(email: string, password: string, displayName?: string): Promise<AuthAccount> {
+  await postJSON('/auth/signup', {
+    email: email.trim().toLowerCase(),
+    password,
+    display_name: displayName?.trim() || undefined,
+  })
+  return loginAccount(email, password)
+}
+
+export async function logoutAccount(): Promise<void> {
+  const token = getAccessToken()
+  try {
+    if (token) {
+      const response = await fetch(resolveApiUrl('/auth/logout'), {
+        method: 'POST',
+        headers: authHeaders(),
+      })
+      if (!response.ok && response.status !== 401) {
+        throw new Error(`Logout could not be confirmed (API ${response.status}).`)
+      }
+    }
+  } finally {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY)
+    setPersonId('')
+    notifyAuthStateChanged()
+  }
+}
+
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (!getAccessToken()) return { authenticated: false, sessionInfo: null }
+  try {
+    const me = await getJSON('/auth/me')
+    const account: AuthAccount | undefined = me?.account
+    if (!account?.id) throw new Error('Invalid account response')
+    let contexts: Array<{ person_id: string; role?: string }> = []
+    try {
+      const result = await getJSON('/auth/care-contexts')
+      if (Array.isArray(result)) contexts = result
+    } catch {
+      // A valid account session can exist before a care record is created.
+    }
+    const authorizedPersonIds = contexts.map(item => item.person_id).filter((id): id is string => typeof id === 'string' && id.length > 0)
+    const selectedPersonId = getPersonId()
+    if (selectedPersonId && !authorizedPersonIds.includes(selectedPersonId)) {
+      setPersonId(authorizedPersonIds[0] || '')
+    }
+
+    return {
+      authenticated: true,
+      sessionInfo: {
+        authenticated: true,
+        account_id: account.id,
+        session_type: 'account',
+        authorized_person_ids: authorizedPersonIds,
+        caregiver_roles: Object.fromEntries(contexts.map(item => [item.person_id, item.role || 'caregiver'])),
+        professional_roles: {},
+        anonymous_session_id: null,
+        expires_at: '',
+        mfa_verified: false,
+      },
+    }
+  } catch {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY)
+    notifyAuthStateChanged()
+    return { authenticated: false, sessionInfo: null }
+  }
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
+  callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
-  // No backend session event stream exists yet.
-  return () => undefined
+  const handler = async () => {
+    const state = await checkAuthState()
+    callback(state.authenticated, state.sessionInfo)
+  }
+  window.addEventListener('solenosAuthStateChanged', handler)
+  return () => window.removeEventListener('solenosAuthStateChanged', handler)
 }
 
 export function startTokenRefresh(): void {
-  // No backend-issued token exists to refresh until authentication is implemented.
+  // The current backend issues expiring sessions but has no refresh endpoint.
+  // checkAuthState validates the session; expired sessions are cleared on next API/auth check.
 }
 
 export function stopTokenRefresh(): void {
-  // No active token-refresh task exists.
+  // No background refresh timer is created without a backend refresh-token contract.
 }
