@@ -126,25 +126,25 @@ async function getPool(): Promise<Pool> {
 
 export async function trySaveCareJourneyEvent(
   input: CreateCareJourneyEventInput,
-): Promise<CareJourneyEvent | null> {
-  if (!process.env.DATABASE_URL) return null;
+): Promise<CareJourneyEvent> {
+  if (!process.env.DATABASE_URL) throw new Error("Care journey database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
-    return saveCareJourneyEventToPostgres(pool, input);
+    return await saveCareJourneyEventToPostgres(pool, input);
   } catch {
-    return null;
+    throw new Error("Unable to persist care journey event; in-memory fallback is prohibited.");
   }
 }
 
 export async function tryLoadCareJourneyEvents(
   caregiverId: string,
-): Promise<CareJourneyEvent[] | null> {
-  if (!process.env.DATABASE_URL) return null;
+): Promise<CareJourneyEvent[]> {
+  if (!process.env.DATABASE_URL) throw new Error("Care journey database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
-    return loadCareJourneyEventsFromPostgres(pool, caregiverId);
+    return await loadCareJourneyEventsFromPostgres(pool, caregiverId);
   } catch {
-    return null;
+    throw new Error("Unable to load care journey events; an in-memory empty timeline is not a valid substitute.");
   }
 }
 
