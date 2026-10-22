@@ -25,9 +25,9 @@ interface LearningEvent {
   created_at: string
 }
 
-function requireArray<T>(value: unknown, resource: string): T[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`The server returned an invalid ${resource} response. No data has been assumed.`)
+function requireArray<T>(value: unknown, resource: string, isValid: (item: unknown) => boolean): T[] {
+  if (!Array.isArray(value) || !value.every(isValid)) {
+    throw new Error(`The server returned an invalid or incomplete ${resource} response. No data has been assumed.`)
   }
   return value as T[]
 }
@@ -66,9 +66,9 @@ export default function Memory() {
           getJSON<unknown>(`/reasoning-memory/${encodedPersonId}`),
           getJSON<unknown>(`/learning-events/${encodedPersonId}`),
         ])
-        const nextObservations = requireArray<Observation>(obsResult, 'observations')
-        const nextMemories = requireArray<ReasoningMemory>(memoryResult, 'reasoning memory')
-        const nextEvents = requireArray<LearningEvent>(eventResult, 'learning events')
+        const nextObservations = requireArray<Observation>(obsResult, 'observations', item => Boolean(item && typeof item === 'object' && typeof (item as Observation).id === 'string' && typeof (item as Observation).original_text === 'string' && typeof (item as Observation).observed_at === 'string' && Number.isFinite(new Date((item as Observation).observed_at).getTime())) )
+        const nextMemories = requireArray<ReasoningMemory>(memoryResult, 'reasoning memory', item => Boolean(item && typeof item === 'object' && typeof (item as ReasoningMemory).id === 'string' && typeof (item as ReasoningMemory).memory_type === 'string' && typeof (item as ReasoningMemory).key === 'string' && Array.isArray((item as ReasoningMemory).value) && typeof (item as ReasoningMemory).confidence === 'number' && Number.isFinite((item as ReasoningMemory).confidence)))
+        const nextEvents = requireArray<LearningEvent>(eventResult, 'learning events', item => Boolean(item && typeof item === 'object' && typeof (item as LearningEvent).id === 'string' && typeof (item as LearningEvent).event_type === 'string' && typeof (item as LearningEvent).detail === 'string' && typeof (item as LearningEvent).created_at === 'string' && Number.isFinite(new Date((item as LearningEvent).created_at).getTime())))
         if (cancelled) return
         setObservations(nextObservations)
         setMemories(nextMemories)
