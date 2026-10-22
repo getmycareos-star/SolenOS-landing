@@ -15,6 +15,8 @@ export type PreparationPack = {
   decisions_made: string[];
   suggested_discussion_topics: string[];
   last_similar_meeting_at: string | null;
+  baseline_status: "previous_similar_meeting" | "no_previous_similar_meeting";
+  care_history_status: "available" | "no_recorded_events" | "unavailable";
   events_in_scope: number;
 };
 
