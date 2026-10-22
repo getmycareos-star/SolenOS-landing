@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { ensureAnonymousSession } from './api/client'
 import RestrictedRolePage from './components/RestrictedRolePage'
+import FirstUseJourney from './components/FirstUseJourney'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
@@ -66,7 +67,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/workspace" element={<Dashboard />} />
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<FirstUseJourney />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/daily-care" element={<DailyCare />} />
         <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
         <Route path="/timeline" element={<Timeline />} />
