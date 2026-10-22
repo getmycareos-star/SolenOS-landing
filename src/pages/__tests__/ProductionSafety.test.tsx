@@ -68,7 +68,11 @@ describe('Phase 4 production data safety', () => {
     mockedGetJSON.mockRejectedValue(new Error('service unavailable'))
 
     const Record = (await import('../Record')).default
-    render(<Record />)
+    render(
+      <MemoryRouter>
+        <Record />
+      </MemoryRouter>,
+    )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not be loaded/i)
     expect(screen.queryByText(/no evidence recorded yet/i)).not.toBeInTheDocument()
