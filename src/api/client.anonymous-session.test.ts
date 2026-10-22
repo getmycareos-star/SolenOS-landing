@@ -51,11 +51,25 @@ describe('anonymous care session contract', () => {
     }));
   });
 
+  it('reuses a valid session that has more than five minutes remaining', async () => {
+    localStorage.setItem('solenos_anonymous_access_token', 'valid-token');
+    localStorage.setItem('solenos_backend_person_id', 'person-valid');
+    localStorage.setItem('solenos_backend_caregiver_id', 'caregiver-valid');
+    localStorage.setItem('solenos_anonymous_session_expires_at', new Date(Date.now() + 10 * 60 * 1000).toISOString());
+
+    const session = await ensureAnonymousSession();
+
+    expect(session.person.id).toBe('person-valid');
+    expect(getCaregiverId()).toBe('caregiver-valid');
+    expect(getAnonymousAccessToken()).toBe('valid-token');
+    expect(global.fetch).toBeUndefined();
+  });
+
   it('refreshes using the backend nested response shape without writing undefined IDs', async () => {
     localStorage.setItem('solenos_anonymous_access_token', 'old-token');
     localStorage.setItem('solenos_backend_person_id', 'person-old');
     localStorage.setItem('solenos_backend_caregiver_id', 'caregiver-old');
-    localStorage.setItem('solenos_anonymous_session_expires_at', new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString());
+    localStorage.setItem('solenos_anonymous_session_expires_at', new Date(Date.now() + 60 * 1000).toISOString());
     const refreshed = serverSession('refreshed');
     global.fetch = jest.fn().mockResolvedValue(makeResponse(refreshed));
 
@@ -77,7 +91,7 @@ describe('anonymous care session contract', () => {
     localStorage.setItem('solenos_anonymous_access_token', 'old-token');
     localStorage.setItem('solenos_backend_person_id', 'person-old');
     localStorage.setItem('solenos_backend_caregiver_id', 'caregiver-old');
-    localStorage.setItem('solenos_anonymous_session_expires_at', new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString());
+    localStorage.setItem('solenos_anonymous_session_expires_at', new Date(Date.now() + 60 * 1000).toISOString());
     global.fetch = jest.fn().mockResolvedValue(makeResponse({
       session_id: 'bad-response',
       person_id: 'wrong-shape',
