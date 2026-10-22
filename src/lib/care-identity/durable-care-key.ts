@@ -44,6 +44,14 @@ function assertDurableCareKey(value: string, source: string): string {
   return normalized;
 }
 
+/** Require an explicit, non-placeholder identity before any care data is read or written. */
+export function requireCaregiverId(value: string | null | undefined, source = "caregiver_id"): string {
+  if (!value?.trim()) {
+    throw new Error("A caregiver identity is required; no shared default identity is permitted.");
+  }
+  return assertDurableCareKey(value, source);
+}
+
 
 
 function newRandomId(): string {
