@@ -116,8 +116,8 @@ export type RecordObservationResult = {
 /** Record a caregiver observation only under an explicit caregiver identity. */
 export function recordObservation(input: RecordObservationInput): RecordObservationResult {
   const caregiverId = input.caregiver_id?.trim();
-  if (!caregiverId) {
-    throw new Error("Caregiver identity is required; observation was not persisted.");
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required; observation was not persisted.");
   }
   const source = input.source ?? "text";
   const extraction = extractObservations(input.raw_text);
@@ -147,7 +147,7 @@ export function recordObservation(input: RecordObservationInput): RecordObservat
 
 export function getObservationWeeklySummary(caregiverId: string) {
   const id = caregiverId?.trim();
-  if (!id) throw new Error("Caregiver identity is required to read observation history.");
+  if (!id || id === "default_caregiver") throw new Error("A distinct caregiver identity is required to read observation history.");
   const history = listStructuredForCaregiver(id);
   return generateWeeklySummary(history);
 }
