@@ -10,7 +10,7 @@
 
 
 
-export const DEFAULT_DURABLE_CARE_KEY = "default_caregiver";
+export const LEGACY_SHARED_PLACEHOLDER_CARE_KEY = "default_caregiver";
 
 
 
@@ -33,7 +33,7 @@ function isEmptyKey(value: string | null | undefined): boolean {
 }
 
 function isSharedPlaceholderKey(value: string | null | undefined): boolean {
-  return value?.trim().toLowerCase() === DEFAULT_DURABLE_CARE_KEY;
+  return value?.trim().toLowerCase() === LEGACY_SHARED_PLACEHOLDER_CARE_KEY;
 }
 
 function assertDurableCareKey(value: string, source: string): string {
@@ -123,7 +123,7 @@ export function resolveDurableCareKey(params: {
 
  * Missing key → fail (never invent shared default_caregiver).
 
- * Explicit `default_caregiver` remains allowed for verify scripts.
+ * Legacy shared placeholder IDs are rejected, including in verify paths.
 
  * Ephemeral `sess_*` ids are never accepted as the durable care key.
 
