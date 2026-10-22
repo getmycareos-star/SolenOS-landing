@@ -16,6 +16,8 @@ export function createGraphEventId(): string {
 }
 
 export function getOrCreateGraph(caregiverId: string, caseId: string | null): CareJourneyGraph {
+  if (!caregiverId?.trim() || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required for care journey graph storage.");
+  caregiverId = caregiverId.trim();
   const key = journeyKey(caregiverId, caseId);
   const existingId = caregiverIndex.get(key);
   if (existingId) {
@@ -45,7 +47,8 @@ export function getGraphForCaregiver(
   caregiverId: string,
   caseId: string | null = null,
 ): CareJourneyGraph | undefined {
-  const key = journeyKey(caregiverId, caseId);
+  if (!caregiverId?.trim() || caregiverId === "default_caregiver") return undefined;
+  const key = journeyKey(caregiverId.trim(), caseId);
   const id = caregiverIndex.get(key);
   return id ? graphs.get(id) : undefined;
 }
