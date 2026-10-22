@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import type { CareJourneyAttachment, CareJourneyEvent, CreateCareJourneyEventInput } from "./types";
 import { inferCareJourneyCategory, inferCareJourneyTitle } from "./classify";
 
