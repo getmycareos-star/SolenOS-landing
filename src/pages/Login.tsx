@@ -8,7 +8,6 @@ export default function Login() {
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [enrollmentKey, setEnrollmentKey] = useState('')
   const [caregiverName, setCaregiverName] = useState('')
   const [personName, setPersonName] = useState('')
   const [relationship, setRelationship] = useState('Family caregiver')
@@ -29,7 +28,7 @@ export default function Login() {
       const account = mode === 'login'
         ? await loginWithPassword(email.trim(), password)
         : await registerCaregiverAccount({
-            email: email.trim(), password, enrollment_key: enrollmentKey,
+            email: email.trim(), password,
             name: caregiverName.trim(), person_name: personName.trim(), relationship,
           })
       continueByRole(account)
@@ -62,10 +61,6 @@ export default function Login() {
             {mode === 'register' && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Use at least 12 characters.</span>}
           </label>
           {mode === 'register' && <>
-            <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Enrollment key
-              <input required type="password" autoComplete="off" value={enrollmentKey} onChange={e => setEnrollmentKey(e.target.value)} style={{ padding: 11, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)' }} />
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>The service administrator must configure ACCOUNT_ENROLLMENT_KEY in Railway and provide it securely. Do not share it publicly.</span>
-            </label>
             <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Your name
               <input required value={caregiverName} onChange={e => setCaregiverName(e.target.value)} style={{ padding: 11, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)' }} />
             </label>
