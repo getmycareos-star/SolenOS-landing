@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { RequireAuth } from './components/AuthProvider'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
@@ -15,7 +16,7 @@ import CareCircle from './pages/CareCircle'
 import Login from './pages/Login'
 import InvestorDashboard from './pages/InvestorDashboard'
 
-const secure = (element: React.ReactNode) => <RequireAuth>{element}</RequireAuth>
+const secure = (element: ReactNode) => <RequireAuth>{element}</RequireAuth>
 
 export default function App() {
   return (
