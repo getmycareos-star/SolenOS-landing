@@ -11,6 +11,7 @@ export {
   resolveDurableCareKey,
 
   requireCareKeyFromRequest,
+  requireCaregiverId,
 
   mintDurableCareKey,
 
