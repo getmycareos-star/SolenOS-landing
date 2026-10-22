@@ -1,4 +1,5 @@
 import { preparationWindowHours } from "./preparation-windows";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import type {
   CaregivingMeeting,
   CreateMeetingInput,
@@ -23,7 +24,7 @@ function indexMeeting(meeting: CaregivingMeeting): void {
 
 export function createMeeting(input: CreateMeetingInput): CaregivingMeeting {
   const now = new Date().toISOString();
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(input.caregiver_id);
   const meeting: CaregivingMeeting = {
     id: createMeetingId(),
     title: input.title.trim(),
@@ -49,7 +50,7 @@ export function createMeeting(input: CreateMeetingInput): CaregivingMeeting {
 
 export function createProposedMeeting(input: ProposedMeetingInput): CaregivingMeeting {
   const now = new Date().toISOString();
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(input.caregiver_id);
   const meeting: CaregivingMeeting = {
     id: createMeetingId(),
     title: input.title.trim(),

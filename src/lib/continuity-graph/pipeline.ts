@@ -1,4 +1,5 @@
 import type { CareJourneyPipelineResult } from "../care-journey-graph/types";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { getGraphForCaregiver } from "../care-journey-graph";
 import { processCareJourneyInput } from "../care-journey-graph/server";
 import { syncContinuityGraphFromJourney } from "./bridge-from-journey";
@@ -19,7 +20,7 @@ import type {
 export function processContinuityInput(
   input: IngestContinuityInputParams,
 ): ContinuityGraphResult {
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(input.caregiver_id);
   const caseId = input.case_id ?? null;
 
   processCareJourneyInput({

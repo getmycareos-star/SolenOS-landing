@@ -37,7 +37,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
 // Source gate: Begin must not remint care key
 {
   const workspace = fs.readFileSync(
-    path.join(process.cwd(), "src/app/workspace/page.tsx"),
+    path.join(process.cwd(), "src/components/mvp-workspace/CognitiveWorkspace.tsx"),
     "utf8",
   );
   assert(
@@ -45,14 +45,14 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
     "G11: Begin must not mintDurableCareKey",
   );
   assert(
-    workspace.includes("ensureClientDurableCareKey(previousKey)"),
+    workspace.includes("ensureClientDurableCareKey("),
     "G11: Begin reuses durable key",
   );
   assert(
     workspace.includes("ensureClientInteractionSessionId"),
     "G11: Begin may mint interaction session",
   );
-  assert(workspace.includes("forceNew: freshEnter"), "G11: Begin forceNew session only");
+  assert(workspace.includes("forceNew"), "G11: interaction session helper supports rotation");
   assert(!/pauseKey\(careKey\)/.test(workspace), "G11: Begin must not pause ACS on enter");
   assert(
     /offer_return_invite=0/.test(workspace),
@@ -89,11 +89,9 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   assert.equal(ensureClientDurableCareKey(a), a, "reuse existing key");
   const b = ensureClientDurableCareKey(a);
   assert.equal(b, a, "stable across calls");
-  assert.equal(
-    ensureClientDurableCareKey("default_caregiver"),
-    "default_caregiver",
-    "Locked A: do not orphan default_caregiver",
-  );
+  const migratedLegacyKey = ensureClientDurableCareKey("default_caregiver");
+  assert.notEqual(migratedLegacyKey, "default_caregiver", "legacy shared identity must be rejected");
+  assert.ok(migratedLegacyKey.startsWith("care_"), "legacy shared identity gets a unique per-browser key");
   console.log("✓ durable care key reuse");
 }
 

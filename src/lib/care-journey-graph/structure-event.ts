@@ -6,6 +6,7 @@ import {
   journeyCategoryFromType,
 } from "./classify-event";
 import type { IngestJourneyInputParams, JourneyGraphEvent, ResolvedStatus } from "./types";
+import { requireCaregiverId } from "../care-identity";
 
 const DR_PATTERN = /\bDr\.?\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g;
 const LOCATION_PATTERN = /\b(bathroom|bedroom|kitchen|hospital|clinic|home|nursing home)\b/i;
@@ -49,7 +50,7 @@ export function structureJourneyEvent(params: {
   const description = params.input.description.trim();
   const eventType = classifyJourneyEventType(description);
   const now = new Date().toISOString();
-  const caregiverId = params.input.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(params.input.caregiver_id);
 
   return {
     id: params.event_id,

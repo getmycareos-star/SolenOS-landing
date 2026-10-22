@@ -1,4 +1,5 @@
 import { inferCareJourneyCategory, inferCareJourneyTitle } from "./classify";
+import { requireCaregiverId } from "../care-identity";
 import type {
   CareJourneyAttachment,
   CareJourneyEvent,
@@ -29,7 +30,7 @@ export function createCareJourneyEvent(input: CreateCareJourneyEventInput): Care
   const now = new Date().toISOString();
   const description = input.description.trim();
   const category = input.category ?? inferCareJourneyCategory(description);
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(input.caregiver_id);
 
   const event: CareJourneyEvent = {
     event_id: createJourneyEventId(),

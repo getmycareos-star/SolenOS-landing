@@ -16,7 +16,6 @@ import type { SituationResponse } from "@/lib/situation-entry";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import {
   CARE_RECIPIENT_ID_STORAGE,
-  DEFAULT_DURABLE_CARE_KEY,
   DURABLE_CARE_KEY_STORAGE,
   ensureClientDurableCareKey,
   ensureClientInteractionSessionId,
@@ -130,7 +129,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [sessionHasNote, setSessionHasNote] = useState(false);
   /** Soft privacy line after first capture — never a consent wall. */
   const [showSoftPrivacyNote, setShowSoftPrivacyNote] = useState(false);
-  const [caregiverId, setCaregiverId] = useState(DEFAULT_DURABLE_CARE_KEY);
+  const [caregiverId, setCaregiverId] = useState("");
   /** Care Reality id — shared Living Care Record (Locked B). Distinct from contributor session. */
   const [careRecipientId, setCareRecipientId] = useState<string | null>(null);
   /** Null = still loading; "" = needs ask-once; string = set. */

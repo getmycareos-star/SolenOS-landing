@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import Community from './Community'
 import { computePoolRunway } from '../lib/cognitive-relief/modules/runway'
 import { DEFAULT_PROFILE } from '../lib/cognitive-relief/types'
+import { ensureClientDurableCareKey, requireCareKeyFromRequest, resolveDurableCareKey } from '../lib/care-identity/durable-care-key'
 
 jest.mock('../api/client', () => ({
   getJSON: jest.fn(),
@@ -64,5 +65,19 @@ describe('Care-finance estimates remain evidence-bound', () => {
     const result = computePoolRunway(DEFAULT_PROFILE, null)
     expect(result.optional_budget).toBeNull()
     expect(result.runways[0].estimated_depletion_window).toContain('no caregiver-entered budget')
+  })
+})
+
+describe('Care identity isolation', () => {
+  it('rejects missing, session-only, and shared-placeholder identities', () => {
+    expect(() => resolveDurableCareKey({})).toThrow(/durable care key is required/i)
+    expect(() => resolveDurableCareKey({ care_session_id: 'sess_example' })).toThrow(/durable care key is required/i)
+    expect(requireCareKeyFromRequest({ caregiver_id: 'default_caregiver' }).ok).toBe(false)
+  })
+
+  it('replaces a legacy shared browser key with a per-browser key', () => {
+    const key = ensureClientDurableCareKey('default_caregiver')
+    expect(key).not.toBe('default_caregiver')
+    expect(key.startsWith('care_')).toBe(true)
   })
 })

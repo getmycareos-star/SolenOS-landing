@@ -1,4 +1,4 @@
-import { DEFAULT_CAREGIVER_ID } from "../contract-constants";
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import {
   DEFAULT_CAREGIVER_SELF_PROFILE,
   type CaregiverSelfProfileData,
@@ -13,7 +13,8 @@ export function createCaregiverSelfProfileId(): string {
   return `csp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function getOrCreateCaregiverSelfProfile(caregiverId = DEFAULT_CAREGIVER_ID): CaregiverSelfProfileRecord {
+export function getOrCreateCaregiverSelfProfile(caregiverId: string): CaregiverSelfProfileRecord {
+  caregiverId = requireCaregiverId(caregiverId);
   const existing = profiles.get(caregiverId);
   if (existing) return existing;
 

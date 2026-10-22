@@ -1,4 +1,5 @@
 import { getGraphForCaregiver } from "../care-journey-graph/graph-store";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { parseMemoryQuery } from "./parse-query";
 import {
   aggregateRelevantEvents,
@@ -24,7 +25,7 @@ import type {
  * NOT search. NOT document retrieval. NOT chatbot Q&A.
  */
 export function reconstructMemory(params: ReconstructMemoryParams): MemoryReconstructionResult {
-  const caregiverId = params.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(params.caregiver_id);
   const parsed = parseMemoryQuery(params.query);
   const graph = getGraphForCaregiver(caregiverId, params.case_id ?? null);
   const allEvents = graph?.events ?? [];

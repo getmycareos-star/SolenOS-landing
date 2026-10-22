@@ -1,4 +1,5 @@
 import { processCareJourneyInput } from "../care-journey-graph/pipeline";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import type { CareJourneyPipelineResult } from "../care-journey-graph/types";
 import type { SolenOSDocument } from "../document-intelligence/types";
 import type { ExtractedKnowledgeItem } from "./types";
@@ -40,7 +41,7 @@ export function linkKnowledgeToCareJourney(params: {
   case_id?: string | null;
   mime_type?: string;
 }): { results: CareJourneyPipelineResult[]; updated_items: ExtractedKnowledgeItem[] } {
-  const caregiverId = params.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(params.caregiver_id);
   const approved = params.knowledge_items.filter((i) => i.review_status === "approved");
   const results: CareJourneyPipelineResult[] = [];
   const updatedItems = [...params.knowledge_items];

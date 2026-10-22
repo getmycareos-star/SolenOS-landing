@@ -16,6 +16,7 @@ import {
   writeFileSync,
 } from "fs";
 import { join } from "path";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 
 const isBrowser = typeof window !== "undefined";
 
@@ -25,8 +26,10 @@ export function livingCareRecordDataDir(...parts: string[]): string {
 }
 
 export function sanitizeDurableCareKey(careKey: string): string {
-  const cleaned = careKey.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120);
-  return cleaned || "default_caregiver";
+  const validated = requireCaregiverId(careKey, "durable care key");
+  const cleaned = validated.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120);
+  if (!cleaned) throw new Error("A valid durable care key is required.");
+  return cleaned;
 }
 
 export function readDurableJson<T>(filePath: string): T | null {

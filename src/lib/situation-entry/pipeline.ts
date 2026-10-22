@@ -15,6 +15,7 @@ import {
   sanitizeSituationUncertaintyFields,
 } from "./caregiver-facing-uncertainty";
 import { toCaregiverFacingLine } from "../mvp-input-architecture";
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { getTemporalTimeline, getIngestionTimeline, getTimelineViews } from "./dual-time";
 import type { CanonicalCareEvent, ProcessSituationInput, SituationResponse } from "./types";
 import {
@@ -2083,7 +2084,7 @@ function finalizeSituationResponse(
   final_output: FinalOutputContract,
   architectural_boundaries_layer: SituationResponse["architectural_boundaries_layer"],
 ): SituationResponse {
-  const caregiverId = withMvpLayer.context?.caregiver_id ?? "default_caregiver";
+  const caregiverId = requireCaregiverId(withMvpLayer.context?.caregiver_id);
   const policyApplied = applyPolicyToFinalOutput(caregiverId, final_output, {
     medical_advice_request:
       withMvpLayer.policy_engine_layer?.ingestion?.medical_advice_request === true,

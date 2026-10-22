@@ -682,7 +682,7 @@ export async function runAnalyzePipelineWithObservability(
   // Step 2d: CARE JOURNEY GRAPH — update structured journey before any reasoning
   const careJourneyGraphProcessed = processCareJourneyInput({
     description: structuredInput.raw_input,
-    caregiver_id: params.telemetry_user_id ?? "default_caregiver",
+    caregiver_id: resolveDurableCareKey({ caregiver_id: params.telemetry_user_id, care_session_id: params.care_session_id }),
     case_id: params.care_session_id ?? null,
     source: params.source_type === "document" ? "document" : "text",
   });

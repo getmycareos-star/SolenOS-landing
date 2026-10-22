@@ -1,4 +1,4 @@
-import { DEFAULT_CAREGIVER_ID } from "../contract-constants";
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfileRecord } from "../types";
 
 const profiles = new Map<string, CareRecipientProfileRecord>();
@@ -16,7 +16,7 @@ export function getOrCreateProfile(params: {
   caregiver_id?: string;
   case_id?: string | null;
 }): CareRecipientProfileRecord {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = requireCaregiverId(params.caregiver_id);
   const caseId = params.case_id ?? null;
   const key = profileKey(caregiverId, caseId);
 
