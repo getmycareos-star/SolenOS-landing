@@ -18,7 +18,7 @@ import {
   containsIllustrationUiDefault,
   containsIllustrationScenarioObject,
 } from "../src/lib/care-reality-intelligence";
-import { SAMPLE_CARE_LOGS_IS_ILLUSTRATION_ONLY } from "../src/data/sample-care-logs";
+import { SAMPLE_CARE_LOGS_IS_ILLUSTRATION_ONLY } from "./fixtures/sample-care-logs";
 
 console.log("=== Illustration vs Implementation Separation ===\n");
 console.log(ILLUSTRATION_VS_IMPLEMENTATION_PURPOSE);
