@@ -335,7 +335,7 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
       const headers = new Headers(init.headers || {})
-      const publicAuthRequest = path.endsWith('/auth/login') || path.endsWith('/auth/signup') || path.endsWith('/auth/provision')
+      const publicAuthRequest = path.endsWith('/auth/login') || path.endsWith('/auth/register') || path.endsWith('/auth/signup') || path.endsWith('/auth/provision')
       const token = getAccessToken()
       if (token && !publicAuthRequest) headers.set('Authorization', 'Bearer ' + token)
       const response = await fetch(url, { ...init, headers, signal: controller.signal })
