@@ -199,6 +199,8 @@ export default function TeamDashboard() {
       </div>
 
       {activeTab === 'overview' && (
+        <>
+        {dashboardError && <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '12px' }}>{dashboardError}</p>}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Caregivers Needing Attention</h2>
@@ -242,6 +244,7 @@ export default function TeamDashboard() {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {activeTab === 'review' && (
@@ -293,6 +296,8 @@ export default function TeamDashboard() {
       )}
 
       {activeTab === 'report' && (
+        <>
+        {reportError && <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '12px' }}>{reportError}</p>}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Community Snapshot</h2>
@@ -322,6 +327,7 @@ export default function TeamDashboard() {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {activeTab === 'monitoring' && (
