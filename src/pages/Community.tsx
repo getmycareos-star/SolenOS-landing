@@ -128,23 +128,6 @@ const POST_TYPE_OPTIONS: { value: PostType; label: string; placeholder: string; 
   { value: 'question', label: 'Ask the Community', placeholder: 'What are you struggling with? Other caregivers may have insight.', emoji: '❓' },
 ]
 
-const TAG_COLORS: Record<string, { bg: string; text: string }> = {
-  sundowning: { bg: 'var(--trust-soft)', text: 'var(--trust)' },
-  wandering: { bg: 'var(--unknown-soft)', text: 'var(--unknown)' },
-  medication: { bg: '#fef2f2', text: '#dc2626' },
-  behavior: { bg: '#ffefed', text: '#ea580c' },
-  sleep: { bg: '#f0fdfa', text: '#0d9488' },
-  communication: { bg: '#eff6ff', text: '#2563eb' },
-  mobility: { bg: '#faf5ff', text: '#7c3aed' },
-  nutrition: { bg: '#fff7ed', text: '#ea580c' },
-  safety: { bg: '#fff1f2', text: '#db2777' },
-  activities: { bg: 'var(--accent-soft)', text: 'var(--accent)' },
-  routine: { bg: '#f8faff', text: '#475569' },
-  appointments: { bg: '#f1f5f9', text: '#334159' },
-  hydration: { bg: '#ecfdf5', text: 'var(--trust)' },
-  general: { bg: 'var(--surface)', text: 'var(--text-secondary)' },
-}
-
 const DEFAULT_TAG_COLORS = { bg: 'var(--accent-soft)', text: 'var(--text-secondary)' }
 
 function authorBadge(authorType: AuthorType) {
@@ -175,8 +158,8 @@ function formatTime(createdAt: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function tagColor(tag: string) {
-  return TAG_COLORS[tag] ?? DEFAULT_TAG_COLORS
+function tagColor(_tag: string) {
+  return DEFAULT_TAG_COLORS
 }
 
 export default function Community() {
@@ -371,7 +354,7 @@ export default function Community() {
             type="text"
             value={wisdomQuery}
             onChange={(e) => setWisdomQuery(e.target.value)}
-            placeholder="e.g. wandering overnight, evening agitation, medication refusal"
+            placeholder="Describe the experience or situation to match"
             style={{
               flex: 1, padding: '8px 12px', borderRadius: '8px',
               border: '1px solid var(--border)', background: 'var(--bg)',
