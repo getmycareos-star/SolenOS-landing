@@ -20,7 +20,7 @@ import {
   addResolvedItem,
 } from "./caregiver-profile/store";
 import {
-  getCaregiverSelfProfilePersistenceStatus,
+  getCaregiverSelfProfileStorageMode,
   tryLoadCaregiverSelfProfile,
   trySaveCaregiverSelfProfile,
 } from "./caregiver-profile/postgres-store";
@@ -41,7 +41,8 @@ export async function processCapacitySelfSession(
 
   const storedRecord = await tryLoadCaregiverSelfProfile(caregiverId);
   let selfRecord = storedRecord;
-  let persistence_status = getCaregiverSelfProfilePersistenceStatus();
+  let persistence_status: "server_persisted" | "local_only" =
+    storedRecord ? "server_persisted" : "local_only";
   if (!selfRecord) {
     selfRecord = getOrCreateCaregiverSelfProfile(caregiverId);
     // Persist the initial empty profile when a database is configured. A write
