@@ -115,102 +115,11 @@ function tagColor(tag: string) {
   return TAG_COLORS[tag] ?? DEFAULT_TAG_COLORS
 }
 
-const SAMPLE_POSTS: CommunityPost[] = [
-  {
-    id: 'sample-1',
-    author_type: 'peer_caregiver',
-    author_label: 'Sarah M.',
-    author_avatar_seed: 'sm',
-    title: 'Managing sundowning evenings',
-    body: 'Dad starts getting agitated around 5pm — pacing, asking where Mom is. The thing that finally helps is dimming lights 30 minutes before, playing his old jazz playlist, and quietly redirecting with a simple task like folding towels. It\'s not perfect, but the episodes dropped from daily to 2-3 times a week.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['sundowning', 'behavior', 'activities', 'sleep'],
-    created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 34, thank_you: 18, support: 12 },
-    comment_count: 5,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-2',
-    author_type: 'peer_caregiver',
-    author_label: 'Robert & Maria',
-    author_avatar_seed: 'rm',
-    title: 'Medication adherence hack',
-    body: 'Mom refused her evening meds for three days straight — we tried pill organizers, reminders, everything. Finally worked: mixing the small pill in a tiny bit of applesauce she loves. Not medical advice, just sharing what got us past this particular hurdle.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['medication', 'behavior'],
-    created_at: new Date(Date.now() - 5 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 52, thank_you: 28, support: 7 },
-    comment_count: 9,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-3',
-    author_type: 'solenos_verified',
-    author_label: 'SolenOS',
-    author_avatar_seed: 'so',
-    title: 'Before your next appointment',
-    body: 'Based on your care record, here are the top items to discuss with the neurologist: (1) recent weight trend — noted 3 lb loss over 2 weeks, (2) wandering episodes increased to 4x this week, (3) new sleep pattern — waking 2-3 hours earlier. Other dementia caregivers flagged tracking daily weight as important before visits.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['medication', 'wandering', 'nutrition', 'appointments'],
-    created_at: new Date(Date.now() - 8 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:solenos_verified',
-    reaction_counts: { like: 15, thank_you: 9, support: 3 },
-    comment_count: 2,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-4',
-    author_type: 'peer_caregiver',
-    author_label: 'Elena R.',
-    author_avatar_seed: 'er',
-    title: 'Safe home setup — what worked for wandering',
-    body: 'Installed door alarms and removed keys from his pocket (he kept trying to leave). Also put a motion sensor nightlight in the hallway. The alarms are loud but they give me enough time to redirect before he reaches the door. Still not foolproof, but safer.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'late',
-    tags: ['wandering', 'safety', 'mobility'],
-    created_at: new Date(Date.now() - 22 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 28, thank_you: 14, support: 19 },
-    comment_count: 6,
-    user_reaction: null,
-  },
-  {
-    id: 'sample-5',
-    author_type: 'peer_caregiver',
-    author_label: 'David K.',
-    author_avatar_seed: 'dk',
-    title: 'Calming techniques for agitation',
-    body: 'When Dad gets combative or confused, I\'ve learned NOT to argue or correct him. Instead: validate his emotion ("I can see you\'re upset"), offer physical comfort (hand on shoulder), and redirect to a familiar activity (looking at photo albums). It doesn\'t eliminate agitation but reduces its intensity.',
-    media: [],
-    visibility: 'public',
-    care_stage: 'moderate',
-    tags: ['behavior', 'communication', 'activities'],
-    created_at: new Date(Date.now() - 3 * 24 * 3600000).toISOString(),
-    updated_at: null,
-    provenance_source: 'community:peer_caregiver',
-    reaction_counts: { like: 41, thank_you: 23, support: 16 },
-    comment_count: 8,
-    user_reaction: null,
-  },
-]
 
 export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerText, setComposerText] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -237,10 +146,12 @@ export default function Community() {
     async function load() {
       try {
         const data = await getJSON(`/community?caregiver_id=${personId}`) as CommunityPostSummary
-        setPosts(data.posts ?? [])
+        setPosts(Array.isArray(data.posts) ? data.posts : [])
+        setLoadError(null)
       } catch (e) {
-        console.error(e)
-        setPosts(SAMPLE_POSTS)
+        console.error('Failed to load community posts:', e)
+        setPosts([])
+        setLoadError('Community posts could not be loaded. Check your connection and try again.')
       } finally {
         setLoading(false)
       }
