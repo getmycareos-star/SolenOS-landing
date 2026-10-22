@@ -1,3 +1,5 @@
+import { isDevelopmentHeuristicModeEnabled } from "../dev-only-heuristics";
+
 /**
 
  * Failure-first product intelligence — questions are symptoms of continuity failures.
@@ -264,7 +266,9 @@ export function classifyFailureFromQuestion(raw: string): {
 
   content_only: boolean;
 
-} {
+} | null {
+
+  if (!isDevelopmentHeuristicModeEnabled()) return null;
 
   const text = raw.toLowerCase();
 
