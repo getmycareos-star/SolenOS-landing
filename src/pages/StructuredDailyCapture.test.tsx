@@ -5,7 +5,7 @@ import StructuredDailyCapture from './StructuredDailyCapture';
 // Mock the postJSON function
 jest.mock('../api/client', () => ({
   ...jest.requireActual('../api/client'),
-  postJSON: jest.fn().mockResolvedValue({}),
+  postJSON: jest.fn().mockResolvedValue({ success: true, id: 'test-persisted-event-id' }),
   getPersonId: jest.fn(() => 'test-person'),
   getCaregiverId: jest.fn(() => 'test-caregiver')
 }));
