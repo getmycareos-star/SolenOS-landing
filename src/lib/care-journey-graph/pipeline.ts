@@ -19,7 +19,8 @@ import type { CareJourneyPipelineResult, IngestJourneyInputParams } from "./type
 export function processCareJourneyInput(
   input: IngestJourneyInputParams,
 ): CareJourneyPipelineResult {
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required; care journey was not processed.");
   const caseId = input.case_id ?? null;
 
   const { facts_only_summary, completeness_status, missing_signals } = extractPipelineFacts(
