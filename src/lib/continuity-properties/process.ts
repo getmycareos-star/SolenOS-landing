@@ -35,7 +35,7 @@ export function resetContinuityPropertiesStore(): void {
  */
 export function processContinuityProperties(input: {
   caregiver_id: string;
-  care_recipient_id?: string;
+  care_recipient_id: string;
   raw_input?: string;
   all_events: CanonicalCareEvent[];
   events_created: CanonicalCareEvent[];
@@ -50,7 +50,10 @@ export function processContinuityProperties(input: {
   presentation_mode?: PresentationMode;
   clinical_profile_id?: string;
 }): ContinuityPropertiesResult {
-  const ownership = input.care_recipient_id ?? input.caregiver_id;
+  const ownership = input.care_recipient_id?.trim();
+  if (!ownership || ownership === "default" || ownership === "default_caregiver") {
+    throw new Error("Explicit care-recipient identity is required for continuity properties.");
+  }
 
   const source_reliability_on_events = input.all_events.map((e) => ({
     event_id: e.id,
