@@ -206,6 +206,7 @@ export async function logoutAccount(): Promise<void> {
     }
   } finally {
     sessionStorage.removeItem(AUTH_TOKEN_KEY)
+    setPersonId('')
     notifyAuthStateChanged()
   }
 }
@@ -223,13 +224,19 @@ export async function checkAuthState(): Promise<{ authenticated: boolean; sessio
     } catch {
       // A valid account session can exist before a care record is created.
     }
+    const authorizedPersonIds = contexts.map(item => item.person_id).filter((id): id is string => typeof id === 'string' && id.length > 0)
+    const selectedPersonId = getPersonId()
+    if (selectedPersonId && !authorizedPersonIds.includes(selectedPersonId)) {
+      setPersonId(authorizedPersonIds[0] || '')
+    }
+
     return {
       authenticated: true,
       sessionInfo: {
         authenticated: true,
         account_id: account.id,
         session_type: 'account',
-        authorized_person_ids: contexts.map(item => item.person_id).filter(Boolean),
+        authorized_person_ids: authorizedPersonIds,
         caregiver_roles: Object.fromEntries(contexts.map(item => [item.person_id, item.role || 'caregiver'])),
         professional_roles: {},
         anonymous_session_id: null,
