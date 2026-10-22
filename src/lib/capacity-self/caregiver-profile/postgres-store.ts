@@ -33,6 +33,26 @@ function parseProfile(raw: unknown): CaregiverSelfProfileData {
   ) {
     throw new Error("Persisted caregiver profile contains invalid field values.");
   }
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    !!value && typeof value === "object" && !Array.isArray(value);
+  if (
+    (obj.key_dates as unknown[]).some((value) =>
+      !isRecord(value) || typeof value.label !== "string" || typeof value.date !== "string"
+    ) ||
+    (obj.care_team as unknown[]).some((value) =>
+      !isRecord(value) || typeof value.name !== "string" ||
+      typeof value.role !== "string" || typeof value.contact !== "string"
+    ) ||
+    (obj.tagged_event_log as unknown[]).some((value) =>
+      !isRecord(value) ||
+      !["symptom", "incident", "decision"].includes(String(value.category)) ||
+      typeof value.tag !== "string" ||
+      typeof value.date !== "string" ||
+      typeof value.raw_entry_id !== "string"
+    )
+  ) {
+    throw new Error("Persisted caregiver profile contains invalid structured history.");
+  }
   return {
     caregiver_basics: obj.caregiver_basics,
     known_conditions: obj.known_conditions as string[],
