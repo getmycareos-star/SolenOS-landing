@@ -462,8 +462,7 @@ export default function StructuredDailyCapture({ compressImageFn = compressImage
     onSettled: () => {
       setSubmitting(false);
     },
-    retry: true,
-    maxRetries: 3
+    // Automatic retries are intentionally disabled for non-idempotent care-record writes.
   });
 
   // Handle form submission to backend
