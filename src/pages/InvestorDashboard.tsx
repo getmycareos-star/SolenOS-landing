@@ -14,6 +14,9 @@ export default function InvestorDashboard() {
       setError(null);
       try {
         const data = await getJSON('/investor/metrics');
+        if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
+          throw new Error('Metrics response was incomplete.');
+        }
         setMetrics(data);
       } catch (err: any) {
         setError(err.message || 'Failed to load metrics');
