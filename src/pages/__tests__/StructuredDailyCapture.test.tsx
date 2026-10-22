@@ -172,6 +172,7 @@ describe('StructuredDailyCapture Component Image Compression Integration', () =>
     // Fill medication form and submit
     const medicationInput = screen.getByPlaceholderText(/enter medication name/i);
     fireEvent.change(medicationInput, { target: { value: 'Test Medication' } });
+    fireEvent.change(screen.getByLabelText(/status/i), { target: { value: 'given' } });
     
     const submitMedicationButton = screen.getByRole('button', { name: /add medication/i });
     fireEvent.click(submitMedicationButton);
