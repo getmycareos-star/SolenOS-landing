@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getJSON, postJSON, getPersonId } from '../api/client'
+import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client'
 import CareCapture from '../components/CareCapture'
 import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
@@ -49,7 +49,13 @@ export default function DailyCare() {
         const data = await getJSON(`/caregivers/person/${encodeURIComponent(personId)}`)
         if (!Array.isArray(data)) throw new Error('Caregiver response was incomplete.')
         setCaregivers(data)
-        if (data.length > 0) setCaregiverId(data[0].id)
+        const verifiedCaregiverId = getCaregiverId()
+        if (verifiedCaregiverId && data.some((item: Caregiver) => item.id === verifiedCaregiverId)) {
+          setCaregiverId(verifiedCaregiverId)
+        } else {
+          setCaregiverId('')
+          setCaregiverError('This account is not linked to a verified caregiver identity for this care record.')
+        }
       } catch (e) {
         console.error(e)
         setCaregiverError('Could not load linked caregivers. Check the care record connection and try again.')
