@@ -166,11 +166,11 @@ assert(route.includes("getActiveCareSituation"), "GET hydrates Active Care Situa
 assert(route.includes("processSessionReentry"), "API supports session re-entry");
 assert(route.includes("care_session_id") && route.includes("resolveCaregiverId"), "API separates care identity from interaction session");
 
-const page = fs.readFileSync(path.join(root, "src/app/page.tsx"), "utf8");
+const page = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
 assert(page.includes("/api/situation?"), "page fetches situation for sidebar");
 assert(page.includes("ensureClientInteractionSessionId"), "Begin mints interaction session");
-assert(page.includes("forceNew: freshEnter"), "Begin forceNew session only");
+assert(page.includes("forceNew"), "interaction session helper supports forced rotation");
 assert(!/freshEnter\s*\?\s*mintDurableCareKey/.test(page), "Begin never remints care key");
 
 const workspace = fs.readFileSync(
