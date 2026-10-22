@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
+import CareContinuityIntegrityPanel from '../components/CareContinuityIntegrityPanel'
 
 interface Evidence {
   id: string
@@ -23,6 +24,7 @@ export default function Record() {
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
+  const careContinuityPersonId = getPersonId()
 
   useEffect(() => {
     let cancelled = false
@@ -303,6 +305,7 @@ export default function Record() {
           ))}
         </div>
       )}
+      <CareContinuityIntegrityPanel personId={careContinuityPersonId} />
     </div>
   )
 }
