@@ -234,7 +234,7 @@ export async function tryLoadCareEventsForCaregiver(
   if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     const pool = await getPool();
-    return loadCareEventsForCaregiverFromPostgres(pool, caregiverId);
+    return await loadCareEventsForCaregiverFromPostgres(pool, caregiverId);
   } catch (error) {
     throw new Error(
       `Care-event history could not be loaded from the configured database: ${error instanceof Error ? error.message : "unknown database error"}`,
