@@ -51,7 +51,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     medication_name: '',
-    status: 'given', // default to given
+    status: '',
     dose: null,
     scheduled_for: null,
     administered_at: null,
@@ -82,7 +82,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     axis: 'mood',
-    score: 3,
+    score: 0,
     observed_at: new Date().toISOString(),
     note: null,
   });
@@ -264,8 +264,8 @@ export default function StructuredDailyCapture() {
       };
       
       // Validate required fields
-      if (!medicationData.medication_name) {
-        alert('Medication name is required');
+      if (!medicationData.medication_name || !medicationData.status) {
+        alert('Medication name and an explicitly selected status are required.');
         setMedicationUploading(false);
         return;
       }
@@ -279,7 +279,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -290,7 +290,7 @@ export default function StructuredDailyCapture() {
       // Reset image preview
       setMedicationImagePreview(null);
       
-      alert('Medication added successfully');
+      alert('Added to the unsaved draft. Save the full daily capture to persist this medication entry.');
     } catch (err: any) {
       setMedicationUploading(false);
       setMedicationCompressing(false);
@@ -331,7 +331,7 @@ export default function StructuredDailyCapture() {
         note: null,
       });
       
-      alert('Vital added successfully');
+      alert('Added to the unsaved draft. Save the full daily capture to persist this vital.');
     } catch (err: any) {
       alert(`Failed to add vital: ${err.message}`);
     }
@@ -342,12 +342,17 @@ export default function StructuredDailyCapture() {
     e.preventDefault();
     
     try {
+      if (!Number.isInteger(scaleForm.score) || scaleForm.score < 1 || scaleForm.score > 5) {
+        setSaveError(new Error('Enter an explicit scale score from 1 to 5.'));
+        return;
+      }
+
       const scaleData = {
         ...scaleForm,
         observed_at: new Date(scaleForm.observed_at).toISOString(),
       };
       
-      // Optimistically add to scales list
+      // Add to the local draft; persistence occurs only when the full capture is saved.
       setForm(prev => ({
         ...prev,
         scales: [...prev.scales, scaleData]
@@ -356,12 +361,12 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: 3,
+        score: 0,
         observed_at: new Date().toISOString(),
         note: null,
       });
       
-      alert('Scale added successfully');
+      alert('Added to the unsaved draft. Save the full daily capture to persist this scale observation.');
     } catch (err: any) {
       alert(`Failed to add scale: ${err.message}`);
     }
@@ -495,8 +500,8 @@ export default function StructuredDailyCapture() {
     onSettled: () => {
       setSubmitting(false);
     },
-    retry: true,
-    maxRetries: 3
+    retry: false,
+    maxRetries: 0
   });
 
   // Handle form submission to backend
@@ -825,6 +830,7 @@ export default function StructuredDailyCapture() {
                 <select
                   id="capture-medication-status"
                   value={medicationForm.status}
+                  required
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
                   style={{ 
                     width: '100%', 
@@ -835,6 +841,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
+                  <option value="">Select status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
@@ -1152,8 +1159,8 @@ export default function StructuredDailyCapture() {
                   type="number"
                   min={1}
                   max={5}
-                  value={scaleForm.score}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: parseInt(e.target.value) || 3 }))}
+                  value={scaleForm.score || ''}
+                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: parseInt(e.target.value) || 0 }))}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 
