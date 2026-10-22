@@ -1,16 +1,33 @@
-// Use the same-origin API proxy in both Vite development and Netlify production.
-// vite.config.ts and netlify.toml forward /api/* to the backend, so the browser
-// never needs a hard-coded backend hostname or import.meta.env in Jest.
+// Same-origin API proxy for Vite development and Netlify production.
 const API_BASE = '/api/v1'
+const TOKEN_KEY = 'solenos_access_token'
+const AUTH_EVENT = 'solenosAuthChanged'
 
 function isPlaceholderIdentifier(value: string | null | undefined): boolean {
   if (!value?.trim()) return true
   return /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(value.trim())
 }
 
+export function getAccessToken(): string | null {
+  const token = localStorage.getItem(TOKEN_KEY)?.trim()
+  return token || null
+}
+
+export function setAuthSession(token: string, accountId?: string | null): void {
+  localStorage.setItem(TOKEN_KEY, token)
+  if (accountId) localStorage.setItem('solenos_account_id', accountId)
+  window.dispatchEvent(new Event(AUTH_EVENT))
+}
+
+export function clearAuthSession(): void {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem('solenos_account_id')
+  localStorage.removeItem('solenos_person_id')
+  localStorage.removeItem('solenos_caregiver_id')
+  window.dispatchEvent(new Event(AUTH_EVENT))
+}
+
 export function getPersonId(): string {
-  // Older builds may have persisted a demo ID in localStorage. Never send it
-  // to the API as if it identified a real care recipient.
   const id = localStorage.getItem('solenos_person_id')?.trim() || ''
   return isPlaceholderIdentifier(id) ? '' : id
 }
@@ -31,22 +48,38 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
   return () => window.removeEventListener('personIdChanged', handler)
 }
 
+export function setCaregiverId(id: string): void {
+  const normalized = id.trim()
+  if (isPlaceholderIdentifier(normalized)) {
+    localStorage.removeItem('solenos_caregiver_id')
+  } else {
+    localStorage.setItem('solenos_caregiver_id', normalized)
+  }
+}
+
+export function getCaregiverId(): string | null {
+  const id = localStorage.getItem('solenos_caregiver_id')?.trim() || ''
+  return isPlaceholderIdentifier(id) ? null : id
+}
+
 function resolveApiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
-
-  // The backend exposes situation capture at /api/situation (outside /api/v1).
-  // All other calls using this client use the /api/v1 router.
   if (normalized === '/situation' || normalized.startsWith('/situation?')) {
     return `/api${normalized}`
   }
-
   return `${API_BASE.replace(/\/$/, '')}${normalized}`
+}
+
+function requestHeaders(extra?: HeadersInit): Headers {
+  const headers = new Headers(extra)
+  const token = getAccessToken()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  return headers
 }
 
 async function handleResponse(res: Response) {
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
-
   if (!res.ok) {
     let message = `API ${res.status}`
     if (isJson) {
@@ -54,24 +87,18 @@ async function handleResponse(res: Response) {
         const err = await res.json()
         message = err.detail || err.message || message
       } catch {
-        // keep generic message
+        // Keep the status-based error.
       }
     } else {
       const text = await res.text()
       message = text || message
     }
+    if (res.status === 401 && getAccessToken()) clearAuthSession()
     throw new Error(message)
   }
-
-  if (!isJson) {
-    throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
-  }
-
+  if (!isJson) throw new Error(`Expected JSON but received ${contentType || 'empty response'}`)
   const text = await res.text()
-  if (!text) {
-    throw new Error('Empty response from server')
-  }
-
+  if (!text) throw new Error('Empty response from server')
   try {
     return JSON.parse(text)
   } catch {
@@ -80,14 +107,14 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path))
+  const res = await fetch(resolveApiUrl(path), { headers: requestHeaders() })
   return handleResponse(res)
 }
 
-// Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path))
+  const res = await fetch(resolveApiUrl(path), { headers: requestHeaders() })
   if (!res.ok) {
+    if (res.status === 401 && getAccessToken()) clearAuthSession()
     throw new Error(`Request failed: ${res.status}`)
   }
   return res.blob()
@@ -96,7 +123,7 @@ export async function getBlob(path: string): Promise<Blob> {
 export async function postJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: requestHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -105,32 +132,21 @@ export async function postJSON(path: string, body: unknown) {
 export async function patchJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: requestHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
-
-// Multipart upload helper. Do not set Content-Type manually: the browser must
-// add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
+    headers: requestHeaders(),
     body,
   })
   return handleResponse(res)
 }
 
-// Caregiver identity is only accepted when explicitly stored by the current
-// frontend session. Never fabricate a caregiver ID for a care record.
-export function getCaregiverId(): string | null {
-  const id = localStorage.getItem('solenos_caregiver_id')?.trim() || ''
-  return isPlaceholderIdentifier(id) ? null : id
-}
-
-// The backend currently has no implemented authentication/session endpoints.
-// Fail closed rather than treating a client-side role choice as authentication.
 export interface AuthSessionInfo {
   authenticated: boolean
   account_id: string | null
@@ -144,20 +160,55 @@ export interface AuthSessionInfo {
 }
 
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (!getAccessToken()) return { authenticated: false, sessionInfo: null }
+  try {
+    const account = await getJSON('/auth/me')
+    const contexts = await getJSON('/auth/care-contexts')
+    const personIds = Array.isArray(contexts)
+      ? contexts.map((item: any) => item?.person_id).filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+      : []
+    if (!getPersonId() && personIds.length > 0) setPersonId(personIds[0])
+    const links = await getJSON('/auth/my-caregiver-links')
+    const selectedPerson = getPersonId()
+    const linkedCaregiver = Array.isArray(links)
+      ? links.find((item: any) => item?.person_id === selectedPerson && typeof item?.caregiver_id === 'string')
+      : null
+    if (linkedCaregiver) setCaregiverId(linkedCaregiver.caregiver_id)
+    return {
+      authenticated: true,
+      sessionInfo: {
+        authenticated: true,
+        account_id: typeof account?.id === 'string' ? account.id : localStorage.getItem('solenos_account_id'),
+        session_type: 'bearer',
+        authorized_person_ids: personIds,
+        caregiver_roles: {},
+        professional_roles: {},
+        anonymous_session_id: null,
+        expires_at: '',
+        mfa_verified: false,
+      },
+    }
+  } catch {
+    return { authenticated: false, sessionInfo: null }
+  }
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
+  callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
-  // No backend session event stream exists yet.
-  return () => undefined
+  const handler = async () => {
+    const state = await checkAuthState()
+    callback(state.authenticated, state.sessionInfo)
+  }
+  window.addEventListener(AUTH_EVENT, handler)
+  return () => window.removeEventListener(AUTH_EVENT, handler)
 }
 
 export function startTokenRefresh(): void {
-  // No backend-issued token exists to refresh until authentication is implemented.
+  // Sessions are server-issued and expire after a fixed lifetime. There is no
+  // refresh-token endpoint; the client must not manufacture or extend a session.
 }
 
 export function stopTokenRefresh(): void {
-  // No active token-refresh task exists.
+  // No client-side refresh timer exists.
 }
