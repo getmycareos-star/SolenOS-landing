@@ -14,14 +14,14 @@ export function getAccessToken(): string | null {
 }
 
 export function setAuthSession(token: string, accountId?: string | null): void {
-  localStorage.setItem(TOKEN_KEY, token)
-  if (accountId) localStorage.setItem('solenos_account_id', accountId)
+  sessionStorage.setItem(TOKEN_KEY, token)
+  if (accountId) sessionStorage.setItem('solenos_account_id', accountId)
   window.dispatchEvent(new Event(AUTH_EVENT))
 }
 
 export function clearAuthSession(): void {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem('solenos_account_id')
+  sessionStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem('solenos_account_id')
   localStorage.removeItem('solenos_person_id')
   localStorage.removeItem('solenos_caregiver_id')
   window.dispatchEvent(new Event(AUTH_EVENT))
@@ -182,7 +182,7 @@ export async function checkAuthState(): Promise<{ authenticated: boolean; sessio
       authenticated: true,
       sessionInfo: {
         authenticated: true,
-        account_id: typeof account?.id === 'string' ? account.id : localStorage.getItem('solenos_account_id'),
+        account_id: typeof account?.id === 'string' ? account.id : sessionStorage.getItem('solenos_account_id'),
         session_type: 'bearer',
         authorized_person_ids: personIds,
         caregiver_roles: {},
