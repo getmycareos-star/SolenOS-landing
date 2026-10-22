@@ -105,6 +105,26 @@ describe('Keyword heuristics are disabled unless explicitly opted into in develo
     expect(classifyFailureFromQuestion('I cannot remember what happened at the last appointment.')).toBeNull()
   })
 
+
+  it('never enables keyword inference in production even when the development flag is set', () => {
+    const previousNodeEnv = process.env.NODE_ENV
+    const previousFlag = process.env.SOLENOS_DEV_KEYWORD_HEURISTICS
+    process.env.NODE_ENV = 'production'
+    process.env.SOLENOS_DEV_KEYWORD_HEURISTICS = 'true'
+    try {
+      expect(classifyCaregiverDemand('Is it time for professional care?').demand_type).toBe('unknown')
+      expect(classifyFailureFromQuestion('Is it time for professional care?')).toBeNull()
+      const interpretation = interpretQuestion('Dad has started wandering at night.')
+      expect(interpretation.demandType).toBe('unknown')
+      expect(interpretation.proposedEvents).toEqual([])
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+      else process.env.NODE_ENV = previousNodeEnv
+      if (previousFlag === undefined) delete process.env.SOLENOS_DEV_KEYWORD_HEURISTICS
+      else process.env.SOLENOS_DEV_KEYWORD_HEURISTICS = previousFlag
+    }
+  })
+
   it('does not convert a question into care events or inferred themes without a validated classifier', () => {
     const interpretation = interpretQuestion('Dad has started wandering at night. Is it time for professional care?')
     expect(interpretation.demandType).toBe('unknown')
