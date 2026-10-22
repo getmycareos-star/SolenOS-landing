@@ -247,7 +247,8 @@ export default function StructuredDailyCapture() {
         formData.append('caregiver_id', caregiverId);
         formData.append('person_id', personId);
         
-        const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
+        const uploadPath = `/upload?person_id=${encodeURIComponent(personId)}&caregiver_id=${encodeURIComponent(caregiverId)}`;
+        const uploadResult = await postFormData(uploadPath, formData) as { evidence_id?: string };
         if (!uploadResult?.evidence_id) {
           throw new Error('Image upload did not return an evidence ID');
         }
