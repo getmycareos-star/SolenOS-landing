@@ -133,7 +133,8 @@ interface BackendAccount {
 interface BackendLoginResponse {
   access_token: string
   token_type: 'bearer'
-  expires_at: string
+  expires_at?: string
+  expires_in?: number
   account: BackendAccount
 }
 
@@ -297,27 +298,25 @@ export async function loginWithPassword(email: string, password: string): Promis
 export async function registerCaregiverAccount(input: {
   email: string
   password: string
+  enrollment_key: string
   name: string
   person_name: string
   relationship?: string
 }): Promise<AuthAccount> {
-  await postJSON<{ account: BackendAccount }>('/auth/signup', {
+  if (!input.enrollment_key.trim()) {
+    throw new Error('An authorized enrollment key is required to create an account.')
+  }
+  const result = await postJSON<BackendLoginResponse>('/auth/register', {
     email: input.email,
     password: input.password,
-    display_name: input.name,
-  })
-  const result = await postJSON<BackendLoginResponse>('/auth/login', {
-    email: input.email,
-    password: input.password,
+    enrollment_key: input.enrollment_key,
+    name: input.name,
+    person_name: input.person_name,
+    relationship: input.relationship || 'Family caregiver',
   })
   clearAuthSession()
   persistAuthToken(result)
   try {
-    await postJSON('/auth/care-contexts', {
-      name: input.person_name,
-      caregiver_name: input.name,
-      relationship: input.relationship || 'family caregiver',
-    })
     return await resolveSignedInAccount(result.account)
   } catch (error) {
     clearAuthSession()
