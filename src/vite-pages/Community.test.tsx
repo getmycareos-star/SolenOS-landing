@@ -10,6 +10,7 @@ jest.unstable_mockModule('../api/client', () => ({
   postJSON: mockPostJSON,
   getPersonId: () => 'care-record-1',
   getCaregiverId: () => 'caregiver-1',
+  subscribeToPersonId: () => () => {},
 }))
 
 const { default: Community } = await import('./Community')
@@ -78,6 +79,10 @@ describe('Community unavailable state', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Your reaction was not saved.')
     expect(screen.getByRole('button', { name: /👍 3/ })).toBeInTheDocument()
+    expect(mockPostJSON).toHaveBeenCalledWith('/community/post-1/reactions', {
+      caregiver_id: 'caregiver-1',
+      reaction_type: 'like',
+    })
     expect(mockPostJSON).toHaveBeenCalledTimes(1)
   })
 
