@@ -48,8 +48,6 @@ export const LanguageSelector = () => {
           onSettled: (data, err, variables, context) => {
             setLoading(false);
           },
-          retry: true,
-          maxRetries: 3
         },
         {
           language: lng

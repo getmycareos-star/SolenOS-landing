@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId } from '../api/client'
 
 interface Event {
   id: string
@@ -16,19 +16,32 @@ interface Event {
 export default function Timeline() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      try {
-        const data = await getJSON('/events/demo-person-id')
-        setEvents(data)
-      } catch (e) {
-        console.error(e)
-      } finally {
+      const personId = getPersonId()
+      if (!personId) {
+        setLoadError('No care record is selected. Select an authorized care record to continue.')
         setLoading(false)
+        return
+      }
+      try {
+        const data = await getJSON(`/events/${encodeURIComponent(personId)}`)
+        if (!Array.isArray(data)) throw new Error('The server response was incomplete.')
+        if (!cancelled) setEvents(data)
+      } catch {
+        if (!cancelled) {
+          setEvents([])
+          setLoadError('This information could not be loaded. Try again when the service is available.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => { cancelled = true }
   }, [])
 
   const formatDate = (d: string) => {
@@ -64,7 +77,9 @@ export default function Timeline() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading && events.length === 0 && (
+      {!loading && loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
+
+      {!loading && !loadError && events.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No events recorded yet.</p>
       )}
 

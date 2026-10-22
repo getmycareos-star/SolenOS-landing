@@ -18,7 +18,7 @@ import {
   recordReviewTime,
   updateCareContextWithOML,
 } from "../src/lib/oml";
-import { SAMPLE_CARE_CONTEXT } from "../src/data/sample-care-context";
+import { SAMPLE_CARE_CONTEXT } from "../tests/fixtures/sample-care-context";
 
 console.log("=== OUTCOME MEASUREMENT LAYER ===\n");
 console.log(OML_PRINCIPLE);

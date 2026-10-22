@@ -97,68 +97,31 @@ describe('useOptimisticMutation', () => {
     expect(onSettled).toHaveBeenCalled();
   });
 
-  it('should prevent concurrent mutations', async () => {
-    const mutationFn = jest.fn().mockImplementation(() => 
-      new Promise(resolve => setTimeout(resolve, 100))
-    );
-    const onMutate = jest.fn().mockResolvedValue({});
-    const onSuccess = jest.fn();
-    const onError = jest.fn();
-    const onSettled = jest.fn();
-    
-    const { result } = renderHook(() => 
-      useOptimisticMutation()
-    );
-    
-    // Start first mutation
-    let firstPromise: Promise<void>;
+  it('rejects concurrent mutations instead of silently queueing or retrying writes', async () => {
+    let resolveMutation!: () => void;
+    const mutationFn = jest.fn(() => new Promise<void>(resolve => {
+      resolveMutation = resolve;
+    }));
+    const { result } = renderHook(() => useOptimisticMutation());
+
+    let firstPromise!: Promise<void | undefined>;
     act(() => {
-      firstPromise = result.current.mutate(
-        {
-          mutationFn,
-          onMutate,
-          onSuccess,
-          onError,
-          onSettled,
-        },
-        { test: 'variable1' }
-      ) as Promise<void>;
+      firstPromise = result.current.mutate({ mutationFn }, { test: 'first' }) as Promise<void | undefined>;
     });
-    
-    // Try to start second mutation while first is pending
-    let secondPromise: Promise<void>;
-    act(() => {
-      secondPromise = result.current.mutate(
-        {
-          mutationFn,
-          onMutate,
-          onSuccess,
-          onError,
-          onSettled,
-          retry: true, // Enable retry to test waiting behavior
-        },
-        { test: 'variable2' }
-      ) as Promise<void>;
-    });
-    
-    // First mutation should still be pending
-    expect(result.current.loading).toBe(true);
-    
-    // Wait for first mutation to complete
+    await waitFor(() => expect(result.current.loading).toBe(true));
+
     await act(async () => {
+      await expect(result.current.mutate({ mutationFn }, { test: 'second' })).rejects.toThrow(
+        'A save is already in progress',
+      );
+    });
+    expect(mutationFn).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveMutation();
       await firstPromise;
     });
-    
-    // Second mutation should have started after first completed
-    expect(result.current.loading).toBe(true);
-    
-    // Wait for second mutation to complete
-    await act(async () => {
-      await secondPromise;
-    });
-    
-    // Both mutations should have completed
     expect(result.current.loading).toBe(false);
-    expect(mutationFn).toHaveBeenCalledTimes(2);
+    expect(mutationFn).toHaveBeenCalledTimes(1);
   });
 });

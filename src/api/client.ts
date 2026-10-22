@@ -3,13 +3,25 @@
 // never needs a hard-coded backend hostname or import.meta.env in Jest.
 const API_BASE = '/api/v1'
 
+function isPlaceholderIdentifier(value: string | null | undefined): boolean {
+  if (!value?.trim()) return true
+  return /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(value.trim())
+}
+
 export function getPersonId(): string {
-  // Do not invent a care-record identifier: callers must handle an unset ID.
-  return localStorage.getItem('solenos_person_id') || ''
+  // Older builds may have persisted a demo ID in localStorage. Never send it
+  // to the API as if it identified a real care recipient.
+  const id = localStorage.getItem('solenos_person_id')?.trim() || ''
+  return isPlaceholderIdentifier(id) ? '' : id
 }
 
 export function setPersonId(id: string): void {
-  localStorage.setItem('solenos_person_id', id)
+  const normalized = id.trim()
+  if (isPlaceholderIdentifier(normalized)) {
+    localStorage.removeItem('solenos_person_id')
+  } else {
+    localStorage.setItem('solenos_person_id', normalized)
+  }
   window.dispatchEvent(new Event('personIdChanged'))
 }
 
@@ -17,10 +29,6 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
   const handler = () => callback(getPersonId())
   window.addEventListener('personIdChanged', handler)
   return () => window.removeEventListener('personIdChanged', handler)
-}
-
-function interpolatePersonId(path: string): string {
-  return path.replace(/demo-person-id/g, getPersonId())
 }
 
 function resolveApiUrl(path: string): string {
@@ -72,22 +80,21 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
+  const res = await fetch(resolveApiUrl(path))
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(interpolatePersonId(path)))
+  const res = await fetch(resolveApiUrl(path))
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown, personId?: boolean) {
-  const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+export async function postJSON(path: string, body: unknown) {
+  const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -95,9 +102,8 @@ export async function postJSON(path: string, body: unknown, personId?: boolean) 
   return handleResponse(res)
 }
 
-export async function patchJSON(path: string, body: unknown, personId?: boolean) {
-  const resolvedPath = personId ? interpolatePersonId(path) : path
-  const res = await fetch(resolveApiUrl(resolvedPath), {
+export async function patchJSON(path: string, body: unknown) {
+  const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -119,7 +125,8 @@ export async function postFormData(path: string, body: FormData) {
 // Caregiver identity is only accepted when explicitly stored by the current
 // frontend session. Never fabricate a caregiver ID for a care record.
 export function getCaregiverId(): string | null {
-  return localStorage.getItem('solenos_caregiver_id')
+  const id = localStorage.getItem('solenos_caregiver_id')?.trim() || ''
+  return isPlaceholderIdentifier(id) ? null : id
 }
 
 // The backend currently has no implemented authentication/session endpoints.

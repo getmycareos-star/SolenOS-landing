@@ -2,40 +2,13 @@ import { useState } from 'react'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
-interface SimilarExperience {
-  post_id: string
-  author_label: string
-  author_type: string
-  content: string
-  tags: string[]
-  relevance_score: number
-}
-
-interface ExperienceResult {
-  trigger_observation: string
-  matched_keywords: string[]
-  matches: SimilarExperience[]
-  community_pattern: string | null
-}
-
 interface CareCaptureProps {
   personId?: string
   onCapture?: (text: string) => void
 }
 
-const CAPTURE_HINTS = [
-  { emoji: '🌙', text: 'Wandering overnight' },
-  { emoji: '💊', text: 'Refused medication' },
-  { emoji: '💤', text: 'Sleep got worse' },
-  { emoji: '🍽️', text: 'Eating less' },
-  { emoji: '😕', text: 'New confusion' },
-  { emoji: '😠', text: 'Increased agitation' },
-  { emoji: '⚖️', text: 'Weight loss' },
-]
-
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
-  const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
   const personId = pid || getPersonId()
@@ -57,27 +30,26 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     onSuccess: async (data, variables) => {
       // The backend currently returns a saved situation, not community matches.
       // Do not call the nonexistent /community/experience endpoint or invent matches.
-      setExperiences(null)
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
       setIdentityError(null)
       setText('')
       onCapture?.(variables.rawInput)
     },
     onError: async (error, variables, context) => {
-      // On error, we could show a failed state, but for simplicity we'll just let the error propagate
-      // The UI will still show the text was processed optimistically
+      // The hook's error state drives the visible failure message; do not clear input.
       console.error('Failed to save situation:', error)
     },
     onSettled: () => {
       // Preserve the user's text on failure so it can be corrected and retried.
     },
-    retry: true,
-    maxRetries: 3
   })
 
   const handleSubmit = async () => {
     if (!text.trim()) return
-    
+    if (!personId.trim() || /^(?:demo|sample|test|fake|placeholder)(?:[-_:]|$)|^(?:current-user-id|team-moderator)$/i.test(personId.trim())) {
+      setIdentityError('Select a real care record before saving this care update.')
+      return
+    }
     const caregiverId = getCaregiverId()
     if (!caregiverId) {
       setIdentityError('A signed-in caregiver is required to save this care update.')
@@ -86,14 +58,16 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     setIdentityError(null)
     setSavedMessage(null)
 
-    await submitSituation({
-      caregiverId,
-      personId,
-      rawInput: text.trim()
-    })
+    try {
+      await submitSituation({
+        caregiverId,
+        personId,
+        rawInput: text.trim()
+      })
+    } catch {
+      // The mutation hook exposes the failure; keep the user's text intact.
+    }
   }
-
-  const clearExperiences = () => setExperiences(null)
 
   return (
     <div style={{
@@ -102,13 +76,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
-        marginBottom: experiences ? '12px' : '8px',
+        marginBottom: savedMessage ? '12px' : '8px',
       }}>
         <span style={{ fontSize: '20px' }}>📝</span>
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {(experiences || savedMessage) && (
+        {savedMessage && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -116,7 +90,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && !savedMessage && (
+        {submitting && !savedMessage && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -124,7 +98,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {Boolean(submitError || identityError) && !experiences && (
+        {Boolean(submitError || identityError) && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -149,7 +123,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           setSavedMessage(null)
           setIdentityError(null)
         }}
-        placeholder="Dad wandered at 2 AM and was confused about where he was..."
+        placeholder="Describe what you observed, when it happened, and what remains uncertain."
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
         style={{
@@ -161,22 +135,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         }}
       />
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-        {CAPTURE_HINTS.map(hint => (
-          <button
-            key={hint.text}
-            type="button"
-            onClick={() => setText(hint.emoji + ' ' + hint.text + ' — ')}
-            style={{
-              padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)',
-              background: 'var(--bg)', fontSize: '11px', color: 'var(--text-secondary)',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
-            {hint.emoji} {hint.text}
-          </button>
-        ))}
-      </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
         <button
@@ -194,72 +152,18 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         </button>
       </div>
 
-      {savedMessage && !experiences && (
+      {Boolean(submitError) && !identityError && (
+        <p role="alert" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--error)' }}>
+          The save could not be confirmed. Your text remains in the field; check the connection and retry.
+        </p>
+      )}
+
+      {savedMessage && (
         <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
           {savedMessage}
         </p>
       )}
 
-      {experiences && (
-        <div style={{
-          marginTop: '16px', padding: '12px 16px',
-          background: 'var(--accent-soft)', border: '1px solid var(--accent)',
-          borderRadius: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '14px' }}>💡</span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
-              Similar caregiver experiences
-            </span>
-            <span
-              onClick={clearExperiences}
-              style={{
-                marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </span>
-          </div>
-
-          {experiences.community_pattern && (
-            <p style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '8px' }}>
-              {experiences.community_pattern}
-            </p>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {experiences.matches.map(m => (
-              <div key={m.post_id} style={{
-                padding: '8px 12px', background: 'var(--surface)',
-                borderRadius: '8px', border: '1px solid var(--border)'
-              }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text)' }}>
-                    {m.author_label}
-                  </span>
-                  {m.author_type === 'solenos_verified' && (
-                    <span style={{ fontSize: '10px', color: 'var(--trust)', background: 'var(--trust-soft)', padding: '1px 6px', borderRadius: '4px' }}>
-                      SolenOS verified
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {m.content}
-                </p>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  {m.tags.map(t => (
-                    <span key={t} style={{
-                      fontSize: '10px', padding: '1px 6px', borderRadius: '4px',
-                      background: 'var(--bg)', color: 'var(--text-secondary)',
-                    }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

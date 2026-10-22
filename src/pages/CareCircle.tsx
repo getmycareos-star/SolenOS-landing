@@ -52,7 +52,7 @@ export default function CareCircle() {
   const [careCircles, setCareCircles] = useState<CareCircle[]>([])
   const [selectedCircle, setSelectedCircle] = useState<CareCircle | null>(null)
   const [circleMembers, setCircleMembers] = useState<CareCircleMembership[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const personId = getPersonId()
 
@@ -61,10 +61,17 @@ export default function CareCircle() {
   }, [personId])
 
   const fetchCareCircles = async () => {
+    if (!personId) {
+      setCareCircles([])
+      setError('No care record is selected. Select an authorized care record to view care circles.')
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
-      const data = await getJSON(`/care-circle/person/${personId}`)
+      const data = await getJSON(`/care-circle/person/${encodeURIComponent(personId)}`)
+      if (!Array.isArray(data)) throw new Error('Care-circle response was incomplete.')
       setCareCircles(data as CareCircle[])
     } catch (err: any) {
       console.error('Failed to fetch care circles:', err)
@@ -140,17 +147,16 @@ export default function CareCircle() {
           Manage family and support networks around the person receiving care.
         </p>
         <button
-          onClick={() => {
-            // In a real implementation, this would open a modal to create a new care circle
-            alert('Create care circle functionality would be implemented here')
-          }}
+          type="button"
+          disabled
+          title="Unavailable until the complete care-circle creation flow is implemented"
           style={{
-            padding: '8px 16px', borderRadius: '8px', border: 'none',
-            background: 'var(--trust)', color: 'white', fontSize: '13px',
-            cursor: 'pointer'
+            padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)',
+            background: 'var(--surface)', color: 'var(--text-secondary)', fontSize: '13px',
+            cursor: 'not-allowed'
           }}
         >
-          New Care Circle
+          Creation unavailable
         </button>
       </div>
       
@@ -159,7 +165,7 @@ export default function CareCircle() {
         <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '12px' }}>Your Care Circles</h2>
         {careCircles.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-            No care circles created yet. Click "New Care Circle" to get started.
+            No care circles are recorded for this care record.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

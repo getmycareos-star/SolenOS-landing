@@ -68,19 +68,26 @@ export default function Dashboard() {
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const personId = getPersonId();
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setLoadError(null);
+      if (!personId) {
+        setLoadError('No care record is selected. Select an authorized care record to load your dashboard.');
+        setLoading(false);
+        return;
+      }
       const results = await Promise.allSettled([
-        getJSON(`/events/${getPersonId()}?limit=5`),
-        getJSON(`/insights/${getPersonId()}?limit=3`),
-        getJSON(`/observations/${getPersonId()}/trends`),
-        getJSON(`/reasoning/${getPersonId()}/summary`),
-        getJSON(`/daily-intelligence/${getPersonId()}`),
-        getJSON(`/actions/${getPersonId()}?status=active`),
+        getJSON(`/events/${encodeURIComponent(personId)}?limit=5`),
+        getJSON(`/insights/${encodeURIComponent(personId)}?limit=3`),
+        getJSON(`/observations/${encodeURIComponent(personId)}/trends`),
+        getJSON(`/reasoning/${encodeURIComponent(personId)}/summary`),
+        getJSON(`/daily-intelligence/${encodeURIComponent(personId)}`),
+        getJSON(`/actions/${encodeURIComponent(personId)}?status=active`),
       ]);
 
       const [evts, inss, trendData, reasoningData, intelData, actionsData] = results;
@@ -102,10 +109,17 @@ export default function Dashboard() {
         setActions([]);
       }
 
+      const sectionNames = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'];
       const failedSections = results
-        .map((result, index) => result.status === 'rejected'
-          ? ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'][index]
-          : null)
+        .map((result, index) => {
+          if (result.status === 'rejected') return sectionNames[index];
+          const value = result.value;
+          const expectsArray = index === 0 || index === 1 || index === 2 || index === 5;
+          const validShape = expectsArray
+            ? Array.isArray(value)
+            : value !== null && typeof value === 'object' && !Array.isArray(value);
+          return validShape ? null : sectionNames[index];
+        })
         .filter((section): section is string => section !== null);
       setLoadError(failedSections.length
         ? `Some dashboard data could not be loaded: ${failedSections.join(', ')}. Check the API connection and try again.`
@@ -118,7 +132,7 @@ export default function Dashboard() {
       setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
       setLoading(false);
     });
-  }, []);
+  }, [personId]);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -177,13 +191,10 @@ export default function Dashboard() {
         <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '4px' }}>
           Today's changes are automatically added to the Living Care Record.
         </p>
-        <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
-          Examples: refused medication Â· wandering overnight Â· sleep got worse Â· new confusion
-        </p>
       </div>
 
       <div style={{ marginBottom: '24px' }}>
-        <CareCapture personId={getPersonId()} />
+        <CareCapture personId={personId} />
       </div>
 
       {loadError && (
@@ -192,8 +203,8 @@ export default function Dashboard() {
         </p>
       )}
 
-      {/* Action List Section */}
-      <div style={{
+      {/* Action List Section: only render after a successful load. */}
+      {!loading && !loadError && <div style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
       }}>
@@ -258,7 +269,7 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       <div style={{
         background: 'var(--accent-soft)', border: '1px solid var(--accent)',
@@ -274,7 +285,7 @@ export default function Dashboard() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading ? (
+      {!loading && !loadError ? (
         <div>
           {dailyIntel && (
             <section style={{ marginBottom: '40px' }}>

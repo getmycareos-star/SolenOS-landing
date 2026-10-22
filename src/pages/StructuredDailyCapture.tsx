@@ -51,7 +51,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     medication_name: '',
-    status: 'given', // default to given
+    status: '',
     dose: null,
     scheduled_for: null,
     administered_at: null,
@@ -68,7 +68,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     vital_type: 'bp_systolic',
-    value: 0,
+    value: Number.NaN,
     measured_at: new Date().toISOString(),
     unit: null,
     note: null,
@@ -82,7 +82,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     axis: 'mood',
-    score: 3,
+    score: Number.NaN,
     observed_at: new Date().toISOString(),
     note: null,
   });
@@ -221,6 +221,14 @@ export default function StructuredDailyCapture() {
       alert('A signed-in caregiver and care record are required to add medication.');
       return;
     }
+    if (!medicationForm.medication_name.trim()) {
+      alert('Medication name is required');
+      return;
+    }
+    if (!medicationForm.status) {
+      alert('Select the actual medication status before adding this record.');
+      return;
+    }
     setMedicationUploading(true);
     
     try {
@@ -263,13 +271,7 @@ export default function StructuredDailyCapture() {
         photo_evidence_id: evidenceId, // Set the photo evidence ID from upload
       };
       
-      // Validate required fields
-      if (!medicationData.medication_name) {
-        alert('Medication name is required');
-        setMedicationUploading(false);
-        return;
-      }
-      
+
       // Optimistically add to medications list
       setForm(prev => ({
         ...prev,
@@ -279,7 +281,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -311,7 +313,7 @@ export default function StructuredDailyCapture() {
       };
       
       // Validate required fields
-      if (isNaN(vitalData.value) || vitalData.value === 0) {
+      if (!Number.isFinite(vitalData.value) || vitalData.value <= 0) {
         alert('Please enter a valid value');
         return;
       }
@@ -325,7 +327,7 @@ export default function StructuredDailyCapture() {
       // Reset vitals form
       setVitalForm({
         vital_type: 'bp_systolic',
-        value: 0,
+        value: Number.NaN,
         measured_at: new Date().toISOString(),
         unit: null,
         note: null,
@@ -346,6 +348,10 @@ export default function StructuredDailyCapture() {
         ...scaleForm,
         observed_at: new Date(scaleForm.observed_at).toISOString(),
       };
+      if (!Number.isInteger(scaleData.score) || scaleData.score < 1 || scaleData.score > 5) {
+        alert('Select the observed score before adding this record.');
+        return;
+      }
       
       // Optimistically add to scales list
       setForm(prev => ({
@@ -356,7 +362,7 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: 3,
+        score: Number.NaN,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -439,7 +445,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -450,7 +456,7 @@ export default function StructuredDailyCapture() {
       // Reset vitals form
       setVitalForm({
         vital_type: 'bp_systolic',
-        value: 0,
+        value: Number.NaN,
         measured_at: new Date().toISOString(),
         unit: null,
         note: null,
@@ -459,7 +465,7 @@ export default function StructuredDailyCapture() {
       // Reset scale form
       setScaleForm({
         axis: 'mood',
-        score: 3,
+        score: Number.NaN,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -495,8 +501,6 @@ export default function StructuredDailyCapture() {
     onSettled: () => {
       setSubmitting(false);
     },
-    retry: true,
-    maxRetries: 3
   });
 
   // Handle form submission to backend
@@ -825,6 +829,7 @@ export default function StructuredDailyCapture() {
                 <select
                   id="capture-medication-status"
                   value={medicationForm.status}
+                  required
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
                   style={{ 
                     width: '100%', 
@@ -835,6 +840,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
+                  <option value="">Select actual status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
@@ -1101,8 +1107,9 @@ export default function StructuredDailyCapture() {
                 <input
                   id="capture-vital-value"
                   type="number"
-                  value={vitalForm.value}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
+                  value={Number.isFinite(vitalForm.value) ? vitalForm.value : ''}
+                  required
+                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: e.target.value === '' ? Number.NaN : Number(e.target.value) }))}
                   placeholder="Enter value"
                   style={{ 
                     width: '100%', 
@@ -1249,8 +1256,9 @@ export default function StructuredDailyCapture() {
                   type="number"
                   min={1}
                   max={5}
-                  value={scaleForm.score}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: parseInt(e.target.value) || 3 }))}
+                  value={Number.isFinite(scaleForm.score) ? scaleForm.score : ''}
+                  required
+                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? Number.NaN : Number.parseInt(e.target.value, 10) }))}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 
