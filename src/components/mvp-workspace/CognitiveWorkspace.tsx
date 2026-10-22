@@ -590,14 +590,44 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       unresolved: [],
     };
 
+    let accessToken = "";
     try {
       const existingToken = getAnonymousAccessToken();
       if (!existingToken) throw new Error("No server-issued care session exists yet.");
       const session = await ensureAnonymousSession();
+      accessToken = session.access_token;
+
+      // "Done for now" is a persisted interaction pause, not a local-only UI reset.
+      // The backend binds this command to the bearer session's person/caregiver scope.
+      const pauseResponse = await fetch(apiUrl("/api/situation"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "pause_active_care_situation",
+          caregiver_id: caregiverId,
+          care_session_id: interactionSessionId(),
+        }),
+      });
+      if (!pauseResponse.ok) {
+        throw new Error("The server did not confirm the interaction pause.");
+      }
+    } catch {
+      setCaregiverError(
+        "SolenOS could not confirm that this interaction was paused. Your current note and selected documents remain here; retry before leaving.",
+      );
+      return;
+    }
+
+    let hydrationWarning = false;
+    try {
       const res = await fetch(
         apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=0`),
-        { headers: { Authorization: `Bearer ${session.access_token}` } },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
+      if (!res.ok) throw new Error("The saved care record could not be refreshed.");
       if (res.ok) {
         const data = (await safeJson(res)) as {
           situations?: Situation[];
@@ -666,14 +696,32 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         };
       }
     } catch {
-      // Local continuity still preserved below even if pause request fails.
+      // The pause is already confirmed. Keep the local continuity payload and
+      // surface the failed refresh instead of pretending hydration succeeded.
+      hydrationWarning = true;
     }
 
-    setRawInput("");
-    setDocuments([]);
+    const hasPendingDraft = Boolean(rawInput.trim()) || documents.length > 0;
+    if (!hasPendingDraft) {
+      setRawInput("");
+      setDocuments([]);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(LAST_INPUT_STORAGE_KEY);
+        window.localStorage.removeItem(ACTIVATION_LAST_SNIPPET_KEY);
+      }
+    } else if (rawInput.trim() && typeof window !== "undefined") {
+      // Reuse the existing recoverable text-draft key; do not discard unsaved text.
+      window.localStorage.setItem(LAST_INPUT_STORAGE_KEY, rawInput);
+    }
     setLastSharedDisplay("");
     setSituationResponse(null);
-    setCaregiverError(null);
+    setCaregiverError(
+      hydrationWarning
+        ? "Interaction paused, but the latest care record could not be refreshed. Check your connection before relying on the refreshed view."
+        : hasPendingDraft
+          ? "Interaction paused. Your unsaved note or selected document has not been saved to the care record yet."
+          : null,
+    );
     setSubmitPhase("idle");
     setShowSoftPrivacyNote(false);
     // Keep continuity flags — Done for now is not first-time UX.
@@ -691,11 +739,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         recent: pausePayload.recent.slice(0, 2),
         unresolved: [],
       });
-    }
-    if (typeof window !== "undefined") {
-      // Draft composer only — not the durable care key / session.
-      window.localStorage.removeItem(LAST_INPUT_STORAGE_KEY);
-      window.localStorage.removeItem(ACTIVATION_LAST_SNIPPET_KEY);
     }
     onPauseActive?.({
       situations: pausePayload.situations,
