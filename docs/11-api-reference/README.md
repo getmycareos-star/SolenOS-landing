@@ -13,7 +13,7 @@
 
 ### `POST /api/observations`
 - Body: `{ raw_text, caregiver_id?, source?: "text"|"voice" }`
-- Records observation intelligence (heuristic). Default caregiver `default_caregiver`.
+- Records observation intelligence (heuristic). Identity must be explicit and authorized; do not use `default_caregiver` or another shared fallback. Confirm this legacy route exists in the deployed architecture before relying on this reference.
 - MVP product path: **text** (`source: "text"`). Voice source is FUTURE (ADR-018).
 
 ### `POST /api/observations/voice` — FUTURE
