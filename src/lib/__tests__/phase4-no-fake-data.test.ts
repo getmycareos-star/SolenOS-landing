@@ -68,4 +68,11 @@ describe('Phase 4 production data-integrity guardrails', () => {
     expect(source('src/lib/routine-moments/builder.ts')).toContain('consistency_score: null')
   })
 
+  it('keeps illustrative care fixtures outside the production source tree', () => {
+    expect(source('scripts/fixtures/README.md')).toContain('must not be imported by `src/` application code')
+    expect(() => source('src/data/sample-care-context.ts')).toThrow()
+    expect(() => source('src/data/sample-care-logs.ts')).toThrow()
+    expect(source('src/App.tsx')).not.toMatch(/AccessibilityDemo|RoutineMomentsDemo|sample-care-context|sample-care-logs/)
+  })
+
 })
