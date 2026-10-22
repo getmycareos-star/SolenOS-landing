@@ -29,14 +29,41 @@ export default async function OpsPage({
   const userSearch = typeof params.user === "string" ? params.user : null;
   const page = Math.max(1, Number(params.page ?? "1") || 1);
 
-  const data = await loadOpsDashboard({
-    eventFilter,
-    userSearch,
-    page,
-    pageSize: 50,
-  });
+  let data: Awaited<ReturnType<typeof loadOpsDashboard>> | null = null;
+  try {
+    data = await loadOpsDashboard({
+      eventFilter,
+      userSearch,
+      page,
+      pageSize: 50,
+    });
+  } catch {
+    // Do not render zero counts or empty queues when database queries failed.
+    data = null;
+  }
 
   const keyQ = encodeURIComponent(key!);
+  if (!data) {
+    return (
+      <div className="ops-console">
+        <header className="ops-header">
+          <div>
+            <h1>SolenOS Ops Console</h1>
+            <p className="ops-meta">Internal · operational data unavailable</p>
+          </div>
+          <div className="ops-meta">
+            <Link href={`/ops/clarity?key=${keyQ}`}>Clarity quarantine</Link>
+            {" · "}
+            <Link href={`/ops/devtools?key=${keyQ}`}>Engine panels</Link>
+          </div>
+        </header>
+        <section className="ops-section" role="alert">
+          <h2>Operational dashboard unavailable</h2>
+          <p>The database is not configured or an operational query failed. Counts, reports, and empty states are withheld until the data source can be verified.</p>
+        </section>
+      </div>
+    );
+  }
   const base = `/ops?key=${keyQ}`;
 
   return (
