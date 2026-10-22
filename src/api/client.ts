@@ -158,9 +158,11 @@ export function getAccessToken(): string {
 export function clearAuthSession(): void {
   localStorage.removeItem(AUTH_TOKEN_KEY)
   localStorage.removeItem('solenos_caregiver_id')
+  localStorage.removeItem('solenos_person_id')
   localStorage.removeItem('solenos_identifier')
   localStorage.removeItem('solenos_user_role')
   window.dispatchEvent(new Event(AUTH_EVENT))
+  window.dispatchEvent(new Event('personIdChanged'))
 }
 
 function persistAuthToken(result: BackendLoginResponse): void {
@@ -220,8 +222,21 @@ async function resolveSignedInAccount(
 
 export async function loginWithPassword(email: string, password: string): Promise<AuthAccount> {
   const result = await postJSON<BackendLoginResponse>('/auth/login', { email, password })
+  const previousEmail = localStorage.getItem('solenos_identifier')?.trim().toLowerCase()
+  const preferredPersonId =
+    previousEmail && previousEmail === result.account.email.trim().toLowerCase()
+      ? getPersonId()
+      : null
+
+  // Clear the previous account's client-side identity before switching tokens.
+  clearAuthSession()
   persistAuthToken(result)
-  return resolveSignedInAccount(result.account, getPersonId())
+  try {
+    return await resolveSignedInAccount(result.account, preferredPersonId)
+  } catch (error) {
+    clearAuthSession()
+    throw error
+  }
 }
 
 export async function registerCaregiverAccount(input: {
@@ -240,13 +255,19 @@ export async function registerCaregiverAccount(input: {
     email: input.email,
     password: input.password,
   })
+  clearAuthSession()
   persistAuthToken(result)
-  await postJSON('/auth/care-contexts', {
-    name: input.person_name,
-    caregiver_name: input.name,
-    relationship: input.relationship || 'family caregiver',
-  })
-  return resolveSignedInAccount(result.account)
+  try {
+    await postJSON('/auth/care-contexts', {
+      name: input.person_name,
+      caregiver_name: input.name,
+      relationship: input.relationship || 'family caregiver',
+    })
+    return await resolveSignedInAccount(result.account)
+  } catch (error) {
+    clearAuthSession()
+    throw error
+  }
 }
 
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
