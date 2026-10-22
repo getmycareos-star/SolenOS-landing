@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId } from '../api/client'
+import CareContinuityIntegrityPanel from '../components/CareContinuityIntegrityPanel'
 
 interface Evidence {
   id: string
@@ -15,11 +16,11 @@ export default function Record() {
   const [items, setItems] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const personId = getPersonId()
 
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const personId = getPersonId()
       if (!personId) {
         setLoadError('No care record is selected. Select an authorized care record to continue.')
         setLoading(false)
@@ -129,6 +130,7 @@ export default function Record() {
           ))}
         </div>
       )}
+      <CareContinuityIntegrityPanel personId={personId} />
     </div>
   )
 }
