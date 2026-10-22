@@ -2,22 +2,6 @@ import { useState } from 'react'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
-interface SimilarExperience {
-  post_id: string
-  author_label: string
-  author_type: string
-  content: string
-  tags: string[]
-  relevance_score: number
-}
-
-interface ExperienceResult {
-  trigger_observation: string
-  matched_keywords: string[]
-  matches: SimilarExperience[]
-  community_pattern: string | null
-}
-
 interface CareCaptureProps {
   personId?: string
   onCapture?: (text: string) => void
@@ -25,7 +9,6 @@ interface CareCaptureProps {
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
-  const [experiences, setExperiences] = useState<ExperienceResult | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
   const personId = pid || getPersonId()
@@ -47,7 +30,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     onSuccess: async (data, variables) => {
       // The backend currently returns a saved situation, not community matches.
       // Do not call the nonexistent /community/experience endpoint or invent matches.
-      setExperiences(null)
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
       setIdentityError(null)
       setText('')
@@ -81,8 +63,6 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     })
   }
 
-  const clearExperiences = () => setExperiences(null)
-
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)',
@@ -90,13 +70,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
-        marginBottom: experiences ? '12px' : '8px',
+        marginBottom: savedMessage ? '12px' : '8px',
       }}>
         <span style={{ fontSize: '20px' }}>📝</span>
         <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
           What changed today?
         </h2>
-        {(experiences || savedMessage) && (
+        {savedMessage && (
           <span style={{
             fontSize: '11px', color: 'var(--success)', fontWeight: 500,
             background: 'var(--success-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -104,7 +84,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saved
           </span>
         )}
-        {submitting && !experiences && !savedMessage && (
+        {submitting && !savedMessage && (
           <span style={{
             fontSize: '11px', color: 'var(--warning)', fontWeight: 500,
             background: 'var(--warning-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -112,7 +92,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             Saving...
           </span>
         )}
-        {Boolean(submitError || identityError) && !experiences && (
+        {Boolean(submitError || identityError) && (
           <span style={{
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
@@ -166,72 +146,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         </button>
       </div>
 
-      {savedMessage && !experiences && (
+      {savedMessage && (
         <p role="status" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--success)' }}>
           {savedMessage}
         </p>
       )}
 
-      {experiences && (
-        <div style={{
-          marginTop: '16px', padding: '12px 16px',
-          background: 'var(--accent-soft)', border: '1px solid var(--accent)',
-          borderRadius: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '14px' }}>💡</span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>
-              Similar caregiver experiences
-            </span>
-            <span
-              onClick={clearExperiences}
-              style={{
-                marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </span>
-          </div>
-
-          {experiences.community_pattern && (
-            <p style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '8px' }}>
-              {experiences.community_pattern}
-            </p>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {experiences.matches.map(m => (
-              <div key={m.post_id} style={{
-                padding: '8px 12px', background: 'var(--surface)',
-                borderRadius: '8px', border: '1px solid var(--border)'
-              }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text)' }}>
-                    {m.author_label}
-                  </span>
-                  {m.author_type === 'solenos_verified' && (
-                    <span style={{ fontSize: '10px', color: 'var(--trust)', background: 'var(--trust-soft)', padding: '1px 6px', borderRadius: '4px' }}>
-                      SolenOS verified
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {m.content}
-                </p>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  {m.tags.map(t => (
-                    <span key={t} style={{
-                      fontSize: '10px', padding: '1px 6px', borderRadius: '4px',
-                      background: 'var(--bg)', color: 'var(--text-secondary)',
-                    }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
