@@ -40,7 +40,11 @@ describe('Phase 4 production data-integrity guardrails', () => {
   })
 
   it('does not ship hardcoded sample Community posts or team risk reports', () => {
-    expect(source('src/pages/Community.tsx')).not.toContain(['SAMPLE', '_POSTS'].join(''))
+    const community = source('src/pages/Community.tsx')
+    expect(community).toContain('zero reactions were not inferred')
+    expect(community).toContain('empty tag list was not inferred')
+    expect(community).not.toContain("typeof counts?.support === 'number' && counts.support >= 0 ? counts.support : 0")
+    expect(community).not.toContain(['SAMPLE', '_POSTS'].join(''))
     expect(source('src/pages/Community.tsx')).not.toMatch(/sample caregiver story/i)
     const forbiddenDashboardMarkers = [
       ['DEMO', '_RISK'].join(''),
