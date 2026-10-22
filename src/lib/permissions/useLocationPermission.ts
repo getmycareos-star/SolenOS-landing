@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
 export type LocationPermissionState =
   | { status: 'unknown' }
@@ -18,10 +18,6 @@ export const useLocationPermission = () => {
     return true;
   }, []);
 
-  useEffect(() => {
-    checkAvailability();
-  }, [checkAvailability]);
-
   const requestLocation = useCallback(async () => {
     if (!checkAvailability()) {
       return;
@@ -39,12 +35,13 @@ export const useLocationPermission = () => {
       });
 
       const { latitude, longitude, accuracy } = position.coords;
+      const { timestamp } = position;
       setState({
         status: 'granted',
         latitude,
         longitude,
         accuracy,
-        timestamp: position.timestamp,
+        timestamp,
       });
     } catch (err: any) {
       let message = 'Unknown error';
