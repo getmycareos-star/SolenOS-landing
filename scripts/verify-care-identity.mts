@@ -160,11 +160,11 @@ assert(hydrated.active.length >= 1, "hydrate from CareContext recreates TrackedS
 console.log("✓ hydrate from CareContext when TrackedSituation empty");
 
 const route = fs.readFileSync(path.join(root, "src/app/api/situation/route.ts"), "utf8");
-assert(route.includes("hydrateTrackedSituationsFromCareContext"), "GET hydrates TrackedSituation");
+assert(route.includes("upsertTrackedSituationFromCareInput"), "GET synchronizes TrackedSituation from care context");
 assert(route.includes("active_situations") || route.includes("situations"), "GET returns situations");
 assert(route.includes("getActiveCareSituation"), "GET hydrates Active Care Situation");
-assert(route.includes("pause_active_care_situation"), "POST can pause ACS");
-assert(route.includes("resolveInteractionSessionId"), "API separates interaction session");
+assert(route.includes("processSessionReentry"), "API supports session re-entry");
+assert(route.includes("care_session_id") && route.includes("resolveCaregiverId"), "API separates care identity from interaction session");
 
 const page = fs.readFileSync(path.join(root, "src/app/page.tsx"), "utf8");
 assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
