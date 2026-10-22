@@ -1,4 +1,4 @@
-import { requireCaregiverId } from "@/lib/care-identity";
+import { requireCaregiverId } from "@/lib/care-identity/durable-care-key";
 import {
   getOrCreateProfile,
   patchProfileRecord,
