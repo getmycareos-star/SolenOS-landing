@@ -300,10 +300,10 @@ export default function CareContinuityIntegrityPanel({ personId }: { personId: s
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
               <strong>{item.field}: {item.asserted_value}</strong>
-              <span style={{ fontSize: 12 }}>{fresh?.status? .replace(/_/g, ' ') || 'freshness unknown'}</span>
+              <span style={{ fontSize: 12 }}>{fresh?.status?.replace(/_/g, ' ') || 'freshness unknown'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Source: {item.source_label} · {item.assertion_kind .replace(/_/g, ' ')} · status: {item.assertion_status}
+              Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
