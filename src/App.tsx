@@ -1,4 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
+import type { ReactNode } from 'react'
+import { RequireAuth } from './components/AuthProvider'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
@@ -14,25 +16,27 @@ import CareCircle from './pages/CareCircle'
 import Login from './pages/Login'
 import InvestorDashboard from './pages/InvestorDashboard'
 
+const secure = (element: ReactNode) => <RequireAuth>{element}</RequireAuth>
+
 export default function App() {
   return (
     <div className="app-container">
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/daily-care" element={<DailyCare />} />
-        <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
-        <Route path="/timeline" element={<Timeline />} />
-        <Route path="/record" element={<Record />} />
-        <Route path="/memory" element={<Memory />} />
-        <Route path="/care-circle" element={<CareCircle />} />
-        <Route path="/companion" element={<Companion />} />
-        <Route path="/insights" element={<Insights />} />
-        <Route path="/community" element={<Community />} />
-        <Route path="/professional" element={<ProfessionalDashboard />} />
-        <Route path="/team" element={<TeamDashboard />} />
-        <Route path="/investor/dashboard" element={<InvestorDashboard />} />
-       </Routes>
+        <Route path="/" element={secure(<Dashboard />)} />
+        <Route path="/daily-care" element={secure(<DailyCare />)} />
+        <Route path="/structured-daily-capture" element={secure(<StructuredDailyCapture />)} />
+        <Route path="/timeline" element={secure(<Timeline />)} />
+        <Route path="/record" element={secure(<Record />)} />
+        <Route path="/memory" element={secure(<Memory />)} />
+        <Route path="/care-circle" element={secure(<CareCircle />)} />
+        <Route path="/companion" element={secure(<Companion />)} />
+        <Route path="/insights" element={secure(<Insights />)} />
+        <Route path="/community" element={secure(<Community />)} />
+        <Route path="/professional" element={secure(<ProfessionalDashboard />)} />
+        <Route path="/team" element={secure(<TeamDashboard />)} />
+        <Route path="/investor/dashboard" element={secure(<InvestorDashboard />)} />
+      </Routes>
     </div>
   )
 }

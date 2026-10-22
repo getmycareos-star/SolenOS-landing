@@ -45,7 +45,7 @@ export default function DailyCare() {
 
     async function loadCaregivers() {
       try {
-        const data = await getJSON(`/caregivers/${encodeURIComponent(personId)}`)
+        const data = await getJSON(`/caregivers/person/${encodeURIComponent(personId)}`)
         if (!Array.isArray(data)) throw new Error('Caregiver response was incomplete.')
         setCaregivers(data)
         if (data.length > 0) setCaregiverId(data[0].id)
