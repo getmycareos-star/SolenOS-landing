@@ -77,7 +77,7 @@ describe("identity isolation boundaries", () => {
       await expect(tryLoadCaregiverSelfProfile("cg_db_unavailable")).rejects.toThrow(/DATABASE_URL is not configured/i);
       await expect(tryLoadProfile("cg_db_unavailable", null)).rejects.toThrow(/DATABASE_URL is not configured/i);
       await expect(tryLoadCareJourneyEvents("cg_db_unavailable")).rejects.toThrow(/DATABASE_URL is not configured/i);
-      await expect(tryLoadGraphForCaregiver("cg_db_unavailable", null)).rejects.toThrow(/DATABASE_URL is not configured/i);
+      await expect(tryLoadGraphForCaregiver("cg_db_unavailable")).rejects.toThrow(/DATABASE_URL is not configured/i);
       await expect(tryLoadCareEventsForCaregiver("cg_db_unavailable")).rejects.toThrow(/DATABASE_URL is not configured/i);
       await expect(tryPersistCareEvent({
         content: "verification event",
