@@ -36,7 +36,8 @@ export function assembleDecisionSnapshot(params: {
 }): CaseDecisionSnapshot {
   const { caseEntity, facts, policy, rawInput } = params;
   const name = recipientLabel(caseEntity);
-  const risk = inferRisk(facts, policy.state === "C" ? "high" : "medium");
+  // The current response schema cannot represent unknown risk; use its conservative medium value rather than inventing high risk from a pattern-state label.
+  const risk = inferRisk(facts, "medium");
   const primaryType = facts.events[0]?.eventType ?? "general";
   const intervention = policy.preferredIntervention;
 
