@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { postJSON, getPersonId, getCaregiverId } from '../api/client'
+import { useState, useEffect } from 'react'
+import { postJSON, getJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface CareCaptureProps {
@@ -32,6 +32,24 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const [qwenStatus, setQwenStatus] = useState<string | null>(null)
   const [qwenCandidates, setQwenCandidates] = useState<QwenCandidateBundle | null>(null)
   const personId = pid || getPersonId()
+
+  useEffect(() => {
+    let active = true
+    if (!personId) return
+    getJSON(`/capture/analyses/${encodeURIComponent(personId)}?limit=1`)
+      .then((data: any) => {
+        const latest = Array.isArray(data?.items) ? data.items[0] : null
+        if (!active || !latest) return
+        setQwenStatus(typeof latest.status === 'string' ? latest.status : null)
+        setQwenCandidates(latest.candidate_data && typeof latest.candidate_data === 'object'
+          ? latest.candidate_data as QwenCandidateBundle
+          : null)
+      })
+      .catch(() => {
+        // The capture form remains usable if optional prior-analysis retrieval fails.
+      })
+    return () => { active = false }
+  }, [personId])
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
     any, 
