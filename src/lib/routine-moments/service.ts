@@ -70,7 +70,7 @@ export function establishBaseline(observations: RoutineMomentRecord[]): RoutineB
   });
 
    // Calculate consistency score (inverse of coefficient of variation of time between observations)
-   let consistencyScore: number;
+   let consistencyScore: number | null;
    if (sortedObs.length >= 2) {
      const intervals: number[] = [];
      for (let i = 1; i < sortedObs.length; i++) {
@@ -86,8 +86,8 @@ export function establishBaseline(observations: RoutineMomentRecord[]): RoutineB
      // Ensure it's between 0 and 1
      consistencyScore = Math.min(1, Math.max(0, consistencyScore));
    } else {
-     // Not enough data to calculate consistency
-     consistencyScore = 0.5; // default middle value
+     // Not enough observations: consistency is unknown, not an invented midpoint.
+     consistencyScore = null
    }
 
   return {
@@ -257,8 +257,10 @@ export function detectChanges(
     const stdDev = Math.sqrt(variance);
     const cv = stdDev / meanInterval;
     const currentConsistencyScore = Math.max(0, 1 - cv);
-    const consistencyChange = Math.abs(currentConsistencyScore - baseline.consistency_score);
-    if (consistencyChange > 0.2) {
+    const consistencyChange = baseline.consistency_score === null
+      ? null
+      : Math.abs(currentConsistencyScore - baseline.consistency_score);
+    if (consistencyChange !== null && consistencyChange > 0.2) {
        changes.push({
          field: 'consistency_score',
          previous_value: baseline.consistency_score,
