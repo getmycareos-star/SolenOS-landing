@@ -19,7 +19,11 @@ import {
   setSessionCapacity,
   addResolvedItem,
 } from "./caregiver-profile/store";
-import { tryLoadCaregiverSelfProfile, trySaveCaregiverSelfProfile } from "./caregiver-profile/postgres-store";
+import {
+  getCaregiverSelfProfilePersistenceStatus,
+  tryLoadCaregiverSelfProfile,
+  trySaveCaregiverSelfProfile,
+} from "./caregiver-profile/postgres-store";
 import { ingestCaregiverSelfEntry } from "./caregiver-profile/ingest-self";
 
 export type ProcessCapacitySelfSessionParams = {
@@ -35,9 +39,15 @@ export async function processCapacitySelfSession(
 ): Promise<CapacitySelfSessionResult> {
   const caregiverId = requireCaregiverId(params.caregiver_id);
 
-  let selfRecord =
-    (await tryLoadCaregiverSelfProfile(caregiverId)) ??
-    getOrCreateCaregiverSelfProfile(caregiverId);
+  const storedRecord = await tryLoadCaregiverSelfProfile(caregiverId);
+  let selfRecord = storedRecord;
+  let persistence_status = getCaregiverSelfProfilePersistenceStatus();
+  if (!selfRecord) {
+    selfRecord = getOrCreateCaregiverSelfProfile(caregiverId);
+    // Persist the initial empty profile when a database is configured. A write
+    // failure is thrown by the storage adapter rather than reported as success.
+    persistence_status = await trySaveCaregiverSelfProfile(selfRecord);
+  }
 
   const recipientItems: CareItem[] = params.input
     ? buildCareItemsFromInput(params.input, "care_recipient")
@@ -77,15 +87,16 @@ export async function processCapacitySelfSession(
     factual_reflection,
     caregiver_items: caregiverItems,
     care_recipient_items: careRecipientItems,
+    persistence_status,
   };
 }
 
 export async function setCaregiverCapacity(
   caregiverId: string,
   capacity: CapacityLevel,
-): Promise<void> {
+): Promise<"server_persisted" | "local_only"> {
   const record = setSessionCapacity(caregiverId, capacity);
-  await trySaveCaregiverSelfProfile(record);
+  return trySaveCaregiverSelfProfile(record);
 }
 
 export async function resolveCareItem(params: {
@@ -94,7 +105,7 @@ export async function resolveCareItem(params: {
   subject: ResolvedItemRecord["subject"];
   context_type: ResolvedItemRecord["context_type"];
   raw_entry_id?: string | null;
-}): Promise<ResolvedItemRecord> {
+}): Promise<{ item: ResolvedItemRecord; persistence_status: "server_persisted" | "local_only" }> {
   const resolved: ResolvedItemRecord = {
     id: `resolved_${Date.now()}`,
     description: params.description,
@@ -104,8 +115,8 @@ export async function resolveCareItem(params: {
     raw_entry_id: params.raw_entry_id ?? null,
   };
   const record = addResolvedItem(params.caregiver_id, resolved);
-  await trySaveCaregiverSelfProfile(record);
-  return resolved;
+  const persistence_status = await trySaveCaregiverSelfProfile(record);
+  return { item: resolved, persistence_status };
 }
 
 export { ingestCaregiverSelfEntry };
