@@ -6,7 +6,8 @@ import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
 jest.mock('../api/client', () => ({
   getPersonId: () => 'test-person-id',
-  getJSON: jest.fn().mockResolvedValue([{ id: 'caregiver-123', name: 'Demo Caregiver' }]),
+  getCaregiverId: () => 'caregiver-123',
+  getJSON: jest.fn().mockResolvedValue([{ id: 'caregiver-123', name: 'Test Caregiver' }]),
   postJSON: jest.fn().mockResolvedValue({}),
 }));
 
@@ -19,7 +20,7 @@ const mockUseLocationPermission = useLocationPermission as jest.MockedFunction<t
 describe('DailyCare', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (getJSON as jest.Mock).mockResolvedValue([{ id: 'caregiver-123', name: 'Demo Caregiver' }]);
+    (getJSON as jest.Mock).mockResolvedValue([{ id: 'caregiver-123', name: 'Test Caregiver' }]);
     (postJSON as jest.Mock).mockResolvedValue({});
     mockUseLocationPermission.mockReturnValue({
       state: { status: 'unknown' },
