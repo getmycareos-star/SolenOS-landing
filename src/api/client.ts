@@ -151,7 +151,7 @@ export async function getJSON(path: string) {
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path))
+  const res = await fetch(resolveApiUrl(path), { headers: authorizationHeaders() })
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -170,7 +170,7 @@ export async function postJSON(path: string, body: unknown) {
 export async function patchJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -182,6 +182,7 @@ export async function patchJSON(path: string, body: unknown) {
 export async function postFormData(path: string, body: FormData) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
+    headers: authorizationHeaders(),
     body,
   })
   return handleResponse(res)
@@ -194,8 +195,8 @@ export function getCaregiverId(): string | null {
   return isPlaceholderIdentifier(id) ? null : id
 }
 
-// The backend currently has no implemented authentication/session endpoints.
-// Fail closed rather than treating a client-side role choice as authentication.
+// Account authentication is still separate. The anonymous bearer capability
+// authorizes one care record; it does not establish an account or professional role.
 export interface AuthSessionInfo {
   authenticated: boolean
   account_id: string | null
