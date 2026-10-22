@@ -178,7 +178,6 @@ export default function Dashboard() {
           Today's changes are automatically added to the Living Care Record.
         </p>
         <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
-          Examples: refused medication Â· wandering overnight Â· sleep got worse Â· new confusion
         </p>
       </div>
 
