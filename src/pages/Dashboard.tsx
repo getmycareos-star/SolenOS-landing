@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getJSON, postJSON, patchJSON, getPersonId, getCaregiverId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
 import CareCapture from '../components/CareCapture';
+import CareHandoffPanel from '../components/CareHandoffPanel';
 
 interface Event {
   id: string;
@@ -300,6 +301,8 @@ export default function Dashboard() {
           onCapture={() => setCaptureRevision((revision) => revision + 1)}
         />
       </div>
+
+      <CareHandoffPanel personId={personId} />
 
       {loadError && (
         <p role="alert" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '16px' }}>
