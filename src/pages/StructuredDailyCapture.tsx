@@ -13,7 +13,7 @@ export default function StructuredDailyCapture() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
-  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number } | null>(null);
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
   const [deltaToken, setDeltaToken] = useState(0);
   
   // Form state
@@ -498,6 +498,7 @@ export default function StructuredDailyCapture() {
         source: 'SolenOS Daily Capture',
         eventDate: new Date().toISOString(),
         token: nextDeltaToken,
+        sourceEventId: typeof data?.id === 'string' ? data.id : undefined,
       });
     },
     onError: async (error, variables, context) => {
