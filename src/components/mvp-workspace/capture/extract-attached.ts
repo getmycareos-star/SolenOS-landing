@@ -21,13 +21,14 @@ export async function extractAttachedDocument(
     status: "pending",
     entryMethod,
     sourceFile: file,
+    extractionSource: "unknown",
   };
 
   if (file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name)) {
     try {
       const text = (await file.text()).trim();
       if (text) {
-        return { ...base, extractedText: text, status: "ready" };
+        return { ...base, extractedText: text, extractionSource: "text", status: "ready" };
       }
     } catch {
       /* fall through */
@@ -100,6 +101,7 @@ export async function extractAttachedDocument(
       extractedCharCount: doc.extracted_char_count,
       status: "ready",
       ocrConfidence: doc.ocr_confidence ?? null,
+      extractionSource: doc.extraction_source ?? "unknown",
     };
   } catch (e) {
     const aborted = e instanceof DOMException && e.name === "AbortError";
