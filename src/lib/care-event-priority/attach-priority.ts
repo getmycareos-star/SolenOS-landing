@@ -46,28 +46,17 @@ export function attachPriorityToEvents(
   return events.map((e) => attachPriorityToEvent(e, events, reference));
 }
 
-/** Placeholder until batch recompute on context append. */
+/** Explicit unknown priority until a real event-based recomputation runs. */
 export function createStubPriority(
   attentionStatus: AttentionStatus = "active",
 ): CareEventPriority {
-  const input = {
-    id: "stub",
-    timestamp: new Date().toISOString(),
-    event_time: null,
-    uncertainty: attentionStatus === "provisional" ? PROVISIONAL_UNCERTAINTY : DEFAULT_UNCERTAINTY,
-    urgency: DEFAULT_URGENCY,
-    dependency_count: DEFAULT_DEPENDENCY_COUNT,
-    recency_days: 0,
-    attention_status: attentionStatus,
-  };
-  const priority_score = computePriority(input);
   return {
-    urgency: input.urgency,
-    uncertainty: input.uncertainty,
-    dependency_count: input.dependency_count,
-    recency_days: input.recency_days,
-    priority_score,
-    tier: classifyPriorityTier(priority_score),
+    urgency: null,
+    uncertainty: null,
+    dependency_count: null,
+    recency_days: null,
+    priority_score: null,
+    tier: null,
     attention_status: attentionStatus,
   };
 }
