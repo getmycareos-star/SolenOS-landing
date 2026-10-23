@@ -87,7 +87,7 @@ const primaryActions = [
     eyebrow: 'DOCUMENTS & RECORD',
     title: 'Review or add documents',
     description: 'Open the existing record and use the document intake that is currently supported.',
-    action: 'Open Living Care Record',
+    action: 'Review or add documents',
   },
 ];
 
