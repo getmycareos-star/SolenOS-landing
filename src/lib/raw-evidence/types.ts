@@ -10,9 +10,6 @@
  * (spec §20).
  */
 
-import { createHash } from "node:crypto";
-import { detectUrgencyLevel } from "../urgency-detection";
-
 export type RawEvidenceInputType =
   | "text"
   | "ocr_text"
@@ -53,13 +50,16 @@ export type SaveRawEvidenceInput = {
   metadata?: Record<string, unknown>;
 };
 
-export type RawEvidencePersistenceBackend = "postgres" | "local_queue" | "memory_only";
+export type RawEvidencePersistenceStatus =
+  | "server_persisted"
+  | "local_queued"
+  | "memory_only";
 
 export type SaveRawEvidenceResult = {
   evidence: RawEvidence;
-  /** True only when a PostgreSQL insert or successful local file write completed. */
+  /** True only when PostgreSQL or the local recovery queue accepted the record. */
   persisted: boolean;
-  persistence_backend: RawEvidencePersistenceBackend;
+  persistence_status: RawEvidencePersistenceStatus;
 };
 
 export type RawEvidenceStoreOptions = {
