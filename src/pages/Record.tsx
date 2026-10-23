@@ -20,6 +20,15 @@ interface Evidence {
     extracted_char_count?: number
     ocr_confidence?: number | null
     metadata_unreadable?: boolean
+    original_filename?: string
+    size_bytes?: number
+    document_type_candidate?: string
+    document_date_candidate?: string | null
+    document_date_review_status?: string
+    extraction_status?: string
+    extraction_error?: string | null
+    review_status?: string
+    document_candidates?: Array<{ candidate_id?: string; candidate_type?: string; subject?: string; observation?: string; source_quote?: string; review_status?: string; source_span_start?: number | null; source_span_end?: number | null }>
   } | null
 }
 
@@ -35,6 +44,7 @@ export default function Record() {
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [documentReviewMessage, setDocumentReviewMessage] = useState<string | null>(null)
+  const [reviewingCandidateKey, setReviewingCandidateKey] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any[]; extractionSource?: string; confidence?: number | null; warnings?: string[]; evidenceId?: string; filename?: string; documentType?: string; documentDate?: string | null; extractionError?: string | null } | null>(null)
   const [showAppointmentBrief, setShowAppointmentBrief] = useState(false)
 
@@ -138,15 +148,13 @@ export default function Record() {
     }
   }
 
-  async function downloadOriginalDocument() {
-    const evidenceId = documentResult?.evidenceId
-    if (!evidenceId) return
+  async function downloadOriginalDocument(evidenceId: string, filename?: string) {
     try {
       const blob = await getBlob(`/documents/${encodeURIComponent(evidenceId)}/file`)
       const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = objectUrl
-      link.download = documentResult.filename || 'care-document'
+      link.download = filename || 'care-document'
       link.style.display = 'none'
       document.body.appendChild(link)
       link.click()
@@ -157,9 +165,9 @@ export default function Record() {
     }
   }
 
-  async function reviewDocumentCandidate(candidateIndex: number, decision: 'accept' | 'reject') {
-    const evidenceId = documentResult?.evidenceId
-    if (!evidenceId) return
+  async function reviewDocumentCandidate(evidenceId: string, candidateIndex: number, decision: 'accept' | 'reject') {
+    const key = `${evidenceId}:${candidateIndex}`
+    setReviewingCandidateKey(key)
     setDocumentReviewMessage(null)
     try {
       const result = await postJSON(
@@ -169,8 +177,14 @@ export default function Record() {
       if (!result.candidate || result.authoritative_lcr_write !== false) {
         throw new Error('The review response did not confirm a review-only decision.')
       }
+      setItems((current) => current.map((item) => {
+        if (item.id !== evidenceId || !item.extra_metadata) return item
+        const candidates = [...(item.extra_metadata.document_candidates || [])]
+        candidates[candidateIndex] = result.candidate
+        return { ...item, extra_metadata: { ...item.extra_metadata, document_candidates: candidates } }
+      }))
       setDocumentResult((current) => {
-        if (!current) return current
+        if (!current || current.evidenceId !== evidenceId) return current
         const candidates = [...(current.candidates || [])]
         candidates[candidateIndex] = result.candidate
         return { ...current, candidates }
@@ -178,6 +192,8 @@ export default function Record() {
       setDocumentReviewMessage(result.message || 'Review decision saved. No authoritative care fact was changed.')
     } catch (error) {
       setDocumentReviewMessage(error instanceof Error ? error.message : 'The review decision could not be saved.')
+    } finally {
+      setReviewingCandidateKey(null)
     }
   }
 
@@ -299,7 +315,7 @@ export default function Record() {
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               Original file preserved · {documentResult.filename || 'document'} · evidence ID {documentResult.evidenceId}
             </p>
-            <button type="button" onClick={() => void downloadOriginalDocument()} style={{ marginTop: '5px', padding: '6px 9px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Download original document</button>
+            <button type="button" onClick={() => documentResult?.evidenceId && void downloadOriginalDocument(documentResult.evidenceId, documentResult.filename)} style={{ marginTop: '5px', padding: '6px 9px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Download original document</button>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               Type candidate: {documentResult.documentType || 'not detected'} · document date candidate: {documentResult.documentDate || 'not detected'}
             </p>
@@ -333,8 +349,8 @@ export default function Record() {
                     </div>
                     {candidate.review_status === 'pending_review' && (
                       <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-                        <button type="button" disabled={processingDocument} onClick={() => void reviewDocumentCandidate(index, 'accept')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Mark reviewed</button>
-                        <button type="button" disabled={processingDocument} onClick={() => void reviewDocumentCandidate(index, 'reject')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Reject candidate</button>
+                        <button type="button" disabled={processingDocument} onClick={() => documentResult?.evidenceId && void reviewDocumentCandidate(documentResult.evidenceId, index, 'accept')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Mark reviewed</button>
+                        <button type="button" disabled={processingDocument} onClick={() => documentResult?.evidenceId && void reviewDocumentCandidate(documentResult.evidenceId, index, 'reject')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Reject candidate</button>
                       </div>
                     )}
                   </li>
@@ -489,6 +505,11 @@ export default function Record() {
                   Evidence origin: {item.source_type.replace(/_/g, ' ')}
                 </p>
               )}
+              {item.extra_metadata?.document_type_candidate && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Document type candidate: {item.extra_metadata.document_type_candidate} · document date candidate: {item.extra_metadata.document_date_candidate || 'not detected'} ({item.extra_metadata.document_date_review_status || 'not reviewed'})
+                </p>
+              )}
               {item.extra_metadata?.extraction_source && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                   Document extraction: {item.extra_metadata.extraction_source}
@@ -500,6 +521,33 @@ export default function Record() {
                 <p role="alert" style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>
                   Some document provenance metadata could not be read. Verify against the original source.
                 </p>
+              )}
+              {item.type === 'document' && item.source_type === 'document_upload' && (
+                <div style={{ marginTop: '8px' }}>
+                  <button type="button" onClick={() => void downloadOriginalDocument(item.id, item.extra_metadata?.original_filename)} style={{ padding: '6px 9px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Download original document</button>
+                  {item.extra_metadata?.document_candidates?.length ? (
+                    <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
+                      {item.extra_metadata.document_candidates.map((candidate, index) => {
+                        const reviewKey = `${item.id}:${index}`
+                        const pending = candidate.review_status === 'pending_review'
+                        return (
+                          <li key={candidate.candidate_id || index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                            <strong>{candidate.candidate_type?.replace(/_/g, ' ') || 'Document candidate'}:</strong> {candidate.observation || 'No extracted text'}
+                            <p style={{ color: 'var(--text-secondary)', marginTop: '3px' }}>Source quote: “{candidate.source_quote || 'No source quote'}” · {candidate.review_status || 'pending_review'}</p>
+                            {pending && (
+                              <div style={{ display: 'flex', gap: '6px', marginTop: '5px', flexWrap: 'wrap' }}>
+                                <button type="button" disabled={reviewingCandidateKey !== null} onClick={() => void reviewDocumentCandidate(item.id, index, 'accept')} style={{ padding: '5px 7px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>{reviewingCandidateKey === reviewKey ? 'Saving…' : 'Mark reviewed'}</button>
+                                <button type="button" disabled={reviewingCandidateKey !== null} onClick={() => void reviewDocumentCandidate(item.id, index, 'reject')} style={{ padding: '5px 7px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Reject candidate</button>
+                              </div>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : (
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '5px' }}>No reviewable candidates were stored for this document.</p>
+                  )}
+                </div>
               )}
               {item.extra_metadata?.extraction_warnings?.map((warning, index) => (
                 <p key={index} role="alert" style={{ fontSize: '12px', color: 'var(--unknown)', marginTop: '4px' }}>
