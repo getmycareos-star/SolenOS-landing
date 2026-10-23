@@ -328,7 +328,7 @@ export default function Record() {
         </div>
       )}
       <CareContinuityIntegrityPanel personId={careContinuityPersonId} evidenceItems={items} />
-      <CareDeltaPanel personId={careContinuityPersonId} autoInput={deltaAutoInput} />
+      <CareDeltaPanel key={careContinuityPersonId} personId={careContinuityPersonId} autoInput={deltaAutoInput} />
     </div>
   )
 }
