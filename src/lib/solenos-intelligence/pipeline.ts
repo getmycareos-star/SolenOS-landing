@@ -632,9 +632,9 @@ export function buildMinimalFinalOutput(params: {
         tier: "unknown",
       },
       recency: {
-        last_update_at: new Date().toISOString(),
+        last_update_at: events[events.length - 1]?.timestamp ?? null,
         critical_event_ages: [],
-        decay_status: "fresh",
+        decay_status: "unknown",
       },
       observed: understanding.facts.filter((f) => f.kind === "observation").map((f) => f.text),
       inferred: [],
