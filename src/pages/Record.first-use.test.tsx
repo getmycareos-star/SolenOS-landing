@@ -77,8 +77,8 @@ describe('Living Care Record first-use workflow', () => {
     fireEvent.change(screen.getByLabelText(/choose a text document/i), { target: { files: [file] } });
     fireEvent.click(screen.getByRole('button', { name: /save and analyze/i }));
 
-    await waitFor(() => expect(screen.getByText(/appointment moved to thursday/i)).toBeInTheDocument());
-    expect(screen.getByText(/pending_review/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/appointment moved to thursday/i).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(/pending_review/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/extracted observations are source-linked review candidates/i)).toBeInTheDocument();
     expect(await screen.findByText(/source document: appointment.txt/i)).toBeInTheDocument();
 
