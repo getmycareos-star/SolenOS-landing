@@ -310,7 +310,7 @@ export default function Record() {
                   {item.kind.replace(/_/g, ' ')}
                 </span>
                 <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  {new Date(item.occurred_at || item.recorded_at || '').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(item.occurred_at || item.recorded_at || '').toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                 </span>
               </div>
               <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '2px 0 6px' }}>{item.title}</h3>
@@ -329,6 +329,48 @@ export default function Record() {
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                   Location: {item.details.location}
                 </p>
+              )}
+              {typeof item.details?.provider === 'string' && item.details.provider && (
+                <p style={{ fontSize: '12px', marginTop: '6px' }}>Provider: {item.details.provider}</p>
+              )}
+              {typeof item.details?.healthcare_org === 'string' && item.details.healthcare_org && (
+                <p style={{ fontSize: '12px', marginTop: '4px' }}>Organization: {item.details.healthcare_org}</p>
+              )}
+              {typeof item.details?.event_type === 'string' && item.details.event_type && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Event type: {item.details.event_type.replace(/_/g, ' ')}
+                </p>
+              )}
+              {typeof item.details?.from_location === 'string' && item.details.from_location && (
+                <p style={{ fontSize: '12px', marginTop: '4px' }}>From: {item.details.from_location}</p>
+              )}
+              {typeof item.details?.to_location === 'string' && item.details.to_location && (
+                <p style={{ fontSize: '12px', marginTop: '4px' }}>To: {item.details.to_location}</p>
+              )}
+              {typeof item.details?.action_type === 'string' && item.details.action_type && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Action: {item.details.action_type.replace(/_/g, ' ')}
+                </p>
+              )}
+              {Array.isArray(item.details?.medication_questions) && item.details.medication_questions.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Medication questions</strong>
+                  <ul style={{ paddingLeft: '18px', marginTop: '4px' }}>
+                    {item.details.medication_questions.map((question, index) => (
+                      <li key={`${item.id}-medication-question-${index}`} style={{ fontSize: '12px', marginBottom: '3px' }}>{String(question)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {Array.isArray(item.details?.documents_to_bring) && item.details.documents_to_bring.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Documents to bring</strong>
+                  <ul style={{ paddingLeft: '18px', marginTop: '4px' }}>
+                    {item.details.documents_to_bring.map((document, index) => (
+                      <li key={`${item.id}-document-${index}`} style={{ fontSize: '12px', marginBottom: '3px' }}>{String(document)}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
               {item.kind !== 'evidence' && (item.evidence?.length ?? 0) > 0 && (
                 <section aria-label="Supporting source material" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
