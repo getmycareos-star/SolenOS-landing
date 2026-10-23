@@ -95,6 +95,7 @@ describe('FirstUseJourney', () => {
       .mockResolvedValueOnce([
         { id: 'old-event', title: 'Old report entered today', occurred_at: '2024-02-01T10:00:00Z', recorded_at: '2026-10-23T10:00:00Z' },
         { id: 'newer-event', title: 'Newer by event time', occurred_at: '2025-08-01T10:00:00Z', recorded_at: '2025-08-01T11:00:00Z' },
+        { id: 'unknown-time-event', title: 'Event time unknown, entered today', recorded_at: '2026-10-23T10:30:00Z' },
       ])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -118,6 +119,7 @@ describe('FirstUseJourney', () => {
     const latestSummary = screen.getByText(/latest event returned/i).closest('p');
     expect(latestSummary).toHaveTextContent('Newer by event time');
     expect(latestSummary).not.toHaveTextContent('Old report entered today');
+    expect(latestSummary).not.toHaveTextContent('Event time unknown, entered today');
     expect(screen.getByText(/assessment save time is not the event time/i)).toBeInTheDocument();
   });
 
