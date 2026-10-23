@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, getPersonId, getCaregiverId, postJSON, postFormData } from '../api/client'
+import { getJSON, getBlob, getPersonId, getCaregiverId, postJSON, postFormData } from '../api/client'
 import { buildAppointmentBrief } from '../lib/document-intelligence/appointment-brief'
 
 interface Evidence {
@@ -135,6 +135,25 @@ export default function Record() {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
       setProcessingDocument(false)
+    }
+  }
+
+  async function downloadOriginalDocument() {
+    const evidenceId = documentResult?.evidenceId
+    if (!evidenceId) return
+    try {
+      const blob = await getBlob(`/documents/${encodeURIComponent(evidenceId)}/file`)
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = documentResult.filename || 'care-document'
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'The original document could not be downloaded.')
     }
   }
 
@@ -280,6 +299,7 @@ export default function Record() {
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               Original file preserved · {documentResult.filename || 'document'} · evidence ID {documentResult.evidenceId}
             </p>
+            <button type="button" onClick={() => void downloadOriginalDocument()} style={{ marginTop: '5px', padding: '6px 9px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Download original document</button>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               Type candidate: {documentResult.documentType || 'not detected'} · document date candidate: {documentResult.documentDate || 'not detected'}
             </p>
