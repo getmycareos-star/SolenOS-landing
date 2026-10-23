@@ -202,13 +202,12 @@ export default function Dashboard() {
   };
 
   const handleAssignAction = async (actionId: string, caregiverId: string) => {
-    if (!caregiverId) return;
     setAssignmentLoadingIds(previous => [...previous, actionId]);
     setAssignmentError(null);
     try {
-      const updated = await patchJSON(`/actions/${encodeURIComponent(actionId)}`, { actor_id: caregiverId }) as { actor_id?: string; actor_label?: string };
+      const updated = await patchJSON(`/actions/${encodeURIComponent(actionId)}`, { actor_id: caregiverId || null }) as { actor_id?: string | null; actor_label?: string | null };
       setActions(previous => previous.map(action => action.id === actionId
-        ? { ...action, actor_id: updated.actor_id ?? caregiverId, actor_label: updated.actor_label ?? linkedCaregivers.find(caregiver => caregiver.id === caregiverId)?.name ?? null }
+        ? { ...action, actor_id: updated.actor_id ?? null, actor_label: updated.actor_label ?? null }
         : action));
     } catch (error) {
       console.error('Failed to assign action:', error);
