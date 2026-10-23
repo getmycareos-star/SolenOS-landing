@@ -106,10 +106,10 @@ export const SolenOSOutputSchema = z
       unknown: z.array(z.unknown()),
       recency: z.object({
         last_updated_at: z.string().nullable(),
-        freshness_score: z.number().min(0).max(1),
+        freshness_score: z.number().min(0).max(1).nullable(),
         interpretation: z.string(),
       }),
-      confidence: z.number().min(0).max(1),
+      confidence: z.number().min(0).max(1).nullable(),
     }),
     transparency_panel: z.object({
       data_used: z.object({
