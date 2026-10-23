@@ -149,7 +149,7 @@ export function emptyDecisionCard(): DecisionCard {
       recency: {
         last_updated_at: null,
         freshness_score: null,
-        interpretation: "potentially outdated (>7–14 days)",
+        interpretation: "Recency unavailable; source timestamp not verified.",
       },
       confidence: null,
     },
