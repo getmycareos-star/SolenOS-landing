@@ -244,7 +244,7 @@ export function LivingCareRecordPanel({
             <dl className="lcr-pillars">
               {view.next_step_guidance!.slice(0, 3).map((item) => (
                 <div key={item.kind + ":" + item.message}>
-                  <dt>{item.kind === "ask" ? "Ask" : item.kind === "check" ? "Check" : item.kind === "monitor" ? "Monitor" : "Existing decision"}</dt>
+                  <dt>{item.kind === "ask" ? "Ask" : item.kind === "check" ? "Check" : item.kind === "monitor" ? "Monitor" : "Do (existing decision)"}</dt>
                   <dd>{item.message}</dd>
                   {item.source_basis.length > 0 && (
                     <dd className="panel-muted">Grounded in: {item.source_basis.join(" · ")}</dd>
