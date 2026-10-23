@@ -237,4 +237,48 @@ describe('Phase 4 production data safety', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/no care record is selected/i)
     expect(mockedGetJSON).not.toHaveBeenCalled()
   })
+
+  it('passes persisted source identifiers and the exact event time to Delta reconciliation', async () => {
+    mockedGetJSON.mockImplementation(async (path: string) => {
+      if (path.startsWith('/caregivers/')) return [{ id: 'caregiver-real-1', name: 'Caregiver' }] as never
+      if (path.startsWith('/care-delta/runs/')) return [] as never
+      throw new Error(`Unexpected GET endpoint: ${path}`)
+    })
+    mockedPostJSON.mockImplementation(async (path: string) => {
+      if (path === '/situation') return {
+        ok: true,
+        message: 'Care update saved.',
+        care_event_id: 'event-saved-1',
+        evidence_id: 'evidence-saved-1',
+        events: [{ id: 'event-saved-1', occurred_at: '2026-10-23T08:15:42Z', evidence_ids: ['evidence-saved-1'] }],
+        qwen_extraction_status: 'not_configured',
+        qwen_analysis_id: 'analysis-saved-1',
+        qwen_candidates: null,
+      } as never
+      if (path === '/care-delta/reconcile') return {
+        event_summary: 'Reconciliation result returned.',
+        caregiver_summary: 'Reconciliation result returned.',
+        provenance: { persisted: true, model_provider: 'test', model: 'test' },
+      } as never
+      throw new Error(`Unexpected POST endpoint: ${path}`)
+    })
+
+    render(<DailyCare />)
+    const note = 'A caregiver recorded a change in the daily routine.'
+    fireEvent.change(screen.getByPlaceholderText(/describe what you observed, when it happened/i), { target: { value: note } })
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
+
+    expect(await screen.findByText('Reconciliation result returned.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(mockedPostJSON).toHaveBeenCalledWith('/care-delta/reconcile', expect.objectContaining({
+        person_id: 'person-real-1',
+        source_event_id: 'event-saved-1',
+        evidence_ids: ['evidence-saved-1'],
+        content: note,
+        event_date: '2026-10-23T08:15:42.000Z',
+        persist: true,
+      }))
+    })
+  })
+
 })
