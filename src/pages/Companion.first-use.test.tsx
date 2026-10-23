@@ -29,6 +29,8 @@ describe('Companion first-use continuity', () => {
       safety_note: null,
       confidence: 0.8,
       evidence_ids: [],
+      ai_generated: true,
+      provider_status: 'connected',
     });
 
     render(<MemoryRouter><Companion /></MemoryRouter>);
@@ -39,6 +41,8 @@ describe('Companion first-use continuity', () => {
 
     await waitFor(() => expect(screen.getByText(/confirm the date with the clinic/i)).toBeInTheDocument());
     expect(screen.getByText(/conversation response only · not automatically saved as a living care record fact/i)).toBeInTheDocument();
+    expect(screen.getByText(/ai-generated response · provider: connected/i)).toBeInTheDocument();
+    expect(screen.getByText(/no living care record evidence was cited/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /use my message as a capture draft/i })).toHaveAttribute(
       'href',
       '/daily-care?draft=The%20appointment%20moved%20to%20Thursday.',
