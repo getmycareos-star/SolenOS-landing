@@ -16,7 +16,7 @@ type DeltaResult = {
   provenance?: Record<string, any>
 }
 
-type DeltaInput = { content: string; source: string; eventDate: string; token: number }
+type DeltaInput = { content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string }
 
 const panelStyle: React.CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
@@ -54,7 +54,8 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         event_date: new Date(input.eventDate).toISOString(),
         source: input.source.trim() || 'Caregiver report',
         content: input.content,
-        evidence_ids: [],
+        evidence_ids: autoInput?.content === input.content && autoInput?.source === input.source ? (autoInput.evidenceIds || []) : [],
+        source_event_id: autoInput?.content === input.content && autoInput?.source === input.source ? autoInput.sourceEventId : undefined,
         persist: true,
       }) as DeltaResult
       setResult(response)
