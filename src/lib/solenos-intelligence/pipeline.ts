@@ -605,10 +605,10 @@ export function buildMinimalFinalOutput(params: {
       })),
       recency: {
         last_updated_at: new Date().toISOString(),
-        freshness_score: 1,
+        freshness_score: null,
         interpretation: "Current capture",
       },
-      confidence: understanding.confidence === "high" ? 0.8 : understanding.confidence === "medium" ? 0.5 : 0.3,
+      confidence: null,
     },
     transparency_panel: {
       data_used: {
@@ -625,11 +625,11 @@ export function buildMinimalFinalOutput(params: {
       evidence_breakdown: understanding.facts.slice(0, 3).map((f) => ({
         conclusion: f.text.slice(0, 100),
         evidence_type: "observation",
-        confidence_pct: understanding.confidence === "high" ? 80 : understanding.confidence === "medium" ? 50 : 30,
+        confidence_pct: null,
       })),
       confidence_scores: {
-        overall_pct: understanding.confidence === "high" ? 80 : understanding.confidence === "medium" ? 50 : 30,
-        tier: understanding.confidence,
+        overall_pct: null,
+        tier: "unknown",
       },
       recency: {
         last_update_at: new Date().toISOString(),
