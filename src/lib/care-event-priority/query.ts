@@ -1,22 +1,25 @@
 import type { CanonicalCareEvent } from "../situation-entry/types";
 import { ATTENTION_PANEL_THRESHOLD, UI_SURFACE_LIMIT } from "./contract-constants";
-import { computePriority } from "./compute-priority";
-import { toPriorityInput } from "./derive-scores";
 import type { PriorityQueryResult } from "./types";
 
 function isScorable(event: CanonicalCareEvent): boolean {
   return event.status !== "invalidated" && event.status !== "superseded";
 }
 
-function scoreOf(event: CanonicalCareEvent): number {
-  if (event.priority?.priority_score != null) return event.priority.priority_score;
-  const input = toPriorityInput(event, [event]);
-  return computePriority(input);
+function scoreOf(event: CanonicalCareEvent): number | null {
+  return event.priority?.priority_score ?? null;
 }
 
 /** Sort by priority_score descending — NOT timestamp or ingestion order. */
 export function sortEventsByPriority(events: CanonicalCareEvent[]): CanonicalCareEvent[] {
-  return [...events].sort((a, b) => scoreOf(b) - scoreOf(a));
+  return [...events].sort((a, b) => {
+    const scoreA = scoreOf(a);
+    const scoreB = scoreOf(b);
+    if (scoreA == null && scoreB == null) return 0;
+    if (scoreA == null) return 1;
+    if (scoreB == null) return -1;
+    return scoreB - scoreA;
+  });
 }
 
 export function getTopEvents(
@@ -27,9 +30,10 @@ export function getTopEvents(
 }
 
 export function getAttentionEvents(events: CanonicalCareEvent[]): CanonicalCareEvent[] {
-  return sortEventsByPriority(events.filter(isScorable)).filter(
-    (e) => scoreOf(e) >= ATTENTION_PANEL_THRESHOLD,
-  );
+  return sortEventsByPriority(events.filter(isScorable)).filter((e) => {
+    const score = scoreOf(e);
+    return score != null && score >= ATTENTION_PANEL_THRESHOLD;
+  });
 }
 
 export function queryPriorityEvents(
@@ -39,7 +43,10 @@ export function queryPriorityEvents(
   const scorable = events.filter(isScorable);
   const all_ranked = sortEventsByPriority(scorable);
   const top_events = all_ranked.slice(0, limit);
-  const attention_events = all_ranked.filter((e) => scoreOf(e) >= ATTENTION_PANEL_THRESHOLD);
+  const attention_events = all_ranked.filter((e) => {
+    const score = scoreOf(e);
+    return score != null && score >= ATTENTION_PANEL_THRESHOLD;
+  });
 
   return {
     top_events,
