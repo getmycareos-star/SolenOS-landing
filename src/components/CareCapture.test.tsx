@@ -49,5 +49,6 @@ describe('CareCapture quick daily entry', () => {
     })));
     expect(await screen.findByText(/event time reported by caregiver/i)).toBeInTheDocument();
     expect(screen.getByText('Slept about three hours and woke twice.')).toBeInTheDocument();
+    expect(screen.getByLabelText('When did this happen?')).toHaveValue('');
   });
 });
