@@ -63,7 +63,7 @@ describe('FirstUseJourney', () => {
 
   it('shows persisted event, evidence and action details for an existing caregiver', async () => {
     mockedGetJSON
-      .mockResolvedValueOnce([{ id: 'event-1', title: 'Poor sleep reported', occurred_at: '2026-10-21T21:00:00Z' }])
+      .mockResolvedValueOnce([{ id: 'event-1', title: 'Poor sleep reported', occurred_at: '2026-10-21T21:00:00Z', recorded_at: '2026-10-23T10:00:00Z' }])
       .mockResolvedValueOnce([{ id: 'evidence-1', type: 'provider_note', title: 'Clinic note', created_at: '2026-10-20T10:00:00Z' }])
       .mockResolvedValueOnce([{ id: 'action-1', normalized_action: 'Ask the clinic about sleep changes', status: 'active', deadline: '2026-10-24T12:00:00Z' }]);
 
@@ -76,6 +76,8 @@ describe('FirstUseJourney', () => {
     expect(screen.getByText('Clinic note')).toBeInTheDocument();
     expect(screen.getByText('Ask the clinic about sleep changes')).toBeInTheDocument();
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
+    expect(screen.getByText(/event time:/i)).toBeInTheDocument();
+    expect(screen.getByText(/entered into SolenOS:/i)).toBeInTheDocument();
     expect(screen.getByText(/does not yet establish which entries changed since your last review/i)).toBeInTheDocument();
   });
 
