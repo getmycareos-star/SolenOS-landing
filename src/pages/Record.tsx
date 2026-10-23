@@ -94,7 +94,6 @@ export default function Record() {
           mime_type: extractedDocument.mimeType || documentFile.type || 'application/octet-stream',
           ocr_confidence: extractedDocument.ocrConfidence ?? null,
           extraction_source: extractedDocument.extractionSource || 'unknown',
-          extraction_source: 'text',
         }],
         provenance: {
           input_type: 'document',
