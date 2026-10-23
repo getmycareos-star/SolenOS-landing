@@ -84,7 +84,7 @@ export function applySafeMode(params: {
       recency: {
         last_updated_at: null,
         freshness_score: null,
-        interpretation: "potentially outdated (>7–14 days)",
+        interpretation: "Recency unavailable; source timestamp not verified.",
       },
       confidence: null,
     },
@@ -133,7 +133,7 @@ export function safeModeMinimalInput(
       recency: {
         last_updated_at: null,
         freshness_score: null,
-        interpretation: "potentially outdated (>7–14 days)",
+        interpretation: "Recency unavailable; source timestamp not verified.",
       },
       confidence: null,
     },
