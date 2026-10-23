@@ -91,11 +91,13 @@ export class RawEvidenceStore {
     ids.push(evidence.id);
     this.index.set(evidence.caregiver_id, ids);
 
+    let filePersisted = false;
     if (typeof writeFileSync === "function") {
       try {
         const dir = dataDir(evidence.caregiver_id);
         mkdirSync(dir, { recursive: true });
         writeFileSync(queueFile(evidence), JSON.stringify(evidence, null, 2), "utf8");
+        filePersisted = true;
       } catch {
         // File failure is non-fatal — memory cache remains source of truth for this process
       }
@@ -133,7 +135,8 @@ export class RawEvidenceStore {
       }
     }
 
-    return { evidence, persisted: persisted || true };
+    const persistence_backend = persisted ? "postgres" : filePersisted ? "local_queue" : "memory_only";
+    return { evidence, persisted: persisted || filePersisted, persistence_backend };
   }
 
   getById(id: string): RawEvidence | undefined {
