@@ -67,8 +67,9 @@ interface Action {
   id: string;
   title: string;
   description?: string;
-  status: 'active' | 'completed';
+  status: string;
   created_at: string;
+  completed_at?: string | null;
   deadline?: string | null;
   is_medication_action?: boolean;
   actor_id?: string | null;
@@ -129,7 +130,8 @@ export default function Dashboard() {
         getJSON(`/observations/${encodeURIComponent(personId)}/trends`),
         getJSON(`/reasoning/${encodeURIComponent(personId)}/summary`),
         getJSON(`/daily-intelligence/${encodeURIComponent(personId)}`),
-        getJSON(`/actions/${encodeURIComponent(personId)}?status=active`),
+        // Load persisted statuses as well as active work so completed actions remain visible after refresh.
+        getJSON(`/actions/${encodeURIComponent(personId)}`),
         getJSON(`/appointments/${encodeURIComponent(personId)}`),
       ]);
 
@@ -149,8 +151,9 @@ export default function Dashboard() {
           id: String(action.id ?? ''),
           title: String(action.normalized_action || action.action_object || action.original_text || 'Untitled action'),
           description: typeof action.condition_text === 'string' ? action.condition_text : undefined,
-          status: action.status === 'completed' ? 'completed' : 'active',
+          status: String(action.status ?? 'active'),
           created_at: String(action.created_at ?? ''),
+          completed_at: typeof action.completed_at === 'string' ? action.completed_at : null,
           deadline: typeof action.deadline === 'string' ? action.deadline : null,
           is_medication_action: action.is_medication_action === true,
           actor_id: typeof action.actor_id === 'string' ? action.actor_id : null,
@@ -295,7 +298,7 @@ export default function Dashboard() {
         borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
       }}>
         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
-          Active Actions
+          Care actions
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '12px' }}>
           Assign each action to a caregiver already linked to this care record. Only authorized linked caregivers are offered.
@@ -303,7 +306,7 @@ export default function Dashboard() {
         {assignmentError && <p role="alert" style={{ color: 'var(--unknown)', fontSize: '12px', marginBottom: '12px' }}>{assignmentError}</p>}
         {actions.length === 0 && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-            No active actions. Actions will appear here when created from situations or insights.
+            No care actions are recorded for this care record.
           </p>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -332,12 +335,17 @@ export default function Dashboard() {
                 <p style={{ margin: '0', fontSize: '12px', color: 'var(--text-secondary)' }}>
                   Recorded: {formatDate(action.created_at)}
                 </p>
-                {action.deadline && Number.isFinite(Date.parse(action.deadline)) && (
+                {action.status !== 'completed' && action.deadline && Number.isFinite(Date.parse(action.deadline)) && (
                   <p style={{ margin: '4px 0 0', fontSize: '12px', color: Date.parse(action.deadline) < Date.now() ? 'var(--unknown)' : 'var(--text-secondary)', fontWeight: Date.parse(action.deadline) < Date.now() ? 600 : 400 }}>
                     {Date.parse(action.deadline) < Date.now() ? 'Overdue · ' : 'Due · '}{new Date(action.deadline).toLocaleString()}
                   </p>
                 )}
-                {action.is_medication_action && (
+                {action.status === 'completed' && action.completed_at && (
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--success)' }}>
+                    Completed: {new Date(action.completed_at).toLocaleString()}
+                  </p>
+                )}
+                {action.status !== 'completed' && action.is_medication_action && (
                   <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
                     Medication-related action. Verify the instruction against the documented care plan; SolenOS does not infer dosage or timing.
                   </p>
@@ -358,24 +366,24 @@ export default function Dashboard() {
                 )}
                 <button
                   onClick={() => handleActionToggle(action.id)}
-                  disabled={loadingIds.includes(action.id)}
+                  disabled={loadingIds.includes(action.id) || action.status === 'completed' || ['cancelled', 'superseded', 'expired'].includes(action.status)}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
                     border: 'none',
-                    background: toggledIds.includes(action.id)
+                    background: action.status === 'completed' || toggledIds.includes(action.id)
                       ? 'var(--success)'
                       : 'var(--trust)',
                     color: 'white',
                     fontSize: '13px',
                     fontWeight: 500,
-                    cursor: loadingIds.includes(action.id) || toggledIds.includes(action.id)
+                    cursor: loadingIds.includes(action.id) || action.status === 'completed' || toggledIds.includes(action.id)
                       ? 'default'
                       : 'pointer',
                     opacity: loadingIds.includes(action.id) ? 0.7 : 1
                   }}
                 >
-                  {loadingIds.includes(action.id) ? 'Processing...' : toggledIds.includes(action.id) ? 'Completed' : 'Mark Complete'}
+                  {loadingIds.includes(action.id) ? 'Processing...' : action.status === 'completed' || toggledIds.includes(action.id) ? 'Completed' : action.status === 'expired' ? 'Expired' : action.status === 'cancelled' ? 'Cancelled' : action.status === 'superseded' ? 'Superseded' : 'Mark Complete'}
                 </button>
               </div>
             </div>
