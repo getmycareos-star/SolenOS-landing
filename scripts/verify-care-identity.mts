@@ -155,11 +155,12 @@ assert(hydrated.active.length >= 1, "hydrate from CareContext recreates TrackedS
 console.log("✓ hydrate from CareContext when TrackedSituation empty");
 
 const route = fs.readFileSync(path.join(root, "src/app/api/situation/route.ts"), "utf8");
-assert(route.includes("hydrateTrackedSituationsFromCareContext"), "GET hydrates TrackedSituation");
-assert(route.includes("active_situations") || route.includes("situations"), "GET returns situations");
-assert(route.includes("getActiveCareSituation"), "GET hydrates Active Care Situation");
-assert(route.includes("pause_active_care_situation"), "POST can pause ACS");
-assert(route.includes("resolveInteractionSessionId"), "API separates interaction session");
+// The duplicate Next route is intentionally disabled: production is the Vite SPA
+// backed by authenticated FastAPI. It must not revive process-local care storage.
+assert(route.includes("legacyRouteUnavailable"), "legacy duplicate route stays disabled");
+assert(route.includes("status: 410"), "legacy duplicate route returns Gone");
+assert(route.includes("authenticated FastAPI care API"), "legacy route directs callers to authoritative API");
+assert(!route.includes("hydrateTrackedSituationsFromCareContext"), "legacy route cannot create local care records");
 
 const page = fs.readFileSync(path.join(root, "src/app/page.tsx"), "utf8");
 assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
