@@ -281,4 +281,54 @@ describe('Phase 4 production data safety', () => {
     })
   })
 
+
+  it('keeps server-completed care actions visible after dashboard reload and retains overdue active actions', async () => {
+    mockedGetJSON.mockImplementation(async (path: string) => {
+      if (path.startsWith('/caregivers/')) return [];
+      if (path.startsWith('/events/')) return [];
+      if (path.startsWith('/insights/')) return [];
+      if (path.includes('/trends')) return [];
+      if (path.includes('/reasoning/')) {
+        return {
+          confirmed_facts: [], open_questions: [], preferences: [],
+          rejected_assumptions: [], care_patterns: [], coordination_decisions: [],
+        };
+      }
+      if (path.startsWith('/daily-intelligence/')) {
+        return {
+          id: 'daily-1', intelligence_date: '2026-10-23',
+          overdue_items: [], upcoming_items: [], active_windows: [],
+          expired_windows: [], daily_summary: '',
+        };
+      }
+      if (path.startsWith('/actions/')) return [
+        {
+          id: 'action-overdue-1',
+          normalized_action: 'Confirm follow-up appointment',
+          status: 'active',
+          created_at: '2026-10-20T08:00:00Z',
+          deadline: '2026-10-21T08:00:00Z',
+        },
+        {
+          id: 'action-completed-1',
+          normalized_action: 'Collect discharge paperwork',
+          status: 'completed',
+          created_at: '2026-10-20T08:00:00Z',
+          completed_at: '2026-10-22T10:30:00Z',
+        },
+      ] as never;
+      if (path.startsWith('/appointments/')) return [];
+      throw new Error(`Unexpected dashboard endpoint: ${path}`);
+    });
+
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
+
+    expect(await screen.findByText('Confirm follow-up appointment')).toBeInTheDocument();
+    expect(screen.getByText(/Overdue ·/)).toBeInTheDocument();
+    expect(await screen.findByText('Collect discharge paperwork')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Completed' })).toBeDisabled();
+    expect(screen.getByText(/Completed:/)).toBeInTheDocument();
+    expect(mockedGetJSON).toHaveBeenCalledWith('/actions/person-real-1');
+  });
+
 })
