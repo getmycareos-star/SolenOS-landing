@@ -24,10 +24,10 @@ export type CareTransparencyPanel = {
   evidence_breakdown: {
     conclusion: string;
     evidence_type: EvidenceType;
-    confidence_pct: number;
+    confidence_pct: number | null;
   }[];
   confidence_scores: {
-    overall_pct: number;
+    overall_pct: number | null;
     tier: ConfidenceTier;
   };
   recency: {
