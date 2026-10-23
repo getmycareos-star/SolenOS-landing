@@ -90,10 +90,10 @@ export const TrustLayerSchema = z
     ),
     recency: z.object({
       last_updated_at: z.string().nullable(),
-      freshness_score: z.number().min(0).max(1),
+      freshness_score: z.number().min(0).max(1).nullable(),
       interpretation: z.string(),
     }),
-    confidence: z.number().min(0).max(1),
+    confidence: z.number().min(0).max(1).nullable(),
   })
   .strict();
 
