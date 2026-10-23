@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Record from './Record';
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client';
@@ -95,6 +95,23 @@ describe('Living Care Record first-use workflow', () => {
       corrected_observation: 'Appointment moved to Friday.',
     });
     expect(screen.getByText(/appointment moved to friday/i)).toBeInTheDocument();
+  });
+
+  it('labels read-only LCR explanations without source citations as unverified explanations', async () => {
+    mockedPostJSON.mockResolvedValue({
+      explanation: 'No saved events are available to explain yet.',
+      provider_status: 'connected',
+      ai_generated: true,
+      evidence_ids: [],
+    });
+    render(<MemoryRouter><Record /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /explain current record/i }));
+
+    await waitFor(() => expect(screen.getByText(/no saved events are available to explain yet/i)).toBeInTheDocument());
+    expect(screen.getByText(/no specific living care record evidence ids were cited/i)).toBeInTheDocument();
+    expect(mockedPostJSON).toHaveBeenCalledWith('/lcr/explain', expect.objectContaining({
+      person_id: 'person-first-record',
+    }));
   });
 
   it('does not show an empty record when evidence retrieval fails', async () => {
