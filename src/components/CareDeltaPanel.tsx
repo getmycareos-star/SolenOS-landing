@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { getPersonId, postJSON } from '../api/client'
+import { getPersonId, getJSON, postJSON } from '../api/client'
+
+type DeltaHistoryEntry = { id: string; source: string; event_date: string; created_at: string; delta?: DeltaResult | null }
 
 type DeltaResult = {
   event_summary?: string
@@ -32,6 +34,8 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
   const [eventDate, setEventDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('')
   const [result, setResult] = useState<DeltaResult | null>(null)
+  const [history, setHistory] = useState<DeltaHistoryEntry[]>([])
+  const [historyError, setHistoryError] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const lastToken = useRef<number | null>(null)
@@ -59,12 +63,37 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         persist: true,
       }) as DeltaResult
       setResult(response)
+      try {
+        const rows = await getJSON(`/care-delta/runs/${encodeURIComponent(scopedPersonId)}`)
+        if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[])
+      } catch {
+        setHistoryError('The delta was returned, but saved history could not be refreshed.')
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'The Delta Engine could not reconcile this event. Existing records were not overwritten.')
     } finally {
       setBusy(false)
     }
   }
+
+  useEffect(() => {
+    let cancelled = false
+    if (!personId) {
+      setHistory([])
+      return () => { cancelled = true }
+    }
+    getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows)) {
+          setHistory(rows as DeltaHistoryEntry[])
+          setHistoryError('')
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setHistoryError('Saved Delta history is unavailable until the backend route and database migration are deployed.')
+      })
+    return () => { cancelled = true }
+  }, [personId])
 
   useEffect(() => {
     if (!autoInput || lastToken.current === autoInput.token) return
@@ -123,6 +152,17 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
       </button></div>
     </form>
     {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12, marginTop: 8 }}>{error}</p>}
+    {historyError && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 11, marginTop: 6 }}>{historyError}</p>}
+    {history.length > 0 && <section style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 10 }}>
+      <h3 style={{ fontSize: 13, margin: '0 0 7px' }}>Previous reconciliations</h3>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {history.slice(0, 10).map((entry) => <button key={entry.id} type="button" onClick={() => entry.delta && setResult(entry.delta)} style={{ textAlign: 'left', border: '1px solid var(--border)', borderRadius: 7, padding: 8, background: 'var(--bg)', color: 'var(--text)', cursor: entry.delta ? 'pointer' : 'default' }}>
+          <strong style={{ fontSize: 12 }}>{entry.source}</strong>
+          <span style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>{new Date(entry.event_date).toLocaleDateString()} · saved {new Date(entry.created_at).toLocaleString()}</span>
+          <span style={{ display: 'block', fontSize: 11, marginTop: 3 }}>{entry.delta?.event_summary || 'Saved reconciliation record'}</span>
+        </button>)}
+      </div>
+    </section>}
     {result && <div aria-live="polite" style={{ marginTop: 14 }}>
       <h3 style={{ fontSize: 15, margin: 0 }}>Delta result</h3>
       <p style={{ fontSize: 12, lineHeight: 1.5 }}>{result.caregiver_summary || result.event_summary}</p>
