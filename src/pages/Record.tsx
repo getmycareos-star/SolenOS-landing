@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON, postFormData } from '../api/client'
+import { buildAppointmentBrief } from '../lib/document-intelligence/appointment-brief'
 
 interface Evidence {
   id: string
@@ -34,6 +35,7 @@ export default function Record() {
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any; extractionSource?: string; confidence?: number | null; warnings?: string[] } | null>(null)
+  const [showAppointmentBrief, setShowAppointmentBrief] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -182,6 +184,7 @@ export default function Record() {
     conversation: '💬',
     observation: '👁️',
   }
+  const appointmentBrief = showAppointmentBrief ? buildAppointmentBrief(items) : null
 
   return (
     <div>
@@ -297,6 +300,88 @@ export default function Record() {
                 No Qwen candidates were returned. The document is still preserved as evidence.
               </p>
             )}
+          </div>
+        )}
+      </section>
+
+      <section style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '10px', padding: '14px', marginBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <strong style={{ fontSize: '13px' }}>Prepare an appointment brief</strong>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Organize saved records into documented sources, caregiver observations, unknowns, and questions. No diagnosis is generated.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAppointmentBrief(true)}
+            disabled={loading || Boolean(loadError) || items.length === 0}
+            style={{
+              padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)',
+              background: loading || Boolean(loadError) || items.length === 0 ? 'var(--bg)' : 'var(--accent)',
+              color: loading || Boolean(loadError) || items.length === 0 ? 'var(--text-secondary)' : 'white',
+              fontSize: '12px', cursor: loading || Boolean(loadError) || items.length === 0 ? 'default' : 'pointer'
+            }}
+          >
+            Prepare appointment brief
+          </button>
+        </div>
+        {showAppointmentBrief && appointmentBrief && (
+          <div style={{ marginTop: '14px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              Recorded period: {appointmentBrief.recorded_period.from} to {appointmentBrief.recorded_period.to}
+            </p>
+            {[
+              { title: 'Documented source text', items: appointmentBrief.documented_sources },
+              { title: 'Caregiver observations', items: appointmentBrief.caregiver_observations },
+              { title: 'Other recorded items', items: appointmentBrief.other_records },
+            ].map(section => (
+              <section key={section.title} style={{ marginTop: '12px' }}>
+                <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>{section.title} ({section.items.length})</h3>
+                {section.items.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No items of this source type are recorded.</p>
+                ) : (
+                  <ul style={{ paddingLeft: '18px', margin: 0 }}>
+                    {section.items.map(item => (
+                      <li key={item.id} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                        <strong>{item.recorded_at} · {item.source_label}</strong>
+                        <p style={{ marginTop: '3px', lineHeight: 1.5 }}>{item.excerpt}</p>
+                        {item.review_warnings.map((warning, index) => (
+                          <p key={index} role="alert" style={{ color: 'var(--unknown)', marginTop: '3px' }}>
+                            Verify: {warning}
+                          </p>
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))}
+            <section style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>System interpretations</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                This brief generates no new AI interpretation. Keep any existing AI-derived insight separate from documented source text and caregiver reports.
+              </p>
+            </section>
+            <section style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>Unknowns to verify</h3>
+              {appointmentBrief.unknowns_to_verify.length ? (
+                <ul style={{ paddingLeft: '18px', margin: 0 }}>
+                  {appointmentBrief.unknowns_to_verify.map((item, index) => <li key={index} style={{ fontSize: '12px', marginBottom: '5px' }}>{item}</li>)}
+                </ul>
+              ) : (
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No extraction warnings are recorded; this does not prove the source material is complete or correct.</p>
+              )}
+            </section>
+            <section style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>Questions for the care team</h3>
+              <ul style={{ paddingLeft: '18px', margin: 0 }}>
+                {appointmentBrief.questions_for_care_team.map((question, index) => <li key={index} style={{ fontSize: '12px', marginBottom: '5px' }}>{question}</li>)}
+              </ul>
+            </section>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '12px' }}>{appointmentBrief.disclaimer}</p>
           </div>
         )}
       </section>
