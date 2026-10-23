@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
@@ -172,7 +172,7 @@ export default function Dashboard() {
       setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
       setLoading(false);
     });
-  }, [personId]);
+  }, [personId, caregiverId]);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -245,7 +245,7 @@ export default function Dashboard() {
     }
   };
 
-  const createReminder = async (event: React.FormEvent<HTMLFormElement>) => {
+  const createReminder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const caregiver = getCaregiverId();
     if (!personId || !caregiver) {
@@ -375,13 +375,23 @@ export default function Dashboard() {
                   </p>
                 )}
                 <p style={{ margin: '0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  Created: {formatDate(action.created_at)}
+                  Created: {formatDate(action.created_at)} · Status: {action.status.replaceAll('_', ' ')}
                 </p>
+                {action.is_medication_action && !action.source_authority_verified && (
+                  <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--warning)' }}>
+                    Medication source authority is unverified. This instruction cannot be activated or marked complete.
+                  </p>
+                )}
+                {action.status === 'pending_confirmation' && !action.is_medication_action && (
+                  <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    This action needs confirmation before it can be marked complete.
+                  </p>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
                   onClick={() => handleActionToggle(action.id)}
-                  disabled={loadingIds.includes(action.id)}
+                  disabled={loadingIds.includes(action.id) || toggledIds.includes(action.id) || !['active', 'conditional'].includes(action.status) || (action.is_medication_action && !action.source_authority_verified)}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -398,7 +408,7 @@ export default function Dashboard() {
                     opacity: loadingIds.includes(action.id) ? 0.7 : 1
                   }}
                 >
-                  {loadingIds.includes(action.id) ? 'Processing...' : toggledIds.includes(action.id) ? 'Completed' : 'Mark Complete'}
+                  {loadingIds.includes(action.id) ? 'Processing...' : toggledIds.includes(action.id) ? 'Completed' : action.is_medication_action && !action.source_authority_verified ? 'Awaiting verification' : !['active', 'conditional'].includes(action.status) ? 'Needs confirmation' : 'Mark Complete'}
                 </button>
               </div>
             </div>
