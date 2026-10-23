@@ -331,4 +331,47 @@ describe('Phase 4 production data safety', () => {
     expect(mockedGetJSON).toHaveBeenCalledWith('/actions/person-real-1');
   });
 
+
+  it('does not report a care action complete unless the backend confirms the completed status', async () => {
+    mockedGetJSON.mockImplementation(async (path: string) => {
+      if (path.startsWith('/caregivers/')) return [];
+      if (path.startsWith('/events/')) return [];
+      if (path.startsWith('/insights/')) return [];
+      if (path.includes('/trends')) return [];
+      if (path.includes('/reasoning/')) {
+        return {
+          confirmed_facts: [], open_questions: [], preferences: [],
+          rejected_assumptions: [], care_patterns: [], coordination_decisions: [],
+        };
+      }
+      if (path.startsWith('/daily-intelligence/')) {
+        return {
+          id: 'daily-1', intelligence_date: '2026-10-23',
+          overdue_items: [], upcoming_items: [], active_windows: [],
+          expired_windows: [], daily_summary: '',
+        };
+      }
+      if (path.startsWith('/actions/')) return [{
+        id: 'action-open-1',
+        normalized_action: 'Confirm follow-up appointment',
+        status: 'active',
+        created_at: '2026-10-20T08:00:00Z',
+      }] as never;
+      if (path.startsWith('/appointments/')) return [];
+      throw new Error(`Unexpected dashboard endpoint: ${path}`);
+    });
+    mockedPostJSON.mockImplementation(async (path: string) => {
+      if (path === '/evidence') return { id: 'evidence-completion-1' } as never;
+      if (path === '/actions/action-open-1/complete') return { status: 'active' } as never;
+      throw new Error(`Unexpected POST endpoint: ${path}`);
+    });
+
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark Complete' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/server did not confirm/i);
+    expect(screen.getByRole('button', { name: 'Mark Complete' })).toBeEnabled();
+    expect(screen.queryByText(/^Completed:/)).not.toBeInTheDocument();
+  });
+
 })
