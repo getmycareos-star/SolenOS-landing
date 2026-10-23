@@ -80,6 +80,9 @@ describe('CareHandoffPanel', () => {
         outstanding_items: ['Call clinic', 'Bring the report'],
         recent_changes: ['Appointment moved'],
         safety_concerns: ['New concern needs review'],
+        due_at: null,
+        reminder_at: null,
+        access_scope: 'care_circle',
       });
     });
     expect(await screen.findByRole('status')).toHaveTextContent(/Handoff saved/);
@@ -93,3 +96,19 @@ describe('CareHandoffPanel', () => {
     expect(screen.queryByText('Evening handoff')).not.toBeInTheDocument();
   });
 });
+
+
+  it('requires a completion report before requesting handoff closure', async () => {
+    mockedGetCaregiverId.mockReturnValue('caregiver-real-1');
+    mockedGetJSON.mockImplementation(async (path: string) => {
+      if (path.startsWith('/care-handoffs/people/')) return [handoff];
+      if (path === '/caregivers/person-real-1') return [{ id: 'caregiver-real-1', name: 'Creator' }, { id: 'caregiver-next', name: 'Next caregiver' }];
+      if (path === '/care-handoffs/handoff-1/events') return [];
+      throw new Error(`Unexpected endpoint: ${path}`);
+    });
+    render(<CareHandoffPanel personId='person-real-1' />);
+    expect(await screen.findByRole('heading', { name: 'Evening handoff' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report and close' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Add a completion report before closing this handoff.');
+    expect(mockedPostJSON).not.toHaveBeenCalled();
+  });
