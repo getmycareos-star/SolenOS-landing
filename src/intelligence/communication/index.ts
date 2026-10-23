@@ -52,10 +52,10 @@ function buildDefaultTrustLayer(
     })),
     recency: {
       last_updated_at: null,
-      freshness_score: 50,
+      freshness_score: null,
       interpretation: "Current session",
     },
-    confidence: understanding.confidence === "high" ? 80 : understanding.confidence === "medium" ? 60 : 40,
+    confidence: null,
   };
 }
 
@@ -82,16 +82,16 @@ function buildDefaultTransparencyPanel(
     evidence_breakdown: understanding.facts.map((f) => ({
       conclusion: f.text,
       evidence_type: "observation" as const,
-      confidence_pct: understanding.confidence === "high" ? 80 : understanding.confidence === "medium" ? 60 : 40,
+      confidence_pct: null,
     })),
     confidence_scores: {
-      overall_pct: understanding.facts.length > 0 ? 65 : 30,
-      tier: understanding.confidence === "high" ? "high" as const : understanding.confidence === "medium" ? "medium" as const : "low" as const,
+      overall_pct: null,
+      tier: "unknown" as const,
     },
     recency: {
       last_update_at: timestamp ?? new Date().toISOString(),
       critical_event_ages: [],
-      decay_status: "fresh" as const,
+      decay_status: "unknown" as const,
     },
     observed: understanding.facts.filter((f) => f.kind === "event" || f.kind === "observation").map((f) => f.text),
     inferred: understanding.facts.filter((f) => f.kind === "decision" || f.kind === "outcome").map((f) => f.text),
