@@ -67,6 +67,7 @@ export async function extractAttachedDocument(
       note?: string;
       message?: string;
       error?: string;
+      detail?: string;
     } = {};
     try {
       data = (await safeJson(res)) as typeof data;
@@ -81,7 +82,8 @@ export async function extractAttachedDocument(
         ...base,
         status: "failed",
         errorNote: sanitizeCaregiverErrorMessage(
-          data.note ??
+          data.detail ??
+            data.note ??
             data.message ??
             data.error ??
             (isImage
