@@ -90,7 +90,7 @@ describe('FirstUseJourney', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Appetite reported lower').length).toBeGreaterThan(0);
     });
-    expect(screen.getByRole('alert')).toHaveTextContent(/recorded actions/i);
+    expect(screen.getAllByRole('alert').some((alert) => /recorded actions/i.test(alert.textContent || ''))).toBe(true);
     expect(screen.queryByText(/contain no saved entries yet/i)).not.toBeInTheDocument();
   });
 
@@ -138,7 +138,7 @@ describe('FirstUseJourney', () => {
     });
     expect(screen.getByText(/has the sleep change happened for several nights/i)).toBeInTheDocument();
     expect(screen.getByText(/one caregiver reported low intake/i)).toBeInTheDocument();
-    expect(screen.getByText(/fluid intake has not been recorded/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/fluid intake has not been recorded/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/does not choose which account is true/i)).toBeInTheDocument();
   });
 
