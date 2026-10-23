@@ -94,7 +94,7 @@ export function buildDegradedOutput(input: {
       })),
       recency: {
         last_updated_at: null,
-        freshness_score: 0,
+        freshness_score: null,
         interpretation: "potentially outdated (>7–14 days)",
       },
       confidence: null,
