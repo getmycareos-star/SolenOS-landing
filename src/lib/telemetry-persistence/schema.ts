@@ -125,7 +125,7 @@ export const SolenOSOutputSchema = z
       reason_for_output: z.string(),
       evidence_breakdown: z.array(z.unknown()),
       confidence_scores: z.object({
-        overall_pct: z.number().min(0).max(100),
+        overall_pct: z.number().min(0).max(100).nullable(),
         tier: z.enum(["low", "medium", "high"]),
       }),
       recency: z.object({
