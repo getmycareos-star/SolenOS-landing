@@ -105,6 +105,17 @@ interface ReminderDelivery {
   delivered_at?: string | null;
 }
 
+interface ReminderDeliveryAttempt {
+  id: string;
+  delivery_id: string;
+  attempt_number: number;
+  channel: string;
+  started_at: string;
+  finished_at?: string | null;
+  outcome: string;
+  error_type?: string | null;
+}
+
 export default function Dashboard() {
   const [events, setEvents] = useState<Event[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -118,6 +129,9 @@ export default function Dashboard() {
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [deliveries, setDeliveries] = useState<ReminderDelivery[]>([]);
+  const [deliveryAttempts, setDeliveryAttempts] = useState<Record<string, ReminderDeliveryAttempt[]>>({});
+  const [expandedDeliveryId, setExpandedDeliveryId] = useState<string | null>(null);
+  const [attemptLoadingId, setAttemptLoadingId] = useState<string | null>(null);
   const [reminderActionId, setReminderActionId] = useState('');
   const [completionNotes, setCompletionNotes] = useState<Record<string, string>>({});
   const [reminderError, setReminderError] = useState<string | null>(null);
@@ -352,6 +366,26 @@ export default function Dashboard() {
     }
   };
 
+
+  const toggleDeliveryAttempts = async (reminderId: string, deliveryId: string) => {
+    if (expandedDeliveryId === deliveryId) {
+      setExpandedDeliveryId(null);
+      return;
+    }
+    setExpandedDeliveryId(deliveryId);
+    if (deliveryAttempts[deliveryId]) return;
+    setAttemptLoadingId(deliveryId);
+    try {
+      const data = await getJSON(`/reminders/${encodeURIComponent(reminderId)}/deliveries/${encodeURIComponent(deliveryId)}/attempts`);
+      if (!Array.isArray(data)) throw new Error('Delivery attempt history was incomplete');
+      setDeliveryAttempts(previous => ({ ...previous, [deliveryId]: data as ReminderDeliveryAttempt[] }));
+    } catch (error) {
+      setReminderError(error instanceof Error ? error.message : 'Delivery attempt history could not be loaded.');
+    } finally {
+      setAttemptLoadingId(null);
+    }
+  };
+
   const cancelReminder = async (reminderId: string) => {
     setReminderSaving(true);
     setReminderError(null);
@@ -541,11 +575,28 @@ export default function Dashboard() {
                   <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>{reminder.enabled && reminder.next_run_at ? new Date(reminder.next_run_at).toLocaleString() : 'No future occurrence'} · {reminder.timezone} · {reminder.recurrence === 'once' ? 'One-time' : `Repeats ${reminder.recurrence}`} at {reminder.local_time}</p>
                   <p style={{ margin: 0, fontSize: '12px' }}>Schedule: <strong>{reminder.enabled ? 'Enabled' : 'Paused'}</strong></p>
                   {deliveries.filter(delivery => delivery.reminder_id === reminder.id).slice(0, 3).map(delivery => (
-                    <p key={delivery.id} style={{ margin: '5px 0 0', fontSize: '12px', color: delivery.status === 'failed' ? 'var(--warning)' : 'var(--text-secondary)' }}>
-                      {new Date(delivery.scheduled_for).toLocaleString()}: <strong>{delivery.status}</strong> · attempts {delivery.attempt_count}
-                      {delivery.delivered_at ? ` · delivered ${new Date(delivery.delivered_at).toLocaleString()}` : ''}
-                      {delivery.last_error ? ` · ${delivery.last_error}` : ''}
-                    </p>
+                    <div key={delivery.id} style={{ marginTop: '6px', fontSize: '12px' }}>
+                      <p style={{ margin: '5px 0 0', color: delivery.status === 'failed' ? 'var(--warning)' : 'var(--text-secondary)' }}>
+                        {new Date(delivery.scheduled_for).toLocaleString()}: <strong>{delivery.status}</strong> · attempts {delivery.attempt_count}
+                        {delivery.delivered_at ? ` · delivered ${new Date(delivery.delivered_at).toLocaleString()}` : ''}
+                        {delivery.last_error ? ` · ${delivery.last_error}` : ''}
+                      </p>
+                      <button type="button" onClick={() => void toggleDeliveryAttempts(reminder.id, delivery.id)} style={{ marginTop: '4px', padding: '3px 6px', border: '1px solid var(--border)', borderRadius: '4px', background: 'transparent', color: 'inherit', fontSize: '11px' }}>
+                        {expandedDeliveryId === delivery.id ? 'Hide attempt history' : 'View attempt history'}
+                      </button>
+                      {expandedDeliveryId === delivery.id && (
+                        <ul style={{ margin: '4px 0 0', paddingLeft: '18px', color: 'var(--text-secondary)' }}>
+                          {attemptLoadingId === delivery.id ? <li>Loading attempts…</li> : (deliveryAttempts[delivery.id] || []).map(attempt => (
+                            <li key={attempt.id}>
+                              Attempt {attempt.attempt_number}: {attempt.outcome} via {attempt.channel}
+                              {attempt.started_at ? ` · ${new Date(attempt.started_at).toLocaleString()}` : ''}
+                              {attempt.error_type ? ` · ${attempt.error_type}` : ''}
+                            </li>
+                          ))}
+                          {!attemptLoadingId && (deliveryAttempts[delivery.id] || []).length === 0 && <li>No attempt details recorded.</li>}
+                        </ul>
+                      )}
+                    </div>
                   ))}
                 </div>
                 {reminder.enabled && <button type="button" disabled={reminderSaving} onClick={() => void cancelReminder(reminder.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'inherit', fontSize: '12px', cursor: reminderSaving ? 'wait' : 'pointer' }}>Cancel</button>}
