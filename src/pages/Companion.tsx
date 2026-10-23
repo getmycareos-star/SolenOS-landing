@@ -9,6 +9,8 @@ interface Message {
   safety_note?: string | null
   confidence?: number | null
   evidence_ids?: string[]
+  ai_generated?: boolean
+  provider_status?: string
   timestamp: Date
 }
 
@@ -70,6 +72,8 @@ export default function Companion() {
         safety_note: response.safety_note,
         confidence: response.confidence,
         evidence_ids: response.evidence_ids,
+        ai_generated: response.ai_generated,
+        provider_status: response.provider_status,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
@@ -175,6 +179,17 @@ export default function Companion() {
             {msg.role === 'assistant' && (
               <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                 Conversation response only · not automatically saved as a Living Care Record fact.
+              </p>
+            )}
+            {msg.role === 'assistant' && (
+              <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                {msg.ai_generated ? 'AI-generated response' : 'No AI-generated answer confirmed'}
+                {msg.provider_status ? ` · Provider: ${msg.provider_status}` : ''}
+              </p>
+            )}
+            {msg.role === 'assistant' && (!msg.evidence_ids || msg.evidence_ids.length === 0) && (
+              <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                No Living Care Record evidence was cited in this response. Treat it as conversational guidance or general information, not a statement confirmed by the saved record.
               </p>
             )}
             {msg.role === 'user' && (
