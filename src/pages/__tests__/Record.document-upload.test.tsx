@@ -25,28 +25,45 @@ describe('Living Care Record document intake', () => {
     mockedGetPersonId.mockReturnValue('person-real-1')
     mockedGetCaregiverId.mockReturnValue('caregiver-real-1')
     mockedPostFormData.mockResolvedValue({
-      ok: true,
-      document: {
-        id: 'doc_123',
-        name: 'discharge.pdf',
-        mime_type: 'application/pdf',
-        extracted_text: 'Discharge instructions say follow up within two weeks.',
-        extracted_char_count: 53,
-        extraction_source: 'pdf_ocr',
-        ocr_confidence: 0.42,
-        extraction_warnings: ['OCR confidence is low. Check the extracted text against the original before relying on it.'],
-        sha256: 'a'.repeat(64),
-      },
+      evidence_id: 'evidence-doc-123',
+      care_event_id: 'event-doc-123',
+      filename: 'discharge.pdf',
+      content_type: 'application/pdf',
+      size_bytes: 2048,
+      sha256: 'a'.repeat(64),
+      document_type_candidate: 'discharge_instructions',
+      document_date_candidate: '2026-10-20',
+      document_date_review_status: 'pending_review',
+      extraction_status: 'extracted',
+      extraction_source: 'pdf_ocr',
+      extraction_version: 'document-intake-v1',
+      ocr_confidence: 0.42,
+      extraction_warnings: ['OCR confidence is low. Check the extracted text against the original before relying on it.'],
+      extraction_error: null,
+      extracted_char_count: 53,
+      source_file_preserved: true,
+      review_required: true,
+      document_candidates: [{
+        candidate_id: 'evidence-doc-123:0',
+        candidate_type: 'follow_up',
+        subject: 'Follow-up reference',
+        observation: 'Discharge instructions say follow up within two weeks.',
+        source_quote: 'Discharge instructions say follow up within two weeks.',
+        source_evidence_id: 'evidence-doc-123',
+        review_status: 'pending_review',
+      }],
+      candidate_count: 1,
     } as never)
     mockedPostJSON.mockResolvedValue({
-      qwen_extraction_status: 'pending_review',
-      qwen_candidates: { observations: [] },
+      candidate: { candidate_type: 'follow_up', observation: 'Discharge instructions say follow up within two weeks.', source_quote: 'Discharge instructions say follow up within two weeks.', review_status: 'accepted_by_caregiver' },
+      authoritative_lcr_write: false,
+      message: 'Review decision saved. No authoritative care fact was changed.',
     } as never)
   })
 
   afterEach(() => cleanup())
 
-  it('sends a PDF through the authenticated extractor and preserves OCR provenance as evidence', async () => {
+  it('persists the original PDF and displays extracted candidates with OCR provenance', async () => {
     render(<MemoryRouter><Record /></MemoryRouter>)
 
     const file = new File(['%PDF-'], 'discharge.pdf', { type: 'application/pdf' })
@@ -56,28 +73,33 @@ describe('Living Care Record document intake', () => {
     fireEvent.click(screen.getByRole('button', { name: /save and review/i }))
 
     await waitFor(() => expect(mockedPostFormData).toHaveBeenCalledWith(
-      '/documents/extract',
+      '/documents/intake',
       expect.any(FormData),
     ))
-    await waitFor(() => expect(mockedPostJSON).toHaveBeenCalledWith(
-      '/situation',
-      expect.objectContaining({
-        person_id: 'person-real-1',
-        caregiver_id: 'caregiver-real-1',
-        documents: [expect.objectContaining({
-          id: 'doc_123',
-          sha256: 'a'.repeat(64),
-          extraction_source: 'pdf_ocr',
-          ocr_confidence: 0.42,
-          extraction_warnings: expect.arrayContaining([expect.stringContaining('OCR confidence is low')]),
-        })],
-        provenance: expect.objectContaining({ transcript_uncertain: true }),
-      }),
-    ))
+    expect(mockedPostJSON).not.toHaveBeenCalledWith('/situation', expect.anything())
 
-    expect(await screen.findByText(/Extraction method: pdf_ocr/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Original file preserved/i)).toBeInTheDocument()
+    expect(screen.getByText(/Type candidate: discharge_instructions/i)).toBeInTheDocument()
+    expect(screen.getByText(/document date candidate: 2026-10-20/i)).toBeInTheDocument()
+    expect(screen.getByText(/Extraction method: pdf_ocr/i)).toBeInTheDocument()
     expect(screen.getByText(/OCR confidence: 42%/i)).toBeInTheDocument()
     expect(screen.getByText(/Review needed: OCR confidence is low/i)).toBeInTheDocument()
+    expect(screen.getByText(/follow_up:/i)).toBeInTheDocument()
+  })
+
+  it('persists an explicit review decision without writing a care fact', async () => {
+    render(<MemoryRouter><Record /></MemoryRouter>)
+    fireEvent.change(screen.getByLabelText(/choose a care document/i), {
+      target: { files: [new File(['%PDF-'], 'discharge.pdf', { type: 'application/pdf' })] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /save and review/i }))
+    await screen.findByText(/Original file preserved/i)
+    fireEvent.click(screen.getByRole('button', { name: /mark reviewed/i }))
+    await waitFor(() => expect(mockedPostJSON).toHaveBeenCalledWith(
+      '/documents/evidence-doc-123/candidates/0/review',
+      { decision: 'accept' },
+    ))
+    expect(await screen.findByText(/Review decision saved/i)).toBeInTheDocument()
   })
 
   it('builds an appointment brief with separate sources and unresolved uncertainties', async () => {
@@ -145,16 +167,29 @@ describe('Living Care Record document intake', () => {
     expect(screen.getByText(/Document review needed: OCR confidence is low/i)).toBeInTheDocument()
   })
 
-  it('does not save care evidence if extraction returns no readable text', async () => {
-    mockedPostFormData.mockResolvedValueOnce({ ok: true, document: { extracted_text: '  ' } } as never)
+  it('keeps an unreadable scanned file while clearly showing extraction failure and no candidates', async () => {
+    mockedPostFormData.mockResolvedValueOnce({
+      evidence_id: 'evidence-scan-1',
+      filename: 'scan.png',
+      document_type_candidate: 'image_document',
+      document_date_candidate: null,
+      extraction_status: 'pending_ocr',
+      extraction_source: 'failed',
+      ocr_confidence: null,
+      extraction_warnings: ['OCR is unavailable'],
+      extraction_error: 'OCR is unavailable on this service.',
+      document_candidates: [],
+      source_file_preserved: true,
+      candidate_count: 0,
+    } as never)
     render(<MemoryRouter><Record /></MemoryRouter>)
 
     fireEvent.change(screen.getByLabelText(/choose a care document/i), {
-      target: { files: [new File(['x'], 'scan.png', { type: 'image/png' })] },
+      target: { files: [new File(['image bytes'], 'scan.png', { type: 'image/png' })] },
     })
     fireEvent.click(screen.getByRole('button', { name: /save and review/i }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/did not return readable text/i)
-    expect(mockedPostJSON).not.toHaveBeenCalled()
+    expect(await screen.findByText(/Text extraction not completed: OCR is unavailable on this service/i)).toBeInTheDocument()
+    expect(screen.getByText(/No reviewable text candidates were found/i)).toBeInTheDocument()
   })
 })
