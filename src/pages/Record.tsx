@@ -93,7 +93,7 @@ export default function Record() {
       }
       const doc = extracted.document
       if (!extracted.ok || !doc || typeof doc.extracted_text !== 'string' || !doc.extracted_text.trim()) {
-        throw new Error('The document reader did not return verified text. The care record was not changed.')
+        throw new Error('The document reader did not return readable text. The care record was not changed.')
       }
 
       const result = await postJSON('/situation', {
