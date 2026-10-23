@@ -39,7 +39,7 @@ describe('Phase 4 production data safety', () => {
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Community posts could not be loaded')
-    expect(screen.queryByText(/M\. Johnson|sample caregiver|sample post|DEMO_RISK/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/M\\. Johnson|sample caregiver|sample post|DEMO_RISK/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/sample posts/i)).not.toBeInTheDocument()
   })
 
@@ -48,7 +48,7 @@ describe('Phase 4 production data safety', () => {
 
     expect(screen.getByRole('heading', { name: /team dashboard unavailable/i })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(/cannot be verified as an authorized/i)
-    expect(screen.queryByText(/M\. Johnson|142 caregivers|4\.2 helpfulness|DEMO_RISK|DEMO_REPORT/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/M\\. Johnson|142 caregivers|4\\.2 helpfulness|DEMO_RISK|DEMO_REPORT/i)).not.toBeInTheDocument()
   })
 
   it('preserves care-capture text when the save request fails', async () => {
@@ -57,7 +57,7 @@ describe('Phase 4 production data safety', () => {
     render(<CareCapture personId="person-real-1" />)
 
     const note = 'Observed a change in sleep; exact start time is uncertain.'
-    const input = screen.getByPlaceholderText(/describe what you observed/i)
+    const input = screen.getByPlaceholderText(/what symptom did you notice/i)
     fireEvent.change(input, { target: { value: note } })
     fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
 
@@ -70,25 +70,25 @@ describe('Phase 4 production data safety', () => {
     mockedPostJSON.mockResolvedValueOnce({
       ok: false,
       message: 'The capture was not accepted.',
-    } as never);
+    } as never)
 
-    render(<CareCapture personId="person-real-1" />);
+    render(<CareCapture personId="person-real-1" />)
 
-    const note = 'The caregiver noticed a change, but the time is uncertain.';
-    const input = screen.getByPlaceholderText(/describe what you observed/i);
-    fireEvent.change(input, { target: { value: note } });
-    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }));
+    const note = 'The caregiver noticed a change, but the time is uncertain.'
+    const input = screen.getByPlaceholderText(/what symptom did you notice/i)
+    fireEvent.change(input, { target: { value: note } })
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/capture was not accepted/i);
-    expect(input).toHaveValue(note);
-    expect(screen.queryByText('Saved')).not.toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/capture was not accepted/i)
+    expect(input).toHaveValue(note)
+    expect(screen.queryByText('Saved')).not.toBeInTheDocument()
   })
 
   it('reloads dashboard sections after a care capture is confirmed saved', async () => {
     mockedGetJSON.mockImplementation(async (path: string) => {
-      if (path.startsWith('/events/')) return [];
-      if (path.startsWith('/insights/')) return [];
-      if (path.includes('/trends')) return [];
+      if (path.startsWith('/events/')) return []
+      if (path.startsWith('/insights/')) return []
+      if (path.includes('/trends')) return []
       if (path.includes('/reasoning/')) {
         return {
           confirmed_facts: [],
@@ -97,7 +97,7 @@ describe('Phase 4 production data safety', () => {
           rejected_assumptions: [],
           care_patterns: [],
           coordination_decisions: [],
-        };
+        }
       }
       if (path.startsWith('/daily-intelligence/')) {
         return {
@@ -108,34 +108,35 @@ describe('Phase 4 production data safety', () => {
           active_windows: [],
           expired_windows: [],
           daily_summary: '',
-        };
+        }
       }
-      if (path.startsWith('/actions/')) return [];
-      throw new Error(`Unexpected dashboard endpoint: ${path}`);
-    });
+      if (path.startsWith('/actions/')) return []
+      throw new Error(`Unexpected dashboard endpoint: ${path}`)
+    })
     mockedPostJSON.mockResolvedValueOnce({
       ok: true,
       message: 'Care input recorded successfully.',
       analysis_status: 'complete',
-    } as never);
+      events: [{ occurred_at: '2026-10-23T08:15:00Z', time_provenance: 'entry_time_defaulted' }],
+    } as never)
 
     render(
       <MemoryRouter>
         <Dashboard />
       </MemoryRouter>,
-    );
+    )
 
-    const note = 'Breakfast was mostly uneaten; exact start time is uncertain.';
-    const input = await screen.findByPlaceholderText(/describe what you observed/i);
-    fireEvent.change(input, { target: { value: note } });
-    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }));
+    const note = 'Breakfast was mostly uneaten; exact start time is uncertain.'
+    const input = await screen.findByPlaceholderText(/what symptom did you notice/i)
+    fireEvent.change(input, { target: { value: note } })
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
 
-    expect(await screen.findByText('Care input recorded successfully.')).toBeInTheDocument();
+    expect(await screen.findByText('Care input recorded successfully.')).toBeInTheDocument()
     await waitFor(() => {
       expect(
         mockedGetJSON.mock.calls.filter(([path]) => String(path).startsWith('/events/')).length,
-      ).toBe(2);
-    });
+      ).toBe(2)
+    })
   })
 
   it('does not report a valid empty record when the record API fails', async () => {
