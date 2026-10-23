@@ -24,6 +24,7 @@ interface CareCaptureProps {
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
   const [captureCategory, setCaptureCategory] = useState<(typeof QUICK_ENTRY_TYPES)[number]['id']>('symptom')
+  const [savedCategory, setSavedCategory] = useState<(typeof QUICK_ENTRY_TYPES)[number]['id'] | null>(null)
   const [eventTime, setEventTime] = useState('')
   const [savedTimeBasis, setSavedTimeBasis] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
@@ -67,6 +68,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Do not call the nonexistent /community/experience endpoint or invent matches.
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
       setSavedText(variables.rawInput)
+      setSavedCategory(captureCategory)
       const eventTimestamp = Array.isArray(data?.events) ? data.events[0]?.occurred_at : null
       setSavedAt(typeof eventTimestamp === 'string' ? eventTimestamp : null)
       setSavedTimeBasis(typeof data?.events?.[0]?.time_provenance === 'string' ? data.events[0].time_provenance : null)
@@ -143,6 +145,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     setIdentityError(null)
     setSavedMessage(null)
     setSavedText(null)
+    setSavedCategory(null)
     setSavedAt(null)
     setSavedTimeBasis(null)
     setReviewFeedback(null)
@@ -220,6 +223,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           setText(e.target.value)
           setSavedMessage(null)
           setSavedText(null)
+          setSavedCategory(null)
           setSavedAt(null)
           setSavedTimeBasis(null)
           setQwenAnalysis(null)
@@ -271,7 +275,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       {savedMessage && savedText && (
         <section aria-label="Original captured report" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--bg)' }}>
           <strong style={{ fontSize: '12px' }}>Original report — preserved</strong>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>Category: {QUICK_ENTRY_TYPES.find((item) => item.id === captureCategory)?.label || captureCategory}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>Category: {QUICK_ENTRY_TYPES.find((item) => item.id === savedCategory)?.label || savedCategory || 'Not specified'}</p>
           {savedAt && <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>{savedTimeBasis === 'caregiver_reported_event_time' ? 'Event time reported by caregiver' : 'Event time not supplied; timestamp defaults to entry time'}: {new Date(savedAt).toLocaleString()}</p>}
           <p style={{ fontSize: '12px', lineHeight: 1.55, whiteSpace: 'pre-wrap', marginTop: '6px' }}>{savedText}</p>
         </section>
