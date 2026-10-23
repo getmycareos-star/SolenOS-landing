@@ -225,7 +225,9 @@ export default function FirstUseJourney() {
   }, [personId, retry]);
 
   const openGaps = snapshot.gaps.filter(isOpenGap);
-  const overdueActions = snapshot.actions.filter((action) => isOpenAction(action) && isOverdue(action.deadline));
+  const openActions = snapshot.actions.filter(isOpenAction);
+  const overdueActions = openActions.filter((action) => isOverdue(action.deadline));
+  const actionsWithoutDueDate = openActions.filter((action) => !action.deadline || Number.isNaN(Date.parse(action.deadline)));
 
   const orderedEvents = snapshot.events.slice().sort((a, b) => {
     const aTime = Date.parse(a.occurred_at || '');
@@ -484,6 +486,19 @@ export default function FirstUseJourney() {
                   <li key={action.id} style={{ fontSize: '12px', marginBottom: '7px' }}>
                     {actionLabel(action)}
                     <span style={{ display: 'block', color: 'var(--error)', fontSize: '11px' }}>Due {displayDate(action.deadline)} · Status: {action.status || 'unknown'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {actionsWithoutDueDate.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Open actions without a recorded due date</h3>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {actionsWithoutDueDate.map((action) => (
+                  <li key={action.id} style={{ fontSize: '12px', marginBottom: '7px' }}>
+                    {actionLabel(action)}
+                    <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>Due date not recorded or invalid · Status: {action.status || 'unknown'}</span>
                   </li>
                 ))}
               </ul>
