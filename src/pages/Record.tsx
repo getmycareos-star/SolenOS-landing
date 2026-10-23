@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
 import CareContinuityIntegrityPanel from '../components/CareContinuityIntegrityPanel'
+import CareDeltaPanel from '../components/CareDeltaPanel'
 
 interface Evidence {
   id: string
@@ -24,6 +25,8 @@ export default function Record() {
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number } | null>(null)
+  const [deltaToken, setDeltaToken] = useState(0)
   const careContinuityPersonId = getPersonId()
 
   useEffect(() => {
@@ -100,6 +103,11 @@ export default function Record() {
         candidates: result.qwen_candidates ?? null,
       })
       setDocumentFile(null)
+      // Automatically compare every accepted text-document intake with the existing LCR state.
+      // The Delta Engine is a second, explicit reconciliation stage; it does not replace source capture.
+      const nextToken = deltaToken + 1
+      setDeltaToken(nextToken)
+      setDeltaAutoInput({ content: extractedText, source: documentFile.name, eventDate: new Date().toISOString(), token: nextToken })
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -306,6 +314,7 @@ export default function Record() {
         </div>
       )}
       <CareContinuityIntegrityPanel personId={careContinuityPersonId} evidenceItems={items} />
+      <CareDeltaPanel personId={careContinuityPersonId} autoInput={deltaAutoInput} />
     </div>
   )
 }
