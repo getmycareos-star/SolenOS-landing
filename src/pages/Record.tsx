@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
+import AppointmentBriefings from '../components/AppointmentBriefings'
 
 interface Evidence {
   id: string
@@ -9,6 +10,11 @@ interface Evidence {
   uploaded_at: string
   time_provenance?: string
   location?: string
+  source_type?: string | null
+  evidence_status?: string | null
+  confidence?: number | null
+  extra_metadata?: Record<string, unknown> | null
+  uploaded_by_caregiver_id?: string
 }
 
 export default function Record() {
@@ -58,16 +64,16 @@ export default function Record() {
       return
     }
     if (!documentFile) {
-      setDocumentError('Choose a supported text document first.')
+      setDocumentError('Choose a supported document first.')
       return
     }
     if (documentFile.size > 5 * 1024 * 1024) {
-      setDocumentError('Text documents must be 5 MiB or smaller.')
+      setDocumentError('Documents must be 5 MiB or smaller.')
       return
     }
     const allowedExtensions = /\.(txt|md|csv|json|log)$/i
     if (!allowedExtensions.test(documentFile.name)) {
-      setDocumentError('This intake currently supports .txt, .md, .csv, .json, and .log files. PDF/scanned-image OCR is not available yet.')
+      setDocumentError('This intake currently supports .txt, .md, .csv, .json, and .log files. PDF/scanned-image OCR is not available in this intake yet.')
       return
     }
     setProcessingDocument(true)
@@ -85,6 +91,8 @@ export default function Record() {
           name: documentFile.name,
           extracted_text: extractedText,
           mime_type: documentFile.type || 'text/plain',
+          ocr_confidence: null,
+          extraction_source: 'text',
         }],
         provenance: {
           input_type: 'document',
@@ -98,6 +106,12 @@ export default function Record() {
         candidates: result.qwen_candidates ?? null,
       })
       setDocumentFile(null)
+      try {
+        const refreshedEvidence = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+        if (Array.isArray(refreshedEvidence)) setItems(refreshedEvidence)
+      } catch {
+        // The saved document result remains visible even if refreshing the list fails.
+      }
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -139,6 +153,23 @@ export default function Record() {
     observation: '👁️',
   }
 
+  function evidenceOriginLabel(item: Evidence): string {
+    if (item.source_type === 'caregiver_observation') return 'Caregiver observation'
+    if (item.source_type === 'document_ocr') return 'Document · OCR extracted'
+    if (item.source_type === 'document_text_extraction') return 'Document · text extracted'
+    if (item.source_type === 'document_extraction_method_unknown') return 'Document · extraction method unknown'
+    if (item.source_type) return item.source_type.replace(/_/g, ' ')
+    if (item.type === 'document') return 'Document evidence · origin details unavailable'
+    return 'Recorded evidence · origin details unavailable'
+  }
+
+  function evidenceConfidenceLabel(item: Evidence): string {
+    if (typeof item.confidence !== 'number' || !Number.isFinite(item.confidence)) {
+      return 'Confidence: unknown'
+    }
+    return `Extraction confidence: ${Math.round(item.confidence * 100)}% — not clinical certainty`
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
@@ -157,6 +188,8 @@ export default function Record() {
            </Link>
          </div>
        </div>
+
+      <AppointmentBriefings evidence={items} />
 
       <section style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
@@ -288,7 +321,21 @@ export default function Record() {
                   {new Date(item.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 8px' }}>
+                Evidence origin: {evidenceOriginLabel(item)}
+                {item.evidence_status ? ` · Status: ${item.evidence_status.replace(/_/g, ' ')}` : ' · Verification status unavailable'}
+              </p>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                {evidenceConfidenceLabel(item)}
+              </p>
+              {item.extra_metadata && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  {typeof item.extra_metadata.extraction_source === 'string' ? `Extraction: ${item.extra_metadata.extraction_source}` : ''}
+                  {typeof item.extra_metadata.document_time_status === 'string' ? ` · Document date: ${item.extra_metadata.document_time_status.replace(/_/g, ' ')}` : ''}
+                  {typeof item.extra_metadata.document_name === 'string' ? ` · File: ${item.extra_metadata.document_name}` : ''}
+                </p>
+              )}
               {item.time_provenance && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
                   Time source: {item.time_provenance}
