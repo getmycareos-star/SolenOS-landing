@@ -41,9 +41,19 @@ function hashContent(content: string): string {
   return createHash("sha256").update(content).digest("hex");
 }
 
+function requireCaregiverId(caregiverId: string): string {
+  const id = caregiverId?.trim();
+  if (!id || id === "default_caregiver") {
+    throw new Error("An explicit caregiver identity is required for raw evidence storage.");
+  }
+  return id;
+}
+
 function dataDir(caregiverId: string): string {
-  const cleaned = caregiverId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80) || "default";
-  return join(process.cwd(), ".data", "raw-evidence-queue", cleaned);
+  const id = requireCaregiverId(caregiverId);
+  const readable = id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32) || "caregiver";
+  const identityHash = createHash("sha256").update(id).digest("hex").slice(0, 24);
+  return join(process.cwd(), ".data", "raw-evidence-queue", `${readable}_${identityHash}`);
 }
 
 function queueFile(evidence: RawEvidence): string {
@@ -63,6 +73,7 @@ export class RawEvidenceStore {
   }
 
   async save(input: SaveRawEvidenceInput): Promise<{ evidence: RawEvidence; persisted: boolean }> {
+    const caregiverId = requireCaregiverId(input.caregiver_id);
     const content = input.content.trim();
     if (content.length === 0) {
       throw new Error("raw evidence content must not be empty");
@@ -72,7 +83,7 @@ export class RawEvidenceStore {
 
     const evidence: RawEvidence = {
       id: input.id ?? createEvidenceId(),
-      caregiver_id: input.caregiver_id,
+      caregiver_id: caregiverId,
       person_id: input.person_id ?? null,
       input_type: (input.input_type ?? "text") as RawEvidenceInputType,
       content,
@@ -139,30 +150,29 @@ export class RawEvidenceStore {
     return { evidence, persisted: persisted || filePersisted, persistence_backend };
   }
 
-  getById(id: string): RawEvidence | undefined {
+  getById(caregiverId: string, id: string): RawEvidence | undefined {
+    const scopedCaregiverId = requireCaregiverId(caregiverId);
     const cached = this.memory.get(id);
-    if (cached) return cached;
+    if (cached) return cached.caregiver_id === scopedCaregiverId ? cached : undefined;
 
     try {
-      for (const dir of readdirSync(join(process.cwd(), ".data", "raw-evidence-queue"))) {
-        const fullPath = join(process.cwd(), ".data", "raw-evidence-queue", dir, `${id}.json`);
-        if (existsSync(fullPath)) {
-          const data = JSON.parse(readFileSync(fullPath, "utf8"));
-          this.memory.set(data.id, data);
-          return data;
-        }
-      }
+      const fullPath = join(dataDir(scopedCaregiverId), `${id}.json`);
+      if (!existsSync(fullPath)) return undefined;
+      const data = JSON.parse(readFileSync(fullPath, "utf8")) as RawEvidence;
+      if (data.id !== id || data.caregiver_id !== scopedCaregiverId) return undefined;
+      this.memory.set(data.id, data);
+      return data;
     } catch {
-      // ignore
+      return undefined;
     }
-    return undefined;
   }
 
   listForCaregiver(caregiverId: string): RawEvidence[] {
+    caregiverId = requireCaregiverId(caregiverId);
     const ids = this.index.get(caregiverId) ?? [];
     const items = ids
       .map((id) => this.memory.get(id))
-      .filter((r): r is RawEvidence => r !== undefined);
+      .filter((r): r is RawEvidence => r !== undefined && r.caregiver_id === caregiverId);
 
     if (items.length === 0) {
       // Try loading from file queue
@@ -172,6 +182,7 @@ export class RawEvidenceStore {
           const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
           for (const file of files) {
             const data = JSON.parse(readFileSync(join(dir, file), "utf8")) as RawEvidence;
+            if (data.caregiver_id !== caregiverId) continue;
             this.memory.set(data.id, data);
             items.push(data);
           }
