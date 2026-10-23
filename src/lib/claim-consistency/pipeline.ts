@@ -33,7 +33,7 @@ export async function runConsistencyGate(
   logger.info("raw evidence persistence result", {
     evidence_id: evidenceId,
     persisted: saveResult.persisted,
-    persistence_backend: saveResult.persistence_backend,
+    persistence_status: saveResult.persistence_status,
   });
 
   if (!saveResult.persisted) {
