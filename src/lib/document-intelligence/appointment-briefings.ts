@@ -55,14 +55,16 @@ export function buildAppointmentBriefings(
       const sentence = sentences[index];
       if (!APPOINTMENT_SIGNAL.test(sentence)) continue;
 
-      const preparation = sentences.filter((candidate) =>
+      const nearbySentences = sentences.slice(Math.max(0, index - 1), Math.min(sentences.length, index + 2));
+      const preparation = nearbySentences.filter((candidate) =>
         PREPARATION_SIGNAL.test(candidate),
       );
       const key = `${item.id}|${sentence.toLowerCase()}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const when = DATE_OR_TIME.exec(sentence)?.[0] ?? null;
+      const whenMatches = sentence.match(new RegExp(DATE_OR_TIME.source, "gi")) ?? [];
+      const when = whenMatches.length ? [...new Set(whenMatches)].join(", ") : null;
       const who = extractWho(sentence);
       const detailsToConfirm: string[] = [];
       if (!when) detailsToConfirm.push("Confirm the appointment date and time.");
