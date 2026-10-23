@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
+import { getJSON, getPersonId, getCaregiverId, postJSON, postFormData } from '../api/client'
 
 interface Evidence {
   id: string
@@ -22,7 +22,7 @@ export default function Record() {
   const [documentFile, setDocumentFile] = useState<File | null>(null)
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
-  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
+  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any; extractionSource?: string; confidence?: number | null; warnings?: string[] } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -50,7 +50,7 @@ export default function Record() {
     return () => { cancelled = true }
   }, [])
 
-  async function submitTextDocument() {
+  async function submitDocument() {
     const personId = getPersonId()
     const caregiverId = getCaregiverId()
     if (!personId || !caregiverId) {
@@ -58,44 +58,77 @@ export default function Record() {
       return
     }
     if (!documentFile) {
-      setDocumentError('Choose a supported text document first.')
+      setDocumentError('Choose a supported document first.')
       return
     }
-    if (documentFile.size > 5 * 1024 * 1024) {
-      setDocumentError('Text documents must be 5 MiB or smaller.')
+    if (documentFile.size > 10 * 1024 * 1024) {
+      setDocumentError('Documents must be 10 MiB or smaller.')
       return
     }
-    const allowedExtensions = /\.(txt|md|csv|json|log)$/i
+    const allowedExtensions = /\.(pdf|png|jpe?g|webp|tiff?|bmp|txt|md|csv|json|log)$/i
     if (!allowedExtensions.test(documentFile.name)) {
-      setDocumentError('This intake currently supports .txt, .md, .csv, .json, and .log files. PDF/scanned-image OCR is not available yet.')
+      setDocumentError('Supported formats are PDF, JPG, PNG, WEBP, TIFF, BMP, TXT, MD, CSV, JSON, and LOG.')
       return
     }
     setProcessingDocument(true)
     setDocumentError(null)
     setDocumentResult(null)
     try {
-      const extractedText = await documentFile.text()
-      if (!extractedText.trim()) throw new Error('The selected document contains no readable text.')
+      const form = new FormData()
+      form.append('file', documentFile)
+      const extracted = await postFormData('/documents/extract', form) as {
+        ok?: boolean
+        document?: {
+          id: string
+          name: string
+          mime_type: string
+          extracted_text: string
+          extracted_text_preview?: string
+          extracted_char_count?: number
+          ocr_confidence?: number | null
+          extraction_source?: string
+          extraction_warnings?: string[]
+          sha256?: string
+        }
+      }
+      const doc = extracted.document
+      if (!extracted.ok || !doc || typeof doc.extracted_text !== 'string' || !doc.extracted_text.trim()) {
+        throw new Error('The document reader did not return verified text. The care record was not changed.')
+      }
+
       const result = await postJSON('/situation', {
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: '',
         documents: [{
-          id: documentFile.name + '-' + documentFile.lastModified,
-          name: documentFile.name,
-          extracted_text: extractedText,
-          mime_type: documentFile.type || 'text/plain',
+          id: doc.id,
+          name: doc.name,
+          extracted_text: doc.extracted_text,
+          mime_type: doc.mime_type || documentFile.type || 'application/octet-stream',
+          ocr_confidence: doc.ocr_confidence ?? null,
+          extraction_source: doc.extraction_source ?? 'unknown',
+          extraction_warnings: doc.extraction_warnings ?? [],
+          sha256: doc.sha256,
+          extracted_char_count: doc.extracted_char_count ?? doc.extracted_text.length,
         }],
         provenance: {
           input_type: 'document',
-          entry_method: 'text_file_upload',
+          entry_method: 'document_upload',
           captured_at: new Date().toISOString(),
-          transcript_uncertain: false,
+          recognition_confidence: doc.ocr_confidence ?? undefined,
+          transcript_uncertain: Boolean(
+            (doc.ocr_confidence != null && doc.ocr_confidence < 0.65) ||
+            (doc.extraction_warnings?.length ?? 0) > 0
+          ),
         },
       }) as { qwen_extraction_status?: string; qwen_candidates?: any; message?: string }
+
       setDocumentResult({
-        status: typeof result.qwen_extraction_status === 'string' ? result.qwen_extraction_status : 'not_reported',
+        status: typeof result.qwen_extraction_status === 'string' ? result.qwen_extraction_status : 'saved_for_review',
         candidates: result.qwen_candidates ?? null,
+        extractionSource: doc.extraction_source ?? 'unknown',
+        confidence: doc.ocr_confidence ?? null,
+        warnings: doc.extraction_warnings ?? [],
       })
       setDocumentFile(null)
     } catch (error) {
@@ -190,15 +223,15 @@ export default function Record() {
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: '10px', padding: '12px 14px', marginBottom: '16px'
       }}>
-        <strong style={{ fontSize: '13px' }}>Analyze a text document with Qwen</strong>
+        <strong style={{ fontSize: '13px' }}>Add a document to the Living Care Record</strong>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '10px' }}>
-          Upload a text-bearing file to save it as source evidence and run Qwen extraction. PDF and scanned-image OCR are not available in this intake yet.
+          Upload a PDF, scan, photo, or text file. SolenOS extracts source text, flags uncertain OCR, and saves it as evidence for review. Extracted text is not a verified medical instruction.
         </p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
-            aria-label="Choose a text document"
+            aria-label="Choose a care document"
             type="file"
-            accept=".txt,.md,.csv,.json,.log,text/plain,text/markdown,text/csv,application/json"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp,.txt,.md,.csv,.json,.log,application/pdf,image/*,text/plain,text/markdown,text/csv,application/json"
             disabled={processingDocument}
             onChange={(event) => {
               setDocumentFile(event.target.files?.[0] || null)
@@ -206,13 +239,13 @@ export default function Record() {
               setDocumentResult(null)
             }}
           />
-          <button onClick={submitTextDocument} disabled={processingDocument || !documentFile} style={{
+          <button onClick={submitDocument} disabled={processingDocument || !documentFile} style={{
             padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)',
             background: processingDocument || !documentFile ? 'var(--bg)' : 'var(--accent)',
             color: processingDocument || !documentFile ? 'var(--text-secondary)' : 'white',
             fontSize: '12px', cursor: processingDocument || !documentFile ? 'default' : 'pointer'
           }}>
-            {processingDocument ? 'Processing…' : 'Save and analyze'}
+            {processingDocument ? 'Reading document…' : 'Save and review'}
           </button>
         </div>
         {documentError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{documentError}</p>}
@@ -222,6 +255,21 @@ export default function Record() {
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               Extracted observations are source-linked review candidates, not established LCR facts.
             </p>
+            {documentResult.extractionSource && (
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Extraction method: {documentResult.extractionSource}
+              </p>
+            )}
+            {documentResult.confidence != null && (
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                OCR confidence: {Math.round(documentResult.confidence * 100)}%
+              </p>
+            )}
+            {documentResult.warnings?.map((warning, index) => (
+              <p key={index} role="alert" style={{ fontSize: '12px', color: 'var(--unknown)', marginTop: '6px' }}>
+                Review needed: {warning}
+              </p>
+            ))}
             {Array.isArray(documentResult.candidates?.observations) && documentResult.candidates.observations.length > 0 ? (
               <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
                 {documentResult.candidates.observations.map((candidate: any, index: number) => (
