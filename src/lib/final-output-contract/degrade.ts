@@ -7,11 +7,11 @@ export function createEmptyTransparencyPanel(): CareTransparencyPanel {
     data_ignored: { conflicting: [], low_confidence: [], stale_or_decayed: [] },
     reason_for_output: "Awaiting structured care input to produce traceable reasoning.",
     evidence_breakdown: [],
-    confidence_scores: { overall_pct: 15, tier: "low" },
+    confidence_scores: { overall_pct: null, tier: "unknown" },
     recency: {
       last_update_at: null,
       critical_event_ages: [],
-      decay_status: "stale",
+      decay_status: "unknown",
     },
     observed: [],
     inferred: [],
