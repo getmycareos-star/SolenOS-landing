@@ -4,19 +4,59 @@ import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
 import CareContinuityIntegrityPanel from '../components/CareContinuityIntegrityPanel'
 import CareDeltaPanel from '../components/CareDeltaPanel'
 
-interface Evidence {
+interface CareRecordTimelineItem {
   id: string
-  type: string
-  source_text: string
-  uploaded_at: string
-  time_provenance?: string
-  location?: string
+  kind: string
+  source_id: string
+  occurred_at: string | null
+  recorded_at?: string | null
+  title: string
+  summary?: string | null
+  status?: string | null
+  source_type?: string | null
+  time_provenance?: string | null
+  evidence?: Array<{
+    id: string
+    type: string
+    source_text: string
+    uploaded_at?: string | null
+    source_type?: string | null
+    time_provenance?: string | null
+    confidence?: number | null
+    evidence_status?: string | null
+  }>
+  details?: Record<string, unknown>
+  related_observations?: Array<{
+    id: string
+    original_text: string
+    observed_at?: string | null
+    time_provenance?: string | null
+    tags?: string[]
+  }>
+  assertions?: Array<{
+    id: string
+    field: string
+    asserted_value: string
+    assertion_status: string
+    source_label: string
+    source_text?: string | null
+  }>
+  outcomes?: Array<{
+    id: string
+    outcome_status: string
+    notes?: string | null
+    correction_text?: string | null
+    created_at?: string | null
+  }>
 }
 
 export default function Record() {
-  const [items, setItems] = useState<Evidence[]>([])
+  const [items, setItems] = useState<CareRecordTimelineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
   const [lcrExplanation, setLcrExplanation] = useState<string | null>(null)
   const [lcrProviderStatus, setLcrProviderStatus] = useState<string | null>(null)
   const [lcrError, setLcrError] = useState<string | null>(null)
@@ -39,9 +79,12 @@ export default function Record() {
         return
       }
       try {
-        const data = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
-        if (!Array.isArray(data)) throw new Error('The server response was incomplete.')
-        if (!cancelled) setItems(data)
+        const data = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200&offset=0`) as { timeline?: unknown; has_more?: boolean }
+        if (!Array.isArray(data.timeline)) throw new Error('The unified care record response was incomplete.')
+        if (!cancelled) {
+          setItems(data.timeline as CareRecordTimelineItem[])
+          setHasMore(Boolean(data.has_more))
+        }
       } catch {
         if (!cancelled) {
           setItems([])
@@ -103,20 +146,24 @@ export default function Record() {
         candidates: result.qwen_candidates ?? null,
       })
       setDocumentFile(null)
-      // Automatically compare every accepted text-document intake with the existing LCR state.
-      // The Delta Engine is a second, explicit reconciliation stage; it does not replace source capture.
+      // Refresh the unified timeline and keep the existing Delta Engine handoff.
+      // The document is already saved at this point; a failed refresh must not misreport it as unsaved.
       const nextToken = deltaToken + 1
       setDeltaToken(nextToken)
       let linkedEvidenceIds: string[] = []
       try {
-        const refreshedEvidence = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
-        if (Array.isArray(refreshedEvidence)) {
-          const matchingEvidence = refreshedEvidence.filter((item: Evidence) =>
+        const refreshed = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200&offset=0`) as { timeline?: unknown; has_more?: boolean }
+        if (Array.isArray(refreshed.timeline)) {
+          const refreshedItems = refreshed.timeline as CareRecordTimelineItem[]
+          setItems(refreshedItems)
+          setHasMore(Boolean(refreshed.has_more))
+          const refreshedEvidence = refreshedItems.flatMap(item => item.evidence || [])
+          const matchingEvidence = refreshedEvidence.filter(item =>
             item.type === 'document' &&
             typeof item.source_text === 'string' &&
             (item.source_text === extractedText || item.source_text.includes(extractedText.slice(0, Math.min(120, extractedText.length))))
           )
-          linkedEvidenceIds = matchingEvidence.slice(-3).map((item: Evidence) => item.id)
+          linkedEvidenceIds = matchingEvidence.slice(-3).map(item => item.id)
         }
       } catch {
         // The document has already been saved; reconciliation may proceed without linked evidence IDs.
@@ -157,10 +204,52 @@ export default function Record() {
   }
 
   const typeIcon: Record<string, string> = {
+    care_event: '📝',
+    evidence: '📄',
+    appointment: '📅',
+    care_action: '☑️',
+    care_transition: '🔄',
+    observation: '👁️',
+    care_assertion: '📌',
+    care_action_outcome: '☑️',
+    care_window: '⏱️',
     document: '📄',
     note: '📝',
     conversation: '💬',
-    observation: '👁️',
+  }
+
+  const continuityEvidenceItems = Array.from(
+    new Map(
+      items.flatMap(item => item.evidence || []).map(source => [
+        source.id,
+        { id: source.id, type: source.type, source_text: source.source_text, uploaded_at: source.uploaded_at || '' },
+      ]),
+    ).values(),
+  )
+
+  async function loadOlderRecords() {
+    const personId = getPersonId()
+    if (!personId) {
+      setLoadMoreError('No authorized care record is selected.')
+      return
+    }
+    setLoadingMore(true)
+    setLoadMoreError(null)
+    try {
+      const offset = items.length
+      const result = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200&offset=${offset}`) as { timeline?: unknown; has_more?: boolean }
+      if (!Array.isArray(result.timeline)) throw new Error('The older care record response was incomplete.')
+      const nextItems = result.timeline as CareRecordTimelineItem[]
+      setItems(current => {
+        const existingIds = new Set(current.map(item => item.id))
+        return [...current, ...nextItems.filter(item => !existingIds.has(item.id))]
+      })
+      setHasMore(Boolean(result.has_more))
+    } catch {
+      setLoadMoreError('Older care records could not be loaded. The records already on screen remain available.')
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   return (
@@ -169,7 +258,7 @@ export default function Record() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Living Care Record</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5, maxWidth: '500px' }}>
-             Upload documents, notes, photos, messages, and care information. SolenOS remembers and connects these over time.
+             One chronological view of recorded care events, observations, source documents, appointments, transitions, and follow-up actions. Original source material stays attached where available.
            </p>
          </div>
          <div>
