@@ -39,9 +39,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
     any, 
-    { caregiverId: string; personId: string; rawInput: string }
+    { caregiverId: string; personId: string; rawInput: string; captureCategory: (typeof QUICK_ENTRY_TYPES)[number]['id']; eventTime: string }
   >({
-    mutationFn: async ({ caregiverId, personId, rawInput }) => {
+    mutationFn: async ({ caregiverId, personId, rawInput, captureCategory, eventTime }) => {
       const response = await postJSON('/situation', {
         caregiver_id: caregiverId,
         person_id: personId,
@@ -68,7 +68,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       // Do not call the nonexistent /community/experience endpoint or invent matches.
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
       setSavedText(variables.rawInput)
-      setSavedCategory(captureCategory)
+      setSavedCategory(variables.captureCategory)
       const eventTimestamp = Array.isArray(data?.events) ? data.events[0]?.occurred_at : null
       setSavedAt(typeof eventTimestamp === 'string' ? eventTimestamp : null)
       setSavedTimeBasis(typeof data?.events?.[0]?.time_provenance === 'string' ? data.events[0].time_provenance : null)
@@ -156,7 +156,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       await submitSituation({
         caregiverId,
         personId,
-        rawInput: text.trim()
+        rawInput: text.trim(),
+        captureCategory,
+        eventTime,
       })
     } catch {
       // The mutation hook exposes the failure; keep the user's text intact.
@@ -208,7 +210,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       <fieldset style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
         <legend style={{ fontSize: '12px', fontWeight: 600, marginBottom: '7px' }}>Quick entry type</legend>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {QUICK_ENTRY_TYPES.map((item) => <button key={item.id} type="button" aria-pressed={captureCategory === item.id} onClick={() => setCaptureCategory(item.id)} style={{ padding: '7px 10px', borderRadius: '999px', border: '1px solid var(--border)', background: captureCategory === item.id ? 'var(--trust)' : 'var(--surface)', color: captureCategory === item.id ? '#fff' : 'var(--text)', fontSize: '11px' }}>{item.label}</button>)}
+          {QUICK_ENTRY_TYPES.map((item) => <button key={item.id} type="button" aria-pressed={captureCategory === item.id} disabled={submitting} onClick={() => setCaptureCategory(item.id)} style={{ padding: '7px 10px', borderRadius: '999px', border: '1px solid var(--border)', background: captureCategory === item.id ? 'var(--trust)' : 'var(--surface)', color: captureCategory === item.id ? '#fff' : 'var(--text)', fontSize: '11px' }}>{item.label}</button>)}
         </div>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '7px' }}>{QUICK_ENTRY_TYPES.find((item) => item.id === captureCategory)?.prompt}</p>
       </fieldset>
