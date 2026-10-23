@@ -5,8 +5,13 @@ import Community from '../Community'
 import Memory from '../Memory'
 import TeamDashboard from '../TeamDashboard'
 import CareCapture from '../../components/CareCapture'
+import DailyCare from '../DailyCare'
 import Dashboard from '../Dashboard'
 import { getJSON, getCaregiverId, getPersonId, postJSON } from '../../api/client'
+
+jest.mock('../../lib/permissions/useLocationPermission', () => ({
+  useLocationPermission: () => ({ state: { status: 'unsupported' }, requestLocation: jest.fn() }),
+}))
 
 jest.mock('../../api/client', () => ({
   getJSON: jest.fn(),
