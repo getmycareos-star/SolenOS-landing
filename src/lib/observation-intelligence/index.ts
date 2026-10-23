@@ -154,7 +154,9 @@ export function getObservationWeeklySummary(caregiverId: string) {
 
 export function getObservationExport(caregiverId: string) {
   const id = caregiverId?.trim();
-  if (!id) throw new Error("Caregiver identity is required to export observation history.");
+  if (!id || id === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required to export observation history.");
+  }
   const observations = listObservationsForCaregiver(id);
   const history = listStructuredForCaregiver(id);
   const weekly = generateWeeklySummary(history);
