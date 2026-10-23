@@ -313,6 +313,7 @@ export default function Record() {
                   {new Date(item.occurred_at || item.recorded_at || '').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '2px 0 6px' }}>{item.title}</h3>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.summary || item.title}</p>
               {item.status && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
