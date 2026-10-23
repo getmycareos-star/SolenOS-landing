@@ -46,7 +46,6 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   assert(legacyRoute.includes("legacyRouteUnavailable") && legacyRoute.includes("status: 410"), "legacy route stays disabled");
   console.log("✓ production Vite auth boundary and legacy-route quarantine");
 }
-}
 
 // ensureClientDurableCareKey stability + session ≠ care key
 {
