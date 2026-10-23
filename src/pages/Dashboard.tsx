@@ -69,6 +69,8 @@ interface Action {
   description?: string;
   status: 'active' | 'completed';
   created_at: string;
+  deadline?: string | null;
+  is_medication_action?: boolean;
 }
 
 export default function Dashboard() {
@@ -123,6 +125,8 @@ export default function Dashboard() {
           description: typeof action.condition_text === 'string' ? action.condition_text : undefined,
           status: action.status === 'completed' ? 'completed' : 'active',
           created_at: String(action.created_at ?? ''),
+          deadline: typeof action.deadline === 'string' ? action.deadline : null,
+          is_medication_action: action.is_medication_action === true,
         })));
       } else {
         setActions([]);
@@ -278,8 +282,18 @@ export default function Dashboard() {
                   </p>
                 )}
                 <p style={{ margin: '0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  Created: {formatDate(action.created_at)}
+                  Recorded: {formatDate(action.created_at)}
                 </p>
+                {action.deadline && Number.isFinite(Date.parse(action.deadline)) && (
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: Date.parse(action.deadline) < Date.now() ? 'var(--unknown)' : 'var(--text-secondary)', fontWeight: Date.parse(action.deadline) < Date.now() ? 600 : 400 }}>
+                    {Date.parse(action.deadline) < Date.now() ? 'Overdue · ' : 'Due · '}{new Date(action.deadline).toLocaleString()}
+                  </p>
+                )}
+                {action.is_medication_action && (
+                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    Medication-related action. Verify the instruction against the documented care plan; SolenOS does not infer dosage or timing.
+                  </p>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
