@@ -1,13 +1,15 @@
 import { TRANSPARENCY_RULES } from "./contract-constants";
 import type { BuildCareTransparencyInput, CareTransparencyPanel, CareTransparencyResult } from "./types";
 
-function tierFromPct(pct: number): CareTransparencyPanel["confidence_scores"]["tier"] {
+function tierFromPct(pct: number | null): CareTransparencyPanel["confidence_scores"]["tier"] {
+  if (pct == null) return "unknown";
   if (pct >= 70) return "high";
   if (pct >= 45) return "medium";
   return "low";
 }
 
-function decayFromFreshness(score: number): CareTransparencyPanel["recency"]["decay_status"] {
+function decayFromFreshness(score: number | null): CareTransparencyPanel["recency"]["decay_status"] {
+  if (score == null) return "unknown";
   if (score >= 0.7) return "fresh";
   if (score >= 0.4) return "aging";
   return "stale";
@@ -54,7 +56,7 @@ export function buildCareTransparencyPanel(input: BuildCareTransparencyInput): C
     evidence_breakdown.push({
       conclusion: item.label,
       evidence_type: "observation",
-      confidence_pct: 75,
+      confidence_pct: null,
     });
   }
 
@@ -62,7 +64,7 @@ export function buildCareTransparencyPanel(input: BuildCareTransparencyInput): C
     evidence_breakdown.push({
       conclusion: assumed.statement,
       evidence_type: "inference",
-      confidence_pct: Math.round((response.trust_layer_engine_layer?.trust_layer.confidence ?? 0.5) * 100),
+      confidence_pct: null,
     });
   }
 
@@ -70,15 +72,13 @@ export function buildCareTransparencyPanel(input: BuildCareTransparencyInput): C
     evidence_breakdown.push({
       conclusion: created[0]!.raw_input.slice(0, 100),
       evidence_type: "observation",
-      confidence_pct: 60,
+      confidence_pct: null,
     });
   }
 
-  const overallPct = Math.round(
-    (response.trust_layer_engine_layer?.trust_layer.confidence ?? 0.5) * 100,
-  );
-
-  const freshness = response.trust_layer_engine_layer?.trust_layer.recency.freshness_score ?? 0.5;
+  // No calibrated confidence score is available for this panel yet.
+  const overallPct: number | null = null;
+  const freshness = response.trust_layer_engine_layer?.trust_layer.recency.freshness_score ?? null;
 
   return {
     data_used: {
