@@ -12,7 +12,7 @@ import Insights from './pages/Insights'
 import Timeline from './pages/Timeline'
 import Record from './pages/Record'
 import Memory from './pages/Memory'
-import CareCircle from './pages/CareCircle'
+import CapabilityUnavailable from './components/CapabilityUnavailable'
 import Login from './pages/Login'
 
 function AnonymousSessionGate({ children }: { children: ReactNode }) {
@@ -74,7 +74,7 @@ export default function App() {
         <Route path="/timeline" element={<Timeline />} />
         <Route path="/record" element={<Record />} />
         <Route path="/memory" element={<Memory />} />
-        <Route path="/care-circle" element={<CareCircle />} />
+        <Route path="/care-circle" element={<CapabilityUnavailable />} />
         <Route path="/companion" element={<Companion />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/community" element={<Community />} />
