@@ -93,7 +93,7 @@ export function applySafeMode(params: {
       data_ignored: { conflicting: [], low_confidence: [], stale_or_decayed: [] },
       reason_for_output: "Safe mode activated due to insufficient structure.",
       evidence_breakdown: [],
-      confidence_scores: { overall_pct: 15, tier: "low" },
+      confidence_scores: { overall_pct: null, tier: "unknown" },
       recency: { last_update_at: null, critical_event_ages: [], decay_status: "stale" },
       observed: [],
       inferred: [],
