@@ -3,6 +3,7 @@ import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/clie
 import { useCameraPermission } from '../lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '../lib/imageCompression';
 import { useOptimisticMutation } from '../lib/optimistic';
+import CareDeltaPanel from '../components/CareDeltaPanel';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
@@ -12,6 +13,8 @@ export default function StructuredDailyCapture() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number } | null>(null);
+  const [deltaToken, setDeltaToken] = useState(0);
   
   // Form state
   const [form, setForm] = useState({
@@ -480,6 +483,22 @@ export default function StructuredDailyCapture() {
       
       setSaveError(null);
       setSaved(true);
+      // Once Daily Capture is persisted, reconcile the saved observations against the longitudinal LCR.
+      // Reconciliation failure is shown by the Delta panel and never rolls back a successfully saved capture.
+      const deltaContent = JSON.stringify({
+        medications: variables.medications,
+        vitals: variables.vitals,
+        scales: variables.scales,
+        notes: variables.notes,
+      }, null, 2);
+      const nextDeltaToken = deltaToken + 1;
+      setDeltaToken(nextDeltaToken);
+      setDeltaAutoInput({
+        content: deltaContent,
+        source: 'SolenOS Daily Capture',
+        eventDate: new Date().toISOString(),
+        token: nextDeltaToken,
+      });
     },
     onError: async (error, variables, context) => {
       // On error, rollback to previous state
@@ -1435,5 +1454,6 @@ export default function StructuredDailyCapture() {
           </button>
         </div>
       </div>
+      <CareDeltaPanel personId={personId} autoInput={deltaAutoInput} />
     );
 }
