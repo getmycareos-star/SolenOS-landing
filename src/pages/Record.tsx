@@ -86,6 +86,7 @@ export default function Record() {
           name: documentFile.name,
           extracted_text: extractedText,
           mime_type: documentFile.type || 'text/plain',
+          extraction_source: 'text',
         }],
         provenance: {
           input_type: 'document',
