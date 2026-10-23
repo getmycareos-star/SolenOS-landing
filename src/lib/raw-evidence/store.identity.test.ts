@@ -53,8 +53,8 @@ describe("raw evidence identity and persistence status", () => {
       caregiver_id: "default_caregiver",
       input_type: "text",
       content: "must not be stored",
-    })).rejects.toThrow(/explicit caregiver identity/i);
-    expect(() => store.listForCaregiver("")).toThrow(/explicit caregiver identity/i);
-    expect(() => store.getById("default_caregiver", evidenceA)).toThrow(/explicit caregiver identity/i);
+    })).rejects.toThrow(/durable caregiver identity/i);
+    expect(() => store.listForCaregiver("")).toThrow(/durable caregiver identity/i);
+    expect(() => store.getById("default_caregiver", evidenceA)).toThrow(/durable caregiver identity/i);
   });
 });
