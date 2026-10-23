@@ -68,6 +68,7 @@ describe('FirstUseJourney', () => {
       .mockResolvedValueOnce([
         { id: 'action-1', normalized_action: 'Ask the clinic about sleep changes', status: 'active', deadline: '2026-10-24T12:00:00Z' },
         { id: 'action-2', normalized_action: 'Confirm the missed follow-up', status: 'pending_confirmation', deadline: '2020-01-01T00:00:00Z' },
+        { id: 'action-3', normalized_action: 'Schedule a follow-up', status: 'blocked', deadline: null },
       ]);
 
     renderJourney();
@@ -81,6 +82,8 @@ describe('FirstUseJourney', () => {
     expect(screen.getAllByText('Confirm the missed follow-up').length).toBeGreaterThan(0);
     expect(screen.getByText(/overdue open actions/i)).toBeInTheDocument();
     expect(screen.getByText(/status: pending_confirmation/i)).toBeInTheDocument();
+    expect(screen.getByText(/open actions without a recorded due date/i)).toBeInTheDocument();
+    expect(screen.getByText('Schedule a follow-up')).toBeInTheDocument();
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
     expect(screen.getAllByText(/event time:/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/entered into SolenOS:/i).length).toBeGreaterThan(0);
