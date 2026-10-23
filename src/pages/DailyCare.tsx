@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getJSON, postJSON, getPersonId } from '../api/client'
 import CareCapture from '../components/CareCapture'
+import CareDeltaPanel from '../components/CareDeltaPanel'
 import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
 interface Caregiver {
@@ -15,6 +16,8 @@ export default function DailyCare() {
   const [saved, setSaved] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [caregiverError, setCaregiverError] = useState<string | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
+  const [deltaToken, setDeltaToken] = useState(0)
 
    const [form, setForm] = useState({
      mood: '',
@@ -112,7 +115,7 @@ export default function DailyCare() {
     }
 
      try {
-       await postJSON('/daily-care/entries', {
+       const savedEvent = await postJSON('/daily-care/entries', {
          person_id: personId,
          caregiver_id: caregiverId,
          mood: form.mood || undefined,
@@ -133,6 +136,26 @@ export default function DailyCare() {
          location_provenance: form.location ? 'user_provided' : undefined,
        })
        setSaved(true)
+       const deltaContent = JSON.stringify({
+         mood: form.mood || undefined,
+         agitation_level: form.agitation_level,
+         agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
+         vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
+         behavior_notes: form.behavior_notes || undefined,
+         sleep_notes: form.sleep_notes || undefined,
+         eating_notes: form.eating_notes || undefined,
+         wellbeing_notes: form.wellbeing_notes || undefined,
+         general_notes: form.general_notes || undefined,
+       }, null, 2)
+       const nextDeltaToken = deltaToken + 1
+       setDeltaToken(nextDeltaToken)
+       setDeltaAutoInput({
+         content: deltaContent,
+         source: 'SolenOS Daily Care',
+         eventDate: new Date().toISOString(),
+         token: nextDeltaToken,
+         sourceEventId: typeof (savedEvent as any)?.id === 'string' ? (savedEvent as any).id : undefined,
+       })
        setForm({
          mood: '',
          agitation_level: '',
@@ -449,6 +472,7 @@ export default function DailyCare() {
           {submitting ? 'Saving...' : 'Save daily care entry'}
         </button>
       </form>
+      <CareDeltaPanel personId={personId} autoInput={deltaAutoInput} />
     </div>
   )
 }
