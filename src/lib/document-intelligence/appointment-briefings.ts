@@ -22,7 +22,8 @@ const APPOINTMENT_SIGNAL =
 const PREPARATION_SIGNAL =
   /\b(?:bring|take with you|prepare|have ready|gather|fast(?:ing)?|do not eat|arrive early|check in|paperwork|medication list|medical records|questions to ask)\b/i;
 const DATE_OR_TIME =
-  /\b(?:\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s*,?\s+[A-Z][a-z]+\s+\d{1,2})?|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,\s*\d{4})?|\d{1,2}:\d{2}\s*(?:am|pm)?|\d{1,2}\s*(?:am|pm))\b/i;
+  /\b(?:\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s*,?\s+[A-Z][a-z]+\s+\d{1,2})?|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,\s*\d{4})?|\d{1,2}:\d{2}\s*(?:am|pm)?|\d{1,2}\s*(?:am|pm)|today|tomorrow|tonight|next\s+(?:week|month|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)|(?:in|within|by)\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|a|an|several)\s+(?:hours?|days?|weeks?|months?))\b/i;
+const RELATIVE_TIMEFRAME = /\b(?:today|tomorrow|tonight|next\s+(?:week|month|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)|(?:in|within|by)\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|a|an|several)\s+(?:hours?|days?|weeks?|months?))\b/i;
 
 function splitSentences(text: string): string[] {
   return text
@@ -68,7 +69,11 @@ export function buildAppointmentBriefings(
       const when = whenMatches.length ? [...new Set(whenMatches)].join(", ") : null;
       const who = extractWho(sentence);
       const detailsToConfirm: string[] = [];
-      if (!when) detailsToConfirm.push("Confirm the appointment date and time.");
+      if (!when) {
+        detailsToConfirm.push("Confirm the appointment date and time.");
+      } else if (RELATIVE_TIMEFRAME.test(when)) {
+        detailsToConfirm.push("Confirm the exact appointment date and time; this source gives only a relative timeframe.");
+      }
       if (!who) detailsToConfirm.push("Confirm the clinician, clinic, or service.");
       if (preparation.length === 0) {
         detailsToConfirm.push("Check the original source for preparation or documents to bring.");
