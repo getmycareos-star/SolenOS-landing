@@ -16,7 +16,7 @@ export default function DailyCare() {
   const [saved, setSaved] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [caregiverError, setCaregiverError] = useState<string | null>(null)
-  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
 
    const [form, setForm] = useState({
@@ -150,6 +150,7 @@ export default function DailyCare() {
        const nextDeltaToken = deltaToken + 1
        setDeltaToken(nextDeltaToken)
        setDeltaAutoInput({
+         personId,
          content: deltaContent,
          source: 'SolenOS Daily Care',
          eventDate: new Date().toISOString(),
