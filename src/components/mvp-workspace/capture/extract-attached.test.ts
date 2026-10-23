@@ -5,7 +5,10 @@ jest.mock("../../../api/client", () => ({
 import { extractAttachedDocument } from "./extract-attached";
 
 describe("extractAttachedDocument API contract", () => {
+  const originalFetch = global.fetch;
+
   afterEach(() => {
+    global.fetch = originalFetch;
     jest.restoreAllMocks();
   });
 
