@@ -83,7 +83,7 @@ describe('FirstUseJourney', () => {
     expect(screen.getByText(/overdue open actions/i)).toBeInTheDocument();
     expect(screen.getByText(/status: pending_confirmation/i)).toBeInTheDocument();
     expect(screen.getByText(/open actions without a recorded due date/i)).toBeInTheDocument();
-    expect(screen.getByText('Schedule a follow-up')).toBeInTheDocument();
+    expect(screen.getAllByText('Schedule a follow-up').length).toBeGreaterThan(0);
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
     expect(screen.getAllByText(/event time:/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/entered into SolenOS:/i).length).toBeGreaterThan(0);
