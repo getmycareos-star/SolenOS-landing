@@ -65,7 +65,10 @@ describe('FirstUseJourney', () => {
     mockedGetJSON
       .mockResolvedValueOnce([{ id: 'event-1', title: 'Poor sleep reported', occurred_at: '2026-10-21T21:00:00Z', recorded_at: '2026-10-23T10:00:00Z' }])
       .mockResolvedValueOnce([{ id: 'evidence-1', type: 'provider_note', title: 'Clinic note', created_at: '2026-10-20T10:00:00Z' }])
-      .mockResolvedValueOnce([{ id: 'action-1', normalized_action: 'Ask the clinic about sleep changes', status: 'active', deadline: '2026-10-24T12:00:00Z' }]);
+      .mockResolvedValueOnce([
+        { id: 'action-1', normalized_action: 'Ask the clinic about sleep changes', status: 'active', deadline: '2026-10-24T12:00:00Z' },
+        { id: 'action-2', normalized_action: 'Confirm the missed follow-up', status: 'pending_confirmation', deadline: '2020-01-01T00:00:00Z' },
+      ]);
 
     renderJourney();
 
@@ -75,6 +78,9 @@ describe('FirstUseJourney', () => {
     expect(screen.getAllByText('Poor sleep reported').length).toBeGreaterThan(0);
     expect(screen.getByText('Clinic note')).toBeInTheDocument();
     expect(screen.getByText('Ask the clinic about sleep changes')).toBeInTheDocument();
+    expect(screen.getByText('Confirm the missed follow-up')).toBeInTheDocument();
+    expect(screen.getByText(/overdue open actions/i)).toBeInTheDocument();
+    expect(screen.getByText(/status: pending_confirmation/i)).toBeInTheDocument();
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
     expect(screen.getAllByText(/event time:/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/entered into SolenOS:/i).length).toBeGreaterThan(0);
@@ -131,6 +137,13 @@ describe('FirstUseJourney', () => {
         description: 'Fluid intake has not been recorded for the recent period.',
         priority: 'important',
         lifecycle_status: 'open',
+      }, {
+        id: 'gap-2',
+        field: 'follow-up result',
+        description: 'The requested follow-up result is still unresolved.',
+        priority: 'high',
+        lifecycle_status: 'reopened',
+        expected_by: '2020-01-01T00:00:00Z',
       }]);
 
     renderJourney();
@@ -141,6 +154,8 @@ describe('FirstUseJourney', () => {
     expect(screen.getByText(/has the sleep change happened for several nights/i)).toBeInTheDocument();
     expect(screen.getByText(/one caregiver reported low intake/i)).toBeInTheDocument();
     expect(screen.getAllByText(/fluid intake has not been recorded/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/follow-up result/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/overdue follow-up/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/does not choose which account is true/i)).toBeInTheDocument();
   });
 
