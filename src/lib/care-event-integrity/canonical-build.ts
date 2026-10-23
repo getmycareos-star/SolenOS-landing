@@ -43,7 +43,7 @@ export function buildUnparsedRawEvent(params: {
       document_id: params.rawInput.document_id,
       status: "unparsed_raw" as CareEventLifecycleStatus,
       integrity: createIntegrityState({
-        confidenceScore: 0,
+        confidenceScore: null,
         originalExtraction: content,
         sources: ["ai_inference"],
       }),
