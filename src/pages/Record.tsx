@@ -218,14 +218,13 @@ export default function Record() {
     conversation: '💬',
   }
 
-  const continuityEvidenceItems = Array.from(
-    new Map(
-      items.flatMap(item => item.evidence || []).map(source => [
-        source.id,
-        { id: source.id, type: source.type, source_text: source.source_text, uploaded_at: source.uploaded_at || '' },
-      ]),
-    ).values(),
-  )
+  const continuityEvidenceMap = new Map<string, { id: string; type: string; source_text: string; uploaded_at: string }>()
+  for (const item of items) {
+    for (const source of item.evidence || []) {
+      continuityEvidenceMap.set(source.id, { id: source.id, type: source.type, source_text: source.source_text, uploaded_at: source.uploaded_at || '' })
+    }
+  }
+  const continuityEvidenceItems = Array.from(continuityEvidenceMap.values())
 
   async function loadOlderRecords() {
     const personId = getPersonId()
@@ -393,30 +392,42 @@ export default function Record() {
               borderRadius: '12px', padding: '16px 20px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '16px' }}>{typeIcon[item.type] || '📎'}</span>
+                <span style={{ fontSize: '16px' }}>{typeIcon[item.kind] || '📎'}</span>
                 <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
-                  {item.type}
+                  {item.kind.replace(/_/g, ' ')}
                 </span>
                 <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  {new Date(item.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(item.occurred_at || item.recorded_at || '').toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                 </span>
               </div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '2px 0 6px' }}>{item.title}</h3>
+              <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.summary || item.title}</p>
+              {item.status && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>Status: {item.status.replace(/_/g, ' ')}</p>}
               {item.time_provenance && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
                   Time source: {item.time_provenance}
                 </p>
               )}
-              {item.location && (
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Location: {item.location}
-                </p>
-              )}
+              {typeof item.details?.location === 'string' && item.details.location && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Location: {item.details.location}</p>}
+              {typeof item.details?.provider === 'string' && item.details.provider && <p style={{ fontSize: '12px', marginTop: '6px' }}>Provider: {item.details.provider}</p>}
+              {typeof item.details?.healthcare_org === 'string' && item.details.healthcare_org && <p style={{ fontSize: '12px', marginTop: '4px' }}>Organization: {item.details.healthcare_org}</p>}
+              {typeof item.details?.event_type === 'string' && item.details.event_type && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Event type: {item.details.event_type.replace(/_/g, ' ')}</p>}
+              {typeof item.details?.from_location === 'string' && item.details.from_location && <p style={{ fontSize: '12px', marginTop: '4px' }}>From: {item.details.from_location}</p>}
+              {typeof item.details?.to_location === 'string' && item.details.to_location && <p style={{ fontSize: '12px', marginTop: '4px' }}>To: {item.details.to_location}</p>}
+              {typeof item.details?.action_type === 'string' && item.details.action_type && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Action: {item.details.action_type.replace(/_/g, ' ')}</p>}
+              {Array.isArray(item.details?.medication_questions) && item.details.medication_questions.length > 0 && <div style={{ marginTop: '8px' }}><strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Medication questions</strong><ul style={{ paddingLeft: '18px', marginTop: '4px' }}>{item.details.medication_questions.map((question, index) => <li key={`${item.id}-medication-question-${index}`} style={{ fontSize: '12px', marginBottom: '3px' }}>{String(question)}</li>)}</ul></div>}
+              {Array.isArray(item.details?.documents_to_bring) && item.details.documents_to_bring.length > 0 && <div style={{ marginTop: '8px' }}><strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Documents to bring</strong><ul style={{ paddingLeft: '18px', marginTop: '4px' }}>{item.details.documents_to_bring.map((document, index) => <li key={`${item.id}-document-${index}`} style={{ fontSize: '12px', marginBottom: '3px' }}>{String(document)}</li>)}</ul></div>}
+              {(item.related_observations?.length ?? 0) > 0 && <section aria-label="Related observations" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}><strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Related observations</strong>{item.related_observations?.map(observation => <div key={observation.id} style={{ marginTop: '6px' }}><p style={{ fontSize: '12px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{observation.original_text}</p>{observation.observed_at && <p style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Observed: {new Date(observation.observed_at).toLocaleString()}</p>}</div>)}</section>}
+              {(item.assertions?.length ?? 0) > 0 && <section aria-label="Source-attributed care facts" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}><strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Source-attributed care facts</strong>{item.assertions?.map(assertion => <div key={assertion.id} style={{ marginTop: '6px' }}><p style={{ fontSize: '12px', lineHeight: 1.5 }}><strong>{assertion.field.replace(/_/g, ' ')}:</strong> {assertion.asserted_value}</p><p style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{assertion.source_label} · {assertion.assertion_status.replace(/_/g, ' ')}</p>{assertion.source_text && <p style={{ fontSize: '11px', lineHeight: 1.5 }}>{assertion.source_text}</p>}</div>)}</section>}
+              {(item.outcomes?.length ?? 0) > 0 && <section aria-label="Care action outcomes" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}><strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Action outcomes</strong>{item.outcomes?.map(outcome => <div key={outcome.id} style={{ marginTop: '6px' }}><p style={{ fontSize: '12px' }}>{outcome.outcome_status.replace(/_/g, ' ')}</p>{(outcome.notes || outcome.correction_text) && <p style={{ fontSize: '11px', lineHeight: 1.5 }}>{outcome.notes || outcome.correction_text}</p>}{outcome.created_at && <p style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Recorded: {new Date(outcome.created_at).toLocaleString()}</p>}</div>)}</section>}
+              {item.kind !== 'evidence' && (item.evidence?.length ?? 0) > 0 && <section aria-label="Supporting source material" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}><strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Supporting source material</strong>{item.evidence?.map(source => <div key={source.id} style={{ marginTop: '6px' }}><span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{source.type.replace(/_/g, ' ')}</span><p style={{ fontSize: '12px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{source.source_text}</p></div>)}</section>}
             </div>
           ))}
         </div>
       )}
-      <CareContinuityIntegrityPanel personId={careContinuityPersonId} evidenceItems={items} />
+      {loadMoreError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px', marginTop: '12px' }}>{loadMoreError}</p>}
+      {hasMore && !loading && !loadError && <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}><button type="button" onClick={loadOlderRecords} disabled={loadingMore} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border)', background: loadingMore ? 'var(--bg)' : 'var(--surface)', color: 'var(--text)', fontSize: '12px', cursor: loadingMore ? 'default' : 'pointer' }}>{loadingMore ? 'Loading older records…' : 'Load older records'}</button></div>}
+      <CareContinuityIntegrityPanel personId={careContinuityPersonId} evidenceItems={continuityEvidenceItems} />
       <CareDeltaPanel key={careContinuityPersonId} personId={careContinuityPersonId} autoInput={deltaAutoInput} />
     </div>
   )
