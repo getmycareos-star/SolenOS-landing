@@ -315,6 +315,8 @@ describe('Phase 4 production data safety', () => {
           status: 'completed',
           created_at: '2026-10-20T08:00:00Z',
           completed_at: '2026-10-22T10:30:00Z',
+          completed_by_caregiver_id: 'caregiver-real-1',
+          completed_by_caregiver_label: 'Primary caregiver',
         },
       ] as never;
       if (path.startsWith('/appointments/')) return [];
@@ -328,6 +330,7 @@ describe('Phase 4 production data safety', () => {
     expect(await screen.findByText('Collect discharge paperwork')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Completed' })).toBeDisabled();
     expect(screen.getByText(/Completed:/)).toBeInTheDocument();
+    expect(screen.getByText('Completed by: Primary caregiver')).toBeInTheDocument();
     expect(mockedGetJSON).toHaveBeenCalledWith('/actions/person-real-1');
   });
 
