@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getJSON, postJSON, getPersonId } from '../api/client';
+import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
 import CareCapture from '../components/CareCapture';
 
@@ -55,8 +55,22 @@ interface Action {
   id: string;
   title: string;
   description?: string;
-  status: 'active' | 'completed';
+  status: string;
   created_at: string;
+  is_medication_action: boolean;
+  source_authority_verified: boolean;
+}
+
+interface Reminder {
+  id: string;
+  title: string;
+  message: string;
+  due_at: string;
+  timezone: string;
+  recurrence_rule: 'daily' | 'weekly' | 'monthly' | null;
+  status: string;
+  attempt_count: number;
+  last_error?: string | null;
 }
 
 export default function Dashboard() {
@@ -66,9 +80,18 @@ export default function Dashboard() {
   const [reasoning, setReasoning] = useState<ReasoningSummary | null>(null);
   const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminderError, setReminderError] = useState<string | null>(null);
+  const [reminderNotice, setReminderNotice] = useState<string | null>(null);
+  const [reminderSaving, setReminderSaving] = useState(false);
+  const [reminderTitle, setReminderTitle] = useState('');
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [reminderDueAt, setReminderDueAt] = useState('');
+  const [reminderRecurrence, setReminderRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const personId = getPersonId();
+  const caregiverId = getCaregiverId();
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
 
@@ -87,7 +110,7 @@ export default function Dashboard() {
         getJSON(`/observations/${encodeURIComponent(personId)}/trends`),
         getJSON(`/reasoning/${encodeURIComponent(personId)}/summary`),
         getJSON(`/daily-intelligence/${encodeURIComponent(personId)}`),
-        getJSON(`/actions/${encodeURIComponent(personId)}?status=active`),
+        getJSON(`/actions/${encodeURIComponent(personId)}`),
       ]);
 
       const [evts, inss, trendData, reasoningData, intelData, actionsData] = results;
@@ -102,11 +125,28 @@ export default function Dashboard() {
           id: String(action.id ?? ''),
           title: String(action.normalized_action || action.action_object || action.original_text || 'Untitled action'),
           description: typeof action.condition_text === 'string' ? action.condition_text : undefined,
-          status: action.status === 'completed' ? 'completed' : 'active',
+          status: String(action.status ?? 'detected'),
           created_at: String(action.created_at ?? ''),
-        })));
+          is_medication_action: action.is_medication_action === true,
+          source_authority_verified: action.source_authority_verified === true,
+        })).filter(action => ['active', 'conditional', 'pending_confirmation', 'blocked'].includes(action.status)));
       } else {
         setActions([]);
+      }
+
+      if (caregiverId) {
+        void getJSON(`/reminders/${encodeURIComponent(personId)}?caregiver_id=${encodeURIComponent(caregiverId)}`)
+          .then(data => {
+            if (Array.isArray(data)) {
+              setReminders(data as Reminder[]);
+              setReminderError(null);
+            } else {
+              setReminderError('Reminder data was incomplete. Try again.');
+            }
+          })
+          .catch(() => setReminderError('Reminders could not be loaded. The service may be unavailable.'));
+      } else {
+        setReminderError('This session has no verified caregiver identity. Reminders are unavailable until the care session is restored.');
       }
 
       const sectionNames = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'];
@@ -151,13 +191,24 @@ export default function Dashboard() {
   };
 
   const handleActionToggle = async (actionId: string) => {
+    const caregiver = getCaregiverId();
+    if (!caregiver) {
+      setLoadError('Completion was not saved because this session has no verified caregiver identity.');
+      return;
+    }
+    const action = actions.find(item => item.id === actionId);
+    if (!action || !['active', 'conditional'].includes(action.status)) return;
+    if (action.is_medication_action && !action.source_authority_verified) {
+      setLoadError('Medication instructions cannot be marked complete until their source authority is verified.');
+      return;
+    }
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
-        // Mark action as complete
         await postJSON(`/actions/${actionId}/complete`, {
+          caregiver_id: caregiver,
           evidence_ids: [],
-          completion_confidence: 0,
-          notes: 'Marked complete by the caregiver in the dashboard; no supporting evidence was attached.'
+          completion_confidence: 0.6,
+          notes: 'Caregiver reported completion in the dashboard; no supporting document was attached.'
         });
         
         // Update local state optimistically (handled by hook)
@@ -175,6 +226,90 @@ export default function Dashboard() {
         throw new Error('Cannot un-complete an action');
       }
     });
+  };
+
+
+  const refreshReminders = async () => {
+    const caregiver = getCaregiverId();
+    if (!personId || !caregiver) {
+      setReminderError('A valid care session is required to load reminders.');
+      return;
+    }
+    try {
+      const data = await getJSON(`/reminders/${encodeURIComponent(personId)}?caregiver_id=${encodeURIComponent(caregiver)}`);
+      if (!Array.isArray(data)) throw new Error('Invalid reminder response');
+      setReminders(data as Reminder[]);
+      setReminderError(null);
+    } catch {
+      setReminderError('Reminders could not be loaded. Try again when the service is available.');
+    }
+  };
+
+  const createReminder = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const caregiver = getCaregiverId();
+    if (!personId || !caregiver) {
+      setReminderError('A valid care session is required to schedule a reminder.');
+      return;
+    }
+    if (!reminderDueAt.trim()) {
+      setReminderError('Choose a due date and time.');
+      return;
+    }
+    const dueDate = new Date(reminderDueAt);
+    if (Number.isNaN(dueDate.getTime())) {
+      setReminderError('The due date and time are invalid.');
+      return;
+    }
+    setReminderSaving(true);
+    setReminderError(null);
+    setReminderNotice(null);
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const idempotencyKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `reminder-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await postJSON('/reminders', {
+        person_id: personId,
+        caregiver_id: caregiver,
+        title: reminderTitle.trim(),
+        message: reminderMessage.trim(),
+        due_at: dueDate.toISOString(),
+        timezone,
+        recurrence_rule: reminderRecurrence === 'none' ? null : reminderRecurrence,
+        idempotency_key: idempotencyKey,
+        max_attempts: 5,
+      });
+      setReminderTitle('');
+      setReminderMessage('');
+      setReminderDueAt('');
+      setReminderRecurrence('none');
+      setReminderNotice('Reminder saved. Delivery status will update after the configured delivery provider returns a receipt.');
+      await refreshReminders();
+    } catch (error) {
+      setReminderError(error instanceof Error ? error.message : 'Reminder could not be saved.');
+    } finally {
+      setReminderSaving(false);
+    }
+  };
+
+  const cancelReminder = async (reminderId: string) => {
+    const caregiver = getCaregiverId();
+    if (!caregiver || !personId) {
+      setReminderError('A valid care session is required to cancel a reminder.');
+      return;
+    }
+    setReminderSaving(true);
+    setReminderError(null);
+    try {
+      await postJSON(`/reminders/${encodeURIComponent(personId)}/${encodeURIComponent(reminderId)}/cancel?caregiver_id=${encodeURIComponent(caregiver)}`, {});
+      await refreshReminders();
+      setReminderNotice('Reminder cancelled.');
+    } catch (error) {
+      setReminderError(error instanceof Error ? error.message : 'Reminder could not be cancelled.');
+    } finally {
+      setReminderSaving(false);
+    }
   };
 
   return (
@@ -270,6 +405,76 @@ export default function Dashboard() {
           ))}
         </div>
       </div>}
+
+
+      <section aria-labelledby="reminders-heading" style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
+      }}>
+        <h2 id="reminders-heading" style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
+          Reminders and follow-through
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
+          Schedule a one-time or recurring reminder. SolenOS only reports delivery when the configured provider returns a receipt.
+        </p>
+        {reminderError && <p role="alert" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '12px' }}>{reminderError}</p>}
+        {reminderNotice && <p role="status" style={{ color: 'var(--trust)', fontSize: '13px', marginBottom: '12px' }}>{reminderNotice}</p>}
+        <form onSubmit={createReminder} style={{ display: 'grid', gap: '10px', marginBottom: '20px' }}>
+          <label style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
+            Reminder title
+            <input required maxLength={200} value={reminderTitle} onChange={event => setReminderTitle(event.target.value)} placeholder="e.g. Call the clinic" style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }} />
+          </label>
+          <label style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
+            Details
+            <textarea required maxLength={4000} value={reminderMessage} onChange={event => setReminderMessage(event.target.value)} placeholder="What needs to happen?" rows={2} style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }} />
+          </label>
+          <label style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
+            Date and time (your device's local time)
+            <input required type="datetime-local" value={reminderDueAt} onChange={event => setReminderDueAt(event.target.value)} style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }} />
+          </label>
+          <label style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
+            Repeat
+            <select value={reminderRecurrence} onChange={event => setReminderRecurrence(event.target.value as 'none' | 'daily' | 'weekly' | 'monthly')} style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }}>
+              <option value="none">Does not repeat</option>
+              <option value="daily">Every day</option>
+              <option value="weekly">Every week</option>
+              <option value="monthly">Every month</option>
+            </select>
+          </label>
+          <div>
+            <button type="submit" disabled={reminderSaving} style={{ padding: '10px 16px', borderRadius: '6px', border: 'none', background: 'var(--trust)', color: 'white', fontWeight: 600, cursor: reminderSaving ? 'wait' : 'pointer', opacity: reminderSaving ? 0.7 : 1 }}>
+              {reminderSaving ? 'Saving…' : 'Save reminder'}
+            </button>
+          </div>
+        </form>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '10px' }}>Scheduled and past reminders</h3>
+        {reminders.length === 0 ? (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>No reminders recorded yet.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {reminders.map(reminder => (
+              <article key={reminder.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 600 }}>{reminder.title}</h4>
+                  <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{reminder.message}</p>
+                  <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {new Date(reminder.due_at).toLocaleString()} · {reminder.timezone} · {reminder.recurrence_rule ? `Repeats ${reminder.recurrence_rule}` : 'One-time'}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12px' }}>
+                    Status: <strong>{reminder.status}</strong> · Delivery attempts: {reminder.attempt_count}
+                  </p>
+                  {reminder.last_error && <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--warning)' }}>Last delivery issue: {reminder.last_error}</p>}
+                </div>
+                {['scheduled', 'failed'].includes(reminder.status) && (
+                  <button type="button" disabled={reminderSaving} onClick={() => void cancelReminder(reminder.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'inherit', fontSize: '12px', cursor: reminderSaving ? 'wait' : 'pointer' }}>
+                    Cancel
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div style={{
         background: 'var(--accent-soft)', border: '1px solid var(--accent)',
