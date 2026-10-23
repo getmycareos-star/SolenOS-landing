@@ -32,3 +32,8 @@ export {
   llmStructuredUnderstanding,
   deterministicUnderstanding,
 } from "./llm-understanding";
+export {
+  buildNextStepGuidance,
+  type NextStepGuidance,
+  type NextStepKind,
+} from "./next-step-guidance";

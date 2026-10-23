@@ -152,6 +152,7 @@ function responseBlob(composed: ComposedCaregiverResponse): string {
     composed.care_story_update ?? "",
     composed.evidence_line ?? "",
     ...(composed.follow_up_items ?? []),
+    ...(composed.next_step_guidance ?? []).flatMap((item) => [item.message, ...item.source_basis]),
   ]
     .filter(Boolean)
     .join("\n");

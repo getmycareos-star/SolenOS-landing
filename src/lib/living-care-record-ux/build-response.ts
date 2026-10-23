@@ -521,6 +521,7 @@ export function buildLivingCareRecordResponse(params: {
     evidence_line: composed.evidence_line,
     evidence_maturity: composed.evidence_maturity,
     follow_up_items: composed.follow_up_items,
+    next_step_guidance: composed.next_step_guidance ?? [],
     mental_load_signal: composed.mental_load_signal,
     trajectory: (() => {
       const stateChanges = response.care_state_change_report?.all_changes ?? [];
