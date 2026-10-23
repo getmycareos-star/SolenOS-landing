@@ -167,6 +167,42 @@ describe('Living Care Record document intake', () => {
     expect(screen.getByText(/Document review needed: OCR confidence is low/i)).toBeInTheDocument()
   })
 
+  it('restores reviewable candidates and original-file download from persisted evidence after reload', async () => {
+    mockedGetJSON.mockResolvedValueOnce([{
+      id: 'evidence-doc-reloaded',
+      type: 'document',
+      source_text: 'Discharge instructions say follow up within two weeks.',
+      uploaded_at: '2026-10-23T12:00:00.000Z',
+      source_type: 'document_upload',
+      extra_metadata: {
+        original_filename: 'discharge.pdf',
+        document_type_candidate: 'discharge_instructions',
+        document_date_candidate: '2026-10-20',
+        document_date_review_status: 'pending_review',
+        document_candidates: [{
+          candidate_id: 'evidence-doc-reloaded:0',
+          candidate_type: 'follow_up',
+          observation: 'Follow up within two weeks.',
+          source_quote: 'Discharge instructions say follow up within two weeks.',
+          review_status: 'pending_review',
+        }],
+      },
+    }] as never)
+
+    render(<MemoryRouter><Record /></MemoryRouter>)
+
+    expect(await screen.findByText(/Document type candidate: discharge_instructions/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /download original document/i })).toBeInTheDocument()
+    expect(screen.getByText(/Source quote: “Discharge instructions say follow up within two weeks.” · pending_review/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /mark reviewed/i }))
+    await waitFor(() => expect(mockedPostJSON).toHaveBeenCalledWith(
+      '/documents/evidence-doc-reloaded/candidates/0/review',
+      { decision: 'accept' },
+    ))
+    expect(await screen.findByText(/accepted_by_caregiver/i)).toBeInTheDocument()
+  })
+
   it('keeps an unreadable scanned file while clearly showing extraction failure and no candidates', async () => {
     mockedPostFormData.mockResolvedValueOnce({
       evidence_id: 'evidence-scan-1',
