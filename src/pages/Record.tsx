@@ -25,7 +25,7 @@ export default function Record() {
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
-  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number } | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
   const careContinuityPersonId = getPersonId()
 
