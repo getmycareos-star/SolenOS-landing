@@ -21,7 +21,7 @@ export async function runConsistencyGate(
   // Spec §3: SAVE RAW EVIDENCE → CONFIRM PERSISTENCE → START EXTRACTION
   // Raw evidence must be persisted BEFORE any AI extraction begins.
   const evidenceStore = getRawEvidenceStore();
-  const { evidence: savedEvidence } = await evidenceStore.save({
+  const saveResult = await evidenceStore.save({
     id: evidenceId,
     caregiver_id: input.caregiver_id,
     input_type: "text",
@@ -30,12 +30,19 @@ export async function runConsistencyGate(
     metadata: { raw_input_id: input.raw_input_id },
   });
 
-  logger.info("raw evidence persisted", {
+  logger.info("raw evidence persistence result", {
     evidence_id: evidenceId,
-    persisted: !!savedEvidence,
+    persisted: saveResult.persisted,
+    persistence_backend: saveResult.persistence_backend,
   });
 
-  // Extraction only begins AFTER raw evidence is confirmed persisted.
+  if (!saveResult.persisted) {
+    throw new Error(
+      "Raw evidence could not be persisted; extraction was not started. Retry when durable storage is available.",
+    );
+  }
+
+  // Extraction only begins AFTER the store confirms a file-queue or PostgreSQL write.
   const { runA, runB } = await runParallelExtractions(input, signal);
 
   logger.logExtractionRun(runA.run_id, runA.success, runA.claims.length, runA.error);
