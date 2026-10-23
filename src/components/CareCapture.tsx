@@ -81,6 +81,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       setReviewFeedback(null)
       setIdentityError(null)
       setText('')
+      setEventTime('')
       onCapture?.(variables.rawInput, {
         eventId: typeof data?.care_event_id === 'string' ? data.care_event_id : (typeof data?.situation_id === 'string' ? data.situation_id : undefined),
         evidenceIds: typeof data?.evidence_id === 'string' ? [data.evidence_id] : (Array.isArray(data?.events?.[0]?.evidence_ids) ? data.events[0].evidence_ids.filter((id: unknown): id is string => typeof id === 'string') : []),
