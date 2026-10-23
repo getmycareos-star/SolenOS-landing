@@ -13,6 +13,7 @@ jest.mock('../api/client', () => ({
 const mockedGetJSON = getJSON as jest.MockedFunction<typeof getJSON>;
 const mockedGetPersonId = getPersonId as jest.MockedFunction<typeof getPersonId>;
 const mockedGetCaregiverId = getCaregiverId as jest.MockedFunction<typeof getCaregiverId>;
+const mockedPostJSON = postJSON as jest.MockedFunction<typeof postJSON>;
 
 afterEach(() => {
   cleanup();
