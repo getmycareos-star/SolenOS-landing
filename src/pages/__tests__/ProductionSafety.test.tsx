@@ -148,7 +148,7 @@ describe('Phase 4 production data safety', () => {
       .mockResolvedValueOnce({
         ok: true,
         message: 'Care input recorded successfully.',
-        events: [{ occurred_at: '2026-10-23T08:15:00Z' }],
+        events: [{ occurred_at: '2026-10-23T08:15:00Z', time_provenance: 'caregiver_reported_event_time' }],
         qwen_extraction_status: 'pending_review',
         qwen_analysis_id: 'analysis-1',
         qwen_candidates: {
@@ -265,7 +265,7 @@ describe('Phase 4 production data safety', () => {
 
     render(<DailyCare />)
     const note = 'A caregiver recorded a change in the daily routine.'
-    fireEvent.change(screen.getByPlaceholderText(/describe what you observed, when it happened/i), { target: { value: note } })
+    fireEvent.change(screen.getByPlaceholderText(/what symptom did you notice/i), { target: { value: note } })
     fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
 
     expect(await screen.findByText('Reconciliation result returned.')).toBeInTheDocument()
