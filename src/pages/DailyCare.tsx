@@ -473,7 +473,7 @@ export default function DailyCare() {
           {submitting ? 'Saving...' : 'Save daily care entry'}
         </button>
       </form>
-      <CareDeltaPanel personId={personId} autoInput={deltaAutoInput} />
+      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} />
     </div>
   )
 }
