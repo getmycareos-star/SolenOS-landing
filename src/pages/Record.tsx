@@ -25,7 +25,7 @@ export default function Record() {
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
-  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
   const careContinuityPersonId = getPersonId()
 
@@ -121,7 +121,7 @@ export default function Record() {
       } catch {
         // The document has already been saved; reconciliation may proceed without linked evidence IDs.
       }
-      setDeltaAutoInput({ content: extractedText, source: documentFile.name, eventDate: new Date().toISOString(), token: nextToken, evidenceIds: Array.from(new Set([result.evidence_id, ...linkedEvidenceIds].filter((id): id is string => typeof id === 'string' && !!id))), sourceEventId: result.care_event_id })
+      setDeltaAutoInput({ personId: careContinuityPersonId, content: extractedText, source: documentFile.name, eventDate: new Date().toISOString(), token: nextToken, evidenceIds: Array.from(new Set([result.evidence_id, ...linkedEvidenceIds].filter((id): id is string => typeof id === 'string' && !!id))), sourceEventId: result.care_event_id })
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
