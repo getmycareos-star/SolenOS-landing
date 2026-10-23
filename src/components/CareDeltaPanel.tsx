@@ -131,6 +131,8 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
           </p>
           {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Source: “{row.evidence_excerpt}”</p>}
           {row.claim_supported === false && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>The value could not be matched to the supplied event or current-state evidence. It was kept uncertain and was not saved as a supported current-state assertion.</p>}
+          {row.historical_only && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>Historical report only — not promoted to current state.</p>}
+          {row.promotion_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{row.promotion_warning}</p>}
           {row.provenance_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{row.provenance_warning}</p>}
           {Array.isArray(row.reports) && <ul style={{ fontSize: 12, margin: '4px 0', paddingLeft: 18 }}>{row.reports.map((report: string, i: number) => <li key={i}>{report}</li>)}</ul>}
         </article>)}
