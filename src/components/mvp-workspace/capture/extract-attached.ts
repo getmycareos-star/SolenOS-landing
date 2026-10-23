@@ -1,7 +1,7 @@
-import { apiUrl, safeJson } from "@/lib/api-url";
-import type { AttachedDocument } from "@/lib/mvp-workspace";
-import type { InputEntryMethod } from "@/lib/input-entry-contract";
-import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
+import { apiUrl, safeJson } from "../../../lib/api-url";
+import type { AttachedDocument } from "../../../lib/mvp-workspace";
+import type { InputEntryMethod } from "../../../lib/input-entry-contract";
+import { sanitizeCaregiverErrorMessage } from "../../../lib/mvp-input-architecture";
 
 function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
