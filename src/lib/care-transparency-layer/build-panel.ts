@@ -125,7 +125,10 @@ export function validateCareTransparencyPanel(panel: CareTransparencyPanel): {
   if (!panel.reason_for_output?.trim()) {
     errors.push("reason_for_output required");
   }
-  if (panel.confidence_scores.overall_pct < 0 || panel.confidence_scores.overall_pct > 100) {
+  if (
+    panel.confidence_scores.overall_pct != null &&
+    (panel.confidence_scores.overall_pct < 0 || panel.confidence_scores.overall_pct > 100)
+  ) {
     errors.push("confidence_scores.overall_pct out of range");
   }
   if (!panel.recency.decay_status) {
