@@ -32,7 +32,7 @@ interface CareRecordTimelineItem {
     observed_at?: string | null
     time_provenance?: string | null
     tags?: string[]
-    evidence?: Array<{ id: string; type: string; source_text: string }>
+    evidence?: Array<{ id: string; type: string; source_text: string; uploaded_at?: string | null }>
   }>
   assertions?: Array<{
     id: string
@@ -41,7 +41,7 @@ interface CareRecordTimelineItem {
     assertion_status: string
     source_label: string
     source_text?: string | null
-    evidence?: Array<{ id: string; type: string; source_text: string }>
+    evidence?: Array<{ id: string; type: string; source_text: string; uploaded_at?: string | null }>
   }>
   outcomes?: Array<{
     id: string
@@ -49,7 +49,7 @@ interface CareRecordTimelineItem {
     notes?: string | null
     correction_text?: string | null
     created_at?: string | null
-    evidence?: Array<{ id: string; type: string; source_text: string }>
+    evidence?: Array<{ id: string; type: string; source_text: string; uploaded_at?: string | null }>
   }>
 }
 
