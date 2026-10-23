@@ -2,6 +2,20 @@ import { useState } from 'react'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
+const QUICK_ENTRY_TYPES = [
+  { id: 'symptom', label: 'Symptom', prompt: 'What symptom did you notice? Include what you observed, how it affected them, and when it began if known.' },
+  { id: 'behavior', label: 'Behavior', prompt: 'What behavior did you observe? Describe what happened without guessing at the cause.' },
+  { id: 'sleep', label: 'Sleep', prompt: 'How did they sleep? Include approximate times or duration if known, and what was different.' },
+  { id: 'meal', label: 'Meal or fluids', prompt: 'What did they eat or drink? Include approximate amount and time if known.' },
+  { id: 'appointment', label: 'Appointment', prompt: 'What happened at the appointment, what instructions were reported, and what follow-up remains?' },
+  { id: 'medication_observation', label: 'Medication observation', prompt: 'What did you observe about the medication or after it was taken? Record only what you know; do not guess a dose or change instructions.' },
+] as const
+
+function localDateTimeValue(date = new Date()): string {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 16)
+}
+
 interface CareCaptureProps {
   personId?: string
   onCapture?: (text: string, savedEvent?: { eventId?: string; evidenceIds?: string[]; occurredAt?: string }) => void
@@ -9,6 +23,9 @@ interface CareCaptureProps {
 
 export default function CareCapture({ personId: pid, onCapture }: CareCaptureProps) {
   const [text, setText] = useState('')
+  const [captureCategory, setCaptureCategory] = useState<(typeof QUICK_ENTRY_TYPES)[number]['id']>('symptom')
+  const [eventTime, setEventTime] = useState('')
+  const [savedTimeBasis, setSavedTimeBasis] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [savedText, setSavedText] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
@@ -28,7 +45,10 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: rawInput,
-      }) as { ok?: boolean; message?: string };
+        capture_category: captureCategory,
+        timestamp: eventTime ? new Date(eventTime).toISOString() : undefined,
+        provenance: { input_type: 'caregiver_observation', entry_method: 'quick_entry', captured_at: new Date().toISOString() },
+      }) as { ok?: boolean; message?: string; events?: Array<{ occurred_at?: string; time_provenance?: string }> };
       if (response?.ok !== true) {
         throw new Error(
           typeof response?.message === 'string' && response.message.trim()
@@ -49,6 +69,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       setSavedText(variables.rawInput)
       const eventTimestamp = Array.isArray(data?.events) ? data.events[0]?.occurred_at : null
       setSavedAt(typeof eventTimestamp === 'string' ? eventTimestamp : null)
+      setSavedTimeBasis(typeof data?.events?.[0]?.time_provenance === 'string' ? data.events[0].time_provenance : null)
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
@@ -123,6 +144,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     setSavedMessage(null)
     setSavedText(null)
     setSavedAt(null)
+    setSavedTimeBasis(null)
     setReviewFeedback(null)
     setReviewDrafts({})
 
@@ -176,13 +198,21 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         )}
       </div>
 
-      <p style={{
-        fontSize: '12px', color: 'var(--text-secondary)',
-        marginBottom: '12px', lineHeight: 1.5
-      }}>
-        Capture one thing that changed — a behavior, a symptom, a moment.
-        SolenOS saves this update to the care record so you can review it alongside other recorded events.
+      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.5 }}>
+        Capture a short observation in the way that is easiest. The original report is preserved; any AI extraction remains a reviewable, unverified candidate.
       </p>
+      <fieldset style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
+        <legend style={{ fontSize: '12px', fontWeight: 600, marginBottom: '7px' }}>Quick entry type</legend>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {QUICK_ENTRY_TYPES.map((item) => <button key={item.id} type="button" aria-pressed={captureCategory === item.id} onClick={() => setCaptureCategory(item.id)} style={{ padding: '7px 10px', borderRadius: '999px', border: '1px solid var(--border)', background: captureCategory === item.id ? 'var(--trust)' : 'var(--surface)', color: captureCategory === item.id ? '#fff' : 'var(--text)', fontSize: '11px' }}>{item.label}</button>)}
+        </div>
+        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '7px' }}>{QUICK_ENTRY_TYPES.find((item) => item.id === captureCategory)?.prompt}</p>
+      </fieldset>
+      <label style={{ display: 'block', fontSize: '12px', marginBottom: '10px' }}>
+        When did this happen? (optional)
+        <input aria-label="When did this happen?" type="datetime-local" value={eventTime} max={localDateTimeValue()} onChange={(event) => setEventTime(event.target.value)} disabled={submitting} style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '5px', padding: '9px 10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', font: 'inherit' }} />
+        <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '10px', marginTop: '4px' }}>Leave blank if you do not know. SolenOS distinguishes an event time you provide from the time the report was entered.</span>
+      </label>
 
       <textarea
         value={text}
@@ -191,12 +221,13 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           setSavedMessage(null)
           setSavedText(null)
           setSavedAt(null)
+          setSavedTimeBasis(null)
           setQwenAnalysis(null)
           setReviewDrafts({})
           setReviewFeedback(null)
           setIdentityError(null)
         }}
-        placeholder="Describe what you observed, when it happened, and what remains uncertain."
+        placeholder={QUICK_ENTRY_TYPES.find((item) => item.id === captureCategory)?.prompt || 'Describe what you observed and what remains uncertain.'}
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
         style={{
@@ -240,7 +271,8 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       {savedMessage && savedText && (
         <section aria-label="Original captured report" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--bg)' }}>
           <strong style={{ fontSize: '12px' }}>Original report — preserved</strong>
-          {savedAt && <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>Recorded event time: {new Date(savedAt).toLocaleString()}</p>}
+          <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>Category: {QUICK_ENTRY_TYPES.find((item) => item.id === captureCategory)?.label || captureCategory}</p>
+          {savedAt && <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>{savedTimeBasis === 'caregiver_reported_event_time' ? 'Event time reported by caregiver' : 'Event time not supplied; timestamp defaults to entry time'}: {new Date(savedAt).toLocaleString()}</p>}
           <p style={{ fontSize: '12px', lineHeight: 1.55, whiteSpace: 'pre-wrap', marginTop: '6px' }}>{savedText}</p>
         </section>
       )}
