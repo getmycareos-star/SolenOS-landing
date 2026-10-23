@@ -38,10 +38,10 @@ export type TrustLayerOutput = {
   }>;
   recency: {
     last_updated_at: string | null;
-    freshness_score: number;
+    freshness_score: number | null;
     interpretation: string;
   };
-  confidence: number;
+  confidence: number | null;
 };
 
 /** The one and only allowed output structure of SolenOS. */
