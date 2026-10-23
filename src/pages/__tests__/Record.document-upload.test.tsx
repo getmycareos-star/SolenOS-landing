@@ -84,7 +84,7 @@ describe('Living Care Record document intake', () => {
     expect(screen.getByText(/Extraction method: pdf_ocr/i)).toBeInTheDocument()
     expect(screen.getByText(/OCR confidence: 42%/i)).toBeInTheDocument()
     expect(screen.getByText(/Review needed: OCR confidence is low/i)).toBeInTheDocument()
-    expect(screen.getByText(/follow_up:/i)).toBeInTheDocument()
+    expect(screen.getByText(/follow up:/i)).toBeInTheDocument()
   })
 
   it('persists an explicit review decision without writing a care fact', async () => {
