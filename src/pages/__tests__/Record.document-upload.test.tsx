@@ -95,6 +95,14 @@ describe('Living Care Record document intake', () => {
         },
       },
       {
+        id: 'evidence-doc-2',
+        type: 'document',
+        source_text: 'Earlier discharge document lists a follow-up plan.',
+        uploaded_at: '2026-10-21T10:00:00.000Z',
+        source_type: 'document',
+        extra_metadata: { extraction_source: 'pdf_text' },
+      },
+      {
         id: 'evidence-note-1',
         type: 'note',
         source_text: 'Caregiver reports a change; onset is uncertain.',
