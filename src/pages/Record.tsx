@@ -34,7 +34,7 @@ export default function Record() {
   const [documentFile, setDocumentFile] = useState<File | null>(null)
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
-  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any; extractionSource?: string; confidence?: number | null; warnings?: string[] } | null>(null)
+  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any[]; extractionSource?: string; confidence?: number | null; warnings?: string[]; evidenceId?: string; filename?: string; documentType?: string; documentDate?: string | null; extractionError?: string | null } | null>(null)
   const [showAppointmentBrief, setShowAppointmentBrief] = useState(false)
 
   useEffect(() => {
@@ -87,63 +87,43 @@ export default function Record() {
     setDocumentError(null)
     setDocumentResult(null)
     try {
+      // One authenticated endpoint extracts text, stores the original bytes,
+      // creates source evidence, and returns exact-source candidates for review.
       const form = new FormData()
       form.append('file', documentFile)
-      const extracted = await postFormData('/documents/extract', form) as {
-        ok?: boolean
-        document?: {
-          id: string
-          name: string
-          mime_type: string
-          extracted_text: string
-          extracted_text_preview?: string
-          extracted_char_count?: number
-          ocr_confidence?: number | null
-          extraction_source?: string
-          extraction_warnings?: string[]
-          sha256?: string
-        }
+      const result = await postFormData('/documents/intake', form) as {
+        evidence_id: string
+        filename: string
+        document_type_candidate: string
+        document_date_candidate: string | null
+        extraction_status: string
+        extraction_source: string
+        ocr_confidence: number | null
+        extraction_warnings: string[]
+        extraction_error: string | null
+        document_candidates: any[]
+        source_file_preserved: boolean
+        candidate_count: number
       }
-      const doc = extracted.document
-      if (!extracted.ok || !doc || typeof doc.extracted_text !== 'string' || !doc.extracted_text.trim()) {
-        throw new Error('The document reader did not return readable text. The care record was not changed.')
+      if (!result.evidence_id || result.source_file_preserved !== true) {
+        throw new Error('The server did not confirm source-file preservation. The document intake is not confirmed.')
       }
-
-      const result = await postJSON('/situation', {
-        caregiver_id: caregiverId,
-        person_id: personId,
-        raw_input: '',
-        documents: [{
-          id: doc.id,
-          name: doc.name,
-          extracted_text: doc.extracted_text,
-          mime_type: doc.mime_type || documentFile.type || 'application/octet-stream',
-          ocr_confidence: doc.ocr_confidence ?? null,
-          extraction_source: doc.extraction_source ?? 'unknown',
-          extraction_warnings: doc.extraction_warnings ?? [],
-          sha256: doc.sha256,
-          extracted_char_count: doc.extracted_char_count ?? doc.extracted_text.length,
-        }],
-        provenance: {
-          input_type: 'document',
-          entry_method: 'document_upload',
-          captured_at: new Date().toISOString(),
-          recognition_confidence: doc.ocr_confidence ?? undefined,
-          transcript_uncertain: Boolean(
-            (doc.ocr_confidence != null && doc.ocr_confidence < 0.65) ||
-            (doc.extraction_warnings?.length ?? 0) > 0
-          ),
-        },
-      }) as { qwen_extraction_status?: string; qwen_candidates?: any; message?: string }
-
       setDocumentResult({
-        status: typeof result.qwen_extraction_status === 'string' ? result.qwen_extraction_status : 'saved_for_review',
-        candidates: result.qwen_candidates ?? null,
-        extractionSource: doc.extraction_source ?? 'unknown',
-        confidence: doc.ocr_confidence ?? null,
-        warnings: doc.extraction_warnings ?? [],
+        status: result.extraction_status,
+        evidenceId: result.evidence_id,
+        filename: result.filename,
+        documentType: result.document_type_candidate,
+        documentDate: result.document_date_candidate,
+        extractionSource: result.extraction_source,
+        confidence: result.ocr_confidence,
+        warnings: result.extraction_warnings ?? [],
+        extractionError: result.extraction_error,
+        candidates: result.document_candidates ?? [],
       })
       setDocumentFile(null)
+      // Refresh the evidence list from persisted server data, not optimistic state.
+      const refreshed = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+      if (Array.isArray(refreshed)) setItems(refreshed)
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -151,7 +131,30 @@ export default function Record() {
     }
   }
 
-  async function explainRecord() {
+  async function reviewDocumentCandidate(candidateIndex: number, decision: 'accept' | 'reject') {
+    const evidenceId = documentResult?.evidenceId
+    if (!evidenceId) return
+    try {
+      const result = await postJSON(
+        `/documents/${encodeURIComponent(evidenceId)}/candidates/${candidateIndex}/review`,
+        { decision },
+      ) as { candidate?: any; message?: string; authoritative_lcr_write?: boolean }
+      if (!result.candidate || result.authoritative_lcr_write !== false) {
+        throw new Error('The review response did not confirm a review-only decision.')
+      }
+      setDocumentResult((current) => {
+        if (!current) return current
+        const candidates = [...(current.candidates || [])]
+        candidates[candidateIndex] = result.candidate
+        return { ...current, candidates }
+      })
+      setDocumentError(result.message || 'Review decision saved. No authoritative care fact was changed.')
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'The review decision could not be saved.')
+    }
+  }
+
+    async function explainRecord() {
     const personId = getPersonId()
     if (!personId) {
       setLcrError('No authorized care record is selected.')
@@ -265,9 +268,12 @@ export default function Record() {
         {documentError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{documentError}</p>}
         {documentResult && (
           <div role="status" style={{ marginTop: '10px' }}>
-            <strong style={{ fontSize: '12px' }}>Qwen document analysis: {documentResult.status}</strong>
+            <strong style={{ fontSize: '12px' }}>Document intake: {documentResult.status}</strong>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Extracted observations are source-linked review candidates, not established LCR facts.
+              Original file preserved · {documentResult.filename || 'document'} · evidence ID {documentResult.evidenceId}
+            </p>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Type candidate: {documentResult.documentType || 'not detected'} · document date candidate: {documentResult.documentDate || 'not detected'}
             </p>
             {documentResult.extractionSource && (
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -279,27 +285,41 @@ export default function Record() {
                 OCR confidence: {Math.round(documentResult.confidence * 100)}%
               </p>
             )}
+            {documentResult.extractionError && (
+              <p role="alert" style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '5px' }}>
+                Text extraction not completed: {documentResult.extractionError}
+              </p>
+            )}
             {documentResult.warnings?.map((warning, index) => (
               <p key={index} role="alert" style={{ fontSize: '12px', color: 'var(--unknown)', marginTop: '6px' }}>
                 Review needed: {warning}
               </p>
             ))}
-            {Array.isArray(documentResult.candidates?.observations) && documentResult.candidates.observations.length > 0 ? (
+            {documentResult.candidates.length > 0 ? (
               <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
-                {documentResult.candidates.observations.map((candidate: any, index: number) => (
-                  <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
-                    <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
-                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      Source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
+                {documentResult.candidates.map((candidate: any, index: number) => (
+                  <li key={candidate.candidate_id || index} style={{ fontSize: '12px', marginBottom: '10px' }}>
+                    <strong>{candidate.candidate_type?.replace(/_/g, ' ') || 'Document candidate'}:</strong> {candidate.observation}
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '3px' }}>
+                      Exact source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
                     </div>
+                    {candidate.review_status === 'pending_review' && (
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        <button type="button" disabled={processingDocument} onClick={() => void reviewDocumentCandidate(index, 'accept')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Mark reviewed</button>
+                        <button type="button" disabled={processingDocument} onClick={() => void reviewDocumentCandidate(index, 'reject')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Reject candidate</button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
             ) : (
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                No Qwen candidates were returned. The document is still preserved as evidence.
+                No reviewable text candidates were found. The original file and extraction status are preserved; no facts were inferred.
               </p>
             )}
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Review decisions are saved with provenance and do not write authoritative Living Care Record facts. Confirm all details against the original document.
+            </p>
           </div>
         )}
       </section>
