@@ -2,17 +2,32 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
 
-interface Evidence {
+interface CareRecordTimelineItem {
   id: string
-  type: string
-  source_text: string
-  uploaded_at: string
-  time_provenance?: string
-  location?: string
+  kind: string
+  source_id: string
+  occurred_at: string | null
+  recorded_at?: string | null
+  title: string
+  summary?: string | null
+  status?: string | null
+  source_type?: string | null
+  time_provenance?: string | null
+  evidence?: Array<{
+    id: string
+    type: string
+    source_text: string
+    uploaded_at?: string | null
+    source_type?: string | null
+    time_provenance?: string | null
+    confidence?: number | null
+    evidence_status?: string | null
+  }>
+  details?: Record<string, unknown>
 }
 
 export default function Record() {
-  const [items, setItems] = useState<Evidence[]>([])
+  const [items, setItems] = useState<CareRecordTimelineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [lcrExplanation, setLcrExplanation] = useState<string | null>(null)
@@ -34,9 +49,9 @@ export default function Record() {
         return
       }
       try {
-        const data = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
-        if (!Array.isArray(data)) throw new Error('The server response was incomplete.')
-        if (!cancelled) setItems(data)
+        const data = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200`) as { timeline?: unknown }
+        if (!Array.isArray(data.timeline)) throw new Error('The unified care record response was incomplete.')
+        if (!cancelled) setItems(data.timeline as CareRecordTimelineItem[])
       } catch {
         if (!cancelled) {
           setItems([])
@@ -98,6 +113,14 @@ export default function Record() {
         candidates: result.qwen_candidates ?? null,
       })
       setDocumentFile(null)
+      // Refresh the unified view after the server confirms the document capture.
+      // A refresh failure must not misreport the successful upload as a failed save.
+      try {
+        const refreshed = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200`) as { timeline?: unknown }
+        if (Array.isArray(refreshed.timeline)) setItems(refreshed.timeline as CareRecordTimelineItem[])
+      } catch {
+        // The saved record will be reloaded on the next page visit.
+      }
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -133,10 +156,12 @@ export default function Record() {
   }
 
   const typeIcon: Record<string, string> = {
-    document: '📄',
-    note: '📝',
-    conversation: '💬',
-    observation: '👁️',
+    care_event: '📝',
+    evidence: '📄',
+    appointment: '📅',
+    care_action: '☑️',
+    care_transition: '🔄',
+    care_window: '⏱️',
   }
 
   return (
@@ -145,7 +170,7 @@ export default function Record() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Living Care Record</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5, maxWidth: '500px' }}>
-             Upload documents, notes, photos, messages, and care information. SolenOS remembers and connects these over time.
+             One chronological view of recorded care events, source documents, appointments, transitions, and follow-up actions. Original source material stays attached where available.
            </p>
          </div>
          <div>
@@ -269,7 +294,7 @@ export default function Record() {
       {!loading && loadError && <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>}
 
       {!loading && !loadError && items.length === 0 && (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No evidence recorded yet.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No care activity recorded yet.</p>
       )}
 
       {!loading && !loadError && (
@@ -280,24 +305,40 @@ export default function Record() {
               borderRadius: '12px', padding: '16px 20px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '16px' }}>{typeIcon[item.type] || '📎'}</span>
+                <span style={{ fontSize: '16px' }}>{typeIcon[item.kind] || '📎'}</span>
                 <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
-                  {item.type}
+                  {item.kind.replace(/_/g, ' ')}
                 </span>
                 <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  {new Date(item.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(item.occurred_at || item.recorded_at || '').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
+              <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.summary || item.title}</p>
+              {item.status && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                  Status: {item.status.replace(/_/g, ' ')}
+                </p>
+              )}
               {item.time_provenance && (
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontStyle: 'italic' }}>
                   Time source: {item.time_provenance}
                 </p>
               )}
-              {item.location && (
+              {typeof item.details?.location === 'string' && item.details.location && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Location: {item.location}
+                  Location: {item.details.location}
                 </p>
+              )}
+              {item.kind !== 'evidence' && (item.evidence?.length ?? 0) > 0 && (
+                <section aria-label="Supporting source material" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Supporting source material</strong>
+                  {item.evidence?.map(source => (
+                    <div key={source.id} style={{ marginTop: '6px' }}>
+                      <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{source.type.replace(/_/g, ' ')}</span>
+                      <p style={{ fontSize: '12px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{source.source_text}</p>
+                    </div>
+                  ))}
+                </section>
               )}
             </div>
           ))}
