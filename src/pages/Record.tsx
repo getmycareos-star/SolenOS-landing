@@ -10,6 +10,11 @@ interface Evidence {
   uploaded_at: string
   time_provenance?: string
   location?: string
+  source_type?: string | null
+  evidence_status?: string | null
+  confidence?: number | null
+  extra_metadata?: Record<string, unknown> | null
+  uploaded_by_caregiver_id?: string
 }
 
 export default function Record() {
@@ -146,6 +151,23 @@ export default function Record() {
     note: '📝',
     conversation: '💬',
     observation: '👁️',
+  }
+
+  function evidenceOriginLabel(item: Evidence): string {
+    if (item.source_type === 'caregiver_observation') return 'Caregiver observation'
+    if (item.source_type === 'document_ocr') return 'Document · OCR extracted'
+    if (item.source_type === 'document_text_extraction') return 'Document · text extracted'
+    if (item.source_type === 'document_extraction_method_unknown') return 'Document · extraction method unknown'
+    if (item.source_type) return item.source_type.replace(/_/g, ' ')
+    if (item.type === 'document') return 'Document evidence · origin details unavailable'
+    return 'Recorded evidence · origin details unavailable'
+  }
+
+  function evidenceConfidenceLabel(item: Evidence): string {
+    if (typeof item.confidence !== 'number' || !Number.isFinite(item.confidence)) {
+      return 'Confidence: unknown'
+    }
+    return `Extraction confidence: ${Math.round(item.confidence * 100)}% — not clinical certainty`
   }
 
   return (
@@ -299,7 +321,21 @@ export default function Record() {
                   {new Date(item.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 8px' }}>
+                Evidence origin: {evidenceOriginLabel(item)}
+                {item.evidence_status ? ` · Status: ${item.evidence_status.replace(/_/g, ' ')}` : ' · Verification status unavailable'}
+              </p>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                {evidenceConfidenceLabel(item)}
+              </p>
+              {item.extra_metadata && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  {typeof item.extra_metadata.extraction_source === 'string' ? `Extraction: ${item.extra_metadata.extraction_source}` : ''}
+                  {typeof item.extra_metadata.document_time_status === 'string' ? ` · Document date: ${item.extra_metadata.document_time_status.replace(/_/g, ' ')}` : ''}
+                  {typeof item.extra_metadata.document_name === 'string' ? ` · File: ${item.extra_metadata.document_name}` : ''}
+                </p>
+              )}
               {item.time_provenance && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
                   Time source: {item.time_provenance}
