@@ -217,13 +217,13 @@ export default function FirstUseJourney() {
   const openGaps = snapshot.gaps.filter(isOpenGap);
   const overdueActions = snapshot.actions.filter((action) => isOpenAction(action) && action.deadline && !Number.isNaN(Date.parse(action.deadline)) && Date.parse(action.deadline) < Date.now());
 
-  const latestEvent = snapshot.events
-    .slice()
-    .sort((a, b) => {
-      const aTime = Date.parse(a.occurred_at || a.recorded_at || '');
-      const bTime = Date.parse(b.occurred_at || b.recorded_at || '');
-      return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
-    })[0];
+  const orderedEvents = snapshot.events.slice().sort((a, b) => {
+    const aTime = Date.parse(a.occurred_at || '');
+    const bTime = Date.parse(b.occurred_at || '');
+    // Missing event time stays unknown; entry time must not make an old report look new.
+    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+  });
+  const latestEvent = orderedEvents[0];
 
   return (
     <section aria-labelledby="first-use-title" style={{
@@ -304,7 +304,7 @@ export default function FirstUseJourney() {
             <div style={{ marginBottom: '14px' }}>
               <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Recent recorded events</h3>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {snapshot.events.slice(0, 3).map((event) => (
+                {orderedEvents.slice(0, 3).map((event) => (
                   <li key={event.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
                     {eventLabel(event)}
                     <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
@@ -350,7 +350,7 @@ export default function FirstUseJourney() {
             <div style={{ marginBottom: '14px' }}>
               <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Persisted change assessments</h3>
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 7px' }}>
-                These are saved system assessments, not a fresh independent validation of the current situation.
+                These are saved system assessments, not a fresh independent validation of the current situation. Assessment save time is not the event time; use the comparison window and source event times to judge whether a change is genuinely new.
               </p>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
                 {snapshot.changes.filter((item) => item.is_active !== false).slice(0, 3).map((item) => (
@@ -364,7 +364,7 @@ export default function FirstUseJourney() {
                     ) : null}
                     {item.explanation && <span style={{ display: 'block' }}>{item.explanation}</span>}
                     <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
-                      Comparison window: {item.comparison_window_start ? displayDate(item.comparison_window_start) : 'start not recorded'} to {item.comparison_window_end ? displayDate(item.comparison_window_end) : 'end not recorded'} · Evidence references: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}
+                      Assessment saved: {displayDate(item.created_at)} · Comparison window: {item.comparison_window_start ? displayDate(item.comparison_window_start) : 'start not recorded'} to {item.comparison_window_end ? displayDate(item.comparison_window_end) : 'end not recorded'} · Evidence references: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}
                     </span>
                   </li>
                 ))}
