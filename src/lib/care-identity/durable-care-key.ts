@@ -27,6 +27,15 @@ export function isInteractionSessionId(value: string | null | undefined): boolea
   return Boolean(value?.trim().startsWith("sess_"));
 }
 
+/** Require an explicit durable identity; browser session IDs and shared placeholders are invalid. */
+export function requireCaregiverId(value: string | null | undefined, source = "caregiver_id"): string {
+  const id = value?.trim() ?? "";
+  if (!id || id.toLowerCase() === "default_caregiver" || isInteractionSessionId(id)) {
+    throw new Error(`A valid durable caregiver identity is required; rejected ${source}.`);
+  }
+  return id;
+}
+
 /**
  * Resolve only an explicitly supplied durable identity.
  * An interaction session is never a care identity, and missing identity fails closed.
@@ -35,12 +44,8 @@ export function resolveDurableCareKey(params: {
   caregiver_id?: string | null;
   care_session_id?: string | null;
 }): string {
-  const fromCaregiver = params.caregiver_id?.trim();
-  if (fromCaregiver && fromCaregiver !== "default_caregiver") return fromCaregiver;
+  return requireCaregiverId(params.caregiver_id, "caregiver_id");
 
-  // Never reinterpret a session identifier as a caregiver identity. Older clients
-  // occasionally sent a durable key in this field; fail closed instead of guessing.
-  throw new Error("An explicit caregiver identity is required; session IDs cannot identify care records.");
 }
 
 /**
@@ -51,7 +56,7 @@ export function requireCareKeyFromRequest(params: {
   care_session_id?: string | null;
 }): { ok: true; careKey: string } | { ok: false; error: string } {
   const fromCaregiver = params.caregiver_id?.trim();
-  if (fromCaregiver && fromCaregiver !== "default_caregiver") {
+  if (fromCaregiver && fromCaregiver.toLowerCase() !== "default_caregiver" && !isInteractionSessionId(fromCaregiver)) {
     return { ok: true, careKey: fromCaregiver };
   }
 
