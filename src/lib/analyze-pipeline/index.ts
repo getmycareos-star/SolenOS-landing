@@ -915,7 +915,7 @@ export async function runAnalyzePipelineWithObservability(
   // ONLY STATE + BELIEF persist. Risk/priority/health are pure derived functions.
 
   // STATE UPDATE — resolution lifecycle syncs into canonical STATE situations.
-  // Durable care key: prefer care_session_id, else telemetry user, else stable default (not a fresh UUID).
+  // Resolve only an explicit caregiver identity; interaction session IDs are never care identities.
   const resolutionCareSessionId = resolveDurableCareKey({
     care_session_id: params.care_session_id,
     caregiver_id: params.telemetry_user_id,
