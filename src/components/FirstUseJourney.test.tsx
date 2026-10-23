@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import FirstUseJourney from './FirstUseJourney';
 import { getJSON, getPersonId } from '../api/client';
@@ -20,6 +20,8 @@ function renderJourney() {
 }
 
 describe('FirstUseJourney', () => {
+  afterEach(() => cleanup());
+
   beforeEach(() => {
     mockedGetPersonId.mockReturnValue('person-real-1');
     mockedGetJSON.mockReset();
@@ -34,6 +36,12 @@ describe('FirstUseJourney', () => {
     expect(screen.getByRole('link', { name: /open companion/i })).toHaveAttribute('href', '/companion');
     expect(screen.getByRole('link', { name: /add a text document/i })).toHaveAttribute('href', '/record');
     expect(screen.getByRole('link', { name: /community/i })).toHaveAttribute('href', '/community');
+    expect(screen.getByRole('link', { name: /dashboard overview/i })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /timeline/i })).toHaveAttribute('href', '/timeline');
+    expect(screen.getByRole('link', { name: /insights/i })).toHaveAttribute('href', '/insights');
+    expect(screen.getByRole('link', { name: /care memory/i })).toHaveAttribute('href', '/memory');
+    expect(mockedGetJSON).toHaveBeenCalledWith('/events/person-real-1?limit=1');
+    expect(mockedGetJSON).toHaveBeenCalledWith('/evidence/person-real-1');
 
     await waitFor(() => {
       expect(screen.getByText(/has no events or evidence yet/i)).toBeInTheDocument();
