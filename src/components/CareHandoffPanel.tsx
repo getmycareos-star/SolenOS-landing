@@ -99,6 +99,9 @@ export default function CareHandoffPanel({ personId }: { personId: string }) {
       setError('A valid, authenticated care session is required.');
       return;
     }
+    if (reminderAt && !dueAt) { setError('Choose a due date before setting a reminder target.'); return; }
+    if (reminderAt && dueAt && new Date(reminderAt).getTime() > new Date(dueAt).getTime()) { setError('The reminder target must be at or before the due date.'); return; }
+    if (accessScope === 'assigned_only' && !assignedTo) { setError('Choose an assigned caregiver for a restricted handoff.'); return; }
     setSaving(true);
     setError(null);
     setNotice(null);
