@@ -107,7 +107,21 @@ export default function Record() {
       // The Delta Engine is a second, explicit reconciliation stage; it does not replace source capture.
       const nextToken = deltaToken + 1
       setDeltaToken(nextToken)
-      setDeltaAutoInput({ content: extractedText, source: documentFile.name, eventDate: new Date().toISOString(), token: nextToken })
+      let linkedEvidenceIds: string[] = []
+      try {
+        const refreshedEvidence = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+        if (Array.isArray(refreshedEvidence)) {
+          const matchingEvidence = refreshedEvidence.filter((item: Evidence) =>
+            item.type === 'document' &&
+            typeof item.source_text === 'string' &&
+            (item.source_text === extractedText || item.source_text.includes(extractedText.slice(0, Math.min(120, extractedText.length))))
+          )
+          linkedEvidenceIds = matchingEvidence.slice(-3).map((item: Evidence) => item.id)
+        }
+      } catch {
+        // The document has already been saved; reconciliation may proceed without linked evidence IDs.
+      }
+      setDeltaAutoInput({ content: extractedText, source: documentFile.name, eventDate: new Date().toISOString(), token: nextToken, evidenceIds: linkedEvidenceIds })
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
