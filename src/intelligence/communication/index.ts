@@ -53,7 +53,7 @@ function buildDefaultTrustLayer(
     recency: {
       last_updated_at: null,
       freshness_score: null,
-      interpretation: "Current session",
+      interpretation: "Recency unavailable; source timestamp not verified.",
     },
     confidence: null,
   };
