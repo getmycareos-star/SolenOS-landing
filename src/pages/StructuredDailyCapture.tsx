@@ -1453,7 +1453,7 @@ export default function StructuredDailyCapture() {
             {submittingMutation ? 'Saving...' : 'Save Daily Capture'}
           </button>
         </div>
-      </div>
       <CareDeltaPanel personId={personId} autoInput={deltaAutoInput} />
+      </div>
     );
 }
