@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { getCaregiverId, getJSON, getPersonId, postJSON } from '../api/client';
+import { getCaregiverId, getJSON, postJSON } from '../api/client';
 
 type Caregiver = { id: string; name: string; relationship?: string };
 type Handoff = {
@@ -198,7 +198,7 @@ export default function CareHandoffPanel({ personId }: { personId: string }) {
             {item.safety_concerns?.length > 0 && <div style={{ marginTop: '8px' }}><strong style={{ fontSize: '12px', color: 'var(--unknown)' }}>Safety concerns / cautions</strong><ul style={{ margin: '4px 0', paddingLeft: '20px' }}>{item.safety_concerns.map((text, index) => <li key={index} style={{ fontSize: '12px', marginBottom: '3px' }}>{text}</li>)}</ul></div>}
             {item.acknowledged_at && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>Acknowledged by {caregiverName(item.acknowledged_by_caregiver_id)} · {new Date(item.acknowledged_at).toLocaleString()}</p>}
             {item.closed_at && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Closed by {caregiverName(item.closed_by_caregiver_id)} · {new Date(item.closed_at).toLocaleString()}</p>}
-            {(eventsByHandoff[item.id] || []).length > 0 && <details style={{ marginTop: '10px' }}><summary style={{ cursor: 'pointer', fontSize: '12px' }}>Audit history ({eventsByHandoff[item.id].length})</summary><ol style={{ margin: '6px 0', paddingLeft: '20px' }}>{eventsByHandoff[item.id].map(event => <li key={event.id} style={{ fontSize: '11px', marginBottom: '4px' }}>{event.event_type} · {caregiverName(event.actor_caregiver_id)} · {new Date(event.created_at).toLocaleString()}</li>)}</ol></details>}
+            {(eventsByHandoff[item.id] || []).length > 0 && <details style={{ marginTop: '10px' }}><summary style={{ cursor: 'pointer', fontSize: '12px' }}>Audit history ({eventsByHandoff[item.id]?.length || 0})</summary><ol style={{ margin: '6px 0', paddingLeft: '20px' }}>{eventsByHandoff[item.id].map(event => <li key={event.id} style={{ fontSize: '11px', marginBottom: '4px' }}>{event.event_type} · {caregiverName(event.actor_caregiver_id)} · {new Date(event.created_at).toLocaleString()}</li>)}</ol></details>}
           </article>
         ))}
       </div>
