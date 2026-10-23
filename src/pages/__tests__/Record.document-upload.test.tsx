@@ -80,6 +80,29 @@ describe('Living Care Record document intake', () => {
     expect(screen.getByText(/Review needed: OCR confidence is low/i)).toBeInTheDocument()
   })
 
+  it('shows stored document origin and extraction warnings after record reload', async () => {
+    mockedGetJSON.mockResolvedValueOnce([{
+      id: 'evidence-doc-1',
+      type: 'document',
+      source_text: 'Discharge instructions say follow up within two weeks.',
+      uploaded_at: '2026-10-23T12:00:00.000Z',
+      source_type: 'document',
+      confidence: 0.42,
+      extra_metadata: {
+        extraction_source: 'image_ocr',
+        ocr_confidence: 0.42,
+        extracted_char_count: 53,
+        extraction_warnings: ['OCR confidence is low; compare with the original.'],
+      },
+    }] as never)
+
+    render(<MemoryRouter><Record /></MemoryRouter>)
+
+    expect(await screen.findByText(/Evidence origin: document/i)).toBeInTheDocument()
+    expect(screen.getByText(/Document extraction: image_ocr/i)).toBeInTheDocument()
+    expect(screen.getByText(/Document review needed: OCR confidence is low/i)).toBeInTheDocument()
+  })
+
   it('does not save care evidence if extraction returns no readable text', async () => {
     mockedPostFormData.mockResolvedValueOnce({ ok: true, document: { extracted_text: '  ' } } as never)
     render(<MemoryRouter><Record /></MemoryRouter>)
