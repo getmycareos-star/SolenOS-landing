@@ -131,7 +131,7 @@ export const SolenOSOutputSchema = z
       recency: z.object({
         last_update_at: z.string().nullable(),
         critical_event_ages: z.array(z.string()),
-        decay_status: z.enum(["fresh", "aging", "stale"]),
+        decay_status: z.enum(["unknown", "fresh", "aging", "stale"]),
       }),
       observed: z.array(z.string()),
       inferred: z.array(z.string()),
