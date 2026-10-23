@@ -82,6 +82,9 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
     setHistory([])
     setError('')
     setHistoryError('')
+    setContent('')
+    setSource('Caregiver report')
+    setEventDate(new Date().toISOString().slice(0, 10))
     lastToken.current = null
     if (!personId) {
       return () => { cancelled = true }
