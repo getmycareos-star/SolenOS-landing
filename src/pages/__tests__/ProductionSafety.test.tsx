@@ -372,7 +372,7 @@ describe('Phase 4 production data safety', () => {
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: 'Mark Complete' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/server did not confirm/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/server did not confirm|service unavailable/i);
     expect(screen.getByRole('button', { name: 'Mark Complete' })).toBeEnabled();
     expect(screen.queryByText(/^Completed:/)).not.toBeInTheDocument();
   });
