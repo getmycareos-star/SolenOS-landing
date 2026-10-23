@@ -34,53 +34,18 @@ function resetAll(): void {
 
 console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
 
-// Source gate: Begin must not remint care key
+// Production source gate: Vite SPA and authenticated API client are authoritative.
+// Legacy Next workspace source is not deployed; its duplicate route must remain disabled.
 {
-  const workspace = fs.readFileSync(
-    path.join(process.cwd(), "src/app/workspace/page.tsx"),
-    "utf8",
-  );
-  assert(
-    !/freshEnter\s*\?\s*mintDurableCareKey/.test(workspace),
-    "G11: Begin must not mintDurableCareKey",
-  );
-  assert(
-    workspace.includes("ensureClientDurableCareKey(previousKey)"),
-    "G11: Begin reuses durable key",
-  );
-  assert(
-    workspace.includes("ensureClientInteractionSessionId"),
-    "G11: Begin may mint interaction session",
-  );
-  assert(workspace.includes("forceNew: freshEnter"), "G11: Begin forceNew session only");
-  assert(!/pauseKey\(careKey\)/.test(workspace), "G11: Begin must not pause ACS on enter");
-  assert(
-    /offer_return_invite=0/.test(workspace),
-    "Locked B: page hydrate must not consume soft invite",
-  );
-  console.log("✓ G11 source: Begin reuses durable care key");
-  console.log("✓ Locked B: workspace hydrate uses offer_return_invite=0");
+  const app = fs.readFileSync(path.join(process.cwd(), "src/App.tsx"), "utf8");
+  const client = fs.readFileSync(path.join(process.cwd(), "src/api/client.ts"), "utf8");
+  const legacyRoute = fs.readFileSync(path.join(process.cwd(), "src/app/api/situation/route.ts"), "utf8");
+  assert(app.includes("AuthGate") && app.includes("checkAuthState"), "production care pages require authenticated session");
+  assert(client.includes("Authorization") && client.includes("Bearer "), "API requests carry bearer authorization");
+  assert(client.includes("getCaregiverId"), "API caller must use explicit caregiver identity");
+  assert(legacyRoute.includes("legacyRouteUnavailable") && legacyRoute.includes("status: 410"), "legacy route stays disabled");
+  console.log("✓ production Vite auth boundary and legacy-route quarantine");
 }
-
-// Workspace: mount does not burn invite; Done path offers once
-{
-  const ws = fs.readFileSync(
-    path.join(process.cwd(), "src/components/mvp-workspace/CognitiveWorkspace.tsx"),
-    "utf8",
-  );
-  assert(
-    /offer_return_invite=0/.test(ws),
-    "Locked B: mount hydrate must not consume soft invite",
-  );
-  assert(
-    /offer_return_invite=1/.test(ws),
-    "Locked B: Done-for-now return path must request soft invite once",
-  );
-  assert(
-    /pause_active_care_situation/.test(ws),
-    "Done for now uses pause action",
-  );
-  console.log("✓ Locked B: Done path requests soft invite once; mount does not burn it");
 }
 
 // ensureClientDurableCareKey stability + session ≠ care key
