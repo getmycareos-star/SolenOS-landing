@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client';
+import { getJSON, postJSON, patchJSON, getPersonId, getCaregiverId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
 import CareCapture from '../components/CareCapture';
 
@@ -71,6 +71,14 @@ interface Action {
   created_at: string;
   deadline?: string | null;
   is_medication_action?: boolean;
+  actor_id?: string | null;
+  actor_label?: string | null;
+}
+
+interface LinkedCaregiver {
+  id: string;
+  name: string;
+  relationship?: string;
 }
 
 export default function Dashboard() {
@@ -81,12 +89,30 @@ export default function Dashboard() {
   const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [linkedCaregivers, setLinkedCaregivers] = useState<LinkedCaregiver[]>([]);
+  const [assignmentLoadingIds, setAssignmentLoadingIds] = useState<string[]>([]);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [captureRevision, setCaptureRevision] = useState(0);
   const personId = getPersonId();
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
+
+  useEffect(() => {
+    setLinkedCaregivers([]);
+    setAssignmentError(null);
+    if (!personId) return;
+    void getJSON(`/caregivers/${encodeURIComponent(personId)}`)
+      .then(data => {
+        if (!Array.isArray(data)) throw new Error('Caregiver list response was incomplete.');
+        setLinkedCaregivers(data as LinkedCaregiver[]);
+      })
+      .catch(error => {
+        console.error('Failed to load linked caregivers:', error);
+        setAssignmentError('Linked caregivers could not be loaded; task assignments are unavailable until the connection is restored.');
+      });
+  }, [personId]);
 
   useEffect(() => {
     async function load() {
@@ -127,6 +153,8 @@ export default function Dashboard() {
           created_at: String(action.created_at ?? ''),
           deadline: typeof action.deadline === 'string' ? action.deadline : null,
           is_medication_action: action.is_medication_action === true,
+          actor_id: typeof action.actor_id === 'string' ? action.actor_id : null,
+          actor_label: typeof action.actor_label === 'string' ? action.actor_label : null,
         })));
       } else {
         setActions([]);
@@ -171,6 +199,23 @@ export default function Dashboard() {
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const handleAssignAction = async (actionId: string, caregiverId: string) => {
+    if (!caregiverId) return;
+    setAssignmentLoadingIds(previous => [...previous, actionId]);
+    setAssignmentError(null);
+    try {
+      const updated = await patchJSON(`/actions/${encodeURIComponent(actionId)}`, { actor_id: caregiverId }) as { actor_id?: string; actor_label?: string };
+      setActions(previous => previous.map(action => action.id === actionId
+        ? { ...action, actor_id: updated.actor_id ?? caregiverId, actor_label: updated.actor_label ?? linkedCaregivers.find(caregiver => caregiver.id === caregiverId)?.name ?? null }
+        : action));
+    } catch (error) {
+      console.error('Failed to assign action:', error);
+      setAssignmentError(error instanceof Error ? error.message : 'Task assignment failed. Try again.');
+    } finally {
+      setAssignmentLoadingIds(previous => previous.filter(id => id !== actionId));
+    }
   };
 
   const handleActionToggle = async (actionId: string) => {
@@ -253,6 +298,10 @@ export default function Dashboard() {
         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
           Active Actions
         </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '12px' }}>
+          Assign each action to a caregiver already linked to this care record. Only authorized linked caregivers are offered.
+        </p>
+        {assignmentError && <p role="alert" style={{ color: 'var(--unknown)', fontSize: '12px', marginBottom: '12px' }}>{assignmentError}</p>}
         {actions.length === 0 && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
             No active actions. Actions will appear here when created from situations or insights.
@@ -295,7 +344,19 @@ export default function Dashboard() {
                   </p>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {linkedCaregivers.length > 0 && (
+                  <select
+                    aria-label={`Assign ${action.title} to a caregiver`}
+                    value={action.actor_id || ''}
+                    disabled={assignmentLoadingIds.includes(action.id)}
+                    onChange={event => handleAssignAction(action.id, event.target.value)}
+                    style={{ maxWidth: '190px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: '12px' }}
+                  >
+                    <option value="">Unassigned</option>
+                    {linkedCaregivers.map(caregiver => <option key={caregiver.id} value={caregiver.id}>{caregiver.name}{caregiver.relationship ? ` · ${caregiver.relationship}` : ''}</option>)}
+                  </select>
+                )}
                 <button
                   onClick={() => handleActionToggle(action.id)}
                   disabled={loadingIds.includes(action.id)}
