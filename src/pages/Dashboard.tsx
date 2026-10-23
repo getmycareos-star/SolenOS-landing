@@ -283,9 +283,6 @@ export default function Dashboard() {
     setReminderNotice(null);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-      const idempotencyKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `reminder-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const localTime = reminderDueAt.slice(11, 16);
       await postJSON(`/reminders/actions/${encodeURIComponent(reminderActionId)}`, {
         title: reminderTitle.trim(),
@@ -403,11 +400,24 @@ export default function Dashboard() {
                     This action needs confirmation before it can be marked complete.
                   </p>
                 )}
+                {['active', 'conditional'].includes(action.status) && (
+                  <label style={{ display: 'grid', gap: '4px', marginTop: '10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Completion note (required)
+                    <textarea
+                      value={completionNotes[action.id] || ''}
+                      onChange={event => setCompletionNotes(previous => ({ ...previous, [action.id]: event.target.value }))}
+                      placeholder="What did you do, and what happened?"
+                      rows={2}
+                      maxLength={2000}
+                      style={{ padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'inherit', width: '100%' }}
+                    />
+                  </label>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
                   onClick={() => handleActionToggle(action.id)}
-                  disabled={loadingIds.includes(action.id) || toggledIds.includes(action.id) || !['active', 'conditional'].includes(action.status) || (action.is_medication_action && action.requires_confirmation)}
+                  disabled={loadingIds.includes(action.id) || toggledIds.includes(action.id) || !['active', 'conditional'].includes(action.status) || !(completionNotes[action.id] || '').trim() || (action.is_medication_action && action.requires_confirmation)}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -418,7 +428,7 @@ export default function Dashboard() {
                     color: 'white',
                     fontSize: '13px',
                     fontWeight: 500,
-                    cursor: loadingIds.includes(action.id) || toggledIds.includes(action.id)
+                    cursor: loadingIds.includes(action.id) || toggledIds.includes(action.id) || !(completionNotes[action.id] || '').trim()
                       ? 'default'
                       : 'pointer',
                     opacity: loadingIds.includes(action.id) ? 0.7 : 1
@@ -503,7 +513,7 @@ export default function Dashboard() {
                       {delivery.delivered_at ? ` · delivered ${new Date(delivery.delivered_at).toLocaleString()}` : ''}
                       {delivery.last_error ? ` · ${delivery.last_error}` : ''}
                     </p>
-                  ))}}
+                  ))}
                 </div>
                 {reminder.enabled && (
                   <button type="button" disabled={reminderSaving} onClick={() => void cancelReminder(reminder.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'inherit', fontSize: '12px', cursor: reminderSaving ? 'wait' : 'pointer' }}>
