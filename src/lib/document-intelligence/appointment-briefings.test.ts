@@ -43,3 +43,17 @@ describe("buildAppointmentBriefings", () => {
     expect(result).toHaveLength(1);
   });
 });
+
+
+it("preserves relative follow-up timeframes without pretending they are exact bookings", () => {
+  const result = buildAppointmentBriefings([{
+    id: "evidence-relative-time",
+    type: "document",
+    source_text: "Follow-up with cardiology in two weeks.",
+  }]);
+  expect(result).toHaveLength(1);
+  expect(result[0].when).toMatch(/in two weeks/i);
+  expect(result[0].detailsToConfirm).toContain(
+    "Confirm the exact appointment date and time; this source gives only a relative timeframe.",
+  );
+});
