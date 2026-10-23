@@ -4,6 +4,18 @@ import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
 import CareContinuityIntegrityPanel from '../components/CareContinuityIntegrityPanel'
 import CareDeltaPanel from '../components/CareDeltaPanel'
 
+interface ReminderItem {
+  id: string
+  title: string
+  message: string
+  due_at: string
+  timezone: string
+  recurrence_rule?: string | null
+  status: string
+  attempt_count: number
+  last_error?: string | null
+}
+
 interface CareRecordTimelineItem {
   id: string
   kind: string
@@ -70,6 +82,13 @@ export default function Record() {
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
+  const [reminders, setReminders] = useState<ReminderItem[]>([])
+  const [remindersError, setRemindersError] = useState<string | null>(null)
+  const [reminderTitle, setReminderTitle] = useState('')
+  const [reminderMessage, setReminderMessage] = useState('')
+  const [reminderDueAt, setReminderDueAt] = useState('')
+  const [reminderRecurrence, setReminderRecurrence] = useState('')
+  const [savingReminder, setSavingReminder] = useState(false)
   const careContinuityPersonId = getPersonId()
 
   useEffect(() => {
@@ -100,6 +119,77 @@ export default function Record() {
     load()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadReminders() {
+      const personId = getPersonId()
+      if (!personId) return
+      try {
+        const data = await getJSON(`/reminders/${encodeURIComponent(personId)}`)
+        if (!cancelled && Array.isArray(data)) setReminders(data as ReminderItem[])
+      } catch {
+        if (!cancelled) setRemindersError('Reminders are unavailable while the care service is offline.')
+      }
+    }
+    loadReminders()
+    return () => { cancelled = true }
+  }, [])
+
+  async function createReminder(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const personId = getPersonId()
+    const caregiverId = getCaregiverId()
+    if (!personId || !caregiverId) {
+      setRemindersError('An authorized care session is required to schedule a reminder.')
+      return
+    }
+    if (!reminderDueAt) {
+      setRemindersError('Choose a date and time for the reminder.')
+      return
+    }
+    setSavingReminder(true)
+    setRemindersError(null)
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+      const result = await postJSON('/reminders', {
+        person_id: personId,
+        caregiver_id: caregiverId,
+        title: reminderTitle.trim(),
+        message: reminderMessage.trim(),
+        due_at: new Date(reminderDueAt).toISOString(),
+        timezone,
+        recurrence_rule: reminderRecurrence || null,
+        idempotency_key: crypto.randomUUID(),
+        max_attempts: 5,
+      }) as ReminderItem
+      setReminders((current) => [result, ...current.filter((item) => item.id !== result.id)].sort((a, b) => Date.parse(a.due_at) - Date.parse(b.due_at)))
+      setReminderTitle('')
+      setReminderMessage('')
+      setReminderDueAt('')
+      setReminderRecurrence('')
+    } catch (error) {
+      setRemindersError(error instanceof Error ? error.message : 'The reminder could not be saved.')
+    } finally {
+      setSavingReminder(false)
+    }
+  }
+
+  async function cancelReminder(reminderId: string) {
+    const personId = getPersonId()
+    const caregiverId = getCaregiverId()
+    if (!personId || !caregiverId) {
+      setRemindersError('An authorized care session is required to cancel a reminder.')
+      return
+    }
+    try {
+      const result = await postJSON(`/reminders/${encodeURIComponent(personId)}/${encodeURIComponent(reminderId)}/cancel?caregiver_id=${encodeURIComponent(caregiverId)}`, {}) as ReminderItem
+      setReminders((current) => current.map((item) => item.id === result.id ? result : item))
+      setRemindersError(null)
+    } catch (error) {
+      setRemindersError(error instanceof Error ? error.message : 'The reminder could not be cancelled.')
+    }
+  }
 
   async function submitTextDocument() {
     const personId = getPersonId()
@@ -436,6 +526,62 @@ export default function Record() {
       )}
       {loadMoreError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px', marginTop: '12px' }}>{loadMoreError}</p>}
       {hasMore && !loading && !loadError && <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}><button type="button" onClick={loadOlderRecords} disabled={loadingMore} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border)', background: loadingMore ? 'var(--bg)' : 'var(--surface)', color: 'var(--text)', fontSize: '12px', cursor: loadingMore ? 'default' : 'pointer' }}>{loadingMore ? 'Loading older records…' : 'Load older records'}</button></div>}
+      <section aria-labelledby="reminders-heading" style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '10px', padding: '16px', marginBottom: '18px'
+      }}>
+        <h2 id="reminders-heading" style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 6px' }}>Care reminders</h2>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 14px' }}>
+          Schedule a follow-up and keep its delivery status visible. A reminder is only marked delivered after the notification provider confirms receipt.
+        </p>
+        <form onSubmit={createReminder} style={{ display: 'grid', gap: '10px', maxWidth: '620px' }}>
+          <label style={{ display: 'grid', gap: '4px', fontSize: '12px' }}>
+            Reminder title
+            <input required maxLength={200} value={reminderTitle} onChange={(event) => setReminderTitle(event.target.value)} placeholder="Call the clinic" style={{ padding: '9px', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+          </label>
+          <label style={{ display: 'grid', gap: '4px', fontSize: '12px' }}>
+            Details
+            <textarea required maxLength={4000} value={reminderMessage} onChange={(event) => setReminderMessage(event.target.value)} placeholder="What needs to be remembered?" rows={2} style={{ padding: '9px', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', resize: 'vertical' }} />
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px' }}>
+            <label style={{ display: 'grid', gap: '4px', fontSize: '12px' }}>
+              Date and time (your local time)
+              <input type="datetime-local" required value={reminderDueAt} onChange={(event) => setReminderDueAt(event.target.value)} style={{ padding: '9px', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+            </label>
+            <label style={{ display: 'grid', gap: '4px', fontSize: '12px' }}>
+              Repeat
+              <select value={reminderRecurrence} onChange={(event) => setReminderRecurrence(event.target.value)} style={{ padding: '9px', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}>
+                <option value="">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </label>
+          </div>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'}</p>
+          <div><button type="submit" disabled={savingReminder} style={{ padding: '9px 13px', borderRadius: '8px', border: 0, background: 'var(--accent)', color: 'white', fontSize: '12px', cursor: savingReminder ? 'default' : 'pointer' }}>{savingReminder ? 'Saving reminder…' : 'Save reminder'}</button></div>
+        </form>
+        {remindersError && <p role="status" aria-live="polite" style={{ color: 'var(--error)', fontSize: '12px', marginTop: '10px' }}>{remindersError}</p>}
+        <div style={{ display: 'grid', gap: '8px', marginTop: '14px' }}>
+          {reminders.length === 0 && <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No reminders are recorded for this care recipient yet.</p>}
+          {reminders.map((item) => (
+            <article key={item.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                <div>
+                  <strong style={{ fontSize: '13px' }}>{item.title}</strong>
+                  <p style={{ fontSize: '12px', margin: '4px 0', whiteSpace: 'pre-wrap' }}>{item.message}</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                    {new Date(item.due_at).toLocaleString()} · {item.timezone} · {item.recurrence_rule || 'One-time'} · {item.status.replace(/_/g, ' ')}
+                  </p>
+                  {item.last_error && <p style={{ fontSize: '11px', color: 'var(--error)', margin: '5px 0 0' }}>Last delivery issue: {item.last_error}</p>}
+                </div>
+                {['scheduled', 'failed'].includes(item.status) && <button type="button" onClick={() => cancelReminder(item.id)} style={{ padding: '6px 9px', borderRadius: '7px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '11px', whiteSpace: 'nowrap' }}>Cancel</button>}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <CareContinuityIntegrityPanel personId={careContinuityPersonId} evidenceItems={continuityEvidenceItems} />
       <CareDeltaPanel key={careContinuityPersonId} personId={careContinuityPersonId} autoInput={deltaAutoInput} />
     </div>
