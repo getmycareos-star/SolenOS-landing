@@ -152,11 +152,13 @@ export function FinalOutputPanel({ output, rawInput, className, firstSituation }
         </h3>
         <p className="panel-muted">
           Trust: {output.trust_layer.recency.interpretation} — freshness{" "}
-          {output.trust_layer.recency.freshness_score >= 0.7
-            ? "recent"
-            : output.trust_layer.recency.freshness_score >= 0.4
-              ? "aging"
-              : "stale"}
+          {output.trust_layer.recency.freshness_score == null
+            ? "unavailable"
+            : output.trust_layer.recency.freshness_score >= 0.7
+              ? "recent"
+              : output.trust_layer.recency.freshness_score >= 0.4
+                ? "aging"
+                : "stale"}
         </p>
 
         {output.trust_layer.known.length > 0 && (
