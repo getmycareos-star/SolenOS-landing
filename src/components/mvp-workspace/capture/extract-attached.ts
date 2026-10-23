@@ -2,6 +2,7 @@ import { apiUrl, safeJson } from "../../../lib/api-url";
 import type { AttachedDocument } from "../../../lib/mvp-workspace";
 import type { InputEntryMethod } from "../../../lib/input-entry-contract";
 import { sanitizeCaregiverErrorMessage } from "../../../lib/mvp-input-architecture";
+import { getAnonymousAccessToken } from "../../../api/client";
 
 function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -44,8 +45,10 @@ export async function extractAttachedDocument(
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res: Response;
     try {
+      const token = getAnonymousAccessToken();
       res = await fetch(apiUrl("/api/extract"), {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,
         signal: controller.signal,
       });
@@ -67,6 +70,7 @@ export async function extractAttachedDocument(
       note?: string;
       message?: string;
       error?: string;
+      detail?: string;
     } = {};
     try {
       data = (await safeJson(res)) as typeof data;
@@ -81,7 +85,8 @@ export async function extractAttachedDocument(
         ...base,
         status: "failed",
         errorNote: sanitizeCaregiverErrorMessage(
-          data.note ??
+          data.detail ??
+            data.note ??
             data.message ??
             data.error ??
             (isImage
