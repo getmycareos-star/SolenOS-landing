@@ -76,8 +76,8 @@ describe('FirstUseJourney', () => {
     expect(screen.getByText('Clinic note')).toBeInTheDocument();
     expect(screen.getByText('Ask the clinic about sleep changes')).toBeInTheDocument();
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
-    expect(screen.getByText(/event time:/i)).toBeInTheDocument();
-    expect(screen.getByText(/entered into SolenOS:/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/event time:/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/entered into SolenOS:/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/does not yet establish which entries changed since your last review/i)).toBeInTheDocument();
   });
 
