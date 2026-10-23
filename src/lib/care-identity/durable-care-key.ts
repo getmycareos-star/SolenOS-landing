@@ -44,7 +44,12 @@ export function resolveDurableCareKey(params: {
   caregiver_id?: string | null;
   care_session_id?: string | null;
 }): string {
-  return requireCaregiverId(params.caregiver_id, "caregiver_id");
+  const fromCaregiver = params.caregiver_id?.trim();
+  if (fromCaregiver) return requireCaregiverId(fromCaregiver, "caregiver_id");
+  if (params.care_session_id?.trim()) {
+    throw new Error("Session IDs cannot identify care records; an explicit caregiver identity is required.");
+  }
+  throw new Error("An explicit caregiver identity is required for care-record access.");
 
 }
 
