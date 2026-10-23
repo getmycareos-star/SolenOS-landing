@@ -9,7 +9,7 @@ type Props = {
 };
 
 export function PriorityAttentionPanel({ events, className }: Props) {
-  const critical = events.filter((e) => e.priority.priority_score >= 80);
+  const critical = events.filter((e) => e.priority.priority_score != null && e.priority.priority_score >= 80);
 
   if (critical.length === 0) return null;
 
@@ -32,7 +32,7 @@ export function PriorityAttentionPanel({ events, className }: Props) {
             </div>
             <p className="priority-attention-body">{event.raw_input}</p>
             <p className="priority-attention-signals">
-              Urgency {event.priority.urgency} · Uncertainty {event.priority.uncertainty} ·{" "}
+              Urgency {event.priority.urgency ?? "Unavailable"} · Uncertainty {event.priority.uncertainty ?? "Unavailable"} ·{" "}
               {formatEventTimeLabel(event.event_time)}
             </p>
           </li>
