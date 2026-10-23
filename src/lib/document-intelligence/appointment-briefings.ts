@@ -27,8 +27,9 @@ const DATE_OR_TIME =
 function splitSentences(text: string): string[] {
   return text
     .replace(/\r/g, "\n")
+    .replace(/\bDr\./gi, "Dr__DOT__")
     .split(/(?<=[.!?])\s+|\n+/)
-    .map((sentence) => sentence.trim())
+    .map((sentence) => sentence.replace(/Dr__DOT__/gi, "Dr.").trim())
     .filter(Boolean);
 }
 
