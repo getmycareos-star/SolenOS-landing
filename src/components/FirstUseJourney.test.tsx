@@ -87,6 +87,28 @@ describe('FirstUseJourney', () => {
     expect(screen.getByText(/does not yet establish which entries changed since your last review/i)).toBeInTheDocument();
   });
 
+  it('orders events by occurrence time rather than when an old report was entered', async () => {
+    mockedGetJSON
+      .mockResolvedValueOnce([
+        { id: 'old-event', title: 'Old report entered today', occurred_at: '2024-02-01T10:00:00Z', recorded_at: '2026-10-23T10:00:00Z' },
+        { id: 'newer-event', title: 'Newer by event time', occurred_at: '2025-08-01T10:00:00Z', recorded_at: '2025-08-01T11:00:00Z' },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    renderJourney();
+
+    await waitFor(() => expect(screen.getByText(/latest event returned/i)).toBeInTheDocument());
+    const latestSummary = screen.getByText(/latest event returned/i).closest('p');
+    expect(latestSummary).toHaveTextContent('Newer by event time');
+    expect(latestSummary).not.toHaveTextContent('Old report entered today');
+    expect(screen.getByText(/assessment save time is not the event time/i)).toBeInTheDocument();
+  });
+
   it('shows retrieved records while explicitly identifying a failed section', async () => {
     mockedGetJSON
       .mockResolvedValueOnce([{ id: 'event-1', title: 'Appetite reported lower' }])
