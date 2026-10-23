@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
+import AppointmentBriefings from '../components/AppointmentBriefings'
 
 interface Evidence {
   id: string
@@ -157,6 +158,8 @@ export default function Record() {
            </Link>
          </div>
        </div>
+
+      <AppointmentBriefings evidence={items} />
 
       <section style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
