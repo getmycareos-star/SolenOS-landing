@@ -40,7 +40,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
   const [busy, setBusy] = useState(false)
   const lastToken = useRef<number | null>(null)
 
-  async function reconcile(input: { content: string; source: string; eventDate: string }) {
+  async function reconcile(input: { content: string; source: string; eventDate: string; evidenceIds?: string[]; sourceEventId?: string }) {
     const scopedPersonId = getPersonId()
     if (!scopedPersonId || scopedPersonId !== personId) {
       setError('Select an authorized care record before reconciling an event.')
@@ -58,8 +58,8 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         event_date: new Date(input.eventDate).toISOString(),
         source: input.source.trim() || 'Caregiver report',
         content: input.content,
-        evidence_ids: autoInput?.content === input.content && autoInput?.source === input.source ? (autoInput.evidenceIds || []) : [],
-        source_event_id: autoInput?.content === input.content && autoInput?.source === input.source ? autoInput.sourceEventId : undefined,
+        evidence_ids: input.evidenceIds || [],
+        source_event_id: input.sourceEventId,
         persist: true,
       }) as DeltaResult
       setResult(response)
