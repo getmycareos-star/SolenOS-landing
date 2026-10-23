@@ -45,6 +45,18 @@ describe("identity isolation boundaries", () => {
     expect(getGraphForCaregiver("default_caregiver")).toBeUndefined();
   });
 
+
+  it("does not report process-memory observations as durably persisted", () => {
+    const result = recordObservation({
+      caregiver_id: "cg_persistence_test",
+      raw_text: "Test-only observation",
+      source: "text",
+    });
+    expect(result.persistence_status).toBe("unavailable");
+    expect(result.persistence_message).toMatch(/process memory|not durably saved/i);
+    expect(() => getObservationExport("default_caregiver")).toThrow(/distinct caregiver identity/i);
+  });
+
   it("refuses un-attributed observations and care events", () => {
     expect(() => recordObservation({ caregiver_id: "", raw_text: "care note" })).toThrow(/caregiver identity/i);
     expect(() => getObservationExport("")).toThrow(/caregiver identity/i);
