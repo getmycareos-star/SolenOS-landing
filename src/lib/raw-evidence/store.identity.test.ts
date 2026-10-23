@@ -36,9 +36,9 @@ describe("raw evidence identity and persistence status", () => {
     });
 
     expect(resultA.persisted).toBe(true);
-    expect(resultA.persistence_backend).toBe("local_queue");
+    expect(resultA.persistence_status).toBe("local_queued");
     expect(resultB.persisted).toBe(true);
-    expect(resultB.persistence_backend).toBe("local_queue");
+    expect(resultB.persistence_status).toBe("local_queued");
 
     expect(store.getById(caregiverA, evidenceA)?.content).toBe("Caregiver A test evidence");
     expect(store.getById(caregiverA, evidenceB)).toBeUndefined();
