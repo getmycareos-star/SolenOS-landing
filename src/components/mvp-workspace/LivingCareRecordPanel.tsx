@@ -232,17 +232,33 @@ export function LivingCareRecordPanel({
         </details>
       )}
 
-      {view.follow_up_items.length > 0 && (
+      {((view.next_step_guidance?.length ?? 0) > 0 || view.follow_up_items.length > 0) && (
         <section className="care-card-actions" aria-labelledby="lcr-actions-heading">
           <h3 id="lcr-actions-heading" className="section-kicker">
-            Next actions
+            What to do next
           </h3>
-          <p className="panel-muted">Suggested next steps — your choice how to proceed.</p>
-          <ul>
-            {view.follow_up_items.slice(0, 2).map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          <p className="panel-muted">
+            Suggestions are grounded in the information held so far. Confirm uncertain details; no new clinical instruction is inferred.
+          </p>
+          {(view.next_step_guidance?.length ?? 0) > 0 ? (
+            <dl className="lcr-pillars">
+              {view.next_step_guidance!.slice(0, 3).map((item) => (
+                <div key={item.kind + ":" + item.message}>
+                  <dt>{item.kind === "ask" ? "Ask" : item.kind === "check" ? "Check" : item.kind === "monitor" ? "Monitor" : "Existing decision"}</dt>
+                  <dd>{item.message}</dd>
+                  {item.source_basis.length > 0 && (
+                    <dd className="panel-muted">Grounded in: {item.source_basis.join(" · ")}</dd>
+                  )}
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <ul>
+              {view.follow_up_items.slice(0, 2).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
