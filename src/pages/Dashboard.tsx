@@ -375,7 +375,7 @@ export default function Dashboard() {
                   </p>
                 )}
                 <p style={{ margin: '0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  Created: {formatDate(action.created_at)} · Status: {action.status.replaceAll('_', ' ')}
+                  Created: {formatDate(action.created_at)} · Status: {action.status.replace(/_/g, ' ')}
                 </p>
                 {action.is_medication_action && !action.source_authority_verified && (
                   <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--warning)' }}>
