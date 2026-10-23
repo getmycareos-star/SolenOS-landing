@@ -95,7 +95,16 @@ describe('FirstUseJourney', () => {
       ])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{
+        id: 'change-1',
+        change_type: 'sleep duration',
+        explanation: 'Recorded assessment of sleep reports.',
+        is_active: true,
+        created_at: '2026-10-23T10:00:00Z',
+        comparison_window_start: '2025-07-01T00:00:00Z',
+        comparison_window_end: '2025-08-01T00:00:00Z',
+        evidence_ids: ['evidence-old'],
+      }])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
