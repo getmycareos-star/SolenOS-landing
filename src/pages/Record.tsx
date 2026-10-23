@@ -34,6 +34,7 @@ export default function Record() {
   const [documentFile, setDocumentFile] = useState<File | null>(null)
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
+  const [documentReviewMessage, setDocumentReviewMessage] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any[]; extractionSource?: string; confidence?: number | null; warnings?: string[]; evidenceId?: string; filename?: string; documentType?: string; documentDate?: string | null; extractionError?: string | null } | null>(null)
   const [showAppointmentBrief, setShowAppointmentBrief] = useState(false)
 
@@ -86,6 +87,7 @@ export default function Record() {
     setProcessingDocument(true)
     setDocumentError(null)
     setDocumentResult(null)
+    setDocumentReviewMessage(null)
     try {
       // One authenticated endpoint extracts text, stores the original bytes,
       // creates source evidence, and returns exact-source candidates for review.
@@ -122,8 +124,13 @@ export default function Record() {
       })
       setDocumentFile(null)
       // Refresh the evidence list from persisted server data, not optimistic state.
-      const refreshed = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
-      if (Array.isArray(refreshed)) setItems(refreshed)
+      try {
+        const refreshed = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+        if (Array.isArray(refreshed)) setItems(refreshed)
+      } catch {
+        // The upload was already confirmed and persisted. Keep that success visible;
+        // the list can be refreshed on the next page load.
+      }
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -134,6 +141,7 @@ export default function Record() {
   async function reviewDocumentCandidate(candidateIndex: number, decision: 'accept' | 'reject') {
     const evidenceId = documentResult?.evidenceId
     if (!evidenceId) return
+    setDocumentReviewMessage(null)
     try {
       const result = await postJSON(
         `/documents/${encodeURIComponent(evidenceId)}/candidates/${candidateIndex}/review`,
@@ -148,9 +156,9 @@ export default function Record() {
         candidates[candidateIndex] = result.candidate
         return { ...current, candidates }
       })
-      setDocumentError(result.message || 'Review decision saved. No authoritative care fact was changed.')
+      setDocumentReviewMessage(result.message || 'Review decision saved. No authoritative care fact was changed.')
     } catch (error) {
-      setDocumentError(error instanceof Error ? error.message : 'The review decision could not be saved.')
+      setDocumentReviewMessage(error instanceof Error ? error.message : 'The review decision could not be saved.')
     }
   }
 
@@ -320,6 +328,7 @@ export default function Record() {
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
               Review decisions are saved with provenance and do not write authoritative Living Care Record facts. Confirm all details against the original document.
             </p>
+            {documentReviewMessage && <p role="status" style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>{documentReviewMessage}</p>
           </div>
         )}
       </section>
