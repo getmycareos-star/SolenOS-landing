@@ -34,10 +34,10 @@ export function createEmptyTrustLayer(): FinalOutputContract["trust_layer"] {
     unknown: [{ statement: "Insufficient structure to surface explicit gaps", drives_clarification: true }],
     recency: {
       last_updated_at: null,
-      freshness_score: 0,
+      freshness_score: null,
       interpretation: "potentially outdated (>7–14 days)",
     },
-    confidence: 0.15,
+    confidence: null,
   };
 }
 export function createEmptyConfidenceState(): FinalOutputContract["confidence_state"] {
@@ -97,7 +97,7 @@ export function buildDegradedOutput(input: {
         freshness_score: 0,
         interpretation: "potentially outdated (>7–14 days)",
       },
-      confidence: 0.2,
+      confidence: null,
     },
     transparency_panel: createEmptyTransparencyPanel(),
   };
