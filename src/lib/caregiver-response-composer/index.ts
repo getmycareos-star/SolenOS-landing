@@ -2393,6 +2393,7 @@ export function assertComposedResponseProfessional(
     ...composed.what_we_know,
     ...composed.still_unclear,
     ...composed.follow_up_items,
+    ...(composed.next_step_guidance ?? []).flatMap((item) => [item.message, ...item.source_basis]),
   ].join("\n");
 
   for (const phrase of CAREGIVER_RESPONSE_BANNED_PHRASES) {
