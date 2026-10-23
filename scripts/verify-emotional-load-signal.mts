@@ -88,8 +88,9 @@ assert(burnout.reasoning.length > 10, "burnout reasoning");
 
 const signal = computeEmotionalLoadSignal(baseInput);
 assert(signal.perSituation.length >= 2, "per-situation contributions");
-assert(signal.recoveryTimeEstimate.estimatedMinutes > 0, "recovery stub");
-console.log("✓ stress + burnout + per-situation + recovery stub");
+assert(signal.recoveryTimeEstimate.estimatedMinutes === null, "recovery duration unavailable without validated model");
+assert(signal.recoveryTimeEstimate.note.includes("unavailable"), "recovery duration limitation is explicit");
+console.log("✓ stress + burnout + per-situation + explicit unavailable recovery duration");
 
 assert(classifyCognitiveFatigue(0) === "LOW", "0 LOW");
 assert(classifyCognitiveFatigue(COGNITIVE_FATIGUE_BANDS.LOW.max) === "LOW", "29 LOW");
