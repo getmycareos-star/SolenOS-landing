@@ -502,7 +502,7 @@ export default function Dashboard() {
                   <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 600 }}>{reminder.title}</h4>
                   <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{reminder.message}</p>
                   <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {reminder.next_run_at ? new Date(reminder.next_run_at).toLocaleString() : 'No future occurrence'} · {reminder.timezone} · {reminder.recurrence === 'once' ? 'One-time' : `Repeats ${reminder.recurrence}`} at {reminder.local_time}
+                    {reminder.enabled && reminder.next_run_at ? new Date(reminder.next_run_at).toLocaleString() : 'No future occurrence'} · {reminder.timezone} · {reminder.recurrence === 'once' ? 'One-time' : `Repeats ${reminder.recurrence}`} at {reminder.local_time}
                   </p>
                   <p style={{ margin: 0, fontSize: '12px' }}>
                     Schedule: <strong>{reminder.enabled ? 'Enabled' : 'Paused'}</strong>
