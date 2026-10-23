@@ -293,6 +293,11 @@ export default function Record() {
               </p>
             )}
             {documentReviewFeedback && <p role="status" style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-secondary)' }}>{documentReviewFeedback}</p>}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px', fontSize: '12px' }}>
+              <Link to="/daily-care" style={{ color: 'var(--trust)' }}>Add a related observation →</Link>
+              <Link to="/timeline" style={{ color: 'var(--trust)' }}>Review recorded events →</Link>
+              <a href="#saved-evidence" style={{ color: 'var(--trust)' }}>View saved source evidence ↓</a>
+            </div>
           </div>
         )}
       </section>
@@ -328,7 +333,7 @@ export default function Record() {
       )}
 
       {!loading && !loadError && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div id="saved-evidence" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {items.map(item => (
             <div key={item.id} style={{
               background: 'var(--surface)', border: '1px solid var(--border)',
