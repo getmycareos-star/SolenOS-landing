@@ -136,7 +136,7 @@ function isOpenGap(gap: InformationGap): boolean {
 function isOverdue(value?: string | null): boolean {
   if (!value) return false;
   // Date-only deadlines are due through the end of that calendar day, not at UTC midnight.
-  const dateOnly = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   const deadline = dateOnly
     ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 23, 59, 59, 999).getTime()
     : Date.parse(value);
