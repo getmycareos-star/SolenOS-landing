@@ -36,6 +36,7 @@ export function upgradeFieldConfidence(
 /** Contradiction lowers confidence — data is never removed. */
 export function downgradeFieldConfidence(current: FieldConfidence): FieldConfidence {
   const order: ConfidenceLevel[] = ["low", "medium", "high"];
+  if (current.extraction === "unknown") return current;
   const idx = order.indexOf(current.extraction);
   return {
     ...current,
@@ -43,7 +44,18 @@ export function downgradeFieldConfidence(current: FieldConfidence): FieldConfide
   };
 }
 
-export function createDefaultIntegrityFields(score: number, userConfirmed = false) {
+export function createDefaultIntegrityFields(score: number | null, userConfirmed = false) {
+  if (score == null) {
+    const unknown: FieldConfidence = {
+      extraction: "unknown",
+      user_confirmed: userConfirmed,
+    };
+    return {
+      extracted_fact: unknown,
+      event_time: { ...unknown },
+    };
+  }
+
   const fc = createFieldConfidence(score, userConfirmed);
   return {
     extracted_fact: fc,
