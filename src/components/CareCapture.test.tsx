@@ -30,7 +30,7 @@ describe('CareCapture quick daily entry', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sleep' }));
     expect(screen.getByRole('button', { name: 'Sleep' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText(/how did they sleep/i)).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: '' })).toHaveAttribute('placeholder', expect.stringMatching(/how did they sleep/i));
+    expect(screen.getByPlaceholderText(/how did they sleep/i)).toBeInTheDocument();
   });
 
   it('sends the selected category and a caregiver-supplied event time without changing the source report', async () => {
