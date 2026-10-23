@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ensureAnonymousSession, getJSON, getPersonId } from '../api/client';
+import CareContinuityIntegrityPanel from './CareContinuityIntegrityPanel';
 
 type RecordState = 'loading' | 'empty' | 'existing' | 'unknown';
 
@@ -11,11 +12,13 @@ type CareEvent = {
   description?: string;
   occurred_at?: string;
   recorded_at?: string;
+  created_at?: string;
 };
 
 type EvidenceRecord = {
   id: string;
   type?: string;
+  source_text?: string;
   title?: string;
   file_name?: string;
   source_label?: string;
@@ -265,7 +268,7 @@ export default function FirstUseJourney() {
             <p style={{ fontSize: '13px', margin: '0 0 14px' }}>
               <strong>Latest event returned:</strong> {eventLabel(latestEvent)}
               <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px', marginTop: '3px' }}>
-                Reported/recorded time: {displayDate(latestEvent.occurred_at || latestEvent.recorded_at)}
+                Event time: {displayDate(latestEvent.occurred_at)} · Entered into SolenOS: {displayDate(latestEvent.recorded_at || latestEvent.created_at)}
               </span>
             </p>
           )}
@@ -292,7 +295,7 @@ export default function FirstUseJourney() {
                   <li key={event.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
                     {eventLabel(event)}
                     <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
-                      {displayDate(event.occurred_at || event.recorded_at)}
+                      Event time: {displayDate(event.occurred_at)} · Entered: {displayDate(event.recorded_at || event.created_at)}
                     </span>
                   </li>
                 ))}
@@ -416,6 +419,66 @@ export default function FirstUseJourney() {
             These are records retrieved from the current API. This screen does not yet establish which entries changed since your last review or whether active actions remain appropriate.
           </p>
         </section>
+      )}
+
+      {recordState === 'existing' && (
+        <section aria-label="Missing information and overdue follow-ups" style={{
+          border: '1px solid var(--border)', borderRadius: '12px', padding: '16px',
+          marginBottom: '22px', background: 'var(--bg)',
+        }}>
+          <h2 style={{ fontSize: '17px', margin: '0 0 6px' }}>Missing information & follow-ups</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+            “Not recorded” means the current record does not contain this information. It does not mean the condition or event is absent. Only an explicitly sourced and reviewed report can document that something was checked and not present.
+          </p>
+          {snapshot.failedSections.length > 0 && (
+            <p role="alert" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Some sources could not be checked ({snapshot.failedSections.join(', ')}); follow-up status may be incomplete.
+            </p>
+          )}
+          {snapshot.gaps.length > 0 ? (
+            <div>
+              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Information gaps recorded</h3>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {snapshot.gaps.map((gap) => {
+                  const due = gap.expected_by ? new Date(gap.expected_by) : null;
+                  const overdue = Boolean(due && !Number.isNaN(due.getTime()) && due.getTime() < Date.now() && !['resolved', 'closed', 'completed'].includes((gap.lifecycle_status || '').toLowerCase()));
+                  return <li key={gap.id} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                    <strong>{gap.field || 'Information not recorded'}</strong>: {gap.description || 'The record has an identified information gap.'}
+                    <span style={{ display: 'block', color: overdue ? 'var(--error)' : 'var(--text-secondary)', fontSize: '11px' }}>
+                      {overdue ? 'Overdue follow-up' : 'Status'} · {gap.lifecycle_status || 'open'} · Due: {displayDate(gap.expected_by)}
+                    </span>
+                  </li>;
+                })}
+              </ul>
+            </div>
+          ) : !snapshot.failedSections.includes('open information gaps') ? (
+            <p style={{ fontSize: '12px', margin: '8px 0' }}>No open information-gap records were returned. This does not confirm that all care information is complete or that a concern is absent.</p>
+          ) : null}
+          {snapshot.actions.some((action) => action.status === 'active' && action.deadline && !Number.isNaN(Date.parse(action.deadline)) && Date.parse(action.deadline) < Date.now()) && (
+            <div>
+              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Overdue active actions</h3>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {snapshot.actions.filter((action) => action.status === 'active' && action.deadline && !Number.isNaN(Date.parse(action.deadline)) && Date.parse(action.deadline) < Date.now()).map((action) => (
+                  <li key={action.id} style={{ fontSize: '12px', marginBottom: '7px' }}>
+                    {actionLabel(action)}
+                    <span style={{ display: 'block', color: 'var(--error)', fontSize: '11px' }}>Due {displayDate(action.deadline)} · Still marked active</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+      {recordState === 'existing' && !snapshot.failedSections.includes('saved evidence and documents') && (
+        <CareContinuityIntegrityPanel
+          personId={getPersonId() || ''}
+          evidenceItems={snapshot.evidence.map((item) => ({
+            id: item.id,
+            type: item.type || 'Evidence',
+            source_text: item.source_text || '',
+            uploaded_at: item.uploaded_at || item.created_at || '',
+          }))}
+        />
       )}
 
       <div style={{
