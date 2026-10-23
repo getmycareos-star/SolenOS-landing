@@ -35,7 +35,7 @@ function splitSentences(text: string): string[] {
 
 function extractWho(sentence: string): string | null {
   const clinician = sentence.match(/\b(?:Dr\.?|Doctor)\s+[A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,3}/);
-  if (clinician?.[0]) return clinician[0].trim();
+  if (clinician?.[0]) return clinician[0].trim().replace(/[.,]+$/, "");
   const clinic = sentence.match(/\b(?:cardiology|neurology|oncology|primary care|clinic|hospital|specialist)\b/i);
   return clinic?.[0] ?? null;
 }
