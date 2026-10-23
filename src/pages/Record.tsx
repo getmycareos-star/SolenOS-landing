@@ -24,12 +24,37 @@ interface CareRecordTimelineItem {
     evidence_status?: string | null
   }>
   details?: Record<string, unknown>
+  related_observations?: Array<{
+    id: string
+    original_text: string
+    observed_at?: string | null
+    time_provenance?: string | null
+    tags?: string[]
+  }>
+  assertions?: Array<{
+    id: string
+    field: string
+    asserted_value: string
+    assertion_status: string
+    source_label: string
+    source_text?: string | null
+  }>
+  outcomes?: Array<{
+    id: string
+    outcome_status: string
+    notes?: string | null
+    correction_text?: string | null
+    created_at?: string | null
+  }>
 }
 
 export default function Record() {
   const [items, setItems] = useState<CareRecordTimelineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
   const [lcrExplanation, setLcrExplanation] = useState<string | null>(null)
   const [lcrProviderStatus, setLcrProviderStatus] = useState<string | null>(null)
   const [lcrError, setLcrError] = useState<string | null>(null)
@@ -49,9 +74,12 @@ export default function Record() {
         return
       }
       try {
-        const data = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200`) as { timeline?: unknown }
+        const data = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200&offset=0`) as { timeline?: unknown; has_more?: boolean }
         if (!Array.isArray(data.timeline)) throw new Error('The unified care record response was incomplete.')
-        if (!cancelled) setItems(data.timeline as CareRecordTimelineItem[])
+        if (!cancelled) {
+          setItems(data.timeline as CareRecordTimelineItem[])
+          setHasMore(Boolean(data.has_more))
+        }
       } catch {
         if (!cancelled) {
           setItems([])
@@ -116,8 +144,11 @@ export default function Record() {
       // Refresh the unified view after the server confirms the document capture.
       // A refresh failure must not misreport the successful upload as a failed save.
       try {
-        const refreshed = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200`) as { timeline?: unknown }
-        if (Array.isArray(refreshed.timeline)) setItems(refreshed.timeline as CareRecordTimelineItem[])
+        const refreshed = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200&offset=0`) as { timeline?: unknown; has_more?: boolean }
+        if (Array.isArray(refreshed.timeline)) {
+          setItems(refreshed.timeline as CareRecordTimelineItem[])
+          setHasMore(Boolean(refreshed.has_more))
+        }
       } catch {
         // The saved record will be reloaded on the next page visit.
       }
@@ -125,6 +156,31 @@ export default function Record() {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
       setProcessingDocument(false)
+    }
+  }
+
+  async function loadOlderRecords() {
+    const personId = getPersonId()
+    if (!personId) {
+      setLoadMoreError('No authorized care record is selected.')
+      return
+    }
+    setLoadingMore(true)
+    setLoadMoreError(null)
+    try {
+      const offset = items.length
+      const result = await getJSON(`/care-record/${encodeURIComponent(personId)}?limit=200&offset=${offset}`) as { timeline?: unknown; has_more?: boolean }
+      if (!Array.isArray(result.timeline)) throw new Error('The older care record response was incomplete.')
+      const nextItems = result.timeline as CareRecordTimelineItem[]
+      setItems(current => {
+        const existingIds = new Set(current.map(item => item.id))
+        return [...current, ...nextItems.filter(item => !existingIds.has(item.id))]
+      })
+      setHasMore(Boolean(result.has_more))
+    } catch {
+      setLoadMoreError('Older care records could not be loaded. The records already on screen remain available.')
+    } finally {
+      setLoadingMore(false)
     }
   }
 
@@ -161,6 +217,9 @@ export default function Record() {
     appointment: '📅',
     care_action: '☑️',
     care_transition: '🔄',
+    observation: '👁️',
+    care_assertion: '📌',
+    care_action_outcome: '☑️',
     care_window: '⏱️',
   }
 
@@ -372,6 +431,53 @@ export default function Record() {
                   </ul>
                 </div>
               )}
+              {(item.related_observations?.length ?? 0) > 0 && (
+                <section aria-label="Related observations" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Related observations</strong>
+                  {item.related_observations?.map(observation => (
+                    <div key={observation.id} style={{ marginTop: '6px' }}>
+                      <p style={{ fontSize: '12px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{observation.original_text}</p>
+                      {observation.observed_at && (
+                        <p style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                          Observed: {new Date(observation.observed_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              )}
+              {(item.assertions?.length ?? 0) > 0 && (
+                <section aria-label="Source-attributed care facts" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Source-attributed care facts</strong>
+                  {item.assertions?.map(assertion => (
+                    <div key={assertion.id} style={{ marginTop: '6px' }}>
+                      <p style={{ fontSize: '12px', lineHeight: 1.5 }}><strong>{assertion.field.replace(/_/g, ' ')}:</strong> {assertion.asserted_value}</p>
+                      <p style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                        {assertion.source_label} · {assertion.assertion_status.replace(/_/g, ' ')}
+                      </p>
+                      {assertion.source_text && <p style={{ fontSize: '11px', lineHeight: 1.5 }}>{assertion.source_text}</p>}
+                    </div>
+                  ))}
+                </section>
+              )}
+              {(item.outcomes?.length ?? 0) > 0 && (
+                <section aria-label="Care action outcomes" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Action outcomes</strong>
+                  {item.outcomes?.map(outcome => (
+                    <div key={outcome.id} style={{ marginTop: '6px' }}>
+                      <p style={{ fontSize: '12px' }}>{outcome.outcome_status.replace(/_/g, ' ')}</p>
+                      {(outcome.notes || outcome.correction_text) && (
+                        <p style={{ fontSize: '11px', lineHeight: 1.5 }}>{outcome.notes || outcome.correction_text}</p>
+                      )}
+                      {outcome.created_at && (
+                        <p style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                          Recorded: {new Date(outcome.created_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              )}
               {item.kind !== 'evidence' && (item.evidence?.length ?? 0) > 0 && (
                 <section aria-label="Supporting source material" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
                   <strong style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Supporting source material</strong>
@@ -385,6 +491,23 @@ export default function Record() {
               )}
             </div>
           ))}
+        </div>
+      )}
+      {loadMoreError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px', marginTop: '12px' }}>{loadMoreError}</p>}
+      {hasMore && !loading && !loadError && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+          <button
+            type="button"
+            onClick={loadOlderRecords}
+            disabled={loadingMore}
+            style={{
+              padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border)',
+              background: loadingMore ? 'var(--bg)' : 'var(--surface)',
+              color: 'var(--text)', fontSize: '12px', cursor: loadingMore ? 'default' : 'pointer',
+            }}
+          >
+            {loadingMore ? 'Loading older records…' : 'Load older records'}
+          </button>
         </div>
       )}
     </div>
