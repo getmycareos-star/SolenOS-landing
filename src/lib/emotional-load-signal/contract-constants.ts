@@ -61,14 +61,6 @@ export const BURNOUT_FORMULA_WEIGHTS = {
   situationSwitching: 0.15,
 } as const;
 
-/** Recovery time modeling stub — minutes after resolution before load decays. */
-export const RECOVERY_TIME_STUB_MINUTES = {
-  LOW: 5,
-  MEDIUM: 15,
-  HIGH: 45,
-  CRITICAL: 120,
-} as const;
-
 /** Load-aware priority: temporal weight reduction when deferring under high load. */
 export const LOAD_AWARE_TEMPORAL_REDUCTION = 0.25;
 
