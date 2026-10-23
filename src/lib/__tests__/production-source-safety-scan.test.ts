@@ -41,12 +41,19 @@ describe("production source fake-data and identity-fallback scan", () => {
     const forbiddenMarkers = [
       "demo-person-id",
       "Alex Johnson",
+      "Sam Johnson",
+      "sam@example.com",
       "SAMPLE_POSTS",
       "DEMO_RISK",
       "DEMO_REVIEW",
       "DEMO_REPORT",
       "142 caregivers",
       "4.2 helpfulness",
+      "RECURRING_COST_HINTS",
+      "placeholder burn rate",
+      "monthlyBurn = 150",
+      "$200/mo",
+      "$300/mo",
     ];
     const matches = content.flatMap(({ path, text }) =>
       forbiddenMarkers.some((marker) => text.includes(marker)) ? [path] : [],
