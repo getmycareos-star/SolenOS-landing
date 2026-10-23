@@ -125,10 +125,13 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
             {row.previous != null ? `Previous: ${row.previous} · ` : ''}
             {row.current != null ? `Reported now: ${row.current} · ` : ''}
             {row.status ? `Status: ${row.status} · ` : ''}
+            {row.certainty ? `Certainty: ${row.certainty} · ` : ''}
             {row.result_present === false ? 'Result not present in supplied record. ' : ''}
             {row.next_question || row.why_conflicting || row.why_it_matters || ''}
           </p>
           {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Source: “{row.evidence_excerpt}”</p>}
+          {row.claim_supported === false && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>The value could not be matched to the supplied event or current-state evidence. It was kept uncertain and was not saved as a supported current-state assertion.</p>}
+          {row.provenance_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{row.provenance_warning}</p>}
           {Array.isArray(row.reports) && <ul style={{ fontSize: 12, margin: '4px 0', paddingLeft: 18 }}>{row.reports.map((report: string, i: number) => <li key={i}>{report}</li>)}</ul>}
         </article>)}
       </div>
