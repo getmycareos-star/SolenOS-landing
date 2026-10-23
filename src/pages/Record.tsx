@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
 import AppointmentBriefings from '../components/AppointmentBriefings'
+import { extractAttachedDocument } from '../components/mvp-workspace/capture/extract-attached'
 
 interface Evidence {
   id: string
@@ -59,33 +60,40 @@ export default function Record() {
       return
     }
     if (!documentFile) {
-      setDocumentError('Choose a supported text document first.')
+      setDocumentError('Choose a supported document first.')
       return
     }
     if (documentFile.size > 5 * 1024 * 1024) {
-      setDocumentError('Text documents must be 5 MiB or smaller.')
+      setDocumentError('Documents must be 5 MiB or smaller.')
       return
     }
-    const allowedExtensions = /\.(txt|md|csv|json|log)$/i
-    if (!allowedExtensions.test(documentFile.name)) {
-      setDocumentError('This intake currently supports .txt, .md, .csv, .json, and .log files. PDF/scanned-image OCR is not available yet.')
+    const supportedDocument =
+      documentFile.type.startsWith('image/') ||
+      /\.(txt|md|csv|json|log|pdf|doc|docx|rtf)$/i.test(documentFile.name)
+    if (!supportedDocument) {
+      setDocumentError('This file type is not supported. Choose a text file, PDF, Word document, RTF, or image.')
       return
     }
     setProcessingDocument(true)
     setDocumentError(null)
     setDocumentResult(null)
     try {
-      const extractedText = await documentFile.text()
-      if (!extractedText.trim()) throw new Error('The selected document contains no readable text.')
+      const extractedDocument = await extractAttachedDocument(documentFile, 'upload')
+      if (extractedDocument.status !== 'ready' || !extractedDocument.extractedText.trim()) {
+        throw new Error(extractedDocument.errorNote || 'The selected document could not be read. Try a clearer scan or type the key details.')
+      }
+      const extractedText = extractedDocument.extractedText
       const result = await postJSON('/situation', {
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: '',
         documents: [{
-          id: documentFile.name + '-' + documentFile.lastModified,
-          name: documentFile.name,
+          id: extractedDocument.id,
+          name: extractedDocument.name,
           extracted_text: extractedText,
-          mime_type: documentFile.type || 'text/plain',
+          mime_type: extractedDocument.mimeType || documentFile.type || 'application/octet-stream',
+          ocr_confidence: extractedDocument.ocrConfidence ?? null,
+          extraction_source: extractedDocument.extractionSource || 'unknown',
           extraction_source: 'text',
         }],
         provenance: {
@@ -100,6 +108,12 @@ export default function Record() {
         candidates: result.qwen_candidates ?? null,
       })
       setDocumentFile(null)
+      try {
+        const refreshedEvidence = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+        if (Array.isArray(refreshedEvidence)) setItems(refreshedEvidence)
+      } catch {
+        // The saved document result remains visible even if refreshing the list fails.
+      }
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -194,15 +208,15 @@ export default function Record() {
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: '10px', padding: '12px 14px', marginBottom: '16px'
       }}>
-        <strong style={{ fontSize: '13px' }}>Analyze a text document with Qwen</strong>
+        <strong style={{ fontSize: '13px' }}>Add a document to the Living Care Record</strong>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '10px' }}>
-          Upload a text-bearing file to save it as source evidence and run Qwen extraction. PDF and scanned-image OCR are not available in this intake yet.
+          Upload text files, PDFs, Word/RTF documents, or images of paperwork. Extraction method and OCR confidence are preserved when available; unreadable or low-confidence text must be checked against the original.
         </p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
-            aria-label="Choose a text document"
+            aria-label="Choose a care document"
             type="file"
-            accept=".txt,.md,.csv,.json,.log,text/plain,text/markdown,text/csv,application/json"
+            accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,text/plain,text/markdown,text/csv,application/json,.txt,.md,.csv,.json,.log,.pdf,.doc,.docx,.rtf"
             disabled={processingDocument}
             onChange={(event) => {
               setDocumentFile(event.target.files?.[0] || null)
