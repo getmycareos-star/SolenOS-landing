@@ -97,7 +97,7 @@ export default function Record() {
           captured_at: new Date().toISOString(),
           transcript_uncertain: false,
         },
-      }) as { qwen_extraction_status?: string; qwen_candidates?: any; message?: string }
+      }) as { qwen_extraction_status?: string; qwen_candidates?: any; message?: string; care_event_id?: string; evidence_id?: string }
       setDocumentResult({
         status: typeof result.qwen_extraction_status === 'string' ? result.qwen_extraction_status : 'not_reported',
         candidates: result.qwen_candidates ?? null,
@@ -121,7 +121,7 @@ export default function Record() {
       } catch {
         // The document has already been saved; reconciliation may proceed without linked evidence IDs.
       }
-      setDeltaAutoInput({ content: extractedText, source: documentFile.name, eventDate: new Date().toISOString(), token: nextToken, evidenceIds: linkedEvidenceIds })
+      setDeltaAutoInput({ content: extractedText, source: documentFile.name, eventDate: new Date().toISOString(), token: nextToken, evidenceIds: Array.from(new Set([result.evidence_id, ...linkedEvidenceIds].filter((id): id is string => typeof id === 'string' && !!id))), sourceEventId: result.care_event_id })
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
