@@ -192,9 +192,12 @@ export default function Dashboard() {
           actor_id: typeof action.actor_id === 'string' ? action.actor_id : null,
           actor_label: typeof action.actor_label === 'string' ? action.actor_label : null,
         })).filter(action => ['active', 'conditional', 'pending_confirmation', 'blocked'].includes(action.status)));
-        setReminderActionId(previous => previous || (actionsData.value as Array<Record<string, unknown>>)
+        const eligibleReminderActions = (actionsData.value as Array<Record<string, unknown>>)
           .map(action => ({ id: String(action.id ?? ''), status: String(action.status ?? 'detected') }))
-          .find(action => ['active', 'conditional'].includes(action.status))?.id || '');
+          .filter(action => ['active', 'conditional'].includes(action.status));
+        setReminderActionId(previous => eligibleReminderActions.some(action => action.id === previous)
+          ? previous
+          : eligibleReminderActions[0]?.id || '');
       } else {
         setActions([]);
       }
@@ -274,6 +277,9 @@ export default function Dashboard() {
         });
         setCompletionNotes(previous => ({ ...previous, [actionId]: '' }));
         setActions(prevActions => prevActions.map(item => item.id === actionId ? { ...item, status: 'completed' } : item));
+        setReminderActionId(previous => previous === actionId
+          ? actions.find(item => item.id !== actionId && ['active', 'conditional'].includes(item.status))?.id || ''
+          : previous);
       },
       disableFn: async () => {
         throw new Error('Cannot un-complete an action');
