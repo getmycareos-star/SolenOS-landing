@@ -180,7 +180,7 @@ describe('Phase 4 production data safety', () => {
     fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
 
     expect(await screen.findByRole('region', { name: /original captured report/i })).toHaveTextContent(original)
-    expect(screen.getByText(/recorded event time/i)).toBeInTheDocument()
+    expect(screen.getByText(/event time reported by caregiver/i)).toBeInTheDocument()
     expect(await screen.findByText(/how many hours did mum sleep/i)).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText(/corrected observation 1/i), {
