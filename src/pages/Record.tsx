@@ -348,7 +348,9 @@ export default function Record() {
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
               Review decisions are saved with provenance and do not write authoritative Living Care Record facts. Confirm all details against the original document.
             </p>
-            {documentReviewMessage ? (\n              <p role="status" style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>{documentReviewMessage}</p>\n            ) : null}
+            {documentReviewMessage ? (
+              <p role="status" style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>{documentReviewMessage}</p>
+            ) : null}
           </div>
         )}
       </section>
