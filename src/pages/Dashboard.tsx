@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client';
+import { getJSON, postJSON, deleteJSON, getPersonId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
 import CareCapture from '../components/CareCapture';
 
@@ -58,19 +58,30 @@ interface Action {
   status: string;
   created_at: string;
   is_medication_action: boolean;
-  source_authority_verified: boolean;
+  requires_confirmation: boolean;
 }
 
 interface Reminder {
   id: string;
+  action_id: string;
   title: string;
   message: string;
-  due_at: string;
+  next_run_at: string | null;
   timezone: string;
-  recurrence_rule: 'daily' | 'weekly' | 'monthly' | null;
+  recurrence: 'once' | 'daily' | 'weekly';
+  local_time: string;
+  enabled: boolean;
+}
+
+interface ReminderDelivery {
+  id: string;
+  reminder_id: string;
+  scheduled_for: string;
   status: string;
   attempt_count: number;
+  next_attempt_at: string;
   last_error?: string | null;
+  delivered_at?: string | null;
 }
 
 export default function Dashboard() {
@@ -81,17 +92,19 @@ export default function Dashboard() {
   const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [deliveries, setDeliveries] = useState<ReminderDelivery[]>([]);
+  const [reminderActionId, setReminderActionId] = useState('');
+  const [completionNotes, setCompletionNotes] = useState<Record<string, string>>({});
   const [reminderError, setReminderError] = useState<string | null>(null);
   const [reminderNotice, setReminderNotice] = useState<string | null>(null);
   const [reminderSaving, setReminderSaving] = useState(false);
   const [reminderTitle, setReminderTitle] = useState('');
   const [reminderMessage, setReminderMessage] = useState('');
   const [reminderDueAt, setReminderDueAt] = useState('');
-  const [reminderRecurrence, setReminderRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
+  const [reminderRecurrence, setReminderRecurrence] = useState<'once' | 'daily' | 'weekly'>('once');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const personId = getPersonId();
-  const caregiverId = getCaregiverId();
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
 
@@ -128,26 +141,29 @@ export default function Dashboard() {
           status: String(action.status ?? 'detected'),
           created_at: String(action.created_at ?? ''),
           is_medication_action: action.is_medication_action === true,
-          source_authority_verified: action.source_authority_verified === true,
+          requires_confirmation: action.requires_confirmation === true,
         })).filter(action => ['active', 'conditional', 'pending_confirmation', 'blocked'].includes(action.status)));
+        setReminderActionId(previous => previous || (actionsData.value as Array<Record<string, unknown>>)
+          .map(action => ({
+            id: String(action.id ?? ''),
+            status: String(action.status ?? 'detected'),
+          }))
+          .find(action => ['active', 'conditional'].includes(action.status))?.id || '');
       } else {
         setActions([]);
       }
 
-      if (caregiverId) {
-        void getJSON(`/reminders/${encodeURIComponent(personId)}?caregiver_id=${encodeURIComponent(caregiverId)}`)
-          .then(data => {
-            if (Array.isArray(data)) {
-              setReminders(data as Reminder[]);
-              setReminderError(null);
-            } else {
-              setReminderError('Reminder data was incomplete. Try again.');
-            }
-          })
-          .catch(() => setReminderError('Reminders could not be loaded. The service may be unavailable.'));
-      } else {
-        setReminderError('This session has no verified caregiver identity. Reminders are unavailable until the care session is restored.');
-      }
+      void Promise.all([
+        getJSON(`/reminders/people/${encodeURIComponent(personId)}`),
+        getJSON(`/reminders/people/${encodeURIComponent(personId)}/deliveries`),
+      ]).then(([reminderData, deliveryData]) => {
+        if (!Array.isArray(reminderData) || !Array.isArray(deliveryData)) {
+          throw new Error('Reminder response was incomplete');
+        }
+        setReminders(reminderData as Reminder[]);
+        setDeliveries(deliveryData as ReminderDelivery[]);
+        setReminderError(null);
+      }).catch(() => setReminderError('Reminders and delivery receipts could not be loaded. The service may be unavailable.'));
 
       const sectionNames = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'];
       const failedSections = results
@@ -172,7 +188,7 @@ export default function Dashboard() {
       setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
       setLoading(false);
     });
-  }, [personId, caregiverId]);
+  }, [personId]);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -191,27 +207,26 @@ export default function Dashboard() {
   };
 
   const handleActionToggle = async (actionId: string) => {
-    const caregiver = getCaregiverId();
-    if (!caregiver) {
-      setLoadError('Completion was not saved because this session has no verified caregiver identity.');
-      return;
-    }
     const action = actions.find(item => item.id === actionId);
     if (!action || !['active', 'conditional'].includes(action.status)) return;
-    if (action.is_medication_action && !action.source_authority_verified) {
-      setLoadError('Medication instructions cannot be marked complete until their source authority is verified.');
+    const note = (completionNotes[actionId] || '').trim();
+    if (!note) {
+      setLoadError('Add a short completion note before marking this action complete.');
+      return;
+    }
+    if (action.is_medication_action && action.requires_confirmation) {
+      setLoadError('This medication-related action still requires confirmation. It cannot be marked complete yet.');
       return;
     }
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
         await postJSON(`/actions/${actionId}/complete`, {
-          caregiver_id: caregiver,
           evidence_ids: [],
           completion_confidence: 0.6,
-          notes: 'Caregiver reported completion in the dashboard; no supporting document was attached.'
+          notes: note
         });
         
-        // Update local state optimistically (handled by hook)
+        setCompletionNotes(previous => ({ ...previous, [actionId]: '' }));
         setActions(prevActions =>
           prevActions.map(action =>
             action.id === actionId
@@ -230,15 +245,18 @@ export default function Dashboard() {
 
 
   const refreshReminders = async () => {
-    const caregiver = getCaregiverId();
-    if (!personId || !caregiver) {
+    if (!personId) {
       setReminderError('A valid care session is required to load reminders.');
       return;
     }
     try {
-      const data = await getJSON(`/reminders/${encodeURIComponent(personId)}?caregiver_id=${encodeURIComponent(caregiver)}`);
-      if (!Array.isArray(data)) throw new Error('Invalid reminder response');
-      setReminders(data as Reminder[]);
+      const [reminderData, deliveryData] = await Promise.all([
+        getJSON(`/reminders/people/${encodeURIComponent(personId)}`),
+        getJSON(`/reminders/people/${encodeURIComponent(personId)}/deliveries`),
+      ]);
+      if (!Array.isArray(reminderData) || !Array.isArray(deliveryData)) throw new Error('Invalid reminder response');
+      setReminders(reminderData as Reminder[]);
+      setDeliveries(deliveryData as ReminderDelivery[]);
       setReminderError(null);
     } catch {
       setReminderError('Reminders could not be loaded. Try again when the service is available.');
@@ -247,9 +265,8 @@ export default function Dashboard() {
 
   const createReminder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const caregiver = getCaregiverId();
-    if (!personId || !caregiver) {
-      setReminderError('A valid care session is required to schedule a reminder.');
+    if (!personId || !reminderActionId) {
+      setReminderError('Choose an active care action before scheduling a reminder.');
       return;
     }
     if (!reminderDueAt.trim()) {
@@ -269,22 +286,22 @@ export default function Dashboard() {
       const idempotencyKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
         : `reminder-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      await postJSON('/reminders', {
-        person_id: personId,
-        caregiver_id: caregiver,
+      const localTime = reminderDueAt.slice(11, 16);
+      await postJSON(`/reminders/actions/${encodeURIComponent(reminderActionId)}`, {
         title: reminderTitle.trim(),
         message: reminderMessage.trim(),
-        due_at: dueDate.toISOString(),
+        scheduled_at: dueDate.toISOString(),
         timezone,
-        recurrence_rule: reminderRecurrence === 'none' ? null : reminderRecurrence,
-        idempotency_key: idempotencyKey,
+        recurrence: reminderRecurrence,
+        local_time: localTime,
         max_attempts: 5,
+        retry_delay_seconds: 60,
       });
       setReminderTitle('');
       setReminderMessage('');
       setReminderDueAt('');
-      setReminderRecurrence('none');
-      setReminderNotice('Reminder saved. Delivery status will update after the configured delivery provider returns a receipt.');
+      setReminderRecurrence('once');
+      setReminderNotice('Reminder saved. SolenOS will create a persistent in-app delivery receipt for each due occurrence.');
       await refreshReminders();
     } catch (error) {
       setReminderError(error instanceof Error ? error.message : 'Reminder could not be saved.');
@@ -294,15 +311,14 @@ export default function Dashboard() {
   };
 
   const cancelReminder = async (reminderId: string) => {
-    const caregiver = getCaregiverId();
-    if (!caregiver || !personId) {
+    if (!personId) {
       setReminderError('A valid care session is required to cancel a reminder.');
       return;
     }
     setReminderSaving(true);
     setReminderError(null);
     try {
-      await postJSON(`/reminders/${encodeURIComponent(personId)}/${encodeURIComponent(reminderId)}/cancel?caregiver_id=${encodeURIComponent(caregiver)}`, {});
+      await deleteJSON(`/reminders/${encodeURIComponent(reminderId)}`);
       await refreshReminders();
       setReminderNotice('Reminder cancelled.');
     } catch (error) {
@@ -377,7 +393,7 @@ export default function Dashboard() {
                 <p style={{ margin: '0', fontSize: '12px', color: 'var(--text-secondary)' }}>
                   Created: {formatDate(action.created_at)} · Status: {action.status.replace(/_/g, ' ')}
                 </p>
-                {action.is_medication_action && !action.source_authority_verified && (
+                {action.is_medication_action && action.requires_confirmation && (
                   <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--warning)' }}>
                     Medication source authority is unverified. This instruction cannot be activated or marked complete.
                   </p>
@@ -391,7 +407,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
                   onClick={() => handleActionToggle(action.id)}
-                  disabled={loadingIds.includes(action.id) || toggledIds.includes(action.id) || !['active', 'conditional'].includes(action.status) || (action.is_medication_action && !action.source_authority_verified)}
+                  disabled={loadingIds.includes(action.id) || toggledIds.includes(action.id) || !['active', 'conditional'].includes(action.status) || (action.is_medication_action && action.requires_confirmation)}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -408,7 +424,7 @@ export default function Dashboard() {
                     opacity: loadingIds.includes(action.id) ? 0.7 : 1
                   }}
                 >
-                  {loadingIds.includes(action.id) ? 'Processing...' : toggledIds.includes(action.id) ? 'Completed' : action.is_medication_action && !action.source_authority_verified ? 'Awaiting verification' : !['active', 'conditional'].includes(action.status) ? 'Needs confirmation' : 'Mark Complete'}
+                  {loadingIds.includes(action.id) ? 'Processing...' : toggledIds.includes(action.id) ? 'Completed' : action.is_medication_action && action.requires_confirmation ? 'Awaiting verification' : !['active', 'conditional'].includes(action.status) ? 'Needs confirmation' : 'Mark Complete'}
                 </button>
               </div>
             </div>
@@ -425,11 +441,20 @@ export default function Dashboard() {
           Reminders and follow-through
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
-          Schedule a one-time or recurring reminder. SolenOS only reports delivery when the configured provider returns a receipt.
+          Link a reminder to an active care action. Each due occurrence gets a persistent in-app delivery receipt and retry history.
         </p>
         {reminderError && <p role="alert" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '12px' }}>{reminderError}</p>}
         {reminderNotice && <p role="status" style={{ color: 'var(--trust)', fontSize: '13px', marginBottom: '12px' }}>{reminderNotice}</p>}
         <form onSubmit={createReminder} style={{ display: 'grid', gap: '10px', marginBottom: '20px' }}>
+          <label style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
+            Related care action
+            <select required value={reminderActionId} onChange={event => setReminderActionId(event.target.value)} style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }}>
+              <option value="">Select an active action</option>
+              {actions.filter(action => ['active', 'conditional'].includes(action.status) && !(action.is_medication_action && action.requires_confirmation)).map(action => (
+                <option key={action.id} value={action.id}>{action.title}</option>
+              ))}
+            </select>
+          </label>
           <label style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
             Reminder title
             <input required maxLength={200} value={reminderTitle} onChange={event => setReminderTitle(event.target.value)} placeholder="e.g. Call the clinic" style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }} />
@@ -444,11 +469,10 @@ export default function Dashboard() {
           </label>
           <label style={{ display: 'grid', gap: '4px', fontSize: '13px' }}>
             Repeat
-            <select value={reminderRecurrence} onChange={event => setReminderRecurrence(event.target.value as 'none' | 'daily' | 'weekly' | 'monthly')} style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }}>
-              <option value="none">Does not repeat</option>
+            <select value={reminderRecurrence} onChange={event => setReminderRecurrence(event.target.value as 'once' | 'daily' | 'weekly')} style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'inherit' }}>
+              <option value="once">Does not repeat</option>
               <option value="daily">Every day</option>
               <option value="weekly">Every week</option>
-              <option value="monthly">Every month</option>
             </select>
           </label>
           <div>
@@ -468,14 +492,20 @@ export default function Dashboard() {
                   <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 600 }}>{reminder.title}</h4>
                   <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{reminder.message}</p>
                   <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {new Date(reminder.due_at).toLocaleString()} · {reminder.timezone} · {reminder.recurrence_rule ? `Repeats ${reminder.recurrence_rule}` : 'One-time'}
+                    {reminder.next_run_at ? new Date(reminder.next_run_at).toLocaleString() : 'No future occurrence'} · {reminder.timezone} · {reminder.recurrence === 'once' ? 'One-time' : `Repeats ${reminder.recurrence}`} at {reminder.local_time}
                   </p>
                   <p style={{ margin: 0, fontSize: '12px' }}>
-                    Status: <strong>{reminder.status}</strong> · Delivery attempts: {reminder.attempt_count}
+                    Schedule: <strong>{reminder.enabled ? 'Enabled' : 'Paused'}</strong>
                   </p>
-                  {reminder.last_error && <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--warning)' }}>Last delivery issue: {reminder.last_error}</p>}
+                  {deliveries.filter(delivery => delivery.reminder_id === reminder.id).slice(0, 3).map(delivery => (
+                    <p key={delivery.id} style={{ margin: '5px 0 0', fontSize: '12px', color: delivery.status === 'failed' ? 'var(--warning)' : 'var(--text-secondary)' }}>
+                      {new Date(delivery.scheduled_for).toLocaleString()}: <strong>{delivery.status}</strong> · attempts {delivery.attempt_count}
+                      {delivery.delivered_at ? ` · delivered ${new Date(delivery.delivered_at).toLocaleString()}` : ''}
+                      {delivery.last_error ? ` · ${delivery.last_error}` : ''}
+                    </p>
+                  ))}}
                 </div>
-                {['scheduled', 'failed'].includes(reminder.status) && (
+                {reminder.enabled && (
                   <button type="button" disabled={reminderSaving} onClick={() => void cancelReminder(reminder.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'inherit', fontSize: '12px', cursor: reminderSaving ? 'wait' : 'pointer' }}>
                     Cancel
                   </button>
