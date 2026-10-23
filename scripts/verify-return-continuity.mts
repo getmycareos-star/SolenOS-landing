@@ -80,7 +80,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   pauseActiveCareSituationSession(careKey);
   markInteractionPaused(careKey, "2026-04-01T10:30:00.000Z");
 
-  const crs = getCareRealityState(careKey);
+  const crs = getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey);
   const first = buildReturnContinuityProjection({
     careKey,
     acs: getActiveCareSituation(careKey),
@@ -96,7 +96,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   const second = buildReturnContinuityProjection({
     careKey,
     acs: getActiveCareSituation(careKey),
-    crs: getCareRealityState(careKey),
+    crs: getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey),
     nowIso: "2026-04-01T13:00:00.000Z",
     offerSoftInvite: true,
   });
@@ -120,7 +120,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
     firstAcs.open_questions.push("Did she hit her head?");
   }
   const gap = firstAcs.open_questions[0]!;
-  const firstCrs = getCareRealityState(careKey)!;
+  const firstCrs = getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey)!;
   // Mirror ACS known-unknown into CRS if ingest had not yet (seeded gap).
   if (!firstCrs.open_uncertainties.includes(gap)) {
     firstCrs.open_uncertainties.push(gap);
@@ -133,7 +133,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
     nowIso: "2026-06-01T11:00:00.000Z",
   });
   const after = getActiveCareSituation(careKey)!;
-  const afterCrs = getCareRealityState(careKey)!;
+  const afterCrs = getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey)!;
   assert(
     after.open_questions.some((q) => q.toLowerCase() === gap.toLowerCase()),
     "Locked B: unanswered gap stays on ACS after unrelated note",
@@ -157,7 +157,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   });
   const acs = getActiveCareSituation(careKey)!;
   acs.open_questions = ["Did she hit her head?"];
-  const crs = getCareRealityState(careKey)!;
+  const crs = getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey)!;
   crs.open_uncertainties = ["Did she hit her head?"];
 
   const resolved = resolveAnsweredUncertainties({
@@ -174,7 +174,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
     nowIso: "2026-06-02T10:30:00.000Z",
   });
   const after = getActiveCareSituation(careKey)!;
-  const afterCrs = getCareRealityState(careKey)!;
+  const afterCrs = getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey)!;
   assert(
     !after.open_questions.some((q) => /hit her head/i.test(q)),
     "Locked B: answered gap removed from ACS",
@@ -203,7 +203,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   const offered = buildReturnContinuityProjection({
     careKey,
     acs: getActiveCareSituation(careKey),
-    crs: getCareRealityState(careKey),
+    crs: getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey),
     nowIso: "2026-06-03T10:00:00.000Z",
     offerSoftInvite: true,
   });
@@ -216,7 +216,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   const stillBlocked = buildReturnContinuityProjection({
     careKey,
     acs: getActiveCareSituation(careKey),
-    crs: getCareRealityState(careKey),
+    crs: getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey),
     nowIso: "2026-06-03T11:00:00.000Z",
     offerSoftInvite: true,
   });
@@ -232,7 +232,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   const nextGap = buildReturnContinuityProjection({
     careKey,
     acs: getActiveCareSituation(careKey),
-    crs: getCareRealityState(careKey),
+    crs: getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey),
     nowIso: "2026-06-03T13:00:00.000Z",
     offerSoftInvite: true,
   });
@@ -251,13 +251,13 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
     nowIso: "2026-05-01T11:00:00.000Z",
   });
   const before = getActiveCareSituation(careKey);
-  const crsBefore = getCareRealityState(careKey);
+  const crsBefore = getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey);
   assert(before != null && crsBefore != null, "G11 reality before pause");
   pauseActiveCareSituationSession(careKey);
   markInteractionPaused(careKey, "2026-05-01T11:15:00.000Z");
 
   const afterAcs = getActiveCareSituation(careKey);
-  const afterCrs = getCareRealityState(careKey);
+  const afterCrs = getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey);
   assert(afterAcs?.id === before!.id, "G11 ACS persists across pause");
   assert(afterCrs?.id === crsBefore!.id, "G11 CRS persists across pause");
   assert(afterAcs?.observations.length === before!.observations.length, "G11 observations intact");
@@ -296,7 +296,7 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   const g18 = buildReturnContinuityProjection({
     careKey,
     acs: getActiveCareSituation(careKey),
-    crs: getCareRealityState(careKey),
+    crs: getCareRealityState(getActiveCareSituation(careKey)?.care_recipient_id ?? careKey),
     nowIso: longNow,
     offerSoftInvite: true,
   });
