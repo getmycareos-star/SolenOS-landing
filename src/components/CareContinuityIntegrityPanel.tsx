@@ -90,14 +90,17 @@ type EvidenceSource = { id: string; type: string; source_text: string; uploaded_
 export default function CareContinuityIntegrityPanel({
   personId,
   evidenceItems = [],
+  evidenceAvailable = true,
 }: {
   personId: string
   evidenceItems?: EvidenceSource[]
+  evidenceAvailable?: boolean
 }) {
   const [data, setData] = useState<PanelData>(emptyData)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [unavailableSections, setUnavailableSections] = useState<string[]>([])
   const [notice, setNotice] = useState('')
   const [field, setField] = useState('')
   const [value, setValue] = useState('')
@@ -120,20 +123,36 @@ export default function CareContinuityIntegrityPanel({
     }
     setLoading(true)
     setError('')
+    const requests: Array<[string, () => Promise<unknown>]> = [
+      ['reported care information', () => getJSON(`/care-continuity/assertions/${encodeURIComponent(personId)}`)],
+      ['freshness and review status', () => getJSON(`/care-continuity/freshness/${encodeURIComponent(personId)}`)],
+      ['care-state history', () => getJSON(`/care-continuity/revisions/${encodeURIComponent(personId)}`)],
+      ['recorded outcomes', () => getJSON(`/care-continuity/outcomes/${encodeURIComponent(personId)}`)],
+      ['next questions', () => postJSON(`/care-continuity/next-questions/${encodeURIComponent(personId)}`, {})],
+      ['competing reports', () => getJSON(`/care-continuity/contradictions/${encodeURIComponent(personId)}`)],
+    ]
     try {
-      const [assertions, freshness, revisions, outcomes, questions, contradictions] = await Promise.all([
-        getJSON(`/care-continuity/assertions/${encodeURIComponent(personId)}`),
-        getJSON(`/care-continuity/freshness/${encodeURIComponent(personId)}`),
-        getJSON(`/care-continuity/revisions/${encodeURIComponent(personId)}`),
-        getJSON(`/care-continuity/outcomes/${encodeURIComponent(personId)}`),
-        postJSON(`/care-continuity/next-questions/${encodeURIComponent(personId)}`, {}),
-        getJSON(`/care-continuity/contradictions/${encodeURIComponent(personId)}`),
-      ])
-      if (![assertions, freshness, revisions, outcomes, questions, contradictions].every(Array.isArray)) {
-        throw new Error('The care-continuity API returned an incomplete response.')
-      }
-      setData({ assertions, freshness, revisions, outcomes, questions, contradictions })
+      const results = await Promise.allSettled(requests.map(([, request]) => request()))
+      const arrays = results.map((result) =>
+        result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : null
+      )
+      const unavailable = requests.flatMap(([name], index) => arrays[index] === null ? [name] : [])
+      setUnavailableSections(unavailable)
+      setData({
+        assertions: (arrays[0] || []) as Assertion[],
+        freshness: (arrays[1] || []) as Freshness[],
+        revisions: (arrays[2] || []) as Revision[],
+        outcomes: (arrays[3] || []) as Outcome[],
+        questions: (arrays[4] || []) as Question[],
+        contradictions: (arrays[5] || []) as Contradiction[],
+      })
+      setError(unavailable.length === requests.length
+        ? 'All care-continuity sources are unavailable. No conclusion can be drawn from this response.'
+        : unavailable.length > 0
+          ? `Could not verify: ${unavailable.join(', ')}. Unavailable sections are not treated as empty.`
+          : '')
     } catch (reason) {
+      setUnavailableSections(requests.map(([name]) => name))
       setError(reason instanceof Error ? reason.message : 'Care continuity could not be loaded.')
     } finally {
       setLoading(false)
@@ -312,7 +331,7 @@ export default function CareContinuityIntegrityPanel({
         <fieldset style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginTop: 10 }}>
           <legend style={{ fontSize: 12 }}>Link existing evidence (optional)</legend>
           {evidenceItems.length === 0
-            ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No existing evidence is available to link. You can still record the report with its source label and excerpt.</p>
+            ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{evidenceAvailable ? 'No existing evidence was returned by the evidence source. You can still record the report with its source label and excerpt.' : 'The evidence source could not be checked, so available evidence is unknown. You can still record the report with its source label and excerpt.'}</p>
             : <div style={{ display: 'grid', gap: 7, maxHeight: 180, overflowY: 'auto' }}>
                 {evidenceItems.map((evidence) => (
                   <label key={evidence.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12 }}>
@@ -336,7 +355,7 @@ export default function CareContinuityIntegrityPanel({
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Reported care information and freshness</h3>
-        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No source-attributed reports have been entered through this panel yet.</p> : data.assertions.map((item) => {
+        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{unavailableSections.includes('reported care information') ? 'Could not verify whether source-attributed reports exist.' : 'No source-attributed reports have been entered through this panel yet.'}</p> : data.assertions.map((item) => {
           const fresh = freshnessById.get(item.id)
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -367,7 +386,7 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Competing reports</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>SolenOS preserves competing reports and does not pick a winner. Resolution requires a human explanation; resolving the conflict does not delete the source reports.</p>
-        {data.contradictions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No contradiction records returned.</p> : data.contradictions.map((item) =>
+        {data.contradictions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{unavailableSections.includes('competing reports') ? 'Could not verify whether competing reports exist.' : 'No contradiction records returned.'}</p> : data.contradictions.map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
               <strong>{item.field}</strong><span style={{ fontSize: 12 }}>{item.resolution_status.replace(/_/g, ' ')}</span>
@@ -394,7 +413,7 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Next questions</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Questions are linked to recorded uncertainty, unresolved reports, or missing information. They do not diagnose or resolve a conflict.</p>
-        {data.questions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No open question candidates from the current engine inputs.</p> : data.questions.map((item, index) => {
+        {data.questions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{unavailableSections.includes('next questions') ? 'Could not verify whether next-question candidates exist.' : 'No open question candidates from the current engine inputs.'}</p> : data.questions.map((item, index) => {
           const actionId = item.persisted_question_id || item.source_id
           return <article key={item.persisted_question_id || item.source_id || index} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <strong style={{ fontSize: 14 }}>{item.question}</strong>
@@ -417,7 +436,7 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Care-state history</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Before-and-after snapshots of tracked backend care-state changes. This is an audit trail, not a claim that every frontend workflow has been migrated to it.</p>
-        {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No tracked revisions returned.</p> : data.revisions.slice(0, 20).map((item) =>
+        {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{unavailableSections.includes('care-state history') ? 'Could not verify whether tracked revisions exist.' : 'No tracked revisions returned.'}</p> : data.revisions.slice(0, 20).map((item) =>
           <details key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <summary style={{ cursor: 'pointer', fontSize: 13 }}>
               {item.target_type} · {item.target_id} · v{item.revision_number} · {item.change_kind} · {new Date(item.changed_at).toLocaleString()}
@@ -433,7 +452,7 @@ export default function CareContinuityIntegrityPanel({
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Recorded outcomes and corrections</h3>
-        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No outcomes recorded yet.</p> : data.outcomes.slice(0, 20).map((item) =>
+        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{unavailableSections.includes('recorded outcomes') ? 'Could not verify whether outcomes have been recorded.' : 'No outcomes recorded yet.'}</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
             <strong>{item.outcome_status.replace(/_/g, ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
             {item.notes && <p>{item.notes}</p>}{item.correction_text && <p><strong>Recorded correction:</strong> {item.correction_text}</p>}
