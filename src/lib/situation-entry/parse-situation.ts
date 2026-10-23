@@ -232,7 +232,7 @@ export function parseSituationToCareEvent(params: {
       situation_id: null,
       document_id: params.document_id ?? null,
       status: "committed",
-      integrity: createIntegrityState({ confidenceScore: 0.75 }),
+      integrity: createIntegrityState({ confidenceScore: null }),
       priority: createStubPriority("active"),
       source_reliability: classifySourceReliability({
         source,
