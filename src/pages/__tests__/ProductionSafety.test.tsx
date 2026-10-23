@@ -187,13 +187,13 @@ describe('Phase 4 production data safety', () => {
       expect(mockedPostJSON).toHaveBeenLastCalledWith('/capture/analyses/analysis-1/review', {
         candidate_index: 0,
         decision: 'correct',
-        corrected_subject: undefined,
+        corrected_subject: 'sleep',
         corrected_observation: 'Mum slept poorly last night.',
       })
     })
     expect(await screen.findByText(/living care record was not changed/i)).toBeInTheDocument()
     expect(screen.getByRole('region', { name: /original captured report/i })).toHaveTextContent(original)
-    expect(screen.getByText(/corrected_by_caregiver/)).toBeInTheDocument()
+    expect(screen.getByText(/corrected by caregiver/i)).toBeInTheDocument()
   })
 
   it('does not report a valid empty record when the record API fails', async () => {
