@@ -39,7 +39,7 @@ describe('Phase 4 production data safety', () => {
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Community posts could not be loaded')
-    expect(screen.queryByText(/M\\. Johnson|sample caregiver|sample post|DEMO_RISK/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/M.*Johnson|sample caregiver|sample post|DEMO_RISK/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/sample posts/i)).not.toBeInTheDocument()
   })
 
@@ -48,7 +48,7 @@ describe('Phase 4 production data safety', () => {
 
     expect(screen.getByRole('heading', { name: /team dashboard unavailable/i })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(/cannot be verified as an authorized/i)
-    expect(screen.queryByText(/M\\. Johnson|142 caregivers|4\\.2 helpfulness|DEMO_RISK|DEMO_REPORT/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/M.*Johnson|142 caregivers|4.2 helpfulness|DEMO_RISK|DEMO_REPORT/i)).not.toBeInTheDocument()
   })
 
   it('preserves care-capture text when the save request fails', async () => {
