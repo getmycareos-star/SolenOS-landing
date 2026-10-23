@@ -231,7 +231,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           setReviewFeedback(null)
           setIdentityError(null)
         }}
-        placeholder={QUICK_ENTRY_TYPES.find((item) => item.id === captureCategory)?.prompt || 'Describe what you observed and what remains uncertain.'}
+        placeholder={`Describe what you observed, when it happened, and what remains uncertain. ${QUICK_ENTRY_TYPES.find((item) => item.id === captureCategory)?.prompt || ''}`.trim()}
         disabled={submitting}
         rows={Math.max(2, Math.floor(text.length / 50) + 1)}
         style={{
