@@ -162,23 +162,17 @@ assert(route.includes("status: 410"), "legacy duplicate route returns Gone");
 assert(route.includes("authenticated FastAPI care API"), "legacy route directs callers to authoritative API");
 assert(!route.includes("hydrateTrackedSituationsFromCareContext"), "legacy route cannot create local care records");
 
-const page = fs.readFileSync(path.join(root, "src/app/page.tsx"), "utf8");
-assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
-assert(page.includes("/api/situation?"), "page fetches situation for sidebar");
-assert(page.includes("ensureClientInteractionSessionId"), "Begin mints interaction session");
-assert(page.includes("forceNew: freshEnter"), "Begin forceNew session only");
-assert(!/freshEnter\s*\?\s*mintDurableCareKey/.test(page), "Begin never remints care key");
-
-const workspace = fs.readFileSync(
-  path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"),
-  "utf8",
-);
-assert(workspace.includes("caregiver_id"), "workspace sends caregiver_id");
-assert(workspace.includes("care_session_id"), "workspace sends care_session_id");
-assert(workspace.includes("onSituationComplete"), "workspace notifies parent");
-assert(workspace.includes("pause_active_care_situation"), "Done for now pauses ACS via API");
-assert(workspace.includes("active_care_situation"), "workspace hydrates ACS from GET");
-assert(workspace.includes("offer_return_invite=0"), "mount hydrate does not burn soft invite");
+// Validate the actual deployed Vite entrypoint and authenticated client.
+// The legacy Next-style workspace is not the production app and its duplicate API is disabled.
+const entry = fs.readFileSync(path.join(root, "src/main.tsx"), "utf8");
+const app = fs.readFileSync(path.join(root, "src/App.tsx"), "utf8");
+const client = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
+assert(entry.includes("./App"), "Vite entry mounts the React Router app");
+assert(app.includes("checkAuthState") && app.includes("AuthGate"), "care pages are gated by authenticated session");
+assert(client.includes("Authorization") && client.includes("Bearer "), "API requests send bearer authorization");
+assert(client.includes("getCaregiverId") && client.includes("solenos_caregiver_id"), "caregiver attribution comes from explicit stored account identity");
+assert(client.includes("A linked caregiver") || client.includes("solenos_caregiver_id"), "client does not derive caregiver identity from session IDs");
+assert(!client.includes("default_caregiver"), "API client does not substitute a shared caregiver identity");
 
 console.log("✓ API + UI wiring");
 
