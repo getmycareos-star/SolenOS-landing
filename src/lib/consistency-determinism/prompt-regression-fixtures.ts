@@ -27,7 +27,7 @@ export const VERIFY_PROMPT_REGRESSION_GOLDENS: Readonly<Record<string, SolenOSRe
       known: [],
       assumed: [],
       unknown: [{ statement: "Insufficient structure to surface explicit gaps", drives_clarification: true }],
-      recency: { last_updated_at: null, freshness_score: null, interpretation: "potentially outdated (>7–14 days)" },
+      recency: { last_updated_at: null, freshness_score: null, interpretation: "Recency unavailable; source timestamp not verified." },
       confidence: null,
     },
     transparency_panel: {
@@ -36,7 +36,7 @@ export const VERIFY_PROMPT_REGRESSION_GOLDENS: Readonly<Record<string, SolenOSRe
       reason_for_output: "Awaiting structured care input to produce traceable reasoning.",
       evidence_breakdown: [],
       confidence_scores: { overall_pct: null, tier: "unknown" },
-      recency: { last_update_at: null, critical_event_ages: [], decay_status: "stale" },
+      recency: { last_update_at: null, critical_event_ages: [], decay_status: "unknown" },
       observed: [],
       inferred: [],
     },
