@@ -469,9 +469,10 @@ export default function FirstUseJourney() {
           )}
         </section>
       )}
-      {recordState === 'existing' && !snapshot.failedSections.includes('saved evidence and documents') && (
+      {recordState === 'existing' && (
         <CareContinuityIntegrityPanel
           personId={getPersonId() || ''}
+          evidenceAvailable={!snapshot.failedSections.includes('saved evidence and documents')}
           evidenceItems={snapshot.evidence.map((item) => ({
             id: item.id,
             type: item.type || 'Evidence',
