@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getJSON, postJSON, getPersonId } from '../api/client';
+import { getJSON, postJSON, getPersonId, getCaregiverId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
 import CareCapture from '../components/CareCapture';
 
@@ -44,11 +44,23 @@ interface ReasoningSummary {
 interface DailyIntelligence {
   id: string;
   intelligence_date: string;
-  overdue_items: any[];
-  upcoming_items: any[];
+  overdue_items: Array<Record<string, unknown>>;
+  upcoming_items: Array<Record<string, unknown>>;
   active_windows: any[];
   expired_windows: any[];
   daily_summary: string;
+}
+
+interface Appointment {
+  id: string;
+  title: string;
+  scheduled_at: string;
+  status: string;
+  location?: string;
+  provider?: string;
+  preparation_notes?: string;
+  documents_to_bring?: string[];
+  medication_questions?: string[];
 }
 
 interface Action {
@@ -66,6 +78,7 @@ export default function Dashboard() {
   const [reasoning, setReasoning] = useState<ReasoningSummary | null>(null);
   const [dailyIntel, setDailyIntel] = useState<DailyIntelligence | null>(null);
   const [actions, setActions] = useState<Action[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [captureRevision, setCaptureRevision] = useState(0);
@@ -89,14 +102,19 @@ export default function Dashboard() {
         getJSON(`/reasoning/${encodeURIComponent(personId)}/summary`),
         getJSON(`/daily-intelligence/${encodeURIComponent(personId)}`),
         getJSON(`/actions/${encodeURIComponent(personId)}?status=active`),
+        getJSON(`/appointments/${encodeURIComponent(personId)}`),
       ]);
 
-      const [evts, inss, trendData, reasoningData, intelData, actionsData] = results;
+      const [evts, inss, trendData, reasoningData, intelData, actionsData, appointmentsData] = results;
       setEvents(evts.status === 'fulfilled' && Array.isArray(evts.value) ? evts.value as Event[] : []);
       setInsights(inss.status === 'fulfilled' && Array.isArray(inss.value) ? inss.value as Insight[] : []);
       setTrends(trendData.status === 'fulfilled' && Array.isArray(trendData.value) ? (trendData.value as ObservationTrend[]).slice(0, 5) : []);
       setReasoning(reasoningData.status === 'fulfilled' ? reasoningData.value as ReasoningSummary : null);
       setDailyIntel(intelData.status === 'fulfilled' ? intelData.value as DailyIntelligence : null);
+
+      setAppointments(appointmentsData.status === 'fulfilled' && Array.isArray(appointmentsData.value)
+        ? appointmentsData.value as Appointment[]
+        : []);
 
       if (actionsData.status === 'fulfilled' && Array.isArray(actionsData.value)) {
         setActions((actionsData.value as Array<Record<string, unknown>>).map(action => ({
@@ -110,12 +128,12 @@ export default function Dashboard() {
         setActions([]);
       }
 
-      const sectionNames = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'];
+      const sectionNames = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions', 'appointments'];
       const failedSections = results
         .map((result, index) => {
           if (result.status === 'rejected') return sectionNames[index];
           const value = result.value;
-          const expectsArray = index === 0 || index === 1 || index === 2 || index === 5;
+          const expectsArray = index === 0 || index === 1 || index === 2 || index === 5 || index === 6;
           const validShape = expectsArray
             ? Array.isArray(value)
             : value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -155,10 +173,26 @@ export default function Dashboard() {
     await toggleActionCompletion(actionId, {
       enableFn: async () => {
         // Mark action as complete
+        const caregiverId = getCaregiverId();
+        if (!caregiverId || !personId) {
+          throw new Error('A valid care session is required to record completion.');
+        }
+        const action = actions.find(item => item.id === actionId);
+        if (!action) throw new Error('The action is no longer available. Refresh and try again.');
+        const confirmedAt = new Date().toISOString();
+        const evidence = await postJSON('/evidence', {
+          person_id: personId,
+          type: 'caregiver_report',
+          source_text: `Caregiver confirmed completion of: ${action.title}. Confirmation recorded at ${confirmedAt}.`,
+          uploaded_by_caregiver_id: caregiverId,
+          evidence_status: 'reported',
+          source_type: 'caregiver_report',
+        }) as { id?: string };
+        if (!evidence?.id) throw new Error('Completion confirmation could not be recorded as evidence.');
         await postJSON(`/actions/${actionId}/complete`, {
-          evidence_ids: [],
-          completion_confidence: 0,
-          notes: 'Marked complete by the caregiver in the dashboard; no supporting evidence was attached.'
+          evidence_ids: [evidence.id],
+          completion_confidence: 0.6,
+          notes: `Caregiver-reported completion confirmed in the dashboard at ${confirmedAt}. This is a report, not independently verified evidence.`,
         });
         
         // Update local state optimistically (handled by hook)
@@ -306,6 +340,29 @@ export default function Dashboard() {
                     <span style={{ fontSize: '12px', color: 'var(--unknown)', fontWeight: 500 }}>
                       {dailyIntel.overdue_items.length} overdue
                     </span>
+                    <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
+                      {dailyIntel.overdue_items.map((item, index) => (
+                        <li key={`${String(item.type ?? 'item')}-${index}`} style={{ fontSize: '13px', marginBottom: '6px' }}>
+                          <strong>{String(item.title || 'Untitled item')}</strong>
+                          {item.scheduled_at ? ` — scheduled ${new Date(String(item.scheduled_at)).toLocaleString()}` : ''}
+                          {item.location ? ` · ${String(item.location)}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {dailyIntel.upcoming_items.length > 0 && (
+                  <div style={{ marginTop: '12px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 500 }}>Items today</span>
+                    <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
+                      {dailyIntel.upcoming_items.map((item, index) => (
+                        <li key={`${String(item.type ?? 'item')}-${index}`} style={{ fontSize: '13px', marginBottom: '6px' }}>
+                          <strong>{String(item.title || 'Untitled item')}</strong>
+                          {(item.scheduled_at || item.occurred_at) ? ` — ${new Date(String(item.scheduled_at || item.occurred_at)).toLocaleString()}` : ''}
+                          {item.location ? ` · ${String(item.location)}` : ''}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
                 {dailyIntel.active_windows.length > 0 && (
@@ -318,6 +375,33 @@ export default function Dashboard() {
               </div>
             </section>
           )}
+
+          <section style={{ marginBottom: '40px' }}>
+            <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              Upcoming appointments
+            </h2>
+            {appointments.filter(appointment => ['scheduled', 'upcoming', 'today'].includes(appointment.status) && Number.isFinite(Date.parse(appointment.scheduled_at)) && Date.parse(appointment.scheduled_at) >= Date.now() - 24 * 60 * 60 * 1000).length === 0 && (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No upcoming appointments are recorded. This does not mean no appointment exists outside SolenOS.</p>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {appointments
+                .filter(appointment => ['scheduled', 'upcoming', 'today'].includes(appointment.status) && Number.isFinite(Date.parse(appointment.scheduled_at)) && Date.parse(appointment.scheduled_at) >= Date.now() - 24 * 60 * 60 * 1000)
+                .sort((a, b) => Date.parse(a.scheduled_at) - Date.parse(b.scheduled_at))
+                .slice(0, 5)
+                .map(appointment => (
+                  <div key={appointment.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '14px' }}>{appointment.title}</strong>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(appointment.scheduled_at).toLocaleString()}</span>
+                    </div>
+                    {(appointment.provider || appointment.location) && <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px' }}>{[appointment.provider, appointment.location].filter(Boolean).join(' · ')}</p>}
+                    {appointment.preparation_notes && <p style={{ fontSize: '13px', marginTop: '8px' }}>Preparation: {appointment.preparation_notes}</p>}
+                    {Array.isArray(appointment.documents_to_bring) && appointment.documents_to_bring.length > 0 && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>Bring: {appointment.documents_to_bring.join(', ')}</p>}
+                    {Array.isArray(appointment.medication_questions) && appointment.medication_questions.length > 0 && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>Questions to ask: {appointment.medication_questions.join('; ')}</p>}
+                  </div>
+                ))}
+            </div>
+          </section>
 
           <section style={{ marginBottom: '40px' }}>
             <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
