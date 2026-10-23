@@ -19,7 +19,7 @@ export default function Companion() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
-  const [deltaAutoInput, setDeltaAutoInput] = useState<{ content: string; source: string; eventDate: string; token: number } | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const personId = getPersonId()
@@ -93,6 +93,7 @@ export default function Companion() {
     const nextToken = deltaToken + 1
     setDeltaToken(nextToken)
     setDeltaAutoInput({
+      personId,
       content: message,
       source: 'AI Companion caregiver message (explicitly selected for LCR reconciliation)',
       eventDate: new Date().toISOString(),
