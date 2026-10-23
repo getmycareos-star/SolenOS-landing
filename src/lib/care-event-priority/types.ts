@@ -16,12 +16,12 @@ export type CareEventPriorityInput = {
 };
 
 export type CareEventPriority = {
-  urgency: number;
-  uncertainty: number;
-  dependency_count: number;
-  recency_days: number;
-  priority_score: number;
-  tier: PriorityTier;
+  urgency: number | null;
+  uncertainty: number | null;
+  dependency_count: number | null;
+  recency_days: number | null;
+  priority_score: number | null;
+  tier: PriorityTier | null;
   attention_status: AttentionStatus;
 };
 
