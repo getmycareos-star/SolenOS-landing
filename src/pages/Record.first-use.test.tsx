@@ -30,7 +30,7 @@ describe('Living Care Record first-use workflow', () => {
     render(<MemoryRouter><Record /></MemoryRouter>);
 
     await waitFor(() => expect(screen.getByText(/no evidence recorded yet/i)).toBeInTheDocument());
-    expect(screen.getByText(/current document intake reads text files/i)).toBeInTheDocument();
+    expect(screen.getByText(/currently accepts \.txt/i)).toBeInTheDocument();
     expect(screen.getByText(/pdf and scanned-image ocr are not available/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /add a related observation/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /review recorded events/i })).toBeInTheDocument();
