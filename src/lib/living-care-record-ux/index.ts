@@ -22,6 +22,7 @@ export type {
   HumanConfidenceLabel,
   LivingCareRecordResponseView,
 } from "./types";
+export type { NextStepGuidance, NextStepKind } from "../care-situation-understanding";
 export {
   CONTINUITY_HOME_BANNED_SCHEMA_TOKENS,
   CRISIS_FALSE_POSITIVE_FIXTURES,
