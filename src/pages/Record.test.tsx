@@ -62,7 +62,7 @@ describe('Living Care Record timeline', () => {
     expect(screen.getByText('Returned home after discharge.')).toBeTruthy()
     expect(screen.getByText('Supporting source material')).toBeTruthy()
     expect(screen.getByText('Call the clinic if dizziness worsens.')).toBeTruthy()
-    expect(screen.getByText('Care Continuity Integrity')).toBeTruthy()
+    expect(screen.getByText('Care continuity')).toBeTruthy()
   })
 
   it('loads older records without replacing the current timeline', async () => {
