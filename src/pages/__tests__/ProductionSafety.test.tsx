@@ -91,6 +91,9 @@ describe('Phase 4 production data safety', () => {
 
   it('reloads dashboard sections after a care capture is confirmed saved', async () => {
     mockedGetJSON.mockImplementation(async (path: string) => {
+      if (path.startsWith('/care-handoffs/people/')) return [];
+      if (path.startsWith('/caregivers/')) return [];
+      if (path.startsWith('/care-handoffs/')) return [];
       if (path.startsWith('/events/')) return [];
       if (path.startsWith('/insights/')) return [];
       if (path.includes('/trends')) return [];
@@ -285,6 +288,9 @@ describe('Phase 4 production data safety', () => {
   it('keeps server-completed care actions visible after dashboard reload and retains overdue active actions', async () => {
     mockedGetJSON.mockImplementation(async (path: string) => {
       if (path.startsWith('/caregivers/')) return [];
+      if (path.startsWith('/care-handoffs/people/')) return [];
+      if (path.startsWith('/caregivers/')) return [];
+      if (path.startsWith('/care-handoffs/')) return [];
       if (path.startsWith('/events/')) return [];
       if (path.startsWith('/insights/')) return [];
       if (path.includes('/trends')) return [];
@@ -338,6 +344,9 @@ describe('Phase 4 production data safety', () => {
   it('does not report a care action complete unless the backend confirms the completed status', async () => {
     mockedGetJSON.mockImplementation(async (path: string) => {
       if (path.startsWith('/caregivers/')) return [];
+      if (path.startsWith('/care-handoffs/people/')) return [];
+      if (path.startsWith('/caregivers/')) return [];
+      if (path.startsWith('/care-handoffs/')) return [];
       if (path.startsWith('/events/')) return [];
       if (path.startsWith('/insights/')) return [];
       if (path.includes('/trends')) return [];
