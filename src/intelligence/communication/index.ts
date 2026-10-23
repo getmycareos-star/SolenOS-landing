@@ -89,7 +89,7 @@ function buildDefaultTransparencyPanel(
       tier: "unknown" as const,
     },
     recency: {
-      last_update_at: timestamp ?? new Date().toISOString(),
+      last_update_at: timestamp ?? null,
       critical_event_ages: [],
       decay_status: "unknown" as const,
     },
