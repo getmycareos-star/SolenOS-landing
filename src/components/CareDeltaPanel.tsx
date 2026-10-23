@@ -18,7 +18,7 @@ type DeltaResult = {
   provenance?: Record<string, any>
 }
 
-type DeltaInput = { content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string }
+type DeltaInput = { personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string }
 
 const panelStyle: React.CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
@@ -78,8 +78,12 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
 
   useEffect(() => {
     let cancelled = false
+    setResult(null)
+    setHistory([])
+    setError('')
+    setHistoryError('')
+    lastToken.current = null
     if (!personId) {
-      setHistory([])
       return () => { cancelled = true }
     }
     getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
@@ -96,7 +100,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
   }, [personId])
 
   useEffect(() => {
-    if (!autoInput || lastToken.current === autoInput.token) return
+    if (!autoInput || autoInput.personId !== personId || lastToken.current === autoInput.token) return
     lastToken.current = autoInput.token
     setSource(autoInput.source)
     setEventDate(autoInput.eventDate.slice(0, 10))
@@ -104,7 +108,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
     void reconcile(autoInput)
     // autoInput token intentionally controls this one-shot capture trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoInput?.token])
+  }, [autoInput?.token, autoInput?.personId, personId])
 
   function renderRows(title: string, rows?: Array<Record<string, any>>) {
     if (!rows?.length) return null
