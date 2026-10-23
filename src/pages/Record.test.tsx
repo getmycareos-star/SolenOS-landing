@@ -32,6 +32,23 @@ const currentTimeline = [
       },
     ],
     details: { event_type: 'hospital_discharge' },
+    assertions: [
+      {
+        id: 'assertion-1',
+        field: 'mobility_support',
+        asserted_value: 'Use walker when walking',
+        assertion_status: 'reported',
+        source_label: 'discharge instruction',
+        source_text: 'Caregiver reported walker use.',
+        evidence: [
+          {
+            id: 'assertion-evidence-1',
+            type: 'care_instruction',
+            source_text: 'Use walker when walking.',
+          },
+        ],
+      },
+    ],
   },
 ]
 
@@ -62,6 +79,7 @@ describe('Living Care Record timeline', () => {
     expect(screen.getByText('Returned home after discharge.')).toBeTruthy()
     expect(screen.getByText('Supporting source material')).toBeTruthy()
     expect(screen.getByText('Call the clinic if dizziness worsens.')).toBeTruthy()
+    expect(screen.getByText('Source (care instruction): Use walker when walking.')).toBeTruthy()
     expect(screen.getByText('Care continuity')).toBeTruthy()
   })
 
