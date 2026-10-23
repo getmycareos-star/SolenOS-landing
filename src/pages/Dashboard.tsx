@@ -70,6 +70,8 @@ interface Action {
   status: string;
   created_at: string;
   completed_at?: string | null;
+  completed_by_caregiver_id?: string | null;
+  completed_by_caregiver_label?: string | null;
   deadline?: string | null;
   is_medication_action?: boolean;
   actor_id?: string | null;
@@ -155,6 +157,8 @@ export default function Dashboard() {
           status: String(action.status ?? 'active'),
           created_at: String(action.created_at ?? ''),
           completed_at: typeof action.completed_at === 'string' ? action.completed_at : null,
+          completed_by_caregiver_id: typeof action.completed_by_caregiver_id === 'string' ? action.completed_by_caregiver_id : null,
+          completed_by_caregiver_label: typeof action.completed_by_caregiver_label === 'string' ? action.completed_by_caregiver_label : null,
           deadline: typeof action.deadline === 'string' ? action.deadline : null,
           is_medication_action: action.is_medication_action === true,
           actor_id: typeof action.actor_id === 'string' ? action.actor_id : null,
@@ -258,6 +262,8 @@ export default function Dashboard() {
               ...action,
               status: completion.status as string,
               completed_at: typeof completion.completed_at === 'string' ? completion.completed_at : null,
+              completed_by_caregiver_id: typeof completion.completed_by_caregiver_id === 'string' ? completion.completed_by_caregiver_id : null,
+              completed_by_caregiver_label: typeof completion.completed_by_caregiver_label === 'string' ? completion.completed_by_caregiver_label : null,
             }
           : action));
       },
@@ -353,6 +359,11 @@ export default function Dashboard() {
                 {action.status === 'completed' && action.completed_at && (
                   <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--success)' }}>
                     Completed: {new Date(action.completed_at).toLocaleString()}
+                  </p>
+                )}
+                {action.status === 'completed' && action.completed_by_caregiver_label && (
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Completed by: {action.completed_by_caregiver_label}
                   </p>
                 )}
                 {action.status !== 'completed' && action.is_medication_action && (
