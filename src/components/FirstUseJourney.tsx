@@ -123,6 +123,16 @@ function actionLabel(action: CareAction): string {
   return action.normalized_action?.trim() || action.action_object?.trim() || action.original_text?.trim() || 'Recorded action';
 }
 
+function isOpenAction(action: CareAction): boolean {
+  const status = (action.status || '').toLowerCase();
+  return ['active', 'conditional', 'pending_confirmation', 'blocked'].includes(status);
+}
+
+function isOpenGap(gap: InformationGap): boolean {
+  const status = (gap.lifecycle_status || '').toLowerCase();
+  return !['resolved', 'closed', 'superseded'].includes(status);
+}
+
 export default function FirstUseJourney() {
   const [recordState, setRecordState] = useState<RecordState>('loading');
   const [snapshot, setSnapshot] = useState<RecordSnapshot>({
@@ -142,7 +152,7 @@ export default function FirstUseJourney() {
     let active = true;
     async function inspectRecord() {
       setRecordState('loading');
-      const names = ['care events', 'saved evidence and documents', 'recorded actions', 'change assessments', 'open questions', 'unresolved contradictions', 'open information gaps'];
+      const names = ['care events', 'saved evidence and documents', 'recorded actions', 'change assessments', 'open questions', 'unresolved contradictions', 'information gaps'];
       let authorizedPersonId = personId;
       try {
         // The browser's person ID is not proof of access. Establish or refresh
@@ -165,11 +175,11 @@ export default function FirstUseJourney() {
       const results = await Promise.allSettled([
         getJSON('/events/' + encodedPersonId + '?limit=5'),
         getJSON('/evidence/' + encodedPersonId),
-        getJSON('/actions/' + encodedPersonId + '?status=active'),
+        getJSON('/actions/' + encodedPersonId + '/uncompleted'),
         getJSON('/change/changes/' + encodedPersonId),
         getJSON('/uncertainty/questions/' + encodedPersonId + '?status=open'),
         getJSON('/uncertainty/contradictions/' + encodedPersonId + '?resolution_status=unresolved'),
-        getJSON('/uncertainty/gaps/' + encodedPersonId + '?status=open'),
+        getJSON('/uncertainty/gaps/' + encodedPersonId),
       ]);
       if (!active) return;
 
@@ -203,6 +213,9 @@ export default function FirstUseJourney() {
     });
     return () => { active = false; };
   }, [personId, retry]);
+
+  const openGaps = snapshot.gaps.filter(isOpenGap);
+  const overdueActions = snapshot.actions.filter((action) => isOpenAction(action) && action.deadline && !Number.isNaN(Date.parse(action.deadline)) && Date.parse(action.deadline) < Date.now());
 
   const latestEvent = snapshot.events
     .slice()
@@ -394,11 +407,11 @@ export default function FirstUseJourney() {
             </div>
           )}
 
-          {snapshot.gaps.length > 0 && (
+          {openGaps.length > 0 && (
             <div style={{ marginBottom: '14px' }}>
               <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Known information gaps</h3>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {snapshot.gaps.slice(0, 3).map((item) => (
+                {openGaps.slice(0, 3).map((item) => (
                   <li key={item.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
                     {item.field ? item.field + ': ' : ''}{item.description || 'Information gap recorded'}
                     <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
@@ -435,13 +448,13 @@ export default function FirstUseJourney() {
               Some sources could not be checked ({snapshot.failedSections.join(', ')}); follow-up status may be incomplete.
             </p>
           )}
-          {snapshot.gaps.length > 0 ? (
+          {openGaps.length > 0 ? (
             <div>
               <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Information gaps recorded</h3>
               <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                {snapshot.gaps.map((gap) => {
+                {openGaps.map((gap) => {
                   const due = gap.expected_by ? new Date(gap.expected_by) : null;
-                  const overdue = Boolean(due && !Number.isNaN(due.getTime()) && due.getTime() < Date.now() && !['resolved', 'closed', 'completed'].includes((gap.lifecycle_status || '').toLowerCase()));
+                  const overdue = Boolean(due && !Number.isNaN(due.getTime()) && due.getTime() < Date.now() && !['resolved', 'closed', 'superseded'].includes((gap.lifecycle_status || '').toLowerCase()));
                   return <li key={gap.id} style={{ fontSize: '12px', marginBottom: '8px' }}>
                     <strong>{gap.field || 'Information not recorded'}</strong>: {gap.description || 'The record has an identified information gap.'}
                     <span style={{ display: 'block', color: overdue ? 'var(--error)' : 'var(--text-secondary)', fontSize: '11px' }}>
@@ -451,17 +464,17 @@ export default function FirstUseJourney() {
                 })}
               </ul>
             </div>
-          ) : !snapshot.failedSections.includes('open information gaps') ? (
-            <p style={{ fontSize: '12px', margin: '8px 0' }}>No open information-gap records were returned. This does not confirm that all care information is complete or that a concern is absent.</p>
+          ) : !snapshot.failedSections.includes('information gaps') ? (
+            <p style={{ fontSize: '12px', margin: '8px 0' }}>No unresolved information-gap records were returned. This does not confirm that all care information is complete or that a concern is absent.</p>
           ) : null}
-          {snapshot.actions.some((action) => action.status === 'active' && action.deadline && !Number.isNaN(Date.parse(action.deadline)) && Date.parse(action.deadline) < Date.now()) && (
+          {overdueActions.length > 0 && (
             <div>
-              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Overdue active actions</h3>
+              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Overdue open actions</h3>
               <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                {snapshot.actions.filter((action) => action.status === 'active' && action.deadline && !Number.isNaN(Date.parse(action.deadline)) && Date.parse(action.deadline) < Date.now()).map((action) => (
+                {overdueActions.map((action) => (
                   <li key={action.id} style={{ fontSize: '12px', marginBottom: '7px' }}>
                     {actionLabel(action)}
-                    <span style={{ display: 'block', color: 'var(--error)', fontSize: '11px' }}>Due {displayDate(action.deadline)} · Still marked active</span>
+                    <span style={{ display: 'block', color: 'var(--error)', fontSize: '11px' }}>Due {displayDate(action.deadline)} · Status: {action.status || 'unknown'}</span>
                   </li>
                 ))}
               </ul>
