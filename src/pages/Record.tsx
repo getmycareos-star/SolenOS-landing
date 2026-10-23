@@ -9,6 +9,17 @@ interface Evidence {
   uploaded_at: string
   time_provenance?: string
   location?: string
+  source_type?: string | null
+  confidence?: number | null
+  extra_metadata?: {
+    mime_type?: string
+    extraction_source?: string
+    extraction_warnings?: string[]
+    sha256?: string
+    extracted_char_count?: number
+    ocr_confidence?: number | null
+    metadata_unreadable?: boolean
+  } | null
 }
 
 export default function Record() {
@@ -337,6 +348,28 @@ export default function Record() {
                 </span>
               </div>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
+              {item.source_type && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                  Evidence origin: {item.source_type.replace(/_/g, ' ')}
+                </p>
+              )}
+              {item.extra_metadata?.extraction_source && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Document extraction: {item.extra_metadata.extraction_source}
+                  {item.extra_metadata.ocr_confidence != null ? ` · OCR confidence ${Math.round(item.extra_metadata.ocr_confidence * 100)}%` : ''}
+                  {item.extra_metadata.extracted_char_count != null ? ` · ${item.extra_metadata.extracted_char_count} characters` : ''}
+                </p>
+              )}
+              {item.extra_metadata?.metadata_unreadable && (
+                <p role="alert" style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>
+                  Some document provenance metadata could not be read. Verify against the original source.
+                </p>
+              )}
+              {item.extra_metadata?.extraction_warnings?.map((warning, index) => (
+                <p key={index} role="alert" style={{ fontSize: '12px', color: 'var(--unknown)', marginTop: '4px' }}>
+                  Document review needed: {warning}
+                </p>
+              ))}
               {item.time_provenance && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
                   Time source: {item.time_provenance}
