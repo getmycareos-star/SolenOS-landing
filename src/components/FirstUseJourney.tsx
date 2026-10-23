@@ -133,6 +133,16 @@ function isOpenGap(gap: InformationGap): boolean {
   return !['resolved', 'closed', 'superseded'].includes(status);
 }
 
+function isOverdue(value?: string | null): boolean {
+  if (!value) return false;
+  // Date-only deadlines are due through the end of that calendar day, not at UTC midnight.
+  const dateOnly = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);
+  const deadline = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 23, 59, 59, 999).getTime()
+    : Date.parse(value);
+  return !Number.isNaN(deadline) && deadline < Date.now();
+}
+
 export default function FirstUseJourney() {
   const [recordState, setRecordState] = useState<RecordState>('loading');
   const [snapshot, setSnapshot] = useState<RecordSnapshot>({
@@ -215,7 +225,7 @@ export default function FirstUseJourney() {
   }, [personId, retry]);
 
   const openGaps = snapshot.gaps.filter(isOpenGap);
-  const overdueActions = snapshot.actions.filter((action) => isOpenAction(action) && action.deadline && !Number.isNaN(Date.parse(action.deadline)) && Date.parse(action.deadline) < Date.now());
+  const overdueActions = snapshot.actions.filter((action) => isOpenAction(action) && isOverdue(action.deadline));
 
   const orderedEvents = snapshot.events.slice().sort((a, b) => {
     const aTime = Date.parse(a.occurred_at || '');
@@ -441,7 +451,7 @@ export default function FirstUseJourney() {
         }}>
           <h2 style={{ fontSize: '17px', margin: '0 0 6px' }}>Missing information & follow-ups</h2>
           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-            “Not recorded” means the current record does not contain this information. It does not mean the condition or event is absent. Only an explicitly sourced and reviewed report can document that something was checked and not present.
+            “Not recorded” means the current record does not contain this information; it does not mean the condition or event is absent. If a caregiver reports checking and not observing something, preserve that as a sourced report—not proof of absence or independent clinical confirmation.
           </p>
           {snapshot.failedSections.length > 0 && (
             <p role="alert" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -453,8 +463,7 @@ export default function FirstUseJourney() {
               <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Information gaps recorded</h3>
               <ul style={{ paddingLeft: '20px', margin: 0 }}>
                 {openGaps.map((gap) => {
-                  const due = gap.expected_by ? new Date(gap.expected_by) : null;
-                  const overdue = Boolean(due && !Number.isNaN(due.getTime()) && due.getTime() < Date.now() && !['resolved', 'closed', 'superseded'].includes((gap.lifecycle_status || '').toLowerCase()));
+                  const overdue = isOverdue(gap.expected_by) && !['resolved', 'closed', 'superseded'].includes((gap.lifecycle_status || '').toLowerCase());
                   return <li key={gap.id} style={{ fontSize: '12px', marginBottom: '8px' }}>
                     <strong>{gap.field || 'Information not recorded'}</strong>: {gap.description || 'The record has an identified information gap.'}
                     <span style={{ display: 'block', color: overdue ? 'var(--error)' : 'var(--text-secondary)', fontSize: '11px' }}>
