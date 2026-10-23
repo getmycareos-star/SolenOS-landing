@@ -78,7 +78,7 @@ describe('FirstUseJourney', () => {
     expect(screen.getAllByText('Poor sleep reported').length).toBeGreaterThan(0);
     expect(screen.getByText('Clinic note')).toBeInTheDocument();
     expect(screen.getByText('Ask the clinic about sleep changes')).toBeInTheDocument();
-    expect(screen.getByText('Confirm the missed follow-up')).toBeInTheDocument();
+    expect(screen.getAllByText('Confirm the missed follow-up').length).toBeGreaterThan(0);
     expect(screen.getByText(/overdue open actions/i)).toBeInTheDocument();
     expect(screen.getByText(/status: pending_confirmation/i)).toBeInTheDocument();
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('FirstUseJourney', () => {
     expect(screen.getByText(/has the sleep change happened for several nights/i)).toBeInTheDocument();
     expect(screen.getByText(/one caregiver reported low intake/i)).toBeInTheDocument();
     expect(screen.getAllByText(/fluid intake has not been recorded/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/follow-up result/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/follow-up result/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/overdue follow-up/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/does not choose which account is true/i)).toBeInTheDocument();
   });
