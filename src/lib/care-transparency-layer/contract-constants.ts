@@ -13,9 +13,9 @@ export const EVIDENCE_TYPES = [
   "system_pattern",
 ] as const;
 
-export const CONFIDENCE_TIERS = ["high", "medium", "low"] as const;
+export const CONFIDENCE_TIERS = ["unknown", "high", "medium", "low"] as const;
 
-export const DECAY_STATUSES = ["fresh", "aging", "stale"] as const;
+export const DECAY_STATUSES = ["unknown", "fresh", "aging", "stale"] as const;
 
 export const TRANSPARENCY_RULES = [
   "data_used_explicit",
