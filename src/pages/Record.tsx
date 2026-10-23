@@ -561,7 +561,7 @@ export default function Record() {
           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'}</p>
           <div><button type="submit" disabled={savingReminder} style={{ padding: '9px 13px', borderRadius: '8px', border: 0, background: 'var(--accent)', color: 'white', fontSize: '12px', cursor: savingReminder ? 'default' : 'pointer' }}>{savingReminder ? 'Saving reminder…' : 'Save reminder'}</button></div>
         </form>
-        {remindersError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px', marginTop: '10px' }}>{remindersError}</p>}
+        {remindersError && <p role="status" aria-live="polite" style={{ color: 'var(--error)', fontSize: '12px', marginTop: '10px' }}>{remindersError}</p>}
         <div style={{ display: 'grid', gap: '8px', marginTop: '14px' }}>
           {reminders.length === 0 && <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No reminders are recorded for this care recipient yet.</p>}
           {reminders.map((item) => (
