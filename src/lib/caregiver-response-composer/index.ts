@@ -74,6 +74,8 @@ import {
 import {
   buildCareSituationUnderstandingFromExtraction,
   projectCareSituationOrientation,
+  buildNextStepGuidance,
+  type NextStepGuidance,
 } from "../care-situation-understanding";
 import {
   projectCareSituationToResponseContract,
@@ -363,6 +365,8 @@ export type ComposedCaregiverResponse = {
   evidence_maturity: 1 | 2 | 3 | 5 | 10;
   /** Real-world / record follow-ups when Decision-ready. */
   follow_up_items: string[];
+  /** Evidence-linked distinction between asking, checking, monitoring, and safe existing actions. */
+  next_step_guidance?: NextStepGuidance[];
   /** Structured contract trace — engine schema aligned to caregiver copy. */
   contract_output: ResponseIntelligenceOutput;
   /** Caregiver mental load signal — brief, non-judgmental. */
@@ -525,6 +529,7 @@ function composeIdentityMismatchTurn(params: {
     evidence_line: null,
     evidence_maturity: 1,
     follow_up_items: [],
+    next_step_guidance: [],
     contract_output: intelligence,
     mental_load_signal: (() => {
       const openGaps = still_unclear.length;
@@ -2232,6 +2237,7 @@ connection_note = scrubPasteField(connection_note);
     evidence_line,
     evidence_maturity: facets.evidence_maturity,
     follow_up_items,
+    next_step_guidance: buildNextStepGuidance(careUnderstanding),
     contract_output: intelligence,
     mental_load_signal: (() => {
       const openGaps = still_unclear.length;
