@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { postJSON, getPersonId, getCaregiverId } from '../api/client'
+import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 const QUICK_ENTRY_TYPES = [
@@ -32,6 +32,12 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
+  const [selectedDocument, setSelectedDocument] = useState<File | null>(null)
+  const [documentUploading, setDocumentUploading] = useState(false)
+  const [documentError, setDocumentError] = useState<string | null>(null)
+  const [documentResult, setDocumentResult] = useState<any>(null)
+  const [documentReviewingIndex, setDocumentReviewingIndex] = useState<number | null>(null)
+  const [documentReviewMessage, setDocumentReviewMessage] = useState<string | null>(null)
   const personId = pid || getPersonId()
 
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
