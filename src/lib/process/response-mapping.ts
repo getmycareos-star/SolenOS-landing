@@ -93,9 +93,9 @@ export function mapResponse(input: ResponseMappingInput): SolenOSOutput {
         drives_clarification: true,
       })),
       recency: {
-        last_updated_at: new Date().toISOString(),
+        last_updated_at: null,
         freshness_score: null,
-        interpretation: "recently recorded",
+        interpretation: "Recency unavailable; source event timestamp not verified.",
       },
       confidence: null,
     },
