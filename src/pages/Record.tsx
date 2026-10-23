@@ -18,6 +18,7 @@ export default function Record() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [lcrExplanation, setLcrExplanation] = useState<string | null>(null)
   const [lcrProviderStatus, setLcrProviderStatus] = useState<string | null>(null)
+  const [lcrEvidenceIds, setLcrEvidenceIds] = useState<string[]>([])
   const [lcrError, setLcrError] = useState<string | null>(null)
   const [explainingLcr, setExplainingLcr] = useState(false)
   const [documentFile, setDocumentFile] = useState<File | null>(null)
@@ -160,6 +161,7 @@ export default function Record() {
     setLcrError(null)
     setLcrExplanation(null)
     setLcrProviderStatus(null)
+    setLcrEvidenceIds([])
     try {
       const result = await postJSON('/lcr/explain', {
         person_id: personId,
@@ -170,6 +172,7 @@ export default function Record() {
       }
       setLcrExplanation(result.explanation)
       setLcrProviderStatus(result.provider_status || 'unknown')
+      setLcrEvidenceIds(Array.isArray(result.evidence_ids) ? result.evidence_ids.filter((id): id is string => typeof id === 'string') : [])
     } catch {
       setLcrError('Qwen could not provide a verified explanation. The existing care record has not been changed.')
     } finally {
@@ -228,6 +231,13 @@ export default function Record() {
           </p>
         )}
         {lcrExplanation && <p style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginTop: '8px' }}>{lcrExplanation}</p>}
+        {lcrExplanation && (
+          <p role="status" style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            {lcrEvidenceIds.length > 0
+              ? `Evidence cited from this authorized record: ${lcrEvidenceIds.join(', ')}`
+              : 'No specific Living Care Record evidence IDs were cited. Treat this as an explanation, not a source-verified statement about recorded facts.'}
+          </p>
+        )}
         {lcrError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{lcrError}</p>}
       </section>
 
