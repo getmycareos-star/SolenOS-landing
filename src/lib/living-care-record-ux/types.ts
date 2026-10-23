@@ -7,6 +7,7 @@ import type {
 } from "../care-reality-state/types";
 import type { DisclosurePlan } from "../care-reality-state/disclosure";
 import type { ResponseRiskLevel } from "../response-intelligence";
+import type { NextStepGuidance } from "../care-situation-understanding";
 
 export type HumanConfidenceLabel = (typeof HUMAN_CONFIDENCE_LABELS)[number];
 
@@ -75,6 +76,8 @@ export type LivingCareRecordResponseView = {
   /** Consequence tier for evidence visibility (1|2|3|5|10). */
   evidence_maturity: 1 | 2 | 3 | 5 | 10;
   follow_up_items: string[];
+  /** Structured, source-grounded next step: ask/check/monitor/do. */
+  next_step_guidance?: NextStepGuidance[];
   /** Caregiver mental load signal — brief, non-judgmental. */
   mental_load_signal: string | null;
   /** Care trajectory from structured state — improving / stable / deteriorating / insufficient_data. */
