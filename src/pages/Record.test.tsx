@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Record from './Record'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
@@ -17,6 +17,7 @@ describe('Living Care Record timeline', () => {
     ;(getJSON as jest.Mock).mockResolvedValue({
       person_id: 'person-1',
       returned_count: 1,
+      has_more: false,
       timeline: [
         {
           id: 'event:event-1',
@@ -52,13 +53,65 @@ describe('Living Care Record timeline', () => {
     )
 
     await waitFor(() => {
-      expect(getJSON).toHaveBeenCalledWith('/care-record/person-1?limit=200')
+      expect(getJSON).toHaveBeenCalledWith('/care-record/person-1?limit=200&offset=0')
     })
 
     expect(await screen.findByText('Hospital discharge')).toBeTruthy()
     expect(screen.getByText('Returned home after discharge.')).toBeTruthy()
     expect(screen.getByText('Supporting source material')).toBeTruthy()
     expect(screen.getByText('Call the clinic if dizziness worsens.')).toBeTruthy()
+  })
+
+  it('loads older records without replacing the current timeline', async () => {
+    ;(getJSON as jest.Mock).mockImplementation((path: string) => {
+      if (path.includes('offset=1')) {
+        return Promise.resolve({
+          has_more: false,
+          timeline: [
+            {
+              id: 'observation:older-1',
+              kind: 'observation',
+              source_id: 'older-1',
+              occurred_at: '2026-10-10T07:00:00Z',
+              recorded_at: '2026-10-10T07:01:00Z',
+              title: 'Care observation',
+              summary: 'Older observation',
+              status: 'recorded',
+            },
+          ],
+        })
+      }
+      return Promise.resolve({
+        has_more: true,
+        timeline: [
+          {
+            id: 'event:event-1',
+            kind: 'care_event',
+            source_id: 'event-1',
+            occurred_at: '2026-10-22T08:30:00Z',
+            recorded_at: '2026-10-22T08:31:00Z',
+            title: 'Hospital discharge',
+            summary: 'Returned home after discharge.',
+            status: 'recorded',
+            evidence: [],
+          },
+        ],
+      })
+    })
+
+    render(
+      <MemoryRouter>
+        <Record />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Hospital discharge')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Load older records' }))
+    expect(await screen.findByText('Older observation')).toBeTruthy()
+    await waitFor(() => {
+      expect(getJSON).toHaveBeenLastCalledWith('/care-record/person-1?limit=200&offset=1')
+    })
+    expect(screen.queryByRole('button', { name: 'Load older records' })).toBeNull()
   })
 
   it('reports an invalid unified timeline response instead of silently showing an empty record', async () => {
