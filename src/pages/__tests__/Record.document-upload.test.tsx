@@ -80,6 +80,40 @@ describe('Living Care Record document intake', () => {
     expect(screen.getByText(/Review needed: OCR confidence is low/i)).toBeInTheDocument()
   })
 
+  it('builds an appointment brief with separate sources and unresolved uncertainties', async () => {
+    mockedGetJSON.mockResolvedValueOnce([
+      {
+        id: 'evidence-doc-1',
+        type: 'document',
+        source_text: 'Prescription document lists medication and follow-up.',
+        uploaded_at: '2026-10-20T10:00:00.000Z',
+        source_type: 'document',
+        extra_metadata: {
+          extraction_source: 'pdf_ocr',
+          ocr_confidence: 0.42,
+          extraction_warnings: ['OCR confidence is low.'],
+        },
+      },
+      {
+        id: 'evidence-note-1',
+        type: 'note',
+        source_text: 'Caregiver reports a change; onset is uncertain.',
+        uploaded_at: '2026-10-22T10:00:00.000Z',
+        source_type: 'caregiver_observation',
+      },
+    ] as never)
+
+    render(<MemoryRouter><Record /></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button', { name: /prepare appointment brief/i }))
+
+    expect(await screen.findByRole('heading', { name: /documented source text/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /caregiver observations/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /system interpretations/i })).toBeInTheDocument()
+    expect(screen.getByText(/the system has not established whether newer documents supersede earlier instructions/i)).toBeInTheDocument()
+    expect(screen.getByText(/questions for the care team/i)).toBeInTheDocument()
+    expect(screen.getByText(/does not diagnose or authorize treatment/i)).toBeInTheDocument()
+  })
+
   it('shows stored document origin and extraction warnings after record reload', async () => {
     mockedGetJSON.mockResolvedValueOnce([{
       id: 'evidence-doc-1',
