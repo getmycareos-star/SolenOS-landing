@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ensureAnonymousSession, getJSON, getPersonId } from '../api/client';
+import CareContinuityIntegrityPanel from './CareContinuityIntegrityPanel';
 
 type RecordState = 'loading' | 'empty' | 'existing' | 'unknown';
 
@@ -11,11 +12,13 @@ type CareEvent = {
   description?: string;
   occurred_at?: string;
   recorded_at?: string;
+  created_at?: string;
 };
 
 type EvidenceRecord = {
   id: string;
   type?: string;
+  source_text?: string;
   title?: string;
   file_name?: string;
   source_label?: string;
@@ -120,6 +123,26 @@ function actionLabel(action: CareAction): string {
   return action.normalized_action?.trim() || action.action_object?.trim() || action.original_text?.trim() || 'Recorded action';
 }
 
+function isOpenAction(action: CareAction): boolean {
+  const status = (action.status || '').toLowerCase();
+  return ['active', 'conditional', 'pending_confirmation', 'blocked'].includes(status);
+}
+
+function isOpenGap(gap: InformationGap): boolean {
+  const status = (gap.lifecycle_status || '').toLowerCase();
+  return !['resolved', 'closed', 'superseded'].includes(status);
+}
+
+function isOverdue(value?: string | null): boolean {
+  if (!value) return false;
+  // Date-only deadlines are due through the end of that calendar day, not at UTC midnight.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const deadline = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 23, 59, 59, 999).getTime()
+    : Date.parse(value);
+  return !Number.isNaN(deadline) && deadline < Date.now();
+}
+
 export default function FirstUseJourney() {
   const [recordState, setRecordState] = useState<RecordState>('loading');
   const [snapshot, setSnapshot] = useState<RecordSnapshot>({
@@ -139,7 +162,7 @@ export default function FirstUseJourney() {
     let active = true;
     async function inspectRecord() {
       setRecordState('loading');
-      const names = ['care events', 'saved evidence and documents', 'recorded actions', 'change assessments', 'open questions', 'unresolved contradictions', 'open information gaps'];
+      const names = ['care events', 'saved evidence and documents', 'recorded actions', 'change assessments', 'open questions', 'unresolved contradictions', 'information gaps'];
       let authorizedPersonId = personId;
       try {
         // The browser's person ID is not proof of access. Establish or refresh
@@ -162,11 +185,11 @@ export default function FirstUseJourney() {
       const results = await Promise.allSettled([
         getJSON('/events/' + encodedPersonId + '?limit=5'),
         getJSON('/evidence/' + encodedPersonId),
-        getJSON('/actions/' + encodedPersonId + '?status=active'),
+        getJSON('/actions/' + encodedPersonId + '/uncompleted'),
         getJSON('/change/changes/' + encodedPersonId),
         getJSON('/uncertainty/questions/' + encodedPersonId + '?status=open'),
         getJSON('/uncertainty/contradictions/' + encodedPersonId + '?resolution_status=unresolved'),
-        getJSON('/uncertainty/gaps/' + encodedPersonId + '?status=open'),
+        getJSON('/uncertainty/gaps/' + encodedPersonId),
       ]);
       if (!active) return;
 
@@ -201,13 +224,18 @@ export default function FirstUseJourney() {
     return () => { active = false; };
   }, [personId, retry]);
 
-  const latestEvent = snapshot.events
-    .slice()
-    .sort((a, b) => {
-      const aTime = Date.parse(a.occurred_at || a.recorded_at || '');
-      const bTime = Date.parse(b.occurred_at || b.recorded_at || '');
-      return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
-    })[0];
+  const openGaps = snapshot.gaps.filter(isOpenGap);
+  const openActions = snapshot.actions.filter(isOpenAction);
+  const overdueActions = openActions.filter((action) => isOverdue(action.deadline));
+  const actionsWithoutDueDate = openActions.filter((action) => !action.deadline || Number.isNaN(Date.parse(action.deadline)));
+
+  const orderedEvents = snapshot.events.slice().sort((a, b) => {
+    const aTime = Date.parse(a.occurred_at || '');
+    const bTime = Date.parse(b.occurred_at || '');
+    // Missing event time stays unknown; entry time must not make an old report look new.
+    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+  });
+  const latestEvent = orderedEvents[0];
 
   return (
     <section aria-labelledby="first-use-title" style={{
@@ -265,7 +293,7 @@ export default function FirstUseJourney() {
             <p style={{ fontSize: '13px', margin: '0 0 14px' }}>
               <strong>Latest event returned:</strong> {eventLabel(latestEvent)}
               <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px', marginTop: '3px' }}>
-                Reported/recorded time: {displayDate(latestEvent.occurred_at || latestEvent.recorded_at)}
+                Event time: {displayDate(latestEvent.occurred_at)} · Entered into SolenOS: {displayDate(latestEvent.recorded_at || latestEvent.created_at)}
               </span>
             </p>
           )}
@@ -288,11 +316,11 @@ export default function FirstUseJourney() {
             <div style={{ marginBottom: '14px' }}>
               <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Recent recorded events</h3>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {snapshot.events.slice(0, 3).map((event) => (
+                {orderedEvents.slice(0, 3).map((event) => (
                   <li key={event.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
                     {eventLabel(event)}
                     <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
-                      {displayDate(event.occurred_at || event.recorded_at)}
+                      Event time: {displayDate(event.occurred_at)} · Entered: {displayDate(event.recorded_at || event.created_at)}
                     </span>
                   </li>
                 ))}
@@ -334,7 +362,7 @@ export default function FirstUseJourney() {
             <div style={{ marginBottom: '14px' }}>
               <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Persisted change assessments</h3>
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 7px' }}>
-                These are saved system assessments, not a fresh independent validation of the current situation.
+                These are saved system assessments, not a fresh independent validation of the current situation. Assessment save time is not the event time; use the comparison window and source event times to judge whether a change is genuinely new.
               </p>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
                 {snapshot.changes.filter((item) => item.is_active !== false).slice(0, 3).map((item) => (
@@ -348,7 +376,7 @@ export default function FirstUseJourney() {
                     ) : null}
                     {item.explanation && <span style={{ display: 'block' }}>{item.explanation}</span>}
                     <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
-                      Comparison window: {item.comparison_window_start ? displayDate(item.comparison_window_start) : 'start not recorded'} to {item.comparison_window_end ? displayDate(item.comparison_window_end) : 'end not recorded'} · Evidence references: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}
+                      Assessment saved: {displayDate(item.created_at)} · Comparison window: {item.comparison_window_start ? displayDate(item.comparison_window_start) : 'start not recorded'} to {item.comparison_window_end ? displayDate(item.comparison_window_end) : 'end not recorded'} · Evidence references: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}
                     </span>
                   </li>
                 ))}
@@ -391,11 +419,11 @@ export default function FirstUseJourney() {
             </div>
           )}
 
-          {snapshot.gaps.length > 0 && (
+          {openGaps.length > 0 && (
             <div style={{ marginBottom: '14px' }}>
               <h3 style={{ fontSize: '13px', margin: '0 0 7px' }}>Known information gaps</h3>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {snapshot.gaps.slice(0, 3).map((item) => (
+                {openGaps.slice(0, 3).map((item) => (
                   <li key={item.id} style={{ fontSize: '12px', lineHeight: 1.5, marginBottom: '6px' }}>
                     {item.field ? item.field + ': ' : ''}{item.description || 'Information gap recorded'}
                     <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>
@@ -416,6 +444,79 @@ export default function FirstUseJourney() {
             These are records retrieved from the current API. This screen does not yet establish which entries changed since your last review or whether active actions remain appropriate.
           </p>
         </section>
+      )}
+
+      {recordState === 'existing' && (
+        <section aria-label="Missing information and overdue follow-ups" style={{
+          border: '1px solid var(--border)', borderRadius: '12px', padding: '16px',
+          marginBottom: '22px', background: 'var(--bg)',
+        }}>
+          <h2 style={{ fontSize: '17px', margin: '0 0 6px' }}>Missing information & follow-ups</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+            “Not recorded” means the current record does not contain this information; it does not mean the condition or event is absent. If a caregiver reports checking and not observing something, preserve that as a sourced report—not proof of absence or independent clinical confirmation.
+          </p>
+          {snapshot.failedSections.length > 0 && (
+            <p role="alert" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Some sources could not be checked ({snapshot.failedSections.join(', ')}); follow-up status may be incomplete.
+            </p>
+          )}
+          {openGaps.length > 0 ? (
+            <div>
+              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Information gaps recorded</h3>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {openGaps.map((gap) => {
+                  const overdue = isOverdue(gap.expected_by) && !['resolved', 'closed', 'superseded'].includes((gap.lifecycle_status || '').toLowerCase());
+                  return <li key={gap.id} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                    <strong>{gap.field || 'Information not recorded'}</strong>: {gap.description || 'The record has an identified information gap.'}
+                    <span style={{ display: 'block', color: overdue ? 'var(--error)' : 'var(--text-secondary)', fontSize: '11px' }}>
+                      {overdue ? 'Overdue follow-up' : 'Status'} · {gap.lifecycle_status || 'open'} · Due: {displayDate(gap.expected_by)}
+                    </span>
+                  </li>;
+                })}
+              </ul>
+            </div>
+          ) : !snapshot.failedSections.includes('information gaps') ? (
+            <p style={{ fontSize: '12px', margin: '8px 0' }}>No unresolved information-gap records were returned. This does not confirm that all care information is complete or that a concern is absent.</p>
+          ) : null}
+          {overdueActions.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Overdue open actions</h3>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {overdueActions.map((action) => (
+                  <li key={action.id} style={{ fontSize: '12px', marginBottom: '7px' }}>
+                    {actionLabel(action)}
+                    <span style={{ display: 'block', color: 'var(--error)', fontSize: '11px' }}>Due {displayDate(action.deadline)} · Status: {action.status || 'unknown'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {actionsWithoutDueDate.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: '13px', margin: '12px 0 6px' }}>Open actions without a recorded due date</h3>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {actionsWithoutDueDate.map((action) => (
+                  <li key={action.id} style={{ fontSize: '12px', marginBottom: '7px' }}>
+                    {actionLabel(action)}
+                    <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '11px' }}>Due date not recorded or invalid · Status: {action.status || 'unknown'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+      {recordState === 'existing' && (
+        <CareContinuityIntegrityPanel
+          personId={getPersonId() || ''}
+          evidenceAvailable={!snapshot.failedSections.includes('saved evidence and documents')}
+          evidenceItems={snapshot.evidence.map((item) => ({
+            id: item.id,
+            type: item.type || 'Evidence',
+            source_text: item.source_text || '',
+            uploaded_at: item.uploaded_at || item.created_at || '',
+          }))}
+        />
       )}
 
       <div style={{

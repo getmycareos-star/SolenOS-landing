@@ -63,9 +63,13 @@ describe('FirstUseJourney', () => {
 
   it('shows persisted event, evidence and action details for an existing caregiver', async () => {
     mockedGetJSON
-      .mockResolvedValueOnce([{ id: 'event-1', title: 'Poor sleep reported', occurred_at: '2026-10-21T21:00:00Z' }])
+      .mockResolvedValueOnce([{ id: 'event-1', title: 'Poor sleep reported', occurred_at: '2026-10-21T21:00:00Z', recorded_at: '2026-10-23T10:00:00Z' }])
       .mockResolvedValueOnce([{ id: 'evidence-1', type: 'provider_note', title: 'Clinic note', created_at: '2026-10-20T10:00:00Z' }])
-      .mockResolvedValueOnce([{ id: 'action-1', normalized_action: 'Ask the clinic about sleep changes', status: 'active', deadline: '2026-10-24T12:00:00Z' }]);
+      .mockResolvedValueOnce([
+        { id: 'action-1', normalized_action: 'Ask the clinic about sleep changes', status: 'active', deadline: '2026-10-24T12:00:00Z' },
+        { id: 'action-2', normalized_action: 'Confirm the missed follow-up', status: 'pending_confirmation', deadline: '2020-01-01T00:00:00Z' },
+        { id: 'action-3', normalized_action: 'Schedule a follow-up', status: 'blocked', deadline: null },
+      ]);
 
     renderJourney();
 
@@ -75,8 +79,48 @@ describe('FirstUseJourney', () => {
     expect(screen.getAllByText('Poor sleep reported').length).toBeGreaterThan(0);
     expect(screen.getByText('Clinic note')).toBeInTheDocument();
     expect(screen.getByText('Ask the clinic about sleep changes')).toBeInTheDocument();
+    expect(screen.getAllByText('Confirm the missed follow-up').length).toBeGreaterThan(0);
+    expect(screen.getByText(/overdue open actions/i)).toBeInTheDocument();
+    expect(screen.getByText(/status: pending_confirmation/i)).toBeInTheDocument();
+    expect(screen.getByText(/open actions without a recorded due date/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Schedule a follow-up').length).toBeGreaterThan(0);
     expect(screen.getByText(/latest event returned/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/event time:/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/entered into SolenOS:/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/does not yet establish which entries changed since your last review/i)).toBeInTheDocument();
+  });
+
+  it('orders events by occurrence time rather than when an old report was entered', async () => {
+    mockedGetJSON
+      .mockResolvedValueOnce([
+        { id: 'old-event', title: 'Old report entered today', occurred_at: '2024-02-01T10:00:00Z', recorded_at: '2026-10-23T10:00:00Z' },
+        { id: 'newer-event', title: 'Newer by event time', occurred_at: '2025-08-01T10:00:00Z', recorded_at: '2025-08-01T11:00:00Z' },
+        { id: 'unknown-time-event', title: 'Event time unknown, entered today', recorded_at: '2026-10-23T10:30:00Z' },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{
+        id: 'change-1',
+        change_type: 'sleep duration',
+        explanation: 'Recorded assessment of sleep reports.',
+        is_active: true,
+        created_at: '2026-10-23T10:00:00Z',
+        comparison_window_start: '2025-07-01T00:00:00Z',
+        comparison_window_end: '2025-08-01T00:00:00Z',
+        evidence_ids: ['evidence-old'],
+      }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    renderJourney();
+
+    await waitFor(() => expect(screen.getByText(/latest event returned/i)).toBeInTheDocument());
+    const latestSummary = screen.getByText(/latest event returned/i).closest('p');
+    expect(latestSummary).toHaveTextContent('Newer by event time');
+    expect(latestSummary).not.toHaveTextContent('Old report entered today');
+    expect(latestSummary).not.toHaveTextContent('Event time unknown, entered today');
+    expect(screen.getByText(/assessment save time is not the event time/i)).toBeInTheDocument();
   });
 
   it('shows retrieved records while explicitly identifying a failed section', async () => {
@@ -90,7 +134,7 @@ describe('FirstUseJourney', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Appetite reported lower').length).toBeGreaterThan(0);
     });
-    expect(screen.getByRole('alert')).toHaveTextContent(/recorded actions/i);
+    expect(screen.getAllByRole('alert').some((alert) => /recorded actions/i.test(alert.textContent || ''))).toBe(true);
     expect(screen.queryByText(/contain no saved entries yet/i)).not.toBeInTheDocument();
   });
 
@@ -129,6 +173,13 @@ describe('FirstUseJourney', () => {
         description: 'Fluid intake has not been recorded for the recent period.',
         priority: 'important',
         lifecycle_status: 'open',
+      }, {
+        id: 'gap-2',
+        field: 'follow-up result',
+        description: 'The requested follow-up result is still unresolved.',
+        priority: 'high',
+        lifecycle_status: 'reopened',
+        expected_by: '2020-01-01T00:00:00Z',
       }]);
 
     renderJourney();
@@ -138,7 +189,9 @@ describe('FirstUseJourney', () => {
     });
     expect(screen.getByText(/has the sleep change happened for several nights/i)).toBeInTheDocument();
     expect(screen.getByText(/one caregiver reported low intake/i)).toBeInTheDocument();
-    expect(screen.getByText(/fluid intake has not been recorded/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/fluid intake has not been recorded/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/follow-up result/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/overdue follow-up/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/does not choose which account is true/i)).toBeInTheDocument();
   });
 
