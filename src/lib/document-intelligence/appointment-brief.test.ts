@@ -1,3 +1,5 @@
+import { describe, expect, it } from '@jest/globals'
+
 import { buildAppointmentBrief } from './appointment-brief'
 
 describe('buildAppointmentBrief', () => {
