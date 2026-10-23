@@ -9,14 +9,6 @@ export const metadata: Metadata = {
 };
 
 const start = "/workspace?enter=1";
-const photos = {
-  hero: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1800&q=85",
-  together: "https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=1400&q=85",
-  support: "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=1400&q=85",
-  appointment: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=85",
-  phone: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=85",
-};
-
 const capabilities = [
   ["⌕", "What happened?", "Keep important moments together."],
   ["↔", "What changed?", "See what is different across the care journey — not just what was written most recently."],
