@@ -223,7 +223,13 @@ export default function Record() {
 
   const continuityEvidenceMap = new Map<string, { id: string; type: string; source_text: string; uploaded_at: string }>()
   for (const item of items) {
-    for (const source of item.evidence || []) {
+    const linkedSources = [
+      ...(item.evidence || []),
+      ...(item.related_observations || []).flatMap(observation => observation.evidence || []),
+      ...(item.assertions || []).flatMap(assertion => assertion.evidence || []),
+      ...(item.outcomes || []).flatMap(outcome => outcome.evidence || []),
+    ]
+    for (const source of linkedSources) {
       continuityEvidenceMap.set(source.id, { id: source.id, type: source.type, source_text: source.source_text, uploaded_at: source.uploaded_at || '' })
     }
   }
