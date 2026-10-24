@@ -1,6 +1,5 @@
-// Use the same-origin API proxy in both Vite development and Netlify production.
-// vite.config.ts and netlify.toml forward /api/* to the backend, so the browser
-// never needs a hard-coded backend hostname or import.meta.env in Jest.
+// Use the same-origin API proxy in Next.js and Netlify production.
+// Netlify forwards /api/* to the backend, so browser requests do not expose a backend hostname.
 const API_BASE = '/api/v1'
 
 function isPlaceholderIdentifier(value: string | null | undefined): boolean {
@@ -11,7 +10,12 @@ function isPlaceholderIdentifier(value: string | null | undefined): boolean {
 export function getPersonId(): string {
   // Older builds may have persisted a demo ID in localStorage. Never send it
   // to the API as if it identified a real care recipient.
-  const id = localStorage.getItem('solenos_person_id')?.trim() || ''
+  // Prefer an explicitly selected legacy person ID; otherwise use the person
+  // issued by the current anonymous care session.
+  const id =
+    localStorage.getItem('solenos_person_id')?.trim() ||
+    localStorage.getItem(ANONYMOUS_PERSON_KEY)?.trim() ||
+    ''
   return isPlaceholderIdentifier(id) ? '' : id
 }
 

@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, ArrowLeft, FileText, Plus, Upload } from "lucide-react";
+import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload, UsersRound, MessageCircle } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
 import { ResearchPreviewAckGate } from "@/components/mvp-workspace/ResearchPreviewAckGate";
@@ -131,6 +131,28 @@ function WorkspacePageInner() {
           </p>
         </section>
 
+        <section className="workspace-entry-actions" aria-label="Care record actions">
+          <button type="button" className="workspace-entry-action" onClick={() => router.push("/workspace/daily-care")}>
+            <CalendarDays size={19} aria-hidden />
+            <span><strong>Daily care</strong><small>Record how today is going</small></span>
+          </button>
+          <button type="button" className="workspace-entry-action" onClick={() => openComposer()}>
+            <Plus size={19} aria-hidden />
+            <span><strong>Add record</strong><small>Add a note, message, or document</small></span>
+          </button>
+        </section>
+
+        <section className="workspace-secondary-tools" aria-label="More care tools">
+          <button type="button" onClick={() => router.push("/workspace/community")}>
+            <UsersRound size={18} aria-hidden />
+            <span><strong>Caregiver community</strong><small>Shared dementia-care experiences</small></span>
+          </button>
+          <button type="button" onClick={() => router.push("/workspace/companion")}>
+            <MessageCircle size={18} aria-hidden />
+            <span><strong>AI Companion</strong><small>Organise thoughts and questions</small></span>
+          </button>
+        </section>
+
         {!hasAnyContent ? (
           /* Empty state — no dead end, real action buttons */
           <section className="mobile-care-cards">
@@ -143,19 +165,7 @@ function WorkspacePageInner() {
                 Start by adding information about the person you care for — a
                 note, a message, a document, or a photo.
               </p>
-              <div className="mobile-empty-actions">
-                <Button variant="primary" onClick={() => openComposer()}>
-                  <Plus size={18} aria-hidden />
-                  Add first record
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => openComposer("upload")}
-                >
-                  <Upload size={18} aria-hidden />
-                  Upload document
-                </Button>
-              </div>
+
             </div>
           </section>
         ) : (

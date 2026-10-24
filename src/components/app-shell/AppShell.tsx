@@ -7,10 +7,8 @@ import {
   BookOpen,
   FileText,
   Settings,
-  Plus,
   PlusCircle,
-  Upload,
-  Camera,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
@@ -40,7 +38,7 @@ const FALLBACK_TABS: NavItem[] = [
   { href: "/workspace/settings", label: "Settings", icon: "⚙" },
 ];
 
-type FABActionId = "record" | "upload" | "capture";
+type FABActionId = "record" | "daily-care";
 
 const FAB_ACTIONS: {
   id: FABActionId;
@@ -48,9 +46,8 @@ const FAB_ACTIONS: {
   icon: LucideIcon;
   href: string;
 }[] = [
+  { id: "daily-care", label: "Daily Care", icon: CalendarDays, href: "/workspace/daily-care" },
   { id: "record", label: "Add Record", icon: PlusCircle, href: "/workspace?compose=1" },
-  { id: "upload", label: "Upload", icon: Upload, href: "/workspace?compose=1" },
-  { id: "capture", label: "Capture", icon: Camera, href: "/workspace?compose=1" },
 ];
 
 /**
@@ -125,7 +122,7 @@ export function AppShell({
           aria-expanded={fabOpen}
           onClick={() => setFabOpen((v) => !v)}
         >
-          <Plus size={24} aria-hidden />
+          <PlusCircle size={24} aria-hidden />
         </Button>
       </div>
 

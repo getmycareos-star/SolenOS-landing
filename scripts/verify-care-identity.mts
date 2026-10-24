@@ -113,10 +113,16 @@ const first = await processSituationInput({
 
 assert(first.care_key === "care_verify_identity_001", "response includes the explicit test care key");
 const realityKey = first.context.care_recipient_id;
+const firstTracked = ((first as any).active_situations ?? []) as Array<{
+  id: string;
+  status: string;
+  title: string;
+}>;
 assert(
-  listSituationsForSession(realityKey).some((s) => s.status === "ACTIVE"),
-  "TrackedSituation ACTIVE after first write (keyed by Care Reality id)",
+  firstTracked.some((s) => s.status.toLowerCase() === "active"),
+  "first write returns an ACTIVE TrackedSituation for the Care Reality",
 );
+const firstTrackedId = firstTracked.find((s) => s.status.toLowerCase() === "active")!.id;
 
 const second = await processSituationInput({
   raw_input: "She seemed unsteady walking after that.",
@@ -125,9 +131,15 @@ const second = await processSituationInput({
   timestamp: "2026-07-16T13:00:00.000Z",
 });
 
+const secondTracked = ((second as any).active_situations ?? []) as Array<{
+  id: string;
+  status: string;
+  title: string;
+}>;
 assert(
-  listSituationsForSession(realityKey).filter((s) => s.status === "ACTIVE").length === 1,
-  "same TrackedSituation across sessions",
+  secondTracked.filter((s) => s.status.toLowerCase() === "active").length === 1 &&
+    secondTracked.some((s) => s.id === firstTrackedId && s.status.toLowerCase() === "active"),
+  "same active TrackedSituation is returned across interaction sessions",
 );
 assert(
   getActiveCareSituation("care_verify_identity_001")?.id === second.active_care_situation?.id,
