@@ -53,6 +53,19 @@ try {
   missingKeyRejected = true;
 }
 assert(missingKeyRejected, "missing durable identity must fail closed rather than use a shared default");
+for (const untrustedSessionId of ["sess_abc", "legacy-key", "550e8400-e29b-41d4-a716-446655440000"]) {
+  let rejected = false;
+  try {
+    resolveDurableCareKey({ caregiver_id: null, care_session_id: untrustedSessionId });
+  } catch {
+    rejected = true;
+  }
+  assert(rejected, `session identifier ${untrustedSessionId} must never become a durable care key`);
+  assert(
+    requireCareKeyFromRequest({ caregiver_id: null, care_session_id: untrustedSessionId }).ok === false,
+    `request must reject session identifier ${untrustedSessionId} as care identity`,
+  );
+}
 assert(
   ensureClientDurableCareKey("default_caregiver") !== "default_caregiver" &&
     ensureClientDurableCareKey("default_caregiver").startsWith("care_"),
