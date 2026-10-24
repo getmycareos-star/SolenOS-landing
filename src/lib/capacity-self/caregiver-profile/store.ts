@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import {
   DEFAULT_CAREGIVER_SELF_PROFILE,
   type CaregiverSelfProfileData,
@@ -29,9 +30,7 @@ export function createCaregiverSelfProfileId(): string {
 }
 
 export function getOrCreateCaregiverSelfProfile(caregiverId: string): CaregiverSelfProfileRecord {
-  const normalizedId = caregiverId?.trim();
-  if (!normalizedId || normalizedId === "default_caregiver") throw new Error("Valid caregiver identity is required.");
-  caregiverId = normalizedId;
+  caregiverId = requireCaregiverId(caregiverId, "caregiver profile store");
   const existing = profiles.get(caregiverId);
   if (existing) return cloneRecord(existing);
 
@@ -93,10 +92,7 @@ export function addResolvedItem(
 }
 
 export function replaceCaregiverSelfProfileRecord(record: CaregiverSelfProfileRecord): void {
-  const caregiverId = record.caregiver_id?.trim();
-  if (!caregiverId || caregiverId === "default_caregiver") {
-    throw new Error("Valid caregiver identity is required.");
-  }
+  const caregiverId = requireCaregiverId(record.caregiver_id, "caregiver profile record");
   if (!record.id || !record.profile || !Array.isArray(record.resolved_items)) {
     throw new Error("A complete caregiver profile record is required.");
   }
