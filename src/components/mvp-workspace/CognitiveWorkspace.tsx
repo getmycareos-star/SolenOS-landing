@@ -492,6 +492,22 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         situationData.context?.caregiver_id ??
         caregiverId;
       setSituationResponse(situationData);
+      const savedEventId =
+        typeof situationData.care_event_id === "string" && situationData.care_event_id
+          ? situationData.care_event_id
+          : typeof situationData.situation_id === "string" && situationData.situation_id
+            ? situationData.situation_id
+            : "";
+      setQwenAnalysis({ status: savedEventId ? "processing" : "unavailable", candidates: null });
+      if (savedEventId) {
+        // Run Qwen after durable save/read-back so model latency cannot trigger a duplicate capture.
+        void requestQwenCandidateAnalysis(savedEventId)
+          .then((analysis) => setQwenAnalysis({
+            status: analysis.qwen_extraction_status,
+            candidates: analysis.qwen_candidates,
+          }))
+          .catch(() => setQwenAnalysis({ status: "unavailable", candidates: null }));
+      }
       setHasContextRoot(true);
       setSessionHasNote(true);
       setShowSoftPrivacyNote(true);
