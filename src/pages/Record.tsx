@@ -192,8 +192,8 @@ export default function Record() {
        </div>
 
       <AppointmentBriefings evidence={items} />
-      {getPersonId() && <CareHandoffPanel personId={getPersonId()} />}
-      {getPersonId() && <CaregiverInvitationPanel personId={getPersonId()} />}
+      {!loading && !loadError && getPersonId() && <CareHandoffPanel personId={getPersonId()} />}
+      {!loading && !loadError && getPersonId() && <CaregiverInvitationPanel personId={getPersonId()} />}
 
       <section style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
