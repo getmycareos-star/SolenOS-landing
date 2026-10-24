@@ -158,7 +158,7 @@ export default function Dashboard() {
         setActions([]);
       }
 
-      const sectionNames = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions', 'appointments'];
+      const sectionNames = ['recent care notes', 'care insights', 'observed changes', 'care summary', 'today’s overview', 'follow-ups', 'appointments'];
       const failedSections = results
         .map((result, index) => {
           if (result.status === 'rejected') return sectionNames[index];
@@ -171,14 +171,14 @@ export default function Dashboard() {
         })
         .filter((section): section is string => section !== null);
       setLoadError(failedSections.length
-        ? `Some dashboard data could not be loaded: ${failedSections.join(', ')}. Check the API connection and try again.`
+        ? `Some care information could not be loaded: ${failedSections.join(', ')}. Check your connection and try again.`
         : null);
       setLoading(false);
     }
 
     void load().catch(error => {
       console.error('Failed to load dashboard:', error);
-      setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
+      setLoadError('Your care information could not be loaded. Check your connection and try again.');
       setLoading(false);
     });
   }, [personId]);
@@ -310,7 +310,7 @@ export default function Dashboard() {
         borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
       }}>
         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
-          Active Actions
+          Follow-ups
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '12px' }}>
           Assign each action to a caregiver already linked to this care record. Only authorized linked caregivers are offered.
@@ -318,7 +318,7 @@ export default function Dashboard() {
         {assignmentError && <p role="alert" style={{ color: 'var(--unknown)', fontSize: '12px', marginBottom: '12px' }}>{assignmentError}</p>}
         {actions.length === 0 && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-            No active actions. Actions will appear here when created from situations or insights.
+            No follow-ups have been recorded yet.
           </p>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -430,7 +430,7 @@ export default function Dashboard() {
                 )}
                 {dailyIntel.upcoming_items.length > 0 && (
                   <div style={{ marginTop: '12px' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 500 }}>Items today</span>
+                    <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 500 }}>Coming up</span>
                     <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
                       {dailyIntel.upcoming_items.map((item, index) => (
                         <li key={`${String(item.type ?? 'item')}-${index}`} style={{ fontSize: '13px', marginBottom: '6px' }}>
@@ -445,7 +445,7 @@ export default function Dashboard() {
                 {dailyIntel.active_windows.length > 0 && (
                   <div style={{ marginTop: '8px' }}>
                     <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 500 }}>
-                      {dailyIntel.active_windows.length} active monitoring period(s)
+                      {dailyIntel.active_windows.length} care tracking period(s)
                     </span>
                   </div>
                 )}
@@ -504,7 +504,7 @@ export default function Dashboard() {
                   )}
                   {evt.time_provenance && (
                     <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px', fontStyle: 'italic' }}>
-                      Time source: {evt.time_provenance}
+                      Time recorded from: {evt.time_provenance}
                     </p>
                   )}
                   {evt.location && (
@@ -523,7 +523,7 @@ export default function Dashboard() {
           {trends.length > 0 && (
             <section style={{ marginBottom: '40px' }}>
               <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Observation patterns
+                Changes noticed over time
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {trends.map(trend => (
