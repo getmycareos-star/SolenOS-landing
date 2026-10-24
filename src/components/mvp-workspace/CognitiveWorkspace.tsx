@@ -351,9 +351,12 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           Authorization: `Bearer ${anonymousSession.access_token}`,
         },
         body: JSON.stringify({
+          person_id: anonymousSession.person.id,
+          caregiver_id: anonymousSession.caregiver.id,
+          client_care_key: caregiverId,
           raw_input: text,
-          caregiver_id: caregiverId,
           care_session_id: interactionSessionId(),
+          timestamp: provenance.captured_at,
           captured_at: provenance.captured_at,
           provenance: {
             input_type:
@@ -613,7 +616,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         },
         body: JSON.stringify({
           action: "pause_active_care_situation",
-          caregiver_id: caregiverId,
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
+          client_care_key: caregiverId,
           care_session_id: interactionSessionId(),
         }),
       });
@@ -630,7 +635,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     let hydrationWarning = false;
     try {
       const res = await fetch(
-        apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=0`),
+        apiUrl(`/api/situation?care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=0`),
         { headers: { Authorization: `Bearer ${accessToken}` } },
       );
       if (!res.ok) throw new Error("The saved care record could not be refreshed.");
