@@ -1,11 +1,41 @@
 import { NextResponse } from "next/server";
-import { putSharedIntake } from "@/lib/input-entry-contract/share-intake";
+import { getBackendOrigin } from "@/lib/backend-origin";
 
 export const runtime = "nodejs";
 
+const MAX_FILES = 5;
+const MAX_SHARED_BYTES = 5 * 1024 * 1024;
+
+type ShareCreateResponse = { id?: string; detail?: string; expires_at?: string };
+
+async function createPersistentShare(
+  payload: { title?: string; text?: string; url?: string; files: Array<{ name: string; mimeType: string; base64: string }> },
+): Promise<{ id: string } | { error: string; status: number }> {
+  try {
+    const target = new URL("/api/v1/share-intake", getBackendOrigin());
+    const upstream = await fetch(target, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+    const data = (await upstream.json().catch(() => ({}))) as ShareCreateResponse;
+    if (!upstream.ok || !data.id) {
+      return {
+        error: data.detail || "The care backend did not confirm the shared content was saved.",
+        status: upstream.ok ? 502 : upstream.status,
+      };
+    }
+    return { id: data.id };
+  } catch {
+    return { error: "The care backend could not be reached. Shared content was not saved.", status: 502 };
+  }
+}
+
 /**
- * Web Share Target receiver (manifest share_target.action).
- * Evidence only — redirects into Living Care Record; same understanding pipeline.
+ * Web Share Target receiver. The backend stores a short-lived, one-time token;
+ * the payload is not kept in a process-local map that may disappear between
+ * serverless invocations.
  */
 export async function POST(request: Request) {
   try {
@@ -15,8 +45,16 @@ export async function POST(request: Request) {
     const url = stringField(form, "url");
 
     const files: Array<{ name: string; mimeType: string; base64: string }> = [];
+    let totalBytes = 0;
     for (const item of form.getAll("files")) {
       if (!(item instanceof File) || item.size === 0) continue;
+      if (files.length >= MAX_FILES) {
+        return NextResponse.json({ error: "Share up to five files at a time." }, { status: 413 });
+      }
+      totalBytes += item.size;
+      if (totalBytes > MAX_SHARED_BYTES) {
+        return NextResponse.json({ error: "Shared files exceed the 5 MB limit." }, { status: 413 });
+      }
       const buffer = Buffer.from(await item.arrayBuffer());
       files.push({
         name: item.name || "shared-file",
@@ -30,18 +68,21 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL("/workspace?enter=1", request.url), 303);
     }
 
-    const payload = putSharedIntake({
+    const created = await createPersistentShare({
       title: title || undefined,
       text: combinedText || undefined,
       url: url || undefined,
       files,
     });
+    if ("error" in created) {
+      return NextResponse.json({ error: created.error }, { status: created.status });
+    }
 
     const dest = new URL("/workspace?enter=1", request.url);
-    dest.searchParams.set("share_id", payload.id);
+    dest.searchParams.set("share_id", created.id);
     return NextResponse.redirect(dest, 303);
   } catch {
-    return NextResponse.redirect(new URL("/workspace?enter=1", request.url), 303);
+    return NextResponse.json({ error: "Shared content could not be processed." }, { status: 400 });
   }
 }
 
@@ -56,14 +97,18 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/share", request.url), 303);
   }
 
-  const payload = putSharedIntake({
+  const created = await createPersistentShare({
     title: title || undefined,
     text: combined,
     url: sharedUrl || undefined,
     files: [],
   });
+  if ("error" in created) {
+    return NextResponse.json({ error: created.error }, { status: created.status });
+  }
+
   const dest = new URL("/workspace?enter=1", request.url);
-  dest.searchParams.set("share_id", payload.id);
+  dest.searchParams.set("share_id", created.id);
   return NextResponse.redirect(dest, 303);
 }
 
