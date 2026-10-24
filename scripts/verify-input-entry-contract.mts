@@ -115,3 +115,13 @@ assert(sot.includes("never change the reasoning engine") || sot.includes("never*
 console.log("✓ SoT present");
 
 console.log("\nAll input-entry-contract checks passed.");
+
+
+const settingsPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "settings", "page.tsx"), "utf8");
+assert(settingsPage.includes('putJSON("/notifications/preferences"'));
+assert(settingsPage.includes("revokeAnonymousSession"));
+assert(settingsPage.includes('href="/workspace/notifications"'));
+const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "notifications", "page.tsx"), "utf8");
+assert(notificationPage.includes('getJSON("/notifications/unread-count")'));
+assert(notificationPage.includes('patchJSON(`/notifications/${encodeURIComponent(item.id)}/read`, {})'));
+console.log("✓ Security session revocation and notification actions use authenticated backend APIs");
