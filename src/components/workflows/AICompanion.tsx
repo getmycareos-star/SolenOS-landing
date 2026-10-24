@@ -229,7 +229,7 @@ export default function Companion() {
           }}
         />
         <button
-          onClick={sendMessage}
+          onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
           style={{
             padding: '10px 20px', borderRadius: '16px', border: 'none',
