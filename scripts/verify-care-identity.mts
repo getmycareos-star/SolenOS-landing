@@ -113,8 +113,16 @@ const first = await processSituationInput({
 
 assert(first.care_key === "care_verify_identity_001", "response includes the explicit test care key");
 const realityKey = first.context.care_recipient_id;
+const trackedAfterFirstWrite = listSituationsForSession(realityKey);
+if (!trackedAfterFirstWrite.some((s) => s.status === "ACTIVE")) {
+  console.error("[care-identity diagnostic]", JSON.stringify({
+    responseCareRealityId: realityKey,
+    returnedActiveSituations: (first as any).active_situations?.map((s: any) => ({ id: s.id, status: s.status, title: s.title })) ?? [],
+    trackedSituationKeys: trackedAfterFirstWrite.map((s) => ({ id: s.id, careSessionId: s.careSessionId, status: s.status })),
+  }, null, 2));
+}
 assert(
-  listSituationsForSession(realityKey).some((s) => s.status === "ACTIVE"),
+  trackedAfterFirstWrite.some((s) => s.status === "ACTIVE"),
   "TrackedSituation ACTIVE after first write (keyed by Care Reality id)",
 );
 
