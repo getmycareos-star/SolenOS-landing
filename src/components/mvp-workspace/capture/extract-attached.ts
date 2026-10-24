@@ -63,8 +63,10 @@ export async function extractAttachedDocument(
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res: Response;
     try {
+      const session = await ensureAnonymousSession();
       res = await fetch(apiUrl("/api/extract"), {
         method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: form,
         signal: controller.signal,
       });
@@ -94,6 +96,25 @@ export async function extractAttachedDocument(
     }
 
     const doc = data.document;
+    if (res.status === 415 && file.type.startsWith("image/")) {
+      try {
+        const evidenceId = await persistOriginalDocument(file, "");
+        return {
+          ...base,
+          evidenceId,
+          status: "ready",
+          errorNote:
+            "This image was saved as evidence, but scanned-image text extraction is not available in this deployment. Type the key details before submitting.",
+        };
+      } catch {
+        return {
+          ...base,
+          status: "failed",
+          errorNote:
+            "Scanned-image text extraction is not available, and the original image could not be saved. Type the key details instead.",
+        };
+      }
+    }
     if (!res.ok || !data.ok || !doc?.extracted_text?.trim()) {
       const isImage = file.type.startsWith("image/");
       return {

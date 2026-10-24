@@ -101,12 +101,19 @@ export function AddSituationPanel({
           added.push(await extractAttachedDocument(file, method));
         }
         onDocumentsChange([...documents, ...added]);
-        const failed = added.filter((d) => d.status === "failed");
-        if (failed.length > 0 && added.every((d) => d.status === "failed")) {
-          setLocalHint(
-            failed[0]?.errorNote ??
-              "Could not read that file. Type the key details, or try another photo.",
-          );
+        const imageNeedsManualText = added.find(
+          (d) => d.status === "ready" && !d.extractedText.trim() && Boolean(d.evidenceId) && Boolean(d.errorNote),
+        );
+        if (imageNeedsManualText?.errorNote) {
+          setLocalHint(imageNeedsManualText.errorNote);
+        } else {
+          const failed = added.filter((d) => d.status === "failed");
+          if (failed.length > 0 && added.every((d) => d.status === "failed")) {
+            setLocalHint(
+              failed[0]?.errorNote ??
+                "Could not read that file. Type the key details, or try another supported file.",
+            );
+          }
         }
       } finally {
         setExtracting(false);
@@ -120,37 +127,13 @@ export function AddSituationPanel({
     let cancelled = false;
 
     async function claimShare() {
-      try {
-        const res = await fetch(
-          `/api/share-intake?id=${encodeURIComponent(pendingShareId!)}`,
-        );
-        const data = (await res.json()) as {
-          ok?: boolean;
-          text?: string;
-          files?: Array<{ name: string; mimeType: string; base64: string }>;
-        };
-        if (cancelled || !res.ok || !data.ok) return;
-
-        if (data.text?.trim()) {
-          onChange(value ? `${value}\n\n${data.text.trim()}` : data.text.trim());
-          setLastEntryMethod("share");
-        }
-
-        if (data.files?.length) {
-          const files = data.files.map((f) => {
-            const binary = atob(f.base64);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i += 1) {
-              bytes[i] = binary.charCodeAt(i);
-            }
-            return new File([bytes], f.name, { type: f.mimeType });
-          });
-          await ingestFiles(files, "share");
-        }
-        onShareClaimed?.();
-      } catch {
-        /* share claim is best-effort */
-      }
+      if (cancelled) return;
+      // The backend does not currently register /api/share-intake. Do not make
+      // a request that will fail or pretend shared content was imported.
+      setLocalHint(
+        "Incoming share intake is not connected in this deployment. Paste the text or use Upload in the workspace; no shared content has been imported.",
+      );
+      onShareClaimed?.();
     }
 
     void claimShare();
@@ -219,8 +202,8 @@ export function AddSituationPanel({
         onDocumentsChange(
           documents.map((d) => (d.id === doc.id ? { ...next, id: d.id } : d)),
         );
-        if (next.status === "failed") {
-          setLocalHint(next.errorNote ?? "Could not read that file. Type the key details instead.");
+        if (next.status === "failed" || (next.status === "ready" && !next.extractedText.trim())) {
+          setLocalHint(next.errorNote ?? "Text extraction is not available for this file. Type the key details instead.");
         } else {
           setLocalHint(null);
         }

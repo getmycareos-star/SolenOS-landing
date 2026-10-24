@@ -54,10 +54,23 @@ jobs:
           from pathlib import Path
           config = Path("netlify.toml").read_text(encoding="utf-8")
           package = Path("package.json").read_text(encoding="utf-8")
-          required = ['publish = ".next"', 'package = "@netlify/plugin-nextjs"', 'to = "https://solenosbackend-production.up.railway.app/api/:splat"']
+          required = [
+              'publish = ".next"',
+              'package = "@netlify/plugin-nextjs"',
+              'from = "/api/extract"',
+              'to = "https://solenosbackend-production.up.railway.app/api/extract"',
+              'from = "/api/v1/*"',
+              'to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"',
+              'from = "/api/situation"',
+              'to = "https://solenosbackend-production.up.railway.app/api/situation"',
+          ]
           missing = [item for item in required if item not in config]
           if missing:
               raise SystemExit(f"Next.js Netlify configuration missing: {missing}")
+          if 'from = "/api/*"' in config:
+              raise SystemExit("Netlify must not force-proxy every /api/* path.")
+          if 'Access-Control-Allow-Origin = "*"' in config:
+              raise SystemExit("Same-origin proxy must not emit wildcard CORS headers.")
           if '"build": "next build"' not in package or '"dev": "next dev"' not in package:
               raise SystemExit("package.json is not configured for Next.js.")
           forbidden = [

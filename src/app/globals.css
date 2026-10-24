@@ -4730,3 +4730,149 @@ img, video, svg { max-width: 100%; }
 .workspace-secondary-tools small { color: var(--muted); font-size: .74rem; line-height: 1.35; }
 .workspace-secondary-tools button:focus-visible { outline: 3px solid color-mix(in srgb, var(--care-accent) 45%, white); outline-offset: 2px; }
 @media (max-width: 380px) { .workspace-secondary-tools { grid-template-columns: minmax(0, 1fr); } }
+
+
+/* Accessible, calm, responsive care workspace refresh (Next.js). */
+:root {
+  --solenos-sage-button: #b9d5b5;
+  --solenos-sage-button-hover: #a8c9a3;
+  --solenos-button-ink: #17251c;
+  --text-base: 1.0625rem;
+}
+html { font-size: 100%; }
+body { overflow-x: clip; }
+button, input, select, textarea { font: inherit; }
+:where(button, a, input, select, textarea, [role="button"]):focus-visible {
+  outline: 3px solid #477c56;
+  outline-offset: 3px;
+}
+.solenos-btn--primary,
+.workspace-primary,
+.el-button {
+  background: var(--solenos-sage-button) !important;
+  border-color: var(--solenos-sage-button) !important;
+  color: var(--solenos-button-ink) !important;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.solenos-btn--primary:hover,
+.workspace-primary:hover,
+.el-button:hover {
+  background: var(--solenos-sage-button-hover) !important;
+  border-color: var(--solenos-sage-button-hover) !important;
+  color: var(--solenos-button-ink) !important;
+}
+.mobile-settings, .mobile-settings-card, .mobile-settings-buttons { min-width: 0; max-width: 100%; }
+.mobile-settings-card { padding: clamp(1rem, 3.5vw, 1.5rem); }
+.mobile-settings-card-title { font-size: 1.2rem !important; line-height: 1.35; }
+.mobile-settings-hint { font-size: 1rem !important; line-height: 1.65; overflow-wrap: anywhere; }
+.mobile-settings-buttons { display: flex; flex-wrap: wrap; gap: .65rem; }
+.mobile-settings-buttons > * { min-width: 0; max-width: 100%; }
+.mobile-settings-buttons .mobile-fab-sheet-item {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.mobile-settings-buttons .solenos-btn:disabled { opacity: .78; }
+.mobile-settings-input, .mobile-screen input:not([type="checkbox"]), .mobile-screen select, .mobile-screen textarea {
+  width: 100%;
+  max-width: 100%;
+  min-height: 48px;
+  font-size: 1rem;
+}
+.mobile-page-head h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.2; }
+.mobile-page-head p { font-size: 1.05rem; line-height: 1.65; }
+.mobile-settings-row { min-width: 0; flex-wrap: wrap; gap: .75rem; }
+.mobile-settings-row > * { min-width: 0; overflow-wrap: anywhere; }
+.mobile-settings-value { overflow-wrap: anywhere; }
+
+/* Structured Daily Capture: prevent inline-width and long-label overflow on phones. */
+.cognitive-workspace, .mobile-screen, main, .panel, .panel-input, .panel-output,
+form, fieldset, section { min-width: 0; }
+input, select, textarea { max-width: 100%; }
+input[type="datetime-local"], input[type="date"], input[type="file"], input[type="number"], input[type="text"], select, textarea {
+  min-height: 48px;
+}
+input[type="file"] { width: 100%; white-space: normal; }
+.medication-file-label { max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .mobile-screen { padding-inline: max(1rem, env(safe-area-inset-left)); }
+  .mobile-page-head { margin-bottom: 1.25rem; }
+  .mobile-settings { gap: 1rem; }
+  .mobile-settings-card { border-radius: 16px; }
+  .mobile-settings-buttons { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .mobile-settings-buttons > *, .mobile-settings-buttons .mobile-fab-sheet-item { width: 100%; }
+  .mobile-settings-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+  .mobile-settings-actions > * { flex: 1 1 9rem; min-width: 0; }
+  .workspace-primary { max-width: 100%; white-space: normal; }
+}
+@media (max-width: 360px) {
+  :root { --text-base: 1rem; }
+  .mobile-screen { padding-inline: .75rem; }
+  .mobile-settings-card { padding: .9rem; }
+}
+
+
+/* Daily Capture layout: the previous inline flex rows caused clipping at phone widths. */
+.structured-daily-capture { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.structured-daily-capture > div:first-child > h1 { font-size: clamp(1.65rem, 5vw, 2rem) !important; line-height: 1.2; }
+.structured-daily-capture p { font-size: 1rem; line-height: 1.65; }
+.structured-daily-capture label { display: block; font-size: .98rem !important; line-height: 1.45; margin-bottom: .4rem !important; overflow-wrap: anywhere; }
+.structured-daily-capture input,
+.structured-daily-capture select,
+.structured-daily-capture textarea {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: .7rem .8rem !important;
+  border: 1px solid #c7d2ca !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #17251c !important;
+  font-size: 1rem !important;
+  line-height: 1.45;
+}
+.structured-daily-capture textarea { min-height: 96px; resize: vertical; }
+.structured-daily-capture button {
+  max-width: 100%;
+  min-height: 46px;
+  padding: .75rem 1rem !important;
+  border: 1px solid var(--solenos-sage-button) !important;
+  border-radius: 10px !important;
+  background: var(--solenos-sage-button) !important;
+  color: var(--solenos-button-ink) !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.structured-daily-capture > section { margin-block: 1.25rem; }
+.structured-daily-capture form > div[style*="display: flex"] { flex-wrap: wrap !important; gap: .85rem !important; }
+.structured-daily-capture form > div[style*="display: flex"] > div { flex: 1 1 13rem !important; min-width: 0 !important; max-width: 100%; }
+.structured-daily-capture input[type="file"] { padding: .6rem !important; }
+.structured-daily-capture .medication-file-label { display: inline-flex; align-items: center; min-height: 44px; }
+.workspace-more-menu { max-width: 100%; }
+.workspace-more-menu-trigger { width: 40px; height: 40px; min-width: 40px; min-height: 40px; flex: 0 0 40px; }
+.workspace-more-menu-dropdown {
+  width: min(17rem, calc(100vw - 1.5rem));
+  min-width: 0;
+  max-width: calc(100vw - 1.5rem);
+  right: 0;
+  overflow-wrap: anywhere;
+}
+.workspace-more-menu-item { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+@media (max-width: 600px) {
+  .structured-daily-capture { padding-inline: .25rem; }
+  .structured-daily-capture > div:first-child { display: block !important; }
+  .structured-daily-capture > div:first-child > p { max-width: none !important; margin-top: .5rem; }
+  .structured-daily-capture form > div[style*="display: flex"] > div { flex-basis: 100% !important; }
+  .workspace-more-menu-dropdown { right: 0; }
+}

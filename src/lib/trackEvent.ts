@@ -1,70 +1,20 @@
 /**
- * Client event emitter for SolenOS Ops Console.
- * Fail silently. Never block UX.
+ * Internal telemetry is intentionally disabled until a real, scoped backend
+ * ingestion endpoint is available. The previous POST /api/track was being
+ * forwarded to FastAPI, which does not register that route and returns 404.
+ * Keep the call signature so existing callers remain non-blocking; do not send
+ * caregiver activity or metadata to an unsupported endpoint.
  */
 
-import {
-  OPS_SESSION_STORAGE_KEY,
-  OPS_USER_STORAGE_KEY,
-  type OpsEventName,
-} from "./ops-console/event-names";
-import { apiUrl } from "./api-url";
+import type { OpsEventName } from "./ops-console/event-names";
 
-function newSessionId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function getSessionId(): string {
-  try {
-    const existing = window.localStorage.getItem(OPS_SESSION_STORAGE_KEY);
-    if (existing) return existing;
-    const id = newSessionId();
-    window.localStorage.setItem(OPS_SESSION_STORAGE_KEY, id);
-    return id;
-  } catch {
-    return newSessionId();
-  }
-}
-
-function getUserId(): string | null {
-  try {
-    return window.localStorage.getItem(OPS_USER_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * track(event_name, metadata) — POST /api/track. Fail silently.
- */
+/** No-op until telemetry persistence is implemented and verified server-side. */
 export function track(
-  event_name: OpsEventName | string,
-  metadata: Record<string, unknown> = {},
+  _event_name: OpsEventName | string,
+  _metadata: Record<string, unknown> = {},
 ): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    const body = {
-      user_id: getUserId(),
-      event_name,
-      session_id: getSessionId(),
-      metadata,
-    };
-
-    void fetch(apiUrl("/api/track"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      keepalive: true,
-    }).catch(() => {
-      /* fail silently */
-    });
-  } catch {
-    /* fail silently */
-  }
+  // Intentionally no network request. Do not re-enable by adding a client URL:
+  // implement a scoped, persisted backend endpoint first.
 }
 
 export default track;

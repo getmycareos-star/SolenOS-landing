@@ -47,7 +47,7 @@ export function PublicFooter() {
         <div className="public-footer-brand">
           <SolenosWordmark size="sm" as="span" />
           <p>{BRAND_TAGLINE}</p>
-          <p className="public-footer-copy">© SolenOS</p>
+          <p className="public-footer-copy">© 2026 SolenOS. All rights reserved.</p>
         </div>
         <nav className="public-footer-links" aria-label="Footer">
           {TRUST_FOOTER_LINKS.map((item) => (

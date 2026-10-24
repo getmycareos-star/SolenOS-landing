@@ -8,15 +8,11 @@ function isPlaceholderIdentifier(value: string | null | undefined): boolean {
 }
 
 export function getPersonId(): string {
-  // Older builds may have persisted a demo ID in localStorage. Never send it
-  // to the API as if it identified a real care recipient.
-  // Prefer an explicitly selected legacy person ID; otherwise use the person
-  // issued by the current anonymous care session.
-  const id =
-    localStorage.getItem('solenos_person_id')?.trim() ||
-    localStorage.getItem(ANONYMOUS_PERSON_KEY)?.trim() ||
-    ''
-  return isPlaceholderIdentifier(id) ? '' : id
+  // The server-issued anonymous session is the only identity authority for
+  // protected care APIs. A legacy localStorage ID is not proof of ownership
+  // and must never override the identity bound to the bearer token.
+  const id = localStorage.getItem(ANONYMOUS_PERSON_KEY)?.trim() || '';
+  return isPlaceholderIdentifier(id) ? '' : id;
 }
 
 export function setPersonId(id: string): void {
@@ -95,7 +91,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       personId &&
       caregiverId &&
       expiresAt &&
-      Date.parse(expiresAt) > Date.now() + 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
     ) {
       setPersonId(personId);
       return {
@@ -121,9 +117,6 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       expires_at: string;
       expires_in_seconds: number;
     };
-    // The backend refresh contract uses flat identity IDs, unlike bootstrap.
-    // Normalize it to the frontend's shared AnonymousSession shape only after
-    // persisting the exact backend-issued IDs.
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
     window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
     window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
