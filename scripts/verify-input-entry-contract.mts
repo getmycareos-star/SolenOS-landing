@@ -90,6 +90,25 @@ assert(fs.existsSync(path.join(root, "src", "app", "share-target", "route.ts")))
 assert(fs.existsSync(path.join(root, "src", "app", "api", "share-intake", "route.ts")));
 console.log("✓ share-target receive + claim API exist");
 
+const workspace = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"),
+  "utf8",
+);
+assert(workspace.includes("isCasualConversationOnly"));
+assert(workspace.includes("/workspace/companion?draft="));
+assert(workspace.includes('method: "GET"') && workspace.includes("hydrationRes"));
+assert(workspace.includes("active_care_situation_turn"));
+console.log("✓ greeting-only notes route to Companion; real captures hydrate the persisted record");
+
+const companion = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
+  "utf8",
+);
+assert(companion.includes("autoDraftSent"));
+assert(companion.includes("sendMessage(draft)"));
+assert(companion.includes("postJSON('/conversation/message'"));
+console.log("✓ greeting draft is sent to the backend Companion endpoint, not a local canned reply");
+
 const sot = fs.readFileSync(
   path.join(root, "docs", "02-product", "solenos-input-entry-contract.md"),
   "utf8",
