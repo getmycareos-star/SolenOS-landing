@@ -453,14 +453,14 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           "The note was accepted, but the backend did not return a persisted care-record view. Refresh the record before retrying; do not submit the same note again.",
         );
       }
-      situationData = {
+      situationData = ({
         ...situationData,
         ...hydrated,
         // Preserve write receipts while using the durable projection for display.
         care_event_id: situationData.care_event_id,
         evidence_id: situationData.evidence_id,
         message: situationData.message,
-      };
+      }) as typeof situationData;
 
       if (situationData.policy_engine_layer?.consent_required) {
         setShowSoftPrivacyNote(true);
