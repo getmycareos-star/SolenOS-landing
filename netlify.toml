@@ -12,10 +12,10 @@
   command = "npm run dev"
   port = 5173
 
-# Forward API requests to the SolenOS backend.
+# Forward API requests to the backend attached to the intended SolenOS Railway production service.
 [[redirects]]
   from = "/api/*"
-  to = "https://solenosbackend-production-ee6a.up.railway.app/api/:splat"
+  to = "https://solenosbackend-production.up.railway.app/api/:splat"
   status = 200
   force = true
 
