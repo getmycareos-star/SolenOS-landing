@@ -406,8 +406,30 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       });
 
       if (!situationRes.ok) {
-        const err = (await safeJson(situationRes)) as { error?: string };
-        throw new Error(err.error ?? "Could not structure situation");
+        const err = (await safeJson(situationRes)) as {
+          error?: string;
+          detail?: string | { code?: string; message?: string };
+        };
+        const detail =
+          typeof err.detail === "string"
+            ? err.detail
+            : err.detail?.message;
+        if (
+          err.detail &&
+          typeof err.detail === "object" &&
+          err.detail.code === "conversation_only" &&
+          readyDocs.length === 0 &&
+          text
+        ) {
+          // Older clients may still submit a greeting to the capture endpoint.
+          // The backend rejects it without writing care evidence; hand it to
+          // Companion for a real Qwen response instead.
+          const session = await ensureAnonymousSession();
+          if (!session.access_token) throw new Error("Secure Companion session unavailable.");
+          window.location.assign("/workspace/companion?draft=" + encodeURIComponent(text));
+          return;
+        }
+        throw new Error(detail ?? err.error ?? "Could not structure situation");
       }
 
       let situationData = normalizeBackendSituationResponse(
