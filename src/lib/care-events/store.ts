@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { deriveConfidence, deriveUncertaintyLevel, inferEventType } from "./classify";
 import type {
   CareEventRecord,
@@ -56,8 +57,7 @@ function buildSourceMetadata(provenance: InputProvenance): Record<string, unknow
 }
 
 export function createCareEvent(input: CreateCareEventInput): CreateCareEventResult {
-  const caregiverId = input.created_by?.trim();
-  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver attribution is required; care event was not stored.");
+  const caregiverId = requireCaregiverId(input.created_by, "care event attribution");
   const now = new Date().toISOString();
   const content = input.content.trim();
   const provenance = input.provenance;
@@ -120,7 +120,8 @@ export function updateCareEventMetadata(
 }
 
 export function listCareEventsForCaregiver(caregiverId: string): CareEventRecord[] {
-  const ids = caregiverIndex.get(caregiverId) ?? [];
+  const id = requireCaregiverId(caregiverId, "care event lookup");
+  const ids = caregiverIndex.get(id) ?? [];
   return ids
     .map((id) => getCareEvent(id))
     .filter((e): e is CareEventRecord => e !== undefined)
