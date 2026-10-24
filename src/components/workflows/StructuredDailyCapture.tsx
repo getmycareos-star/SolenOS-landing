@@ -762,7 +762,7 @@ export default function StructuredDailyCapture() {
   };
   
   return (
-    <div>
+    <div className="structured-daily-capture">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>Structured Daily Capture</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5', maxWidth: '500px' }}>
