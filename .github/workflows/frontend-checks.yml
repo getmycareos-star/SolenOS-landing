@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "vite.config.ts"
+      - "netlify.toml"
       - "tsconfig*.json"
       - ".github/workflows/frontend-checks.yml"
   pull_request:
@@ -47,3 +48,25 @@ jobs:
 
       - name: Build production bundle
         run: npm run build
+
+      - name: Verify Netlify uses the Vite bundle and current API proxy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          config = Path("netlify.toml").read_text(encoding="utf-8")
+          required = [
+              'command = "npm run build"',
+              'publish = "dist"',
+              'to = "https://solenosbackend-production-ee6a.up.railway.app/api/:splat"',
+              'to = "/index.html"',
+          ]
+          missing = [item for item in required if item not in config]
+          if missing:
+              raise SystemExit(f"Netlify config is missing required Vite/API settings: {missing}")
+          if ".next" in config or "plugin-nextjs" in config:
+              raise SystemExit("Netlify config still contains a Next.js build target/plugin.")
+          if config.index('from = "/api/*"') > config.index('from = "/*"'):
+              raise SystemExit("The SPA fallback must come after the API proxy.")
+          print("PASS: Netlify config targets Vite dist, current Railway API, and ordered SPA fallback.")
+          PY
