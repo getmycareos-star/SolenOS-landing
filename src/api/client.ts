@@ -10,7 +10,12 @@ function isPlaceholderIdentifier(value: string | null | undefined): boolean {
 export function getPersonId(): string {
   // Older builds may have persisted a demo ID in localStorage. Never send it
   // to the API as if it identified a real care recipient.
-  const id = localStorage.getItem('solenos_person_id')?.trim() || ''
+  // Prefer an explicitly selected legacy person ID; otherwise use the person
+  // issued by the current anonymous care session.
+  const id =
+    localStorage.getItem('solenos_person_id')?.trim() ||
+    localStorage.getItem(ANONYMOUS_PERSON_KEY)?.trim() ||
+    ''
   return isPlaceholderIdentifier(id) ? '' : id
 }
 
