@@ -237,6 +237,27 @@ export async function patchJSON(path: string, body: unknown) {
 }
 
 
+export async function putJSON(path: string, body: unknown) {
+  const res = await fetch(resolveApiUrl(path), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
+    body: JSON.stringify(body),
+  })
+  return handleResponse(res)
+}
+
+/** Revoke the current server-issued bearer session; never silently replace it. */
+export async function revokeAnonymousSession(): Promise<void> {
+  await postJSON("/sessions/revoke", {});
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
+    window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
+    window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
+    window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
+    window.dispatchEvent(new Event("personIdChanged"));
+  }
+}
+
 // Multipart upload helper. Do not set Content-Type manually: the browser must
 // add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {

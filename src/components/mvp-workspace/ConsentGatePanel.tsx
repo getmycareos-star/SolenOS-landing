@@ -1,6 +1,7 @@
 "use client";
 
 import { apiUrl, safeJson } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -17,9 +18,10 @@ type ConsentStatus = {
 type Props = {
   caregiverId: string;
   onConsentAccepted?: () => void;
+  onStatusChange?: (status: "required" | "accepted" | "unavailable") => void;
 };
 
-export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
+export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChange }: Props) {
   const [status, setStatus] = useState<ConsentStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -34,16 +36,25 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
 
   const loadStatus = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(apiUrl(`/api/policy/consent?user_id=${encodeURIComponent(caregiverId)}`));
+      const session = await ensureAnonymousSession();
+      const res = await fetch(apiUrl(`/api/v1/consent?person_id=${encodeURIComponent(session.person.id)}`), {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Could not load consent status.");
       const data = (await res.json()) as ConsentStatus;
       setStatus(data);
+      onStatusChange?.(data.required ? "required" : "accepted");
     } catch {
       setError("Could not load consent status.");
+      setStatus(null);
+      onStatusChange?.("unavailable");
     } finally {
       setLoading(false);
     }
-  }, [caregiverId]);
+  }, [caregiverId, onStatusChange]);
 
   useEffect(() => {
     void loadStatus();
@@ -55,11 +66,16 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
     setError(null);
 
     try {
-      const res = await fetch(apiUrl("/api/policy/consent"), {
+      const session = await ensureAnonymousSession();
+      const res = await fetch(apiUrl("/api/v1/consent"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
-          user_id: caregiverId,
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
           medical_disclaimer_acknowledged: medicalAck,
           privacy_model_acknowledged: privacyAck,
           multi_caregiver_acknowledged: multiCaregiverAck,
@@ -69,8 +85,8 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
         }),
       });
 
-      const data = (await safeJson(res)) as { error?: string };
-      if (!res.ok) throw new Error(data.error ?? "Consent submission failed");
+      const data = (await safeJson(res)) as { error?: string; detail?: string };
+      if (!res.ok) throw new Error(data.detail ?? data.error ?? "Consent submission failed");
 
       await loadStatus();
       onConsentAccepted?.();
@@ -82,7 +98,20 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
   }
 
   if (loading) return null;
-  if (!status || !status.required) return null;
+  if (!status) {
+    return (
+      <section className="panel consent-gate-panel" aria-label="Consent status unavailable">
+        <h2 className="workspace-headline">Privacy status unavailable</h2>
+        <p role="alert" className="consent-error">
+          {error ?? "SolenOS could not confirm the consent status for this care record."}
+        </p>
+        <button type="button" className="workspace-secondary" onClick={() => void loadStatus()}>
+          Retry
+        </button>
+      </section>
+    );
+  }
+  if (!status.required) return null;
 
   const mandatoryReady =
     termsAccepted && medicalAck && privacyAck && multiCaregiverAck && noAdvertisingAck;

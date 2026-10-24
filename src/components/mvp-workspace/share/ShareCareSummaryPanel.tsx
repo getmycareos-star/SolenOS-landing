@@ -88,7 +88,7 @@ export function ShareCareSummaryPanel({
     }
     const session = await ensureAnonymousSession();
     const url = apiUrl(
-      `/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(careSessionId)}`,
+      `/api/situation?caregiver_id=${encodeURIComponent(session.caregiver.id)}&care_session_id=${encodeURIComponent(careSessionId)}`,
     );
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${session.access_token}` },

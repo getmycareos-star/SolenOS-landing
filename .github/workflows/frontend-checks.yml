@@ -57,8 +57,6 @@ jobs:
           required = [
               'publish = ".next"',
               'package = "@netlify/plugin-nextjs"',
-              'from = "/api/extract"',
-              'to = "https://solenosbackend-production.up.railway.app/api/extract"',
               'from = "/api/v1/*"',
               'to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"',
               'from = "/api/situation"',
@@ -69,6 +67,10 @@ jobs:
               raise SystemExit(f"Next.js Netlify configuration missing: {missing}")
           if 'from = "/api/*"' in config:
               raise SystemExit("Netlify must not force-proxy every /api/* path.")
+          if 'from = "/api/extract"' in config:
+              raise SystemExit("Document extraction must run through the Next.js /api/extract route handler.")
+          if not Path("src/app/api/extract/route.ts").is_file():
+              raise SystemExit("Next.js document extraction route is missing.")
           if 'Access-Control-Allow-Origin = "*"' in config:
               raise SystemExit("Same-origin proxy must not emit wildcard CORS headers.")
           if '"build": "next build"' not in package or '"dev": "next dev"' not in package:

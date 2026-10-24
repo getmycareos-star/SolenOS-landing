@@ -1,6 +1,7 @@
 "use client";
 
 import { apiUrl } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import { useState } from "react";
 
 
@@ -18,17 +19,24 @@ async function submitFeedback(payload: {
   reduced_confusion_yes_no: boolean;
   care_key?: string;
 }): Promise<void> {
-
-  await fetch(apiUrl("/api/feedback"), {
-
+  const session = await ensureAnonymousSession();
+  const response = await fetch(apiUrl("/api/v1/feedback"), {
     method: "POST",
-
-    headers: { "Content-Type": "application/json" },
-
-    body: JSON.stringify(payload),
-
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      person_id: session.person.id,
+      caregiver_id: session.caregiver.id,
+      category: "human_validation",
+      detail: JSON.stringify(payload),
+    }),
   });
-
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { detail?: string; error?: string };
+    throw new Error(data.detail ?? data.error ?? "Feedback was not saved.");
+  }
 }
 
 
@@ -42,6 +50,7 @@ export function HumanValidationLoop({
   const [step, setStep] = useState<"helpful" | "confusion" | "done">("helpful");
 
   const [helpfulValue, setHelpfulValue] = useState<boolean | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
 
 
@@ -59,16 +68,21 @@ export function HumanValidationLoop({
 
     if (helpfulValue === null) return;
 
-    await submitFeedback({
-      interaction_id: interactionId,
-      helpful_yes_no: helpfulValue,
-      reduced_confusion_yes_no,
-      ...(careKey?.trim() ? { care_key: careKey.trim() } : {}),
-    });
-
-    setStep("done");
-
-    onComplete();
+    setFeedbackError(null);
+    try {
+      await submitFeedback({
+        interaction_id: interactionId,
+        helpful_yes_no: helpfulValue,
+        reduced_confusion_yes_no,
+        ...(careKey?.trim() ? { care_key: careKey.trim() } : {}),
+      });
+      setStep("done");
+      onComplete();
+    } catch (err) {
+      setFeedbackError(
+        err instanceof Error ? err.message : "Feedback was not saved. Check your connection and try again.",
+      );
+    }
 
   }
 
@@ -133,6 +147,7 @@ export function HumanValidationLoop({
       {step === "confusion" && (
 
         <div className="validation-step validation-step-optional">
+          {feedbackError && <p className="panel-muted" role="alert">{feedbackError}</p>}
 
           <p className="validation-prompt validation-prompt-optional">
 

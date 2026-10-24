@@ -1,26 +1,9 @@
 import { NextResponse } from "next/server";
+import { getBackendOrigin } from "@/lib/backend-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function backendOrigin(): string {
-  const configured =
-    process.env.SOLENOS_BACKEND_URL ||
-    process.env.BACKEND_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://solenosbackend-production.up.railway.app";
-  let url: URL;
-  try {
-    url = new URL(configured);
-  } catch {
-    throw new Error("The SolenOS backend URL is not a valid absolute URL.");
-  }
-  const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-  if (url.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && isLocal && url.protocol === "http:")) {
-    throw new Error("The SolenOS backend must use HTTPS in production.");
-  }
-  return url.origin;
-}
 
 async function proxySituation(request: Request): Promise<Response> {
   const authorization = request.headers.get("authorization");
@@ -34,7 +17,7 @@ async function proxySituation(request: Request): Promise<Response> {
   let target: URL;
   try {
     const incoming = new URL(request.url);
-    target = new URL(`/api/situation${incoming.search}`, backendOrigin());
+    target = new URL(`/api/situation${incoming.search}`, getBackendOrigin());
   } catch (error) {
     return NextResponse.json(
       { detail: error instanceof Error ? error.message : "The SolenOS backend is not configured." },
