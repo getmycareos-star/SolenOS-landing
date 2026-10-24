@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, postFormData, getPersonId, getCaregiverId } from '../api/client';
-import { useCameraPermission } from '../lib/permissions/useCameraPermission';
-import { compressImage, dataURLtoFile } from '../lib/imageCompression';
-import { useOptimisticMutation } from '../lib/optimistic';
-import CareDeltaPanel from '../components/CareDeltaPanel';
+import { postJSON, postFormData, getPersonId, getCaregiverId } from '@/api/client';
+import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
+import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
+import { useOptimisticMutation } from '@/lib/optimistic';
+import CareDeltaPanel from '@/components/CareDeltaPanel';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
