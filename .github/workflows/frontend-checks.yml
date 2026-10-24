@@ -57,6 +57,8 @@ jobs:
           required = [
               'publish = ".next"',
               'package = "@netlify/plugin-nextjs"',
+              'from = "/api/extract"',
+              'to = "https://solenosbackend-production.up.railway.app/api/extract"',
               'from = "/api/v1/*"',
               'to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"',
               'from = "/api/situation"',
