@@ -42,6 +42,14 @@
   status = 200
   force = true
 
+# Authenticated document extraction is a backend endpoint, not a Next.js API
+# route. This rule becomes functional when the matching backend PR is deployed.
+[[redirects]]
+  from = "/api/extract"
+  to = "https://solenosbackend-production.up.railway.app/api/extract"
+  status = 200
+  force = true
+
 # Security headers
 [[headers]]
   for = "/*"
