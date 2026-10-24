@@ -35,7 +35,7 @@ import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, requestQwenCandidateAnalysis, reviewQwenCandidate } from "@/api/client";
 import {
   IN_APP_IMPROVING_NOTICE,
   EMERGENCY_BOUNDARY,
@@ -140,6 +140,8 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [prefs] = useState<AccessibilityPrefs>(DEFAULT_ACCESSIBILITY);
   const [transitionKey, setTransitionKey] = useState(0);
   const [situationResponse, setSituationResponse] = useState<WorkspaceSituationResponse | null>(null);
+  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
+  const [qwenReviewError, setQwenReviewError] = useState<string | null>(null);
   const [hasContextRoot, setHasContextRoot] = useState(false);
   const [entryMode, setEntryMode] = useState<"initial" | "update">("initial");
   /** This browser session shared at least one note — gates Continuity / dual pane. */
@@ -492,6 +494,17 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         situationData.context?.caregiver_id ??
         caregiverId;
       setSituationResponse(situationData);
+      const savedEventId = typeof situationData.care_event_id === "string" ? situationData.care_event_id : "";
+      setQwenAnalysis({ status: savedEventId ? "processing" : "unavailable", candidates: null });
+      if (savedEventId) {
+        // Run Qwen after durable save/read-back so model latency cannot trigger a duplicate capture.
+        void requestQwenCandidateAnalysis(savedEventId)
+          .then((analysis) => setQwenAnalysis({
+            status: analysis.qwen_extraction_status,
+            candidates: analysis.qwen_candidates,
+          }))
+          .catch(() => setQwenAnalysis({ status: "unavailable", candidates: null }));
+      }
       setHasContextRoot(true);
       setSessionHasNote(true);
       setShowSoftPrivacyNote(true);
@@ -811,6 +824,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     }
     setLastSharedDisplay("");
     setSituationResponse(null);
+    setQwenAnalysis(null);
     setCaregiverError(
       hydrationWarning
         ? "Interaction paused, but the latest care record could not be refreshed. Check your connection before relying on the refreshed view."
@@ -1006,6 +1020,73 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                 }}
                 onContinue={handleDoneForNow}
               />
+            )}
+            {qwenAnalysis && (
+              <section className="panel panel-response" aria-label="Qwen support suggestions">
+                <h3>Qwen suggestions for caregiver review</h3>
+                <p role="status">
+                  {qwenAnalysis.status === "processing"
+                    ? "Reviewing the saved source with the local SolenOS model…"
+                    : qwenAnalysis.status === "pending_review"
+                      ? "These are suggestions only. They are not confirmed care facts and have not been written to the Living Care Record."
+                      : "The care update remains saved. Qwen suggestions are currently unavailable; nothing was substituted or invented."}
+                </p>
+                {qwenAnalysis.candidates?.observations?.length ? (
+                  <ul>
+                    {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => (
+                      <li key={index}>
+                        <strong>{candidate.subject}:</strong> {candidate.observation}
+                        <p>Source: “{candidate.source_quote}” · {candidate.review_status}</p>
+                        {candidate.candidate_id && candidate.review_status === "pending_review" && (
+                          <div className="qwen-candidate-review-actions">
+                            <button type="button" onClick={async () => {
+                              try {
+                                const reviewed = await reviewQwenCandidate(candidate.candidate_id, "accepted");
+                                setQwenAnalysis((current: any) => current ? {
+                                  ...current,
+                                  candidates: current.candidates ? {
+                                    ...current.candidates,
+                                    observations: current.candidates.observations.map((row: any) =>
+                                      row.candidate_id === candidate.candidate_id ? { ...row, review_status: reviewed.status } : row
+                                    ),
+                                  } : null,
+                                } : current);
+                                setQwenReviewError(null);
+                              } catch {
+                                setQwenReviewError("The review decision was not confirmed by the server.");
+                              }
+                            }}>Accept suggestion</button>
+                            <button type="button" onClick={async () => {
+                              try {
+                                const reviewed = await reviewQwenCandidate(candidate.candidate_id, "rejected");
+                                setQwenAnalysis((current: any) => current ? {
+                                  ...current,
+                                  candidates: current.candidates ? {
+                                    ...current.candidates,
+                                    observations: current.candidates.observations.map((row: any) =>
+                                      row.candidate_id === candidate.candidate_id ? { ...row, review_status: reviewed.status } : row
+                                    ),
+                                  } : null,
+                                } : current);
+                                setQwenReviewError(null);
+                              } catch {
+                                setQwenReviewError("The review decision was not confirmed by the server.");
+                              }
+                            }}>Reject suggestion</button>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {qwenReviewError && <p role="alert">{qwenReviewError}</p>}
+                {qwenAnalysis.candidates?.open_questions?.length ? (
+                  <div>
+                    <strong>Questions to clarify</strong>
+                    <ul>{qwenAnalysis.candidates.open_questions.map((question: string, index: number) => <li key={index}>{question}</li>)}</ul>
+                  </div>
+                ) : null}
+              </section>
             )}
             <button
               type="button"
