@@ -101,12 +101,19 @@ export function AddSituationPanel({
           added.push(await extractAttachedDocument(file, method));
         }
         onDocumentsChange([...documents, ...added]);
-        const failed = added.filter((d) => d.status === "failed");
-        if (failed.length > 0 && added.every((d) => d.status === "failed")) {
-          setLocalHint(
-            failed[0]?.errorNote ??
-              "Could not read that file. Type the key details, or try another photo.",
-          );
+        const imageNeedsManualText = added.find(
+          (d) => d.status === "ready" && !d.extractedText.trim() && Boolean(d.evidenceId) && Boolean(d.errorNote),
+        );
+        if (imageNeedsManualText?.errorNote) {
+          setLocalHint(imageNeedsManualText.errorNote);
+        } else {
+          const failed = added.filter((d) => d.status === "failed");
+          if (failed.length > 0 && added.every((d) => d.status === "failed")) {
+            setLocalHint(
+              failed[0]?.errorNote ??
+                "Could not read that file. Type the key details, or try another supported file.",
+            );
+          }
         }
       } finally {
         setExtracting(false);
@@ -219,8 +226,8 @@ export function AddSituationPanel({
         onDocumentsChange(
           documents.map((d) => (d.id === doc.id ? { ...next, id: d.id } : d)),
         );
-        if (next.status === "failed") {
-          setLocalHint(next.errorNote ?? "Could not read that file. Type the key details instead.");
+        if (next.status === "failed" || (next.status === "ready" && !next.extractedText.trim())) {
+          setLocalHint(next.errorNote ?? "Text extraction is not available for this file. Type the key details instead.");
         } else {
           setLocalHint(null);
         }
