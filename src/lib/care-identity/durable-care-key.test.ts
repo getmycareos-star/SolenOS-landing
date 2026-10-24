@@ -44,12 +44,20 @@ describe("identity isolation boundaries", () => {
     expect(key).not.toBe("sess_legacy_session");
   });
 
-  it("refuses to create caregiver-scoped stores without a valid identity", () => {
-    expect(() => getOrCreateCaregiverSelfProfile("")).toThrow(/caregiver identity/i);
-    expect(() => getOrCreateCaregiverSelfProfile("default_caregiver")).toThrow(/caregiver identity/i);
-    expect(() => getOrCreateProfile({ caregiver_id: "default_caregiver" })).toThrow(/caregiver identity/i);
-    expect(() => getOrCreateGraph("default_caregiver", null)).toThrow(/caregiver identity/i);
-    expect(getGraphForCaregiver("default_caregiver")).toBeUndefined();
+  it("refuses shared placeholders and interaction-session IDs across caregiver-scoped stores", () => {
+    for (const invalidId of ["", "default_caregiver", "DEFAULT_CAREGIVER", "sess_legacy_session"]) {
+      expect(() => getOrCreateCaregiverSelfProfile(invalidId)).toThrow(/caregiver identity/i);
+      expect(() => getOrCreateProfile({ caregiver_id: invalidId })).toThrow(/caregiver identity/i);
+      expect(() => getOrCreateGraph(invalidId, null)).toThrow(/caregiver identity/i);
+      expect(getGraphForCaregiver(invalidId)).toBeUndefined();
+      expect(() => getObservationExport(invalidId)).toThrow(/caregiver identity/i);
+      expect(() => listCareEventsForCaregiver(invalidId)).toThrow(/caregiver identity/i);
+      expect(() => createCareEvent({
+        content: "test note",
+        created_by: invalidId,
+        provenance: { input_type: "text" },
+      } as any)).toThrow(/caregiver identity|caregiver attribution/i);
+    }
   });
 
 
