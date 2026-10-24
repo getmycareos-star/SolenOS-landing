@@ -217,7 +217,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       .then((session) =>
         fetch(
           apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
-          { headers: { Authorization: `Bearer ${accessToken}` } },
+          { headers: { Authorization: `Bearer ${session.access_token}` } },
         ),
       )
       .then(async (r) => {
@@ -666,7 +666,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           try {
             const inviteRes = await fetch(
               apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=1`),
-              { headers: { Authorization: `Bearer ${session.access_token}` } },
+              { headers: { Authorization: `Bearer ${accessToken}` } },
             );
             if (inviteRes.ok) {
               const inviteData = (await safeJson(inviteRes)) as {
