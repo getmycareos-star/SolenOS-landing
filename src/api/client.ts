@@ -1,6 +1,5 @@
-// Use the same-origin API proxy in both Vite development and Netlify production.
-// vite.config.ts and netlify.toml forward /api/* to the backend, so the browser
-// never needs a hard-coded backend hostname or import.meta.env in Jest.
+// Use the same-origin API proxy in Next.js and Netlify production.
+// Netlify forwards /api/* to the backend, so browser requests do not expose a backend hostname.
 const API_BASE = '/api/v1'
 
 function isPlaceholderIdentifier(value: string | null | undefined): boolean {
