@@ -368,6 +368,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           },
           documents: readyDocs.map((d) => ({
             id: d.id,
+            evidence_id: d.evidenceId,
             name: d.name,
             mime_type: d.mimeType || null,
             extracted_text: d.extractedText,
