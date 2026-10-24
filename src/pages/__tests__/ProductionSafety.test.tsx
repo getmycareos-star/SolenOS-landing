@@ -5,8 +5,13 @@ import Community from '../Community'
 import Memory from '../Memory'
 import TeamDashboard from '../TeamDashboard'
 import CareCapture from '../../components/CareCapture'
+import DailyCare from '../DailyCare'
 import Dashboard from '../Dashboard'
 import { getJSON, getCaregiverId, getPersonId, postJSON } from '../../api/client'
+
+jest.mock('../../lib/permissions/useLocationPermission', () => ({
+  useLocationPermission: () => ({ state: { status: 'unsupported' }, requestLocation: jest.fn() }),
+}))
 
 jest.mock('../../api/client', () => ({
   getJSON: jest.fn(),
@@ -138,6 +143,64 @@ describe('Phase 4 production data safety', () => {
     });
   })
 
+  it('preserves the original report and persists an explicit correction to a review-only extraction candidate', async () => {
+    mockedPostJSON
+      .mockResolvedValueOnce({
+        ok: true,
+        message: 'Care input recorded successfully.',
+        events: [{ occurred_at: '2026-10-23T08:15:00Z' }],
+        qwen_extraction_status: 'pending_review',
+        qwen_analysis_id: 'analysis-1',
+        qwen_candidates: {
+          observations: [{
+            subject: 'sleep',
+            observation: 'Mum slept badly.',
+            source_quote: 'Mum slept badly',
+            time_expression: 'last night',
+            certainty: 'reported',
+            review_status: 'pending_review',
+          }],
+          open_questions: ['How many hours did Mum sleep?'],
+          possible_safety_flags: [],
+        },
+      } as never)
+      .mockResolvedValueOnce({
+        candidate: {
+          subject: 'sleep',
+          observation: 'Mum slept poorly last night.',
+          source_quote: 'Mum slept badly',
+          review_status: 'corrected_by_caregiver',
+        },
+        message: 'Review decision saved with the original candidate preserved. The Living Care Record was not changed.',
+      } as never)
+
+    render(<CareCapture personId="person-real-1" />)
+    const original = 'Mum slept badly, ate very little this morning, and says her knee hurts.'
+    fireEvent.change(screen.getByPlaceholderText(/describe what you observed/i), { target: { value: original } })
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
+
+    expect(await screen.findByRole('region', { name: /original captured report/i })).toHaveTextContent(original)
+    expect(screen.getByText(/recorded event time/i)).toBeInTheDocument()
+    expect(await screen.findByText(/how many hours did mum sleep/i)).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/corrected observation 1/i), {
+      target: { value: 'Mum slept poorly last night.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /save correction/i }))
+
+    await waitFor(() => {
+      expect(mockedPostJSON).toHaveBeenLastCalledWith('/capture/analyses/analysis-1/review', {
+        candidate_index: 0,
+        decision: 'correct',
+        corrected_subject: 'sleep',
+        corrected_observation: 'Mum slept poorly last night.',
+      })
+    })
+    expect(await screen.findByText(/living care record was not changed/i)).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: /original captured report/i })).toHaveTextContent(original)
+    expect(screen.getByText(/corrected by caregiver/i)).toBeInTheDocument()
+  })
+
   it('does not report a valid empty record when the record API fails', async () => {
     mockedGetJSON.mockRejectedValue(new Error('service unavailable'))
 
@@ -174,4 +237,48 @@ describe('Phase 4 production data safety', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/no care record is selected/i)
     expect(mockedGetJSON).not.toHaveBeenCalled()
   })
+
+  it('passes persisted source identifiers and the exact event time to Delta reconciliation', async () => {
+    mockedGetJSON.mockImplementation(async (path: string) => {
+      if (path.startsWith('/caregivers/')) return [{ id: 'caregiver-real-1', name: 'Caregiver' }] as never
+      if (path.startsWith('/care-delta/runs/')) return [] as never
+      throw new Error(`Unexpected GET endpoint: ${path}`)
+    })
+    mockedPostJSON.mockImplementation(async (path: string) => {
+      if (path === '/situation') return {
+        ok: true,
+        message: 'Care update saved.',
+        care_event_id: 'event-saved-1',
+        evidence_id: 'evidence-saved-1',
+        events: [{ id: 'event-saved-1', occurred_at: '2026-10-23T08:15:42Z', evidence_ids: ['evidence-saved-1'] }],
+        qwen_extraction_status: 'not_configured',
+        qwen_analysis_id: 'analysis-saved-1',
+        qwen_candidates: null,
+      } as never
+      if (path === '/care-delta/reconcile') return {
+        event_summary: 'Reconciliation result returned.',
+        caregiver_summary: 'Reconciliation result returned.',
+        provenance: { persisted: true, model_provider: 'test', model: 'test' },
+      } as never
+      throw new Error(`Unexpected POST endpoint: ${path}`)
+    })
+
+    render(<DailyCare />)
+    const note = 'A caregiver recorded a change in the daily routine.'
+    fireEvent.change(screen.getByPlaceholderText(/describe what you observed, when it happened/i), { target: { value: note } })
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
+
+    expect(await screen.findByText('Reconciliation result returned.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(mockedPostJSON).toHaveBeenCalledWith('/care-delta/reconcile', expect.objectContaining({
+        person_id: 'person-real-1',
+        source_event_id: 'event-saved-1',
+        evidence_ids: ['evidence-saved-1'],
+        content: note,
+        event_date: '2026-10-23T08:15:42.000Z',
+        persist: true,
+      }))
+    })
+  })
+
 })

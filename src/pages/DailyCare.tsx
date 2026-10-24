@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getJSON, postJSON, getPersonId } from '../api/client'
 import CareCapture from '../components/CareCapture'
+import CareDeltaPanel from '../components/CareDeltaPanel'
 import { useLocationPermission } from '../lib/permissions/useLocationPermission'
 
 interface Caregiver {
@@ -15,6 +16,8 @@ export default function DailyCare() {
   const [saved, setSaved] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [caregiverError, setCaregiverError] = useState<string | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null)
+  const [deltaToken, setDeltaToken] = useState(0)
 
    const [form, setForm] = useState({
      mood: '',
@@ -172,7 +175,21 @@ export default function DailyCare() {
         </p>
       </div>
 
-      <CareCapture personId={personId} />
+      <CareCapture personId={personId} onCapture={(content, savedEvent) => {
+        // Reconcile only after the source event has been persisted and its IDs are returned.
+        if (!personId || !savedEvent?.eventId || !savedEvent.evidenceIds?.length) return
+        const token = deltaToken + 1
+        setDeltaToken(token)
+        setDeltaAutoInput({
+          personId,
+          content,
+          source: 'Daily Care caregiver report',
+          eventDate: savedEvent.occurredAt || new Date().toISOString(),
+          evidenceIds: savedEvent.evidenceIds,
+          sourceEventId: savedEvent.eventId,
+          token,
+        })
+      }} />
 
       {saved && (
         <div style={{
@@ -449,6 +466,7 @@ export default function DailyCare() {
           {submitting ? 'Saving...' : 'Save daily care entry'}
         </button>
       </form>
+      <CareDeltaPanel personId={personId} autoInput={deltaAutoInput} />
     </div>
   )
 }
