@@ -33,6 +33,10 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "living_care_record",
 ]);
 
+const statusFunction = assist.slice(assist.indexOf("async function checkQwen"), assist.indexOf("async function askQwen"));
+assert(statusFunction.includes('getJSON("/assistant/status"'));
+assert(!statusFunction.includes("ensureAnonymousSession"), "Infrastructure status checks must not create synthetic care records.");
+
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
   "Qwen support across SolenOS",
