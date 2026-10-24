@@ -244,6 +244,30 @@ export async function patchJSON(path: string, body: unknown) {
 }
 
 
+export async function putJSON(path: string, body: unknown) {
+  const res = await fetch(resolveApiUrl(path), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authorizationHeaders() },
+    body: JSON.stringify(body),
+  });
+  return handleResponse(res);
+}
+
+/** Revoke the current backend-issued anonymous session and clear its local capability. */
+export async function revokeAnonymousSession(): Promise<void> {
+  await postJSON("/sessions/revoke", {});
+  for (const key of [
+    ANONYMOUS_TOKEN_KEY,
+    ANONYMOUS_PERSON_KEY,
+    ANONYMOUS_CAREGIVER_KEY,
+    ANONYMOUS_EXPIRY_KEY,
+    "solenos_person_id",
+  ]) {
+    window.localStorage.removeItem(key);
+  }
+  window.dispatchEvent(new Event("personIdChanged"));
+}
+
 // Multipart upload helper. Do not set Content-Type manually: the browser must
 // add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
