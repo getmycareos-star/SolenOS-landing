@@ -115,7 +115,12 @@ assert(workspace.includes("isCasualConversationOnly"));
 assert(workspace.includes("/workspace/companion?draft="));
 assert(workspace.includes('method: "GET"') && workspace.includes("hydrationRes"));
 assert(workspace.includes("active_care_situation_turn"));
-console.log("✓ greeting-only notes route to Companion; care captures reload the persisted view");
+assert(workspace.includes("let hydrated = situationData"), "Use the POST read-after-write projection first");
+assert(
+  workspace.indexOf("let hydrated = situationData") < workspace.indexOf("const hydrationUrl"),
+  "A second GET must be a fallback only when the POST lacks a persisted view",
+);
+console.log("✓ greeting-only notes route to Companion; care captures prefer the persisted POST projection");
 
 const companion = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
