@@ -401,6 +401,16 @@ export default function Dashboard() {
     }
   };
 
+  const proactiveItems = (dailyIntel?.proactive_items ?? []).filter(item => {
+    const hasTitle = typeof item.title === 'string' && item.title.trim().length > 0;
+    const hasMessage = typeof item.message === 'string' && item.message.trim().length > 0;
+    const hasEvidenceRefs = Array.isArray(item.source_evidence_ids) && item.source_evidence_ids.some(id => typeof id === 'string' && id.trim().length > 0);
+    const hasRecordRefs = (Array.isArray(item.source_ids) && item.source_ids.some(id => typeof id === 'string' && id.trim().length > 0))
+      || (typeof item.source_id === 'string' && item.source_id.trim().length > 0);
+    return hasTitle && hasMessage && (hasEvidenceRefs || hasRecordRefs);
+  });
+  const withheldProactiveItems = Math.max(0, (dailyIntel?.proactive_items?.length ?? 0) - proactiveItems.length);
+
   return (
     <div>
       <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>What matters today</h1>
@@ -671,7 +681,12 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-              {(dailyIntel.proactive_items || []).length > 0 && (
+              {withheldProactiveItems > 0 && (
+                <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                  {withheldProactiveItems} proactive cue(s) were withheld because source references or required details were missing.
+                </p>
+              )}
+                            {proactiveItems.length > 0 && (
                 <section aria-label="Proactive care coordination" style={{
                   marginTop: '12px', background: 'var(--surface)', border: '1px solid var(--border)',
                   borderRadius: '12px', padding: '16px 20px'
@@ -681,9 +696,9 @@ export default function Dashboard() {
                     Based on recorded appointments, open actions, and recent events. These cues do not establish a diagnosis or cause; check the source before acting.
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {(dailyIntel.proactive_items || []).map((item, index) => {
-                      const title = String(item.title || 'Care coordination item');
-                      const message = String(item.message || 'Review the source record.');
+                    {proactiveItems.map((item, index) => {
+                      const title = String(item.title);
+                      const message = String(item.message);
                       const priority = String(item.priority || 'coordination').replace(/_/g, ' ');
                       const sourceIds = Array.isArray(item.source_evidence_ids)
                         ? item.source_evidence_ids.filter((id): id is string => typeof id === 'string')
