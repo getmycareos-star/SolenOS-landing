@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { postJSON, getPersonId } from '../api/client'
-import CareDeltaPanel from '../components/CareDeltaPanel'
+import { postJSON, getPersonId } from '@/api/client'
+import CareDeltaPanel from '@/components/CareDeltaPanel'
 
 interface Message {
   role: 'user' | 'assistant'
