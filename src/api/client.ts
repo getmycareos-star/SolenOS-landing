@@ -289,3 +289,12 @@ export function startTokenRefresh(): void {
 export function stopTokenRefresh(): void {
   // No active token-refresh task exists.
 }
+
+
+export async function deleteJSON(path: string) {
+  const res = await fetch(resolveApiUrl(path), {
+    method: 'DELETE',
+    headers: authorizationHeaders(),
+  })
+  return handleResponse(res)
+}
