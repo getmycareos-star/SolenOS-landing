@@ -84,7 +84,7 @@ describe('Phase 4 production data safety', () => {
     expect(screen.queryByText('Saved')).not.toBeInTheDocument();
   })
 
-  it('reloads dashboard sections after a care capture is confirmed saved', async () => {
+  it('opens with a care overview and routes daily capture to its own screen', async () => {
     mockedGetJSON.mockImplementation(async (path: string) => {
       if (path.startsWith('/events/')) return [];
       if (path.startsWith('/insights/')) return [];
@@ -111,13 +111,10 @@ describe('Phase 4 production data safety', () => {
         };
       }
       if (path.startsWith('/actions/')) return [];
+      if (path.startsWith('/appointments/')) return [];
+      if (path.startsWith('/caregivers/')) return [];
       throw new Error(`Unexpected dashboard endpoint: ${path}`);
     });
-    mockedPostJSON.mockResolvedValueOnce({
-      ok: true,
-      message: 'Care input recorded successfully.',
-      analysis_status: 'complete',
-    } as never);
 
     render(
       <MemoryRouter>
@@ -125,17 +122,16 @@ describe('Phase 4 production data safety', () => {
       </MemoryRouter>,
     );
 
-    const note = 'Breakfast was mostly uneaten; exact start time is uncertain.';
-    const input = await screen.findByPlaceholderText(/describe what you observed/i);
-    fireEvent.change(input, { target: { value: note } });
-    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }));
-
-    expect(await screen.findByText('Care input recorded successfully.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /care overview/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /record today's change/i })).toHaveAttribute('href', '/daily-care');
+    expect(screen.getByRole('link', { name: /open care record/i })).toHaveAttribute('href', '/record');
+    expect(screen.getByRole('link', { name: /view timeline/i })).toHaveAttribute('href', '/timeline');
+    expect(screen.queryByPlaceholderText(/describe what you observed/i)).not.toBeInTheDocument();
+    expect(await screen.findByText(/care overview/i)).toBeInTheDocument();
     await waitFor(() => {
-      expect(
-        mockedGetJSON.mock.calls.filter(([path]) => String(path).startsWith('/events/')).length,
-      ).toBe(2);
+      expect(mockedGetJSON.mock.calls.some(([path]) => String(path).startsWith('/events/'))).toBe(true);
     });
+    expect(screen.queryByText(/Living Care Record system model/i)).not.toBeInTheDocument();
   })
 
   it('does not report a valid empty record when the record API fails', async () => {
