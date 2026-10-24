@@ -1,14 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Netlify deployment — output is handled by Next.js adapter
-  // No static export needed; Netlify detects Next.js automatically
-
+  // Netlify deployment — output is handled by the Next.js adapter.
+  // Keep the backend image allowlist aligned with the registered Railway domain.
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "solenosbackend-production-8773.up.railway.app",
+        hostname: "solenosbackend-production.up.railway.app",
       },
     ],
   },
