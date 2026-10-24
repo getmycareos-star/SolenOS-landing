@@ -90,7 +90,6 @@ export default function QwenAssistPanel({
     setChecking(true);
     setStatusError(null);
     try {
-      await ensureAnonymousSession();
       const result = (await getJSON("/assistant/status")) as QwenStatus;
       if (
         result?.available !== true ||
