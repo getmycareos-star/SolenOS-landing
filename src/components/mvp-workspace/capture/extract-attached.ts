@@ -1,4 +1,4 @@
-import { apiUrl, safeJson } from "@/lib/api-url";
+import { safeJson } from "@/lib/api-url";
 import { ensureAnonymousSession, postFormData } from "@/api/client";
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputEntryMethod } from "@/lib/input-entry-contract";
@@ -72,7 +72,7 @@ export async function extractAttachedDocument(
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res: Response;
     try {
-      res = await fetch(apiUrl("/api/extract"), {
+      res = await fetch("/api/extract", {
         method: "POST",
         body: form,
         signal: controller.signal,
