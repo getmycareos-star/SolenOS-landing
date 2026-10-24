@@ -27,11 +27,18 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Proxy all /api/* calls to the Railway backend (SolenOS_backend).
-# The frontend repo no longer ships Next.js API route handlers.
+# Proxy only API routes owned by the FastAPI backend. Keeping the scope
+# explicit prevents unrelated frontend-owned or unsupported paths (for example
+# telemetry) from being silently forwarded to the backend.
 [[redirects]]
-  from = "/api/*"
-  to = "https://solenosbackend-production.up.railway.app/api/:splat"
+  from = "/api/v1/*"
+  to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/situation"
+  to = "https://solenosbackend-production.up.railway.app/api/situation"
   status = 200
   force = true
 
