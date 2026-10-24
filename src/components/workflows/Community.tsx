@@ -43,7 +43,7 @@ interface ExperienceResult {
   summary: string | null
   matches: ExperienceMatch[]
   post_ids: string[]
-  provider_status: 'connected' | 'not_configured' | 'error' | 'not_needed'
+  provider_status: 'available' | 'unavailable' | 'invalid_response' | 'not_configured' | 'connected' | 'error' | 'not_needed'
   ai_generated: boolean
   notice: string
 }

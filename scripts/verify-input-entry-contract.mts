@@ -153,3 +153,38 @@ const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspac
 assert(notificationPage.includes('getJSON("/notifications/unread-count")'));
 assert(notificationPage.includes('patchJSON(`/notifications/${encodeURIComponent(item.id)}/read`, {})'));
 console.log("✓ Security session revocation and notification actions use authenticated backend APIs");
+
+
+
+const apiClient = fs.readFileSync(path.join(root, "src", "api", "client.ts"), "utf8");
+assert(apiClient.includes("requestQwenCandidateAnalysis"));
+assert(apiClient.includes("'/assistant/extract-candidates'"));
+assert(apiClient.includes("requestQwenSupport"));
+assert(apiClient.includes("'/assistant/assist'"));
+const dailyCapture = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"),
+  "utf8",
+);
+assert(dailyCapture.includes("requestQwenCandidateAnalysis(savedEventId)"));
+const community = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "Community.tsx"),
+  "utf8",
+);
+assert(community.includes("postJSON('/community/experience/summary'"));
+const cognitiveWorkspace = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"),
+  "utf8",
+);
+assert(cognitiveWorkspace.includes("requestQwenCandidateAnalysis(savedEventId)"));
+assert(cognitiveWorkspace.includes("not been written to the Living Care Record"));
+console.log("✓ Qwen is called after persisted capture, document intake and Daily Capture; Community summaries use the Qwen endpoint");
+
+
+const companionScreen = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
+  "utf8",
+);
+assert(companionScreen.includes("getJSON('/assistant/status')"));
+assert(companionScreen.includes("Local Qwen connected"));
+assert(companionScreen.includes("will not substitute a canned or fabricated reply"));
+console.log("✓ Companion reports the actual authenticated local Qwen runtime status");

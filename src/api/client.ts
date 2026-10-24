@@ -227,6 +227,70 @@ export async function postJSON(path: string, body: unknown) {
   return handleResponse(res)
 }
 
+export type QwenCandidateAnalysis = {
+  event_id: string;
+  qwen_extraction_status: string;
+  qwen_candidates: { observations: Array<{
+    subject: string;
+    observation: string;
+    source_quote: string;
+    review_status: string;
+    source_event_id: string;
+    source_evidence_id?: string;
+    candidate_id: string;
+  }>; open_questions: string[] } | null;
+  ai_generated: boolean;
+  written_to_lcr: false;
+};
+
+/** Analyze an already-persisted event. Failure never changes the save receipt. */
+export async function requestQwenCandidateAnalysis(eventId: string): Promise<QwenCandidateAnalysis> {
+  return postJSON('/assistant/extract-candidates', { event_id: eventId }) as Promise<QwenCandidateAnalysis>;
+}
+
+export type QwenSupportWorkflow =
+  | 'daily_capture'
+  | 'document'
+  | 'community'
+  | 'appointment'
+  | 'handoff'
+  | 'living_care_record';
+
+export type QwenSupportResponse = {
+  workflow: QwenSupportWorkflow;
+  reply: string;
+  ai_generated: boolean;
+  model: string;
+  authority: 'solenos_care_record_and_caregiver';
+  review_required: true;
+  written_to_lcr: false;
+  persistence: 'read_only_assistance';
+  source_event_ids: string[];
+  source_evidence_ids: string[];
+  provider_status: string;
+};
+
+/** Optional, read-only Qwen help for a named workflow. Never persists model output. */
+export async function requestQwenSupport(input: {
+  workflow: QwenSupportWorkflow;
+  text: string;
+  evidence_ids?: string[];
+  appointment_id?: string;
+}): Promise<QwenSupportResponse> {
+  return postJSON('/assistant/assist', input) as Promise<QwenSupportResponse>;
+}
+
+export async function reviewQwenCandidate(
+  candidateId: string,
+  decision: 'accepted' | 'rejected',
+  reviewNote?: string,
+): Promise<{ id: string; status: 'accepted' | 'rejected'; written_to_lcr: false }> {
+  return postJSON(
+    `/assistant/candidates/${encodeURIComponent(candidateId)}/review`,
+    { decision, review_note: reviewNote },
+  ) as Promise<{ id: string; status: 'accepted' | 'rejected'; written_to_lcr: false }>;
+}
+
 export async function patchJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
