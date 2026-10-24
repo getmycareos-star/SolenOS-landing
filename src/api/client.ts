@@ -237,6 +237,7 @@ export type QwenCandidateAnalysis = {
     review_status: string;
     source_event_id: string;
     source_evidence_id?: string;
+    candidate_id: string;
   }>; open_questions: string[] } | null;
   ai_generated: boolean;
   written_to_lcr: false;
@@ -277,6 +278,17 @@ export async function requestQwenSupport(input: {
   appointment_id?: string;
 }): Promise<QwenSupportResponse> {
   return postJSON('/assistant/assist', input) as Promise<QwenSupportResponse>;
+}
+
+export async function reviewQwenCandidate(
+  candidateId: string,
+  decision: 'accepted' | 'rejected',
+  reviewNote?: string,
+): Promise<{ id: string; status: 'accepted' | 'rejected'; written_to_lcr: false }> {
+  return postJSON(
+    `/assistant/candidates/${encodeURIComponent(candidateId)}/review`,
+    { decision, review_note: reviewNote },
+  ) as Promise<{ id: string; status: 'accepted' | 'rejected'; written_to_lcr: false }>;
 }
 
 export async function patchJSON(path: string, body: unknown) {
