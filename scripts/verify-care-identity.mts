@@ -172,11 +172,10 @@ assert(hydrated.active.length >= 1, "hydrate from CareContext recreates TrackedS
 console.log("✓ hydrate from CareContext when TrackedSituation empty");
 
 const route = fs.readFileSync(path.join(root, "src/app/api/situation/route.ts"), "utf8");
-assert(route.includes("upsertTrackedSituationFromCareInput"), "GET synchronizes TrackedSituation from care context");
-assert(route.includes("active_situations") || route.includes("situations"), "GET returns situations");
-assert(route.includes("getActiveCareSituation"), "GET hydrates Active Care Situation");
-assert(route.includes("processSessionReentry"), "API supports session re-entry");
-assert(route.includes("care_session_id") && route.includes("resolveCaregiverId"), "API separates care identity from interaction session");
+assert(route.includes("backendOrigin") && route.includes("proxySituation"), "care situation API proxies to the durable backend");
+assert(route.includes("Authorization") && route.includes("bearer "), "care situation proxy requires a bearer session");
+assert(route.includes("request.method"), "care situation proxy forwards supported HTTP methods");
+assert(!route.includes("upsertTrackedSituationFromCareInput"), "the Next.js route does not shadow durable backend state with process-local state");
 
 const page = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
