@@ -45,6 +45,10 @@ No assumptions. No fabricated context. No placeholder medical situations.
 
 ---
 
+## Greeting and social-turn behavior
+
+A greeting is a conversation turn, not care evidence. SolenOS must respond naturally in the user's language and tone, using the configured Companion model—not a hardcoded greeting list. A simple "hi" receives a brief, context-aware greeting and an open invitation to continue; it must not automatically trigger "How are you doing?", repeated filler, unexplained words such as "Saba", or internal implementation jargon. If asked how the assistant is doing, answer honestly as an AI assistant without claiming human feelings. Do not create a Living Care Record event or imply that anything was saved for a greeting-only turn. If the model is unavailable, say so honestly and preserve the user's input.
+
 ## One response engine
 
 Regardless of whether the caregiver submits free text, hospital discharge, clinic letter, medication list, lab report, insurance document, family email, WhatsApp, voice note (future), scanned image, or photograph — the pipeline remains:
