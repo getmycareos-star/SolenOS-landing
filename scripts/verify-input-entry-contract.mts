@@ -117,3 +117,24 @@ assert(sot.includes("never change the reasoning engine") || sot.includes("never*
 console.log("✓ SoT present");
 
 console.log("\nAll input-entry-contract checks passed.");
+
+
+// Casual conversation must be sent to the server-backed Companion, never
+// persisted as care evidence. The backend session IDs, not a UI label, scope writes.
+const cognitiveWorkspace = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"),
+  "utf8",
+);
+assert(cognitiveWorkspace.includes("isCasualConversationOnly(text)"));
+assert(cognitiveWorkspace.includes('"/workspace/companion?draft='));
+assert(cognitiveWorkspace.includes("person_id: anonymousSession.person.id"));
+assert(cognitiveWorkspace.includes("caregiver_id: anonymousSession.caregiver.id"));
+assert(cognitiveWorkspace.includes('err.detail.code === "conversation_only"'));
+assert(cognitiveWorkspace.includes("The note was accepted, but the backend did not return a persisted care-record view"));
+const companion = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
+  "utf8",
+);
+assert(companion.includes("ensureAnonymousSession()"));
+assert(companion.includes("person_id: session.person.id"));
+console.log("✓ greetings use Companion and care writes use server-issued identity");
