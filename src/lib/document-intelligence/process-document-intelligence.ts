@@ -194,16 +194,17 @@ const segments = splitDocumentSegments(params.rawInput, params.documentIntake.do
 export function toDocumentIntelligenceLayerPayload(
   result: DocumentIntelligenceLayerResult,
 ): DocumentIntelligenceLayerPayload {
+  const scores = result.nodes.map((node) => node.confidence.overall);
   const overallConfidence =
-    result.nodes.length > 0
-      ? result.nodes.reduce((sum, n) => sum + n.confidence.overall, 0) / result.nodes.length
-      : 1;
+    scores.length > 0 && scores.every((score): score is number => score !== null)
+      ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+      : null;
 
   return {
     nodeCount: result.nodes.length,
     documentTypes: result.nodes.map((n) => n.type),
     overallConfidence,
-    uncertaintyFlagged: result.nodes.some((n) => n.confidence.uncertaintyFlagged),
+    uncertaintyFlagged: result.nodes.some((n) => n.confidence.uncertaintyFlagged || n.confidence.overall === null),
     signals: result.signals,
     pendingMemoryWriteCount: result.memoryLinks.pendingWrites.length,
   };
