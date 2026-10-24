@@ -554,6 +554,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         // Preserve write receipts while using the durable projection for display.
         care_event_id: situationData.care_event_id,
         evidence_id: situationData.evidence_id,
+        qwen_extraction_status: situationData.qwen_extraction_status ?? hydrated.qwen_extraction_status,
+        qwen_candidates: situationData.qwen_candidates ?? hydrated.qwen_candidates,
+        qwen_review_required: situationData.qwen_review_required ?? hydrated.qwen_review_required,
+        qwen_written_to_lcr: false,
         message: situationData.message,
       }) as typeof situationData;
 
@@ -575,7 +579,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
 
       // Update workspace info flags.
       const obsCount = situationData.active_care_situation?.observations?.length ?? 0;
-      const hasInfo = obsCount > 0 || (situationData.events_created?.length ?? 0) > 0;
+      const hasInfo = obsCount > 0 || (situationData.events_created?.length ?? 0) > 0 || Boolean(situationData.care_event_id);
       setHasCareInfo(hasInfo);
 
       // Stay in update mode only while this ACS has more than one note.
@@ -1052,14 +1056,45 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                   "Care input was saved, but change and situation analysis could not be completed. The recorded evidence remains available."}
               </p>
             )}
-            {situationResponse.ok === true && !situationResponse.active_care_situation ? (
-              <section className="panel panel-response" role="status" aria-live="polite">
-                <h3>Care record view unavailable</h3>
-                <p>
-                  The server accepted this capture but did not return a persisted care-record view.
-                  Refresh the record to verify what was saved before submitting the same information again.
-                </p>
+            {situationResponse.qwen_extraction_status === "available" && situationResponse.qwen_candidates && (
+              <section className="panel panel-response" aria-label="Qwen source review" role="status">
+                <h3>Qwen suggestions — review required</h3>
+                <p>These suggestions were generated from the submitted source. They are not confirmed facts and were not written to the Living Care Record.</p>
+                {(situationResponse.qwen_candidates.observations ?? []).length > 0 ? (
+                  <ul>
+                    {(situationResponse.qwen_candidates.observations ?? []).map((candidate, index) => (
+                      <li key={`${candidate.source_quote}-${index}`}>
+                        <strong>{candidate.subject}:</strong> {candidate.observation}
+                        <blockquote>{candidate.source_quote}</blockquote>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p>Qwen found no source-grounded observation to suggest for review.</p>}
+                {(situationResponse.qwen_candidates.open_questions ?? []).map((question, index) => (
+                  <p key={`${question}-${index}`}>Question for clarification: {question}</p>
+                ))}
               </section>
+            )}
+            {situationResponse.qwen_extraction_status === "unavailable" && (
+              <p className="workspace-status-warning" role="status">The care entry was saved, but Qwen analysis was unavailable. No AI suggestions were generated and the saved entry was not changed.</p>
+            )}
+            {situationResponse.ok === true && !situationResponse.active_care_situation ? (
+              savedEventReceipt ? (
+                <section className="panel panel-response" role="status" aria-live="polite">
+                  <h3>{savedEventReceipt.readbackVerified ? "Care entry saved" : "Care entry accepted"}</h3>
+                  <p>{savedEventReceipt.readbackVerified
+                    ? "The saved event was found on read-back. SolenOS did not infer a separate active care situation from this entry."
+                    : "The backend returned a saved-entry receipt, but a separate read-back could not be verified. Do not submit the same information again; refresh the record to check the entry."}</p>
+                  <p><strong>Entry:</strong> {savedEventReceipt.title}</p>
+                  <p><strong>Record reference:</strong> {savedEventReceipt.id}</p>
+                  {savedEventReceipt.description && <p>{savedEventReceipt.description}</p>}
+                </section>
+              ) : (
+                <section className="panel panel-response" role="status" aria-live="polite">
+                  <h3>Care record view unavailable</h3>
+                  <p>The server did not return a persisted event receipt or an active care-record view. Do not submit the same information again; refresh the record before retrying.</p>
+                </section>
+              )
             ) : (
               <SituationResponsePanel
                 response={situationResponse}
