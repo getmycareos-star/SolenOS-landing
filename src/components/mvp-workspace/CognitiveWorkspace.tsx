@@ -320,7 +320,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   }, []);
 
   async function handleAddSituation(provenance: InputProvenance) {
-    const readyDocs = documents.filter((d) => d.status === "ready" && d.extractedText.trim());
+    const readyDocs = documents.filter((d) => d.status === "ready" && (d.extractedText.trim() || d.evidenceId));
     const text = rawInput.trim();
     const sharedDisplay = buildSharedDisplayText(text, readyDocs);
 
