@@ -253,7 +253,13 @@ export type QwenSupportWorkflow =
   | 'document'
   | 'community'
   | 'appointment'
+  | 'after_appointment'
   | 'handoff'
+  | 'professional_summary'
+  | 'open_loops'
+  | 'two_week_review'
+  | 'decision_outcome'
+  | 'medication_day'
   | 'living_care_record';
 
 export type QwenSupportResponse = {
