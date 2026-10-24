@@ -26,6 +26,7 @@ export function normalizeBackendSituationResponse(raw: unknown): WorkspaceSituat
     analysis_warning?: string | null;
     care_recipient_id?: string;
     total_events?: number;
+    events?: unknown[];
   };
   const rawWhatChanged = (raw as { what_changed?: unknown }).what_changed;
 
@@ -41,7 +42,7 @@ export function normalizeBackendSituationResponse(raw: unknown): WorkspaceSituat
         ? [rawWhatChanged]
         : [],
     what_merged_or_split: serverResponse.what_merged_or_split ?? [],
-    events_created: serverResponse.events_created ?? serverResponse.events ?? [],
+    events_created: serverResponse.events_created ?? (Array.isArray(serverResponse.events) ? serverResponse.events as SituationResponse["events_created"] : []),
     // FastAPI's turn is a minimal hydration projection, not the richer local
     // ActiveSituationTurn contract. Rebuild it from the persisted situation.
     active_care_situation_turn:
