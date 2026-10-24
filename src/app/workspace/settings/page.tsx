@@ -18,6 +18,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { ensureAnonymousSession, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
+import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -265,16 +266,9 @@ function LegalCard() {
 function PrivacyCard() {
   const { show, render } = useToast();
   const [confirmClear, setConfirmClear] = useState(false);
-  const [dataTraining, setDataTraining] = useState(false);
   const [consentDate, setConsentDate] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("solenos_data_training");
-      if (raw) setDataTraining(raw === "1");
-    } catch {
-      /* ignore */
-    }
     // Read consent date only after mount — prevents server/client mismatch.
     try {
       const consentAt = getOnboardingCompletedAt();
@@ -341,26 +335,7 @@ function PrivacyCard() {
         </div>
       )}
 
-      <label className="mobile-settings-row">
-        <span>
-          <span className="mobile-settings-label">Data training</span>
-          <span className="mobile-settings-hint">
-            Off by default. Your data is never sold.
-          </span>
-        </span>
-        <span className="mobile-toggle">
-          <input
-            type="checkbox"
-            checked={dataTraining}
-            onChange={(e) => {
-              setDataTraining(e.target.checked);
-              window.localStorage.setItem("solenos_data_training", e.target.checked ? "1" : "0");
-              show(e.target.checked ? "Data training on" : "Data training off", "success");
-            }}
-          />
-          <span className="mobile-toggle-track" />
-        </span>
-      </label>
+      <PolicySettingsPanel />
 
       <div className="mobile-settings-buttons">
         {confirmClear ? (
