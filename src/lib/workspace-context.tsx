@@ -136,24 +136,28 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     const existingToken = getAnonymousAccessToken();
     if (!existingToken) {
       const onboardingPending = !hasCompletedOnboarding();
-      if (
+      const shouldEnterWorkspace =
         onboardingPending ||
         hasEnteredCareRecord() ||
         localSituations.length > 0 ||
         Boolean(opsKey) ||
-        freshEnter
-      ) {
-        setEntryReady(true);
-      } else {
+        freshEnter;
+
+      // A first-time visitor who has not entered onboarding should go to /start.
+      // Once the workspace is entered, bootstrap the server-issued anonymous
+      // capability before making any protected care-data request. Existing IDs
+      // without a token are rejected by ensureAnonymousSession rather than
+      // silently creating a replacement record.
+      if (!shouldEnterWorkspace) {
         router.replace("/start");
+        return;
       }
-      return;
     }
 
     void ensureAnonymousSession()
       .then((session) =>
         fetch(
-          `/api/situation?caregiver_id=${encodeURIComponent(key)}&care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
+          `/api/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
           { headers: { Authorization: `Bearer ${session.access_token}` } },
         ),
       )
