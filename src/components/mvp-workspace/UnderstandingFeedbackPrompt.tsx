@@ -1,6 +1,7 @@
 "use client";
 
 import { apiUrl } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
@@ -37,16 +38,26 @@ export function UnderstandingFeedbackPrompt({
       setSaving(true);
       setSubmitError(null);
       try {
-        const res = await fetch(apiUrl("/api/research-feedback"), {
+        const session = await ensureAnonymousSession();
+        const res = await fetch(apiUrl("/api/v1/feedback"), {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({
-            care_key: careKey.trim(),
-            helped_understand: helped,
-            missed: details?.option,
-            expected_understanding: details?.expected,
-            situation_id: situationId ?? undefined,
-            raw_input_excerpt: rawInputExcerpt ?? undefined,
+            person_id: session.person.id,
+            caregiver_id: session.caregiver.id,
+            category: "human_validation",
+            detail: JSON.stringify({
+              care_key: careKey.trim(),
+              helped_understand: helped,
+              missed: details?.option,
+              expected_understanding: details?.expected,
+              situation_id: situationId ?? undefined,
+              raw_input_excerpt: rawInputExcerpt ?? undefined,
+              source: "post_response_understanding_prompt",
+            }),
           }),
         });
         if (!res.ok) {
