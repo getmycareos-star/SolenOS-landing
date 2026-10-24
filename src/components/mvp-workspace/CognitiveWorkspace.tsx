@@ -398,7 +398,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         throw new Error(err.error ?? "Could not structure situation");
       }
 
-      const situationData = normalizeBackendSituationResponse(
+      let situationData = normalizeBackendSituationResponse(
         await safeJson(situationRes),
       ) as WorkspaceSituationResponse & {
         policy_engine_layer?: {
@@ -409,6 +409,44 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         care_session_id?: string;
         ui_situations?: Situation[];
         situations?: Situation[];
+      };
+
+      // POST /api/situation confirms the write; GET /api/situation rebuilds the
+      // caregiver view from persisted evidence/events. Do not treat the POST
+      // acknowledgement itself as proof that the LCR projection is available.
+      const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
+      hydrationUrl.searchParams.set("caregiver_id", caregiverId);
+      hydrationUrl.searchParams.set("care_session_id", interactionSessionId());
+      const hydrationRes = await fetch(hydrationUrl.toString(), {
+        method: "GET",
+        headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
+        cache: "no-store",
+      });
+      if (!hydrationRes.ok) {
+        throw new Error(
+          "The note was accepted, but the saved care record could not be reloaded. Refresh the record before retrying; do not submit the same note again.",
+        );
+      }
+      const hydrated = normalizeBackendSituationResponse(
+        await safeJson(hydrationRes),
+      ) as WorkspaceSituationResponse & {
+        care_key?: string;
+        care_session_id?: string;
+        ui_situations?: Situation[];
+        situations?: Situation[];
+      };
+      if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
+        throw new Error(
+          "The note was accepted, but the backend did not return a persisted care-record view. Refresh the record before retrying; do not submit the same note again.",
+        );
+      }
+      situationData = {
+        ...situationData,
+        ...hydrated,
+        // Preserve write receipts while using the durable projection for display.
+        care_event_id: situationData.care_event_id,
+        evidence_id: situationData.evidence_id,
+        message: situationData.message,
       };
 
       if (situationData.policy_engine_layer?.consent_required) {
