@@ -73,9 +73,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const filename = (blob.name || "upload").replace(/[\\/\\0-\\x1f\\x7f]/g, "_").slice(0, 180);
+    const filename = (blob.name || "upload").replace(/[^a-zA-Z0-9._ -]/g, "_").slice(0, 180);
     const contentType = (blob.type || "").toLowerCase();
-    const extension = /\\.([a-z0-9]{1,10})$/i.exec(filename)?.[1]?.toLowerCase();
+    const extension = /\.([a-z0-9]{1,10})$/i.exec(filename)?.[1]?.toLowerCase();
     const typeByExtension: Record<string, string> = {
       pdf: "application/pdf",
       txt: "text/plain",
