@@ -43,4 +43,5 @@ The Companion endpoint is present, but live Qwen inference is **not confirmed**.
 - Backend PR #56 added original-document persistence and one-time Share Target intake; its CI passed before merge.
 - Backend PR #59 adds consent, notification preferences/inbox and session revocation. Backend tests and PostgreSQL migration validation passed before merge.
 - Railway deployment after PR #59 reported a successful deployment, applied migration `20261024_10 -> 20261024_11`, and returned `GET /ready` with `200 OK`.
+- Image OCR uses Tesseract.js in the Next.js route. PDF/Office extraction requires a configured `TIKA_SERVER_URL` or `TIKA_JAR_PATH`; production no longer falls back to a fictitious localhost Tika daemon. Netlify's Tika configuration has not been verified, so PDF/Office extraction is not claimed as production-verified.
 - The source-level and CI evidence above is not a substitute for authenticated live production round trips. Live save/read-back, cross-record denial, Community posting/reactions, and Companion model inference remain separately to be verified against the public deployment.
