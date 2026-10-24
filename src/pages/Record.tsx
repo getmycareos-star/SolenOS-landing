@@ -23,6 +23,9 @@ export default function Record() {
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
+  const [documentReviewDrafts, setDocumentReviewDrafts] = useState<Record<number, string>>({})
+  const [documentReviewingIndex, setDocumentReviewingIndex] = useState<number | null>(null)
+  const [documentReviewFeedback, setDocumentReviewFeedback] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false

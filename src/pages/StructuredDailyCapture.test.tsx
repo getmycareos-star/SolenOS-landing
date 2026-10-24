@@ -1,6 +1,11 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StructuredDailyCapture from './StructuredDailyCapture';
+import { MemoryRouter } from 'react-router-dom';
+
+function renderCapture() {
+  return render(<MemoryRouter><StructuredDailyCapture /></MemoryRouter>);
+}
 
 // Mock the postJSON function
 jest.mock('../api/client', () => ({
@@ -16,7 +21,7 @@ describe('StructuredDailyCapture', () => {
   });
 
   it('should render the main heading', () => {
-    render(<StructuredDailyCapture />);
+    renderCapture();
     const heading = screen.getByRole('heading', { name: /structured daily capture/i });
     expect(heading).toBeInTheDocument();
   });

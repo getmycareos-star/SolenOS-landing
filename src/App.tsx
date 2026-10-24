@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { ensureAnonymousSession } from './api/client'
 import RestrictedRolePage from './components/RestrictedRolePage'
+import FirstUseJourney from './components/FirstUseJourney'
 import Dashboard from './pages/Dashboard'
 import DailyCare from './pages/DailyCare'
 import StructuredDailyCapture from './pages/StructuredDailyCapture'
@@ -11,7 +12,7 @@ import Insights from './pages/Insights'
 import Timeline from './pages/Timeline'
 import Record from './pages/Record'
 import Memory from './pages/Memory'
-import CareCircle from './pages/CareCircle'
+import CapabilityUnavailable from './components/CapabilityUnavailable'
 import Login from './pages/Login'
 
 function AnonymousSessionGate({ children }: { children: ReactNode }) {
@@ -66,13 +67,14 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/workspace" element={<Dashboard />} />
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<FirstUseJourney />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/daily-care" element={<DailyCare />} />
         <Route path="/structured-daily-capture" element={<StructuredDailyCapture />} />
         <Route path="/timeline" element={<Timeline />} />
         <Route path="/record" element={<Record />} />
         <Route path="/memory" element={<Memory />} />
-        <Route path="/care-circle" element={<CareCircle />} />
+        <Route path="/care-circle" element={<CapabilityUnavailable />} />
         <Route path="/companion" element={<Companion />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/community" element={<Community />} />
