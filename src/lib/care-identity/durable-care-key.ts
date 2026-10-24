@@ -77,7 +77,13 @@ export function requireCareKeyFromRequest(params: {
  */
 export function ensureClientDurableCareKey(stored: string | null | undefined): string {
   const trimmed = stored?.trim();
-  if (trimmed && trimmed !== "default_caregiver") return trimmed;
+  if (
+    trimmed &&
+    trimmed.toLowerCase() !== "default_caregiver" &&
+    !isInteractionSessionId(trimmed)
+  ) {
+    return trimmed;
+  }
   return mintDurableCareKey();
 }
 
