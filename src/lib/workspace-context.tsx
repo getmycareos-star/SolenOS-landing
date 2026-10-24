@@ -157,7 +157,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     void ensureAnonymousSession()
       .then((session) =>
         fetch(
-          `/api/situation?caregiver_id=${encodeURIComponent(key)}&care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
+          `/api/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
           { headers: { Authorization: `Bearer ${session.access_token}` } },
         ),
       )
