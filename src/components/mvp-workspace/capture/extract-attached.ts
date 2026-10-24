@@ -63,8 +63,10 @@ export async function extractAttachedDocument(
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res: Response;
     try {
+      const session = await ensureAnonymousSession();
       res = await fetch(apiUrl("/api/extract"), {
         method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: form,
         signal: controller.signal,
       });
