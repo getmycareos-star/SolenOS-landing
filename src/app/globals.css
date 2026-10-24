@@ -4816,3 +4816,63 @@ input[type="file"] { width: 100%; white-space: normal; }
   .mobile-screen { padding-inline: .75rem; }
   .mobile-settings-card { padding: .9rem; }
 }
+
+
+/* Daily Capture layout: the previous inline flex rows caused clipping at phone widths. */
+.structured-daily-capture { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.structured-daily-capture > div:first-child > h1 { font-size: clamp(1.65rem, 5vw, 2rem) !important; line-height: 1.2; }
+.structured-daily-capture p { font-size: 1rem; line-height: 1.65; }
+.structured-daily-capture label { display: block; font-size: .98rem !important; line-height: 1.45; margin-bottom: .4rem !important; overflow-wrap: anywhere; }
+.structured-daily-capture input,
+.structured-daily-capture select,
+.structured-daily-capture textarea {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: .7rem .8rem !important;
+  border: 1px solid #c7d2ca !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #17251c !important;
+  font-size: 1rem !important;
+  line-height: 1.45;
+}
+.structured-daily-capture textarea { min-height: 96px; resize: vertical; }
+.structured-daily-capture button {
+  max-width: 100%;
+  min-height: 46px;
+  padding: .75rem 1rem !important;
+  border: 1px solid var(--solenos-sage-button) !important;
+  border-radius: 10px !important;
+  background: var(--solenos-sage-button) !important;
+  color: var(--solenos-button-ink) !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.structured-daily-capture > section { margin-block: 1.25rem; }
+.structured-daily-capture form > div[style*="display: flex"] { flex-wrap: wrap !important; gap: .85rem !important; }
+.structured-daily-capture form > div[style*="display: flex"] > div { flex: 1 1 13rem !important; min-width: 0 !important; max-width: 100%; }
+.structured-daily-capture input[type="file"] { padding: .6rem !important; }
+.structured-daily-capture .medication-file-label { display: inline-flex; align-items: center; min-height: 44px; }
+.workspace-more-menu { max-width: 100%; }
+.workspace-more-menu-trigger { width: 40px; height: 40px; min-width: 40px; min-height: 40px; flex: 0 0 40px; }
+.workspace-more-menu-dropdown {
+  width: min(17rem, calc(100vw - 1.5rem));
+  min-width: 0;
+  max-width: calc(100vw - 1.5rem);
+  right: 0;
+  overflow-wrap: anywhere;
+}
+.workspace-more-menu-item { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+@media (max-width: 600px) {
+  .structured-daily-capture { padding-inline: .25rem; }
+  .structured-daily-capture > div:first-child { display: block !important; }
+  .structured-daily-capture > div:first-child > p { max-width: none !important; margin-top: .5rem; }
+  .structured-daily-capture form > div[style*="display: flex"] > div { flex-basis: 100% !important; }
+  .workspace-more-menu-dropdown { right: 0; }
+}
