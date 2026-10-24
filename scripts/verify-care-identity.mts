@@ -23,6 +23,7 @@ import { resetNormalizationStore } from "../src/lib/event-normalization/event-no
 import { resetPolicyEngineStore, seedVerifyConsent } from "../src/lib/policy-engine";
 import {
   listSituationsForSession,
+  listAllTrackedSituations,
   resetResolutionStoreForTests,
 } from "../src/lib/resolution-engine/persistence";
 import { hydrateTrackedSituationsFromCareContext } from "../src/lib/resolution-engine/care-context-sync";
@@ -119,6 +120,7 @@ if (!trackedAfterFirstWrite.some((s) => s.status === "ACTIVE")) {
     responseCareRealityId: realityKey,
     returnedActiveSituations: (first as any).active_situations?.map((s: any) => ({ id: s.id, status: s.status, title: s.title })) ?? [],
     trackedSituationKeys: trackedAfterFirstWrite.map((s) => ({ id: s.id, careSessionId: s.careSessionId, status: s.status })),
+    allTrackedSituations: listAllTrackedSituations().map((s) => ({ id: s.id, careSessionId: s.careSessionId, userId: s.userId, status: s.status, title: s.title })),
   }, null, 2));
 }
 assert(
