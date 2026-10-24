@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 
 interface Message {
@@ -36,10 +36,6 @@ export default function Companion() {
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText) return
-    if (!personId) {
-      setRequestError('No care record is selected. Select an authorized care record before starting a conversation.')
-      return
-    }
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
@@ -52,8 +48,11 @@ export default function Companion() {
     setMessages(prev => [...prev, userMsg])
 
     try {
+      // Resolve the server-issued bearer session at send time; a stale
+      // browser snapshot must not block or authorize Companion.
+      const session = await ensureAnonymousSession()
       const response = await postJSON('/conversation/message', {
-        person_id: personId,
+        person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
       }) as any
