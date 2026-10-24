@@ -447,29 +447,28 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         situations?: Situation[];
       };
 
-      // POST confirms the write; GET rebuilds the caregiver view from persisted
-      // evidence/events. Do not treat the POST acknowledgement as an LCR view.
-      const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
-      hydrationUrl.searchParams.set("caregiver_id", caregiverId);
-      hydrationUrl.searchParams.set("care_session_id", interactionSessionId());
-      const hydrationRes = await fetch(hydrationUrl.toString(), {
-        method: "GET",
-        headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
-        cache: "no-store",
-      });
-      if (!hydrationRes.ok) {
-        throw new Error(
-          "The note was accepted, but the saved care record could not be reloaded. Refresh the record before retrying; do not submit the same note again.",
-        );
+      // The backend POST returns its read-after-write projection from saved
+      // evidence/events. Use it first; only make a separate GET for older
+      // backend deployments that acknowledge a write without returning the view.
+      let hydrated = situationData;
+      if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
+        const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
+        hydrationUrl.searchParams.set("caregiver_id", caregiverId);
+        hydrationUrl.searchParams.set("care_session_id", interactionSessionId());
+        const hydrationRes = await fetch(hydrationUrl.toString(), {
+          method: "GET",
+          headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
+          cache: "no-store",
+        });
+        if (!hydrationRes.ok) {
+          throw new Error(
+            "The note was accepted, but the saved care record could not be reloaded. Refresh the record before retrying; do not submit the same note again.",
+          );
+        }
+        hydrated = normalizeBackendSituationResponse(
+          await safeJson(hydrationRes),
+        ) as typeof situationData;
       }
-      const hydrated = normalizeBackendSituationResponse(
-        await safeJson(hydrationRes),
-      ) as WorkspaceSituationResponse & {
-        care_key?: string;
-        care_session_id?: string;
-        ui_situations?: Situation[];
-        situations?: Situation[];
-      };
       if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
         throw new Error(
           "The note was accepted, but the backend did not return a persisted care-record view. Refresh the record before retrying; do not submit the same note again.",
