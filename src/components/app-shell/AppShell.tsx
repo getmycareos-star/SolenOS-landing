@@ -122,7 +122,7 @@ export function AppShell({
           aria-expanded={fabOpen}
           onClick={() => setFabOpen((v) => !v)}
         >
-          <Plus size={24} aria-hidden />
+          <PlusCircle size={24} aria-hidden />
         </Button>
       </div>
 
