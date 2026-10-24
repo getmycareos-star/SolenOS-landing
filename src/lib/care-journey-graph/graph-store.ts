@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import type { CareJourneyGraph, JourneyGraphEvent, JourneyRelationship } from "./types";
 
 const graphs = new Map<string, CareJourneyGraph>();
@@ -16,8 +17,7 @@ export function createGraphEventId(): string {
 }
 
 export function getOrCreateGraph(caregiverId: string, caseId: string | null): CareJourneyGraph {
-  if (!caregiverId?.trim() || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required for care journey graph storage.");
-  caregiverId = caregiverId.trim();
+  caregiverId = requireCaregiverId(caregiverId, "care journey graph store");
   const key = journeyKey(caregiverId, caseId);
   const existingId = caregiverIndex.get(key);
   if (existingId) {
@@ -47,8 +47,13 @@ export function getGraphForCaregiver(
   caregiverId: string,
   caseId: string | null = null,
 ): CareJourneyGraph | undefined {
-  if (!caregiverId?.trim() || caregiverId === "default_caregiver") return undefined;
-  const key = journeyKey(caregiverId.trim(), caseId);
+  let normalizedId: string;
+  try {
+    normalizedId = requireCaregiverId(caregiverId, "care journey graph lookup");
+  } catch {
+    return undefined;
+  }
+  const key = journeyKey(normalizedId, caseId);
   const id = caregiverIndex.get(key);
   return id ? graphs.get(id) : undefined;
 }
@@ -81,10 +86,8 @@ export function restoreGraphForCaregiver(
   caseId: string | null,
   previousGraph: CareJourneyGraph | null,
 ): void {
-  if (!caregiverId?.trim() || caregiverId === "default_caregiver") {
-    throw new Error("Valid caregiver identity is required to restore graph state.");
-  }
-  const key = journeyKey(caregiverId.trim(), caseId);
+  const normalizedId = requireCaregiverId(caregiverId, "care journey graph restore");
+  const key = journeyKey(normalizedId, caseId);
   const currentId = caregiverIndex.get(key);
   if (currentId) graphs.delete(currentId);
   caregiverIndex.delete(key);
