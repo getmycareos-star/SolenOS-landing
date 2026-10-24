@@ -42,7 +42,7 @@
     "SolenOS_backend",
     "frontend",
     "frontend2",
-    "src/legacy-vite-pages",
+    "src/legacy-pages",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/__tests__/**",
