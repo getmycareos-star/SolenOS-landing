@@ -27,11 +27,18 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Proxy all /api/* calls to the Railway backend (SolenOS_backend).
-# The frontend repo no longer ships Next.js API route handlers.
+# Proxy only API routes owned by the FastAPI backend. Keeping the scope
+# explicit prevents unrelated frontend-owned or unsupported paths (for example
+# telemetry) from being silently forwarded to the backend.
 [[redirects]]
-  from = "/api/*"
-  to = "https://solenosbackend-production.up.railway.app/api/:splat"
+  from = "/api/v1/*"
+  to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/situation"
+  to = "https://solenosbackend-production.up.railway.app/api/situation"
   status = 200
   force = true
 
@@ -43,14 +50,9 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# CORS headers for API proxy to Railway backend
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-    Access-Control-Max-Age = "86400"
+# API calls use this site's same-origin /api/* proxy. Browser CORS is not
+# required for same-origin requests; the Railway backend owns its explicit
+# CORS allowlist for direct cross-origin clients.
 
 [[headers]]
   for = "/assets/*"
