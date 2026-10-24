@@ -365,6 +365,12 @@ function PrivacyCard() {
 
   const clearLocalData = () => {
     const keys = [
+      // backend-issued identity and session credentials
+      "solenos_anonymous_access_token",
+      "solenos_backend_person_id",
+      "solenos_backend_caregiver_id",
+      "solenos_anonymous_session_expires_at",
+      "solenos_person_id",
       // identity
       "solenos_durable_care_key",
       "solenos_care_session_id",
