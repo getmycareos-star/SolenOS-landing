@@ -438,7 +438,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         throw new Error(err.error ?? "Could not structure situation");
       }
 
-      const situationData = normalizeBackendSituationResponse(
+      let situationData = normalizeBackendSituationResponse(
         await safeJson(situationRes),
       ) as WorkspaceSituationResponse & {
         policy_engine_layer?: {
@@ -450,6 +450,43 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         ui_situations?: Situation[];
         situations?: Situation[];
       };
+
+      // A successful POST is not proof that the LCR projection was returned.
+      // Read the record back once from durable backend state before showing an
+      // unavailable view; never invent a situation from the submitted text.
+      if (!situationData.active_care_situation) {
+        const query = new URLSearchParams({
+          caregiver_id: caregiverId,
+          care_session_id: interactionSessionId(),
+        });
+        const readBack = await fetch(apiUrl(`/api/situation?${query.toString()}`), {
+          method: "GET",
+          headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
+          cache: "no-store",
+        });
+        if (readBack.ok) {
+          const hydrated = normalizeBackendSituationResponse(
+            await safeJson(readBack),
+          ) as WorkspaceSituationResponse & {
+            policy_engine_layer?: {
+              consent_required?: boolean;
+              ingestion?: { allowed?: boolean; blocked_reason?: string | null };
+            };
+            care_key?: string;
+            care_session_id?: string;
+            ui_situations?: Situation[];
+            situations?: Situation[];
+          };
+          if (hydrated.active_care_situation) {
+            situationData = {
+              ...situationData,
+              ...hydrated,
+              analysis_status: situationData.analysis_status,
+              analysis_warning: situationData.analysis_warning,
+            };
+          }
+        }
+      }
 
       if (situationData.policy_engine_layer?.consent_required) {
         setShowSoftPrivacyNote(true);
@@ -964,8 +1001,8 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
               <section className="panel panel-response" role="status" aria-live="polite">
                 <h3>Care record view unavailable</h3>
                 <p>
-                  The server accepted this capture but did not return a persisted care-record view.
-                  Refresh the record to verify what was saved before submitting the same information again.
+                  The backend accepted this entry but did not return a care-record view, even after a read-back attempt.
+                  The original text remains visible above. Do not submit it again; check the saved record before retrying.
                 </p>
               </section>
             ) : (
