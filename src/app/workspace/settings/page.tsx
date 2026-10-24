@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
+import { ensureAnonymousSession, getJSON } from "@/api/client";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -193,9 +194,37 @@ function ProfileCard() {
   );
 }
 
-/** Security — honest account status. No fake account controls. */
+/** Security — show verified backend session state; account features stay unavailable until implemented. */
 function SecurityCard() {
   const { show, render } = useToast();
+  const [backendStatus, setBackendStatus] = useState<"checking" | "active" | "error">("checking");
+  const [sessionExpiry, setSessionExpiry] = useState<string | null>(null);
+
+  const verifyBackendSession = useCallback(async () => {
+    setBackendStatus("checking");
+    try {
+      // Bootstrap/refresh a server-issued bearer session, then exercise a
+      // protected care endpoint through the same Netlify API proxy as the app.
+      const session = await ensureAnonymousSession();
+      await getJSON("/situation?offer_return_invite=0");
+      setSessionExpiry(session.expires_at);
+      setBackendStatus("active");
+    } catch (error) {
+      setSessionExpiry(null);
+      setBackendStatus("error");
+      show(
+        error instanceof Error
+          ? `Could not verify the backend session: ${error.message}`
+          : "Could not verify the backend session. Retry when the connection is available.",
+        "error",
+      );
+    }
+  }, [show]);
+
+  useEffect(() => {
+    void verifyBackendSession();
+  }, [verifyBackendSession]);
+
   const accountControls: {
     label: string;
     variant: ButtonVariant;
@@ -204,51 +233,77 @@ function SecurityCard() {
     {
       label: "Create account",
       variant: "primary",
-      note: "Account sign-in is not available yet.",
+      note: "Account creation is not implemented yet. Your current care session is protected by the backend.",
     },
     {
       label: "Change password",
       variant: "secondary",
-      note: "Requires an account, which is not available yet.",
+      note: "Password management requires an account system, which is not available yet.",
     },
     {
       label: "Add email",
       variant: "secondary",
-      note: "Requires an account, which is not available yet.",
+      note: "Email linking requires an account system, which is not available yet.",
     },
     {
       label: "Delete account",
       variant: "destructive",
-      note: "Requires an account, which is not available yet.",
+      note: "There is no account to delete. Use Privacy & Data to manage this browser's local data.",
     },
   ];
 
   return (
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title">
-        <Lock size={16} aria-hidden /> Security
+        <Shield size={16} aria-hidden /> Security
       </h2>
       <p className="mobile-settings-hint">
-        Your SolenOS data is stored on this device. Account sign-in and
-        cross-device sync are not yet available.
+        Care-data requests use a server-issued session scoped to this care record.
+        The backend validates that session and rejects requests for another care record.
+        This browser holds the session credential; account sign-in and cross-device
+        account recovery are not available yet.
       </p>
+      <div className="mobile-settings-row" aria-live="polite">
+        <span>
+          <span className="mobile-settings-label">Backend session</span>
+          <span className="mobile-settings-hint">
+            {backendStatus === "checking" && "Verifying this browser's session with the care API…"}
+            {backendStatus === "active" && "Verified: the protected care API accepted this session."}
+            {backendStatus === "error" && "Could not verify the session with the backend."}
+          </span>
+          {backendStatus === "active" && sessionExpiry && (
+            <span className="mobile-settings-hint">
+              Session expiry: {new Date(sessionExpiry).toLocaleString()}
+            </span>
+          )}
+        </span>
+        <Button
+          variant="secondary"
+          disabled={backendStatus === "checking"}
+          onClick={() => void verifyBackendSession()}
+        >
+          {backendStatus === "checking" ? "Checking…" : "Verify again"}
+        </Button>
+      </div>
       <div className="mobile-settings-buttons">
         {accountControls.map((control) => (
           <Button
             key={control.label}
             variant={control.variant}
             className="mobile-fab-sheet-item"
-            aria-describedby="security-account-status"
+            disabled
             title={control.note}
-            onClick={() => show(control.note, "info")}
+            aria-describedby="security-account-status"
           >
             {control.label}
           </Button>
         ))}
       </div>
       <p id="security-account-status" className="mobile-settings-hint" role="note">
-        Account features are not available yet. These controls explain their current status; they do not create an account, change a password, or add an email address.
-        When accounts are introduced, SolenOS will use email and password to secure your care record.
+        Account creation, password changes, email linking, and account deletion are not
+        implemented. These controls remain unavailable rather than implying that an
+        account operation succeeded. Backend session security is separate and is
+        verified above.
       </p>
       {render()}
     </section>
