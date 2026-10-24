@@ -35,7 +35,7 @@ import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { ensureAnonymousSession, getAnonymousAccessToken, requestQwenCandidateAnalysis } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, requestQwenCandidateAnalysis, reviewQwenCandidate } from "@/api/client";
 import {
   IN_APP_IMPROVING_NOTICE,
   EMERGENCY_BOUNDARY,
@@ -141,6 +141,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [transitionKey, setTransitionKey] = useState(0);
   const [situationResponse, setSituationResponse] = useState<WorkspaceSituationResponse | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
+  const [qwenReviewError, setQwenReviewError] = useState<string | null>(null);
   const [hasContextRoot, setHasContextRoot] = useState(false);
   const [entryMode, setEntryMode] = useState<"initial" | "update">("initial");
   /** This browser session shared at least one note — gates Continuity / dual pane. */
@@ -1036,10 +1037,49 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                       <li key={index}>
                         <strong>{candidate.subject}:</strong> {candidate.observation}
                         <p>Source: “{candidate.source_quote}” · {candidate.review_status}</p>
+                        {candidate.candidate_id && candidate.review_status === "pending_review" && (
+                          <div className="qwen-candidate-review-actions">
+                            <button type="button" onClick={async () => {
+                              try {
+                                const reviewed = await reviewQwenCandidate(candidate.candidate_id, "accepted");
+                                setQwenAnalysis((current: any) => current ? {
+                                  ...current,
+                                  candidates: current.candidates ? {
+                                    ...current.candidates,
+                                    observations: current.candidates.observations.map((row: any) =>
+                                      row.candidate_id === candidate.candidate_id ? { ...row, review_status: reviewed.status } : row
+                                    ),
+                                  } : null,
+                                } : current);
+                                setQwenReviewError(null);
+                              } catch {
+                                setQwenReviewError("The review decision was not confirmed by the server.");
+                              }
+                            }}>Accept suggestion</button>
+                            <button type="button" onClick={async () => {
+                              try {
+                                const reviewed = await reviewQwenCandidate(candidate.candidate_id, "rejected");
+                                setQwenAnalysis((current: any) => current ? {
+                                  ...current,
+                                  candidates: current.candidates ? {
+                                    ...current.candidates,
+                                    observations: current.candidates.observations.map((row: any) =>
+                                      row.candidate_id === candidate.candidate_id ? { ...row, review_status: reviewed.status } : row
+                                    ),
+                                  } : null,
+                                } : current);
+                                setQwenReviewError(null);
+                              } catch {
+                                setQwenReviewError("The review decision was not confirmed by the server.");
+                              }
+                            }}>Reject suggestion</button>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
                 ) : null}
+                {qwenReviewError && <p role="alert">{qwenReviewError}</p>}
                 {qwenAnalysis.candidates?.open_questions?.length ? (
                   <div>
                     <strong>Questions to clarify</strong>
