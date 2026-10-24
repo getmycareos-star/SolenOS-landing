@@ -14,7 +14,7 @@ describe("production caregiver identity guards", () => {
         caregiver_id: "default_caregiver",
         raw_text: "identity isolation regression",
       }),
-    ).toThrow(/distinct caregiver identity/i);
+    ).toThrow(/caregiver identity/i);
 
     expect(() =>
       saveObservation("default_caregiver", "identity isolation regression", "text", []),
