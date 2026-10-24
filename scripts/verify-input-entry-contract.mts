@@ -105,6 +105,10 @@ const workspace = fs.readFileSync(
   "utf8",
 );
 assert(workspace.includes("evidence_id: d.evidenceId"));
+const apiUrl = fs.readFileSync(path.join(root, "src", "lib", "api-url.ts"), "utf8");
+assert(apiUrl.includes('normalized === "/api/extract"'), "Document extraction must stay on the Next.js route handler even when a direct backend origin is configured");
+console.log("✓ Document extraction route is not redirected to an unregistered FastAPI endpoint");
+
 console.log("✓ Original documents persist and link to care events");
 
 const sot = fs.readFileSync(
