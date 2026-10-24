@@ -139,3 +139,17 @@
   .editorial-landing .el-more-links { gap: .8rem 1rem; }
 }
 @media (prefers-reduced-motion: reduce) { .editorial-landing *, .editorial-landing *::before, .editorial-landing *::after { transition: none !important; scroll-behavior: auto !important; } }
+
+
+/* Readability pass: preserve the editorial layout while increasing small copy. */
+.editorial-landing { font-size: 1.0625rem; line-height: 1.7; }
+.editorial-landing p, .editorial-landing li { font-size: clamp(1rem, 1.2vw, 1.125rem); line-height: 1.75; }
+.editorial-landing .el-hero p, .editorial-landing .el-intro p { font-size: clamp(1.1rem, 1.5vw, 1.25rem); line-height: 1.75; }
+.editorial-landing .el-button { min-height: 48px; padding: .9rem 1.25rem; font-size: 1rem; }
+.editorial-landing a:focus-visible { outline: 3px solid #477c56; outline-offset: 4px; }
+@media (max-width: 600px) {
+  .editorial-landing { font-size: 1.0625rem; }
+  .editorial-landing p, .editorial-landing li { font-size: 1.0625rem; line-height: 1.75; }
+  .editorial-landing h1 { font-size: clamp(2rem, 9vw, 3rem); line-height: 1.12; }
+  .editorial-landing h2 { font-size: clamp(1.65rem, 7vw, 2.25rem); line-height: 1.2; }
+}
