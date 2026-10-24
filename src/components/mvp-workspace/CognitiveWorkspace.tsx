@@ -76,6 +76,17 @@ function interactionSessionId(forceNew = false): string {
 
 type SubmitPhase = "idle" | "acknowledged" | "processing" | "done";
 
+/** Social-only input belongs in Companion, never in the Living Care Record. */
+function isCasualConversationOnly(text: string): boolean {
+  const normalized = text
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[.!?,;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return /^(hi|hello|hey|hiya|how are you|how are you doing|how's it going|hows it going|good morning|good afternoon|good evening|thanks|thank you|thank you so much|good night|bye|goodbye)$/.test(normalized);
+}
+
 /** Build caregiver-facing + LCR display text from typed note and/or ready documents. */
 function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string {
   const parts: string[] = [];
@@ -329,7 +340,12 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       return;
     }
 
-    // Empty or greeting-only input → SESSION_REENTRY_EVENT (handled by API)
+    // Social-only messages are conversational, not care evidence. Send them to
+    // Companion so Qwen generates the response; never save "hi" as a care event.
+    if (readyDocs.length === 0 && text && isCasualConversationOnly(text)) {
+      window.location.assign(`/workspace/companion?draft=${encodeURIComponent(text)}`);
+      return;
+    }
 
     setLoading(true);
     setCaregiverError(null);
