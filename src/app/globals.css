@@ -1,32 +1,31 @@
 :root {
-  --font-solenos-sans: "DM Sans", system-ui, sans-serif;
+  --font-solenos-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-solenos-serif: "Libre Baskerville", Georgia, serif;
-  /* Brand palette — official slate + sage */
-  --solenos-slate: #3d4543;
-  --solenos-sage: #7d8b75;
-  --solenos-paper: #f8f6f2;
-  --solenos-muted: #6b7280;
-  --solenos-hairline: #d4d0c8;
-  /* Care Reality visual language — not chatbot chrome */
-  --care-note-bg: #f3efe7;
-  --care-note-text: #1f2937;
-  --care-note-border: #e5ddd0;
+  /* Professional care palette: deep teal, clean white, cool neutral surfaces. */
+  --solenos-slate: #173f4b;
+  --solenos-sage: #267c78;
+  --solenos-paper: #f5f7f8;
+  --solenos-muted: #5f7179;
+  --solenos-hairline: #dce5e8;
+  --care-note-bg: #f0f5f5;
+  --care-note-text: #172b35;
+  --care-note-border: #dce5e8;
   --care-understanding-bg: #ffffff;
-  --care-understanding-text: #1f2937;
-  --care-accent: #52796f;
-  --care-unknowns-bg: #f3efe7;
-  --ink: var(--solenos-slate);
+  --care-understanding-text: #172b35;
+  --care-accent: #167d78;
+  --care-unknowns-bg: #fff4dc;
+  --ink: #172b35;
   --paper: var(--solenos-paper);
   --muted: var(--solenos-muted);
   --hairline: var(--solenos-hairline);
-  --panel-pad: clamp(1.25rem, 4vw, 3rem);
+  --panel-pad: clamp(1rem, 4vw, 2rem);
   --text-base: 1rem;
   --text-lede: 1.125rem;
   --text-headline: clamp(1.75rem, 3vw, 2.35rem);
-  --transition-soft: 280ms ease;
+  --transition-soft: 180ms ease;
   color: var(--ink);
   background-color: var(--paper);
-  font-family: var(--font-solenos-serif);
+  font-family: var(--font-solenos-sans);
   line-height: 1.55;
   font-size: var(--text-base);
 }
@@ -38,17 +37,9 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: var(--solenos-paper);
-  background-image:
-    radial-gradient(ellipse at 15% 20%, rgba(61, 69, 67, 0.03) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 80%, rgba(125, 139, 117, 0.04) 0%, transparent 50%),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.35) 0%,
-      transparent 40%,
-      rgba(61, 69, 67, 0.02) 100%
-    );
+  background: var(--solenos-paper);
   color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
 .sr-only {
