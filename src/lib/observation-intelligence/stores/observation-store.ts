@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import type { OBSERVATION_SOURCES } from "../contract-constants";
 import type { StructuredObservation } from "../ontology";
 
@@ -40,11 +41,7 @@ const structuredByObservation = new Map<string, StructuredObservationRecord[]>()
 const caregiverIndex = new Map<string, string[]>();
 
 function requireCaregiverIdentity(caregiverId: string): string {
-  const id = caregiverId?.trim();
-  if (!id || id === "default_caregiver") {
-    throw new Error("A distinct caregiver identity is required for observation storage.");
-  }
-  return id;
+  return requireCaregiverId(caregiverId, "observation storage");
 }
 
 export function createObservationId(): string {
