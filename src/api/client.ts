@@ -172,6 +172,44 @@ export function ensureAnonymousSession(): Promise<AnonymousSession> {
   return anonymousSessionPromise;
 }
 
+/** Force a server-side validation and rotation of the current anonymous bearer session. */
+export async function verifyAnonymousSession(): Promise<AnonymousSession> {
+  if (typeof window === "undefined") {
+    throw new Error("Anonymous care sessions can only be verified in the browser.");
+  }
+  const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
+  if (!token) {
+    throw new Error("No saved care-session credential is available on this device.");
+  }
+  const response = await fetch("/api/v1/sessions/refresh", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const refreshed = (await handleResponse(response)) as {
+    session_id: string;
+    person_id: string;
+    caregiver_id: string;
+    access_token: string;
+    token_type: "Bearer";
+    expires_at: string;
+    expires_in_seconds: number;
+  };
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
+  setPersonId(refreshed.person_id);
+  return {
+    session_id: refreshed.session_id,
+    person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
+    caregiver: { id: refreshed.caregiver_id, name: "Caregiver", relationship: "Family" },
+    access_token: refreshed.access_token,
+    token_type: "Bearer",
+    expires_at: refreshed.expires_at,
+    expires_in_seconds: refreshed.expires_in_seconds,
+  };
+}
+
 async function handleResponse(res: Response) {
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
