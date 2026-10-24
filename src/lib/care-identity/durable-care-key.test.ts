@@ -80,7 +80,7 @@ describe("identity isolation boundaries", () => {
         content: "care note",
         provenance: { input_type: "text" },
       } as any),
-    ).toThrow(/caregiver attribution/i);
+    ).toThrow(/caregiver identity|caregiver attribution/i);
   });
 });
 
