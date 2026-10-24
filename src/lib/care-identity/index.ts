@@ -8,6 +8,8 @@ export {
 
   resolveDurableCareKey,
 
+  requireCaregiverId,
+
   requireCareKeyFromRequest,
 
   mintDurableCareKey,
