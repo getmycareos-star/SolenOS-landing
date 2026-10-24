@@ -40,14 +40,21 @@ function NotificationsCard() {
     }
   }, []);
 
-  const persist = (key: string, value: boolean) => {
+  const persist = (key: string, value: boolean): boolean => {
     try {
+      const raw = window.localStorage.getItem("solenos_notif_prefs");
+      const stored = raw ? (JSON.parse(raw) as { quietHours?: boolean; reminders?: boolean }) : {};
       window.localStorage.setItem(
         "solenos_notif_prefs",
-        JSON.stringify({ quietHours, reminders, [key]: value }),
+        JSON.stringify({
+          quietHours: typeof stored.quietHours === "boolean" ? stored.quietHours : quietHours,
+          reminders: typeof stored.reminders === "boolean" ? stored.reminders : reminders,
+          [key]: value,
+        }),
       );
+      return true;
     } catch {
-      /* ignore */
+      return false;
     }
   };
 
@@ -60,7 +67,7 @@ function NotificationsCard() {
         <span>
           <span className="mobile-settings-label">Quiet hours</span>
           <span className="mobile-settings-hint">
-            Suppress non-emergency alerts.
+            Local preference only; SolenOS does not currently send alerts.
           </span>
         </span>
         <span className="mobile-toggle">
@@ -69,8 +76,8 @@ function NotificationsCard() {
             checked={quietHours}
             onChange={(e) => {
               setQuietHours(e.target.checked);
-              persist("quietHours", e.target.checked);
-              show(e.target.checked ? "Quiet hours on" : "Quiet hours off", "success");
+              const saved = persist("quietHours", e.target.checked);
+              show(saved ? "Preference saved on this device" : "Could not save preference", saved ? "success" : "error");
             }}
           />
           <span className="mobile-toggle-track" />
@@ -80,7 +87,7 @@ function NotificationsCard() {
         <span>
           <span className="mobile-settings-label">Care reminders</span>
           <span className="mobile-settings-hint">
-            Gentle nudges for open care notes.
+            Saved on this device only; reminder scheduling and delivery are not connected yet.
           </span>
         </span>
         <span className="mobile-toggle">
@@ -89,13 +96,17 @@ function NotificationsCard() {
             checked={reminders}
             onChange={(e) => {
               setReminders(e.target.checked);
-              persist("reminders", e.target.checked);
-              show(e.target.checked ? "Reminders on" : "Reminders off", "success");
+              const saved = persist("reminders", e.target.checked);
+              show(saved ? "Preference saved on this device" : "Could not save preference", saved ? "success" : "error");
             }}
           />
           <span className="mobile-toggle-track" />
         </span>
       </label>
+      <p className="mobile-settings-hint">
+        These are local preferences only. SolenOS does not currently schedule or confirm delivery of reminders or alerts.
+      </p>
+      <Link href="/workspace/reminders" className="care-reminders-settings-link">Manage care reminders</Link>
       {render()}
     </section>
   );

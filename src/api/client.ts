@@ -1,5 +1,7 @@
-// Use the same-origin API proxy in Next.js and Netlify production.
-// Netlify forwards /api/* to the backend, so browser requests do not expose a backend hostname.
+import { apiUrl } from "@/lib/api-url";
+
+// Small JSON requests use the same-origin API proxy. File uploads use apiUrl()
+// to reach the backend directly and avoid Netlify proxy request-body limits.
 const API_BASE = '/api/v1'
 
 function isPlaceholderIdentifier(value: string | null | undefined): boolean {
@@ -240,12 +242,16 @@ export async function patchJSON(path: string, body: unknown) {
 // Multipart upload helper. Do not set Content-Type manually: the browser must
 // add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
-  const res = await fetch(resolveApiUrl(path), {
-    method: 'POST',
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const backendPath = normalized.startsWith("/api/v1/")
+    ? normalized
+    : `/api/v1${normalized}`;
+  const res = await fetch(apiUrl(backendPath), {
+    method: "POST",
     headers: authorizationHeaders(),
     body,
-  })
-  return handleResponse(res)
+  });
+  return handleResponse(res);
 }
 
 // Caregiver identity is only accepted when explicitly stored by the current
