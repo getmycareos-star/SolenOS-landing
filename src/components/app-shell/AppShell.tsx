@@ -29,7 +29,7 @@ type AppShellProps = {
 };
 
 /** Tab icons per position — Care Record, Timeline, Documents, Settings. */
-const TAB_ICONS: LucideIcon[] = [BookOpen, FileText, FileText, Settings];
+const TAB_ICONS: LucideIcon[] = [BookOpen, CalendarDays, FileText, Settings];
 
 const FALLBACK_TABS: NavItem[] = [
   { href: "/workspace", label: "Care Record", icon: "◉" },
