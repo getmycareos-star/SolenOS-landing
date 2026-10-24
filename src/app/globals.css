@@ -4706,3 +4706,26 @@ img, video, svg { max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Compact entry choices keep Daily Care and Add Record off the main content canvas. */
+.workspace-entry-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0 1.25rem; }
+.workspace-entry-action { display: flex; align-items: center; gap: .75rem; min-width: 0; width: 100%; padding: .85rem 1rem; border: 1px solid var(--solenos-hairline); border-radius: 14px; background: #fff; color: var(--ink); text-align: left; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, transform 160ms ease; }
+.workspace-entry-action:hover { border-color: var(--care-accent); background: #fbfcfa; }
+.workspace-entry-action:active { transform: translateY(1px); }
+.workspace-entry-action > svg { flex: 0 0 auto; color: var(--care-accent); }
+.workspace-entry-action span { display: flex; flex-direction: column; min-width: 0; gap: .15rem; }
+.workspace-entry-action strong { font-family: var(--font-solenos-sans); font-size: .95rem; font-weight: 650; }
+.workspace-entry-action small { color: var(--muted); font-family: var(--font-solenos-sans); font-size: .78rem; line-height: 1.4; }
+.daily-care-page-head { display: flex; align-items: flex-start; gap: .8rem; width: 100%; margin: 0 auto 1.25rem; max-width: 54rem; }
+.daily-care-page-head > div { min-width: 0; flex: 1; }
+.daily-care-page-head h1 { margin: .15rem 0 .45rem; font-size: clamp(1.7rem, 5vw, 2.2rem); line-height: 1.15; }
+.daily-care-page-head p:not(.daily-care-eyebrow) { margin: 0; color: var(--muted); line-height: 1.6; }
+.daily-care-eyebrow { display: flex; align-items: center; gap: .4rem; margin: 0; color: var(--care-accent); font-family: var(--font-solenos-sans); font-size: .75rem; font-weight: 700; letter-spacing: .07em; }
+.daily-care-error { width: min(100%, 38rem); margin: 1rem auto; padding: 1rem; border: 1px solid var(--solenos-hairline); border-radius: 14px; background: white; }
+.daily-care-error p { margin: .5rem 0 1rem; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .workspace-entry-actions { grid-template-columns: minmax(0, 1fr); gap: .55rem; margin: .8rem 0 1rem; }
+  .workspace-entry-action { padding: .8rem .9rem; }
+  .workspace-entry-action small { font-size: .8rem; }
+  .daily-care-page-head { gap: .45rem; }
+}
