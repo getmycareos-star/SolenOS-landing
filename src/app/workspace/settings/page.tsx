@@ -196,7 +196,7 @@ function ProfileCard() {
 
 /** Security — show verified backend session state; account features stay unavailable until implemented. */
 function SecurityCard() {
-  const { show, render } = useToast();
+  const { render } = useToast();
   const [backendStatus, setBackendStatus] = useState<"checking" | "active" | "error">("checking");
   const [sessionExpiry, setSessionExpiry] = useState<string | null>(null);
 
@@ -212,14 +212,11 @@ function SecurityCard() {
     } catch (error) {
       setSessionExpiry(null);
       setBackendStatus("error");
-      show(
-        error instanceof Error
-          ? `Could not verify the backend session: ${error.message}`
-          : "Could not verify the backend session. Retry when the connection is available.",
-        "error",
-      );
+      // The visible status and retry control provide feedback without a
+      // toast-driven render loop.
+      console.error("Backend session verification failed:", error);
     }
-  }, [show]);
+  }, []);
 
   useEffect(() => {
     void verifyBackendSession();
