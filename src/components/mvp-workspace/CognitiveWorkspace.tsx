@@ -216,7 +216,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     void ensureAnonymousSession()
       .then((session) =>
         fetch(
-          apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
+          apiUrl(`/api/situation?care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
           { headers: { Authorization: `Bearer ${session.access_token}` } },
         ),
       )
@@ -670,7 +670,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         if (durable) {
           try {
             const inviteRes = await fetch(
-              apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(caregiverId)}&care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=1`),
+              apiUrl(`/api/situation?care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=1`),
               { headers: { Authorization: `Bearer ${accessToken}` } },
             );
             if (inviteRes.ok) {
