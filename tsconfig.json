@@ -45,6 +45,12 @@
     "src/App.tsx",
     "src/main.tsx",
     "src/vite-env.d.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "src/legacy-vite-pages",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/__tests__/**",
+    "src/**/*.backup",
+    "src/**/*.bak"
   ]
 }
