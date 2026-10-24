@@ -1,65 +1,37 @@
 # SolenOS
 
-**An evolving intelligence layer that understands a person's changing care reality over time and helps families recognize change, coordinate action, and make decisions with confidence.**
+**A Living Care Record for family caregivers.**
 
-> The care journey, remembered.
+SolenOS helps families preserve care context over time: what happened, what changed, what remains uncertain, and what needs to be clarified next.
 
-**Product:** SolenOS  
-**Category (not a rename):** Care Reality Intelligence  
-**Foundation:** The Living Care Record
+## Hosting
 
-**Documentation Governance (living SoT):** [docs/README.md](docs/README.md) · **Canonical architecture:** [docs/17-canonical-architecture/](docs/17-canonical-architecture/) · Machine contract: `src/lib/solenos-layers/architecture-map.ts`
+- Frontend: React + TypeScript + Vite on **Netlify only**.
+- Backend: FastAPI on Railway.
+- Database: PostgreSQL, migrated with Alembic.
+- Vercel is not a supported or intended deployment target for SolenOS.
 
-A change is complete only when code works, verifies pass, docs/canonical architecture (and PRDs if affected) are updated. **If code and docs conflict, documentation wins.**
+The Netlify build configuration is in [`netlify.toml`](./netlify.toml). The frontend build command is `npm run build`, and the publish directory is `dist`.
 
-## What SolenOS is
+## Run locally (PowerShell)
 
-SolenOS maintains continuous understanding of one person's care journey — CareEvents, change, context, meaning, and attention — so caregiving never depends on reconstructing everything from memory.
-
-Philosophy chain: **Input → Event → Change → Context → Meaning → Attention**
-
-## What SolenOS is not
-
-Not a chatbot, EHR, portal, document app, reminder app, task manager, or generic care coordination tool.  
-Never use forbidden product renames from the permanent product-identity directive.
-
-## Caregiver path (MVP)
-
-```
-caregiver input (text + documents) → POST /api/situation → Living Care Record update
-```
-
-Ops/engine compression (`POST /api/analyze`) is hard-gated and is **not** the caregiver product entry.
-
-## Run locally
-
-```bash
-npm install
+```powershell
+npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Vite normally serves the frontend at [http://localhost:5173](http://localhost:5173).
 
-**LLM (server-side only):**
+## Verify a frontend change
 
-```bash
-copy .env.local.example .env.local
-# Edit .env.local — set GEMINI_API_KEY (never commit this file)
+```powershell
+npm run typecheck
+npm test -- --runInBand
+npm run build
 ```
 
-## Product integrity gate (Path A preview)
+Passing these checks does not prove the current Netlify deployment or the live backend is healthy. Check the Netlify deploy's commit and separately verify live API/database behavior.
 
-Before internal preview, Path A must stay green:
+## Product boundaries
 
-```bash
-npm run verify:product-path
-npm run verify:product-identity
-```
-
-This proves Care Reality / Living Care Record behavior — not chatbot, document summarizer, or task manager.
-
-**Preview honesty:** single Node process + `.data/` JSON. Same-machine restart: yes. New device / multi-user / cloud multi-instance: **not** qualified. Details: [docs/13-infrastructure/preview-qualification.md](docs/13-infrastructure/preview-qualification.md) · Integrity: [docs/02-product/solenos-product-integrity.md](docs/02-product/solenos-product-integrity.md)
-
-## Legacy analyze constraints
-
-Historical analyze-only MVP notes live in [docs/MVP_ARCHITECTURE_CONSTRAINTS.md](docs/MVP_ARCHITECTURE_CONSTRAINTS.md). They describe the ops compression path — **not** SolenOS product identity.
+SolenOS is not an AI doctor. Document extraction creates source evidence and review-only candidates; it does not silently convert extracted text into verified medical instructions or authoritative care facts. Preserve uncertainty, source attribution, and caregiver review decisions.

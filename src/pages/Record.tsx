@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
+import { getJSON, getBlob, getPersonId, getCaregiverId, postJSON, postFormData } from '../api/client'
+import { buildAppointmentBrief } from '../lib/document-intelligence/appointment-brief'
 
 interface Evidence {
   id: string
@@ -9,6 +10,26 @@ interface Evidence {
   uploaded_at: string
   time_provenance?: string
   location?: string
+  source_type?: string | null
+  confidence?: number | null
+  extra_metadata?: {
+    mime_type?: string
+    extraction_source?: string
+    extraction_warnings?: string[]
+    sha256?: string
+    extracted_char_count?: number
+    ocr_confidence?: number | null
+    metadata_unreadable?: boolean
+    original_filename?: string
+    size_bytes?: number
+    document_type_candidate?: string
+    document_date_candidate?: string | null
+    document_date_review_status?: string
+    extraction_status?: string
+    extraction_error?: string | null
+    review_status?: string
+    document_candidates?: Array<{ candidate_id?: string; candidate_type?: string; subject?: string; observation?: string; source_quote?: string; review_status?: string; source_span_start?: number | null; source_span_end?: number | null }>
+  } | null
 }
 
 export default function Record() {
@@ -22,7 +43,10 @@ export default function Record() {
   const [documentFile, setDocumentFile] = useState<File | null>(null)
   const [processingDocument, setProcessingDocument] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
-  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any } | null>(null)
+  const [documentReviewMessage, setDocumentReviewMessage] = useState<string | null>(null)
+  const [reviewingCandidateKey, setReviewingCandidateKey] = useState<string | null>(null)
+  const [documentResult, setDocumentResult] = useState<{ status: string; candidates: any[]; extractionSource?: string; confidence?: number | null; warnings?: string[]; evidenceId?: string; filename?: string; documentType?: string; documentDate?: string | null; extractionError?: string | null } | null>(null)
+  const [showAppointmentBrief, setShowAppointmentBrief] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -50,7 +74,7 @@ export default function Record() {
     return () => { cancelled = true }
   }, [])
 
-  async function submitTextDocument() {
+  async function submitDocument() {
     const personId = getPersonId()
     const caregiverId = getCaregiverId()
     if (!personId || !caregiverId) {
@@ -58,46 +82,65 @@ export default function Record() {
       return
     }
     if (!documentFile) {
-      setDocumentError('Choose a supported text document first.')
+      setDocumentError('Choose a supported document first.')
       return
     }
-    if (documentFile.size > 5 * 1024 * 1024) {
-      setDocumentError('Text documents must be 5 MiB or smaller.')
+    if (documentFile.size > 10 * 1024 * 1024) {
+      setDocumentError('Documents must be 10 MiB or smaller.')
       return
     }
-    const allowedExtensions = /\.(txt|md|csv|json|log)$/i
+    const allowedExtensions = /\.(pdf|png|jpe?g|webp|tiff?|bmp|txt|md|csv|json|log)$/i
     if (!allowedExtensions.test(documentFile.name)) {
-      setDocumentError('This intake currently supports .txt, .md, .csv, .json, and .log files. PDF/scanned-image OCR is not available yet.')
+      setDocumentError('Supported formats are PDF, JPG, PNG, WEBP, TIFF, BMP, TXT, MD, CSV, JSON, and LOG.')
       return
     }
     setProcessingDocument(true)
     setDocumentError(null)
     setDocumentResult(null)
+    setDocumentReviewMessage(null)
     try {
-      const extractedText = await documentFile.text()
-      if (!extractedText.trim()) throw new Error('The selected document contains no readable text.')
-      const result = await postJSON('/situation', {
-        caregiver_id: caregiverId,
-        person_id: personId,
-        raw_input: '',
-        documents: [{
-          id: documentFile.name + '-' + documentFile.lastModified,
-          name: documentFile.name,
-          extracted_text: extractedText,
-          mime_type: documentFile.type || 'text/plain',
-        }],
-        provenance: {
-          input_type: 'document',
-          entry_method: 'text_file_upload',
-          captured_at: new Date().toISOString(),
-          transcript_uncertain: false,
-        },
-      }) as { qwen_extraction_status?: string; qwen_candidates?: any; message?: string }
+      // One authenticated endpoint extracts text, stores the original bytes,
+      // creates source evidence, and returns exact-source candidates for review.
+      const form = new FormData()
+      form.append('file', documentFile)
+      const result = await postFormData('/documents/intake', form) as {
+        evidence_id: string
+        filename: string
+        document_type_candidate: string
+        document_date_candidate: string | null
+        extraction_status: string
+        extraction_source: string
+        ocr_confidence: number | null
+        extraction_warnings: string[]
+        extraction_error: string | null
+        document_candidates: any[]
+        source_file_preserved: boolean
+        candidate_count: number
+      }
+      if (!result.evidence_id || result.source_file_preserved !== true) {
+        throw new Error('The server did not confirm source-file preservation. The document intake is not confirmed.')
+      }
       setDocumentResult({
-        status: typeof result.qwen_extraction_status === 'string' ? result.qwen_extraction_status : 'not_reported',
-        candidates: result.qwen_candidates ?? null,
+        status: result.extraction_status,
+        evidenceId: result.evidence_id,
+        filename: result.filename,
+        documentType: result.document_type_candidate,
+        documentDate: result.document_date_candidate,
+        extractionSource: result.extraction_source,
+        confidence: result.ocr_confidence,
+        warnings: result.extraction_warnings ?? [],
+        extractionError: result.extraction_error,
+        candidates: result.document_candidates ?? [],
       })
       setDocumentFile(null)
+      // Refresh the evidence list from persisted server data, not optimistic state.
+      try {
+        const refreshed = await getJSON(`/evidence/${encodeURIComponent(personId)}`)
+        if (Array.isArray(refreshed)) setItems(refreshed)
+      } catch {
+        // The upload was already confirmed and persisted. Keep that success visible;
+        // the list can be refreshed on the next page load.
+      }
     } catch (error) {
       setDocumentError(error instanceof Error ? error.message : 'Document processing could not be confirmed.')
     } finally {
@@ -105,7 +148,56 @@ export default function Record() {
     }
   }
 
-  async function explainRecord() {
+  async function downloadOriginalDocument(evidenceId: string, filename?: string) {
+    try {
+      const blob = await getBlob(`/documents/${encodeURIComponent(evidenceId)}/file`)
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = filename || 'care-document'
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'The original document could not be downloaded.')
+    }
+  }
+
+  async function reviewDocumentCandidate(evidenceId: string, candidateIndex: number, decision: 'accept' | 'reject') {
+    const key = `${evidenceId}:${candidateIndex}`
+    setReviewingCandidateKey(key)
+    setDocumentReviewMessage(null)
+    try {
+      const result = await postJSON(
+        `/documents/${encodeURIComponent(evidenceId)}/candidates/${candidateIndex}/review`,
+        { decision },
+      ) as { candidate?: any; message?: string; authoritative_lcr_write?: boolean }
+      if (!result.candidate || result.authoritative_lcr_write !== false) {
+        throw new Error('The review response did not confirm a review-only decision.')
+      }
+      setItems((current) => current.map((item) => {
+        if (item.id !== evidenceId || !item.extra_metadata) return item
+        const candidates = [...(item.extra_metadata.document_candidates || [])]
+        candidates[candidateIndex] = result.candidate
+        return { ...item, extra_metadata: { ...item.extra_metadata, document_candidates: candidates } }
+      }))
+      setDocumentResult((current) => {
+        if (!current || current.evidenceId !== evidenceId) return current
+        const candidates = [...(current.candidates || [])]
+        candidates[candidateIndex] = result.candidate
+        return { ...current, candidates }
+      })
+      setDocumentReviewMessage(result.message || 'Review decision saved. No authoritative care fact was changed.')
+    } catch (error) {
+      setDocumentReviewMessage(error instanceof Error ? error.message : 'The review decision could not be saved.')
+    } finally {
+      setReviewingCandidateKey(null)
+    }
+  }
+
+    async function explainRecord() {
     const personId = getPersonId()
     if (!personId) {
       setLcrError('No authorized care record is selected.')
@@ -138,6 +230,7 @@ export default function Record() {
     conversation: '💬',
     observation: '👁️',
   }
+  const appointmentBrief = showAppointmentBrief ? buildAppointmentBrief(items) : null
 
   return (
     <div>
@@ -190,15 +283,15 @@ export default function Record() {
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: '10px', padding: '12px 14px', marginBottom: '16px'
       }}>
-        <strong style={{ fontSize: '13px' }}>Analyze a text document with Qwen</strong>
+        <strong style={{ fontSize: '13px' }}>Add a document to the Living Care Record</strong>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '10px' }}>
-          Upload a text-bearing file to save it as source evidence and run Qwen extraction. PDF and scanned-image OCR are not available in this intake yet.
+          Upload a PDF, scan, photo, or text file. SolenOS extracts source text, flags uncertain OCR, and saves it as evidence for review. Extracted text is not a verified medical instruction.
         </p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
-            aria-label="Choose a text document"
+            aria-label="Choose a care document"
             type="file"
-            accept=".txt,.md,.csv,.json,.log,text/plain,text/markdown,text/csv,application/json"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp,.txt,.md,.csv,.json,.log,application/pdf,image/*,text/plain,text/markdown,text/csv,application/json"
             disabled={processingDocument}
             onChange={(event) => {
               setDocumentFile(event.target.files?.[0] || null)
@@ -206,38 +299,156 @@ export default function Record() {
               setDocumentResult(null)
             }}
           />
-          <button onClick={submitTextDocument} disabled={processingDocument || !documentFile} style={{
+          <button onClick={submitDocument} disabled={processingDocument || !documentFile} style={{
             padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)',
             background: processingDocument || !documentFile ? 'var(--bg)' : 'var(--accent)',
             color: processingDocument || !documentFile ? 'var(--text-secondary)' : 'white',
             fontSize: '12px', cursor: processingDocument || !documentFile ? 'default' : 'pointer'
           }}>
-            {processingDocument ? 'Processing…' : 'Save and analyze'}
+            {processingDocument ? 'Reading document…' : 'Save and review'}
           </button>
         </div>
         {documentError && <p role="alert" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{documentError}</p>}
         {documentResult && (
           <div role="status" style={{ marginTop: '10px' }}>
-            <strong style={{ fontSize: '12px' }}>Qwen document analysis: {documentResult.status}</strong>
+            <strong style={{ fontSize: '12px' }}>Document intake: {documentResult.status}</strong>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Extracted observations are source-linked review candidates, not established LCR facts.
+              Original file preserved · {documentResult.filename || 'document'} · evidence ID {documentResult.evidenceId}
             </p>
-            {Array.isArray(documentResult.candidates?.observations) && documentResult.candidates.observations.length > 0 ? (
+            <button type="button" onClick={() => documentResult?.evidenceId && void downloadOriginalDocument(documentResult.evidenceId, documentResult.filename)} style={{ marginTop: '5px', padding: '6px 9px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Download original document</button>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Type candidate: {documentResult.documentType || 'not detected'} · document date candidate: {documentResult.documentDate || 'not detected'}
+            </p>
+            {documentResult.extractionSource && (
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Extraction method: {documentResult.extractionSource}
+              </p>
+            )}
+            {documentResult.confidence != null && (
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                OCR confidence: {Math.round(documentResult.confidence * 100)}%
+              </p>
+            )}
+            {documentResult.extractionError && (
+              <p role="alert" style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '5px' }}>
+                Text extraction not completed: {documentResult.extractionError}
+              </p>
+            )}
+            {documentResult.warnings?.map((warning, index) => (
+              <p key={index} role="alert" style={{ fontSize: '12px', color: 'var(--unknown)', marginTop: '6px' }}>
+                Review needed: {warning}
+              </p>
+            ))}
+            {documentResult.candidates.length > 0 ? (
               <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
-                {documentResult.candidates.observations.map((candidate: any, index: number) => (
-                  <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
-                    <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
-                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      Source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
+                {documentResult.candidates.map((candidate: any, index: number) => (
+                  <li key={candidate.candidate_id || index} style={{ fontSize: '12px', marginBottom: '10px' }}>
+                    <strong>{candidate.candidate_type?.replace(/_/g, ' ') || 'Document candidate'}:</strong> {candidate.observation}
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '3px' }}>
+                      Exact source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
                     </div>
+                    {candidate.review_status === 'pending_review' && (
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        <button type="button" disabled={processingDocument} onClick={() => documentResult?.evidenceId && void reviewDocumentCandidate(documentResult.evidenceId, index, 'accept')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Mark reviewed</button>
+                        <button type="button" disabled={processingDocument} onClick={() => documentResult?.evidenceId && void reviewDocumentCandidate(documentResult.evidenceId, index, 'reject')} style={{ padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Reject candidate</button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
             ) : (
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                No Qwen candidates were returned. The document is still preserved as evidence.
+                No reviewable text candidates were found. The original file and extraction status are preserved; no facts were inferred.
               </p>
             )}
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Review decisions are saved with provenance and do not write authoritative Living Care Record facts. Confirm all details against the original document.
+            </p>
+            {documentReviewMessage ? (
+              <p role="status" style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>{documentReviewMessage}</p>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <section style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '10px', padding: '14px', marginBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <strong style={{ fontSize: '13px' }}>Prepare an appointment brief</strong>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Organize saved records into documented sources, caregiver observations, unknowns, and questions. No diagnosis is generated.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAppointmentBrief(true)}
+            disabled={loading || Boolean(loadError) || items.length === 0}
+            style={{
+              padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)',
+              background: loading || Boolean(loadError) || items.length === 0 ? 'var(--bg)' : 'var(--accent)',
+              color: loading || Boolean(loadError) || items.length === 0 ? 'var(--text-secondary)' : 'white',
+              fontSize: '12px', cursor: loading || Boolean(loadError) || items.length === 0 ? 'default' : 'pointer'
+            }}
+          >
+            Prepare appointment brief
+          </button>
+        </div>
+        {showAppointmentBrief && appointmentBrief && (
+          <div style={{ marginTop: '14px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              Recorded period: {appointmentBrief.recorded_period.from} to {appointmentBrief.recorded_period.to}
+            </p>
+            {[
+              { title: 'Documented source text', items: appointmentBrief.documented_sources },
+              { title: 'Caregiver observations', items: appointmentBrief.caregiver_observations },
+              { title: 'Other recorded items', items: appointmentBrief.other_records },
+            ].map(section => (
+              <section key={section.title} style={{ marginTop: '12px' }}>
+                <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>{section.title} ({section.items.length})</h3>
+                {section.items.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No items of this source type are recorded.</p>
+                ) : (
+                  <ul style={{ paddingLeft: '18px', margin: 0 }}>
+                    {section.items.map(item => (
+                      <li key={item.id} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                        <strong>{item.recorded_at} · {item.source_label}</strong>
+                        <p style={{ marginTop: '3px', lineHeight: 1.5 }}>{item.excerpt}</p>
+                        {item.review_warnings.map((warning, index) => (
+                          <p key={index} role="alert" style={{ color: 'var(--unknown)', marginTop: '3px' }}>
+                            Verify: {warning}
+                          </p>
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))}
+            <section style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>System interpretations</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                This brief generates no new AI interpretation. Keep any existing AI-derived insight separate from documented source text and caregiver reports.
+              </p>
+            </section>
+            <section style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>Unknowns to verify</h3>
+              {appointmentBrief.unknowns_to_verify.length ? (
+                <ul style={{ paddingLeft: '18px', margin: 0 }}>
+                  {appointmentBrief.unknowns_to_verify.map((item, index) => <li key={index} style={{ fontSize: '12px', marginBottom: '5px' }}>{item}</li>)}
+                </ul>
+              ) : (
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No extraction warnings are recorded; this does not prove the source material is complete or correct.</p>
+              )}
+            </section>
+            <section style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>Questions for the care team</h3>
+              <ul style={{ paddingLeft: '18px', margin: 0 }}>
+                {appointmentBrief.questions_for_care_team.map((question, index) => <li key={index} style={{ fontSize: '12px', marginBottom: '5px' }}>{question}</li>)}
+              </ul>
+            </section>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '12px' }}>{appointmentBrief.disclaimer}</p>
           </div>
         )}
       </section>
@@ -289,6 +500,60 @@ export default function Record() {
                 </span>
               </div>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
+              {item.source_type && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                  Evidence origin: {item.source_type.replace(/_/g, ' ')}
+                </p>
+              )}
+              {item.extra_metadata?.document_type_candidate && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Document type candidate: {item.extra_metadata.document_type_candidate} · document date candidate: {item.extra_metadata.document_date_candidate || 'not detected'} ({item.extra_metadata.document_date_review_status || 'not reviewed'})
+                </p>
+              )}
+              {item.extra_metadata?.extraction_source && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Document extraction: {item.extra_metadata.extraction_source}
+                  {item.extra_metadata.ocr_confidence != null ? ` · OCR confidence ${Math.round(item.extra_metadata.ocr_confidence * 100)}%` : ''}
+                  {item.extra_metadata.extracted_char_count != null ? ` · ${item.extra_metadata.extracted_char_count} characters` : ''}
+                </p>
+              )}
+              {item.extra_metadata?.metadata_unreadable && (
+                <p role="alert" style={{ fontSize: '11px', color: 'var(--unknown)', marginTop: '4px' }}>
+                  Some document provenance metadata could not be read. Verify against the original source.
+                </p>
+              )}
+              {item.type === 'document' && item.source_type === 'document_upload' && (
+                <div style={{ marginTop: '8px' }}>
+                  <button type="button" onClick={() => void downloadOriginalDocument(item.id, item.extra_metadata?.original_filename)} style={{ padding: '6px 9px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Download original document</button>
+                  {item.extra_metadata?.document_candidates?.length ? (
+                    <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
+                      {item.extra_metadata.document_candidates.map((candidate, index) => {
+                        const reviewKey = `${item.id}:${index}`
+                        const pending = candidate.review_status === 'pending_review'
+                        return (
+                          <li key={candidate.candidate_id || index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                            <strong>{candidate.candidate_type?.replace(/_/g, ' ') || 'Document candidate'}:</strong> {candidate.observation || 'No extracted text'}
+                            <p style={{ color: 'var(--text-secondary)', marginTop: '3px' }}>Source quote: “{candidate.source_quote || 'No source quote'}” · {candidate.review_status || 'pending_review'}</p>
+                            {pending && (
+                              <div style={{ display: 'flex', gap: '6px', marginTop: '5px', flexWrap: 'wrap' }}>
+                                <button type="button" disabled={reviewingCandidateKey !== null} onClick={() => void reviewDocumentCandidate(item.id, index, 'accept')} style={{ padding: '5px 7px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>{reviewingCandidateKey === reviewKey ? 'Saving…' : 'Mark reviewed'}</button>
+                                <button type="button" disabled={reviewingCandidateKey !== null} onClick={() => void reviewDocumentCandidate(item.id, index, 'reject')} style={{ padding: '5px 7px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)', color: 'var(--text)', fontSize: '10px' }}>Reject candidate</button>
+                              </div>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : (
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '5px' }}>No reviewable candidates were stored for this document.</p>
+                  )}
+                </div>
+              )}
+              {item.extra_metadata?.extraction_warnings?.map((warning, index) => (
+                <p key={index} role="alert" style={{ fontSize: '12px', color: 'var(--unknown)', marginTop: '4px' }}>
+                  Document review needed: {warning}
+                </p>
+              ))}
               {item.time_provenance && (
                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
                   Time source: {item.time_provenance}

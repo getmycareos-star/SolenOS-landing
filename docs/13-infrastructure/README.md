@@ -1,44 +1,38 @@
-# 13 — Infrastructure
+# SolenOS infrastructure
 
-## Runtime
+## Hosting boundary
 
-- **App:** Next.js 15 (`next.config.ts` currently empty defaults)
-- **UI:** React 19
-- **API:** App Router route handlers
-- **Optional:** `fastify-shim` (not default path)
+- **Frontend:** React + TypeScript + Vite, built and published by **Netlify** from this repository.
+- **Backend API:** FastAPI, deployed separately on Railway.
+- **Database:** PostgreSQL; schema changes are managed by the backend Alembic migration chain.
+- **No Vercel deployment is part of the SolenOS hosting architecture.** Do not add Vercel build scripts, configuration, deployment workflows, or required Vercel preview checks to this repository.
+- The repository does not contain a `vercel.json`; `.vercel/` is ignored. Existing Vercel GitHub-App/project connections must be disconnected in the external Vercel/GitHub settings because repository commits cannot revoke an external integration.
 
-## Environment
+## Netlify frontend configuration
 
-Copy `.env.local.example` → `.env.local` (or add keys to `.env`).
+The root `netlify.toml` is the source of truth for the frontend build:
 
-**Restart required:** Next.js reads env files only at process start. After adding or changing `GEMINI_API_KEY` (or any variable) in `.env` or `.env.local`, restart `npm run dev`.
+- Build command: `npm run build`
+- Publish directory: `dist`
+- Node.js: 20
+- `/api/*` is proxied to the backend.
+- All other paths fall back to `/index.html` for React Router.
 
-| Variable | Role |
-|----------|------|
-| `GEMINI_API_KEY` | Required for `/api/analyze` and Gemini server STT (`/api/observations/voice`) |
-| `SOLENOS_GEMINI_MODEL` | Default gemini-1.5-pro |
-| `SOLENOS_LLM_PROVIDER` | gemini \| ollama \| openai |
-| `SOLENOS_LLM_MODEL` | Override |
-| `OPENAI_*` / `OLLAMA_*` | Alternate providers |
-| `DATABASE_URL` | Postgres telemetry |
-| `SOLENOS_TELEMETRY_DISABLED=1` | Disable writes |
-| `TIKA_*` / `TESSERACT_OCR` | Document extract util |
+Do not replace this with Next.js, `.next`, or Vercel build settings. When changing the backend API origin, update the Netlify proxy target deliberately and verify the resulting deployed endpoint.
 
-**Security note:** never commit real keys; keep `.env.local` private. Rotate if an example file ever contained a live key.
+## Local development
 
-## Deploy assumptions
+```powershell
+npm ci
+npm run dev
+```
 
-- **No** checked-in `Dockerfile`, `vercel.json`, or CI workflows found at documentation time
-- Assume single Node process: **in-memory stores are not multi-instance safe**
-- Horizontal scale requires durable STATE + shared session store (ADR required)
+The Vite development server defaults to port 5173. Run `npm run typecheck`, `npm test -- --runInBand`, and `npm run build` before considering a frontend change verified.
 
-**Internal preview qualification:** [`preview-qualification.md`](./preview-qualification.md) — Path A gate `npm run verify:product-path`; same-machine `.data/` yes; cloud/multi-instance **not** qualified.
+## Environment and secrets
 
-## Observability
+Set deploy/runtime secrets in the relevant hosting environment, not in source control. Never commit live API keys, database credentials, bearer tokens, or private environment files. If a live credential has entered Git history or chat, rotate it.
 
-- Failure observability / isolation modules exist in-lib; verify scripts cover contracts
-- `system_events` / cases tables for architectural event ledger when wired
+## Deployment verification
 
-## Modify safely
-
-Document new env vars here + onboarding. Do not put secrets in `architecture-map.ts` or docs.
+A successful GitHub Actions run proves repository checks only. It does not prove that Netlify published the intended commit, that the Railway API is healthy, or that live PostgreSQL migrations and document OCR work. Verify the Netlify deploy commit separately and run the gated staging integration workflow before claiming the full stack is verified.
