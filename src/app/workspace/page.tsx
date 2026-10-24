@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload } from "lucide-react";
+import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload, UsersRound, MessageCircle } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
 import { ResearchPreviewAckGate } from "@/components/mvp-workspace/ResearchPreviewAckGate";
@@ -139,6 +139,17 @@ function WorkspacePageInner() {
           <button type="button" className="workspace-entry-action" onClick={() => openComposer()}>
             <Plus size={19} aria-hidden />
             <span><strong>Add record</strong><small>Add a note, message, or document</small></span>
+          </button>
+        </section>
+
+        <section className="workspace-secondary-tools" aria-label="More care tools">
+          <button type="button" onClick={() => router.push("/workspace/community")}>
+            <UsersRound size={18} aria-hidden />
+            <span><strong>Caregiver community</strong><small>Shared dementia-care experiences</small></span>
+          </button>
+          <button type="button" onClick={() => router.push("/workspace/companion")}>
+            <MessageCircle size={18} aria-hidden />
+            <span><strong>AI Companion</strong><small>Organise thoughts and questions</small></span>
           </button>
         </section>
 
