@@ -364,6 +364,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
 
     setLoading(true);
     setCaregiverError(null);
+    setSavedEventReceipt(null);
     setSubmitPhase("acknowledged");
 
     try {
