@@ -696,6 +696,8 @@ export default function Dashboard() {
                         : typeof item.actor_id === 'string' ? item.actor_id : null;
                       const actionStatus = typeof item.status === 'string' ? item.status.replace(/_/g, ' ') : null;
                       const deadline = typeof item.deadline === 'string' ? item.deadline : null;
+                      const firstRecordedAt = typeof item.first_recorded_at === 'string' ? item.first_recorded_at : null;
+                      const lastRecordedAt = typeof item.last_recorded_at === 'string' ? item.last_recorded_at : null;
                       const passage = typeof item.source_passage === 'string' ? item.source_passage : null;
                       return (
                         <article key={String(item.id || index)} style={{ borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
@@ -707,6 +709,13 @@ export default function Dashboard() {
                           {owner && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Assigned to: {owner}</p>}
                           {actionStatus && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Recorded status: {actionStatus}</p>}
                           {deadline && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Recorded deadline: {new Date(deadline).toLocaleString()}</p>}
+                          {(firstRecordedAt || lastRecordedAt) && (
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>
+                              {firstRecordedAt ? `First recorded: ${new Date(firstRecordedAt).toLocaleString()}` : ''}
+                              {firstRecordedAt && lastRecordedAt ? ' · ' : ''}
+                              {lastRecordedAt ? `Most recent: ${new Date(lastRecordedAt).toLocaleString()}` : ''}
+                            </p>
+                          )}
                           {passage && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '5px 0' }}>Source passage: “{passage}”</p>}
                           {(sourceIds.length > 0 || sourceRecordIds.length > 0) && (
                             <p style={{ fontSize: '10px', color: 'var(--text-secondary)', margin: '4px 0' }}>
