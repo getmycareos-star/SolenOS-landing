@@ -238,7 +238,7 @@ function SecurityCard() {
             key={control.label}
             variant={control.variant}
             className="mobile-fab-sheet-item"
-            disabled
+            aria-describedby="security-account-status"
             title={control.note}
             onClick={() => show(control.note, "info")}
           >
@@ -246,9 +246,9 @@ function SecurityCard() {
           </Button>
         ))}
       </div>
-      <p className="mobile-settings-hint">
-        When accounts are introduced, SolenOS will use email and password to
-        secure your care record.
+      <p id="security-account-status" className="mobile-settings-hint" role="note">
+        Account features are not available yet. These controls explain their current status; they do not create an account, change a password, or add an email address.
+        When accounts are introduced, SolenOS will use email and password to secure your care record.
       </p>
       {render()}
     </section>
