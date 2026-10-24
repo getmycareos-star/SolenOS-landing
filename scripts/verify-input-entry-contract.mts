@@ -178,3 +178,13 @@ const cognitiveWorkspace = fs.readFileSync(
 assert(cognitiveWorkspace.includes("requestQwenCandidateAnalysis(savedEventId)"));
 assert(cognitiveWorkspace.includes("not been written to the Living Care Record"));
 console.log("✓ Qwen is called after persisted capture, document intake and Daily Capture; Community summaries use the Qwen endpoint");
+
+
+const companionScreen = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
+  "utf8",
+);
+assert(companionScreen.includes("getJSON('/assistant/status')"));
+assert(companionScreen.includes("Local Qwen connected"));
+assert(companionScreen.includes("will not substitute a canned or fabricated reply"));
+console.log("✓ Companion reports the actual authenticated local Qwen runtime status");
