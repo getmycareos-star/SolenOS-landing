@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getJSON, postJSON, getCaregiverId, checkAuthState } from '@/api/client'
+import { getJSON, postJSON, getCaregiverId } from '@/api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -175,9 +175,8 @@ export default function Community() {
 
   async function handleReaction(postId: string, reactionType: ReactionType) {
     setActionError(null)
-    const auth = await checkAuthState()
-    if (!auth.authenticated || !auth.sessionInfo || !caregiverId) {
-      setActionError('Reactions are unavailable because SolenOS cannot verify an authenticated caregiver session.')
+    if (!caregiverId) {
+      setActionError('Reactions are unavailable because this browser has no valid SolenOS caregiver session. Your care record has not been changed.')
       return
     }
     try {
@@ -250,9 +249,8 @@ export default function Community() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!composerText.trim()) return
-    const auth = await checkAuthState()
-    if (!auth.authenticated || !auth.sessionInfo || !caregiverId) {
-      setActionError('Posting is unavailable because SolenOS cannot verify an authenticated caregiver session. Your text has been kept.')
+    if (!caregiverId) {
+      setActionError('Posting is unavailable because this browser has no valid SolenOS caregiver session. Your text has been kept.')
       return
     }
     setSubmitting(true)
