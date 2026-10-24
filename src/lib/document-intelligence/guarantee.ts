@@ -42,6 +42,7 @@ export function runDocumentIntelligenceSystemGuarantee(params: {
 
     if (
       node.confidence.uncertaintyFlagged &&
+      node.confidence.overall !== null &&
       node.confidence.overall >= DOCUMENT_CONFIDENCE_THRESHOLD
     ) {
       violations.push(`node ${node.id}: uncertainty flag inconsistent with confidence score`);
