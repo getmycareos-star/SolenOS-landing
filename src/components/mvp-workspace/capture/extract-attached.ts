@@ -1,4 +1,4 @@
-import { safeJson } from "@/lib/api-url";
+import { apiUrl, safeJson } from "@/lib/api-url";
 import { ensureAnonymousSession, postFormData } from "@/api/client";
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputEntryMethod } from "@/lib/input-entry-contract";
