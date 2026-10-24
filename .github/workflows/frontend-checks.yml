@@ -58,7 +58,7 @@ jobs:
           required = [
               'command = "npm run build"',
               'publish = "dist"',
-              'to = "https://solenosbackend-production-ee6a.up.railway.app/api/:splat"',
+              'to = "https://solenosbackend-production.up.railway.app/api/:splat"',
               'to = "/index.html"',
           ]
           missing = [item for item in required if item not in config]
