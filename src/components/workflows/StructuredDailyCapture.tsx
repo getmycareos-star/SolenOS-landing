@@ -4,6 +4,7 @@ import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import CareDeltaPanel from '@/components/CareDeltaPanel';
+import QwenAssistPanel from '@/components/qwen/QwenAssistPanel';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
@@ -824,6 +825,19 @@ export default function StructuredDailyCapture() {
           )}
         </section>
       )}
+
+      <QwenAssistPanel
+        title="Qwen support for Daily Capture"
+        defaultWorkflow="daily_capture"
+        compact
+        contextText={[
+          form.notes.trim() ? "Caregiver-entered daily note (draft or saved): " + form.notes.trim() : "",
+          form.medications.length ? "Medication observations supplied by caregiver (not medical advice): " + JSON.stringify(form.medications) : "",
+          form.vitals.length ? "Vital measurements supplied by caregiver: " + JSON.stringify(form.vitals) : "",
+          form.scales.length ? "Caregiver-entered scales: " + JSON.stringify(form.scales) : "",
+        ].filter(Boolean).join("\n\n")}
+        evidenceIds={form.medications.map((item) => item.photo_evidence_id).filter((id): id is string => Boolean(id))}
+      />
 
       {/* Save error indicator */}
       {Boolean(saveError) && !saved && (
