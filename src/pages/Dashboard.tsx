@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getJSON, postJSON, patchJSON, getPersonId, getCaregiverId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
-import CareCapture from '../components/CareCapture';
 
 interface Event {
   id: string;
@@ -94,7 +93,6 @@ export default function Dashboard() {
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [captureRevision, setCaptureRevision] = useState(0);
   const personId = getPersonId();
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
@@ -183,7 +181,7 @@ export default function Dashboard() {
       setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
       setLoading(false);
     });
-  }, [personId, captureRevision]);
+  }, [personId]);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -262,26 +260,43 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>What matters today</h1>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-        Quickly record changes, symptoms, behaviors, or observations from today.
-      </p>
-
-      <div style={{
-        background: 'var(--trust-soft)', border: '1px solid var(--trust)',
-        borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
-      }}>
-        <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '4px' }}>
-          Today's changes are automatically added to the Living Care Record.
+      <header style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '28px', lineHeight: 1.2, fontWeight: 650, marginBottom: '8px' }}>Care overview</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.6, maxWidth: '680px', margin: 0 }}>
+          Review what has changed, what still needs attention, and what your family has recorded about care.
         </p>
-      </div>
+      </header>
 
-      <div style={{ marginBottom: '24px' }}>
-        <CareCapture
-          personId={personId}
-          onCapture={() => setCaptureRevision((revision) => revision + 1)}
-        />
-      </div>
+      <section aria-labelledby="quick-actions-heading" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
+        gap: '12px', marginBottom: '24px'
+      }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px' }}>
+          <h2 id="quick-actions-heading" style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 6px' }}>Record a care update</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 14px' }}>
+            Capture a change, symptom, behaviour, or observation in the daily care form. It is kept with the care record for review.
+          </p>
+          <Link to="/daily-care" style={{
+            display: 'inline-flex', alignItems: 'center', minHeight: '42px', padding: '0 14px',
+            borderRadius: '8px', background: 'var(--accent)', color: 'white', fontSize: '14px',
+            fontWeight: 600, textDecoration: 'none'
+          }}>Record today's change <span aria-hidden="true" style={{ marginLeft: '8px' }}>→</span></Link>
+        </div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px' }}>
+          <h2 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 6px' }}>Living Care Record</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 14px' }}>
+            Review recorded events, source evidence, and the timeline of care.
+          </p>
+          <Link to="/record" style={{ color: 'var(--accent)', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>Open care record <span aria-hidden="true">→</span></Link>
+        </div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px' }}>
+          <h2 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 6px' }}>Care timeline</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 14px' }}>
+            Follow changes over time and see when each item was recorded.
+          </p>
+          <Link to="/timeline" style={{ color: 'var(--accent)', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>View timeline <span aria-hidden="true">→</span></Link>
+        </div>
+      </section>
 
       {loadError && (
         <p role="alert" style={{ color: 'var(--warning)', fontSize: '13px', marginBottom: '16px' }}>
@@ -382,18 +397,6 @@ export default function Dashboard() {
           ))}
         </div>
       </div>}
-
-      <div style={{
-        background: 'var(--accent-soft)', border: '1px solid var(--accent)',
-        borderRadius: '8px', padding: '8px 14px', marginBottom: '24px'
-      }}>
-        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
-          ðŸ“š Living Care Record system model
-        </p>
-        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
-          Today's Change â†’ Living Care Record â†’ Timeline â†’ Insights â†’ Community Wisdom
-        </p>
-      </div>
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
