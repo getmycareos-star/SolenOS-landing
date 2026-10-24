@@ -77,6 +77,17 @@ function interactionSessionId(forceNew = false): string {
 
 type SubmitPhase = "idle" | "acknowledged" | "processing" | "done";
 
+/** Social-only input belongs in Companion, never in the Living Care Record. */
+function isCasualConversationOnly(text: string): boolean {
+  const normalized = text
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[.!?,;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return /^(hi|hello|hey|hiya|how are you|how are you doing|how's it going|hows it going|good morning|good afternoon|good evening|thanks|thank you|thank you so much|good night|bye|goodbye)$/.test(normalized);
+}
+
 /** Build caregiver-facing + LCR display text from typed note and/or ready documents. */
 function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string {
   const parts: string[] = [];
@@ -331,7 +342,18 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       return;
     }
 
-    // Empty or greeting-only input → SESSION_REENTRY_EVENT (handled by API)
+    // Social-only messages are conversational, not care evidence. Send them to
+    // Companion so Qwen generates the response; never save "hi" as a care event.
+    if (readyDocs.length === 0 && text && isCasualConversationOnly(text)) {
+      try {
+        // Ensure the anonymous bearer session exists before Companion auto-sends the draft.
+        await ensureAnonymousSession();
+        window.location.assign(`/workspace/companion?draft=${encodeURIComponent(text)}`);
+      } catch {
+        setCaregiverError("SolenOS could not start a secure Companion session. Your greeting was not saved to the care record; please try again.");
+      }
+      return;
+    }
 
     setLoading(true);
     setCaregiverError(null);
@@ -388,7 +410,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         throw new Error(err.error ?? "Could not structure situation");
       }
 
-      const situationData = normalizeBackendSituationResponse(
+      let situationData = normalizeBackendSituationResponse(
         await safeJson(situationRes),
       ) as WorkspaceSituationResponse & {
         policy_engine_layer?: {
@@ -397,9 +419,48 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         };
         care_key?: string;
         care_session_id?: string;
+        care_event_id?: string;
+        evidence_id?: string;
         ui_situations?: Situation[];
         situations?: Situation[];
       };
+
+      // POST confirms the write; GET rebuilds the caregiver view from persisted
+      // evidence/events. Do not treat the POST acknowledgement as an LCR view.
+      const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
+      hydrationUrl.searchParams.set("caregiver_id", caregiverId);
+      hydrationUrl.searchParams.set("care_session_id", interactionSessionId());
+      const hydrationRes = await fetch(hydrationUrl.toString(), {
+        method: "GET",
+        headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
+        cache: "no-store",
+      });
+      if (!hydrationRes.ok) {
+        throw new Error(
+          "The note was accepted, but the saved care record could not be reloaded. Refresh the record before retrying; do not submit the same note again.",
+        );
+      }
+      const hydrated = normalizeBackendSituationResponse(
+        await safeJson(hydrationRes),
+      ) as WorkspaceSituationResponse & {
+        care_key?: string;
+        care_session_id?: string;
+        ui_situations?: Situation[];
+        situations?: Situation[];
+      };
+      if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
+        throw new Error(
+          "The note was accepted, but the backend did not return a persisted care-record view. Refresh the record before retrying; do not submit the same note again.",
+        );
+      }
+      situationData = ({
+        ...situationData,
+        ...hydrated,
+        // Preserve write receipts while using the durable projection for display.
+        care_event_id: situationData.care_event_id,
+        evidence_id: situationData.evidence_id,
+        message: situationData.message,
+      }) as typeof situationData;
 
       if (situationData.policy_engine_layer?.consent_required) {
         setShowSoftPrivacyNote(true);

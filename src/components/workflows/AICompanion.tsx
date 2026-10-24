@@ -22,6 +22,7 @@ export default function Companion() {
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const autoDraftSent = useRef(false)
   const personId = getPersonId()
 
   const scrollToBottom = () => {
@@ -32,8 +33,9 @@ export default function Companion() {
     scrollToBottom()
   }, [messages])
 
-  const sendMessage = async () => {
-    if (!input.trim()) return
+  const sendMessage = async (textOverride?: string) => {
+    const submittedText = (textOverride ?? input).trim()
+    if (!submittedText) return
     if (!personId) {
       setRequestError('No care record is selected. Select an authorized care record before starting a conversation.')
       return
@@ -44,13 +46,12 @@ export default function Companion() {
 
     const userMsg: Message = {
       role: 'user',
-      text: input,
+      text: submittedText,
       timestamp: new Date(),
     }
     setMessages(prev => [...prev, userMsg])
 
     try {
-      const submittedText = input
       const response = await postJSON('/conversation/message', {
         person_id: personId,
         text: submittedText,
@@ -80,17 +81,31 @@ export default function Companion() {
       const detail = e instanceof Error ? e.message.trim() : ''
       const routeMissing = /\bAPI 404\b|^not found$/i.test(detail)
       const modelUnavailable = /\bAPI 503\b|model is not configured|model.*unavailable|ollama/i.test(detail)
+      setInput(submittedText)
       setRequestError(
         routeMissing
           ? 'Companion is not available from the connected backend yet. The endpoint returned 404; your text remains in the input.'
           : modelUnavailable
-            ? 'The Companion model service is not configured or reachable. Your text remains in the input; no completed response was produced. Try again after the model service is available.'
+            ? 'The Qwen model service is not configured or reachable. No reply was generated; your text remains in the input.'
             : 'The server did not confirm whether it received this message. Your text remains in the input. Check the care record before retrying to avoid duplicates.'
       )
     } finally {
       setLoading(false)
     }
   }
+
+  // A greeting-only note is handed off here as a draft. Send it through the
+  // real backend Companion/Qwen endpoint; never synthesize a local canned reply.
+  useEffect(() => {
+    if (autoDraftSent.current) return
+    const draft = new URLSearchParams(window.location.search).get('draft')?.trim()
+    if (!draft) return
+    autoDraftSent.current = true
+    setInput(draft)
+    void sendMessage(draft)
+    // Intentional one-time route handoff, not a reactive chat effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const compareMessageWithRecord = (message: string) => {
     const nextToken = deltaToken + 1
@@ -214,7 +229,7 @@ export default function Companion() {
           }}
         />
         <button
-          onClick={sendMessage}
+          onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
           style={{
             padding: '10px 20px', borderRadius: '16px', border: 'none',
