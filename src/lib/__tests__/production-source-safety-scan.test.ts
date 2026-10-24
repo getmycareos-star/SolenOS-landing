@@ -61,6 +61,12 @@ describe("production source fake-data and identity-fallback scan", () => {
     expect(matches).toEqual([]);
   });
 
+  it("does not fall back from an explicitly empty capture scope to another selected person", () => {
+    const capture = readFileSync(resolve(process.cwd(), "src/components/CareCapture.tsx"), "utf8");
+    expect(capture).toContain("const personId = pid ?? getPersonId()");
+    expect(capture).not.toContain("const personId = pid || getPersonId()");
+  });
+
   it("does not import verification fixtures into application source", () => {
     const imports = content.flatMap(({ path, text }) =>
       /from\s+["'][^"']*(?:scripts\/fixtures|tests\/fixtures|test-fixtures)[^"']*["']/.test(text)
