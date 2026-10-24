@@ -1,10 +1,29 @@
 import { apiUrl, safeJson } from "@/lib/api-url";
+import { ensureAnonymousSession, postFormData } from "@/api/client";
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputEntryMethod } from "@/lib/input-entry-contract";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 
 function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+async function persistOriginalDocument(file: File, extractedText: string): Promise<string> {
+  const session = await ensureAnonymousSession();
+  const form = new FormData();
+  form.append("file", file);
+  form.append("person_id", session.person.id);
+  form.append("caregiver_id", session.caregiver.id);
+  form.append("evidence_type", "document");
+  form.append("extracted_text", extractedText.slice(0, 100_000));
+  const result = (await postFormData("/upload", form)) as {
+    evidence_id?: string;
+    persisted?: boolean;
+  };
+  if (!result.persisted || !result.evidence_id) {
+    throw new Error("The original file was not confirmed as saved.");
+  }
+  return result.evidence_id;
 }
 
 /** Extract file → AttachedDocument. Same path for Scan / Snap / Upload / Share. */
@@ -27,7 +46,17 @@ export async function extractAttachedDocument(
     try {
       const text = (await file.text()).trim();
       if (text) {
-        return { ...base, extractedText: text, status: "ready" };
+        try {
+          const evidenceId = await persistOriginalDocument(file, text);
+          return { ...base, evidenceId, extractedText: text, status: "ready" };
+        } catch {
+          return {
+            ...base,
+            extractedText: text,
+            status: "failed",
+            errorNote: "The text was read, but the original file could not be saved to the Living Care Record. Retry the upload before submitting it.",
+          };
+        }
       }
     } catch {
       /* fall through */
@@ -90,9 +119,23 @@ export async function extractAttachedDocument(
       };
     }
 
+    let evidenceId: string;
+    try {
+      evidenceId = await persistOriginalDocument(file, doc.extracted_text.trim());
+    } catch {
+      return {
+        ...base,
+        id: doc.id,
+        extractedText: doc.extracted_text.trim(),
+        status: "failed",
+        errorNote: "The text was extracted, but the original file could not be saved to the Living Care Record. Retry the upload before submitting it.",
+      };
+    }
+
     return {
       ...base,
       id: doc.id,
+      evidenceId,
       name: doc.name,
       mimeType: doc.mime_type ?? base.mimeType,
       extractedText: doc.extracted_text.trim(),
