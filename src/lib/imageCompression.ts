@@ -1,12 +1,5 @@
-// Image compression service for SolenOS frontend
-// Provides client-side image compression before upload to reduce bandwidth and improve performance
-
-/**
- * Compress an image file using browser-image-compression library
- * @param file The image file to compress
- * @param options Compression options (size limit, quality, etc.)
- * @returns Promise that resolves with the compressed file
- */
+// Browser-native image compression for SolenOS.
+// No Vite-only or third-party runtime dependency is required.
 export async function compressImage(
   file: File,
   options: {
@@ -16,70 +9,71 @@ export async function compressImage(
     initialQuality?: number;
     compressForce?: boolean;
     rotate?: boolean;
-  } = {}
+  } = {},
 ): Promise<File> {
-  // Reject non-image input before the fallback handler; returning a text file
-  // from an image upload path would violate the caller's contract.
-  if (!file.type.startsWith('image/')) {
-    throw new Error('File is not an image');
+  if (!file.type.startsWith("image/")) {
+    throw new Error("File is not an image");
   }
 
-  // Dynamically import the library to avoid bundling issues if not used
-  try {
-    const { default: imageCompression } = await import('browser-image-compression');
-    
-    const defaultOptions = {
-      maxSizeMB: 0.5, // Default to 0.5MB (500KB) as per requirements
-      maxWidthOrHeight: 2000, // Default to 2000px max dimension
-      useWebWorker: true, // Use web worker if available
-      initialQuality: 0.8, // Start with 80% quality
-      compressForce: false, // Don't force compression if already small
-      rotate: true, // Auto-rotate based on EXIF orientation
-      ...options
-    };
+  const maxSizeMB = options.maxSizeMB ?? 0.5;
+  const maxDimension = options.maxWidthOrHeight ?? 2000;
+  const initialQuality = options.initialQuality ?? 0.8;
 
-    // Compress the image
-    const compressedFile = await imageCompression(file, defaultOptions);
-    
-    // Ensure the file is still a valid image file
-    if (!compressedFile.type.startsWith('image/')) {
-      throw new Error('Compression resulted in non-image file');
+  if (file.size <= maxSizeMB * 1024 * 1024 && !options.compressForce) return file;
+
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    const targetBytes = maxSizeMB * 1024 * 1024;
+    let quality = Math.min(1, Math.max(0.2, initialQuality));
+    let blob = await canvasToBlob(canvas, quality);
+    while (blob.size > targetBytes && quality > 0.25) {
+      quality = Math.max(0.25, quality - 0.15);
+      blob = await canvasToBlob(canvas, quality);
     }
-    
-    return compressedFile;
+    const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+    const normalizedBlob = blob.type === outputType ? blob : await canvasToBlob(canvas, quality, outputType);
+    return new File([normalizedBlob], file.name, {
+      type: normalizedBlob.type || outputType,
+      lastModified: file.lastModified,
+    });
   } catch (error) {
-    console.error('Image compression failed:', error);
-    // If compression fails, return the original file to maintain functionality
-    // In a production app, you might want to show an error to the user instead
+    console.warn("Image compression unavailable; preserving original image.", error);
     return file;
+  } finally {
+    bitmap?.close();
   }
 }
 
-/**
- * Calculate the size reduction percentage between original and compressed files
- * @param originalSize Original file size in bytes
- * @param compressedSize Compressed file size in bytes
- * @returns Size reduction percentage (0-100)
- */
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number, type = "image/jpeg"): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => blob ? resolve(blob) : reject(new Error("Browser could not encode this image.")),
+      type,
+      quality,
+    );
+  });
+}
+
 export function calculateSizeReduction(originalSize: number, compressedSize: number): number {
   if (originalSize === 0) return 0;
   return Math.round(((originalSize - compressedSize) / originalSize) * 100);
 }
 
-/**
- * Convert a data URL to a File object
- * @param dataURL The data URL representing the image
- * @param filename The filename to use for the File object
- * @returns File object
- */
 export function dataURLtoFile(dataURL: string, filename: string): File {
-  const arr = dataURL.split(',');
-  const mime = arr[0].match(/:(.*?);/)![1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, { type: mime });
+  const parts = dataURL.split(",");
+  const mime = parts[0]?.match(/:(.*?);/)?.[1];
+  if (!mime || !parts[1]) throw new Error("Invalid image data.");
+  const binary = atob(parts[1]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], filename, { type: mime });
 }
