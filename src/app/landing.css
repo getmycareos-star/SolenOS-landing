@@ -1,14 +1,15 @@
 /* Editorial Care Journey landing page — scoped to homepage only. */
 .editorial-landing {
-  --el-paper: #f8f6f2;
-  --el-ink: #242623;
-  --el-slate: #3d4543;
-  --el-sage: #7d8b75;
-  --el-care: #52796f;
-  --el-muted: #6b726b;
-  --el-line: #d4d0c8;
-  --el-soft-sage: #eef0ea;
-  --el-dark: #171a18;
+  /* Match the app shell's accessible teal/neutral design system. */
+  --el-paper: #f5f7f8;
+  --el-ink: #172b35;
+  --el-slate: #173f4b;
+  --el-sage: #267c78;
+  --el-care: #167d78;
+  --el-muted: #5f7179;
+  --el-line: #dce5e8;
+  --el-soft-sage: #e9f2f1;
+  --el-dark: #173f4b;
   background: var(--el-paper);
   color: var(--el-ink);
   font-family: var(--font-solenos-sans, "DM Sans", sans-serif);
@@ -30,12 +31,12 @@
 .editorial-landing .el-green { color: var(--el-care); font-weight: 500; }
 .editorial-landing .el-button { display: inline-flex; gap: 1.5rem; align-items: center; justify-content: space-between; background: var(--el-sage); color: #fff; text-decoration: none; padding: .72rem 1.05rem; font-size: .78rem; border-radius: 3px; transition: background .18s ease, transform .18s ease; }
 .editorial-landing .el-button:hover { background: var(--el-care); transform: translateY(-1px); }
-.editorial-landing .el-hero { min-height: 470px; display: grid; grid-template-columns: .86fr 1.14fr; background: #f0e9df; }
+.editorial-landing .el-hero { min-height: 470px; display: grid; grid-template-columns: .86fr 1.14fr; background: #e9f2f1; }
 .editorial-landing .el-hero-copy { padding: clamp(2rem, 6vw, 5.3rem) clamp(1.5rem, 7vw, 6rem); align-self: center; position: relative; z-index: 1; }
 .editorial-landing .el-hero h1 { font-size: clamp(2.15rem, 4.25vw, 3.7rem); margin: 1rem 0 1.3rem; max-width: 590px; }
 .editorial-landing .el-hero h1 em { color: var(--el-sage); font-weight: 400; }
 .editorial-landing .el-hero-copy > p:not(.el-kicker) { font-size: .86rem; margin: 1.1rem 0 1.35rem; }
-.editorial-landing .el-hero-photo { position: relative; min-height: 470px; background: linear-gradient(90deg, #f0e9df 0%, rgba(240,233,223,.12) 24%, transparent 45%), url("https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=1600&q=85") center 35%/cover no-repeat; }
+.editorial-landing .el-hero-photo { position: relative; min-height: 470px; background: linear-gradient(90deg, #e9f2f1 0%, rgba(233,242,241,.12) 24%, transparent 45%), url("https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=1600&q=85") center 35%/cover no-repeat; }
 .editorial-landing .el-photo-caption { position: absolute; right: 1.4rem; bottom: 1.2rem; color: white; font: italic .8rem var(--font-solenos-serif, Georgia, serif); text-shadow: 0 1px 8px #333; }
 .editorial-landing .el-burden { display: grid; grid-template-columns: .88fr 1.12fr; background: var(--el-dark); color: #f7f5ef; min-height: 350px; }
 .editorial-landing .el-burden-copy { padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 6vw, 5rem); align-self: center; }
@@ -69,7 +70,7 @@
 .editorial-landing .el-process-step { display: flex; align-items: center; flex-direction: column; gap: .45rem; min-width: 55px; }
 .editorial-landing .el-process-step span { display: grid; place-items: center; border-radius: 50%; width: 39px; height: 39px; color: white; background: var(--el-sage); font-size: 1.2rem; }
 .editorial-landing .el-process-step small { font-size: .67rem; }
-.editorial-landing .el-appointments { display: grid; grid-template-columns: .9fr 1fr 1fr 1fr; background: #eee8dd; border-bottom: 1px solid var(--el-line); }
+.editorial-landing .el-appointments { display: grid; grid-template-columns: .9fr 1fr 1fr 1fr; background: #edf3f4; border-bottom: 1px solid var(--el-line); }
 .editorial-landing .el-appointment-photo { min-height: 370px; background: url("https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1100&q=85") center/cover no-repeat; }
 .editorial-landing .el-appointment-copy, .editorial-landing .el-dementia-copy, .editorial-landing .el-dementia-note { padding: clamp(1.3rem, 3vw, 2.5rem); align-self: center; }
 .editorial-landing .el-appointment-copy h2, .editorial-landing .el-dementia-copy h2 { font-size: 1.45rem; }
@@ -152,4 +153,69 @@
   .editorial-landing p, .editorial-landing li { font-size: 1.0625rem; line-height: 1.75; }
   .editorial-landing h1 { font-size: clamp(2rem, 9vw, 3rem); line-height: 1.12; }
   .editorial-landing h2 { font-size: clamp(1.65rem, 7vw, 2.25rem); line-height: 1.2; }
+}
+
+
+/* Editorial layout refinement: readable copy and clear capability cards. */
+.editorial-landing .el-capabilities {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+.editorial-landing .el-cap-intro {
+  grid-column: 1 / -1;
+  padding: 0;
+}
+.editorial-landing .el-cap {
+  min-width: 0;
+  border: 1px solid var(--el-line);
+  border-radius: 14px;
+  background: #fff;
+  padding: clamp(1rem, 2vw, 1.4rem);
+}
+.editorial-landing .el-cap h3 { font-size: 1rem; line-height: 1.4; }
+.editorial-landing .el-hero-copy > p:not(.el-kicker),
+.editorial-landing .el-burden .el-italic,
+.editorial-landing .el-reassurance-copy > p:not(.el-italic),
+.editorial-landing .el-cap p,
+.editorial-landing .el-context p,
+.editorial-landing .el-appointment-copy p,
+.editorial-landing .el-dementia-copy p,
+.editorial-landing .el-dementia-note p,
+.editorial-landing .el-trust p,
+.editorial-landing .el-final-cta p {
+  font-size: clamp(1rem, 1.05vw, 1.125rem);
+  line-height: 1.7;
+}
+.editorial-landing .el-cap li,
+.editorial-landing .el-appointment-copy li {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+.editorial-landing .el-button {
+  border-radius: 10px;
+  background: var(--el-care);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: .9rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(23, 63, 75, .12);
+}
+.editorial-landing .el-button:hover { background: #115f5b; }
+@media (max-width: 600px) {
+  .editorial-landing .el-capabilities { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  .editorial-landing .el-cap-intro { grid-column: 1; }
+  .editorial-landing .el-cap { border-radius: 12px; padding: 1rem; }
+  .editorial-landing .el-hero-copy > p:not(.el-kicker),
+  .editorial-landing .el-burden .el-italic,
+  .editorial-landing .el-reassurance-copy > p:not(.el-italic),
+  .editorial-landing .el-cap p,
+  .editorial-landing .el-context p,
+  .editorial-landing .el-appointment-copy p,
+  .editorial-landing .el-dementia-copy p,
+  .editorial-landing .el-dementia-note p,
+  .editorial-landing .el-trust p,
+  .editorial-landing .el-final-cta p {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
 }
