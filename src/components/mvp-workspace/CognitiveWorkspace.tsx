@@ -35,7 +35,7 @@ import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, requestQwenCandidateAnalysis } from "@/api/client";
 import {
   IN_APP_IMPROVING_NOTICE,
   EMERGENCY_BOUNDARY,
@@ -140,6 +140,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [prefs] = useState<AccessibilityPrefs>(DEFAULT_ACCESSIBILITY);
   const [transitionKey, setTransitionKey] = useState(0);
   const [situationResponse, setSituationResponse] = useState<WorkspaceSituationResponse | null>(null);
+  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
   const [hasContextRoot, setHasContextRoot] = useState(false);
   const [entryMode, setEntryMode] = useState<"initial" | "update">("initial");
   /** This browser session shared at least one note — gates Continuity / dual pane. */
@@ -492,12 +493,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         situationData.context?.caregiver_id ??
         caregiverId;
       setSituationResponse(situationData);
-      const savedEventId =
-        typeof situationData.care_event_id === "string" && situationData.care_event_id
-          ? situationData.care_event_id
-          : typeof situationData.situation_id === "string" && situationData.situation_id
-            ? situationData.situation_id
-            : "";
+      const savedEventId = typeof situationData.care_event_id === "string" ? situationData.care_event_id : "";
       setQwenAnalysis({ status: savedEventId ? "processing" : "unavailable", candidates: null });
       if (savedEventId) {
         // Run Qwen after durable save/read-back so model latency cannot trigger a duplicate capture.
