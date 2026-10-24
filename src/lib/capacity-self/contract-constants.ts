@@ -15,8 +15,6 @@ export const VALUES_CAPTURE_ROADMAP = {
   ],
 } as const;
 
-export const DEFAULT_CAREGIVER_ID = "default_caregiver";
-
 export const CONTEXT_LABELS: Record<string, string> = {
   phone_call: "Phone calls this week",
   home_repair: "Home repair this week",

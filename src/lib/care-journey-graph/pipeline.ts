@@ -5,6 +5,8 @@ import {
   addEventToGraph,
   createGraphEventId,
   getOrCreateGraph,
+  getGraphForCaregiver,
+  restoreGraphForCaregiver,
 } from "./graph-store";
 import { trySaveGraphEvent } from "./postgres-store";
 import { extractPipelineFacts, structureJourneyEvent } from "./structure-event";
@@ -19,7 +21,8 @@ import type { CareJourneyPipelineResult, IngestJourneyInputParams } from "./type
 export function processCareJourneyInput(
   input: IngestJourneyInputParams,
 ): CareJourneyPipelineResult {
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required; care journey was not processed.");
   const caseId = input.case_id ?? null;
 
   const { facts_only_summary, completeness_status, missing_signals } = extractPipelineFacts(
@@ -77,9 +80,20 @@ export function processCareJourneyInput(
 export async function processCareJourneyInputAsync(
   input: IngestJourneyInputParams,
 ): Promise<CareJourneyPipelineResult> {
-  const result = processCareJourneyInput(input);
-  await trySaveGraphEvent(result.event, result.new_relationships);
-  return result;
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("Valid caregiver identity is required; graph event was not persisted.");
+  }
+  const caseId = input.case_id ?? null;
+  const previousGraph = getGraphForCaregiver(caregiverId, caseId) ?? null;
+  try {
+    const result = processCareJourneyInput(input);
+    await trySaveGraphEvent(result.event, result.new_relationships);
+    return result;
+  } catch (error) {
+    restoreGraphForCaregiver(caregiverId, caseId, previousGraph);
+    throw error;
+  }
 }
 
 export function getCareJourneyGraphForCaregiver(

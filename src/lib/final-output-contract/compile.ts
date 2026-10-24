@@ -425,10 +425,11 @@ function buildTrustLayer(response: CompileSource): FinalOutputContract["trust_la
     fallback.recency.last_updated_at =
       response.context.events[response.context.events.length - 1]?.ingestion_time ?? null;
   }
-  fallback.confidence = Math.min(
-    0.85,
-    fallback.recency.freshness_score * 0.6 + (fallback.known.length > 0 ? 0.25 : 0.1),
-  );
+  if (fallback.recency.freshness_score != null && fallback.known.length > 0) {
+    fallback.confidence = Math.min(0.85, fallback.recency.freshness_score * 0.6 + 0.25);
+  } else {
+    fallback.confidence = null;
+  }
   return fallback;
 }
 

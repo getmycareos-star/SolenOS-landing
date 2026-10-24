@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import type { OBSERVATION_SOURCES } from "../contract-constants";
 import type { StructuredObservation } from "../ontology";
 
@@ -39,6 +40,10 @@ const observations = new Map<string, ObservationRecord>();
 const structuredByObservation = new Map<string, StructuredObservationRecord[]>();
 const caregiverIndex = new Map<string, string[]>();
 
+function requireCaregiverIdentity(caregiverId: string): string {
+  return requireCaregiverId(caregiverId, "observation storage");
+}
+
 export function createObservationId(): string {
   return `obs_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -53,6 +58,7 @@ export function saveObservation(
   source: ObservationSource,
   structured: StructuredObservation[],
 ): { observation: ObservationRecord; structured: StructuredObservationRecord[] } {
+  caregiverId = requireCaregiverIdentity(caregiverId);
   const now = new Date().toISOString();
   const text = rawText.trim();
   const observation: ObservationRecord = {
@@ -92,7 +98,8 @@ export function getStructuredForObservation(id: string): StructuredObservationRe
 }
 
 export function listObservationsForCaregiver(caregiverId: string): ObservationRecord[] {
-  const ids = caregiverIndex.get(caregiverId) ?? [];
+  const id = requireCaregiverIdentity(caregiverId);
+  const ids = caregiverIndex.get(id) ?? [];
   return ids
     .map((id) => observations.get(id))
     .filter((r): r is ObservationRecord => r !== undefined)
@@ -121,9 +128,18 @@ function startOfWeek(date: Date): Date {
   return d;
 }
 
-/** No-op persistence stub for Postgres wiring (see migration 013). */
-export async function persistObservations(_caregiverId: string): Promise<void> {
-  // Stub: INSERT INTO observations / structured_observations when DB adapter wired.
+/**
+ * Durable persistence is not wired. Return an explicit unavailable result rather
+ * than pretending a no-op INSERT succeeded.
+ */
+export async function persistObservations(
+  caregiverId: string,
+): Promise<{ available: false; reason: string }> {
+  requireCaregiverIdentity(caregiverId);
+  return {
+    available: false,
+    reason: "Observation database adapter is not configured; records are process-memory-only.",
+  };
 }
 
 export function resetObservationStore(): void {

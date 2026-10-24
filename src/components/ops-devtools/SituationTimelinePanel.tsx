@@ -11,8 +11,8 @@ type Props = {
   showFullTimeline?: boolean;
 };
 
-function tierClass(tier: string): string {
-  return `priority-tier priority-tier-${tier.toLowerCase()}`;
+function tierClass(tier: string | null): string {
+  return `priority-tier priority-tier-${(tier ?? "unavailable").toLowerCase()}`;
 }
 
 export function SituationTimelinePanel({
@@ -37,15 +37,15 @@ export function SituationTimelinePanel({
         {showFullTimeline ? "Full timeline" : "What matters now"}
       </h3>
       <p className="situation-timeline-hint">
-        Sorted by priority score — not timestamp or ingestion order.
+        Scored events are ranked by priority; events without a computed score follow them and are labeled unavailable.
         {hiddenCount > 0 && ` ${hiddenCount} lower-priority event${hiddenCount === 1 ? "" : "s"} hidden.`}
       </p>
       <ul className="situation-timeline-list">
         {ranked.map((event) => (
           <li key={event.id} className="situation-timeline-item">
             <div className="situation-timeline-meta">
-              <span className={tierClass(event.priority.tier)}>{event.priority.tier}</span>
-              <span className="priority-score">{event.priority.priority_score}</span>
+              <span className={tierClass(event.priority.tier)}>{event.priority.tier ?? "Priority unavailable"}</span>
+              <span className="priority-score">{event.priority.priority_score ?? "Unavailable"}</span>
               <time dateTime={event.timestamp}>{formatEventTimeLabel(event.event_time)}</time>
               {event.event_time.type !== "exact" && (
                 <span className="time-uncertainty-badge">{event.event_time.type}</span>

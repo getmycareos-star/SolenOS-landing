@@ -7,14 +7,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  resetMeetingStore,
-  createMeeting,
-  createProposedMeeting,
-  confirmProposedMeeting,
-  generatePreparationPack,
-  prepareMeetingNow,
-  runMeetingPreparationTrigger,
-  recordMeetingOutcome,
   detectProposedMeetingsFromText,
   isWithinPreparationWindow,
   PREPARATION_WINDOWS_HOURS,
@@ -22,9 +14,21 @@ import {
   toMeetingPreparationLayerPayload,
 } from "../src/lib/meeting-preparation";
 import {
+  resetMeetingStore,
+  createMeeting,
+  createProposedMeeting,
+  confirmProposedMeeting,
+} from "../src/lib/meeting-preparation/meeting-store";
+import { generatePreparationPack } from "../src/lib/meeting-preparation/generate-pack";
+import {
+  prepareMeetingNow,
+  runMeetingPreparationTrigger,
+  recordMeetingOutcome,
+} from "../src/lib/meeting-preparation/trigger-engine";
+import {
   resetCareJourneyGraphStore,
   } from "../src/lib/care-journey-graph";
-import { processCareJourneyInput } from "../src/lib/care-journey-graph/server";
+import { processCareJourneyInput } from "../src/lib/care-journey-graph/pipeline";
 
 const root = process.cwd();
 

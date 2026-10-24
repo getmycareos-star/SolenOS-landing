@@ -37,7 +37,8 @@ export interface RoutineMomentChange {
   current_value: any;
   change_type: 'update' | 'correction' | 'insertion' | 'deletion';
   detected_at: string; // ISO timestamp
-  confidence: number;
+  /** Statistical confidence is not calibrated for this heuristic comparison. */
+  confidence: number | null;
 }
 
 export interface RoutineBaseline {
@@ -47,7 +48,7 @@ export interface RoutineBaseline {
   average_time_of_day?: string; // ISO time string
   assistance_level_distribution: Record<string, number>;
   participation_level_distribution: Record<string, number>;
-  consistency_score: number;
+  consistency_score: number | null;
   last_updated: string; // ISO timestamp
   sample_size: number;
 }

@@ -14,7 +14,7 @@ export const CARE_EVENT_STATUSES = [
   "superseded",
 ] as const;
 
-export const CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
+export const CONFIDENCE_LEVELS = ["unknown", "low", "medium", "high"] as const;
 
 export const TRUTH_SOURCE_PRIORITY = [
   "user_correction",

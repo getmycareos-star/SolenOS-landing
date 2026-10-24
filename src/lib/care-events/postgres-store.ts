@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import { deriveConfidence, deriveUncertaintyLevel, inferEventType } from "./classify";
 import type { CareEventRecord, CreateCareEventInput, EventSourceRecord } from "./types";
 
@@ -155,14 +155,14 @@ async function getPool(): Promise<Pool> {
 
 export async function tryPersistCareEvent(
   input: CreateCareEventInput,
-): Promise<CareEventRecord | null> {
-  if (!process.env.DATABASE_URL) return null;
+): Promise<CareEventRecord> {
+  if (!process.env.DATABASE_URL) throw new Error("Care event database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     const { care_event } = await persistCareEventToPostgres(pool, input);
     return care_event;
   } catch {
-    return null;
+    throw new Error("Unable to persist care event and evidence source; save was not confirmed.");
   }
 }
 
@@ -228,12 +228,12 @@ export async function loadCareEventsForCaregiverFromPostgres(
 
 export async function tryLoadCareEventsForCaregiver(
   caregiverId: string,
-): Promise<CareEventRecord[] | null> {
-  if (!process.env.DATABASE_URL) return null;
+): Promise<CareEventRecord[]> {
+  if (!process.env.DATABASE_URL) throw new Error("Care event database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
-    return loadCareEventsForCaregiverFromPostgres(pool, caregiverId);
+    return await loadCareEventsForCaregiverFromPostgres(pool, caregiverId);
   } catch {
-    return null;
+    throw new Error("Unable to load caregiver care events; unavailable storage cannot be treated as an empty history.");
   }
 }

@@ -18,14 +18,14 @@ export default function DailyCare() {
 
    const [form, setForm] = useState({
      mood: '',
-     mood_scale: 3,
-     agitation_level: 'None',
-     agitation_scale: 1,
+     mood_scale: 0,
+      agitation_level: '',
+      agitation_scale: 0,
      vitals: {} as Record<string, string>,
      behavior_notes: '',
      sleep_notes: '',
      eating_notes: '',
-     wellbeing_stress: 3,
+
      wellbeing_notes: '',
      general_notes: '',
      location: null as { latitude: number; longitude: number; accuracy: number; timestamp: number } | null,
@@ -84,7 +84,7 @@ export default function DailyCare() {
    };
 
    const addVital = () => {
-     const key = prompt('Vital name (e.g. bp_systolic, heart_rate, oxygen_sat):')
+     const key = prompt('Enter the vital type as recorded by the caregiver or clinician:')
      if (key) {
        const val = prompt(`Value for ${key}:`)
        if (val !== null) setForm({ ...form, vitals: { ...form.vitals, [key]: val } })
@@ -117,14 +117,14 @@ export default function DailyCare() {
          person_id: personId,
          caregiver_id: caregiverId,
          mood: form.mood || undefined,
-         mood_scale: form.mood_scale !== 3 ? form.mood_scale : undefined,
-         agitation_level: form.agitation_level,
-         agitation_scale: form.agitation_scale !== 1 ? form.agitation_scale : undefined,
+         mood_scale: form.mood ? form.mood_scale : undefined,
+         agitation_level: form.agitation_level || undefined,
+         agitation_scale: form.agitation_level ? form.agitation_scale : undefined,
          vitals: Object.keys(form.vitals).length > 0 ? form.vitals : undefined,
          behavior_notes: form.behavior_notes || undefined,
          sleep_notes: form.sleep_notes || undefined,
          eating_notes: form.eating_notes || undefined,
-         wellbeing_stress: form.wellbeing_stress !== 3 ? form.wellbeing_stress : undefined,
+
          wellbeing_notes: form.wellbeing_notes || undefined,
          general_notes: form.general_notes || undefined,
          location: form.location ? {
@@ -141,15 +141,14 @@ export default function DailyCare() {
        setSaved(true)
        setForm({
          mood: '',
-         mood_scale: 3,
-         agitation_level: 'None',
-         agitation_scale: 1,
+         mood_scale: 0,
+         agitation_level: '',
+         agitation_scale: 0,
          vitals: {},
          behavior_notes: '',
          sleep_notes: '',
          eating_notes: '',
-         wellbeing_stress: 3,
-         wellbeing_notes: '',
+            wellbeing_notes: '',
          general_notes: '',
          location: null,
        })
@@ -173,10 +172,10 @@ export default function DailyCare() {
         borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
       }}>
         <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '2px' }}>
-          These entries automatically become part of your Living Care Record.
+          Entries appear in the Living Care Record after the server confirms the save.
         </p>
         <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
-          Examples: refused medication · wandering · sleep changes · appetite · new confusion
+          Record only observations that are relevant to this care record.
         </p>
       </div>
 
@@ -236,7 +235,7 @@ export default function DailyCare() {
             {MOOD_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
           <label style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', display: 'block' }}>
-            Mood scale: {form.mood_scale}/5
+            {form.mood ? `Mood scale: ${form.mood_scale}/5` : 'Mood not rated'}
           </label>
         </section>
 
@@ -250,6 +249,7 @@ export default function DailyCare() {
             onChange={e => { updateField('agitation_level', e.target.value); updateField('agitation_scale', AGITATION_OPTIONS.indexOf(e.target.value) + 1) }}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px' }}
           >
+            <option value="">Select agitation level</option>
             {AGITATION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         </section>
@@ -285,7 +285,7 @@ export default function DailyCare() {
           <textarea
             value={form.behavior_notes}
             onChange={e => updateField('behavior_notes', e.target.value)}
-            placeholder="Any notable behavior or interaction today..."
+            placeholder="Describe an observed behavior or interaction"
             rows={3}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
@@ -299,7 +299,7 @@ export default function DailyCare() {
           <textarea
             value={form.sleep_notes}
             onChange={e => updateField('sleep_notes', e.target.value)}
-            placeholder="Night rest, naps, sleep quality..."
+            placeholder="Describe sleep or rest observations"
             rows={2}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
@@ -313,7 +313,7 @@ export default function DailyCare() {
           <textarea
             value={form.eating_notes}
             onChange={e => updateField('eating_notes', e.target.value)}
-            placeholder="Meals, appetite, fluid intake..."
+            placeholder="Describe food or fluid observations"
             rows={2}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />
@@ -327,7 +327,7 @@ export default function DailyCare() {
           <textarea
             value={form.general_notes}
             onChange={e => updateField('general_notes', e.target.value)}
-            placeholder="Anything else worth noting..."
+            placeholder="Add other observations"
             rows={2}
             style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '14px', resize: 'vertical' }}
           />

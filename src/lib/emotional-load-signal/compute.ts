@@ -1,7 +1,6 @@
 import {
   BURNOUT_FORMULA_WEIGHTS,
   COGNITIVE_FATIGUE_BANDS,
-  RECOVERY_TIME_STUB_MINUTES,
   STRESS_INDICATOR_WEIGHTS,
 } from "./contract-constants";
 import type {
@@ -191,13 +190,12 @@ export function computeSituationContributions(
     .sort((a, b) => b.loadScore - a.loadScore);
 }
 
-/** Recovery time modeling stub — decays after resolution (not persisted). */
+/** No validated recovery-duration model exists; never emit a fabricated minute estimate. */
 export function estimateRecoveryTime(level: CognitiveFatigueLevel): RecoveryTimeEstimate {
-  const estimatedMinutes = RECOVERY_TIME_STUB_MINUTES[level];
   return {
-    estimatedMinutes,
+    estimatedMinutes: null,
     level,
-    note: `Stub: expect ~${estimatedMinutes}min recovery after resolving primary stress driver (not persisted).`,
+    note: "Recovery duration unavailable; no validated model is configured.",
   };
 }
 

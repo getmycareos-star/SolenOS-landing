@@ -40,9 +40,8 @@ import { composeCaregiverResponse } from "../caregiver-response-composer";
 import { assertResponseAcceptanceGate } from "../response-acceptance-gate";
 import { applyRealCaregiverTestComposeGate } from "../real-caregiver-test";
 import { ensureContributorCareReality } from "../multi-caregiver-context-model";
-import { getOrCreateCareContextRoot, appendEventsToContext } from "../situation-entry/context-store";
+import { getCareContextRoot, appendEventsToContext } from "../situation-entry/context-store";
 import type {
-  ActiveCareSituation,
   ActiveSituationTurn,
   CareRealityState,
   ContinuityDecision,
@@ -83,37 +82,14 @@ function nowIso(): string {
 }
 
 function resolveCareRecipientId(input: SolenOSInput, memory: SolenOSMemory): string {
-  return input.careRecipientId ??
-    memory.careRealityState?.care_recipient_id ??
-    memory.activeSituation?.care_recipient_id ??
-    input.caregiverId;
-}
-
-function buildActiveSituationStub(
-  input: SolenOSInput,
-  careRecipientId: string,
-): ActiveCareSituation {
-  return {
-    id: `acs_${careRecipientId}`,
-    caregiver_id: input.caregiverId,
-    care_recipient_id: careRecipientId,
-    opened_at: nowIso(),
-    updated_at: nowIso(),
-    root_event_id: null,
-    subject_label: "",
-    theme: "mixed",
-    observations: [],
-    open_questions: [],
-    asked_questions: [],
-    understanding_stage: "gathering",
-    connection_note: null,
-    synthesis: null,
-    what_matters_now: null,
-    interaction_paused_at: null,
-    lifecycle_status: "active",
-    familiarity_baseline: [],
-    pattern_label: null,
-  };
+  const careRecipientId =
+    input.careRecipientId?.trim() ||
+    memory.careRealityState?.care_recipient_id?.trim() ||
+    memory.activeSituation?.care_recipient_id?.trim();
+  if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") {
+    throw new Error("Care-recipient identity is required; caregiver identity must never be reused as recipient identity.");
+  }
+  return careRecipientId;
 }
 
 async function runDataAcquisition(params: {
@@ -181,9 +157,9 @@ function mergeDareResults(results: DareIngestResult[]): DareIngestResult {
   };
 }
 
-function persistEvents(events: CanonicalCareEvent[], caregiverId: string): void {
+async function persistEvents(events: CanonicalCareEvent[], caregiverId: string): Promise<void> {
   for (const event of events) {
-    void recordCareEvent({
+    await recordCareEvent({
       content: event.raw_input,
       created_by: caregiverId,
       provenance: {
@@ -219,10 +195,14 @@ export async function runIntelligencePipeline(
   const stages: IntelligenceResult["stages"] = [];
 
   // Stage 0: Normalize input
+  const caregiverId = rawInput.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default" || caregiverId === "default_caregiver") {
+    throw new Error("Authenticated caregiver identity is required; no default identity is permitted.");
+  }
   const input: SolenOSInput = {
     raw: rawInput.raw_input ?? "",
     source: rawInput.source ?? "user_input",
-    caregiverId: rawInput.caregiver_id ?? rawInput.contributor_id ?? "default",
+    caregiverId,
     careRecipientId: rawInput.care_recipient_id,
     contributorId: rawInput.contributor_id,
     documents: rawInput.documents,
@@ -230,7 +210,7 @@ export async function runIntelligencePipeline(
   };
 
   // Stage 1: Memory Retrieval
-  const memory = retrieveMemory(input);
+  const memory = await retrieveMemory(input);
   stages.push({
     name: "memory_retrieval",
     durationMs: Date.now() - startTime,
@@ -252,7 +232,8 @@ export async function runIntelligencePipeline(
   ensureContributorCareReality(input.caregiverId, careRecipientId);
 
   // Initialize durable context
-  const contextRoot = getOrCreateCareContextRoot(input.caregiverId);
+  const contextRoot = getCareContextRoot(input.caregiverId);
+  if (!contextRoot) throw new Error("Durable care context is unavailable; refusing to create a synthetic context root.");
 
   // Stage 2: Data Acquisition
   const { events, documentEventsCount } = await runDataAcquisition({
@@ -282,8 +263,10 @@ export async function runIntelligencePipeline(
     memory,
   });
 
-  if (memoryStrategy.willRemember && options.applyMemoryStrategy !== false) {
-    persistEvents(events, input.caregiverId);
+  // Raw care evidence is always persisted; memory strategy may affect summaries,
+  // but it must never suppress the authoritative care record.
+  if (events.length > 0) {
+    await persistEvents(events, input.caregiverId);
   }
 
   stages.push({
@@ -309,7 +292,8 @@ export async function runIntelligencePipeline(
   });
 
   // Stage 6: Active Situation Update
-  let activeSituation = memory.activeSituation ?? buildActiveSituationStub(input, careRecipientId);
+  const activeSituation = memory.activeSituation;
+  if (!activeSituation) throw new Error("Active care situation is unavailable; no synthetic situation was created.");
   const relation = classifySituationRelation({
     active: memory.activeSituation,
     rawText: input.raw,
@@ -621,10 +605,10 @@ export function buildMinimalFinalOutput(params: {
       })),
       recency: {
         last_updated_at: new Date().toISOString(),
-        freshness_score: 1,
+        freshness_score: null,
         interpretation: "Current capture",
       },
-      confidence: understanding.confidence === "high" ? 0.8 : understanding.confidence === "medium" ? 0.5 : 0.3,
+      confidence: null,
     },
     transparency_panel: {
       data_used: {
@@ -641,16 +625,16 @@ export function buildMinimalFinalOutput(params: {
       evidence_breakdown: understanding.facts.slice(0, 3).map((f) => ({
         conclusion: f.text.slice(0, 100),
         evidence_type: "observation",
-        confidence_pct: understanding.confidence === "high" ? 80 : understanding.confidence === "medium" ? 50 : 30,
+        confidence_pct: null,
       })),
       confidence_scores: {
-        overall_pct: understanding.confidence === "high" ? 80 : understanding.confidence === "medium" ? 50 : 30,
-        tier: understanding.confidence,
+        overall_pct: null,
+        tier: "unknown",
       },
       recency: {
-        last_update_at: new Date().toISOString(),
+        last_update_at: events[events.length - 1]?.timestamp ?? null,
         critical_event_ages: [],
-        decay_status: "fresh",
+        decay_status: "unknown",
       },
       observed: understanding.facts.filter((f) => f.kind === "observation").map((f) => f.text),
       inferred: [],

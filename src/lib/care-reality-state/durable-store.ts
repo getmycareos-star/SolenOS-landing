@@ -15,10 +15,10 @@ import {
 
 const memory = new Map<string, CareRealityState>();
 
-function filePath(caregiverId: string): string {
+function filePath(careRecipientId: string): string {
   return livingCareRecordDataDir(
     "care-reality-state",
-    `${sanitizeDurableCareKey(caregiverId)}.json`,
+    `${sanitizeDurableCareKey(careRecipientId)}.json`,
   );
 }
 
@@ -27,18 +27,21 @@ export function crsCache(): Map<string, CareRealityState> {
 }
 
 export function loadCareRealityStateFromDurable(
-  caregiverId: string,
+  careRecipientId: string,
 ): CareRealityState | null {
-  return readDurableJson<CareRealityState>(filePath(caregiverId));
+  return readDurableJson<CareRealityState>(filePath(careRecipientId));
 }
 
 export function persistCareRealityStateToDurable(state: CareRealityState): void {
-  const key = state.care_recipient_id ?? state.caregiver_id;
-  writeDurableJson(filePath(key), state);
+  const careRecipientId = state.care_recipient_id?.trim();
+  if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") {
+    throw new Error("Explicit care-recipient identity is required to persist Care Reality State.");
+  }
+  writeDurableJson(filePath(careRecipientId), state);
 }
 
-export function deleteCareRealityStateDurable(caregiverId: string): void {
-  deleteDurableFile(filePath(caregiverId));
+export function deleteCareRealityStateDurable(careRecipientId: string): void {
+  deleteDurableFile(filePath(careRecipientId));
 }
 
 export function clearCareRealityStateMemoryCache(): void {
@@ -46,6 +49,6 @@ export function clearCareRealityStateMemoryCache(): void {
 }
 
 export function resetCareRealityStateDurableStore(): void {
-  memory.clear();
   clearDurableDirectory(livingCareRecordDataDir("care-reality-state"));
+  memory.clear();
 }

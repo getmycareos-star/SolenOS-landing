@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import type { CareJourneyGraph, JourneyGraphEvent, JourneyRelationship } from "./types";
 
 const graphs = new Map<string, CareJourneyGraph>();
@@ -16,6 +17,7 @@ export function createGraphEventId(): string {
 }
 
 export function getOrCreateGraph(caregiverId: string, caseId: string | null): CareJourneyGraph {
+  caregiverId = requireCaregiverId(caregiverId, "care journey graph store");
   const key = journeyKey(caregiverId, caseId);
   const existingId = caregiverIndex.get(key);
   if (existingId) {
@@ -45,7 +47,13 @@ export function getGraphForCaregiver(
   caregiverId: string,
   caseId: string | null = null,
 ): CareJourneyGraph | undefined {
-  const key = journeyKey(caregiverId, caseId);
+  let normalizedId: string;
+  try {
+    normalizedId = requireCaregiverId(caregiverId, "care journey graph lookup");
+  } catch {
+    return undefined;
+  }
+  const key = journeyKey(normalizedId, caseId);
   const id = caregiverIndex.get(key);
   return id ? graphs.get(id) : undefined;
 }
@@ -69,6 +77,24 @@ export function addEventToGraph(
   };
   graphs.set(updated.journey_id, updated);
   return updated;
+}
+
+
+/** Restore the previous in-memory snapshot after a failed durable write. */
+export function restoreGraphForCaregiver(
+  caregiverId: string,
+  caseId: string | null,
+  previousGraph: CareJourneyGraph | null,
+): void {
+  const normalizedId = requireCaregiverId(caregiverId, "care journey graph restore");
+  const key = journeyKey(normalizedId, caseId);
+  const currentId = caregiverIndex.get(key);
+  if (currentId) graphs.delete(currentId);
+  caregiverIndex.delete(key);
+  if (previousGraph) {
+    graphs.set(previousGraph.journey_id, previousGraph);
+    caregiverIndex.set(key, previousGraph.journey_id);
+  }
 }
 
 export function resetCareJourneyGraphStore(): void {

@@ -1,4 +1,3 @@
-import { DEFAULT_CAREGIVER_ID } from "@/lib/cognitive-relief/contract-constants";
 import {
   getOrCreateProfile,
   patchProfileRecord,
@@ -38,7 +37,8 @@ async function resolveRecord(params: {
   caregiver_id?: string;
   case_id?: string | null;
 }): Promise<CareRecipientProfileRecord> {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = params.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required; dementia record was not read or changed.");
   const caseId = params.case_id ?? null;
   return (
     (await tryLoadProfile(caregiverId, caseId)) ??

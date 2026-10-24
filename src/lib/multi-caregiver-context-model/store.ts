@@ -1,6 +1,5 @@
 import type { MultiCaregiverCareContext } from "./types";
 import type { CanonicalCareEvent } from "../situation-entry/types";
-import { DEFAULT_CARE_RECIPIENT_ID } from "./contract-constants";
 import {
   livingCareRecordDataDir,
   readDurableJson,
@@ -28,9 +27,15 @@ function hydrateLinks(): void {
   const durable = readDurableJson<LinkMap>(linksPath());
   if (!durable) return;
   for (const [contributorId, careRecipientId] of Object.entries(durable)) {
-    if (contributorId && careRecipientId) {
-      caregiverToRecipient.set(contributorId, careRecipientId);
+    if (
+      !contributorId ||
+      !careRecipientId ||
+      ["default", "default_caregiver", "default_care_recipient"].includes(contributorId) ||
+      ["default", "default_caregiver", "default_care_recipient"].includes(careRecipientId)
+    ) {
+      throw new Error("Stored caregiver-to-recipient mapping contains a reserved identity; private care data is unavailable until the mapping is repaired.");
     }
+    caregiverToRecipient.set(contributorId, careRecipientId);
   }
 }
 
@@ -50,6 +55,16 @@ export function linkCaregiverToRecipient(
   caregiverId: string,
   careRecipientId: string,
 ): void {
+  const contributor = caregiverId?.trim();
+  const recipient = careRecipientId?.trim();
+  if (!contributor || ["default_caregiver", "default_care_recipient", "default"].includes(contributor)) {
+    throw new Error("A distinct contributor identity is required to link care records.");
+  }
+  if (!recipient || ["default_caregiver", "default_care_recipient", "default"].includes(recipient)) {
+    throw new Error("A distinct care-recipient identity is required to link care records.");
+  }
+  caregiverId = contributor;
+  careRecipientId = recipient;
   hydrateLinks();
   caregiverToRecipient.set(caregiverId, careRecipientId);
   persistLinks();
@@ -64,9 +79,17 @@ export function ensureContributorCareReality(
   contributorId: string,
   joinCareRecipientId?: string | null,
 ): string {
+  const contributor = contributorId?.trim();
+  if (!contributor || ["default_caregiver", "default_care_recipient", "default"].includes(contributor)) {
+    throw new Error("A distinct contributor identity is required to resolve care records.");
+  }
+  contributorId = contributor;
   hydrateLinks();
   const join = joinCareRecipientId?.trim();
   if (join) {
+    if (["default_caregiver", "default_care_recipient", "default"].includes(join)) {
+      throw new Error("A distinct care-recipient identity is required to join care records.");
+    }
     linkCaregiverToRecipient(contributorId, join);
     return join;
   }
@@ -82,16 +105,18 @@ export function ensureContributorCareReality(
  * Accepts contributor id or an existing care_recipient_id (no double-mint).
  */
 export function resolveCareRealityStoreKey(contributorOrRealityId: string): string {
+  const requested = contributorOrRealityId?.trim();
+  if (!requested || ["default_caregiver", "default_care_recipient", "default"].includes(requested)) {
+    throw new Error("A distinct care-recipient or linked contributor identity is required.");
+  }
+  contributorOrRealityId = requested;
   hydrateLinks();
   for (const recipientId of caregiverToRecipient.values()) {
     if (recipientId === contributorOrRealityId) return contributorOrRealityId;
   }
   const linked = caregiverToRecipient.get(contributorOrRealityId);
   if (linked) return linked;
-  if (
-    contributorOrRealityId.startsWith("cr_") ||
-    contributorOrRealityId === DEFAULT_CARE_RECIPIENT_ID
-  ) {
+  if (contributorOrRealityId.startsWith("cr_")) {
     return contributorOrRealityId;
   }
   return ensureContributorCareReality(contributorOrRealityId);

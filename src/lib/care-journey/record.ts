@@ -1,8 +1,3 @@
-import {
-  createCareJourneyEvent,
-  listCareJourneyEventsForCaregiver,
-  searchCareJourneyEvents,
-} from "./store";
 import { tryLoadCareJourneyEvents, trySaveCareJourneyEvent } from "./postgres-store";
 import type {
   CareJourneyEvent,
@@ -14,17 +9,13 @@ import type {
 export async function recordCareJourneyEvent(
   input: CreateCareJourneyEventInput,
 ): Promise<CareJourneyEvent> {
-  const persisted = await trySaveCareJourneyEvent(input);
-  if (persisted) return persisted;
-  return createCareJourneyEvent(input);
+  return trySaveCareJourneyEvent(input);
 }
 
 export async function loadCareJourneyTimeline(
   caregiverId: string,
 ): Promise<CareJourneyTimelineEntry[]> {
-  const fromPostgres = await tryLoadCareJourneyEvents(caregiverId);
-  if (fromPostgres) return fromPostgres;
-  return listCareJourneyEventsForCaregiver(caregiverId);
+  return tryLoadCareJourneyEvents(caregiverId);
 }
 
 export async function searchCareJourney(
@@ -79,4 +70,3 @@ export async function recordJourneyEventFromCareCapture(params: {
   });
 }
 
-export { searchCareJourneyEvents, listCareJourneyEventsForCaregiver };

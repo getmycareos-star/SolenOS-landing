@@ -36,7 +36,6 @@ export const MULTI_CAREGIVER_DESIGN_RULES = [
   "no_anonymous_caregiver_input",
 ] as const;
 
-export const DEFAULT_CARE_RECIPIENT_ID = "default_care_recipient";
 
 export const CONTRADICTION_PATTERNS = [
   {

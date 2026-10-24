@@ -7,7 +7,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  resetCareJourneyStore,
   inferCareJourneyCategory,
   CARE_JOURNEY_CATEGORIES,
   CARE_JOURNEY_IDENTITY,
@@ -17,6 +16,7 @@ import {
   loadCareJourneyTimeline,
   searchCareJourney,
 } from "../src/lib/care-journey/server";
+import { resetCareJourneyStore } from "../src/lib/care-journey/store";
 
 const root = process.cwd();
 

@@ -27,6 +27,7 @@ export type SolenOSMemory = {
   activeSituation: import("../active-care-situation/types").ActiveCareSituation | null;
   continuityDecision: import("../care-identity").ContinuityDecision | null;
   recentEvents: import("../situation-entry").CanonicalCareEvent[];
+  recentEventsStatus: "available" | "no_recorded_events" | "partial";
 };
 
 export type IntelligenceStage = {

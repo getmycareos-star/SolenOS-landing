@@ -2,31 +2,42 @@ import { randomUUID } from "node:crypto";
 
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../../db/postgres-pool";
 import type { CareContextType } from "../../care-contexts/types";
 import { parseDementiaContext } from "../../care-contexts/dementia/validate";
 import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfileRecord } from "../types";
 import { createProfileId } from "./store";
 
 function parseProfileData(raw: unknown): CareRecipientProfileData {
-  if (!raw || typeof raw !== "object") return { ...DEFAULT_PROFILE };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Persisted care-recipient profile is invalid; refusing to replace it with an empty profile.");
+  }
   const obj = raw as Record<string, unknown>;
+  const arrayFields = [
+    "known_conditions",
+    "current_medications",
+    "key_dates",
+    "care_team",
+    "tagged_event_log",
+    "location_index",
+  ];
+  if (typeof obj.care_recipient_basics !== "string" || arrayFields.some((field) => !Array.isArray(obj[field]))) {
+    throw new Error("Persisted care-recipient profile is incomplete; refusing to silently substitute empty fields.");
+  }
+  if (
+    (obj.known_conditions as unknown[]).some((value) => typeof value !== "string") ||
+    (obj.current_medications as unknown[]).some((value) => typeof value !== "string")
+  ) {
+    throw new Error("Persisted care-recipient profile contains invalid field values.");
+  }
   return {
-    care_recipient_basics: typeof obj.care_recipient_basics === "string" ? obj.care_recipient_basics : "",
-    known_conditions: Array.isArray(obj.known_conditions)
-      ? obj.known_conditions.filter((x): x is string => typeof x === "string")
-      : [],
-    current_medications: Array.isArray(obj.current_medications)
-      ? obj.current_medications.filter((x): x is string => typeof x === "string")
-      : [],
-    key_dates: Array.isArray(obj.key_dates) ? (obj.key_dates as CareRecipientProfileData["key_dates"]) : [],
-    care_team: Array.isArray(obj.care_team) ? (obj.care_team as CareRecipientProfileData["care_team"]) : [],
-    tagged_event_log: Array.isArray(obj.tagged_event_log)
-      ? (obj.tagged_event_log as CareRecipientProfileData["tagged_event_log"])
-      : [],
-    location_index: Array.isArray(obj.location_index)
-      ? (obj.location_index as CareRecipientProfileData["location_index"])
-      : [],
+    care_recipient_basics: obj.care_recipient_basics,
+    known_conditions: obj.known_conditions as string[],
+    current_medications: obj.current_medications as string[],
+    key_dates: obj.key_dates as CareRecipientProfileData["key_dates"],
+    care_team: obj.care_team as CareRecipientProfileData["care_team"],
+    tagged_event_log: obj.tagged_event_log as CareRecipientProfileData["tagged_event_log"],
+    location_index: obj.location_index as CareRecipientProfileData["location_index"],
   };
 }
 
@@ -132,24 +143,23 @@ export async function tryLoadProfile(
   caregiverId: string,
   caseId: string | null,
 ): Promise<CareRecipientProfileRecord | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL) throw new Error("Care-recipient profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     return loadProfileFromPostgres(pool, caregiverId, caseId);
   } catch {
-    return null;
+    throw new Error("Unable to load care-recipient profile from Postgres; in-memory fallback is prohibited.");
   }
 }
 
 export async function trySaveProfile(record: CareRecipientProfileRecord): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+  if (!process.env.DATABASE_URL) throw new Error("Care-recipient profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     await saveProfileToPostgres(pool, record);
   } catch {
-    // silent fallback to in-memory
-  }
-}
+    throw new Error("Unable to persist care-recipient profile to Postgres; save was not confirmed.");
+  }}
 
 export function resetCognitiveReliefPoolForTests(): void {
   poolPromise = null;
@@ -173,7 +183,7 @@ export async function createProfileInPostgres(
     created_at: now,
     updated_at: now,
   };
-  if (!process.env.DATABASE_URL) return record;
+  if (!process.env.DATABASE_URL) throw new Error("Care-recipient profile database is unavailable: DATABASE_URL is not configured.");
   const pool = await getPool();
   return saveProfileToPostgres(pool, record);
 }

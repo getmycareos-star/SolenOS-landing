@@ -34,4 +34,3 @@ export {
   mapLegacyEventType,
 } from "./retrieve";
 
-export { recordEventOutcome, linkOutcomeEvent } from "./outcome-linkage";

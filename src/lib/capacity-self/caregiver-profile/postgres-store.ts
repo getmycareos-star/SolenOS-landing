@@ -2,35 +2,93 @@ import { randomUUID } from "node:crypto";
 
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../../db/postgres-pool";
 import type {
   CaregiverSelfProfileData,
   CaregiverSelfProfileRecord,
   CapacityLevel,
   ResolvedItemRecord,
 } from "../types";
-import { DEFAULT_CAREGIVER_SELF_PROFILE } from "../types";
 
 function parseProfile(raw: unknown): CaregiverSelfProfileData {
-  if (!raw || typeof raw !== "object") return { ...DEFAULT_CAREGIVER_SELF_PROFILE };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Persisted caregiver profile is invalid; refusing to replace it with an empty profile.");
+  }
   const obj = raw as Record<string, unknown>;
+  const arrayFields = [
+    "known_conditions",
+    "current_medications",
+    "key_dates",
+    "care_team",
+    "tagged_event_log",
+    "open_item_descriptions",
+  ];
+  if (typeof obj.caregiver_basics !== "string" || arrayFields.some((field) => !Array.isArray(obj[field]))) {
+    throw new Error("Persisted caregiver profile is incomplete; refusing to silently substitute empty fields.");
+  }
+  if (
+    (obj.known_conditions as unknown[]).some((value) => typeof value !== "string") ||
+    (obj.current_medications as unknown[]).some((value) => typeof value !== "string") ||
+    (obj.open_item_descriptions as unknown[]).some((value) => typeof value !== "string")
+  ) {
+    throw new Error("Persisted caregiver profile contains invalid field values.");
+  }
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    !!value && typeof value === "object" && !Array.isArray(value);
+  if (
+    (obj.key_dates as unknown[]).some((value) =>
+      !isRecord(value) || typeof value.label !== "string" || typeof value.date !== "string"
+    ) ||
+    (obj.care_team as unknown[]).some((value) =>
+      !isRecord(value) || typeof value.name !== "string" ||
+      typeof value.role !== "string" || typeof value.contact !== "string"
+    ) ||
+    (obj.tagged_event_log as unknown[]).some((value) =>
+      !isRecord(value) ||
+      !["symptom", "incident", "decision"].includes(String(value.category)) ||
+      typeof value.tag !== "string" ||
+      typeof value.date !== "string" ||
+      typeof value.raw_entry_id !== "string"
+    )
+  ) {
+    throw new Error("Persisted caregiver profile contains invalid structured history.");
+  }
   return {
-    caregiver_basics: typeof obj.caregiver_basics === "string" ? obj.caregiver_basics : "",
-    known_conditions: Array.isArray(obj.known_conditions)
-      ? obj.known_conditions.filter((x): x is string => typeof x === "string")
-      : [],
-    current_medications: Array.isArray(obj.current_medications)
-      ? obj.current_medications.filter((x): x is string => typeof x === "string")
-      : [],
-    key_dates: Array.isArray(obj.key_dates) ? (obj.key_dates as CaregiverSelfProfileData["key_dates"]) : [],
-    care_team: Array.isArray(obj.care_team) ? (obj.care_team as CaregiverSelfProfileData["care_team"]) : [],
-    tagged_event_log: Array.isArray(obj.tagged_event_log)
-      ? (obj.tagged_event_log as CaregiverSelfProfileData["tagged_event_log"])
-      : [],
-    open_item_descriptions: Array.isArray(obj.open_item_descriptions)
-      ? obj.open_item_descriptions.filter((x): x is string => typeof x === "string")
-      : [],
+    caregiver_basics: obj.caregiver_basics,
+    known_conditions: obj.known_conditions as string[],
+    current_medications: obj.current_medications as string[],
+    key_dates: obj.key_dates as CaregiverSelfProfileData["key_dates"],
+    care_team: obj.care_team as CaregiverSelfProfileData["care_team"],
+    tagged_event_log: obj.tagged_event_log as CaregiverSelfProfileData["tagged_event_log"],
+    open_item_descriptions: obj.open_item_descriptions as string[],
   };
+}
+
+function parseResolvedItems(raw: unknown): ResolvedItemRecord[] {
+  if (!Array.isArray(raw)) {
+    throw new Error("Persisted resolved-item history is invalid; refusing to substitute an empty history.");
+  }
+  const validSubjects = new Set(["care_recipient", "caregiver"]);
+  const validContexts = new Set(["phone_call", "home_repair", "medical", "financial", "errand", "other"]);
+  for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error("Persisted resolved-item history contains invalid records.");
+    }
+    const row = item as Record<string, unknown>;
+    if (
+      typeof row.id !== "string" ||
+      typeof row.description !== "string" ||
+      typeof row.subject !== "string" ||
+      !validSubjects.has(row.subject) ||
+      typeof row.context_type !== "string" ||
+      !validContexts.has(row.context_type) ||
+      typeof row.resolved_at !== "string" ||
+      !(row.raw_entry_id === null || typeof row.raw_entry_id === "string")
+    ) {
+      throw new Error("Persisted resolved-item history contains invalid records.");
+    }
+  }
+  return raw as ResolvedItemRecord[];
 }
 
 let poolPromise: Promise<Pool> | null = null;
@@ -43,7 +101,7 @@ async function getPool(): Promise<Pool> {
 export async function tryLoadCaregiverSelfProfile(
   caregiverId: string,
 ): Promise<CaregiverSelfProfileRecord | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL) throw new Error("Caregiver profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     const result = await pool.query<{
@@ -65,22 +123,25 @@ export async function tryLoadCaregiverSelfProfile(
       id: row.id,
       caregiver_id: row.caregiver_id,
       profile: parseProfile(row.profile),
-      session_capacity: row.session_capacity as CapacityLevel | null,
-      resolved_items: Array.isArray(row.resolved_items)
-        ? (row.resolved_items as ResolvedItemRecord[])
-        : [],
+      session_capacity:
+        row.session_capacity === null
+          ? null
+          : row.session_capacity === "low" || row.session_capacity === "medium" || row.session_capacity === "high"
+            ? row.session_capacity
+            : (() => { throw new Error("Persisted caregiver capacity is invalid."); })(),
+      resolved_items: parseResolvedItems(row.resolved_items),
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
   } catch {
-    return null;
+    throw new Error("Unable to load caregiver profile from Postgres; in-memory fallback is prohibited.");
   }
 }
 
 export async function trySaveCaregiverSelfProfile(
   record: CaregiverSelfProfileRecord,
 ): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+  if (!process.env.DATABASE_URL) throw new Error("Caregiver profile database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     const id = record.id.startsWith("csp_") ? randomUUID() : record.id;
@@ -101,7 +162,7 @@ export async function trySaveCaregiverSelfProfile(
       ],
     );
   } catch {
-    // in-memory fallback
+    throw new Error("Unable to persist caregiver profile to Postgres; save was not confirmed.");
   }
 }
 

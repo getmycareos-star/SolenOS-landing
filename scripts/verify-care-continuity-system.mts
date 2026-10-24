@@ -16,13 +16,14 @@ import {
 } from "../src/lib/care-continuity-system";
 import { reconstructMemory } from "../src/lib/memory-reconstruction-engine";
 import { processUniversalKnowledgeExtraction } from "../src/lib/universal-knowledge-extraction";
-import { createMeeting, generatePreparationPack } from "../src/lib/meeting-preparation";
+import { createMeeting } from "../src/lib/meeting-preparation/meeting-store";
+import { generatePreparationPack } from "../src/lib/meeting-preparation/generate-pack";
 import { runDecisionGate } from "../src/lib/risk-uncertainty-engine/decision-gate";
 import { checkInformationCompleteness } from "../src/lib/risk-uncertainty-engine/completeness-check";
 import {
   resetCareJourneyGraphStore,
   } from "../src/lib/care-journey-graph";
-import { processCareJourneyInput } from "../src/lib/care-journey-graph/server";
+import { processCareJourneyInput } from "../src/lib/care-journey-graph/pipeline";
 import { resetMeetingStore } from "../src/lib/meeting-preparation/meeting-store";
 import { resetUniversalKnowledgeStore } from "../src/lib/universal-knowledge-extraction/store";
 
@@ -43,7 +44,7 @@ assert(CARE_CONTINUITY_PROHIBITED.length >= 5, "prohibited behaviors documented"
 assert(CARE_CONTINUITY_MVP_PILLARS.length === 52, "fifty-two MVP pillars");
 console.log("✓ core system contract");
 
-const status = getCareContinuitySystemStatus("default_caregiver", null, root);
+const status = getCareContinuitySystemStatus("cg_verify_identity", null, root);
 assert(status.all_pillars_present, `all pillars present: ${JSON.stringify(status.pillars)}`);
 console.log("✓ all 52 MVP pillars implemented");
 

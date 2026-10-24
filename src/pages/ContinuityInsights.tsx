@@ -32,8 +32,7 @@ export default function ContinuityInsights() {
       try {
         const personId = getPersonId()
         if (personId === null) {
-          // Handle missing person ID - show empty state or redirect to onboarding
-          setInsights([])
+          setError('Select a care recipient before loading continuity insights.')
           return
         }
         const data = await getJSON('/continuity/' + personId + '/insights', personId)
@@ -77,7 +76,7 @@ export default function ContinuityInsights() {
 
       {error && <p style={{ color: '#dc2626', fontSize: '13px' }}>{error}</p>}
 
-      {!loading && insights.length === 0 && (
+      {!loading && !error && insights.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
           No continuity insights yet. Record some events to see connections emerge.
         </p>

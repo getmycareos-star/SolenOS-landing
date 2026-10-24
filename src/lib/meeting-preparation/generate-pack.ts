@@ -56,11 +56,11 @@ export function generatePreparationPack(meeting: CaregivingMeeting): Preparation
 
   const allMeetings = listMeetingsForCaregiver(meeting.caregiver_id);
   const lastSimilar = findLastSimilarMeeting(meeting, allMeetings);
-  const startTime = lastSimilar?.datetime ?? "1970-01-01T00:00:00.000Z";
+  const startTime = lastSimilar?.datetime ?? null;
   const endTime = now;
 
   const windowEvents = allEvents
-    .filter((e) => isInWindow(e, startTime, endTime))
+    .filter((e) => !startTime || isInWindow(e, startTime, endTime))
     .filter((e) => eventRelevantToMeeting(e, meeting.type));
 
   const scopedEvents = collectLinkedChainEvents(windowEvents, allEvents, relationships);
@@ -103,7 +103,7 @@ export function generatePreparationPack(meeting: CaregivingMeeting): Preparation
     .slice(0, 8);
 
   const items_being_monitored = extractMonitoringItems(
-    allEvents.filter((e) => isInWindow(e, startTime, endTime)),
+    allEvents.filter((e) => !startTime || isInWindow(e, startTime, endTime)),
   );
 
   const suggested_discussion_topics = deriveDiscussionTopics({
@@ -124,6 +124,8 @@ export function generatePreparationPack(meeting: CaregivingMeeting): Preparation
     decisions_made,
     suggested_discussion_topics,
     last_similar_meeting_at: lastSimilar?.datetime ?? null,
+    baseline_status: lastSimilar ? "previous_similar_meeting" : "no_previous_similar_meeting",
+    care_history_status: !graph ? "unavailable" : allEvents.length ? "available" : "no_recorded_events",
     events_in_scope: scopedEvents.length,
   };
 }

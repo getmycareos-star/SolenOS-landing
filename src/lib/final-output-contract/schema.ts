@@ -90,10 +90,10 @@ export const TrustLayerSchema = z
     ),
     recency: z.object({
       last_updated_at: z.string().nullable(),
-      freshness_score: z.number().min(0).max(1),
+      freshness_score: z.number().min(0).max(1).nullable(),
       interpretation: z.string(),
     }),
-    confidence: z.number().min(0).max(1),
+    confidence: z.number().min(0).max(1).nullable(),
   })
   .strict();
 
@@ -114,17 +114,17 @@ export const TransparencyPanelSchema = z
       z.object({
         conclusion: z.string(),
         evidence_type: z.enum(["observation", "inference", "external_report", "system_pattern"]),
-        confidence_pct: z.number().min(0).max(100),
+        confidence_pct: z.number().min(0).max(100).nullable(),
       }),
     ),
     confidence_scores: z.object({
-      overall_pct: z.number().min(0).max(100),
-      tier: z.enum(["high", "medium", "low"]),
+      overall_pct: z.number().min(0).max(100).nullable(),
+      tier: z.enum(["unknown", "high", "medium", "low"]),
     }),
     recency: z.object({
       last_update_at: z.string().nullable(),
       critical_event_ages: z.array(z.string()),
-      decay_status: z.enum(["fresh", "aging", "stale"]),
+      decay_status: z.enum(["unknown", "fresh", "aging", "stale"]),
     }),
     observed: z.array(z.string()),
     inferred: z.array(z.string()),

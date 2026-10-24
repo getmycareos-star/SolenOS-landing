@@ -18,7 +18,7 @@ import {
 import {
   resetCareJourneyGraphStore,
   } from "../src/lib/care-journey-graph";
-import { processCareJourneyInput } from "../src/lib/care-journey-graph/server";
+import { processCareJourneyInput } from "../src/lib/care-journey-graph/pipeline";
 
 const root = process.cwd();
 

@@ -29,7 +29,7 @@ export function CareRecipientNameGate({
   async function save() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Enter a name — Mom, Dad, or a given name.");
+      setError("Enter the care recipient name.");
       return;
     }
     setSaving(true);
@@ -73,7 +73,7 @@ export function CareRecipientNameGate({
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Mom, Dad, Mary…"
+        placeholder="Enter care recipient name"
         autoComplete="off"
         disabled={saving}
         onKeyDown={(e) => {

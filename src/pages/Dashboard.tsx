@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getJSON, postJSON, getPersonId } from '../api/client';
+import { getJSON, postJSON, getPersonId, subscribeToPersonId } from '../api/client';
 import { useOptimisticToggle } from '../lib/optimistic';
 import CareCapture from '../components/CareCapture';
 
@@ -71,54 +71,124 @@ export default function Dashboard() {
 
   const { toggle: toggleActionCompletion, toggledIds, loadingIds } = useOptimisticToggle<string>();
 
+  const [personId, setPersonIdState] = useState(getPersonId());
+
+  useEffect(() => subscribeToPersonId(setPersonIdState), []);
+
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       setLoading(true);
-      const results = await Promise.allSettled([
-        getJSON(`/events/${getPersonId()}?limit=5`),
-        getJSON(`/insights/${getPersonId()}?limit=3`),
-        getJSON(`/observations/${getPersonId()}/trends`),
-        getJSON(`/reasoning/${getPersonId()}/summary`),
-        getJSON(`/daily-intelligence/${getPersonId()}`),
-        getJSON(`/actions/${getPersonId()}?status=active`),
-      ]);
+      setLoadError(null);
+      setEvents([]);
+      setInsights([]);
+      setTrends([]);
+      setReasoning(null);
+      setDailyIntel(null);
+      setActions([]);
 
-      const [evts, inss, trendData, reasoningData, intelData, actionsData] = results;
-      setEvents(evts.status === 'fulfilled' && Array.isArray(evts.value) ? evts.value as Event[] : []);
-      setInsights(inss.status === 'fulfilled' && Array.isArray(inss.value) ? inss.value as Insight[] : []);
-      setTrends(trendData.status === 'fulfilled' && Array.isArray(trendData.value) ? (trendData.value as ObservationTrend[]).slice(0, 5) : []);
-      setReasoning(reasoningData.status === 'fulfilled' ? reasoningData.value as ReasoningSummary : null);
-      setDailyIntel(intelData.status === 'fulfilled' ? intelData.value as DailyIntelligence : null);
-
-      if (actionsData.status === 'fulfilled' && Array.isArray(actionsData.value)) {
-        setActions((actionsData.value as Array<Record<string, unknown>>).map(action => ({
-          id: String(action.id ?? ''),
-          title: String(action.normalized_action || action.action_object || action.original_text || 'Untitled action'),
-          description: typeof action.condition_text === 'string' ? action.condition_text : undefined,
-          status: action.status === 'completed' ? 'completed' : 'active',
-          created_at: String(action.created_at ?? ''),
-        })));
-      } else {
-        setActions([]);
+      if (!personId.trim()) {
+        setLoadError('Select an authorized care record before loading dashboard information.');
+        setLoading(false);
+        return;
       }
 
-      const failedSections = results
-        .map((result, index) => result.status === 'rejected'
-          ? ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'][index]
-          : null)
-        .filter((section): section is string => section !== null);
-      setLoadError(failedSections.length
-        ? `Some dashboard data could not be loaded: ${failedSections.join(', ')}. Check the API connection and try again.`
-        : null);
-      setLoading(false);
+      try {
+        const encodedPersonId = encodeURIComponent(personId);
+        const results = await Promise.allSettled([
+          getJSON(`/events/${encodedPersonId}?limit=5`),
+          getJSON(`/insights/${encodedPersonId}?limit=3`),
+          getJSON(`/observations/${encodedPersonId}/trends`),
+          getJSON(`/reasoning/${encodedPersonId}/summary`),
+          getJSON(`/daily-intelligence/${encodedPersonId}`),
+          getJSON(`/actions/${encodedPersonId}?status=active`),
+        ]);
+
+        const names = ['events', 'insights', 'observation trends', 'reasoning summary', 'daily intelligence', 'actions'];
+        const failures = results
+          .map((result, index) => result.status === 'rejected' ? names[index] : null)
+          .filter((name): name is string => name !== null);
+        if (failures.length) {
+          throw new Error(`Dashboard data could not be loaded for: ${failures.join(', ')}. No empty state is being inferred from failed requests.`);
+        }
+
+        const values = results.map(result => (result as PromiseFulfilledResult<unknown>).value);
+        const isRecord = (value: unknown): value is Record<string, unknown> =>
+          Boolean(value && typeof value === 'object' && !Array.isArray(value));
+        const validEvents = Array.isArray(values[0]) && values[0].every((item: unknown) =>
+          isRecord(item) && typeof item.id === 'string' && Boolean(item.id) &&
+          typeof item.title === 'string' &&
+          typeof item.occurred_at === 'string' && Number.isFinite(new Date(item.occurred_at).getTime())
+        );
+        const validInsights = Array.isArray(values[1]) && values[1].every((item: unknown) =>
+          isRecord(item) && typeof item.id === 'string' && Boolean(item.id) &&
+          typeof item.title === 'string' && typeof item.description === 'string' &&
+          typeof item.insight_type === 'string' &&
+          typeof item.confidence === 'number' && Number.isFinite(item.confidence)
+        );
+        const validTrends = Array.isArray(values[2]) && values[2].every((item: unknown) =>
+          isRecord(item) && typeof item.tag === 'string' &&
+          typeof item.count === 'number' && Number.isFinite(item.count) &&
+          typeof item.trend === 'string'
+        );
+        const reasoningValue = values[3];
+        const dailyIntelValue = values[4];
+        const reasoningKeys = ['confirmed_facts', 'open_questions', 'preferences', 'rejected_assumptions', 'care_patterns', 'coordination_decisions'];
+        const validReasoning = isRecord(reasoningValue) && reasoningKeys.every(key => Array.isArray(reasoningValue[key]));
+        const validDailyIntel = dailyIntelValue === null || (
+          isRecord(dailyIntelValue) &&
+          typeof dailyIntelValue.daily_summary === 'string' &&
+          ['overdue_items', 'upcoming_items', 'active_windows', 'expired_windows'].every(key => Array.isArray(dailyIntelValue[key]))
+        );
+        if (!validEvents || !validInsights || !validTrends || !validReasoning || !validDailyIntel || !Array.isArray(values[5])) {
+          throw new Error('The server returned incomplete dashboard data. No missing fields or empty states were guessed.');
+        }
+
+        const nextActions = (values[5] as Array<Record<string, unknown>>).map(action => {
+          const title = action.normalized_action || action.action_object || action.original_text;
+          if (
+            typeof action.id !== 'string' || !action.id ||
+            typeof title !== 'string' || !title.trim() ||
+            !['active', 'completed'].includes(String(action.status)) ||
+            typeof action.created_at !== 'string' ||
+            !Number.isFinite(new Date(action.created_at).getTime())
+          ) {
+            throw new Error('The server returned an action without a valid ID or description. The dashboard data was not treated as complete.');
+          }
+          return {
+            id: action.id,
+            title,
+            description: typeof action.condition_text === 'string' ? action.condition_text : undefined,
+            status: action.status as 'active' | 'completed',
+            created_at: action.created_at as string,
+          };
+        });
+
+        if (cancelled) return;
+        setEvents(values[0] as Event[]);
+        setInsights(values[1] as Insight[]);
+        setTrends((values[2] as ObservationTrend[]).slice(0, 5));
+        setReasoning(values[3] as ReasoningSummary | null);
+        setDailyIntel(values[4] as DailyIntelligence | null);
+        setActions(nextActions);
+      } catch (error) {
+        if (cancelled) return;
+        setEvents([]);
+        setInsights([]);
+        setTrends([]);
+        setReasoning(null);
+        setDailyIntel(null);
+        setActions([]);
+        setLoadError(error instanceof Error ? error.message : 'Dashboard data could not be verified. Its contents are unknown.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
-    void load().catch(error => {
-      console.error('Failed to load dashboard:', error);
-      setLoadError('Dashboard data could not be loaded. Check the API connection and try again.');
-      setLoading(false);
-    });
-  }, []);
+    void load();
+    return () => { cancelled = true; };
+  }, [personId]);
 
   const formatDate = (d: string) => {
     const date = new Date(d);
@@ -175,10 +245,10 @@ export default function Dashboard() {
         borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
       }}>
         <p style={{ fontSize: '12px', color: 'var(--trust)', marginBottom: '4px' }}>
-          Today's changes are automatically added to the Living Care Record.
+          A care update is added to the Living Care Record only after the server confirms it was saved.
         </p>
         <p style={{ fontSize: '11px', color: 'var(--trust)', opacity: 0.8 }}>
-          Examples: refused medication Â· wandering overnight Â· sleep got worse Â· new confusion
+          Use your own observations; no care event is prefilled.
         </p>
       </div>
 
@@ -200,7 +270,7 @@ export default function Dashboard() {
         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
           Active Actions
         </h2>
-        {actions.length === 0 && (
+        {!loadError && actions.length === 0 && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
             No active actions. Actions will appear here when created from situations or insights.
           </p>
@@ -274,7 +344,7 @@ export default function Dashboard() {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
 
-      {!loading ? (
+      {!loading && !loadError ? (
         <div>
           {dailyIntel && (
             <section style={{ marginBottom: '40px' }}>

@@ -20,9 +20,7 @@ interface CommunityPost {
   tags: string[]
   created_at: string
   updated_at: string | null
-  provenance_source: string
   reaction_counts: Record<ReactionType, number>
-  comment_count: number
   user_reaction: ReactionType | null
 }
 
@@ -58,41 +56,73 @@ interface ExperienceResult {
   matches: { post: ApiCommunityPost; matched_terms?: string[]; match_type?: string }[]
 }
 
-function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
-  const validStage = post.care_stage === 'early' || post.care_stage === 'moderate' || post.care_stage === 'late'
-    ? post.care_stage
-    : 'unspecified'
-  const validAuthor: AuthorType = post.author_type === 'solenos_verified'
-    || post.author_type === 'professional'
-    || post.author_type === 'professional_pending'
-    ? post.author_type
-    : 'peer_caregiver'
-  const counts = post.reaction_counts || {}
-  const userReaction = post.user_reaction === 'support' || post.user_reaction === 'helpful'
-    || post.user_reaction === 'relate' || post.user_reaction === 'heart'
-    ? post.user_reaction
-    : null
+export function normalizeCommunityPost(post: ApiCommunityPost): CommunityPost {
+  if (!post || typeof post.id !== 'string' || !post.id ||
+      typeof post.content !== 'string' || !post.content.trim() ||
+      typeof post.author_label !== 'string' || !post.author_label.trim() ||
+      typeof post.created_at !== 'string' || !Number.isFinite(new Date(post.created_at).getTime())) {
+    throw new Error('The server returned a Community post with missing identity, content, or timestamp. It was not displayed.');
+  }
+
+  const validAuthors: AuthorType[] = ['peer_caregiver', 'solenos_verified', 'professional', 'professional_pending'];
+  if (!validAuthors.includes(post.author_type as AuthorType)) {
+    throw new Error('The server returned an unsupported Community author type. It was not guessed.');
+  }
+  if (post.visibility !== 'public' && post.visibility !== 'private' && post.visibility !== 'anonymous') {
+    throw new Error('The server returned an unsupported Community visibility value. The post was not shown.');
+  }
+  const validStageValues = ['early', 'moderate', 'late'] as const;
+  const validStage = post.care_stage == null
+    ? 'unspecified'
+    : validStageValues.includes(post.care_stage as typeof validStageValues[number])
+      ? post.care_stage as typeof validStageValues[number]
+      : (() => { throw new Error('The server returned an unsupported Community care stage. It was not guessed.'); })();
+  const validAuthor = post.author_type as AuthorType;
+  const counts = post.reaction_counts;
+  if (!counts || typeof counts !== 'object' || Array.isArray(counts)) {
+    throw new Error('The server omitted Community reaction counts; zero reactions were not inferred.');
+  }
+  const validReactionTypes: ReactionType[] = ['support', 'helpful', 'relate', 'heart'];
+  for (const [type, count] of Object.entries(counts)) {
+    if (!validReactionTypes.includes(type as ReactionType) || typeof count !== 'number' || !Number.isFinite(count) || count < 0) {
+      throw new Error('The server returned invalid Community reaction counts.');
+    }
+  }
+  for (const type of validReactionTypes) {
+    if (typeof counts[type] !== 'number' || !Number.isFinite(counts[type]) || counts[type] < 0) {
+      throw new Error(`The server omitted or malformed the Community ${type} reaction count; zero was not inferred.`);
+    }
+  }
+  if (post.user_reaction !== null && !validReactionTypes.includes(post.user_reaction as ReactionType)) {
+    throw new Error('The server returned an unsupported Community reaction state.');
+  }
+  if (post.user_reaction === undefined) {
+    throw new Error('The server omitted the current user reaction state; it was not inferred.');
+  }
+  if (!Array.isArray(post.tags) || !post.tags.every((tag) => typeof tag === 'string')) {
+    throw new Error('The server omitted or malformed Community tags; an empty tag list was not inferred.');
+  }
+  const userReaction = post.user_reaction as ReactionType | null;
+
   return {
     id: post.id,
     author_type: validAuthor,
-    author_label: post.author_label || 'Anonymous caregiver',
+    author_label: post.author_label,
     author_avatar_seed: '🧑',
     title: post.post_type === 'question' ? 'Community question' : null,
     body: post.content,
     media: [],
-    visibility: post.visibility === 'private' ? 'circle' : 'public',
+    visibility: post.visibility === 'private' ? 'circle' : post.visibility,
     care_stage: validStage,
-    tags: Array.isArray(post.tags) ? post.tags : [],
-    created_at: post.created_at || '',
+    tags: post.tags,
+    created_at: post.created_at,
     updated_at: null,
-    provenance_source: 'caregiver-submitted',
     reaction_counts: {
-      support: counts.support || 0,
-      helpful: counts.helpful || 0,
-      relate: counts.relate || 0,
-      heart: counts.heart || 0,
+      support: counts.support,
+      helpful: counts.helpful,
+      relate: counts.relate,
+      heart: counts.heart,
     },
-    comment_count: 0,
     user_reaction: userReaction,
   }
 }
@@ -117,23 +147,6 @@ const POST_TYPE_OPTIONS: { value: PostType; label: string; placeholder: string; 
   { value: 'experience', label: 'Share What Worked', placeholder: 'Share a tip, routine, or moment that helped...', emoji: '💡' },
   { value: 'question', label: 'Ask the Community', placeholder: 'What are you struggling with? Other caregivers may have insight.', emoji: '❓' },
 ]
-
-const TAG_COLORS: Record<string, { bg: string; text: string }> = {
-  sundowning: { bg: 'var(--trust-soft)', text: 'var(--trust)' },
-  wandering: { bg: 'var(--unknown-soft)', text: 'var(--unknown)' },
-  medication: { bg: '#fef2f2', text: '#dc2626' },
-  behavior: { bg: '#ffefed', text: '#ea580c' },
-  sleep: { bg: '#f0fdfa', text: '#0d9488' },
-  communication: { bg: '#eff6ff', text: '#2563eb' },
-  mobility: { bg: '#faf5ff', text: '#7c3aed' },
-  nutrition: { bg: '#fff7ed', text: '#ea580c' },
-  safety: { bg: '#fff1f2', text: '#db2777' },
-  activities: { bg: 'var(--accent-soft)', text: 'var(--accent)' },
-  routine: { bg: '#f8faff', text: '#475569' },
-  appointments: { bg: '#f1f5f9', text: '#334159' },
-  hydration: { bg: '#ecfdf5', text: 'var(--trust)' },
-  general: { bg: 'var(--surface)', text: 'var(--text-secondary)' },
-}
 
 const DEFAULT_TAG_COLORS = { bg: 'var(--accent-soft)', text: 'var(--text-secondary)' }
 
@@ -165,8 +178,8 @@ function formatTime(createdAt: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function tagColor(tag: string) {
-  return TAG_COLORS[tag] ?? DEFAULT_TAG_COLORS
+function tagColor(_tag: string) {
+  return DEFAULT_TAG_COLORS
 }
 
 export default function Community() {
@@ -255,18 +268,18 @@ export default function Community() {
   async function fetchWisdom() {
     if (!wisdomQuery.trim()) return
     setActionError(null)
+    setWisdomMatches([])
     setLoadingWisdom(true)
     try {
       const data = await postJSON<ExperienceResult>('/community/experience', { observation: wisdomQuery.trim() })
-      if (data?.matches) {
-        setWisdomMatches(data.matches.slice(0, 4).map(match => ({
+      if (!data || !Array.isArray(data.matches)) throw new Error('The server returned an invalid experience-match response.')
+      setWisdomMatches(data.matches.slice(0, 4).map(match => ({
           post_id: match.post.id,
           author_label: match.post.author_label,
           author_type: match.post.author_type,
           content: match.post.content,
           tags: Array.isArray(match.post.tags) ? match.post.tags : [],
-        })))
-      }
+      })))
     } catch (e) {
       setWisdomMatches([])
       setActionError(e instanceof Error ? e.message : 'Shared experiences could not be retrieved.')
@@ -329,7 +342,7 @@ export default function Community() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Community</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '500px' }}>
-            Shared experiences from caregivers like you. When you capture what changed in "What Matters Today," similar experiences surface here.
+            Caregiver-submitted posts appear here after moderation. Matching is shown only when the backend returns published posts that match your query.
           </p>
           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.7, marginTop: '4px' }}>
             Shared experience is not medical advice — always confirm with a clinician.
@@ -359,7 +372,7 @@ export default function Community() {
             type="text"
             value={wisdomQuery}
             onChange={(e) => setWisdomQuery(e.target.value)}
-            placeholder="e.g. wandering overnight, evening agitation, medication refusal"
+            placeholder="Describe the experience or situation to match"
             style={{
               flex: 1, padding: '8px 12px', borderRadius: '8px',
               border: '1px solid var(--border)', background: 'var(--bg)',

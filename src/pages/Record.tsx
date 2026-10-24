@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJSON } from '../api/client'
+import { getJSON, getPersonId, subscribeToPersonId } from '../api/client'
 
 interface Evidence {
   id: string
@@ -11,23 +11,58 @@ interface Evidence {
   location?: string
 }
 
+function requireEvidenceArray(value: unknown): Evidence[] {
+  if (!Array.isArray(value) || !value.every(item =>
+    item && typeof item.id === 'string' &&
+    typeof item.type === 'string' &&
+    typeof item.source_text === 'string' &&
+    typeof item.uploaded_at === 'string' &&
+    Number.isFinite(new Date(item.uploaded_at).getTime())
+  )) {
+    throw new Error('The server returned an invalid or incomplete Living Care Record response. No empty state has been assumed.')
+  }
+  return value as Evidence[]
+}
+
 export default function Record() {
+  const [personId, setPersonIdState] = useState(getPersonId())
   const [items, setItems] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadVersion, setReloadVersion] = useState(0)
+
+  useEffect(() => subscribeToPersonId(setPersonIdState), [])
 
   useEffect(() => {
+    let cancelled = false
+
     async function load() {
-      try {
-        const data = await getJSON('/evidence/demo-person-id')
-        setItems(data)
-      } catch (e) {
-        console.error(e)
-      } finally {
+      setLoading(true)
+      setLoadError(null)
+      setItems([])
+
+      if (!personId.trim()) {
+        setLoadError('Select an authorized care record to view its evidence.')
         setLoading(false)
+        return
+      }
+
+      try {
+        const data = await getJSON<unknown>(`/evidence/${encodeURIComponent(personId)}`)
+        const nextItems = requireEvidenceArray(data)
+        if (!cancelled) setItems(nextItems)
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(error instanceof Error ? error.message : 'The Living Care Record could not be loaded. Its contents are unknown.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    load()
-  }, [])
+
+    void load()
+    return () => { cancelled = true }
+  }, [personId, reloadVersion])
 
   const typeIcon: Record<string, string> = {
     document: '📄',
@@ -42,74 +77,40 @@ export default function Record() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Living Care Record</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5, maxWidth: '500px' }}>
-             Upload documents, notes, photos, messages, and care information. SolenOS remembers and connects these over time.
-           </p>
-         </div>
-         <div>
-           <Link to="/daily-care" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none', marginRight: '16px' }}>
-             ← Daily notes
-           </Link>
-           <Link to="/structured-daily-capture" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
-             ← Structured capture
-           </Link>
-         </div>
-       </div>
-
-      <div style={{
-        background: 'var(--accent-soft)', border: '1px solid var(--accent)',
-        borderRadius: '8px', padding: '8px 14px', marginBottom: '16px'
-      }}>
-        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
-          Changes recorded in "What Matters Today" automatically become part of the Living Care Record.
-        </p>
-        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
-          Not sure where something belongs? Add it anywhere. SolenOS will organize it.
-        </p>
+            Evidence saved to the selected care record.
+          </p>
+        </div>
+        <div>
+          <Link to="/daily-care" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none', marginRight: '16px' }}>← Daily notes</Link>
+          <Link to="/structured-daily-capture" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>← Structured capture</Link>
+        </div>
       </div>
 
-      <div style={{
-        display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px',
-        padding: '8px 12px', background: 'var(--bg)', borderRadius: '8px', border: '1px dashed var(--border)'
-      }}>
-        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Examples:</span>
-        {['Doctor\'s note', 'Hospital discharge paper', 'Medication list', 'Family message', 'Photo of document'].map(ex => (
-          <span key={ex} style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>• {ex}</span>
-        ))}
-      </div>
-
-      {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
-
-      {!loading && items.length === 0 && (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No evidence recorded yet.</p>
+      {loading && <p role="status" style={{ color: 'var(--text-secondary)' }}>Loading Living Care Record…</p>}
+      {!loading && loadError && (
+        <section role="alert" style={{ border: '1px solid var(--error)', borderRadius: 10, padding: 16, color: 'var(--error)' }}>
+          <strong>Living Care Record could not be confirmed.</strong>
+          <p style={{ marginTop: 8 }}>{loadError}</p>
+          <button type="button" onClick={() => setReloadVersion(version => version + 1)} style={{ marginTop: 10 }}>Retry</button>
+        </section>
       )}
 
-      {!loading && (
+      {!loading && !loadError && items.length === 0 && (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>No evidence is recorded for this care record.</p>
+      )}
+
+      {!loading && !loadError && items.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {items.map(item => (
-            <div key={item.id} style={{
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: '12px', padding: '16px 20px'
-            }}>
+            <div key={item.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <span style={{ fontSize: '16px' }}>{typeIcon[item.type] || '📎'}</span>
-                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
-                  {item.type}
-                </span>
-                <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  {new Date(item.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </span>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>{item.type}</span>
+                <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(item.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.source_text}</p>
-              {item.time_provenance && (
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
-                  Time source: {item.time_provenance}
-                </p>
-              )}
-              {item.location && (
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Location: {item.location}
-                </p>
-              )}
+              {item.time_provenance && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>Time source: {item.time_provenance}</p>}
+              {item.location && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Location: {item.location}</p>}
             </div>
           ))}
         </div>

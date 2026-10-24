@@ -1,7 +1,7 @@
-// src/lib/routine-moments/test.ts
-import { establishBaseline, detectChanges } from './service';
-import { createRoutineMomentObservation } from './builder';
-import { ApiRoutineMomentStore } from './store';
+// Test-only synthetic observations. Never imported by production application code.
+import { establishBaseline, detectChanges } from '../routine-moments/service';
+import { createRoutineMomentObservation } from '../routine-moments/builder';
+import { ApiRoutineMomentStore } from '../routine-moments/store';
 
 // Mock the API functions for testing
 jest.mock('../../api/client', () => ({

@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { deriveConfidence, deriveUncertaintyLevel, inferEventType } from "./classify";
 import type {
   CareEventRecord,
@@ -56,6 +57,7 @@ function buildSourceMetadata(provenance: InputProvenance): Record<string, unknow
 }
 
 export function createCareEvent(input: CreateCareEventInput): CreateCareEventResult {
+  const caregiverId = requireCaregiverId(input.created_by, "care event attribution");
   const now = new Date().toISOString();
   const content = input.content.trim();
   const provenance = input.provenance;
@@ -88,7 +90,7 @@ export function createCareEvent(input: CreateCareEventInput): CreateCareEventRes
     source_type: sourceType,
     confidence: deriveConfidence(provenance),
     uncertainty_level: deriveUncertaintyLevel(provenance),
-    created_by: input.created_by ?? null,
+    created_by: caregiverId,
     metadata: {
       ...buildSourceMetadata(provenance),
       ...(input.metadata ?? {}),
@@ -118,7 +120,8 @@ export function updateCareEventMetadata(
 }
 
 export function listCareEventsForCaregiver(caregiverId: string): CareEventRecord[] {
-  const ids = caregiverIndex.get(caregiverId) ?? [];
+  const id = requireCaregiverId(caregiverId, "care event lookup");
+  const ids = caregiverIndex.get(id) ?? [];
   return ids
     .map((id) => getCareEvent(id))
     .filter((e): e is CareEventRecord => e !== undefined)

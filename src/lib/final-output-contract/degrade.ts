@@ -7,11 +7,11 @@ export function createEmptyTransparencyPanel(): CareTransparencyPanel {
     data_ignored: { conflicting: [], low_confidence: [], stale_or_decayed: [] },
     reason_for_output: "Awaiting structured care input to produce traceable reasoning.",
     evidence_breakdown: [],
-    confidence_scores: { overall_pct: 15, tier: "low" },
+    confidence_scores: { overall_pct: null, tier: "unknown" },
     recency: {
       last_update_at: null,
       critical_event_ages: [],
-      decay_status: "stale",
+      decay_status: "unknown",
     },
     observed: [],
     inferred: [],
@@ -34,10 +34,10 @@ export function createEmptyTrustLayer(): FinalOutputContract["trust_layer"] {
     unknown: [{ statement: "Insufficient structure to surface explicit gaps", drives_clarification: true }],
     recency: {
       last_updated_at: null,
-      freshness_score: 0,
-      interpretation: "potentially outdated (>7–14 days)",
+      freshness_score: null,
+      interpretation: "Recency unavailable; source timestamp not verified.",
     },
-    confidence: 0.15,
+    confidence: null,
   };
 }
 export function createEmptyConfidenceState(): FinalOutputContract["confidence_state"] {
@@ -94,10 +94,10 @@ export function buildDegradedOutput(input: {
       })),
       recency: {
         last_updated_at: null,
-        freshness_score: 0,
-        interpretation: "potentially outdated (>7–14 days)",
+        freshness_score: null,
+        interpretation: "Recency unavailable; source timestamp not verified.",
       },
-      confidence: 0.2,
+      confidence: null,
     },
     transparency_panel: createEmptyTransparencyPanel(),
   };

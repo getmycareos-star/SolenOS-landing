@@ -1,5 +1,5 @@
 import type { JourneyGraphEvent } from "../care-journey-graph/types";
-import { listMeetingsForCaregiver } from "../meeting-preparation/meeting-store";
+import type { CaregivingMeeting } from "../meeting-preparation/types";
 import { isWithinPreparationWindow } from "../meeting-preparation/preparation-windows";
 import {
   FOLLOW_UP_LOOKAHEAD_DAYS,
@@ -150,10 +150,9 @@ export function detectEventBasedSignals(
 }
 
 export function detectAppointmentNearSignals(
-  caregiverId: string,
+  meetings: CaregivingMeeting[],
   now: Date = new Date(),
 ): ProactiveSignal[] {
-  const meetings = listMeetingsForCaregiver(caregiverId);
   const signals: ProactiveSignal[] = [];
 
   for (const meeting of meetings) {

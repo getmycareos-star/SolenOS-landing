@@ -1,4 +1,4 @@
-import { getCareEvent, updateCareEventMetadata } from "@/lib/care-events";
+import { getCareEvent, updateCareEventMetadata } from "../care-events/store";
 import type { OutcomeStatus } from "./types";
 
 export function recordEventOutcome(params: {

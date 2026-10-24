@@ -1,10 +1,12 @@
 import '@testing-library/jest-dom';
 
-Object.defineProperty(window, 'alert', {
-  configurable: true,
-  writable: true,
-  value: jest.fn(),
-});
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'alert', {
+    configurable: true,
+    writable: true,
+    value: jest.fn(),
+  });
+}
 
 Object.defineProperty(URL, 'createObjectURL', {
   configurable: true,

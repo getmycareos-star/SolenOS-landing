@@ -11,10 +11,9 @@
 - **Behavior:** Full analyze-pipeline; returns clarity fields + optional layers (trust, safety, confidence, crisis, delegation, load, continuity, …).
 - **Errors:** 422 pipeline/validation; 503 missing LLM key.
 
-### `POST /api/observations`
-- Body: `{ raw_text, caregiver_id?, source?: "text"|"voice" }`
-- Records observation intelligence (heuristic). Default caregiver `default_caregiver`.
-- MVP product path: **text** (`source: "text"`). Voice source is FUTURE (ADR-018).
+### `POST /api/observations` — NOT IMPLEMENTED
+
+No mounted FastAPI route currently exposes this endpoint, and the observation module's Postgres adapter is not wired. Its in-process extraction result explicitly reports `persistence_status: "unavailable"`; it must not be used as a durable production care-record API. The voice path also returns `PERSISTENCE_UNAVAILABLE` rather than reporting success.
 
 ### `POST /api/observations/voice` — FUTURE
 - Multipart: `audio`|`file`, optional `caregiver_id`, `language_hint`, `edited_transcript`, `preview_only`
@@ -22,12 +21,13 @@
 - **Not an MVP product surface** (ADR-018). Prefer text observation via `POST /api/observations`.
 - No server STT keys → **503** with `client_stt_hint`.
 
-### `GET /api/observations/weekly-summary`
-- Query: `caregiver_id?` → weekly pattern JSON (counts, recurring, emotional/memory incidents, changes).
+### `GET /api/observations/weekly-summary` — NOT IMPLEMENTED
 
-### `GET /api/observations/export`
-- Query: `caregiver_id?`, `format=html|text|json|pdf` → export report.
-- `pdf` is HTML print stub (`X-SolenOS-Pdf-Path: html_print_stub`) until pdfkit.
+No mounted production route. The underlying module requires an explicit, distinct caregiver ID and must not be presented as durable or server-authoritative; no shared default identity is permitted.
+
+### `GET /api/observations/export` — NOT IMPLEMENTED
+
+No mounted production route. Any internal export must use an explicit, distinct caregiver identity. The PDF print stub is not a production PDF export.
 
 ### `POST /api/tts/synthesize` — FUTURE
 - Body: `{ text, language_preference?, voice_profile?: "female"|"male" }`

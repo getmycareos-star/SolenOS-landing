@@ -211,7 +211,7 @@ export function RealMomentPanel({
             className="brain-dump"
             value={value}
             onChange={(e) => handleTextChange(e.target.value)}
-            placeholder="mom confused again · need refill · insurance issue · forgot appointment date"
+            placeholder="Describe the care moment in your own words"
             rows={10}
             disabled={loading}
             aria-label="Text care entry"
@@ -288,7 +288,7 @@ export function RealMomentPanel({
             </label>
           </div>
           <p className="document-hint">
-            Discharge paperwork, medication labels, insurance letters, appointment summaries.
+            Add source material if available.
           </p>
         </div>
       )}

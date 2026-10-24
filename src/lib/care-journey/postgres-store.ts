@@ -1,18 +1,35 @@
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
-import type { CareJourneyAttachment, CareJourneyEvent, CreateCareJourneyEventInput } from "./types";
+import { createPostgresPool } from "../db/postgres-pool";
+import { CARE_JOURNEY_CATEGORIES, type CareJourneyAttachment, type CareJourneyEvent, type CreateCareJourneyEventInput } from "./types";
 import { inferCareJourneyCategory, inferCareJourneyTitle } from "./classify";
 
 function parseAttachments(raw: unknown): CareJourneyAttachment[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (a): a is CareJourneyAttachment =>
-      !!a &&
-      typeof a === "object" &&
-      typeof (a as CareJourneyAttachment).id === "string" &&
-      typeof (a as CareJourneyAttachment).name === "string",
-  );
+  if (!Array.isArray(raw)) {
+    throw new Error("Persisted care journey attachments are invalid; refusing to show an empty attachment list.");
+  }
+  for (const attachment of raw) {
+    if (!attachment || typeof attachment !== "object" || Array.isArray(attachment)) {
+      throw new Error("Persisted care journey attachment contains an invalid record.");
+    }
+    const item = attachment as Record<string, unknown>;
+    if (
+      typeof item.id !== "string" ||
+      typeof item.name !== "string" ||
+      (item.mime_type !== undefined && typeof item.mime_type !== "string") ||
+      (item.url !== undefined && typeof item.url !== "string")
+    ) {
+      throw new Error("Persisted care journey attachment contains invalid fields.");
+    }
+  }
+  return raw as CareJourneyAttachment[];
+}
+
+function parseMetadata(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Persisted care journey metadata is invalid.");
+  }
+  return raw as Record<string, unknown>;
 }
 
 function rowToEvent(row: {
@@ -25,20 +42,22 @@ function rowToEvent(row: {
   event_date: string;
   source: string;
   attachments: unknown;
-  metadata: Record<string, unknown>;
+  metadata: unknown;
   created_at: string;
 }): CareJourneyEvent {
   return {
     event_id: row.event_id,
     case_id: row.case_id,
     caregiver_id: row.caregiver_id,
-    category: row.category as CareJourneyEvent["category"],
+    category: CARE_JOURNEY_CATEGORIES.includes(row.category as CareJourneyEvent["category"])
+      ? (row.category as CareJourneyEvent["category"])
+      : (() => { throw new Error("Persisted care journey category is invalid."); })(),
     title: row.title,
     description: row.description,
     event_date: row.event_date,
     source: row.source,
     attachments: parseAttachments(row.attachments),
-    metadata: row.metadata ?? {},
+    metadata: parseMetadata(row.metadata),
     created_at: row.created_at,
   };
 }
@@ -50,7 +69,8 @@ export async function saveCareJourneyEventToPostgres(
   const now = new Date().toISOString();
   const description = input.description.trim();
   const category = input.category ?? inferCareJourneyCategory(description);
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required before database persistence.");
 
   const result = await pool.query<{
     event_id: string;
@@ -125,25 +145,25 @@ async function getPool(): Promise<Pool> {
 
 export async function trySaveCareJourneyEvent(
   input: CreateCareJourneyEventInput,
-): Promise<CareJourneyEvent | null> {
-  if (!process.env.DATABASE_URL) return null;
+): Promise<CareJourneyEvent> {
+  if (!process.env.DATABASE_URL) throw new Error("Care journey database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
-    return saveCareJourneyEventToPostgres(pool, input);
+    return await saveCareJourneyEventToPostgres(pool, input);
   } catch {
-    return null;
+    throw new Error("Unable to persist care journey event; in-memory fallback is prohibited.");
   }
 }
 
 export async function tryLoadCareJourneyEvents(
   caregiverId: string,
-): Promise<CareJourneyEvent[] | null> {
-  if (!process.env.DATABASE_URL) return null;
+): Promise<CareJourneyEvent[]> {
+  if (!process.env.DATABASE_URL) throw new Error("Care journey database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
-    return loadCareJourneyEventsFromPostgres(pool, caregiverId);
+    return await loadCareJourneyEventsFromPostgres(pool, caregiverId);
   } catch {
-    return null;
+    throw new Error("Unable to load care journey events; an in-memory empty timeline is not a valid substitute.");
   }
 }
 

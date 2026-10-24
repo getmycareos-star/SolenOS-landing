@@ -26,7 +26,14 @@ export default function ProfessionalDashboard() {
       const response = await getJSON<{ care_recipients: ProfessionalRecord[]; count: number }>(
         '/professional/dashboard?professional_caregiver_id=' + encodeURIComponent(caregiverId),
       )
-      if (!response || !Array.isArray(response.care_recipients)) throw new Error('The backend returned an invalid professional dashboard response.')
+      if (!response || !Array.isArray(response.care_recipients) || !response.care_recipients.every(record =>
+        record && record.person && typeof record.person.id === 'string' && typeof record.person.name === 'string' &&
+        typeof record.access_grant_id === 'string' &&
+        typeof record.care_events_count === 'number' && Number.isFinite(record.care_events_count) &&
+        typeof record.appointments_count === 'number' && Number.isFinite(record.appointments_count) &&
+        typeof record.active_insights_count === 'number' && Number.isFinite(record.active_insights_count) &&
+        Array.isArray(record.last_events) && record.last_events.every(event => event && typeof event.id === 'string' && typeof event.title === 'string')
+      )) throw new Error('The backend returned incomplete professional dashboard data. No partial or fabricated records were displayed.')
       setRecords(response.care_recipients)
     } catch (e) {
       setRecords([])

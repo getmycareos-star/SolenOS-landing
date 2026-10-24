@@ -136,7 +136,8 @@ export function retrieveHistoricalContext(
   return {
     query: query.trim(),
     matches,
-    evidence_backed: true,
+    evidence_backed: matches.length > 0,
+    status: matches.length > 0 ? "available" : "no_matches",
   };
 }
 

@@ -282,7 +282,7 @@ export function DementiaCareRecordPanel({ className }: Props) {
                       type="text"
                       value={wanderDesc}
                       disabled={saving}
-                      placeholder="Tried to leave house at 8pm"
+                      placeholder="Describe the observed event"
                       onChange={(e) => setWanderDesc(e.target.value)}
                     />
                   </label>
@@ -349,7 +349,7 @@ export function DementiaCareRecordPanel({ className }: Props) {
                       type="text"
                       value={finDesc}
                       disabled={saving}
-                      placeholder="Unknown caller requested account details"
+                      placeholder="Describe the concern in your own words"
                       onChange={(e) => setFinDesc(e.target.value)}
                     />
                   </label>

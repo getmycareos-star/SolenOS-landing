@@ -40,7 +40,10 @@ export function linkKnowledgeToCareJourney(params: {
   case_id?: string | null;
   mime_type?: string;
 }): { results: CareJourneyPipelineResult[]; updated_items: ExtractedKnowledgeItem[] } {
-  const caregiverId = params.caregiver_id ?? "default_caregiver";
+  const caregiverId = params.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required before document knowledge can be linked to a care journey.");
+  }
   const approved = params.knowledge_items.filter((i) => i.review_status === "approved");
   const results: CareJourneyPipelineResult[] = [];
   const updatedItems = [...params.knowledge_items];

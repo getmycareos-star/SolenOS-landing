@@ -5,7 +5,6 @@ export {
   SOURCE_TYPES,
   MULTI_CAREGIVER_DESIGN_RULES,
   MULTI_CAREGIVER_PRIVACY_RULES,
-  DEFAULT_CARE_RECIPIENT_ID,
 } from "./contract-constants";
 
 export type {

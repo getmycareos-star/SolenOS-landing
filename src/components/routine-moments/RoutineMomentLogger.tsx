@@ -180,7 +180,7 @@ export const RoutineMomentLogger: React.FC<RoutineMomentLoggerProps> = ({ person
           <p>Average Time of Day: {baseline.average_time_of_day}</p>
           <p>Assistance Level Distribution: {JSON.stringify(baseline.assistance_level_distribution)}</p>
           <p>Participation Level Distribution: {JSON.stringify(baseline.participation_level_distribution)}</p>
-          <p>Consistency Score: {baseline.consistency_score.toFixed(2)}</p>
+          <p>Consistency Score: {baseline.consistency_score === null ? 'Insufficient observations to calculate' : baseline.consistency_score.toFixed(2)}</p>
           <p>Sample Size: {baseline.sample_size}</p>
           <p>Last Updated: {new Date(baseline.last_updated).toLocaleString()}</p>
         </div>
@@ -195,7 +195,7 @@ export const RoutineMomentLogger: React.FC<RoutineMomentLoggerProps> = ({ person
               <li key={index}>
                 <strong>{change.field}</strong>: changed from {change.previous_value} to {change.current_value} (
                   {change.change_type}
-                ) [Confidence: {change.confidence.toFixed(2)}]
+                ) [Confidence: {change.confidence === null ? 'unavailable (not calibrated)' : change.confidence.toFixed(2)}]
                 <br />
                 Detected at: {new Date(change.detected_at).toLocaleString()}
               </li>

@@ -19,7 +19,8 @@ import type {
 export function processContinuityInput(
   input: IngestContinuityInputParams,
 ): ContinuityGraphResult {
-  const caregiverId = input.caregiver_id ?? "default_caregiver";
+  const caregiverId = input.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required; continuity data was not processed.");
   const caseId = input.case_id ?? null;
 
   processCareJourneyInput({

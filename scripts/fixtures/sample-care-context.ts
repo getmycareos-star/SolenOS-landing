@@ -1,4 +1,4 @@
-import type { CareContext } from "../lib/care-context";
+import type { CareContext } from "../../src/lib/care-context";
 
 /** Rich sample context for architecture directive demos. */
 export const SAMPLE_CARE_CONTEXT: CareContext = {

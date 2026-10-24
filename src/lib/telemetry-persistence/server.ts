@@ -6,7 +6,8 @@ import type { TelemetryStore } from "./types";
 
 import { getMemoryTelemetryStore } from "./memory-store";
 
-import { createPostgresPool, PostgresTelemetryStore } from "./postgres-store";
+import { PostgresTelemetryStore } from "./postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 
 import type { TelemetryFeedbackSubmit } from "./schema";
 import { setFeedbackContainmentFromFeedback } from "./feedback-containment";

@@ -43,7 +43,7 @@ export function buildUnparsedRawEvent(params: {
       document_id: params.rawInput.document_id,
       status: "unparsed_raw" as CareEventLifecycleStatus,
       integrity: createIntegrityState({
-        confidenceScore: 0,
+        confidenceScore: null,
         originalExtraction: content,
         sources: ["ai_inference"],
       }),
@@ -124,7 +124,7 @@ export function buildProvisionalEvent(params: {
       document_id: params.rawInput.document_id,
       status: "provisional" as CareEventLifecycleStatus,
       integrity: createIntegrityState({
-        confidenceScore: 0.45,
+        confidenceScore: null,
         originalExtraction: label,
       }),
       priority: createStubPriority("provisional"),

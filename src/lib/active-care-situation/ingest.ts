@@ -112,23 +112,20 @@ function realityKey(contributorOrRealityId: string): string {
 export function getActiveCareSituation(contributorId: string): ActiveCareSituation | null {
   const careRecipientId = realityKey(contributorId);
   const cached = acsCache().get(careRecipientId);
-  if (cached) return cached;
-
-  let durable = loadActiveCareSituationFromDurable(careRecipientId);
-  if (!durable && careRecipientId !== contributorId) {
-    durable = loadActiveCareSituationFromDurable(contributorId);
+  if (cached) {
+    if (cached.care_recipient_id !== careRecipientId) {
+      throw new Error("Cached Active Care Situation identity does not match the requested care recipient.");
+    }
+    return cached;
   }
+
+  const durable = loadActiveCareSituationFromDurable(careRecipientId);
   if (!durable) return null;
-
-  const normalized: ActiveCareSituation = {
-    ...durable,
-    care_recipient_id: durable.care_recipient_id ?? careRecipientId,
-  };
-  acsCache().set(careRecipientId, normalized);
-  if (!durable.care_recipient_id) {
-    persistActiveCareSituationToDurable(normalized);
+  if (durable.care_recipient_id !== careRecipientId) {
+    throw new Error("Persisted Active Care Situation is missing or mismatches its care-recipient identity.");
   }
-  return normalized;
+  acsCache().set(careRecipientId, durable);
+  return durable;
 }
 
 /**
@@ -137,16 +134,9 @@ export function getActiveCareSituation(contributorId: string): ActiveCareSituati
  */
 export function clearActiveCareSituation(contributorId: string): void {
   const careRecipientId = realityKey(contributorId);
-  acsCache().delete(careRecipientId);
   deleteActiveCareSituationDurable(careRecipientId);
-  if (careRecipientId !== contributorId) {
-    acsCache().delete(contributorId);
-    deleteActiveCareSituationDurable(contributorId);
-  }
+  acsCache().delete(careRecipientId);
   clearCareRealityState(careRecipientId);
-  if (careRecipientId !== contributorId) {
-    clearCareRealityState(contributorId);
-  }
 }
 
 /**
@@ -159,14 +149,15 @@ export function pauseActiveCareSituationSession(
 ): ActiveCareSituation | null {
   const current = getActiveCareSituation(contributorId);
   if (!current) return null;
-  const careRecipientId = current.care_recipient_id ?? realityKey(contributorId);
+  const careRecipientId = current.care_recipient_id;
+  if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") throw new Error("Active situation has no valid care-recipient identity.");
   const paused: ActiveCareSituation = {
     ...current,
     care_recipient_id: careRecipientId,
     interaction_paused_at: new Date().toISOString(),
   };
-  acsCache().set(careRecipientId, paused);
   persistActiveCareSituationToDurable(paused);
+  acsCache().set(careRecipientId, paused);
   return paused;
 }
 
@@ -174,14 +165,15 @@ export function pauseActiveCareSituationSession(
 export function resumeActiveCareSituationSession(contributorId: string): void {
   const current = getActiveCareSituation(contributorId);
   if (!current?.interaction_paused_at) return;
-  const careRecipientId = current.care_recipient_id ?? realityKey(contributorId);
+  const careRecipientId = current.care_recipient_id;
+  if (!careRecipientId || careRecipientId !== realityKey(contributorId)) throw new Error("Active situation care-recipient identity does not match the authenticated contributor mapping.");
   const resumed: ActiveCareSituation = {
     ...current,
     care_recipient_id: careRecipientId,
     interaction_paused_at: null,
   };
-  acsCache().set(careRecipientId, resumed);
   persistActiveCareSituationToDurable(resumed);
+  acsCache().set(careRecipientId, resumed);
 }
 
 const EMPTY_RESPONSE_EVOLUTION: ResponseEvolutionEvaluation = {
@@ -372,9 +364,10 @@ export function projectActiveSituationTurn(
     (situation.observations.length <= 1 ? "opens_new" : "updates_active");
 
   const latest = situation.observations[situation.observations.length - 1];
-  const crsKey =
-    situation.care_recipient_id ??
-    realityKey(situation.caregiver_id);
+  const crsKey = situation.care_recipient_id?.trim();
+  if (!crsKey || crsKey === "default" || crsKey === "default_caregiver") {
+    throw new Error("Care-recipient identity is required to project the active situation.");
+  }
   if (!latest) {
     const crs = getCareRealityState(crsKey);
     return attachCareRealityFields(
@@ -423,7 +416,7 @@ export function projectActiveSituationTurn(
   const crs =
     getCareRealityState(crsKey) ??
     updateCareRealityState({
-      caregiverId: crsKey,
+      caregiverId: situation.caregiver_id,
       turn: baseTurn,
       situation,
       relation: resolved,
@@ -452,8 +445,8 @@ function ingestReinforcementExisting(params: {
     updated_at: params.nowIso,
     observations,
   };
-  acsCache().set(params.careRecipientId, situation);
   persistActiveCareSituationToDurable(situation);
+  acsCache().set(params.careRecipientId, situation);
   return projectActiveSituationTurn(situation, "updates_active");
 }
 
@@ -528,7 +521,7 @@ function ingestMemoryCorrection(params: {
 
   const situation: ActiveCareSituation = {
     ...params.prior,
-    care_recipient_id: params.prior.care_recipient_id ?? params.careRecipientId,
+    care_recipient_id: params.prior.care_recipient_id,
     caregiver_id: params.contributorId,
     updated_at: params.nowIso,
     observations: [...observations, observation],
@@ -558,8 +551,8 @@ function ingestMemoryCorrection(params: {
   const whatChanged =
     "Prior understanding was corrected — earlier evidence kept as disputed.";
 
-  acsCache().set(params.careRecipientId, situation);
   persistActiveCareSituationToDurable(situation);
+  acsCache().set(params.careRecipientId, situation);
 
   const progressiveOriented = {
     ...progressive,
@@ -910,7 +903,7 @@ export function ingestActiveCareObservation(params: {
   } else {
     draft = {
       ...prior,
-      care_recipient_id: prior.care_recipient_id ?? careRecipientId,
+      care_recipient_id: prior.care_recipient_id,
       caregiver_id: contributorId,
       updated_at: nowIso,
       root_event_id: prior.root_event_id ?? params.rootEventId ?? eventIds[0] ?? null,
@@ -1175,7 +1168,7 @@ export function ingestActiveCareObservation(params: {
 
   const situation: ActiveCareSituation = {
     ...draft,
-    care_recipient_id: draft.care_recipient_id ?? careRecipientId,
+    care_recipient_id: draft.care_recipient_id,
     theme: progressive.theme,
     understanding_stage: progressive.understanding_stage,
     open_questions: known_unknowns,
@@ -1189,8 +1182,8 @@ export function ingestActiveCareObservation(params: {
     familiarity_baseline: familiarityLines,
   };
 
-  acsCache().set(careRecipientId, situation);
   persistActiveCareSituationToDurable(situation);
+  acsCache().set(careRecipientId, situation);
 
   clearSoftInviteWhenUncertaintyGone({
     careKey: params.caregiverId,

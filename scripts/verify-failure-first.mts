@@ -11,7 +11,7 @@ import {
   PRODUCT_INVARIANT,
   planProactiveSurface,
 } from "../src/lib/care-context";
-import { SAMPLE_CARE_CONTEXT } from "../src/data/sample-care-context";
+import { SAMPLE_CARE_CONTEXT } from "./fixtures/sample-care-context";
 
 console.log("=== FAILURE-FIRST PRODUCT INTELLIGENCE ===\n");
 console.log(PRODUCT_INVARIANT);

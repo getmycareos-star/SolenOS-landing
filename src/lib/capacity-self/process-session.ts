@@ -1,4 +1,3 @@
-import { DEFAULT_CAREGIVER_ID } from "./contract-constants";
 import type {
   CapacitySelfSessionResult,
   CapacityLevel,
@@ -16,8 +15,7 @@ import {
 } from "./items/build-care-items";
 import {
   getOrCreateCaregiverSelfProfile,
-  setSessionCapacity,
-  addResolvedItem,
+  replaceCaregiverSelfProfileRecord,
 } from "./caregiver-profile/store";
 import { tryLoadCaregiverSelfProfile, trySaveCaregiverSelfProfile } from "./caregiver-profile/postgres-store";
 import { ingestCaregiverSelfEntry } from "./caregiver-profile/ingest-self";
@@ -33,9 +31,12 @@ export type ProcessCapacitySelfSessionParams = {
 export async function processCapacitySelfSession(
   params: ProcessCapacitySelfSessionParams = {},
 ): Promise<CapacitySelfSessionResult> {
-  const caregiverId = params.caregiver_id ?? DEFAULT_CAREGIVER_ID;
+  const caregiverId = params.caregiver_id?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("A distinct caregiver identity is required; no shared fallback identity is permitted.");
+  }
 
-  let selfRecord =
+  const selfRecord =
     (await tryLoadCaregiverSelfProfile(caregiverId)) ??
     getOrCreateCaregiverSelfProfile(caregiverId);
 
@@ -84,8 +85,17 @@ export async function setCaregiverCapacity(
   caregiverId: string,
   capacity: CapacityLevel,
 ): Promise<void> {
-  const record = setSessionCapacity(caregiverId, capacity);
+  if (!caregiverId.trim() || caregiverId.trim() === "default_caregiver") throw new Error("A distinct caregiver identity is required.");
+  const existing =
+    (await tryLoadCaregiverSelfProfile(caregiverId)) ??
+    getOrCreateCaregiverSelfProfile(caregiverId);
+  const record = {
+    ...existing,
+    session_capacity: capacity,
+    updated_at: new Date().toISOString(),
+  };
   await trySaveCaregiverSelfProfile(record);
+  replaceCaregiverSelfProfileRecord(record);
 }
 
 export async function resolveCareItem(params: {
@@ -95,6 +105,8 @@ export async function resolveCareItem(params: {
   context_type: ResolvedItemRecord["context_type"];
   raw_entry_id?: string | null;
 }): Promise<ResolvedItemRecord> {
+  const caregiverId = params.caregiver_id.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("A distinct caregiver identity is required.");
   const resolved: ResolvedItemRecord = {
     id: `resolved_${Date.now()}`,
     description: params.description,
@@ -103,8 +115,16 @@ export async function resolveCareItem(params: {
     resolved_at: new Date().toISOString(),
     raw_entry_id: params.raw_entry_id ?? null,
   };
-  const record = addResolvedItem(params.caregiver_id, resolved);
+  const existing =
+    (await tryLoadCaregiverSelfProfile(caregiverId)) ??
+    getOrCreateCaregiverSelfProfile(caregiverId);
+  const record = {
+    ...existing,
+    resolved_items: [...existing.resolved_items, resolved].slice(-200),
+    updated_at: new Date().toISOString(),
+  };
   await trySaveCaregiverSelfProfile(record);
+  replaceCaregiverSelfProfileRecord(record);
   return resolved;
 }
 

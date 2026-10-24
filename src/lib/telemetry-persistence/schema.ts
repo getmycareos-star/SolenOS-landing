@@ -106,10 +106,10 @@ export const SolenOSOutputSchema = z
       unknown: z.array(z.unknown()),
       recency: z.object({
         last_updated_at: z.string().nullable(),
-        freshness_score: z.number().min(0).max(1),
+        freshness_score: z.number().min(0).max(1).nullable(),
         interpretation: z.string(),
       }),
-      confidence: z.number().min(0).max(1),
+      confidence: z.number().min(0).max(1).nullable(),
     }),
     transparency_panel: z.object({
       data_used: z.object({
@@ -125,13 +125,13 @@ export const SolenOSOutputSchema = z
       reason_for_output: z.string(),
       evidence_breakdown: z.array(z.unknown()),
       confidence_scores: z.object({
-        overall_pct: z.number().min(0).max(100),
+        overall_pct: z.number().min(0).max(100).nullable(),
         tier: z.enum(["low", "medium", "high"]),
       }),
       recency: z.object({
         last_update_at: z.string().nullable(),
         critical_event_ages: z.array(z.string()),
-        decay_status: z.enum(["fresh", "aging", "stale"]),
+        decay_status: z.enum(["unknown", "fresh", "aging", "stale"]),
       }),
       observed: z.array(z.string()),
       inferred: z.array(z.string()),

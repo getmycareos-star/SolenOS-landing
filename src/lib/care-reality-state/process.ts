@@ -13,13 +13,13 @@ import {
   resetCareRealityStateDurableStore,
   clearCareRealityStateMemoryCache,
 } from "./durable-store";
-import { resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
 import {
   isCareRealityAnchorText,
   isProductSessionMetaText,
   observationCareFact,
 } from "../care-epistemics";
 import { projectOpenUncertaintiesForState } from "../progressive-understanding/uncertainty-lifecycle";
+import { resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
 
 export function resetCareRealityStateStore(): void {
   resetCareRealityStateDurableStore();
@@ -27,27 +27,26 @@ export function resetCareRealityStateStore(): void {
 
 export { clearCareRealityStateMemoryCache };
 
-function realityKey(contributorOrRealityId: string): string {
-  return resolveCareRealityStoreKey(contributorOrRealityId);
+function realityKey(careRecipientId: string): string {
+  const id = careRecipientId?.trim();
+  if (!id || id === "default" || id === "default_caregiver") {
+    throw new Error("Explicit care-recipient identity is required for Care Reality State.");
+  }
+  return id;
 }
 
-export function getCareRealityState(contributorOrRealityId: string): CareRealityState | null {
-  const careRecipientId = realityKey(contributorOrRealityId);
-  const cached = crsCache().get(careRecipientId);
-  if (cached) return normalizeCareRealityState(cached);
-  let durable = loadCareRealityStateFromDurable(careRecipientId);
-  if (!durable && careRecipientId !== contributorOrRealityId) {
-    durable = loadCareRealityStateFromDurable(contributorOrRealityId);
+export function getCareRealityState(careRecipientId: string): CareRealityState | null {
+  const key = realityKey(careRecipientId);
+  const durable = loadCareRealityStateFromDurable(key);
+  if (!durable) {
+    crsCache().delete(key);
+    return null;
   }
-  if (!durable) return null;
-  const normalized = normalizeCareRealityState({
-    ...durable,
-    care_recipient_id: durable.care_recipient_id ?? careRecipientId,
-  });
-  crsCache().set(careRecipientId, normalized);
-  if (!durable.care_recipient_id) {
-    persistCareRealityStateToDurable(normalized);
+  if (durable.care_recipient_id !== key) {
+    throw new Error("Persisted Care Reality State is missing or mismatches its care-recipient identity.");
   }
+  const normalized = normalizeCareRealityState(durable);
+  crsCache().set(key, normalized);
   return normalized;
 }
 
@@ -63,14 +62,10 @@ function normalizeCareRealityState(state: CareRealityState): CareRealityState {
   };
 }
 
-export function clearCareRealityState(contributorOrRealityId: string): void {
-  const careRecipientId = realityKey(contributorOrRealityId);
-  crsCache().delete(careRecipientId);
-  deleteCareRealityStateDurable(careRecipientId);
-  if (careRecipientId !== contributorOrRealityId) {
-    crsCache().delete(contributorOrRealityId);
-    deleteCareRealityStateDurable(contributorOrRealityId);
-  }
+export function clearCareRealityState(careRecipientId: string): void {
+  const key = realityKey(careRecipientId);
+  deleteCareRealityStateDurable(key);
+  crsCache().delete(key);
 }
 
 function newId(): string {
@@ -191,7 +186,12 @@ export function updateCareRealityState(
   input: UpdateCareRealityStateInput,
 ): CareRealityState {
   const nowIso = input.nowIso ?? new Date().toISOString();
-  const prior = getCareRealityState(input.caregiverId);
+  const careRecipientId = realityKey(input.situation.care_recipient_id);
+  const authorizedRecipientId = resolveCareRealityStoreKey(input.caregiverId);
+  if (authorizedRecipientId !== careRecipientId) {
+    throw new Error("Caregiver is not linked to this care recipient; Care Reality State update was rejected.");
+  }
+  const prior = getCareRealityState(careRecipientId);
   const { turn, situation, relation } = input;
 
   const disclosure_stage = disclosureStageFor(
@@ -352,14 +352,8 @@ export function updateCareRealityState(
 
   const state: CareRealityState = {
     id: crsId,
-    care_recipient_id:
-      situation.care_recipient_id ??
-      prior?.care_recipient_id ??
-      realityKey(input.caregiverId),
-    caregiver_id:
-      situation.care_recipient_id ??
-      prior?.care_recipient_id ??
-      realityKey(input.caregiverId),
+    care_recipient_id: careRecipientId,
+    caregiver_id: input.caregiverId,
     care_recipient_label: situation.subject_label,
     updated_at: nowIso,
     situation_id: situation.id,
@@ -401,8 +395,8 @@ export function updateCareRealityState(
     })(),
   };
 
-  crsCache().set(state.care_recipient_id ?? state.caregiver_id, state);
   persistCareRealityStateToDurable(state);
+  crsCache().set(careRecipientId, state);
   return state;
 }
 

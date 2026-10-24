@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import type {
   CareJourneyGraph,
   JourneyGraphEvent,
@@ -85,47 +85,57 @@ export async function saveGraphEventToPostgres(
   event: JourneyGraphEvent,
   relationships: JourneyRelationship[],
 ): Promise<void> {
-  await pool.query(
-    `INSERT INTO care_journey_graph_events (
-       id, journey_id, caregiver_id, case_id, event_type, timestamp, description,
-       people_involved, location, evidence, related_event_ids, clinical_importance,
-       open_questions, resolved_status, source, category, title, attachments, metadata
-     )
-     VALUES ($1, $2, $3, $4::uuid, $5, $6, $7, $8::jsonb, $9, $10::jsonb, $11::jsonb, $12,
-             $13::jsonb, $14, $15, $16, $17, $18::jsonb, $19::jsonb)
-     ON CONFLICT (id) DO NOTHING`,
-    [
-      event.id,
-      event.journey_id,
-      event.caregiver_id,
-      event.case_id,
-      event.event_type,
-      event.timestamp,
-      event.description,
-      JSON.stringify(event.people_involved),
-      event.location,
-      JSON.stringify(event.evidence),
-      JSON.stringify(event.related_event_ids),
-      event.clinical_importance,
-      JSON.stringify(event.open_questions),
-      event.resolved_status,
-      event.source,
-      event.category,
-      event.title,
-      JSON.stringify(event.attachments),
-      JSON.stringify(event.metadata),
-    ],
-  );
-
-  for (const rel of relationships) {
-    await pool.query(
-      `INSERT INTO care_journey_graph_relationships (
-         id, journey_id, from_event_id, to_event_id, relationship_type, note
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `INSERT INTO care_journey_graph_events (
+         id, journey_id, caregiver_id, case_id, event_type, timestamp, description,
+         people_involved, location, evidence, related_event_ids, clinical_importance,
+         open_questions, resolved_status, source, category, title, attachments, metadata
        )
-       VALUES ($1, $2, $3, $4, $5, $6)
+       VALUES ($1, $2, $3, $4::uuid, $5, $6, $7, $8::jsonb, $9, $10::jsonb, $11::jsonb, $12,
+               $13::jsonb, $14, $15, $16, $17, $18::jsonb, $19::jsonb)
        ON CONFLICT (id) DO NOTHING`,
-      [rel.id, rel.journey_id, rel.from_event_id, rel.to_event_id, rel.relationship_type, rel.note],
+      [
+        event.id,
+        event.journey_id,
+        event.caregiver_id,
+        event.case_id,
+        event.event_type,
+        event.timestamp,
+        event.description,
+        JSON.stringify(event.people_involved),
+        event.location,
+        JSON.stringify(event.evidence),
+        JSON.stringify(event.related_event_ids),
+        event.clinical_importance,
+        JSON.stringify(event.open_questions),
+        event.resolved_status,
+        event.source,
+        event.category,
+        event.title,
+        JSON.stringify(event.attachments),
+        JSON.stringify(event.metadata),
+      ],
     );
+
+    for (const rel of relationships) {
+      await client.query(
+        `INSERT INTO care_journey_graph_relationships (
+           id, journey_id, from_event_id, to_event_id, relationship_type, note
+         )
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (id) DO NOTHING`,
+        [rel.id, rel.journey_id, rel.from_event_id, rel.to_event_id, rel.relationship_type, rel.note],
+      );
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -202,26 +212,25 @@ async function getPool(): Promise<Pool> {
 export async function trySaveGraphEvent(
   event: JourneyGraphEvent,
   relationships: JourneyRelationship[],
-): Promise<boolean> {
-  if (!process.env.DATABASE_URL) return false;
+): Promise<void> {
+  if (!process.env.DATABASE_URL) throw new Error("Care journey graph database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
     await saveGraphEventToPostgres(pool, event, relationships);
-    return true;
   } catch {
-    return false;
+    throw new Error("Unable to persist care journey graph event; save was not confirmed.");
   }
 }
 
 export async function tryLoadGraphForCaregiver(
   caregiverId: string,
 ): Promise<CareJourneyGraph | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL) throw new Error("Care journey graph database is unavailable: DATABASE_URL is not configured.");
   try {
     const pool = await getPool();
-    return loadGraphFromPostgres(pool, caregiverId);
+    return await loadGraphFromPostgres(pool, caregiverId);
   } catch {
-    return null;
+    throw new Error("Unable to load care journey graph; unavailable storage cannot be treated as an empty graph.");
   }
 }
 

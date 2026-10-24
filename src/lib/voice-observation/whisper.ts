@@ -12,7 +12,7 @@ export type WhisperTranscribeSuccess = {
 export type WhisperTranscribeFailure = {
   ok: false;
   error: string;
-  code: "MISSING_API_KEY" | "EMPTY_AUDIO" | "TRANSCRIPTION_FAILED" | "NO_SERVER_STT";
+  code: "MISSING_API_KEY" | "EMPTY_AUDIO" | "TRANSCRIPTION_FAILED" | "NO_SERVER_STT" | "PERSISTENCE_UNAVAILABLE";
 };
 
 export type WhisperTranscribeResult = WhisperTranscribeSuccess | WhisperTranscribeFailure;
@@ -125,6 +125,8 @@ export async function captureVoiceObservation(params: {
     aggregation: unknown;
     weekly_summary_snippet: string;
     observations_this_week: number;
+    persistence_status: "persisted" | "unavailable";
+    persistence_message?: string;
   };
 }): Promise<
   | {
@@ -156,6 +158,14 @@ export async function captureVoiceObservation(params: {
     raw_text: transcript,
     source: "voice",
   });
+
+  if (!isObservationDurablyPersisted(observation.persistence_status)) {
+    return {
+      ok: false,
+      code: "PERSISTENCE_UNAVAILABLE",
+      error: observation.persistence_message ?? OBSERVATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
+    };
+  }
 
   return { ok: true, transcript, observation, whisperModel };
 }

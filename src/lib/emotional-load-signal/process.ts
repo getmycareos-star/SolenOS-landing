@@ -255,7 +255,7 @@ export function toEmotionalLoadSignalLayerPayload(
     deferNonCritical: layer.priorityAdjustment.deferNonCritical,
     simplifyRecommendations: layer.priorityAdjustment.simplifyRecommendations,
     perSituationCount: layer.signal.perSituation.length,
-    recoveryMinutesStub: layer.signal.recoveryTimeEstimate.estimatedMinutes,
+    recoveryMinutesEstimate: layer.signal.recoveryTimeEstimate.estimatedMinutes,
     detectionEnabled: layer.detectionEnabled,
     guaranteeOk: layer.guarantee.ok,
   };

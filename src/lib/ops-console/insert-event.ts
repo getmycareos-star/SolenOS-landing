@@ -3,7 +3,7 @@
  */
 
 import type { Pool } from "pg";
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 
 export type SolenEventRow = {
   id: number;

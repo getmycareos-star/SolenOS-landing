@@ -16,10 +16,6 @@ export {
 } from "./prompts";
 
 export {
-  retrieveMemory,
-} from "./memory";
-
-export {
   applyReasoning,
 } from "./reasoning";
 
@@ -27,10 +23,7 @@ export {
   applyMemoryStrategy,
 } from "./memory-strategy";
 
-export {
-  runIntelligencePipeline,
-  buildMinimalFinalOutput,
-} from "./pipeline";
+/** Database-backed pipeline entry points are server-only; use the backend API from the browser. */
 
 export type {
   SolenOSInput,

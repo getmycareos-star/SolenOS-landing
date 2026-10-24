@@ -1,5 +1,5 @@
 // src/lib/routine-moments/service.ts
-import { RoutineMomentRecord, RoutineBaseline, RoutineMomentChange, ConfidenceLevel } from './types';
+import { RoutineMomentRecord, RoutineBaseline, RoutineMomentChange } from './types';
 
 /**
  * Establish a baseline for a routine from a list of observations.
@@ -70,7 +70,7 @@ export function establishBaseline(observations: RoutineMomentRecord[]): RoutineB
   });
 
    // Calculate consistency score (inverse of coefficient of variation of time between observations)
-   let consistencyScore: number;
+   let consistencyScore: number | null;
    if (sortedObs.length >= 2) {
      const intervals: number[] = [];
      for (let i = 1; i < sortedObs.length; i++) {
@@ -86,8 +86,8 @@ export function establishBaseline(observations: RoutineMomentRecord[]): RoutineB
      // Ensure it's between 0 and 1
      consistencyScore = Math.min(1, Math.max(0, consistencyScore));
    } else {
-     // Not enough data to calculate consistency
-     consistencyScore = 0.5; // default middle value
+     // Not enough observations: consistency is unknown, not an invented midpoint.
+     consistencyScore = null
    }
 
   return {
@@ -131,15 +131,23 @@ export function detectChanges(
    const daysDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
    const weeksDiff = Math.max(daysDiff / 7, 0.1);
    const currentFrequency = observations.length / weeksDiff;
-   const frequencyChange = Math.abs(currentFrequency - baseline.frequency_per_week) / baseline.frequency_per_week;
-   if (frequencyChange > 0.2) { // 20% change threshold
+   const frequencyChange =
+     baseline.frequency_per_week > 0
+       ? Math.abs(currentFrequency - baseline.frequency_per_week) / baseline.frequency_per_week
+       : null;
+   // A relative percentage is undefined when the baseline is zero. In that case,
+   // report only that observed frequency is now nonzero, without a percentage claim.
+   if (
+     (frequencyChange !== null && frequencyChange > 0.2) ||
+     (baseline.frequency_per_week === 0 && currentFrequency > 0)
+   ) {
      changes.push({
        field: 'frequency_per_week',
        previous_value: baseline.frequency_per_week,
        current_value: currentFrequency,
        change_type: 'update',
        detected_at: new Date().toISOString(),
-       confidence: Math.min(0.9, frequencyChange), // Higher change -> higher confidence
+       confidence: null
      });
    }
 
@@ -166,7 +174,7 @@ export function detectChanges(
          current_value: currentTimeOfDay,
          change_type: 'update',
          detected_at: new Date().toISOString(),
-         confidence: Math.min(0.9, timeDiffMinutes / 60), // Scale confidence by hours difference
+         confidence: null
        });
      }
    }
@@ -202,7 +210,7 @@ export function detectChanges(
           current_value: currentVal,
           change_type: 'update',
           detected_at: new Date().toISOString(),
-          confidence: Math.min(0.9, change),
+          confidence: null
         });
      }
     });
@@ -239,7 +247,7 @@ export function detectChanges(
          current_value: currentVal,
          change_type: 'update',
          detected_at: new Date().toISOString(),
-         confidence: Math.min(0.9, change),
+         confidence: null,
        });
     }
   });
@@ -257,15 +265,17 @@ export function detectChanges(
     const stdDev = Math.sqrt(variance);
     const cv = stdDev / meanInterval;
     const currentConsistencyScore = Math.max(0, 1 - cv);
-    const consistencyChange = Math.abs(currentConsistencyScore - baseline.consistency_score);
-    if (consistencyChange > 0.2) {
+    const consistencyChange = baseline.consistency_score === null
+      ? null
+      : Math.abs(currentConsistencyScore - baseline.consistency_score);
+    if (consistencyChange !== null && consistencyChange > 0.2) {
        changes.push({
          field: 'consistency_score',
          previous_value: baseline.consistency_score,
          current_value: currentConsistencyScore,
          change_type: 'update',
          detected_at: new Date().toISOString(),
-         confidence: Math.min(0.9, consistencyChange),
+         confidence: null
        });
     }
   }

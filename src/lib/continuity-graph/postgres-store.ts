@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import type { ContinuityEdge, ContinuityGraph, ContinuityNode } from "./types";
 
 function rowToNode(row: {

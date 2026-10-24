@@ -1,7 +1,5 @@
 export {
 
-  DEFAULT_DURABLE_CARE_KEY,
-
   DURABLE_CARE_KEY_STORAGE,
 
   CARE_RECIPIENT_ID_STORAGE,
@@ -9,6 +7,8 @@ export {
   INTERACTION_SESSION_STORAGE,
 
   resolveDurableCareKey,
+
+  requireCaregiverId,
 
   requireCareKeyFromRequest,
 

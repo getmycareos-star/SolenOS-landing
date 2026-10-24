@@ -4,6 +4,9 @@ const backendAccount = {
   id: 'account-test-1',
   email: 'caregiver@example.test',
   display_name: 'Test Caregiver',
+  role: 'caregiver',
+  caregiver_id: 'caregiver-test-1',
+  person_id: 'person-test-1',
 }
 
 function jsonResponse(payload: unknown, status = 200): Response {
@@ -71,20 +74,20 @@ describe('SolenOS authentication API contract', () => {
     expect(localStorage.getItem('solenos_caregiver_id')).toBe('caregiver-test-1')
   })
 
-  it('registers through the actual signup route and creates the care context', async () => {
+  it('registers through the protected backend enrollment route', async () => {
+    const registeredAccount = {
+      ...backendAccount,
+      id: 'account-created-1',
+      email: 'new-caregiver@example.test',
+      caregiver_id: 'caregiver-created-1',
+      person_id: 'person-created-1',
+    }
     fetchMock
-      .mockResolvedValueOnce(jsonResponse({ account: backendAccount }, 201))
       .mockResolvedValueOnce(jsonResponse({
         access_token: 'registered-access-token',
         token_type: 'bearer',
-        expires_at: '2026-10-23T00:00:00+00:00',
-        account: backendAccount,
-      }))
-      .mockResolvedValueOnce(jsonResponse({
-        person_id: 'person-created-1',
-        name: 'Mother Abuchi',
-        role: 'caregiver',
-        permissions: ['read', 'write'],
+        expires_in: 3600,
+        account: registeredAccount,
       }, 201))
       .mockResolvedValueOnce(jsonResponse([{
         person_id: 'person-created-1',
@@ -95,13 +98,14 @@ describe('SolenOS authentication API contract', () => {
       .mockResolvedValueOnce(jsonResponse([{
         person_id: 'person-created-1',
         caregiver_id: 'caregiver-created-1',
-        account_id: 'account-test-1',
+        account_id: 'account-created-1',
         permissions: ['read', 'write'],
       }]))
 
     const account = await registerCaregiverAccount({
-      email: 'caregiver@example.test',
+      email: 'new-caregiver@example.test',
       password: 'correct-horse-battery-staple',
+      enrollment_key: 'authorized-enrollment-key',
       name: 'Test Caregiver',
       person_name: 'Mother Abuchi',
       relationship: 'Daughter',
@@ -110,15 +114,16 @@ describe('SolenOS authentication API contract', () => {
     expect(account.person_id).toBe('person-created-1')
     expect(account.caregiver_id).toBe('caregiver-created-1')
     expect(fetchMock.mock.calls.map(([url, init]) => [url, (init as RequestInit | undefined)?.method || 'GET'])).toEqual([
-      ['/api/v1/auth/signup', 'POST'],
-      ['/api/v1/auth/login', 'POST'],
-      ['/api/v1/auth/care-contexts', 'POST'],
+      ['/api/v1/auth/register', 'POST'],
       ['/api/v1/auth/care-contexts', 'GET'],
       ['/api/v1/auth/my-caregiver-links?person_id=person-created-1', 'GET'],
     ])
-    expect(JSON.parse((fetchMock.mock.calls[2][1] as RequestInit).body as string)).toEqual({
-      name: 'Mother Abuchi',
-      caregiver_name: 'Test Caregiver',
+    expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+      email: 'new-caregiver@example.test',
+      password: 'correct-horse-battery-staple',
+      enrollment_key: 'authorized-enrollment-key',
+      name: 'Test Caregiver',
+      person_name: 'Mother Abuchi',
       relationship: 'Daughter',
     })
   })

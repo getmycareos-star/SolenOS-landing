@@ -4,6 +4,7 @@ export type {
   RawEvidence,
   SaveRawEvidenceInput,
   SaveRawEvidenceResult,
+  RawEvidencePersistenceStatus,
   RawEvidenceStoreOptions,
 } from "./types";
 

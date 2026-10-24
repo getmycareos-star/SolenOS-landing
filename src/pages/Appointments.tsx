@@ -18,6 +18,22 @@ function displayDate(value: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+function isAppointment(value: unknown): value is Appointment {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return typeof item.id === 'string' && Boolean(item.id) &&
+    typeof item.person_id === 'string' && typeof item.title === 'string' &&
+    typeof item.scheduled_at === 'string' && Number.isFinite(new Date(item.scheduled_at).getTime()) &&
+    typeof item.status === 'string' && typeof item.created_by_caregiver_id === 'string'
+}
+
+function isCaregiver(value: unknown): value is Caregiver {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Record<string, unknown>
+  return typeof item.id === 'string' && Boolean(item.id) &&
+    typeof item.name === 'string' && typeof item.person_id === 'string'
+}
+
 export default function Appointments() {
   const personId = getPersonId()
   const [caregivers, setCaregivers] = useState<Caregiver[]>([])
@@ -35,28 +51,44 @@ export default function Appointments() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [appointmentsLoadError, setAppointmentsLoadError] = useState<string | null>(null)
+  const [caregiversLoadError, setCaregiversLoadError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   async function load() {
+    setError(null)
+    setAppointmentsLoadError(null)
+    setCaregiversLoadError(null)
+    setAppointments([])
+    setCaregivers([])
     if (!personId) {
-      setAppointments([]); setCaregivers([])
-      setError('Select a care recipient before managing appointments.')
+      const message = 'Select a care recipient before loading appointments.'
+      setAppointmentsLoadError(message)
+      setCaregiversLoadError('Select a care recipient before loading linked caregivers.')
+      setError(message)
+      setLoading(false)
       return
     }
-    setLoading(true); setError(null)
+    setLoading(true)
     const results = await Promise.allSettled([
-      getJSON('/appointments/' + encodeURIComponent(personId)),
-      getJSON('/caregivers/' + encodeURIComponent(personId)),
+      getJSON<unknown>('/appointments/' + encodeURIComponent(personId)),
+      getJSON<unknown>('/caregivers/' + encodeURIComponent(personId)),
     ])
-    if (results[0].status === 'fulfilled' && Array.isArray(results[0].value)) setAppointments(results[0].value as Appointment[])
-    else { setAppointments([]); setError('Appointments could not be retrieved from the backend.') }
-    if (results[1].status === 'fulfilled' && Array.isArray(results[1].value)) {
+    if (results[0].status === 'fulfilled' && Array.isArray(results[0].value) && results[0].value.every(isAppointment)) {
+      setAppointments(results[0].value as Appointment[])
+    } else {
+      const detail = results[0].status === 'rejected' && results[0].reason instanceof Error ? results[0].reason.message : 'The server returned an invalid response.'
+      setAppointmentsLoadError(`Appointment list unavailable: ${detail}`)
+      setError('Appointments could not be verified. The list is not being treated as empty.')
+    }
+    if (results[1].status === 'fulfilled' && Array.isArray(results[1].value) && results[1].value.every(isCaregiver)) {
       const list = results[1].value as Caregiver[]
       setCaregivers(list)
       setCaregiverId(current => list.some(c => c.id === current) ? current : list[0]?.id || '')
     } else {
-      setCaregivers([])
-      setError(current => [current, 'Linked caregivers could not be retrieved; appointment creation is disabled.'].filter(Boolean).join(' '))
+      const detail = results[1].status === 'rejected' && results[1].reason instanceof Error ? results[1].reason.message : 'The server returned an invalid response.'
+      setCaregiversLoadError(`Linked caregivers unavailable: ${detail}`)
+      setError(current => [current, 'Linked caregivers could not be verified; appointment creation is disabled.'].filter(Boolean).join(' '))
     }
     setLoading(false)
   }
@@ -116,7 +148,7 @@ export default function Appointments() {
       <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 600 }}>Record an appointment</h2>
         <form onSubmit={createAppointment} style={{ display: 'grid', gap: 12, marginTop: 14 }}>
-          <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Appointment title<input required value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} placeholder="e.g. Neurology follow-up" /></label>
+          <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Appointment title<input required value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} placeholder="Enter the appointment title" /></label>
           <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Date and time<input required type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={inputStyle} /></label>
           <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Time zone<input value={timezone} onChange={e => setTimezone(e.target.value)} required style={inputStyle} /></label>
           <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>Recorded by<select required value={caregiverId} onChange={e => setCaregiverId(e.target.value)} disabled={!caregivers.length} style={inputStyle}><option value="">Select linked caregiver</option>{caregivers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
@@ -130,8 +162,8 @@ export default function Appointments() {
         </form>
       </section>
       <section style={{ marginTop: 20, padding: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600 }}>Saved appointments ({appointments.length})</h2>
-        {loading ? <p style={{ marginTop: 10, color: 'var(--text-secondary)' }}>Loading appointments…</p> : appointments.length === 0 ? <p style={{ marginTop: 10, color: 'var(--text-secondary)', fontSize: 13 }}>No appointments returned by the backend.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{appointments.map(a => <article key={a.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600 }}>{appointmentsLoadError ? 'Saved appointments' : `Saved appointments (${appointments.length})`}</h2>
+        {loading ? <p role="status" style={{ marginTop: 10, color: 'var(--text-secondary)' }}>Loading appointments…</p> : appointmentsLoadError ? <p role="alert" style={{ marginTop: 10, color: 'var(--error)', fontSize: 13 }}>{appointmentsLoadError}</p> : appointments.length === 0 ? <p style={{ marginTop: 10, color: 'var(--text-secondary)', fontSize: 13 }}>No appointments returned by the backend.</p> : <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>{appointments.map(a => <article key={a.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}><strong>{a.title}</strong><span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.status}</span></div>
           <p style={{ marginTop: 6, fontSize: 13 }}>{displayDate(a.scheduled_at)}{a.scheduled_at_timezone ? ' · ' + a.scheduled_at_timezone : ''}</p>
           {(a.provider || a.location) && <p style={{ marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>{[a.provider, a.location].filter(Boolean).join(' · ')}</p>}

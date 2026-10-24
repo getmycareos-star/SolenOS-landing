@@ -33,26 +33,10 @@ export {
   detectProposedMeetingsFromText,
 } from "./preparation-windows";
 
-export {
-  createMeeting,
-  createProposedMeeting,
-  confirmProposedMeeting,
-  getMeeting,
-  listMeetingsForCaregiver,
-  attachPreparationPack,
-  completeMeeting,
-  cancelMeeting,
-  resetMeetingStore,
-} from "./meeting-store";
-
-export { generatePreparationPack } from "./generate-pack";
-
-export {
-  runMeetingPreparationTrigger,
-  prepareMeetingNow,
-  recordMeetingOutcome,
-  buildEmptyOutcome,
-  type TriggerResult,
-} from "./trigger-engine";
+/**
+ * Stateful meeting storage and preparation are not wired to durable persistence.
+ * They are intentionally excluded from this production-safe barrel; use the
+ * authoritative backend appointment APIs until a durable meeting adapter exists.
+ */
 
 export { toMeetingPreparationLayerPayload } from "./layer-payload";

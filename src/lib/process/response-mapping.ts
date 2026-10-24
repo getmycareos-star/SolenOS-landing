@@ -93,11 +93,11 @@ export function mapResponse(input: ResponseMappingInput): SolenOSOutput {
         drives_clarification: true,
       })),
       recency: {
-        last_updated_at: new Date().toISOString(),
-        freshness_score: 0.5,
-        interpretation: "recently recorded",
+        last_updated_at: null,
+        freshness_score: null,
+        interpretation: "Recency unavailable; source event timestamp not verified.",
       },
-      confidence: uncertain ? 0.2 : 0.5,
+      confidence: null,
     },
     transparency_panel: {
       data_used: {
@@ -114,16 +114,16 @@ export function mapResponse(input: ResponseMappingInput): SolenOSOutput {
       evidence_breakdown: input.signals.medical_entities.slice(0, 3).map((entity) => ({
         conclusion: entity,
         evidence_type: "observation" as const,
-        confidence_pct: 50,
+        confidence_pct: null,
       })),
       confidence_scores: {
-        overall_pct: uncertain ? 20 : 50,
-        tier: uncertain ? "low" : "medium",
+        overall_pct: null,
+        tier: "unknown",
       },
       recency: {
         last_update_at: new Date().toISOString(),
         critical_event_ages: [],
-        decay_status: "fresh",
+        decay_status: "unknown",
       },
       observed: input.signals.medical_entities.slice(0, 3),
       inferred: input.signals.inferred.slice(0, 2).map((inf) => inf.signal),

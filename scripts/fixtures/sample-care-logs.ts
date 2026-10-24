@@ -1,4 +1,4 @@
-import type { RawCareInput } from "../lib/care-snapshot";
+import type { RawCareInput } from "../../src/lib/care-snapshot";
 
 /**
  * ILLUSTRATION / DEV FIXTURE ONLY — not production defaults.

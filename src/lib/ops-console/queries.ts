@@ -4,7 +4,7 @@
  */
 
 import type { Pool } from "pg";
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import { getMemorySolenEvents } from "./insert-event";
 
 let poolPromise: Promise<Pool> | null = null;
@@ -20,12 +20,17 @@ async function querySafe<T extends Record<string, unknown>>(
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  if (!pool) return [];
+  if (!pool) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Operational database is unavailable; metrics cannot be verified.");
+    }
+    return [];
+  }
   try {
     const result = await pool.query(sql, params);
     return result.rows as T[];
   } catch {
-    return [];
+    throw new Error("An operational database query failed; metrics cannot be verified.");
   }
 }
 
@@ -498,9 +503,10 @@ export async function loadOpsDashboard(input?: {
     `SELECT timestamp::text AS timestamp FROM solen_events ORDER BY timestamp DESC LIMIT 1`,
   );
 
-  // Memory fallback when DB empty
+  // Read in-memory events only for the explicit non-production/no-pool fallback below.
   const mem = memoryEventCounts();
-  const useMemory = !pool || (totalEvents === 0 && mem.length > 0);
+  // In-memory telemetry is a development fallback only. Never substitute it for a connected database that reports zero rows.
+  const useMemory = !pool && process.env.NODE_ENV !== 'production';
 
   let rawEvents: RawEventRow[] = [];
   let rawTotal = 0;
@@ -558,7 +564,7 @@ export async function loadOpsDashboard(input?: {
 
   const lastEvent =
     lastEventRows[0]?.timestamp ??
-    (mem.length > 0 ? mem[mem.length - 1]!.timestamp : null);
+    (!pool && process.env.NODE_ENV !== 'production' && mem.length > 0 ? mem[mem.length - 1]!.timestamp : null);
 
   let ingestion: "healthy" | "warning" | "unknown" = "unknown";
   if (lastEvent) {
@@ -572,8 +578,8 @@ export async function loadOpsDashboard(input?: {
 
   return {
     founder: {
-      users: totalRegistered || totalUsersEvent,
-      active_care_cases: casesActive || careCasesEvent,
+      users: totalRegistered,
+      active_care_cases: casesActive,
       returning_users: returningUsers,
       retention_7d: retention7d,
       care_records_reopened: careRecordsReopened,
@@ -648,7 +654,7 @@ export async function loadOpsDashboard(input?: {
       sample_error_message: e.sample_error_message ?? "",
     })),
     system: {
-      total_events: totalEvents || mem.length,
+      total_events: totalEvents,
       events_24h: events24h,
       last_event_received: lastEvent,
       ingestion_health: ingestion,
@@ -656,7 +662,7 @@ export async function loadOpsDashboard(input?: {
       query_latency_ms: queryLatency,
     },
     raw_events: rawEvents,
-    raw_total: rawTotal || mem.length,
+    raw_total: rawTotal,
   };
 }
 

@@ -1,6 +1,6 @@
 import type { SupportSignalTelemetryInsert } from "./support-signal-telemetry";
 import { getTelemetryStore } from "./server";
-import { createPostgresPool } from "./postgres-store";
+import { createPostgresPool } from "../db/postgres-pool";
 import type { Pool } from "pg";
 
 const memorySupportSignalEvents: SupportSignalTelemetryInsert[] = [];

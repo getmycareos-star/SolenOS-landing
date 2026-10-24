@@ -6,6 +6,14 @@
  * Inspiration: solenosai.netlify.app — three clarity pillars when warranted; relief, not interview.
  */
 
+function requireCareRecipientId(situation: { care_recipient_id?: string; caregiver_id: string }): string {
+  const careRecipientId = situation.care_recipient_id?.trim();
+  if (!careRecipientId || careRecipientId === "default" || careRecipientId === "default_caregiver") {
+    throw new Error("Explicit care-recipient identity is required; caregiver identity is not a substitute.");
+  }
+  return careRecipientId;
+}
+
 import type { ActiveSituationTurn } from "../active-care-situation/types";
 import { processCareSignalUnderstanding } from "../care-signal-understanding";
 import {
@@ -628,7 +636,7 @@ export function composeCaregiverResponse(params: {
   });
   const isNewCareReality = careMemoryState === "new_care_reality";
 
-  const crsKey = situation.care_recipient_id ?? situation.caregiver_id;
+  const crsKey = requireCareRecipientId(situation);
   const crs = getCareRealityState(crsKey);
   const crsCtx = resolveCrsComposeContext({
     crs,
@@ -1616,7 +1624,7 @@ if (improvement) {
   // G13 — record questions answer from decision memory, never Clarity form
   if (turnClass === "record_question") {
     const decisionCareKey =
-      situation.care_recipient_id ?? situation.caregiver_id;
+      requireCareRecipientId(situation);
     const answered = answerRecordQuestion({
       careKey: decisionCareKey,
       question: latestRawText,
@@ -1642,7 +1650,7 @@ if (improvement) {
   // Decision preparation (continuity symptom / guidance) — never recommendation.
   if (continuitySymptom) {
     const decisionCareKey =
-      situation.care_recipient_id ?? situation.caregiver_id;
+      requireCareRecipientId(situation);
     const prep = composeDecisionPreparation({
       careKey: decisionCareKey,
       maxLines: 2,
@@ -1667,7 +1675,7 @@ if (improvement) {
     !gatheringContext
   ) {
     const decisionCareKey =
-      situation.care_recipient_id ?? situation.caregiver_id;
+      requireCareRecipientId(situation);
     const recentDecisions = listDecisionMemory(decisionCareKey).slice(-1);
     const decisionInTurn =
       recentDecisions.length > 0 &&
@@ -1876,7 +1884,7 @@ if (show_clarity && !pushback && what_matters_now) {
       follow_up_items.push("Add anything else that changed alongside this");
     } else if (show_clarity) {
       const decisionCareKey =
-        situation.care_recipient_id ?? situation.caregiver_id;
+        requireCareRecipientId(situation);
       const recent = listDecisionMemory(decisionCareKey).slice(-1)[0];
       follow_up_items.push(
         ...composeReliefFollowUps({
@@ -2062,7 +2070,7 @@ what_can_wait: show_clarity ? what_can_wait : null,
       });
 
   const decisionCareKeyForStory =
-    situation.care_recipient_id ?? situation.caregiver_id;
+    requireCareRecipientId(situation);
   const latestDecision = listDecisionMemory(decisionCareKeyForStory).slice(-1)[0];
 
   const care_story_update =

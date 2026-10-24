@@ -50,8 +50,8 @@ export type SituationEmotionalLoadContribution = {
 
 /** Recovery time modeling stub after situation resolution. */
 export type RecoveryTimeEstimate = {
-  /** Minutes until emotional load is expected to decay (stub). */
-  estimatedMinutes: number;
+  /** Null until a validated recovery-duration model exists. */
+  estimatedMinutes: number | null;
   level: CognitiveFatigueLevel;
   note: string;
 };
@@ -159,7 +159,7 @@ export type EmotionalLoadSignalLayerPayload = {
   deferNonCritical: boolean;
   simplifyRecommendations: boolean;
   perSituationCount: number;
-  recoveryMinutesStub: number;
+  recoveryMinutesEstimate: number | null;
   detectionEnabled: boolean;
   guaranteeOk: boolean;
 };

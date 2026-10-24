@@ -122,23 +122,17 @@ const captured = await captureVoiceObservation({
   editedTranscript: "Dad wandered outside at 2am",
   record: recordObservation,
 });
-assert(captured.ok === true, "captureVoiceObservation ok");
-if (captured.ok) {
-  assert(captured.transcript.includes("wandered"), "transcript set");
-  assert(
-    (captured.observation.structured as { signal: string }[]).some(
-      (s) => s.signal === "wandering",
-    ),
-    "voice path extracts wandering",
-  );
-  assert(captured.observation.observations_this_week >= 1, "KPI increments");
+assert(captured.ok === false && captured.code === "PERSISTENCE_UNAVAILABLE", "voice capture must not report success without durable persistence");
+if (!captured.ok) {
+  assert(captured.code === "PERSISTENCE_UNAVAILABLE", "voice transcript must not be reported as a saved observation");
 }
 const voiceRec = recordObservation({
   caregiver_id: "cg_voice2",
   raw_text: "Mom asked where Dad was seven times today",
   source: "voice",
 });
-assert(voiceRec.observations_this_week >= 1, "voice source_type path");
+assert(voiceRec.observations_this_week >= 1, "voice source_type extraction runs in process memory");
+assert(voiceRec.persistence_status === "unavailable", "in-memory observation is not durable");
 console.log("✓ STT→observation path (mocked server STT via edited transcript)");
 
 // ─── STT provider routing ────────────────────────────────────────────────────
@@ -196,14 +190,19 @@ const required = [
   "src/lib/voice-observation/transcribe.ts",
   "src/lib/voice-observation/speech-language.ts",
   "src/lib/voice-observation/voice-mode.ts",
-  "src/app/api/observations/voice/route.ts",
-  "src/app/api/tts/synthesize/route.ts",
-  "db/migrations/013_voice_observation_tts.sql",
 ];
 for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
-console.log("✓ module + API + migration files");
+// Voice server endpoints and the advertised migration are not currently present.
+for (const futurePath of [
+  "src/app/api/observations/voice/route.ts",
+  "src/app/api/tts/synthesize/route.ts",
+  "db/migrations/013_voice_observation_tts.sql",
+]) {
+  assert(!fs.existsSync(path.join(root, futurePath)), `${futurePath} must remain absent until voice persistence is implemented`);
+}
+console.log("✓ future voice libraries exist; server routes/migration are explicitly unavailable");
 
 assert(
   VOICE_OBSERVATION_MVP.successKpi === "observations_per_caregiver_per_week",

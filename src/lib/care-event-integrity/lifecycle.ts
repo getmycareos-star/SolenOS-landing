@@ -14,7 +14,7 @@ export function mapNormalizationStatusToLifecycle(
 }
 
 export function createIntegrityState(params: {
-  confidenceScore: number;
+  confidenceScore: number | null;
   userConfirmed?: boolean;
   originalExtraction?: string;
   sources?: CareEventIntegrity["sources"];

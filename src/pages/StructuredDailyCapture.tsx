@@ -51,7 +51,7 @@ export default function StructuredDailyCapture() {
     note: string | null;
   }>({
     medication_name: '',
-    status: 'given', // default to given
+    status: '',
     dose: null,
     scheduled_for: null,
     administered_at: null,
@@ -67,7 +67,7 @@ export default function StructuredDailyCapture() {
     unit: string | null;
     note: string | null;
   }>({
-    vital_type: 'bp_systolic',
+    vital_type: '',
     value: 0,
     measured_at: new Date().toISOString(),
     unit: null,
@@ -81,8 +81,8 @@ export default function StructuredDailyCapture() {
     observed_at: string;
     note: string | null;
   }>({
-    axis: 'mood',
-    score: 3,
+    axis: '',
+    score: 0,
     observed_at: new Date().toISOString(),
     note: null,
   });
@@ -269,6 +269,11 @@ export default function StructuredDailyCapture() {
         setMedicationUploading(false);
         return;
       }
+      if (!['given', 'refused', 'missed'].includes(medicationData.status)) {
+        alert('Select the actual medication status before adding this entry.');
+        setMedicationUploading(false);
+        return;
+      }
       
       // Optimistically add to medications list
       setForm(prev => ({
@@ -279,7 +284,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -310,8 +315,12 @@ export default function StructuredDailyCapture() {
         measured_at: new Date(vitalForm.measured_at).toISOString(),
       };
       
-      // Validate required fields
-      if (isNaN(vitalData.value) || vitalData.value === 0) {
+      // Require the caregiver to identify what was actually measured.
+      if (!vitalData.vital_type) {
+        alert('Select the actual vital type before adding this entry.');
+        return;
+      }
+      if (!Number.isFinite(vitalData.value) || vitalData.value <= 0) {
         alert('Please enter a valid value');
         return;
       }
@@ -324,7 +333,7 @@ export default function StructuredDailyCapture() {
       
       // Reset vitals form
       setVitalForm({
-        vital_type: 'bp_systolic',
+        vital_type: '',
         value: 0,
         measured_at: new Date().toISOString(),
         unit: null,
@@ -342,6 +351,14 @@ export default function StructuredDailyCapture() {
     e.preventDefault();
     
     try {
+      if (!scaleForm.axis.trim()) {
+        alert('Select the actual scale before adding this entry.');
+        return;
+      }
+      if (!Number.isInteger(scaleForm.score) || scaleForm.score < 1 || scaleForm.score > 5) {
+        alert('Enter the observed score from 1 to 5 before adding this entry.');
+        return;
+      }
       const scaleData = {
         ...scaleForm,
         observed_at: new Date(scaleForm.observed_at).toISOString(),
@@ -355,8 +372,8 @@ export default function StructuredDailyCapture() {
       
       // Reset scale form
       setScaleForm({
-        axis: 'mood',
-        score: 3,
+        axis: '',
+        score: 0,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -428,7 +445,14 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
-      // On success, reset the form
+      // Only a persisted event ID is enough to show a saved state or clear care input.
+      if (!data || typeof data !== 'object' ||
+          (data as Record<string, unknown>).success !== true ||
+          typeof (data as Record<string, unknown>).id !== 'string' ||
+          !(data as Record<string, unknown>).id) {
+        throw new Error('The server did not confirm a persisted daily-care event. The form has been preserved; check the Living Care Record before retrying to avoid a duplicate.');
+      }
+      // On confirmed persistence, reset the form
       setForm({
         medications: [],
         vitals: [],
@@ -439,7 +463,7 @@ export default function StructuredDailyCapture() {
       // Reset medication form
       setMedicationForm({
         medication_name: '',
-        status: 'given',
+        status: '',
         dose: null,
         scheduled_for: null,
         administered_at: null,
@@ -449,7 +473,7 @@ export default function StructuredDailyCapture() {
       
       // Reset vitals form
       setVitalForm({
-        vital_type: 'bp_systolic',
+        vital_type: '',
         value: 0,
         measured_at: new Date().toISOString(),
         unit: null,
@@ -458,8 +482,8 @@ export default function StructuredDailyCapture() {
       
       // Reset scale form
       setScaleForm({
-        axis: 'mood',
-        score: 3,
+        axis: '',
+        score: 0,
         observed_at: new Date().toISOString(),
         note: null,
       });
@@ -495,8 +519,7 @@ export default function StructuredDailyCapture() {
     onSettled: () => {
       setSubmitting(false);
     },
-    retry: true,
-    maxRetries: 3
+    // Daily capture is a durable write and is never automatically replayed.
   });
 
   // Handle form submission to backend
@@ -835,6 +858,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
+                  <option value="">Select actual status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
@@ -848,7 +872,7 @@ export default function StructuredDailyCapture() {
                   id="medication-dose"
                   value={medicationForm.dose || ''}
                   onChange={(e) => setMedicationForm(prev => ({ ...prev, dose: e.target.value || null }))}
-                  placeholder="Enter dose (e.g., 10mg)"
+                  placeholder="Enter the recorded dose"
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1087,6 +1111,7 @@ export default function StructuredDailyCapture() {
                   fontSize: '14px' 
                 }}
               >
+                <option value="">Select vital type</option>
                 {VITAL_TYPES.map(type => (
                   <option key={type} value={type}>
                     {type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -1101,7 +1126,7 @@ export default function StructuredDailyCapture() {
                 <input
                   id="capture-vital-value"
                   type="number"
-                  value={vitalForm.value}
+                  value={vitalForm.value || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
                   placeholder="Enter value"
                   style={{ 
@@ -1122,7 +1147,7 @@ export default function StructuredDailyCapture() {
                   id="vital-unit"
                   value={vitalForm.unit || ''}
                   onChange={(e) => setVitalForm(prev => ({ ...prev, unit: e.target.value || null }))}
-                  placeholder="Enter unit (e.g., mmHg, bpm)"
+                  placeholder="Enter the recorded unit"
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1233,6 +1258,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
+                  <option value="">Select scale</option>
                   {SCALE_AXES.map(axis => (
                     <option key={axis} value={axis}>
                       {axis.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -1249,8 +1275,8 @@ export default function StructuredDailyCapture() {
                   type="number"
                   min={1}
                   max={5}
-                  value={scaleForm.score}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: parseInt(e.target.value) || 3 }))}
+                  value={scaleForm.score || ''}
+                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? 0 : Number(e.target.value) }))}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 

@@ -1,7 +1,7 @@
 import { structureCareInput } from "../care-record/structure-input";
 import { inferEventType } from "./classify";
-import { tryPersistCareEvent } from "./postgres-store";
-import { createCareEvent, getCareEvent, updateCareEventMetadata } from "./store";
+import { retrieveHistoricalContext } from "../care-record/retrieve";
+import { tryLoadCareEventsForCaregiver, tryPersistCareEvent } from "./postgres-store";
 import type { CreateCareEventInput, CreateCareEventResult } from "./types";
 
 function enrichWithStructured(input: CreateCareEventInput): CreateCareEventInput {
@@ -32,18 +32,14 @@ function enrichWithStructured(input: CreateCareEventInput): CreateCareEventInput
 }
 
 /**
- * Record a CareEvent — structured for continuous care record, in-memory + Postgres.
+ * Record a CareEvent — only reports success after the event and source are durably stored.
  */
 export async function recordCareEvent(input: CreateCareEventInput): Promise<CreateCareEventResult> {
+  const caregiverId = input.created_by?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Authenticated caregiver attribution is required; care event was not recorded.");
   const enriched = enrichWithStructured(input);
-  const inMemory = createCareEvent(enriched);
-
   const persisted = await tryPersistCareEvent(enriched);
-  if (persisted) {
-    return { care_event: persisted };
-  }
-
-  return inMemory;
+  return { care_event: persisted };
 }
 
 export async function recordCareEventWithContext(
@@ -55,28 +51,24 @@ export async function recordCareEventWithContext(
 > {
   const result = await recordCareEvent(input);
 
-  const { listCareEventsForCaregiver } = await import("./store");
-  const { retrieveHistoricalContext } = await import("../care-record/retrieve");
+  const caregiverId = input.created_by?.trim();
+  if (!caregiverId || caregiverId === "default_caregiver") {
+    throw new Error("Authenticated caregiver attribution is required to retrieve historical context.");
+  }
 
-  const caregiverId = input.created_by ?? "default_caregiver";
-  const prior = listCareEventsForCaregiver(caregiverId).filter(
-    (e) => e.id !== result.care_event.id,
-  );
-
-  const historical_context =
-    prior.length > 0
-      ? retrieveHistoricalContext(prior, input.content, 5)
-      : { query: input.content, matches: [], evidence_backed: true as const };
-
-  if (historical_context.matches.length > 0) {
-    const relatedIds = historical_context.matches.map((m) => m.event_id);
-    updateCareEventMetadata(result.care_event.id, {
-      related_event_ids: relatedIds,
-    });
-    const refreshed = getCareEvent(result.care_event.id);
-    if (refreshed) {
-      return { care_event: refreshed, historical_context };
-    }
+  let historical_context: import("../care-record/types").HistoricalContextResult;
+  try {
+    const prior = (await tryLoadCareEventsForCaregiver(caregiverId)).filter(
+      (event) => event.id !== result.care_event.id,
+    );
+    historical_context = retrieveHistoricalContext(prior, input.content, 5);
+  } catch {
+    historical_context = {
+      query: input.content,
+      matches: [],
+      evidence_backed: false,
+      status: "unavailable",
+    };
   }
 
   return { ...result, historical_context };

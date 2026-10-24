@@ -8,7 +8,7 @@ type Props = {
   className?: string;
 };
 
-export function MemoryEpisodePanel({ caregiverId = "default_caregiver", className }: Props) {
+export function MemoryEpisodePanel({ caregiverId, className }: Props) {
   const [graph, setGraph] = useState<HierarchicalMemoryGraph | null>(null);
   const [expandedEpisode, setExpandedEpisode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -16,6 +16,11 @@ export function MemoryEpisodePanel({ caregiverId = "default_caregiver", classNam
   const pageSize = 5;
 
   const load = useCallback(async () => {
+    if (!caregiverId?.trim() || caregiverId === "default_caregiver") {
+      setGraph(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(
