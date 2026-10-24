@@ -38,6 +38,38 @@ describe("reconstructed care-situation disclosure", () => {
     );
   });
 
+  it("shows a persisted-entry receipt when the event was saved but no situation projection was returned", () => {
+    const response = {
+      ok: true,
+      care_event_id: "event-saved-123",
+      evidence_id: "evidence-saved-456",
+      message: "Care input recorded successfully.",
+      events: [{
+        id: "event-saved-123",
+        title: "Breakfast was mostly uneaten.",
+        description: "Breakfast was mostly uneaten.",
+        occurred_at: "2026-10-24T10:00:00Z",
+      }],
+      active_care_situation: undefined,
+      active_care_situation_turn: undefined,
+    } as unknown as SituationResponse;
+
+    render(
+      <SituationResponsePanel
+        response={response}
+        rawInput="Breakfast was mostly uneaten."
+      />,
+    );
+
+    expect(screen.getByRole("status").textContent).toContain(
+      "Entry saved to the Living Care Record",
+    );
+    expect(screen.getByRole("status").textContent).toContain(
+      "event-saved-123",
+    );
+    expect(screen.queryByText("Care record view unavailable")).toBeNull();
+  });
+
   it("does not show the projection warning when a separate reasoning state is persisted", () => {
     const response = {
       active_care_situation: {
