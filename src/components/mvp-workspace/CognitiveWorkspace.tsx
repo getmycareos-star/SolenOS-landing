@@ -419,6 +419,8 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         };
         care_key?: string;
         care_session_id?: string;
+        care_event_id?: string;
+        evidence_id?: string;
         ui_situations?: Situation[];
         situations?: Situation[];
       };
