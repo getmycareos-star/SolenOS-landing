@@ -13,9 +13,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 export function apiUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  // Document extraction is implemented as a Next.js route handler, not a
-  // FastAPI endpoint. Always keep this path same-origin even when the optional
-  // direct backend origin is configured for larger authenticated API calls.
+  // Keep extraction same-origin: the Next.js handler forwards the bearer token
+  // to Railway and uses local OCR only for formats the backend cannot extract.
   if (normalized === "/api/extract" || normalized.startsWith("/api/extract?")) return normalized;
   if (!API_BASE) return normalized;
   return `${API_BASE.replace(/\/$/, "")}${normalized}`;
