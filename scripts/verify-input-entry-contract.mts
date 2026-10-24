@@ -88,7 +88,24 @@ console.log("✓ Share Target registered in manifest");
 
 assert(fs.existsSync(path.join(root, "src", "app", "share-target", "route.ts")));
 assert(fs.existsSync(path.join(root, "src", "app", "api", "share-intake", "route.ts")));
-console.log("✓ share-target receive + claim API exist");
+const shareTarget = fs.readFileSync(path.join(root, "src", "app", "share-target", "route.ts"), "utf8");
+const shareClaim = fs.readFileSync(path.join(root, "src", "app", "api", "share-intake", "route.ts"), "utf8");
+assert(shareTarget.includes("createPersistentShare") && shareTarget.includes("/api/v1/share-intake"));
+assert(shareClaim.includes("getBackendOrigin") && shareClaim.includes("/api/v1/share-intake/"));
+assert(!shareTarget.includes("putSharedIntake"), "Share Target must not rely on process-local memory");
+console.log("✓ Share Target persists and claims one-time backend capabilities");
+
+const extractor = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "capture", "extract-attached.ts"),
+  "utf8",
+);
+assert(extractor.includes('postFormData("/upload"') && extractor.includes("evidenceId"));
+const workspace = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"),
+  "utf8",
+);
+assert(workspace.includes("evidence_id: d.evidenceId"));
+console.log("✓ Original documents persist and link to care events");
 
 const sot = fs.readFileSync(
   path.join(root, "docs", "02-product", "solenos-input-entry-contract.md"),
