@@ -65,7 +65,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
               documents, and what changed over time. No memory required.
             </p>
             <div className="onboarding-trust-signal">
-              <span aria-hidden="true">🔒</span> Your data stays private.
+              <span aria-hidden="true">🔒</span> Your care information stays private. It is not sold or used for advertising.
             </div>
             <Button variant="primary" className="onboarding-cta" onClick={handleStart}>
               Begin
