@@ -63,17 +63,12 @@ export type InferredDocument = {
 
 
 export type DocumentConfidence = {
-
-  extraction: number;
-
-  structure: number;
-
-  inference: number;
-
-  overall: number;
-
+  /** Null means no calibrated provider confidence is available. */
+  extraction: number | null;
+  structure: number | null;
+  inference: number | null;
+  overall: number | null;
   uncertaintyFlagged: boolean;
-
 };
 
 
@@ -132,7 +127,7 @@ export type DocumentMemoryProposal = {
 
   suggestedInfluenceLabel: string;
 
-  confidence: number;
+  confidence: number | null;
 
   status: DocumentMemoryProposalStatus;
 
@@ -200,7 +195,7 @@ export type DocumentIntelligenceLayerPayload = {
 
   documentTypes: readonly SolenOSDocument[];
 
-  overallConfidence: number;
+  overallConfidence: number | null;
 
   uncertaintyFlagged: boolean;
 
