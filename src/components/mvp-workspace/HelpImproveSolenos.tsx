@@ -1,6 +1,7 @@
 "use client";
 
 import { apiUrl } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import { useCallback, useState } from "react";
 import {
   GLOBAL_FEEDBACK_LABEL,
@@ -30,27 +31,37 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
     setSaving(true);
     setSubmitError(null);
     try {
+      const session = await ensureAnonymousSession();
       const key = careKey?.trim() || "anonymous_feedback";
       const helped = option === "Response was helpful";
-      const res = await fetch(apiUrl("/api/research-feedback"), {
+      const res = await fetch(apiUrl("/api/v1/feedback"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
-          care_key: key,
-          helped_understand: helped,
-          missed: helped ? undefined : option || undefined,
-          expected_understanding: note.trim() || undefined,
-          raw_input_excerpt: "global_help_improve",
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
+          category: "help_improve",
+          detail: JSON.stringify({
+            care_key: key,
+            helped_understand: helped,
+            missed: helped ? undefined : option || undefined,
+            expected_understanding: note.trim() || undefined,
+            source: "global_help_improve",
+          }),
         }),
       });
       if (!res.ok) {
-        throw new Error("We couldn't send your feedback right now.");
+        const data = (await res.json().catch(() => ({}))) as { detail?: string; error?: string };
+        throw new Error(data.detail ?? data.error ?? "We couldn't send your feedback right now.");
       }
       // Only claim the feedback was recorded once the request actually succeeds.
       setDone(true);
-    } catch {
+    } catch (err) {
       setSubmitError(
-        "We couldn't send your feedback. Check your connection and try again.",
+        err instanceof Error ? err.message : "We couldn't send your feedback. Check your connection and try again.",
       );
     } finally {
       setSaving(false);
