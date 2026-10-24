@@ -19,7 +19,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const [text, setText] = useState('')
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
-  const personId = pid || getPersonId()
+  const personId = pid ?? getPersonId()
 
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
     SavedSituation,
