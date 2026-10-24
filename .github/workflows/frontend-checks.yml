@@ -7,7 +7,6 @@ on:
       - "src/**"
       - "package.json"
       - "package-lock.json"
-      - "vite.config.ts"
       - "netlify.toml"
       - "tsconfig*.json"
       - ".github/workflows/frontend-checks.yml"
@@ -16,7 +15,7 @@ on:
       - "src/**"
       - "package.json"
       - "package-lock.json"
-      - "vite.config.ts"
+      - "netlify.toml"
       - "tsconfig*.json"
       - ".github/workflows/frontend-checks.yml"
 
@@ -40,33 +39,28 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Type-check
+      - name: Type-check Next.js application
         run: npm run typecheck
 
-      - name: Run tests
-        run: npm test -- --runInBand
+      - name: Run continuity and production-safety checks
+        run: npm test
 
-      - name: Build production bundle
+      - name: Build production Next.js application
         run: npm run build
 
-      - name: Verify Netlify uses the Vite bundle and current API proxy
+      - name: Verify Netlify targets Next.js
         run: |
           python - <<'PY'
           from pathlib import Path
-
           config = Path("netlify.toml").read_text(encoding="utf-8")
-          required = [
-              'command = "npm run build"',
-              'publish = "dist"',
-              'to = "https://solenosbackend-production.up.railway.app/api/:splat"',
-              'to = "/index.html"',
-          ]
+          package = Path("package.json").read_text(encoding="utf-8")
+          required = ['publish = ".next"', 'package = "@netlify/plugin-nextjs"', 'to = "https://solenosbackend-production.up.railway.app/api/:splat"']
           missing = [item for item in required if item not in config]
           if missing:
-              raise SystemExit(f"Netlify config is missing required Vite/API settings: {missing}")
-          if ".next" in config or "plugin-nextjs" in config:
-              raise SystemExit("Netlify config still contains a Next.js build target/plugin.")
-          if config.index('from = "/api/*"') > config.index('from = "/*"'):
-              raise SystemExit("The SPA fallback must come after the API proxy.")
-          print("PASS: Netlify config targets Vite dist, current Railway API, and ordered SPA fallback.")
+              raise SystemExit(f"Next.js Netlify configuration missing: {missing}")
+          if '"build": "next build"' not in package or '"dev": "next dev"' not in package:
+              raise SystemExit("package.json is not configured for Next.js.")
+          if Path("vite.config.ts").exists() or Path("src/main.tsx").exists():
+              raise SystemExit("Vite entry/config files remain in the active repository root.")
+          print("PASS: Next.js build, Netlify plugin and Railway API proxy are configured.")
           PY
