@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, postFormData, getPersonId, getCaregiverId } from '@/api/client';
+import { postJSON, postFormData, getPersonId, getCaregiverId, requestQwenCandidateAnalysis } from '@/api/client';
 import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
@@ -438,10 +438,18 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
-      setQwenAnalysis({
-        status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
-        candidates: data?.qwen_candidates ?? null,
-      });
+      const savedEventId = typeof data?.id === 'string' ? data.id : '';
+      setQwenAnalysis({ status: savedEventId ? 'processing' : 'unavailable', candidates: null });
+      if (savedEventId) {
+        // Qwen runs after the save receipt. Model latency/failure must not block
+        // form reset or make the caregiver repeat an already-persisted capture.
+        void requestQwenCandidateAnalysis(savedEventId)
+          .then((analysis) => setQwenAnalysis({
+            status: analysis.qwen_extraction_status,
+            candidates: analysis.qwen_candidates,
+          }))
+          .catch(() => setQwenAnalysis({ status: 'unavailable', candidates: null }));
+      }
       // On success, reset the form
       setForm({
         medications: [],
