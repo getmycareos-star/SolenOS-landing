@@ -116,6 +116,7 @@ describe('CareHandoffPanel', () => {
 
 
   it('shows a persisted family briefing and labels reminder delivery from actual receipts', async () => {
+    mockedGetCaregiverId.mockReturnValue('caregiver-real-1');
     mockedGetJSON.mockImplementation(async (path: string) => {
       if (path.startsWith('/care-handoffs/people/')) return [{
         ...handoff,
@@ -149,6 +150,7 @@ describe('CareHandoffPanel', () => {
   });
 
   it('does not claim delivery when a handoff reminder has no receipt', async () => {
+    mockedGetCaregiverId.mockReturnValue('caregiver-real-1');
     mockedGetJSON.mockImplementation(async (path: string) => {
       if (path.startsWith('/care-handoffs/people/')) return [{ ...handoff, reminder_at: '2026-10-22T09:00:00Z' }];
       if (path === '/caregivers/person-real-1') return [
