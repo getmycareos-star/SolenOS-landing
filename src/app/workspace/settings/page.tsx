@@ -106,6 +106,7 @@ function NotificationsCard() {
       <p className="mobile-settings-hint">
         These are local preferences only. SolenOS does not currently schedule or confirm delivery of reminders or alerts.
       </p>
+      <Link href="/workspace/reminders" className="care-reminders-settings-link">Manage care reminders</Link>
       {render()}
     </section>
   );
