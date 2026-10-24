@@ -709,7 +709,7 @@ export default function Dashboard() {
                               Source references: {[...sourceIds, ...sourceRecordIds].join(', ')}
                             </p>
                           )}
-                          {item.time_provenance && <p style={{ fontSize: '10px', color: 'var(--text-secondary)', margin: '4px 0' }}>Time provenance: {String(item.time_provenance).replace(/_/g, ' ')}</p>}
+                          {typeof item.time_provenance === 'string' && <p style={{ fontSize: '10px', color: 'var(--text-secondary)', margin: '4px 0' }}>Time provenance: {item.time_provenance.replace(/_/g, ' ')}</p>}
                         </article>
                       );
                     })}
