@@ -396,8 +396,24 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       });
 
       if (!situationRes.ok) {
-        const err = (await safeJson(situationRes)) as { error?: string };
-        throw new Error(err.error ?? "Could not structure situation");
+        const err = (await safeJson(situationRes)) as {
+          error?: string;
+          detail?: string | { code?: string; message?: string };
+        };
+        const detail = typeof err.detail === "string" ? err.detail : err.detail?.message;
+        if (
+          err.detail &&
+          typeof err.detail === "object" &&
+          err.detail.code === "conversation_only" &&
+          readyDocs.length === 0 &&
+          text
+        ) {
+          // Server-side defense for older clients: redirect social messages to
+          // Companion without writing care evidence or creating a care event.
+          window.location.assign(`/workspace/companion?draft=${encodeURIComponent(text)}`);
+          return;
+        }
+        throw new Error(detail ?? err.error ?? "Could not structure situation");
       }
 
       let situationData = normalizeBackendSituationResponse(
