@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { getJSON, postJSON, getCaregiverId, checkAuthState } from '../api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
@@ -306,7 +306,7 @@ export default function Community() {
             Shared experience is not medical advice — always confirm with a clinician.
           </p>
         </div>
-        <Link to="/" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+        <Link href="/workspace" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
           ← Back to capture
         </Link>
       </div>
