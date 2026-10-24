@@ -1,26 +1,35 @@
 import { NextResponse } from "next/server";
-import { claimSharedIntake } from "@/lib/input-entry-contract/share-intake";
+import { getBackendOrigin } from "@/lib/backend-origin";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-/** Claim shared evidence into the composer — same extract → situation path afterward. */
+/** Claim a short-lived, one-time share capability stored by the FastAPI backend. */
 export async function GET(request: Request) {
-  const id = new URL(request.url).searchParams.get("id");
-  if (!id) {
-    return NextResponse.json({ ok: false, error: "missing id" }, { status: 400 });
+  const id = new URL(request.url).searchParams.get("id")?.trim();
+  if (!id || id.length > 256) {
+    return NextResponse.json({ ok: false, error: "missing or invalid id" }, { status: 400 });
   }
 
-  const payload = claimSharedIntake(id);
-  if (!payload) {
-    return NextResponse.json({ ok: false, error: "not found" }, { status: 404 });
+  try {
+    const target = new URL(`/api/v1/share-intake/${encodeURIComponent(id)}`, getBackendOrigin());
+    const upstream = await fetch(target, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    const contentType = upstream.headers.get("content-type") || "application/json";
+    return new Response(await upstream.arrayBuffer(), {
+      status: upstream.status,
+      headers: {
+        "content-type": contentType,
+        "cache-control": "no-store",
+      },
+    });
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Shared content could not be retrieved from the care backend." },
+      { status: 502 },
+    );
   }
-
-  return NextResponse.json({
-    ok: true,
-    entry_method: "share",
-    text: payload.text ?? "",
-    title: payload.title ?? "",
-    url: payload.url ?? "",
-    files: payload.files,
-  });
 }
