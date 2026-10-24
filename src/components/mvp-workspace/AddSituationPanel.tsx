@@ -127,37 +127,13 @@ export function AddSituationPanel({
     let cancelled = false;
 
     async function claimShare() {
-      try {
-        const res = await fetch(
-          `/api/share-intake?id=${encodeURIComponent(pendingShareId!)}`,
-        );
-        const data = (await res.json()) as {
-          ok?: boolean;
-          text?: string;
-          files?: Array<{ name: string; mimeType: string; base64: string }>;
-        };
-        if (cancelled || !res.ok || !data.ok) return;
-
-        if (data.text?.trim()) {
-          onChange(value ? `${value}\n\n${data.text.trim()}` : data.text.trim());
-          setLastEntryMethod("share");
-        }
-
-        if (data.files?.length) {
-          const files = data.files.map((f) => {
-            const binary = atob(f.base64);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i += 1) {
-              bytes[i] = binary.charCodeAt(i);
-            }
-            return new File([bytes], f.name, { type: f.mimeType });
-          });
-          await ingestFiles(files, "share");
-        }
-        onShareClaimed?.();
-      } catch {
-        /* share claim is best-effort */
-      }
+      if (cancelled) return;
+      // The backend does not currently register /api/share-intake. Do not make
+      // a request that will fail or pretend shared content was imported.
+      setLocalHint(
+        "Incoming share intake is not connected in this deployment. Paste the text or use Upload in the workspace; no shared content has been imported.",
+      );
+      onShareClaimed?.();
     }
 
     void claimShare();
