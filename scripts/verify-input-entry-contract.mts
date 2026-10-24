@@ -111,6 +111,21 @@ console.log("✓ Document extraction route is not redirected to an unregistered 
 
 console.log("✓ Original documents persist and link to care events");
 
+assert(workspace.includes("isCasualConversationOnly"));
+assert(workspace.includes("/workspace/companion?draft="));
+assert(workspace.includes('method: "GET"') && workspace.includes("hydrationRes"));
+assert(workspace.includes("active_care_situation_turn"));
+console.log("✓ greeting-only notes route to Companion; care captures reload the persisted view");
+
+const companion = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
+  "utf8",
+);
+assert(companion.includes("autoDraftSent"));
+assert(companion.includes("sendMessage(draft)"));
+assert(companion.includes("postJSON('/conversation/message'"));
+console.log("✓ greeting draft is sent to the backend Companion endpoint, not a local canned reply");
+
 const sot = fs.readFileSync(
   path.join(root, "docs", "02-product", "solenos-input-entry-contract.md"),
   "utf8",
