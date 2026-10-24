@@ -367,8 +367,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           Authorization: `Bearer ${anonymousSession.access_token}`,
         },
         body: JSON.stringify({
+          person_id: anonymousSession.person.id,
+          caregiver_id: anonymousSession.caregiver.id,
+          client_care_key: caregiverId,
           raw_input: text,
-          caregiver_id: caregiverId,
           care_session_id: interactionSessionId(),
           captured_at: provenance.captured_at,
           provenance: {
@@ -411,30 +413,28 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         situations?: Situation[];
       };
 
-      // POST /api/situation confirms the write; GET /api/situation rebuilds the
-      // caregiver view from persisted evidence/events. Do not treat the POST
-      // acknowledgement itself as proof that the LCR projection is available.
-      const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
-      hydrationUrl.searchParams.set("caregiver_id", caregiverId);
-      hydrationUrl.searchParams.set("care_session_id", interactionSessionId());
-      const hydrationRes = await fetch(hydrationUrl.toString(), {
-        method: "GET",
-        headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
-        cache: "no-store",
-      });
-      if (!hydrationRes.ok) {
-        throw new Error(
-          "The note was accepted, but the saved care record could not be reloaded. Refresh the record before retrying; do not submit the same note again.",
-        );
+      // The backend POST returns its read-after-write projection from saved
+      // evidence/events. Use that projection first; a second request is only a
+      // compatibility fallback for older backend deployments.
+      let hydrated = situationData;
+      if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
+        const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
+        hydrationUrl.searchParams.set("caregiver_id", caregiverId);
+        hydrationUrl.searchParams.set("care_session_id", interactionSessionId());
+        const hydrationRes = await fetch(hydrationUrl.toString(), {
+          method: "GET",
+          headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
+          cache: "no-store",
+        });
+        if (!hydrationRes.ok) {
+          throw new Error(
+            "The note was accepted, but the saved care record could not be reloaded. Refresh the record before retrying; do not submit the same note again.",
+          );
+        }
+        hydrated = normalizeBackendSituationResponse(
+          await safeJson(hydrationRes),
+        ) as typeof situationData;
       }
-      const hydrated = normalizeBackendSituationResponse(
-        await safeJson(hydrationRes),
-      ) as WorkspaceSituationResponse & {
-        care_key?: string;
-        care_session_id?: string;
-        ui_situations?: Situation[];
-        situations?: Situation[];
-      };
       if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
         throw new Error(
           "The note was accepted, but the backend did not return a persisted care-record view. Refresh the record before retrying; do not submit the same note again.",
