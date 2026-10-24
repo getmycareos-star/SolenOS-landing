@@ -5,10 +5,10 @@ import { ensureAnonymousSession } from "@/api/client";
 import { useCallback, useEffect, useState } from "react";
 
 type Props = {
-  caregiverId: string;
+  caregiverId?: string;
 };
 
-export function PolicySettingsPanel({ caregiverId }: Props) {
+export function PolicySettingsPanel(_props: Props = {}) {
   const [dataImprovement, setDataImprovement] = useState(false);
   const [verified, setVerified] = useState(false);
   const [limitedMode, setLimitedMode] = useState(false);
@@ -35,7 +35,7 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [caregiverId]);
+  }, []);
 
   useEffect(() => {
     void load();
