@@ -7,10 +7,7 @@ import {
   BookOpen,
   FileText,
   Settings,
-  Plus,
   PlusCircle,
-  Upload,
-  Camera,
   CalendarDays,
   type LucideIcon,
 } from "lucide-react";
