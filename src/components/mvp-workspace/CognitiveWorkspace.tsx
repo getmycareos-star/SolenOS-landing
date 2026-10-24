@@ -827,6 +827,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     }
     setLastSharedDisplay("");
     setSituationResponse(null);
+    setQwenAnalysis(null);
     setCaregiverError(
       hydrationWarning
         ? "Interaction paused, but the latest care record could not be refreshed. Check your connection before relying on the refreshed view."
@@ -1022,6 +1023,34 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                 }}
                 onContinue={handleDoneForNow}
               />
+            )}
+            {qwenAnalysis && (
+              <section className="panel panel-response" aria-label="Qwen support suggestions">
+                <h3>Qwen suggestions for caregiver review</h3>
+                <p role="status">
+                  {qwenAnalysis.status === "processing"
+                    ? "Reviewing the saved source with the local SolenOS model…"
+                    : qwenAnalysis.status === "pending_review"
+                      ? "These are suggestions only. They are not confirmed care facts and have not been written to the Living Care Record."
+                      : "The care update remains saved. Qwen suggestions are currently unavailable; nothing was substituted or invented."}
+                </p>
+                {qwenAnalysis.candidates?.observations?.length ? (
+                  <ul>
+                    {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => (
+                      <li key={index}>
+                        <strong>{candidate.subject}:</strong> {candidate.observation}
+                        <p>Source: “{candidate.source_quote}” · {candidate.review_status}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {qwenAnalysis.candidates?.open_questions?.length ? (
+                  <div>
+                    <strong>Questions to clarify</strong>
+                    <ul>{qwenAnalysis.candidates.open_questions.map((question: string, index: number) => <li key={index}>{question}</li>)}</ul>
+                  </div>
+                ) : null}
+              </section>
             )}
             <button
               type="button"
