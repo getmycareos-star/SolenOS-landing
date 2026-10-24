@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { verifyAnonymousSession } from "@/api/client";
+import { ensureAnonymousSession, getJSON } from "@/api/client";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -205,7 +205,10 @@ function SecurityCard() {
     try {
       // Bootstrap/refresh a server-issued bearer session, then exercise a
       // protected care endpoint through the same Netlify API proxy as the app.
-      const session = await verifyAnonymousSession();
+      const session = await ensureAnonymousSession();
+      // A protected read proves the backend accepts this exact saved token.
+      // Do not rotate it here: other mounted components may hold the current token in memory.
+      await getJSON(`/evidence/${encodeURIComponent(session.person.id)}`);
       setSessionExpiry(session.expires_at);
       setBackendStatus("active");
     } catch (error) {
