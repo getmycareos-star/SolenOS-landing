@@ -179,6 +179,34 @@ assert(cognitiveWorkspace.includes("requestQwenCandidateAnalysis(savedEventId)")
 assert(cognitiveWorkspace.includes("not been written to the Living Care Record"));
 console.log("✓ Qwen is called after persisted capture, document intake and Daily Capture; Community summaries use the Qwen endpoint");
 
+const qwenSupportPanel = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "QwenSupportPanel.tsx"),
+  "utf8",
+);
+for (const workflow of [
+  "daily_capture", "document", "community", "appointment", "after_appointment",
+  "handoff", "professional_summary", "open_loops", "two_week_review",
+  "decision_outcome", "medication_day", "living_care_record",
+]) {
+  assert(apiClient.includes(`'${workflow}'`), `Missing Qwen workflow contract: ${workflow}`);
+  assert(qwenSupportPanel.includes(`"${workflow}"`), `Missing Qwen support UI: ${workflow}`);
+}
+assert(qwenSupportPanel.includes("requestQwenSupport"));
+assert(qwenSupportPanel.includes("written_to_lcr !== false"));
+assert(qwenSupportPanel.includes("Nothing was written to the Living Care Record"));
+for (const page of [
+  "src/app/workspace/page.tsx",
+  "src/app/workspace/daily-care/page.tsx",
+  "src/app/workspace/documents/page.tsx",
+  "src/app/workspace/community/page.tsx",
+]) {
+  const source = fs.readFileSync(path.join(root, page), "utf8");
+  assert(source.includes("QwenSupportPanel"), `Qwen support panel not mounted in ${page}`);
+}
+console.log("✓ Qwen read-only support is exposed across care, documents, Community, appointments, handoffs, reviews and LCR");
+
+
+
 
 const companionScreen = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
