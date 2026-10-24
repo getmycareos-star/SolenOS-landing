@@ -17,84 +17,75 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
+import { ensureAnonymousSession, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
-/** Notification toggles persisted immediately (no Save button). */
+/** Notification controls persist to the authenticated care-record backend. */
 function NotificationsCard() {
   const { show, render } = useToast();
   const [quietHours, setQuietHours] = useState(false);
   const [reminders, setReminders] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("solenos_notif_prefs");
-      if (raw) {
-        const p = JSON.parse(raw) as { quietHours?: boolean; reminders?: boolean };
-        if (typeof p.quietHours === "boolean") setQuietHours(p.quietHours);
-        if (typeof p.reminders === "boolean") setReminders(p.reminders);
+    let cancelled = false;
+    void (async () => {
+      try {
+        await ensureAnonymousSession();
+        const prefs = await getJSON("/notifications/preferences") as {
+          quiet_hours_enabled: boolean; reminders_enabled: boolean;
+        };
+        if (!cancelled) {
+          setQuietHours(prefs.quiet_hours_enabled);
+          setReminders(prefs.reminders_enabled);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load backend notification preferences.");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch {
-      /* ignore */
-    }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  const persist = (key: string, value: boolean) => {
+  const persist = async (key: "quiet_hours_enabled" | "reminders_enabled", value: boolean) => {
+    setSaving(true);
+    setError("");
     try {
-      window.localStorage.setItem(
-        "solenos_notif_prefs",
-        JSON.stringify({ quietHours, reminders, [key]: value }),
-      );
-    } catch {
-      /* ignore */
+      await ensureAnonymousSession();
+      const result = await putJSON("/notifications/preferences", { [key]: value }) as {
+        quiet_hours_enabled: boolean; reminders_enabled: boolean;
+      };
+      setQuietHours(result.quiet_hours_enabled);
+      setReminders(result.reminders_enabled);
+      show("Notification preferences saved to this care record.", "success");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save notification preferences.");
+      show("Notification preferences were not saved.", "error");
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <section className="mobile-settings-card">
-      <h2 className="mobile-settings-card-title">
-        <Bell size={16} aria-hidden /> Notifications
-      </h2>
+      <h2 className="mobile-settings-card-title"><Bell size={16} aria-hidden /> Notifications</h2>
+      {loading && <p className="mobile-settings-hint" role="status">Loading preferences from the care backend…</p>}
+      {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
       <label className="mobile-settings-row">
-        <span>
-          <span className="mobile-settings-label">Quiet hours</span>
-          <span className="mobile-settings-hint">
-            Suppress non-emergency alerts.
-          </span>
-        </span>
-        <span className="mobile-toggle">
-          <input
-            type="checkbox"
-            checked={quietHours}
-            onChange={(e) => {
-              setQuietHours(e.target.checked);
-              persist("quietHours", e.target.checked);
-              show(e.target.checked ? "Quiet hours on" : "Quiet hours off", "success");
-            }}
-          />
-          <span className="mobile-toggle-track" />
-        </span>
+        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Suppress non-emergency reminders. Emergency handling is not disabled by this preference.</span></span>
+        <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("quiet_hours_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
       <label className="mobile-settings-row">
-        <span>
-          <span className="mobile-settings-label">Care reminders</span>
-          <span className="mobile-settings-hint">
-            Gentle nudges for open care notes.
-          </span>
-        </span>
-        <span className="mobile-toggle">
-          <input
-            type="checkbox"
-            checked={reminders}
-            onChange={(e) => {
-              setReminders(e.target.checked);
-              persist("reminders", e.target.checked);
-              show(e.target.checked ? "Reminders on" : "Reminders off", "success");
-            }}
-          />
-          <span className="mobile-toggle-track" />
-        </span>
+        <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">Allow care-related reminder notifications.</span></span>
+        <span className="mobile-toggle"><input type="checkbox" checked={reminders} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("reminders_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
+      <div className="mobile-settings-actions">
+        <Button variant="secondary" asChild><Link href="/workspace/notifications">View notifications</Link></Button>
+      </div>
       {render()}
     </section>
   );
@@ -193,62 +184,54 @@ function ProfileCard() {
   );
 }
 
-/** Security — honest account status. No fake account controls. */
+/** Security — show actual bearer-session status and allow server-side revocation. */
 function SecurityCard() {
   const { show, render } = useToast();
-  const accountControls: {
-    label: string;
-    variant: ButtonVariant;
-    note: string;
-  }[] = [
-    {
-      label: "Create account",
-      variant: "primary",
-      note: "Account sign-in is not available yet.",
-    },
-    {
-      label: "Change password",
-      variant: "secondary",
-      note: "Requires an account, which is not available yet.",
-    },
-    {
-      label: "Add email",
-      variant: "secondary",
-      note: "Requires an account, which is not available yet.",
-    },
-    {
-      label: "Delete account",
-      variant: "destructive",
-      note: "Requires an account, which is not available yet.",
-    },
-  ];
+  const [status, setStatus] = useState<"checking" | "active" | "unavailable" | "revoked">("checking");
+  const [busy, setBusy] = useState(false);
+  const [expiresAt, setExpiresAt] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    void ensureAnonymousSession().then((session) => {
+      if (!cancelled) { setStatus("active"); setExpiresAt(session.expires_at); }
+    }).catch(() => {
+      if (!cancelled) setStatus("unavailable");
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const revoke = async () => {
+    setBusy(true);
+    try {
+      await revokeAnonymousSession();
+      setStatus("revoked");
+      setExpiresAt("");
+      show("This care-record session was revoked by the backend.", "success");
+    } catch (e) {
+      show(e instanceof Error ? e.message : "The backend could not revoke this session.", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <section className="mobile-settings-card">
-      <h2 className="mobile-settings-card-title">
-        <Lock size={16} aria-hidden /> Security
-      </h2>
-      <p className="mobile-settings-hint">
-        Your SolenOS data is stored on this device. Account sign-in and
-        cross-device sync are not yet available.
+      <h2 className="mobile-settings-card-title"><Shield size={16} aria-hidden /> Security</h2>
+      <p className="mobile-settings-hint" role="status">
+        {status === "checking" ? "Checking the backend-issued care-record session…" :
+          status === "active" ? "An active, scoped anonymous bearer session is protecting this care record. This is not an account login." :
+          status === "revoked" ? "This session has been revoked. Care APIs will reject its token." :
+          "No valid session could be confirmed. Protected care operations should remain unavailable until the backend confirms a session."}
       </p>
+      {expiresAt && <p className="mobile-settings-hint">Session expires: {new Date(expiresAt).toLocaleString()}</p>}
       <div className="mobile-settings-buttons">
-        {accountControls.map((control) => (
-          <Button
-            key={control.label}
-            variant={control.variant}
-            className="mobile-fab-sheet-item"
-            disabled
-            title={control.note}
-            onClick={() => show(control.note, "info")}
-          >
-            {control.label}
-          </Button>
-        ))}
+        <Button variant="destructive" disabled={status !== "active" || busy} loading={busy} onClick={() => void revoke()}>
+          {busy ? "Revoking…" : "Revoke this session"}
+        </Button>
       </div>
       <p className="mobile-settings-hint">
-        When accounts are introduced, SolenOS will use email and password to
-        secure your care record.
+        Account creation, password changes, MFA, and cross-device account recovery are not implemented yet; this screen does not pretend they are enabled.
       </p>
       {render()}
     </section>
