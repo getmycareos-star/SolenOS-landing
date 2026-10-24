@@ -97,7 +97,7 @@ export async function POST(request: Request) {
       tif: "image/tiff",
       tiff: "image/tiff",
       bmp: "image/bmp",
-      json: "application/json",
+      json: "text/plain",
     };
     const effectiveType = contentType || typeByExtension[extension ?? ""] || "";
     if (!ALLOWED_TYPES.has(effectiveType) && !(extension && typeByExtension[extension])) {
