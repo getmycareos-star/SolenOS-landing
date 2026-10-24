@@ -345,7 +345,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     // Social-only messages are conversational, not care evidence. Send them to
     // Companion so Qwen generates the response; never save "hi" as a care event.
     if (readyDocs.length === 0 && text && isCasualConversationOnly(text)) {
-      window.location.assign(`/workspace/companion?draft=${encodeURIComponent(text)}`);
+      try {
+        // Ensure the anonymous bearer session exists before Companion auto-sends the draft.
+        await ensureAnonymousSession();
+        window.location.assign(`/workspace/companion?draft=${encodeURIComponent(text)}`);
+      } catch {
+        setCaregiverError("SolenOS could not start a secure Companion session. Your greeting was not saved to the care record; please try again.");
+      }
       return;
     }
 
