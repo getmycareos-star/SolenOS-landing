@@ -87,3 +87,13 @@ small, .text-secondary { color: var(--text-secondary); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Keep existing inline-styled dashboard panels usable on phones. */
+@media (max-width: 760px) {
+  [style*="display: flex"][style*="justify-content: space-between"] { flex-wrap: wrap; }
+  [style*="display: flex"][style*="justify-content: space-between"] > * { min-width: 0; }
+  [style*="display: flex"][style*="flex-direction: column"] { min-width: 0; }
+  [style*="padding: 16px 20px"], [style*="padding: 18px"] { padding: 14px !important; }
+  [style*="max-width: 190px"] { max-width: 100% !important; }
+  [style*="font-size: 11px"], [style*="font-size: 12px"] { overflow-wrap: anywhere; }
+}
