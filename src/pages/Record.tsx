@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, getPersonId, getCaregiverId, postJSON } from '../api/client'
 import AppointmentBriefings from '../components/AppointmentBriefings'
+import CareHandoffPanel from '../components/CareHandoffPanel'
 
 interface Evidence {
   id: string
@@ -190,6 +191,7 @@ export default function Record() {
        </div>
 
       <AppointmentBriefings evidence={items} />
+      {getPersonId() && <CareHandoffPanel personId={getPersonId()} />}
 
       <section style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
