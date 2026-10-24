@@ -144,7 +144,7 @@ describe('CareHandoffPanel', () => {
       throw new Error(`Unexpected endpoint: ${path}`);
     });
     render(<CareHandoffPanel personId="person-real-1" />);
-    expect(await screen.findByRole('region', { name: 'Family care briefing' })).toHaveTextContent('1');
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Family care briefing' })).toHaveTextContent('1'));
     expect(screen.getByText(/OVERDUE/)).toBeInTheDocument();
     expect(await screen.findByText(/Delivery delivered/)).toBeInTheDocument();
   });
