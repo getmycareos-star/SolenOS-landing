@@ -78,11 +78,14 @@ export default function Companion() {
     } catch (e: unknown) {
       setMessages(prev => prev.filter(message => message !== userMsg))
       const detail = e instanceof Error ? e.message.trim() : ''
-      const unavailable = /\bAPI 404\b|^not found$/i.test(detail)
+      const routeMissing = /\bAPI 404\b|^not found$/i.test(detail)
+      const modelUnavailable = /\bAPI 503\b|model is not configured|model.*unavailable|ollama/i.test(detail)
       setRequestError(
-        unavailable
+        routeMissing
           ? 'Companion is not available from the connected backend yet. The endpoint returned 404; your text remains in the input.'
-          : 'The server did not confirm whether it received this message. Your text remains in the input. Check the care record before retrying to avoid duplicates.'
+          : modelUnavailable
+            ? 'The Companion model service is not configured or reachable. Your text remains in the input; no completed response was produced. Try again after the model service is available.'
+            : 'The server did not confirm whether it received this message. Your text remains in the input. Check the care record before retrying to avoid duplicates.'
       )
     } finally {
       setLoading(false)
