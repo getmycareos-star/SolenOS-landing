@@ -18,9 +18,10 @@ type ConsentStatus = {
 type Props = {
   caregiverId: string;
   onConsentAccepted?: () => void;
+  onStatusChange?: (status: "required" | "accepted" | "unavailable") => void;
 };
 
-export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
+export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChange }: Props) {
   const [status, setStatus] = useState<ConsentStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -45,12 +46,15 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
       if (!res.ok) throw new Error("Could not load consent status.");
       const data = (await res.json()) as ConsentStatus;
       setStatus(data);
+      onStatusChange?.(data.required ? "required" : "accepted");
     } catch {
       setError("Could not load consent status.");
+      setStatus(null);
+      onStatusChange?.("unavailable");
     } finally {
       setLoading(false);
     }
-  }, [caregiverId]);
+  }, [caregiverId, onStatusChange]);
 
   useEffect(() => {
     void loadStatus();
