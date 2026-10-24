@@ -131,7 +131,7 @@ describe('Phase 4 production data safety', () => {
     await waitFor(() => {
       expect(mockedGetJSON.mock.calls.some(([path]) => String(path).startsWith('/events/'))).toBe(true);
     });
-    expect(screen.queryByText(/ðŸ|â†’/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Living Care Record system model/i)).not.toBeInTheDocument();
   })
 
   it('does not report a valid empty record when the record API fails', async () => {
