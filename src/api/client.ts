@@ -8,14 +8,10 @@ function isPlaceholderIdentifier(value: string | null | undefined): boolean {
 }
 
 export function getPersonId(): string {
-  // Older builds may have persisted a demo ID in localStorage. Never send it
-  // to the API as if it identified a real care recipient.
-  // Prefer an explicitly selected legacy person ID; otherwise use the person
-  // issued by the current anonymous care session.
-  const id =
-    localStorage.getItem('solenos_person_id')?.trim() ||
-    localStorage.getItem(ANONYMOUS_PERSON_KEY)?.trim() ||
-    ''
+  // Only the backend-issued person ID is authorized by the bearer capability.
+  // A legacy localStorage ID may belong to another record and must never take
+  // precedence over the identity bound to the current server-issued session.
+  const id = localStorage.getItem(ANONYMOUS_PERSON_KEY)?.trim() || ''
   return isPlaceholderIdentifier(id) ? '' : id
 }
 
@@ -71,6 +67,23 @@ export function getAnonymousAccessToken(): string | null {
 function authorizationHeaders(): Record<string, string> {
   const token = getAnonymousAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/** Ensure protected API requests wait for the server-issued record identity.
+ * The session bootstrap/refresh implementation uses raw fetch, so this does
+ * not recurse. Public time utilities remain callable before care entry.
+ */
+async function requestAuthorizationHeaders(path: string): Promise<Record<string, string>> {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  const isPublicTimeUtility = /^\/time\/(?:now|ago|until)(?:\?|$)/.test(normalized);
+  if (!isPublicTimeUtility) {
+    await ensureAnonymousSession();
+  }
+  const headers = authorizationHeaders();
+  if (!isPublicTimeUtility && !headers.Authorization) {
+    throw new Error('A valid SolenOS care session is required before accessing this record.');
+  }
+  return headers;
 }
 
 /** Create or refresh a scoped anonymous session without account registration. */
@@ -212,13 +225,15 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path), { headers: authorizationHeaders() })
+  const headers = await requestAuthorizationHeaders(path)
+  const res = await fetch(resolveApiUrl(path), { headers })
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path), { headers: authorizationHeaders() })
+  const headers = await requestAuthorizationHeaders(path)
+  const res = await fetch(resolveApiUrl(path), { headers })
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -226,18 +241,20 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown) {
+  const authHeaders = await requestAuthorizationHeaders(path)
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
 export async function patchJSON(path: string, body: unknown) {
+  const authHeaders = await requestAuthorizationHeaders(path)
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -247,9 +264,10 @@ export async function patchJSON(path: string, body: unknown) {
 // Multipart upload helper. Do not set Content-Type manually: the browser must
 // add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
+  const headers = await requestAuthorizationHeaders(path)
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: authorizationHeaders(),
+    headers,
     body,
   })
   return handleResponse(res)
