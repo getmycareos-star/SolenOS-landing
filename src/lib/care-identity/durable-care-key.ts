@@ -115,11 +115,9 @@ export function resolveDurableCareKey(params: {
   const fromCaregiver = params.caregiver_id?.trim();
   if (fromCaregiver) return assertDurableCareKey(fromCaregiver, "caregiver_id");
 
-  const fromSession = params.care_session_id?.trim();
-  // Interaction sessions are not care reality keys (Locked A).
-  if (fromSession) return assertDurableCareKey(fromSession, "care_session_id");
-
-  throw new Error("A durable care key is required; no shared default identity is permitted.");
+  // Session IDs are interaction-scoped and must never be reinterpreted as
+  // durable caregiver/care-record identity, even if they lack the sess_ prefix.
+  throw new Error("An explicit durable caregiver identity is required; session IDs cannot identify care records.");
 
 }
 
@@ -153,22 +151,11 @@ export function requireCareKeyFromRequest(params: {
 
 
 
-  const fromSession = params.care_session_id?.trim();
-
-  if (fromSession && !isSharedPlaceholderKey(fromSession) && !isInteractionSessionId(fromSession)) {
-
-    return { ok: true, careKey: fromSession };
-
-  }
-
-
-
+  // Never infer durable identity from a session field. A caller must supply
+  // an explicit caregiver_id; backend authorization remains authoritative.
   return {
-
     ok: false,
-
-    error: "caregiver_id is required — Living Care Record writes need a care key",
-
+    error: "caregiver_id is required — session IDs cannot identify care records",
   };
 
 }
