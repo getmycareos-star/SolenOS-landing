@@ -96,7 +96,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       setPersonId(personId);
       return {
         person: { id: personId, name: "Care recipient", date_of_birth: null },
-        caregiver: { id: caregiverId, name: "Caregiver", relationship: "Family" },
+        caregiver: { id: caregiverId, name: "Caregiver", relationship: "" },
         access_token: token,
         token_type: "Bearer",
         expires_at: expiresAt,
@@ -125,7 +125,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     return {
       session_id: refreshed.session_id,
       person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
-      caregiver: { id: refreshed.caregiver_id, name: "Caregiver", relationship: "Family" },
+      caregiver: { id: refreshed.caregiver_id, name: "Caregiver", relationship: "" },
       access_token: refreshed.access_token,
       token_type: "Bearer",
       expires_at: refreshed.expires_at,

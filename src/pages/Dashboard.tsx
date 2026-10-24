@@ -48,6 +48,7 @@ interface DailyIntelligence {
   upcoming_items: Array<Record<string, unknown>>;
   active_windows: any[];
   expired_windows: any[];
+  proactive_items?: Array<Record<string, unknown>>;
   daily_summary: string;
 }
 
@@ -400,6 +401,16 @@ export default function Dashboard() {
     }
   };
 
+  const proactiveItems = (dailyIntel?.proactive_items ?? []).filter(item => {
+    const hasTitle = typeof item.title === 'string' && item.title.trim().length > 0;
+    const hasMessage = typeof item.message === 'string' && item.message.trim().length > 0;
+    const hasEvidenceRefs = Array.isArray(item.source_evidence_ids) && item.source_evidence_ids.some(id => typeof id === 'string' && id.trim().length > 0);
+    const hasRecordRefs = (Array.isArray(item.source_ids) && item.source_ids.some(id => typeof id === 'string' && id.trim().length > 0))
+      || (typeof item.source_id === 'string' && item.source_id.trim().length > 0);
+    return hasTitle && hasMessage && (hasEvidenceRefs || hasRecordRefs);
+  });
+  const withheldProactiveItems = Math.max(0, (dailyIntel?.proactive_items?.length ?? 0) - proactiveItems.length);
+
   return (
     <div>
       <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>What matters today</h1>
@@ -670,6 +681,72 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
+              {withheldProactiveItems > 0 && (
+                <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                  {withheldProactiveItems} proactive cue(s) were withheld because source references or required details were missing.
+                </p>
+              )}
+                            {proactiveItems.length > 0 && (
+                <section aria-label="Proactive care coordination" style={{
+                  marginTop: '12px', background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '12px', padding: '16px 20px'
+                }}>
+                  <h3 style={{ fontSize: '14px', margin: '0 0 4px' }}>Proactive care coordination</h3>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 12px' }}>
+                    Based on recorded appointments, open actions, and recent events. These cues do not establish a diagnosis or cause; check the source before acting.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {proactiveItems.map((item, index) => {
+                      const title = String(item.title);
+                      const message = String(item.message);
+                      const priority = String(item.priority || 'coordination').replace(/_/g, ' ');
+                      const sourceIds = Array.isArray(item.source_evidence_ids)
+                        ? item.source_evidence_ids.filter((id): id is string => typeof id === 'string')
+                        : [];
+                      const sourceRecordIds = Array.isArray(item.source_ids)
+                        ? item.source_ids.filter((id): id is string => typeof id === 'string')
+                        : (typeof item.source_id === 'string' ? [item.source_id] : []);
+                      const owner = typeof item.actor_label === 'string'
+                        ? item.actor_label
+                        : typeof item.actor_id === 'string' ? item.actor_id : null;
+                      const actionStatus = typeof item.status === 'string' ? item.status.replace(/_/g, ' ') : null;
+                      const deadline = typeof item.deadline === 'string' ? item.deadline : null;
+                      const firstRecordedAt = typeof item.first_recorded_at === 'string' ? item.first_recorded_at : null;
+                      const lastRecordedAt = typeof item.last_recorded_at === 'string' ? item.last_recorded_at : null;
+                      const passage = typeof item.source_passage === 'string' ? item.source_passage : null;
+                      return (
+                        <article key={String(item.id || index)} style={{ borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'baseline' }}>
+                            <strong style={{ fontSize: '13px' }}>{title}</strong>
+                            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{priority}</span>
+                          </div>
+                          <p style={{ fontSize: '12px', lineHeight: 1.5, margin: '5px 0' }}>{message}</p>
+                          {owner && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Assigned to: {owner}</p>}
+                          {actionStatus && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Recorded status: {actionStatus}</p>}
+                          {deadline && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Recorded deadline: {new Date(deadline).toLocaleString()}</p>}
+                          {(firstRecordedAt || lastRecordedAt) && (
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>
+                              {firstRecordedAt ? `First recorded: ${new Date(firstRecordedAt).toLocaleString()}` : ''}
+                              {firstRecordedAt && lastRecordedAt ? ' · ' : ''}
+                              {lastRecordedAt ? `Most recent: ${new Date(lastRecordedAt).toLocaleString()}` : ''}
+                            </p>
+                          )}
+                          {passage && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '5px 0' }}>Source passage: “{passage}”</p>}
+                          {(sourceIds.length > 0 || sourceRecordIds.length > 0) && (
+                            <p style={{ fontSize: '10px', color: 'var(--text-secondary)', margin: '4px 0' }}>
+                              Source references: {[...sourceIds, ...sourceRecordIds].join(', ')}
+                            </p>
+                          )}
+                          {typeof item.time_provenance === 'string' && <p style={{ fontSize: '10px', color: 'var(--text-secondary)', margin: '4px 0' }}>Time provenance: {item.time_provenance.replace(/_/g, ' ')}</p>}
+                        </article>
+                      );
+                    })}
+                  </div>
+                  <Link to="/record" style={{ display: 'inline-block', marginTop: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Review the Living Care Record →
+                  </Link>
+                </section>
+              )}
             </section>
           )}
 
