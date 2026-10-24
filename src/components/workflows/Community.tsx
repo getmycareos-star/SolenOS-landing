@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getJSON, postJSON, getCaregiverId, checkAuthState } from '../api/client'
+import { getJSON, postJSON, getCaregiverId, checkAuthState } from '@/api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
