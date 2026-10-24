@@ -41,6 +41,7 @@ import {
   EMERGENCY_BOUNDARY,
 } from "@/lib/early-access-trust";
 import { HelpImproveSolenos } from "./HelpImproveSolenos";
+import { ConsentGatePanel } from "./ConsentGatePanel";
 
 function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string {
   const observations = response.active_care_situation?.observations ?? [];
@@ -778,6 +779,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <p className="panel-muted research-preview-notice" role="note">
         {IN_APP_IMPROVING_NOTICE}
       </p>
+      <ConsentGatePanel caregiverId={caregiverId} />
       <HelpImproveSolenos careKey={caregiverId} compact />
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
