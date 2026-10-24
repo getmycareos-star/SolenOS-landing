@@ -177,6 +177,19 @@ assert(route.includes("Authorization") && route.includes("bearer "), "care situa
 assert(route.includes("request.method"), "care situation proxy forwards supported HTTP methods");
 assert(!route.includes("upsertTrackedSituationFromCareInput"), "the Next.js route does not shadow durable backend state with process-local state");
 
+const consentGate = fs.readFileSync(path.join(root, "src/components/mvp-workspace/ConsentGatePanel.tsx"), "utf8");
+const policySettings = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PolicySettingsPanel.tsx"), "utf8");
+assert(consentGate.includes("/api/v1/consent") && consentGate.includes("session.access_token"), "consent gate uses the scoped backend consent contract");
+assert(policySettings.includes("/api/v1/consent") && policySettings.includes("session.access_token"), "privacy settings use the scoped backend consent contract");
+
+const shareSummary = fs.readFileSync(path.join(root, "src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx"), "utf8");
+assert(shareSummary.includes("session.caregiver.id"), "care-summary hydration uses the backend-issued caregiver identity");
+
+const feedbackPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/HelpImproveSolenos.tsx"), "utf8");
+const validationLoop = fs.readFileSync(path.join(root, "src/components/HumanValidationLoop.tsx"), "utf8");
+assert(feedbackPanel.includes("/api/v1/feedback") && feedbackPanel.includes("session.access_token"), "improvement feedback uses the scoped backend endpoint");
+assert(validationLoop.includes("/api/v1/feedback") && validationLoop.includes("session.access_token"), "human-validation feedback uses the scoped backend endpoint");
+
 const page = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
 assert(page.includes("/api/situation?"), "page fetches situation for sidebar");
