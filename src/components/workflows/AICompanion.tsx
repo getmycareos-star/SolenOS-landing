@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
+import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -133,6 +134,12 @@ export default function Companion() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+      <QwenAssistPanel
+        title="Qwen support for your Living Care Record"
+        defaultWorkflow="living_care_record"
+        compact
+      />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 600 }}>Companion chat</h1>
         <button
