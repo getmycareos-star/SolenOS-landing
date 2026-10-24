@@ -35,6 +35,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
 
   const loadStatus = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const session = await ensureAnonymousSession();
       const res = await fetch(apiUrl(`/api/v1/consent?person_id=${encodeURIComponent(session.person.id)}`), {
@@ -93,7 +94,20 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted }: Props) {
   }
 
   if (loading) return null;
-  if (!status || !status.required) return null;
+  if (!status) {
+    return (
+      <section className="panel consent-gate-panel" aria-label="Consent status unavailable">
+        <h2 className="workspace-headline">Privacy status unavailable</h2>
+        <p role="alert" className="consent-error">
+          {error ?? "SolenOS could not confirm the consent status for this care record."}
+        </p>
+        <button type="button" className="workspace-secondary" onClick={() => void loadStatus()}>
+          Retry
+        </button>
+      </section>
+    );
+  }
+  if (!status.required) return null;
 
   const mandatoryReady =
     termsAccepted && medicalAck && privacyAck && multiCaregiverAck && noAdvertisingAck;
