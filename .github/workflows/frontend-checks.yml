@@ -60,7 +60,38 @@ jobs:
               raise SystemExit(f"Next.js Netlify configuration missing: {missing}")
           if '"build": "next build"' not in package or '"dev": "next dev"' not in package:
               raise SystemExit("package.json is not configured for Next.js.")
-          if Path("vite.config.ts").exists() or Path("src/main.tsx").exists():
-              raise SystemExit("Vite entry/config files remain in the active repository root.")
-          print("PASS: Next.js build, Netlify plugin and Railway API proxy are configured.")
+          forbidden = [
+              "vite.config.ts",
+              "vite.config.js",
+              "src/main.tsx",
+              "src/App.tsx",
+              "src/index.css",
+              "index.html",
+              "tsconfig.node.json",
+              "tsconfig.vite.json",
+              "src/pages",
+              "package.json.backup",
+          ]
+          remaining = [path for path in forbidden if Path(path).exists()]
+          if remaining:
+              raise SystemExit(f"Obsolete Vite application files remain active: {remaining}")
+          required_routes = [
+              "src/app/page.tsx",
+              "src/app/workspace/page.tsx",
+              "src/app/workspace/daily-care/page.tsx",
+              "src/app/workspace/community/page.tsx",
+              "src/app/workspace/companion/page.tsx",
+          ]
+          missing_routes = [path for path in required_routes if not Path(path).is_file()]
+          if missing_routes:
+              raise SystemExit(f"Required Next.js routes are missing: {missing_routes}")
+          required_workflows = [
+              "src/components/workflows/StructuredDailyCapture.tsx",
+              "src/components/workflows/Community.tsx",
+              "src/components/workflows/AICompanion.tsx",
+          ]
+          missing_workflows = [path for path in required_workflows if not Path(path).is_file()]
+          if missing_workflows:
+              raise SystemExit(f"Required Next.js workflow components are missing: {missing_workflows}")
+          print("PASS: Next.js routes, workflow components, Netlify plugin and Railway API proxy are configured.")
           PY
