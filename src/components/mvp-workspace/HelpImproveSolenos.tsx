@@ -1,5 +1,7 @@
 "use client";
 
+import { apiUrl } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import { useCallback, useState } from "react";
 import {
   GLOBAL_FEEDBACK_LABEL,
@@ -9,31 +11,70 @@ import {
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 
 type Props = {
-  /** Retained for callers; feedback is not keyed to a care record. */
   careKey?: string | null;
   compact?: boolean;
 };
 
 /**
- * Optional improvement signal. Until a scoped, persisted feedback API exists,
- * feedback is prepared as an email draft rather than sent to an unsupported route.
+ * Always-available improvement signal — not only after AI responses.
  */
-export function HelpImproveSolenos({ compact }: Props) {
+export function HelpImproveSolenos({ careKey, compact }: Props) {
   const [open, setOpen] = useState(false);
   const [option, setOption] = useState("");
   const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const openEmailDraft = useCallback(() => {
-    if (!option) return;
-    const body = [
-      `Feedback: ${option}`,
-      note.trim() ? `Additional note: ${note.trim()}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n");
-    window.location.href =
-      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("SolenOS early-access feedback")}&body=${encodeURIComponent(body)}`;
-  }, [note, option]);
+  const submit = useCallback(async () => {
+    if (saving) return;
+    setSaving(true);
+    setSubmitError(null);
+    try {
+      const session = await ensureAnonymousSession();
+      const key = careKey?.trim() || "anonymous_feedback";
+      const helped = option === "Response was helpful";
+      const res = await fetch(apiUrl("/api/v1/feedback"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
+          category: "help_improve",
+          detail: JSON.stringify({
+            care_key: key,
+            helped_understand: helped,
+            missed: helped ? undefined : option || undefined,
+            expected_understanding: note.trim() || undefined,
+            source: "global_help_improve",
+          }),
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { detail?: string; error?: string };
+        throw new Error(data.detail ?? data.error ?? "We couldn't send your feedback right now.");
+      }
+      // Only claim the feedback was recorded once the request actually succeeds.
+      setDone(true);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "We couldn't send your feedback. Check your connection and try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [careKey, note, option, saving]);
+
+  if (done) {
+    return (
+      <p className="panel-muted help-improve-thanks" role="status">
+        Thank you — we have recorded your feedback for our team.
+      </p>
+    );
+  }
 
   if (!open) {
     return (
@@ -57,6 +98,7 @@ export function HelpImproveSolenos({ compact }: Props) {
                 name="global-feedback"
                 checked={option === opt}
                 onChange={() => setOption(opt)}
+                disabled={saving}
               />
               {opt}
             </label>
@@ -69,28 +111,34 @@ export function HelpImproveSolenos({ compact }: Props) {
           rows={2}
           value={note}
           onChange={(e) => setNote(e.target.value)}
+          disabled={saving}
         />
       </label>
+{submitError && (
+        <p className="panel-muted help-improve-error" role="alert">
+          {submitError}
+        </p>
+      )}
       <div className="situation-actions">
         <button
           type="button"
           className="workspace-primary"
-          disabled={!option}
-          onClick={openEmailDraft}
+          disabled={saving || !option}
+          onClick={() => void submit()}
         >
-          Open email draft
+          Send
         </button>
         <button
           type="button"
           className="workspace-secondary"
+          disabled={saving}
           onClick={() => setOpen(false)}
         >
           Cancel
         </button>
       </div>
       <p className="panel-muted">
-        Feedback opens in your email app; SolenOS has not received it until you send it.
-        {" "}Or email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+        Or email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
       </p>
     </div>
   );
