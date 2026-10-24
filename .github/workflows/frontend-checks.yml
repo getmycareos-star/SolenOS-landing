@@ -61,6 +61,8 @@ jobs:
               'to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"',
               'from = "/api/situation"',
               'to = "https://solenosbackend-production.up.railway.app/api/situation"',
+              'from = "/api/extract"',
+              'to = "https://solenosbackend-production.up.railway.app/api/extract"',
           ]
           missing = [item for item in required if item not in config]
           if missing:
