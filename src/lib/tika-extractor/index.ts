@@ -43,7 +43,12 @@ const TIKA_TYPES = new Set([
 ]);
 
 function tikaServerUrl(): string {
-  return process.env.TIKA_SERVER_URL ?? "http://127.0.0.1:9998";
+  const configured = process.env.TIKA_SERVER_URL?.trim();
+  // Netlify/serverless production has no Tika daemon on its own localhost.
+  // Keep localhost as a developer convenience only; never wait on a fake
+  // production localhost service when no Tika endpoint is configured.
+  if (configured) return configured;
+  return process.env.NODE_ENV === "production" ? "" : "http://127.0.0.1:9998";
 }
 
 function ocrEnabled(): boolean {
@@ -64,7 +69,9 @@ async function extractViaTikaServer(
   buffer: Buffer,
   contentType: string,
 ): Promise<string | null> {
-  const base = tikaServerUrl().replace(/\/$/, "");
+  const configuredBase = tikaServerUrl();
+  if (!configuredBase) return null;
+  const base = configuredBase.replace(/\/$/, "");
   try {
     const res = await fetch(`${base}/tika`, {
       method: "PUT",
