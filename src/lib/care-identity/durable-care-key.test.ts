@@ -35,6 +35,13 @@ describe("identity isolation boundaries", () => {
     const key = ensureClientDurableCareKey("default_caregiver");
     expect(key).toMatch(/^care_/);
     expect(key).not.toBe("default_caregiver");
+    expect(ensureClientDurableCareKey("DEFAULT_CAREGIVER")).toMatch(/^care_/);
+  });
+
+  it("never promotes an interaction session ID to a durable caregiver key", () => {
+    const key = ensureClientDurableCareKey("sess_legacy_session");
+    expect(key).toMatch(/^care_/);
+    expect(key).not.toBe("sess_legacy_session");
   });
 
   it("refuses to create caregiver-scoped stores without a valid identity", () => {
