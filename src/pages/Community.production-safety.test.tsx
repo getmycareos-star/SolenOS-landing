@@ -152,3 +152,22 @@ describe('Keyword heuristics are disabled unless explicitly opted into in develo
     expect(interpretation.uncertainties[0]).toMatch(/no validated evidence-grounded classifier/i)
   })
 })
+
+describe('Community Qwen fallback integrity', () => {
+  it('does not call the legacy literal-search endpoint when the Qwen endpoint returns 404', async () => {
+    mockedGetJSON.mockResolvedValue({ posts: [] })
+    mockedPostJSON.mockRejectedValue(new Error('API 404: endpoint not found'))
+
+    render(<MemoryRouter><Community /></MemoryRouter>)
+    fireEvent.change(screen.getByPlaceholderText(/wandering overnight/i), {
+      target: { value: 'night wandering' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /find wisdom/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Qwen assistance could not be confirmed/i)
+    expect(mockedPostJSON).toHaveBeenCalledTimes(1)
+    expect(mockedPostJSON).toHaveBeenCalledWith('/community/experience/summary', {
+      observation: 'night wandering',
+    })
+  })
+})
