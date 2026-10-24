@@ -31,6 +31,12 @@
 # explicit prevents unrelated frontend-owned or unsupported paths (for example
 # telemetry) from being silently forwarded to the backend.
 [[redirects]]
+  from = "/api/extract"
+  to = "https://solenosbackend-production.up.railway.app/api/extract"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/v1/*"
   to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"
   status = 200
