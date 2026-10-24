@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { verifyAnonymousSession } from "@/api/client";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -205,8 +205,7 @@ function SecurityCard() {
     try {
       // Bootstrap/refresh a server-issued bearer session, then exercise a
       // protected care endpoint through the same Netlify API proxy as the app.
-      const session = await ensureAnonymousSession();
-      await getJSON("/situation?offer_return_invite=0");
+      const session = await verifyAnonymousSession();
       setSessionExpiry(session.expires_at);
       setBackendStatus("active");
     } catch (error) {
