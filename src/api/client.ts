@@ -247,6 +247,38 @@ export async function requestQwenCandidateAnalysis(eventId: string): Promise<Qwe
   return postJSON('/assistant/extract-candidates', { event_id: eventId }) as Promise<QwenCandidateAnalysis>;
 }
 
+export type QwenSupportWorkflow =
+  | 'daily_capture'
+  | 'document'
+  | 'community'
+  | 'appointment'
+  | 'handoff'
+  | 'living_care_record';
+
+export type QwenSupportResponse = {
+  workflow: QwenSupportWorkflow;
+  reply: string;
+  ai_generated: boolean;
+  model: string;
+  authority: 'solenos_care_record_and_caregiver';
+  review_required: true;
+  written_to_lcr: false;
+  persistence: 'read_only_assistance';
+  source_event_ids: string[];
+  source_evidence_ids: string[];
+  provider_status: string;
+};
+
+/** Optional, read-only Qwen help for a named workflow. Never persists model output. */
+export async function requestQwenSupport(input: {
+  workflow: QwenSupportWorkflow;
+  text: string;
+  evidence_ids?: string[];
+  appointment_id?: string;
+}): Promise<QwenSupportResponse> {
+  return postJSON('/assistant/assist', input) as Promise<QwenSupportResponse>;
+}
+
 export async function patchJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
