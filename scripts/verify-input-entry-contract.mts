@@ -124,7 +124,11 @@ const companion = fs.readFileSync(
 assert(companion.includes("autoDraftSent"));
 assert(companion.includes("sendMessage(draft)"));
 assert(companion.includes("postJSON('/conversation/message'"));
-console.log("✓ greeting draft is sent to the backend Companion endpoint, not a local canned reply");
+assert(companion.includes("ensureAnonymousSession()"));
+assert(companion.includes("person_id: session.person.id"));
+assert(workspace.includes('err.detail.code === "conversation_only"'));
+assert(workspace.includes("/workspace/companion?draft="));
+console.log("✓ greetings use the server-issued session and Companion endpoint; they are not written as care evidence");
 
 const sot = fs.readFileSync(
   path.join(root, "docs", "02-product", "solenos-input-entry-contract.md"),
