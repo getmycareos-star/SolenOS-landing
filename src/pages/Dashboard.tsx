@@ -691,7 +691,10 @@ export default function Dashboard() {
                       const sourceRecordIds = Array.isArray(item.source_ids)
                         ? item.source_ids.filter((id): id is string => typeof id === 'string')
                         : (typeof item.source_id === 'string' ? [item.source_id] : []);
-                      const owner = typeof item.actor_label === 'string' ? item.actor_label : null;
+                      const owner = typeof item.actor_label === 'string'
+                        ? item.actor_label
+                        : typeof item.actor_id === 'string' ? item.actor_id : null;
+                      const actionStatus = typeof item.status === 'string' ? item.status.replace(/_/g, ' ') : null;
                       const deadline = typeof item.deadline === 'string' ? item.deadline : null;
                       const passage = typeof item.source_passage === 'string' ? item.source_passage : null;
                       return (
@@ -702,6 +705,7 @@ export default function Dashboard() {
                           </div>
                           <p style={{ fontSize: '12px', lineHeight: 1.5, margin: '5px 0' }}>{message}</p>
                           {owner && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Assigned to: {owner}</p>}
+                          {actionStatus && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Recorded status: {actionStatus}</p>}
                           {deadline && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0' }}>Recorded deadline: {new Date(deadline).toLocaleString()}</p>}
                           {passage && <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '5px 0' }}>Source passage: “{passage}”</p>}
                           {(sourceIds.length > 0 || sourceRecordIds.length > 0) && (
