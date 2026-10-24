@@ -217,7 +217,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       .then((session) =>
         fetch(
           apiUrl(`/api/situation?caregiver_id=${encodeURIComponent(storedCareKey)}&care_session_id=${encodeURIComponent(sessionId)}&offer_return_invite=0`),
-          { headers: { Authorization: `Bearer ${session.access_token}` } },
+          { headers: { Authorization: `Bearer ${accessToken}` } },
         ),
       )
       .then(async (r) => {
