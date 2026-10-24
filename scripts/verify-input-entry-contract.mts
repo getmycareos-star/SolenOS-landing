@@ -95,9 +95,15 @@ assert(shareClaim.includes("getBackendOrigin") && shareClaim.includes("/api/v1/s
 assert(!shareTarget.includes("putSharedIntake"), "Share Target must not rely on process-local memory");
 console.log("✓ Share Target persists and claims one-time backend capabilities");
 
-const extractor = fs.readFileSync(path.join(root, "src", "components", "mvp-workspace", "capture", "extract-attached.ts"), "utf8");
+const extractor = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "capture", "extract-attached.ts"),
+  "utf8",
+);
 assert(extractor.includes('postFormData("/upload"') && extractor.includes("evidenceId"));
-const workspace = fs.readFileSync(path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"), "utf8");
+const workspace = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"),
+  "utf8",
+);
 assert(workspace.includes("evidence_id: d.evidenceId"));
 console.log("✓ Original documents persist and link to care events");
 
@@ -109,3 +115,13 @@ assert(sot.includes("never change the reasoning engine") || sot.includes("never*
 console.log("✓ SoT present");
 
 console.log("\nAll input-entry-contract checks passed.");
+
+
+const settingsPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "settings", "page.tsx"), "utf8");
+assert(settingsPage.includes('putJSON("/notifications/preferences"'));
+assert(settingsPage.includes("revokeAnonymousSession"));
+assert(settingsPage.includes('href="/workspace/notifications"'));
+const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "notifications", "page.tsx"), "utf8");
+assert(notificationPage.includes('getJSON("/notifications/unread-count")'));
+assert(notificationPage.includes('patchJSON(`/notifications/${encodeURIComponent(item.id)}/read`, {})'));
+console.log("✓ Security session revocation and notification actions use authenticated backend APIs");
