@@ -1,6 +1,7 @@
 "use client";
 
 import { apiUrl, safeJson } from "@/lib/api-url";
+import { ensureAnonymousSession } from "@/api/client";
 import { useCallback, useEffect, useState } from "react";
 
 type Props = {
@@ -18,7 +19,12 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(apiUrl(`/api/policy/consent?user_id=${encodeURIComponent(caregiverId)}`));
+      const session = await ensureAnonymousSession();
+      const res = await fetch(apiUrl(`/api/v1/consent?person_id=${encodeURIComponent(session.person.id)}`), {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Could not load consent status.");
       const data = (await safeJson(res)) as {
         verified?: boolean;
         profile?: { data_improvement_consent?: boolean; limited_mode?: boolean };
@@ -39,11 +45,16 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch(apiUrl("/api/policy/consent"), {
+      const session = await ensureAnonymousSession();
+      const res = await fetch(apiUrl("/api/v1/consent"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
-          user_id: caregiverId,
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
           action: "update_data_improvement",
           data_improvement_consent: enabled,
         }),
@@ -62,10 +73,18 @@ export function PolicySettingsPanel({ caregiverId }: Props) {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch(apiUrl("/api/policy/consent"), {
+      const session = await ensureAnonymousSession();
+      const res = await fetch(apiUrl("/api/v1/consent"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: caregiverId, action: "revoke" }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
+          action: "revoke",
+        }),
       });
       if (!res.ok) throw new Error("Revoke failed");
       await load();
