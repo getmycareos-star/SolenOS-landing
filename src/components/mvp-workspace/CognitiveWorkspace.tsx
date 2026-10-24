@@ -140,6 +140,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [prefs] = useState<AccessibilityPrefs>(DEFAULT_ACCESSIBILITY);
   const [transitionKey, setTransitionKey] = useState(0);
   const [situationResponse, setSituationResponse] = useState<WorkspaceSituationResponse | null>(null);
+  const [savedEventReceipt, setSavedEventReceipt] = useState<{
+    id: string;
+    title: string;
+    description?: string | null;
+    occurred_at?: string;
+    readbackVerified: boolean;
+  } | null>(null);
   const [hasContextRoot, setHasContextRoot] = useState(false);
   const [entryMode, setEntryMode] = useState<"initial" | "update">("initial");
   /** This browser session shared at least one note — gates Continuity / dual pane. */
@@ -447,9 +454,12 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         situations?: Situation[];
       };
 
-      // The backend POST returns its read-after-write projection from saved
-      // evidence/events. Use it first; only make a separate GET for older
-      // backend deployments that acknowledge a write without returning the view.
+      // A successful POST is a write receipt. Prefer the read-after-write
+      // projection; if no active situation was inferred, verify the event by ID
+      // rather than treating a valid saved event as a failed capture.
+      setLastSharedDisplay(sharedDisplay);
+      setRawInput("");
+      setDocuments([]);
       let hydrated = situationData;
       if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
         const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
@@ -460,20 +470,84 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
           cache: "no-store",
         });
-        if (!hydrationRes.ok) {
-          throw new Error(
-            "The note was accepted, but the saved care record could not be reloaded. Refresh the record before retrying; do not submit the same note again.",
-          );
+        if (hydrationRes.ok) {
+          hydrated = normalizeBackendSituationResponse(
+            await safeJson(hydrationRes),
+          ) as typeof situationData;
         }
-        hydrated = normalizeBackendSituationResponse(
-          await safeJson(hydrationRes),
-        ) as typeof situationData;
       }
-      if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
+
+      const savedId = situationData.care_event_id;
+      let verifiedReceipt: {
+        id: string;
+        title: string;
+        description?: string | null;
+        occurred_at?: string;
+        readbackVerified: boolean;
+      } | null = null;
+      if (savedId) {
+        const projected = (hydrated.events_created ?? []).find(
+          (event) => String((event as { id?: unknown }).id ?? "") === savedId,
+        ) as unknown as { id?: string; title?: string; description?: string | null; occurred_at?: string } | undefined;
+        if (projected?.id) {
+          verifiedReceipt = {
+            id: projected.id,
+            title: projected.title || sharedDisplay || "Saved care entry",
+            description: projected.description,
+            occurred_at: projected.occurred_at,
+            readbackVerified: true,
+          };
+        } else {
+          // Older deployed APIs may acknowledge the write but omit the
+          // projection. Check the durable event endpoint under the same bearer.
+          try {
+            const eventsRes = await fetch(
+              apiUrl(`/api/v1/events/${encodeURIComponent(anonymousSession.person.id)}`),
+              {
+                method: "GET",
+                headers: { Authorization: `Bearer ${anonymousSession.access_token}` },
+                cache: "no-store",
+              },
+            );
+            if (eventsRes.ok) {
+              const rows = await safeJson(eventsRes);
+              if (Array.isArray(rows)) {
+                const event = rows.find(
+                  (row) => row && typeof row === "object" && String((row as { id?: unknown }).id ?? "") === savedId,
+                ) as { id?: string; title?: string; description?: string | null; occurred_at?: string } | undefined;
+                if (event?.id) {
+                  verifiedReceipt = {
+                    id: event.id,
+                    title: event.title || sharedDisplay || "Saved care entry",
+                    description: event.description,
+                    occurred_at: event.occurred_at,
+                    readbackVerified: true,
+                  };
+                }
+              }
+            }
+          } catch {
+            // The POST receipt remains visible, but the UI must not imply that
+            // a separate read-after-write verification succeeded.
+          }
+        }
+        if (!verifiedReceipt) {
+          verifiedReceipt = {
+            id: savedId,
+            title: sharedDisplay || "Saved care entry",
+            description: sharedDisplay || null,
+            readbackVerified: false,
+          };
+        }
+      }
+
+      if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn && !verifiedReceipt) {
         throw new Error(
-          "The note was accepted, but the backend did not return a persisted care-record view. Refresh the record before retrying; do not submit the same note again.",
+          "The server accepted the capture but returned no event ID and no persisted view. Do not submit the same information again; refresh the record before retrying.",
         );
       }
+      setSavedEventReceipt(verifiedReceipt);
+
       situationData = ({
         ...situationData,
         ...hydrated,
