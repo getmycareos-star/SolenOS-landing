@@ -91,7 +91,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       personId &&
       caregiverId &&
       expiresAt &&
-      Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.now() + 24 * 60 * 60 * 1000
     ) {
       setPersonId(personId);
       return {
@@ -117,6 +117,9 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       expires_at: string;
       expires_in_seconds: number;
     };
+    // The backend refresh contract uses flat identity IDs, unlike bootstrap.
+    // Normalize it to the frontend's shared AnonymousSession shape only after
+    // persisting the exact backend-issued IDs.
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
     window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
     window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
