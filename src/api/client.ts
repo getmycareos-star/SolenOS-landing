@@ -227,6 +227,26 @@ export async function postJSON(path: string, body: unknown) {
   return handleResponse(res)
 }
 
+export type QwenCandidateAnalysis = {
+  event_id: string;
+  qwen_extraction_status: string;
+  qwen_candidates: { observations: Array<{
+    subject: string;
+    observation: string;
+    source_quote: string;
+    review_status: string;
+    source_event_id: string;
+    source_evidence_id?: string;
+  }>; open_questions: string[] } | null;
+  ai_generated: boolean;
+  written_to_lcr: false;
+};
+
+/** Analyze an already-persisted event. Failure never changes the save receipt. */
+export async function requestQwenCandidateAnalysis(eventId: string): Promise<QwenCandidateAnalysis> {
+  return postJSON('/assistant/extract-candidates', { event_id: eventId }) as Promise<QwenCandidateAnalysis>;
+}
+
 export async function patchJSON(path: string, body: unknown) {
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
