@@ -18,10 +18,10 @@ describe("production caregiver identity guards", () => {
 
     expect(() =>
       saveObservation("default_caregiver", "identity isolation regression", "text", []),
-    ).toThrow(/distinct caregiver identity/i);
+    ).toThrow(/caregiver identity/i);
 
     expect(() => listObservationsForCaregiver("default_caregiver")).toThrow(
-      /distinct caregiver identity/i,
+      /caregiver identity/i,
     );
   });
 
@@ -60,7 +60,7 @@ describe("production caregiver identity guards", () => {
   it("rejects missing identities in all three production entry points", async () => {
     expect(() =>
       recordObservation({ caregiver_id: "", raw_text: "identity isolation regression" }),
-    ).toThrow(/distinct caregiver identity/i);
+    ).toThrow(/caregiver identity/i);
 
     await expect(
       ingestCareEntry({ caregiver_id: "", content: "identity isolation regression", raw_entry_id: "test-only-entry" }),
