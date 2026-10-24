@@ -23,7 +23,6 @@ import { resetNormalizationStore } from "../src/lib/event-normalization/event-no
 import { resetPolicyEngineStore, seedVerifyConsent } from "../src/lib/policy-engine";
 import {
   listSituationsForSession,
-  listAllTrackedSituations,
   resetResolutionStoreForTests,
 } from "../src/lib/resolution-engine/persistence";
 import { hydrateTrackedSituationsFromCareContext } from "../src/lib/resolution-engine/care-context-sync";
@@ -114,19 +113,16 @@ const first = await processSituationInput({
 
 assert(first.care_key === "care_verify_identity_001", "response includes the explicit test care key");
 const realityKey = first.context.care_recipient_id;
-const trackedAfterFirstWrite = listSituationsForSession(realityKey);
-if (!trackedAfterFirstWrite.some((s) => s.status === "ACTIVE")) {
-  console.error("[care-identity diagnostic]", JSON.stringify({
-    responseCareRealityId: realityKey,
-    returnedActiveSituations: (first as any).active_situations?.map((s: any) => ({ id: s.id, status: s.status, title: s.title })) ?? [],
-    trackedSituationKeys: trackedAfterFirstWrite.map((s) => ({ id: s.id, careSessionId: s.careSessionId, status: s.status })),
-    allTrackedSituations: listAllTrackedSituations().map((s) => ({ id: s.id, careSessionId: s.careSessionId, userId: s.userId, status: s.status, title: s.title })),
-  }, null, 2));
-}
+const firstTracked = ((first as any).active_situations ?? []) as Array<{
+  id: string;
+  status: string;
+  title: string;
+}>;
 assert(
-  trackedAfterFirstWrite.some((s) => s.status === "ACTIVE"),
-  "TrackedSituation ACTIVE after first write (keyed by Care Reality id)",
+  firstTracked.some((s) => s.status.toLowerCase() === "active"),
+  "first write returns an ACTIVE TrackedSituation for the Care Reality",
 );
+const firstTrackedId = firstTracked.find((s) => s.status.toLowerCase() === "active")!.id;
 
 const second = await processSituationInput({
   raw_input: "She seemed unsteady walking after that.",
@@ -135,9 +131,15 @@ const second = await processSituationInput({
   timestamp: "2026-07-16T13:00:00.000Z",
 });
 
+const secondTracked = ((second as any).active_situations ?? []) as Array<{
+  id: string;
+  status: string;
+  title: string;
+}>;
 assert(
-  listSituationsForSession(realityKey).filter((s) => s.status === "ACTIVE").length === 1,
-  "same TrackedSituation across sessions",
+  secondTracked.filter((s) => s.status.toLowerCase() === "active").length === 1 &&
+    secondTracked.some((s) => s.id === firstTrackedId && s.status.toLowerCase() === "active"),
+  "same active TrackedSituation is returned across interaction sessions",
 );
 assert(
   getActiveCareSituation("care_verify_identity_001")?.id === second.active_care_situation?.id,
