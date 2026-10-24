@@ -47,8 +47,9 @@ export async function extractAttachedDocument(
       const text = (await file.text()).trim();
       if (text) {
         try {
-          const evidenceId = await persistOriginalDocument(file, text);
-          return { ...base, evidenceId, extractedText: text, status: "ready" };
+          const boundedText = text.slice(0, 100_000);
+          const evidenceId = await persistOriginalDocument(file, boundedText);
+          return { ...base, evidenceId, extractedText: boundedText, status: "ready" };
         } catch {
           return {
             ...base,
@@ -121,12 +122,12 @@ export async function extractAttachedDocument(
 
     let evidenceId: string;
     try {
-      evidenceId = await persistOriginalDocument(file, doc.extracted_text.trim());
+      evidenceId = await persistOriginalDocument(file, doc.extracted_text.trim().slice(0, 100_000));
     } catch {
       return {
         ...base,
         id: doc.id,
-        extractedText: doc.extracted_text.trim(),
+        extractedText: doc.extracted_text.trim().slice(0, 100_000),
         status: "failed",
         errorNote: "The text was extracted, but the original file could not be saved to the Living Care Record. Retry the upload before submitting it.",
       };
