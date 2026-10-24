@@ -27,6 +27,8 @@ export type ClarityEnvelope = {
 
 export type AttachedDocument = {
   id: string;
+  /** Backend-issued evidence ID for the persisted original bytes and extracted text. */
+  evidenceId?: string;
   name: string;
   mimeType: string;
   /** Extracted text when OCR/Tika succeeded; empty if pending/failed. */
