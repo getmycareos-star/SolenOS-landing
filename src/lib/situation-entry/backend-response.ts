@@ -41,7 +41,7 @@ export function normalizeBackendSituationResponse(raw: unknown): WorkspaceSituat
         ? [rawWhatChanged]
         : [],
     what_merged_or_split: serverResponse.what_merged_or_split ?? [],
-    events_created: serverResponse.events_created ?? [],
+    events_created: serverResponse.events_created ?? serverResponse.events ?? [],
     // FastAPI's turn is a minimal hydration projection, not the richer local
     // ActiveSituationTurn contract. Rebuild it from the persisted situation.
     active_care_situation_turn:
