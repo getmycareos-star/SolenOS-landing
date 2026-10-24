@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { postJSON, getPersonId } from '../api/client'
+import CareDeltaPanel from '../components/CareDeltaPanel'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -18,6 +19,8 @@ export default function Companion() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number } | null>(null)
+  const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const personId = getPersonId()
 
@@ -84,6 +87,18 @@ export default function Companion() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const compareMessageWithRecord = (message: string) => {
+    const nextToken = deltaToken + 1
+    setDeltaToken(nextToken)
+    setDeltaAutoInput({
+      personId,
+      content: message,
+      source: 'AI Companion caregiver message (explicitly selected for LCR reconciliation)',
+      eventDate: new Date().toISOString(),
+      token: nextToken,
+    })
   }
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -171,6 +186,11 @@ export default function Companion() {
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: msg.role === 'user' ? 'right' : 'left', marginTop: '4px' }}>
               {msg.role === 'user' ? 'You' : 'SolenOS'} · {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
+            {msg.role === 'user' && <button
+              type="button"
+              onClick={() => compareMessageWithRecord(msg.text)}
+              style={{ marginTop: 5, fontSize: 11, color: 'var(--text-secondary)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 8px', cursor: 'pointer' }}
+            >Compare this report with the Living Care Record</button>}
           </div>
         ))}
         <div ref={bottomRef} />
@@ -202,6 +222,7 @@ export default function Companion() {
           {loading ? '...' : 'Send'}
         </button>
       </div>
+      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} />
     </div>
   )
 }
