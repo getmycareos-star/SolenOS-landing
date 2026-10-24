@@ -108,15 +108,32 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
-    const refreshed = (await handleResponse(refreshResponse)) as AnonymousSession;
-    // The backend refresh endpoint returns the same nested person/caregiver
-    // shape as anonymous bootstrap. Keep the contract identical on both paths.
+    const refreshed = (await handleResponse(refreshResponse)) as {
+      session_id: string;
+      person_id: string;
+      caregiver_id: string;
+      access_token: string;
+      token_type: "Bearer";
+      expires_at: string;
+      expires_in_seconds: number;
+    };
+    // The backend refresh contract uses flat identity IDs, unlike bootstrap.
+    // Normalize it to the frontend's shared AnonymousSession shape only after
+    // persisting the exact backend-issued IDs.
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
-    window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person.id);
-    window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver.id);
+    window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
+    window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
     window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
-    setPersonId(refreshed.person.id);
-    return refreshed;
+    setPersonId(refreshed.person_id);
+    return {
+      session_id: refreshed.session_id,
+      person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
+      caregiver: { id: refreshed.caregiver_id, name: "Caregiver", relationship: "Family" },
+      access_token: refreshed.access_token,
+      token_type: "Bearer",
+      expires_at: refreshed.expires_at,
+      expires_in_seconds: refreshed.expires_in_seconds,
+    };
   }
 
   // Existing record IDs without the bearer secret are not proof of ownership.
