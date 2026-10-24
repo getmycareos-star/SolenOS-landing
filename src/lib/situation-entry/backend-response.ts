@@ -7,6 +7,16 @@ export type WorkspaceSituationResponse = SituationResponse & {
   analysis_warning?: string | null;
   care_recipient_id?: string;
   total_events?: number;
+  care_event_id?: string;
+  evidence_id?: string;
+  qwen_extraction_status?: "available" | "unavailable" | "not_applicable";
+  qwen_candidates?: {
+    observations?: Array<{ subject: string; observation: string; source_quote: string; review_status?: string }>;
+    open_questions?: string[];
+  } | null;
+  qwen_review_required?: boolean;
+  qwen_written_to_lcr?: boolean;
+  events?: Array<{ id?: string; title?: string; description?: string | null; occurred_at?: string; evidence_ids?: string[] }>;
 };
 
 /**
