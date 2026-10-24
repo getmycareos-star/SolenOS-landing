@@ -18,6 +18,7 @@ import {
   type WorkspaceSituationResponse,
 } from "@/lib/situation-entry/backend-response";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
+import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 import {
   CARE_RECIPIENT_ID_STORAGE,
   DURABLE_CARE_KEY_STORAGE,
@@ -945,6 +946,18 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       {consentState === "accepted" && (
         <>
       <HelpImproveSolenos careKey={caregiverId} compact />
+      <QwenAssistPanel
+        title="Qwen support across SolenOS"
+        defaultWorkflow="living_care_record"
+        contextText={[
+          rawInput.trim() ? "Current caregiver input (not necessarily saved): " + rawInput.trim() : "",
+          ...documents.filter((document) => document.extractedText.trim()).map((document) =>
+            "Attached document " + document.name + " (extracted text; not a confirmed care fact): " + document.extractedText.trim()
+          ),
+          lastSharedDisplay?.trim() ? "Current displayed care context: " + lastSharedDisplay.trim() : "",
+        ].filter(Boolean).join("\n\n")}
+        evidenceIds={documents.map((document) => document.evidenceId).filter((id): id is string => Boolean(id))}
+      />
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
           What you share stays in the Living Care Record for this care journey. It is not sold or used
