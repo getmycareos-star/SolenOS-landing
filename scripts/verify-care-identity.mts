@@ -172,7 +172,7 @@ assert(hydrated.active.length >= 1, "hydrate from CareContext recreates TrackedS
 console.log("✓ hydrate from CareContext when TrackedSituation empty");
 
 const route = fs.readFileSync(path.join(root, "src/app/api/situation/route.ts"), "utf8");
-assert(route.includes("backendOrigin") && route.includes("proxySituation"), "care situation API proxies to the durable backend");
+assert(route.includes("getBackendOrigin") && route.includes("proxySituation"), "care situation API proxies to the durable backend");
 assert(route.includes("Authorization") && route.includes("bearer "), "care situation proxy requires a bearer session");
 assert(route.includes("request.method"), "care situation proxy forwards supported HTTP methods");
 assert(!route.includes("upsertTrackedSituationFromCareInput"), "the Next.js route does not shadow durable backend state with process-local state");
