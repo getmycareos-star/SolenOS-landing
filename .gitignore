@@ -24,3 +24,6 @@ _*.ps1
 _*.txt
 netlify*.local
 test-results/
+
+# Vercel is not a SolenOS deployment target
+.vercel/
