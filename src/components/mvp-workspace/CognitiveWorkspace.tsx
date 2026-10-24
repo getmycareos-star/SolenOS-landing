@@ -136,6 +136,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   /** Soft privacy line after first capture — never a consent wall. */
   const [showSoftPrivacyNote, setShowSoftPrivacyNote] = useState(false);
   const [caregiverId, setCaregiverId] = useState("");
+  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
   /** Care Reality id — shared Living Care Record (Locked B). Distinct from contributor session. */
   const [careRecipientId, setCareRecipientId] = useState<string | null>(null);
   /** Null = still loading; "" = needs ask-once; string = set. */
@@ -779,7 +780,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <p className="panel-muted research-preview-notice" role="note">
         {IN_APP_IMPROVING_NOTICE}
       </p>
-      <ConsentGatePanel caregiverId={caregiverId} />
+      <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
+      {consentState === "accepted" && (
+        <>
       <HelpImproveSolenos careKey={caregiverId} compact />
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
@@ -945,6 +948,8 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <p className="panel-muted workspace-emergency-note" role="note">
         {EMERGENCY_BOUNDARY}
       </p>
+        </>
+      )}
     </div>
   );
 }
