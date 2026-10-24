@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getJSON, postJSON, getCaregiverId } from '@/api/client'
+import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -382,6 +383,19 @@ export default function Community() {
           </div>
         )}
       </div>
+
+      <QwenAssistPanel
+        title="Qwen support for Community"
+        defaultWorkflow="community"
+        compact
+        contextText={[
+          wisdomQuery.trim() ? "Caregiver's community search topic: " + wisdomQuery.trim() : "",
+          wisdomMatches.length
+            ? "Published peer experiences returned by the community search (personal reports, not authoritative care facts): " +
+              JSON.stringify(wisdomMatches.map((match) => ({ post_id: match.post_id, content: match.content, tags: match.tags })))
+            : "",
+        ].filter(Boolean).join("\n\n")}
+      />
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button
