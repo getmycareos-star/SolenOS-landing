@@ -70,7 +70,7 @@ export async function POST(request: Request) {
 
     const created = await createPersistentShare({
       title: title || undefined,
-      text: combinedText || undefined,
+      text: text || undefined,
       url: url || undefined,
       files,
     });
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
 
   const created = await createPersistentShare({
     title: title || undefined,
-    text: combined,
+    text: text || undefined,
     url: sharedUrl || undefined,
     files: [],
   });
