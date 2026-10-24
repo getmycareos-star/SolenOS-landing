@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 
 const StructuredDailyCapture = dynamic(
-  () => import("@/pages/StructuredDailyCapture"),
+  () => import("@/legacy-vite-pages/StructuredDailyCapture"),
   {
     ssr: false,
     loading: () => <BrandLoading message="Opening daily care…" />,
