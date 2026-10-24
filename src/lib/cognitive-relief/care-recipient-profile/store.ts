@@ -1,3 +1,4 @@
+import { requireCaregiverId } from "../../care-identity/durable-care-key";
 import { DEFAULT_PROFILE, type CareRecipientProfileData, type CareRecipientProfileRecord } from "../types";
 
 const profiles = new Map<string, CareRecipientProfileRecord>();
@@ -15,8 +16,7 @@ export function getOrCreateProfile(params: {
   caregiver_id?: string;
   case_id?: string | null;
 }): CareRecipientProfileRecord {
-  const caregiverId = params.caregiver_id?.trim();
-  if (!caregiverId || caregiverId === "default_caregiver") throw new Error("Valid caregiver identity is required.");
+  const caregiverId = requireCaregiverId(params.caregiver_id, "care-recipient profile store");
   const caseId = params.case_id ?? null;
   const key = profileKey(caregiverId, caseId);
 
