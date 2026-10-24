@@ -138,6 +138,64 @@ describe('Phase 4 production data safety', () => {
     });
   })
 
+  it('preserves the original report and persists an explicit correction to a review-only extraction candidate', async () => {
+    mockedPostJSON
+      .mockResolvedValueOnce({
+        ok: true,
+        message: 'Care input recorded successfully.',
+        events: [{ occurred_at: '2026-10-23T08:15:00Z' }],
+        qwen_extraction_status: 'pending_review',
+        qwen_analysis_id: 'analysis-1',
+        qwen_candidates: {
+          observations: [{
+            subject: 'sleep',
+            observation: 'Mum slept badly.',
+            source_quote: 'Mum slept badly',
+            time_expression: 'last night',
+            certainty: 'reported',
+            review_status: 'pending_review',
+          }],
+          open_questions: ['How many hours did Mum sleep?'],
+          possible_safety_flags: [],
+        },
+      } as never)
+      .mockResolvedValueOnce({
+        candidate: {
+          subject: 'sleep',
+          observation: 'Mum slept poorly last night.',
+          source_quote: 'Mum slept badly',
+          review_status: 'corrected_by_caregiver',
+        },
+        message: 'Review decision saved with the original candidate preserved. The Living Care Record was not changed.',
+      } as never)
+
+    render(<CareCapture personId="person-real-1" />)
+    const original = 'Mum slept badly, ate very little this morning, and says her knee hurts.'
+    fireEvent.change(screen.getByPlaceholderText(/describe what you observed/i), { target: { value: original } })
+    fireEvent.click(screen.getByRole('button', { name: /save what changed/i }))
+
+    expect(await screen.findByRole('region', { name: /original captured report/i })).toHaveTextContent(original)
+    expect(screen.getByText(/recorded event time/i)).toBeInTheDocument()
+    expect(await screen.findByText(/how many hours did mum sleep/i)).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/corrected observation 1/i), {
+      target: { value: 'Mum slept poorly last night.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /save correction/i }))
+
+    await waitFor(() => {
+      expect(mockedPostJSON).toHaveBeenLastCalledWith('/capture/analyses/analysis-1/review', {
+        candidate_index: 0,
+        decision: 'correct',
+        corrected_subject: 'sleep',
+        corrected_observation: 'Mum slept poorly last night.',
+      })
+    })
+    expect(await screen.findByText(/living care record was not changed/i)).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: /original captured report/i })).toHaveTextContent(original)
+    expect(screen.getByText(/corrected by caregiver/i)).toBeInTheDocument()
+  })
+
   it('does not report a valid empty record when the record API fails', async () => {
     mockedGetJSON.mockRejectedValue(new Error('service unavailable'))
 
