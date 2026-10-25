@@ -5339,3 +5339,25 @@ input[type="file"] { width: 100%; white-space: normal; }
   background: #115f5b !important;
   border-color: #115f5b !important;
 }
+
+
+/* Daily Capture fields always use readable text on a light input surface. */
+.structured-daily-capture input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.structured-daily-capture select,
+.structured-daily-capture textarea {
+  background-color: #ffffff !important;
+  color: #172b35 !important;
+  caret-color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+  border-color: #718477 !important;
+}
+.structured-daily-capture input::placeholder,
+.structured-daily-capture textarea::placeholder {
+  color: #5f7179 !important;
+  -webkit-text-fill-color: #5f7179 !important;
+  opacity: 1;
+}
+.structured-daily-capture select option {
+  background: #ffffff;
+  color: #172b35;
+}
