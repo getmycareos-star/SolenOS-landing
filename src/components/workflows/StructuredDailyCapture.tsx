@@ -336,7 +336,7 @@ export default function StructuredDailyCapture() {
       setMedicationImagePreview(null);
       
       setMedicationFeedback('Added to this daily-care draft. Save the daily care update below to keep it.');
-    } catch (err: any) {
+    } catch {
       setMedicationUploading(false);
       setMedicationCompressing(false);
       setMedicationError("We couldn’t add this medicine. Check the details and try again.");
