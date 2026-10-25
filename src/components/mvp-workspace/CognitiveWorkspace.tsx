@@ -28,7 +28,7 @@ import {
 import type { Situation } from "@/lib/ui-runtime/types";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { AddSituationPanel } from "./AddSituationPanel";
-import type { WorkspaceAction } from "./WorkspaceMoreMenu";
+import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
 import { ActivationOutputPanel } from "./ActivationOutputPanel";
 import { SituationResponsePanel } from "./SituationResponsePanel";
 import { CareRecipientNameGate } from "./CareRecipientNameGate";
@@ -710,9 +710,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         } catch {
           /* ignore */
         }
-        // In a full implementation, this would navigate to an archive view.
-        // For MVP, we redirect to /workspace which will show the empty state.
-        window.location.href = "/workspace";
         break;
       }
       case "restore": {
@@ -726,7 +723,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       }
       case "delete": {
         const confirmed = window.confirm(
-          "Delete this care record?\n\nThis will permanently remove all care information from this device. This action cannot be undone.",
+          "Clear this workspace from this device?\n\nThis clears locally stored workspace information. It does not delete server-held care records.",
         );
         if (!confirmed) return;
         try {
@@ -1011,6 +1008,30 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           {IN_APP_IMPROVING_NOTICE}
         </p>
         <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
+      </div>
+    );
+  }
+
+  if (isArchived) {
+    return (
+      <div className={shellClass}>
+        <p className="panel-muted research-preview-notice" role="note">
+          {IN_APP_IMPROVING_NOTICE}
+        </p>
+        <section className="panel" aria-labelledby="archived-workspace-heading">
+          <h2 id="archived-workspace-heading" className="workspace-headline">Workspace archived</h2>
+          <p className="panel-muted">
+            This workspace is hidden from the active view on this device. Archiving does not delete
+            server-held care information.
+          </p>
+          <WorkspaceMoreMenu
+            onAction={(action) => void handleWorkspaceAction(action)}
+            isPinned={isPinned}
+            isArchived={true}
+            canAddToHome={canAddToHome}
+            hasCareInfo={hasContextRoot || sessionHasNote}
+          />
+        </section>
       </div>
     );
   }
