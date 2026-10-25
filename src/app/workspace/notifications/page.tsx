@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
+import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 
 type CareNotification = {
   id: string;
@@ -88,6 +89,12 @@ export default function WorkspaceNotificationsPage() {
             ))}
           </div>}
         <div className="mobile-settings-actions mt-4"><Button variant="secondary" asChild><Link href="/workspace/settings">Notification settings</Link></Button></div>
+        <QwenAssistPanel
+          defaultWorkflow="reminders_notifications"
+          title="Qwen support for reminders"
+          contextText={items.slice(0, 10).map((item) => "Notification [" + item.id + "]: " + item.title + "; category=" + item.category + "; priority=" + item.priority + "; read=" + item.is_read + "; created=" + (item.created_at ?? "unknown") + "; body=" + item.body).join("\n")}
+          compact
+        />
       </div>
     </main>
   );

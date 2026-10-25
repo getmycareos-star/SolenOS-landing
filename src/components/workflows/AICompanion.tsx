@@ -136,7 +136,7 @@ export default function Companion() {
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
       <QwenAssistPanel
         title="Qwen support for your Living Care Record"
-        defaultWorkflow="living_care_record"
+        defaultWorkflow="companion"
         compact
       />
 

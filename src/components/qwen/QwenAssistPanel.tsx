@@ -5,8 +5,15 @@ import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 export type QwenWorkflow =
   | "daily_capture"
+  | "add_record"
   | "document"
-  | "community"
+  | "living_care_record"
+  | "care_history_search"
+  | "care_situation_change"
+  | "delta_engine"
+  | "evidence_provenance"
+  | "uncertainty_contradictions"
+  | "returning_caregiver"
   | "appointment"
   | "after_appointment"
   | "handoff"
@@ -15,7 +22,19 @@ export type QwenWorkflow =
   | "two_week_review"
   | "decision_outcome"
   | "medication_day"
-  | "living_care_record";
+  | "reminders_notifications"
+  | "care_coordination"
+  | "community"
+  | "companion"
+  | "caregiver_feedback"
+  | "sharing_export"
+  | "roles_access"
+  | "account_recovery"
+  | "settings_security"
+  | "record_lifecycle"
+  | "offline_sync"
+  | "ai_reliability"
+  | "audit_review";
 
 type QwenAssistResult = {
   workflow: QwenWorkflow;
@@ -41,18 +60,37 @@ type QwenStatus = {
 };
 
 const WORKFLOWS: Array<{ value: QwenWorkflow; label: string }> = [
-  { value: "living_care_record", label: "Living Care Record" },
-  { value: "daily_capture", label: "Daily Capture" },
-  { value: "document", label: "Documents and extracted text" },
-  { value: "community", label: "Community experiences" },
-  { value: "appointment", label: "Appointment preparation" },
-  { value: "after_appointment", label: "After-appointment notes" },
-  { value: "handoff", label: "Care handoff" },
-  { value: "professional_summary", label: "Professional summary" },
-  { value: "open_loops", label: "Open questions and follow-ups" },
-  { value: "two_week_review", label: "Two-week review" },
-  { value: "decision_outcome", label: "Decision and reported outcome" },
-  { value: "medication_day", label: "Medication-day observations" },
+  { value: "daily_capture", label: "Daily care — Daily Capture" },
+  { value: "add_record", label: "Daily care — Add Record and correction" },
+  { value: "document", label: "Daily care — Documents and extracted information" },
+  { value: "living_care_record", label: "Daily care — Living Care Record" },
+  { value: "care_history_search", label: "Daily care — Care history search and retrieval" },
+  { value: "care_situation_change", label: "Care understanding — Care situation and change" },
+  { value: "delta_engine", label: "Care understanding — Delta Engine and reconciliation" },
+  { value: "evidence_provenance", label: "Care understanding — Evidence and provenance" },
+  { value: "uncertainty_contradictions", label: "Care understanding — Uncertainty and contradictions" },
+  { value: "returning_caregiver", label: "Care understanding — Returning-caregiver orientation" },
+  { value: "appointment", label: "Coordination — Appointment preparation" },
+  { value: "after_appointment", label: "Coordination — After-appointment capture" },
+  { value: "handoff", label: "Coordination — Care handoff" },
+  { value: "professional_summary", label: "Coordination — Professional summary" },
+  { value: "open_loops", label: "Coordination — Open loops and follow-ups" },
+  { value: "two_week_review", label: "Coordination — Two-week review" },
+  { value: "decision_outcome", label: "Coordination — Decision and outcome memory" },
+  { value: "medication_day", label: "Coordination — Medication-day observations" },
+  { value: "reminders_notifications", label: "Coordination — Reminders and notifications" },
+  { value: "care_coordination", label: "Coordination — Care coordination and delegation" },
+  { value: "community", label: "Community — Dementia-focused peer experiences" },
+  { value: "companion", label: "Community — Qwen Companion" },
+  { value: "caregiver_feedback", label: "Community — Caregiver feedback and AI correction" },
+  { value: "sharing_export", label: "Sharing and access — Sharing and export" },
+  { value: "roles_access", label: "Sharing and access — Roles and professional access" },
+  { value: "account_recovery", label: "Sharing and access — Signup, login and recovery" },
+  { value: "settings_security", label: "Sharing and access — Settings, security and privacy" },
+  { value: "record_lifecycle", label: "Sharing and access — Pin, archive, restore and delete" },
+  { value: "offline_sync", label: "Reliability — Offline use and synchronization" },
+  { value: "ai_reliability", label: "Reliability — Qwen availability and retry" },
+  { value: "audit_review", label: "Reliability — Audit trail and review candidates" },
 ];
 
 type Props = {
@@ -173,7 +211,7 @@ export default function QwenAssistPanel({
         <div>
           <h2 style={{ fontSize: "15px", fontWeight: 650, margin: 0 }}>{title}</h2>
           <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginTop: "4px", lineHeight: 1.5 }}>
-            Optional Qwen assistance using the Railway-hosted local model. Suggestions only; it cannot edit or overrule the Living Care Record.
+            Shared Qwen assistance across SolenOS workflows. Suggestions only; SolenOS controls permissions and saved records, and Qwen cannot overrule the Living Care Record.
           </p>
         </div>
         <button
