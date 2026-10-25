@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, postJSON, getJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
@@ -20,6 +20,7 @@ export default function Companion() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [qwenStatus, setQwenStatus] = useState<{ state: 'checking' | 'available' | 'unavailable'; model?: string }>({ state: 'checking' })
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -33,6 +34,25 @@ export default function Companion() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    let cancelled = false
+    void ensureAnonymousSession()
+      .then(() => getJSON('/assistant/status'))
+      .then((data: any) => {
+        if (!cancelled) {
+          setQwenStatus(
+            data?.available === true && data?.provider === 'local_ollama'
+              ? { state: 'available', model: typeof data.model === 'string' ? data.model : undefined }
+              : { state: 'unavailable' },
+          )
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setQwenStatus({ state: 'unavailable' })
+      })
+    return () => { cancelled = true }
+  }, [])
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
@@ -150,6 +170,13 @@ export default function Companion() {
         </button>
       </div>
 
+      <p role="status" aria-live="polite" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+        {qwenStatus.state === 'checking'
+          ? 'Checking the SolenOS local model runtime…'
+          : qwenStatus.state === 'available'
+            ? `Local Qwen connected · ${qwenStatus.model ?? 'configured model'} · model-generated support`
+            : 'Local Qwen is unavailable. SolenOS will not substitute a canned or fabricated reply.'}
+      </p>
       {requestError && <p role="alert" style={{ color: 'var(--error)', fontSize: '13px', marginBottom: '12px' }}>{requestError}</p>}
 
       {emergency && (
