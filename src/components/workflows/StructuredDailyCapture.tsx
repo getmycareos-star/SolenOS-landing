@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { postJSON, postFormData, getPersonId, getCaregiverId } from '@/api/client';
+import { postJSON, postFormData, getPersonId, getCaregiverId, requestQwenCandidateAnalysis, reviewQwenCandidate } from '@/api/client';
 import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
@@ -14,6 +14,7 @@ export default function StructuredDailyCapture() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
+  const [qwenReviewError, setQwenReviewError] = useState<string | null>(null);
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
   const [deltaToken, setDeltaToken] = useState(0);
   
@@ -439,10 +440,18 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
-      setQwenAnalysis({
-        status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
-        candidates: data?.qwen_candidates ?? null,
-      });
+      const savedEventId = typeof data?.id === 'string' ? data.id : '';
+      setQwenAnalysis({ status: savedEventId ? 'processing' : 'unavailable', candidates: null });
+      if (savedEventId) {
+        // Qwen runs after the save receipt. Model latency/failure must not block
+        // form reset or make the caregiver repeat an already-persisted capture.
+        void requestQwenCandidateAnalysis(savedEventId)
+          .then((analysis) => setQwenAnalysis({
+            status: analysis.qwen_extraction_status,
+            candidates: analysis.qwen_candidates,
+          }))
+          .catch(() => setQwenAnalysis({ status: 'unavailable', candidates: null }));
+      }
       // On success, reset the form
       setForm({
         medications: [],
@@ -803,6 +812,44 @@ export default function StructuredDailyCapture() {
                   <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                     Source: “{candidate.source_quote}” · Review: {candidate.review_status || 'pending_review'}
                   </div>
+                  {candidate.candidate_id && candidate.review_status === 'pending_review' && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                      <button type="button" onClick={async () => {
+                        try {
+                          const reviewed = await reviewQwenCandidate(candidate.candidate_id, 'accepted');
+                          setQwenAnalysis((current: any) => current ? {
+                            ...current,
+                            candidates: current.candidates ? {
+                              ...current.candidates,
+                              observations: current.candidates.observations.map((row: any) =>
+                                row.candidate_id === candidate.candidate_id ? { ...row, review_status: reviewed.status } : row
+                              ),
+                            } : null,
+                          } : current);
+                          setQwenReviewError(null);
+                        } catch {
+                          setQwenReviewError('The review decision was not confirmed by the server.');
+                        }
+                      }}>Accept suggestion</button>
+                      <button type="button" onClick={async () => {
+                        try {
+                          const reviewed = await reviewQwenCandidate(candidate.candidate_id, 'rejected');
+                          setQwenAnalysis((current: any) => current ? {
+                            ...current,
+                            candidates: current.candidates ? {
+                              ...current.candidates,
+                              observations: current.candidates.observations.map((row: any) =>
+                                row.candidate_id === candidate.candidate_id ? { ...row, review_status: reviewed.status } : row
+                              ),
+                            } : null,
+                          } : current);
+                          setQwenReviewError(null);
+                        } catch {
+                          setQwenReviewError('The review decision was not confirmed by the server.');
+                        }
+                      }}>Reject suggestion</button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -813,6 +860,7 @@ export default function StructuredDailyCapture() {
                 : 'No Qwen-generated candidates are available. The saved capture remains recorded; no substitute analysis was invented.'}
             </p>
           )}
+          {qwenReviewError && <p role="alert">{qwenReviewError}</p>}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '10px' }}>
               <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
