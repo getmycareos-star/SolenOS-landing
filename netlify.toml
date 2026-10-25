@@ -32,13 +32,13 @@
 # telemetry) from being silently forwarded to the backend.
 [[redirects]]
   from = "/api/v1/*"
-  to = "https://solenosbackend-production-2729.up.railway.app/api/v1/:splat"
+  to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/api/situation"
-  to = "https://solenosbackend-production-2729.up.railway.app/api/situation"
+  to = "https://solenosbackend-production.up.railway.app/api/situation"
   status = 200
   force = true
 
