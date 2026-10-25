@@ -73,11 +73,6 @@ requireText("src/components/workflows/StructuredDailyCapture.tsx", [
   "Qwen support for Daily Capture",
   "qwen_extraction_status",
 ]);
-requireText("src/components/workflows/Community.tsx", [
-  "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'",
-  "postJSON('/community/experience/summary'",
-  "Qwen support for Community",
-]);
 requireText("src/components/workflows/AICompanion.tsx", [
   "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'",
   "postJSON('/conversation/message'",
@@ -100,7 +95,7 @@ requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("<h3>Care record view unavailable</h3>"));
 
-console.log("PASS: shared Qwen assistance is available across the workspace, documents, Daily Capture, Community, Companion, and notifications.");
-console.log("PASS: all 31 SolenOS workflow IDs are exposed by the shared Qwen selector.");
+console.log("PASS: shared Qwen assistance is available across the workspace, documents, Daily Capture, Companion, and notifications; Community Qwen integration is disabled.");
+console.log("PASS: all 30 enabled SolenOS workflow IDs are exposed by the shared Qwen selector; Community is excluded.");
 console.log("PASS: UI requires an actual local-Qwen response and explicitly verifies that assistance is read-only.");
 console.log("PASS: casual greetings are routed to Companion, and confirmed persisted captures never invite duplicate submission because the situation projection is missing.");
