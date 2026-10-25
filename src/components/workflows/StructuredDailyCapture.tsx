@@ -196,7 +196,7 @@ export default function StructuredDailyCapture() {
       stopCam();
     } catch (err) {
       console.error('Failed to capture image:', err);
-      alert('Failed to capture image: ' + (err instanceof Error ? err.message : String(err)));
+      alert("We couldn't take that photo. Check camera permission or choose an image from your device.");
       stopCam();
       setMedicationCompressing(false);
     }
@@ -324,7 +324,7 @@ export default function StructuredDailyCapture() {
     } catch (err: any) {
       setMedicationUploading(false);
       setMedicationCompressing(false);
-      alert(`Failed to add medication: ${err.message}`);
+      alert("We couldn’t add this medication. Check the details and try again.");
     } finally {
       setMedicationUploading(false);
     }
@@ -394,7 +394,7 @@ export default function StructuredDailyCapture() {
       
       alert('Scale added successfully');
     } catch (err: any) {
-      alert(`Failed to add scale: ${err.message}`);
+      alert("We couldn’t add this rating. Check the details and try again.");
     }
   };
   
@@ -459,7 +459,7 @@ export default function StructuredDailyCapture() {
         });
       }
     } catch (reason) {
-      setReviewFeedback(reason instanceof Error ? reason.message : 'The review decision could not be saved.');
+      setReviewFeedback('We couldn’t save that review. Please try again.');
     } finally {
       setReviewingCandidate(null);
     }
@@ -615,7 +615,7 @@ export default function StructuredDailyCapture() {
       
       setSaveError(error);
       setSaved(false);
-      alert(`Failed to save: ${error instanceof Error ? error.message : String(error)}`);
+      // The inline save-error state provides a clear retry path without exposing service details.
     },
     onSettled: () => {
       setSubmitting(false);
