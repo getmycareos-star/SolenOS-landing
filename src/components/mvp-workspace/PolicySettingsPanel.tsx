@@ -64,13 +64,26 @@ export function PolicySettingsPanel(_props: Props = {}) {
           data_improvement_consent: enabled,
         }),
       });
-      if (!res.ok) throw new Error("Update failed");
-      // Only update the visible switch after the server confirms the saved choice.
-      setDataImprovement(enabled);
+      const saved = (await safeJson(res)) as {
+        ok?: boolean;
+        verified?: boolean;
+        profile?: { data_improvement_consent?: boolean };
+        detail?: string;
+        error?: string;
+      };
+      if (
+        !res.ok ||
+        saved.verified !== true ||
+        saved.profile?.data_improvement_consent !== enabled
+      ) {
+        throw new Error(saved.detail ?? saved.error ?? "The server did not confirm the saved choice.");
+      }
+      // Only update the visible switch after the server response confirms the persisted value.
+      setDataImprovement(saved.profile.data_improvement_consent);
       setMessage(
         enabled
-          ? "Your choice is saved. Only the improvement uses described below are allowed."
-          : "Your choice is saved. Optional improvement use is now off.",
+          ? "Your choice is saved. Feedback you deliberately submit through the improvement route may be reviewed to improve SolenOS."
+          : "Your choice is saved. Optional improvement feedback is now off; new feedback submissions will be rejected until you opt in again.",
       );
     } catch {
       setMessage("We couldn't save this choice. Your previous saved setting remains in place.");
