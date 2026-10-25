@@ -90,6 +90,10 @@ export default function QwenAssistPanel({
     setChecking(true);
     setStatusError(null);
     try {
+      // The status route is care-session scoped. Resolve the server-issued
+      // bearer capability first so a healthy local model is not misreported
+      // as unavailable merely because this panel was opened before session bootstrap.
+      await ensureAnonymousSession();
       const result = (await getJSON("/assistant/status")) as QwenStatus;
       if (
         result?.available !== true ||
