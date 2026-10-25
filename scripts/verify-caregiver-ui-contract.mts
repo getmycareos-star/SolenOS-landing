@@ -41,7 +41,7 @@ assert.match(styles, /--solenos-sage-button: #b9d5b5/);
 assert.match(styles, /--solenos-button-ink: #17251c/);
 assert.match(styles, /\.structured-daily-capture input[^,]*,[\s\S]*?color: #172b35 !important/);
 assert.match(dailyCapture, /measured_at: toLocalDateTimeInput\(\)/);
-assert.match(dailyCapture, /vital_type: 'heart_rate'[\s\S]*?bpm/);
+assert.match(dailyCapture, /heart_rate: 'bpm'/);
 assert.match(dailyCapture, /showPanel=\{false\}/);
 assert.match(dailyCapture, /Added to this daily-care draft/);
 assert.doesNotMatch(dailyCapture, /Unverified extraction/);
