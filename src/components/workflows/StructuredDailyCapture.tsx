@@ -441,8 +441,14 @@ export default function StructuredDailyCapture() {
     },
     onSuccess: async (data, variables, context) => {
       const savedEventId = typeof data?.id === 'string' ? data.id : '';
-      setQwenAnalysis({ status: savedEventId ? 'processing' : 'unavailable', candidates: null });
-      if (savedEventId) {
+      const returnedCandidates = data?.qwen_candidates ?? null;
+      setQwenAnalysis({
+        status: typeof data?.qwen_extraction_status === 'string'
+          ? data.qwen_extraction_status
+          : returnedCandidates ? 'pending_review' : savedEventId ? 'processing' : 'unavailable',
+        candidates: returnedCandidates,
+      });
+      if (savedEventId && !returnedCandidates) {
         // Qwen runs after the save receipt. Model latency/failure must not block
         // form reset or make the caregiver repeat an already-persisted capture.
         void requestQwenCandidateAnalysis(savedEventId)
