@@ -35,7 +35,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
       setDataImprovement(Boolean(data.profile?.data_improvement_consent));
       setLimitedMode(Boolean(data.profile?.limited_mode));
     } catch {
-      setLoadError("We couldn't load your privacy preference. Try again.");
+      setLoadError("We couldn't load your privacy choice. Try again.");
     } finally {
       setLoading(false);
     }
@@ -46,6 +46,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
   }, [load]);
 
   async function toggleImprovement(enabled: boolean) {
+    if (saving || loadError || !verified || limitedMode) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -64,28 +65,58 @@ export function PolicySettingsPanel(_props: Props = {}) {
         }),
       });
       if (!res.ok) throw new Error("Update failed");
+      // Only update the visible switch after the server confirms the saved choice.
       setDataImprovement(enabled);
-      setMessage(enabled ? "Your choice is saved. De-identified patterns may be used to improve care continuity and safety as described below." : "Your choice is saved. Your information will not be used for optional system improvement.");
+      setMessage(
+        enabled
+          ? "Your choice is saved. Only the improvement uses described below are allowed."
+          : "Your choice is saved. Optional improvement use is now off.",
+      );
     } catch {
-      setMessage("We couldn't save this choice. Your previous setting remains in place.");
+      setMessage("We couldn't save this choice. Your previous saved setting remains in place.");
+      await load();
     } finally {
       setSaving(false);
     }
   }
 
-
-  if (loading) return <section className="policy-settings-panel"><h4>Data &amp; system improvement</h4><p className="panel-muted" role="status">Loading your privacy choice…</p></section>;
+  if (loading) {
+    return (
+      <section className="policy-settings-panel">
+        <h4>Help improve SolenOS (optional)</h4>
+        <p className="panel-muted" role="status">Checking your saved privacy choice…</p>
+      </section>
+    );
+  }
 
   return (
-    <section className="policy-settings-panel">
-      <h4>Data &amp; system improvement</h4>
+    <section className="policy-settings-panel" aria-labelledby="improvement-consent-heading">
+      <h4 id="improvement-consent-heading">Help improve SolenOS (optional)</h4>
       <p className="panel-muted">
-        You choose whether SolenOS may use de-identified patterns to improve how care information is organized and understood. This choice is optional and can be changed at any time.
+        You control whether feedback you deliberately submit to help improve SolenOS may be used
+        for that purpose. This is separate from using your care record to provide the features
+        you request. Your choice can be changed here at any time.
       </p>
-      {loadError && <p className="panel-muted" role="alert">{loadError} <button type="button" className="workspace-secondary" onClick={() => void load()}>Try again</button></p>}
 
-      {!verified && <p className="panel-muted">Please complete the required privacy acknowledgement before changing this optional preference.</p>}
-      {limitedMode && <p className="panel-muted">Optional system improvement is unavailable while limited privacy mode is active.</p>}
+      {loadError && (
+        <p className="panel-muted" role="alert">
+          {loadError}{" "}
+          <button type="button" className="workspace-secondary" onClick={() => void load()}>
+            Try again
+          </button>
+        </p>
+      )}
+      {!verified && !loadError && (
+        <p className="panel-muted">
+          Complete the required privacy acknowledgement before changing this optional choice.
+        </p>
+      )}
+      {limitedMode && (
+        <p className="panel-muted">
+          Optional improvement use is unavailable while privacy access is limited.
+        </p>
+      )}
+
       <label className="consent-checkbox">
         <input
           type="checkbox"
@@ -93,29 +124,39 @@ export function PolicySettingsPanel(_props: Props = {}) {
           disabled={!verified || limitedMode || saving || Boolean(loadError)}
           onChange={(e) => void toggleImprovement(e.target.checked)}
         />
-        <span>Allow system improvement using my data</span>
+        <span>{saving ? "Saving your choice…" : "Allow my submitted improvement feedback to be used"}</span>
       </label>
 
       {loadError ? (
-        <p className="panel-muted">We couldn't confirm your current preference, so we won't assume it is on or off. Try loading it again before changing this setting.</p>
+        <p className="panel-muted">
+          We couldn't confirm whether this is on or off, so the control is disabled until your
+          saved choice can be checked.
+        </p>
       ) : dataImprovement ? (
-        <div className="policy-improvement-details" role="status">
-          <h5>What may be used</h5>
+        <div className="policy-improvement-details">
+          <h5>What may be used when this is on</h5>
           <ul>
-            <li>De-identified patterns about how care updates, changes, and follow-up needs are organized.</li>
-            <li>Broad usage patterns that help improve continuity and safety.</li>
+            <li>Feedback you deliberately submit using an improvement or validation option.</li>
+            <li>The feedback category and related information needed to review that submission.</li>
           </ul>
-          <h5>What is not used for this purpose</h5>
+          <h5>What this choice does not allow</h5>
           <ul>
-            <li>Your name, email address, or direct account identifiers.</li>
-            <li>Your identifiable care notes, documents, or a named person's care history as public examples.</li>
-            <li>Advertising, selling personal data, or targeting you with ads.</li>
+            <li>Publishing your care record or making it visible to other caregivers.</li>
+            <li>Using this checkbox as permission to sell your personal information or show you targeted ads.</li>
+            <li>Automatically sending every private care note, document, or Companion conversation as improvement feedback.</li>
           </ul>
-          <p className="panel-muted">This setting records your preference. It does not mean every item is automatically shared or that identifiable care details are made public.</p>
+          <p className="panel-muted">
+            SolenOS must still apply access controls and remove direct identifiers where appropriate.
+            This setting does not mean your care details are made public.
+          </p>
         </div>
       ) : (
-        <p className="panel-muted">Off: your information is not permitted for optional system improvement. Your care record still works for your own care continuity.</p>
+        <p className="panel-muted">
+          <strong>Off.</strong> Optional improvement feedback use is not permitted. You can still
+          use your care record for the care features you request.
+        </p>
       )}
+
       {message && <p className="panel-muted" role="status">{message}</p>}
     </section>
   );
