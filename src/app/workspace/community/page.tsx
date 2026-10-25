@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { BrandLoading } from "@/components/brand";
+import QwenSupportPanel from "@/components/workflows/QwenSupportPanel";
 
 const Community = dynamic(() => import("@/components/workflows/Community"), {
   ssr: false,
@@ -16,6 +17,7 @@ export default function CommunityPage() {
         <p>Learn from shared dementia-care experiences. Community posts do not automatically change your Living Care Record.</p>
       </div>
       <Community />
+      <QwenSupportPanel workflow="community" />
     </div>
   );
 }
