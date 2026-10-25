@@ -97,7 +97,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         }
       })
       .catch(() => {
-        if (!cancelled) setHistoryError('Saved Delta history is unavailable until the backend route and database migration are deployed.')
+        if (!cancelled) setHistoryError('We couldn't load your saved care-change history. Your existing care information hasn't been changed.')
       })
     return () => { cancelled = true }
   }, [personId])
@@ -164,7 +164,18 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
       </button></div>
     </form>
     {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12, marginTop: 8 }}>{error}</p>}
-    {historyError && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 11, marginTop: 6 }}>{historyError}</p>}
+    {historyError && <div role="status" style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 6 }}>
+      <p style={{ margin: "0 0 6px" }}>{historyError}</p>
+      <button type="button" onClick={() => {
+        setHistoryError("");
+        getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
+          .then((rows) => {
+            if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[]);
+            else setHistoryError("Your saved care-change history is still unavailable. Try again shortly.");
+          })
+          .catch(() => setHistoryError("Your saved care-change history is still unavailable. Try again shortly."));
+      }} style={{ padding: "8px 12px", minHeight: 40, borderRadius: 8, border: "2px solid var(--solenos-slate, #173f4b)", background: "var(--solenos-slate, #173f4b)", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Try again</button>
+    </div>}
     {history.length > 0 && <section style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 10 }}>
       <h3 style={{ fontSize: 13, margin: '0 0 7px' }}>Previous reconciliations</h3>
       <div style={{ display: 'grid', gap: 6 }}>
