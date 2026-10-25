@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
+import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 
 type CareNotification = {
   id: string;
@@ -36,8 +37,8 @@ export default function WorkspaceNotificationsPage() {
       ]);
       setItems(feed.items);
       setUnreadCount(unread.unread_count);
-    } catch {
-      setError("We couldn't load your notifications. Check your connection and try again.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load notifications from the care backend.");
     } finally {
       setLoading(false);
     }
@@ -53,8 +54,8 @@ export default function WorkspaceNotificationsPage() {
       const updated = await patchJSON(`/notifications/${encodeURIComponent(item.id)}/read`, {}) as CareNotification;
       setItems((current) => current.map((row) => row.id === updated.id ? updated : row));
       setUnreadCount((current) => Math.max(0, current - 1));
-    } catch {
-      setError("We couldn't update this notification. Please try again.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not mark this notification read.");
     } finally {
       setBusyId(null);
     }
@@ -68,8 +69,8 @@ export default function WorkspaceNotificationsPage() {
           <Button variant="secondary" onClick={() => void load()} disabled={loading}>Refresh</Button>
         </div>
         <h1 className="workspace-headline mt-5"><Bell size={22} className="inline-block mr-2" />Notifications</h1>
-        <p className="mobile-settings-hint">Updates for this care record. Unread: {unreadCount}.</p>
-        {error && <div role="alert" className="mobile-settings-hint"><p>{error}</p><Button variant="secondary" onClick={() => void load()} disabled={loading}>Try again</Button></div>}
+        <p className="mobile-settings-hint">Backend-backed notifications for this care-record session. Unread: {unreadCount}.</p>
+        {error && <p role="alert" className="mobile-settings-hint">{error}</p>}
         {loading ? <p role="status" className="mobile-settings-hint">Loading notifications…</p> :
           items.length === 0 ? <p className="mobile-settings-hint">No notifications have been recorded for this care record.</p> :
           <div className="mt-4 space-y-3">
@@ -88,6 +89,12 @@ export default function WorkspaceNotificationsPage() {
             ))}
           </div>}
         <div className="mobile-settings-actions mt-4"><Button variant="secondary" asChild><Link href="/workspace/settings">Notification settings</Link></Button></div>
+        <QwenAssistPanel
+          defaultWorkflow="reminders_notifications"
+          title="Qwen support for reminders"
+          contextText={items.slice(0, 10).map((item) => "Notification [" + item.id + "]: " + item.title + "; category=" + item.category + "; priority=" + item.priority + "; read=" + item.is_read + "; created=" + (item.created_at ?? "unknown") + "; body=" + item.body).join("\n")}
+          compact
+        />
       </div>
     </main>
   );
