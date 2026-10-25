@@ -7,6 +7,9 @@ const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICo
 const orientation = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 const deltaPanel = fs.readFileSync(path.join(root, "src/components/CareDeltaPanel.tsx"), "utf8");
+const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
+const landingStyles = fs.readFileSync(path.join(root, "src/app/landing.css"), "utf8");
+const notifications = fs.readFileSync(path.join(root, "src/app/workspace/notifications/page.tsx"), "utf8");
 
 // Errors must be event-driven, dismissible through correction/reset, and not stale.
 assert.match(companion, /\{requestError && <p role="alert"/);
@@ -36,5 +39,14 @@ assert.doesNotMatch(orientation, /<p><\/p>/);
 // Primary controls have explicit, high-contrast sage/ink tokens.
 assert.match(styles, /--solenos-sage-button: #b9d5b5/);
 assert.match(styles, /--solenos-button-ink: #17251c/);
+assert.match(styles, /\.structured-daily-capture input[^,]*,[\s\S]*?color: #172b35 !important/);
+assert.match(dailyCapture, /measured_at: toLocalDateTimeInput\(\)/);
+assert.match(dailyCapture, /vital_type: 'heart_rate'[\s\S]*?bpm/);
+assert.match(dailyCapture, /showPanel=\{false\}/);
+assert.match(dailyCapture, /Added to this daily-care draft/);
+assert.doesNotMatch(dailyCapture, /Unverified extraction/);
+assert.doesNotMatch(dailyCapture, /Not returned by the extractor/);
+assert.doesNotMatch(landingStyles, /\.editorial-landing \.el-button/);
+assert.doesNotMatch(notifications, /Backend-backed notifications/);
 
 console.log("Caregiver UI contract checks passed.");
