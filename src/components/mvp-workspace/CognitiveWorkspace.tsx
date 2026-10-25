@@ -635,6 +635,48 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
 
   async function handleWorkspaceAction(action: WorkspaceAction) {
     switch (action) {
+      case "share_care_summary": {
+        // Share only information already present in the current caregiver session.
+        // Never generate sample facts or imply that an unverified extraction is established care history.
+        const summaryParts = [
+          "SolenOS — Living Care Record summary",
+          displayName?.trim() ? `Person: ${displayName.trim()}` : null,
+          lastSharedDisplay.trim() ? `Recent caregiver entry:\n${lastSharedDisplay.trim()}` : null,
+          savedEventReceipt?.title ? `Saved care update: ${savedEventReceipt.title}` : null,
+          savedEventReceipt?.description ? `Details: ${savedEventReceipt.description}` : null,
+        ].filter((part): part is string => Boolean(part));
+        const hasShareableCare = Boolean(
+          lastSharedDisplay.trim() || savedEventReceipt?.title || savedEventReceipt?.description,
+        );
+        if (!hasShareableCare) {
+          window.alert("There is no saved care information available to share from this screen yet.");
+          break;
+        }
+        const summary = summaryParts.join("\n\n");
+        try {
+          if (typeof navigator.share === "function") {
+            await navigator.share({ title: "SolenOS Living Care Record summary", text: summary });
+          } else if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(summary);
+            window.alert("Care summary copied. You can paste it into the app or message of your choice.");
+          } else {
+            window.prompt("Copy this care summary:", summary);
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") break;
+          try {
+            if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(summary);
+              window.alert("Care summary copied. You can paste it into the app or message of your choice.");
+            } else {
+              window.prompt("Copy this care summary:", summary);
+            }
+          } catch {
+            window.prompt("Copy this care summary:", summary);
+          }
+        }
+        break;
+      }
       case "pin": {
         setIsPinned(true);
         try {

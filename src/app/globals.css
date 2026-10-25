@@ -5134,3 +5134,38 @@ input[type="file"] { width: 100%; white-space: normal; }
   .care-reminder-form button { width: 100%; }
   .care-reminder-actions > button { flex: 1; }
 }
+
+/* Pre-release accessibility hardening: preserve the existing SolenOS palette. */
+:root {
+  --text-base: 1.0625rem;
+}
+
+/* Larger landing-page body copy, without changing its layout or adding colors. */
+.editorial-landing {
+  font-size: 1.0625rem;
+}
+
+/* Comfortable touch targets for the mobile care workflows. */
+@media (max-width: 760px) {
+  .mobile-screen button,
+  .mobile-screen input,
+  .mobile-screen select,
+  .mobile-screen textarea,
+  .workspace-entry-action,
+  .workspace-secondary-tools > button {
+    min-height: 44px;
+  }
+
+  .mobile-screen input,
+  .mobile-screen select,
+  .mobile-screen textarea {
+    font-size: 1rem;
+  }
+}
+
+/* Keyboard focus must remain visible against the existing neutral/sage surfaces. */
+:where(button, a, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 3px solid var(--solenos-sage);
+  outline-offset: 3px;
+}
+
