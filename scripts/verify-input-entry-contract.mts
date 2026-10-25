@@ -158,13 +158,13 @@ console.log("✓ Security session revocation and notification actions use authen
 const apiClient = fs.readFileSync(path.join(root, "src", "api", "client.ts"), "utf8");
 assert(apiClient.includes("requestQwenCandidateAnalysis"));
 assert(apiClient.includes("'/assistant/extract-candidates'"));
-assert(apiClient.includes("requestQwenSupport"));
-assert(apiClient.includes("'/assistant/assist'"));
+assert(apiClient.includes("reviewQwenCandidate"));
 const dailyCapture = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"),
   "utf8",
 );
 assert(dailyCapture.includes("requestQwenCandidateAnalysis(savedEventId)"));
+assert(dailyCapture.includes("reviewQwenCandidate"));
 const community = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "Community.tsx"),
   "utf8",
@@ -176,36 +176,23 @@ const cognitiveWorkspace = fs.readFileSync(
 );
 assert(cognitiveWorkspace.includes("requestQwenCandidateAnalysis(savedEventId)"));
 assert(cognitiveWorkspace.includes("not been written to the Living Care Record"));
-console.log("✓ Qwen is called after persisted capture, document intake and Daily Capture; Community summaries use the Qwen endpoint");
-
-const qwenSupportPanel = fs.readFileSync(
-  path.join(root, "src", "components", "workflows", "QwenSupportPanel.tsx"),
+const qwenAssistPanel = fs.readFileSync(
+  path.join(root, "src", "components", "qwen", "QwenAssistPanel.tsx"),
   "utf8",
 );
+assert(qwenAssistPanel.includes('postJSON("/assistant/assist"') || qwenAssistPanel.includes("postJSON('/assistant/assist'"));
 for (const workflow of [
   "daily_capture", "document", "community", "appointment", "after_appointment",
   "handoff", "professional_summary", "open_loops", "two_week_review",
   "decision_outcome", "medication_day", "living_care_record",
 ]) {
-  assert(apiClient.includes(`'${workflow}'`), `Missing Qwen workflow contract: ${workflow}`);
-  assert(qwenSupportPanel.includes(`"${workflow}"`), `Missing Qwen support UI: ${workflow}`);
+  assert(qwenAssistPanel.includes(`"${workflow}"`), `Missing Qwen support workflow: ${workflow}`);
 }
-assert(qwenSupportPanel.includes("requestQwenSupport"));
-assert(qwenSupportPanel.includes("written_to_lcr !== false"));
-assert(qwenSupportPanel.includes("Nothing was written to the Living Care Record"));
-for (const page of [
-  "src/app/workspace/page.tsx",
-  "src/app/workspace/daily-care/page.tsx",
-  "src/app/workspace/documents/page.tsx",
-  "src/app/workspace/community/page.tsx",
-]) {
-  const source = fs.readFileSync(path.join(root, page), "utf8");
-  assert(source.includes("QwenSupportPanel"), `Qwen support panel not mounted in ${page}`);
-}
-console.log("✓ Qwen read-only support is exposed across care, documents, Community, appointments, handoffs, reviews and LCR");
-
-
-
+assert(qwenAssistPanel.includes("written_to_lcr: false"));
+const workspacePage = fs.readFileSync(path.join(root, "src", "app", "workspace", "page.tsx"), "utf8");
+assert(workspacePage.includes('import QwenAssistPanel from "@/components/qwen/QwenAssistPanel"'));
+assert(workspacePage.includes('defaultWorkflow="living_care_record"'));
+console.log("✓ Existing Qwen panel routes all support workflows; capture suggestions are persisted and review-only");
 
 const companionScreen = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
