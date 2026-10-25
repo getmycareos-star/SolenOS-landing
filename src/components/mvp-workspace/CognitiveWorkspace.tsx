@@ -645,7 +645,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           savedEventReceipt?.title ? `Saved care update: ${savedEventReceipt.title}` : null,
           savedEventReceipt?.description ? `Details: ${savedEventReceipt.description}` : null,
         ].filter((part): part is string => Boolean(part));
-        if (summaryParts.length === 1) {
+        const hasShareableCare = Boolean(
+          lastSharedDisplay.trim() || savedEventReceipt?.title || savedEventReceipt?.description,
+        );
+        if (!hasShareableCare) {
           window.alert("There is no saved care information available to share from this screen yet.");
           break;
         }
