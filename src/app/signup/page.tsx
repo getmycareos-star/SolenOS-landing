@@ -41,7 +41,7 @@ export default function SignupPage() {
         <div className="account-auth-card">
           <p className="account-auth-kicker">OPTIONAL ACCOUNT</p>
           <h1>Create your SolenOS account</h1>
-          <p>Create an account to return to the same care record when you sign in. You can also use SolenOS without an account. If you already started anonymously in this browser, your existing care record will be linked rather than replaced.</p>
+          <p>Create an account to return to the same care record when you sign in. You can also use SolenOS without an account. If you already started anonymously in this browser and the session is still valid, your existing care record will be linked rather than replaced.</p>
           <form onSubmit={submit} className="account-auth-form">
             <label>Email
               <input type="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} />
