@@ -26,6 +26,11 @@ function toLocalDateTimeInput(date = new Date()): string {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
+const SCALE_LABELS: Record<string, string> = {
+  mood: 'Mood',
+  agitation: 'Agitation',
+  wellbeing_stress: 'Stress and wellbeing',
+};
 
 export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
@@ -39,6 +44,8 @@ export default function StructuredDailyCapture() {
   const [deltaToken, setDeltaToken] = useState(0);
   const [vitalError, setVitalError] = useState<string | null>(null);
   const [vitalFeedback, setVitalFeedback] = useState<string | null>(null);
+  const [scaleError, setScaleError] = useState<string | null>(null);
+  const [scaleFeedback, setScaleFeedback] = useState<string | null>(null);
   
   // Form state
   const [form, setForm] = useState({
@@ -111,7 +118,7 @@ export default function StructuredDailyCapture() {
   }>({
     axis: 'mood',
     score: Number.NaN,
-    observed_at: new Date().toISOString(),
+    observed_at: toLocalDateTimeInput(),
     note: null,
   });
   
@@ -364,38 +371,29 @@ export default function StructuredDailyCapture() {
     setVitalFeedback('Added to this daily-care draft. Save daily capture below to keep it.');
   };
   
-  // Handle scale form submission
-  const handleScaleSubmit = async (e: React.FormEvent) => {
+  // Add a daily rating to the draft; it is saved with the complete daily-care update.
+  const handleScaleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      const scaleData = {
-        ...scaleForm,
-        observed_at: new Date(scaleForm.observed_at).toISOString(),
-      };
-      if (!Number.isInteger(scaleData.score) || scaleData.score < 1 || scaleData.score > 5) {
-        alert('Select the observed score before adding this record.');
-        return;
-      }
-      
-      // Optimistically add to scales list
-      setForm(prev => ({
-        ...prev,
-        scales: [...prev.scales, scaleData]
-      }));
-      
-      // Reset scale form
-      setScaleForm({
-        axis: 'mood',
-        score: Number.NaN,
-        observed_at: new Date().toISOString(),
-        note: null,
-      });
-      
-      alert('Added to this daily-care draft. Save the daily care update below to keep it.');
-    } catch (err: any) {
-      alert("We couldn’t add this rating. Check the details and try again.");
+    setScaleError(null);
+    setScaleFeedback(null);
+    const observedAt = new Date(scaleForm.observed_at);
+    if (!Number.isInteger(scaleForm.score) || scaleForm.score < 1 || scaleForm.score > 5) {
+      setScaleError('Choose a rating from 1 to 5 before adding it.');
+      return;
     }
+    if (Number.isNaN(observedAt.getTime())) {
+      setScaleError('Choose when this was observed.');
+      return;
+    }
+    const scaleData = { ...scaleForm, observed_at: observedAt.toISOString() };
+    setForm(prev => ({ ...prev, scales: [...prev.scales, scaleData] }));
+    setScaleForm({
+      axis: 'mood',
+      score: Number.NaN,
+      observed_at: toLocalDateTimeInput(),
+      note: null,
+    });
+    setScaleFeedback('Added to this daily-care draft. Save the daily care update below to keep it.');
   };
   
   async function reviewCaptureCandidate(index: number, decision: 'accept' | 'correct' | 'reject') {
@@ -567,7 +565,7 @@ export default function StructuredDailyCapture() {
       setScaleForm({
         axis: 'mood',
         score: Number.NaN,
-        observed_at: new Date().toISOString(),
+        observed_at: toLocalDateTimeInput(),
         note: null,
       });
       
@@ -1440,7 +1438,7 @@ export default function StructuredDailyCapture() {
         
         {/* Scales section */}
         <section>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Scales</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Daily ratings</h2>
           
           {/* Scales form */}
           <div style={{ 
@@ -1450,11 +1448,11 @@ export default function StructuredDailyCapture() {
             padding: '16px', 
             marginBottom: '24px' 
           }}>
-            <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add Scale Observation</h3>
+            <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a daily rating</h3>
             
             <form onSubmit={handleScaleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label htmlFor="capture-scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
+                <label htmlFor="capture-scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Rating type</label>
                 <select
                   id="capture-scale-type"
                   value={scaleForm.axis}
@@ -1470,15 +1468,15 @@ export default function StructuredDailyCapture() {
                 >
                   {SCALE_AXES.map(axis => (
                     <option key={axis} value={axis}>
-                      {axis.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      {SCALE_LABELS[axis] ?? axis.replace(/_/g, ' ')}
                     </option>
                   ))}
                 </select>
               </div>
               
-              <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label htmlFor="capture-scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
+                  <label htmlFor="capture-scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Rating (1–5)</label>
                 <input
                   id="capture-scale-score"
                   type="number"
@@ -1500,11 +1498,12 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed At</label>
+                <label htmlFor="capture-scale-observed-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed at</label>
                 <input
+                  id="capture-scale-observed-at"
                   type="datetime-local"
                   value={scaleForm.observed_at}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, observed_at: e.target.value }))}
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, observed_at: e.target.value })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1517,10 +1516,11 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="capture-scale-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
                 <textarea
+                  id="capture-scale-note"
                   value={scaleForm.note || ''}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, note: e.target.value || null }))}
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, note: e.target.value || null })); }}
                   placeholder="Add any notes about the scale observation"
                   rows={2}
                   style={{ 
@@ -1537,22 +1537,16 @@ export default function StructuredDailyCapture() {
               
             </div>
               
+              {scaleError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{scaleError}</p>}
+              {scaleFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{scaleFeedback}</p>}
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
-                  type="button"
-                  onClick={handleScaleSubmit}
+                  type="submit"
+                  className="workspace-primary"
                   disabled={submitting}
-                  style={{ 
-                    fontSize: '13px', 
-                    fontWeight: '500', 
-                    color: 'white', 
-                    background: submitting ? 'var(--text-secondary)' : 'var(--accent)', 
-                    padding: '8px 16px', 
-                    borderRadius: '6px', 
-                    cursor: submitting ? 'default' : 'pointer' 
-                  }}
+                  style={{ fontSize: '14px', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
                 >
-                  {submitting ? 'Adding...' : 'Add Scale'}
+                  {submitting ? 'Adding…' : 'Add rating'}
                 </button>
               </div>
             </form>
