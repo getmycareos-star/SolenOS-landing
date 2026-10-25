@@ -164,6 +164,14 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     if (newPassword !== confirmPassword) throw new Error("The passwords do not match.");
     const path = purpose === "password-reset" ? "/account-security/password-reset/confirm" : "/account-security/recovery/confirm";
     await post(path, { token, new_password: newPassword });
+    try {
+      window.localStorage.removeItem("solenos_anonymous_access_token");
+      window.localStorage.removeItem("solenos_backend_person_id");
+      window.localStorage.removeItem("solenos_backend_caregiver_id");
+      window.localStorage.removeItem("solenos_anonymous_session_expires_at");
+      window.localStorage.removeItem("solenos_backend_account_id");
+    } catch { /* storage may be unavailable */ }
+    setAccountToken("");
     setMessage(purpose === "password-reset"
       ? "Password changed. Existing sessions have been revoked. Sign in again with your new password."
       : "Account recovered. Existing sessions and MFA enrollment have been revoked/reset. Sign in again and set up MFA again.");
@@ -251,6 +259,7 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
       {message && <p role="status" style={{ color: "#315d40" }}>{message}</p>}
     </div>
     {accountToken && <section style={cardStyle}>
+      <p><a href="/workspace" style={{ color: "#315d40" }}>Continue to your care record</a></p>
       <h2 style={{ fontSize: 22, marginTop: 0 }}>Multi-factor authentication</h2>
       <p style={{ color: "#526157", lineHeight: 1.6 }}>Enable an authenticator app as a second factor for future sign-ins. Recovery codes are displayed once after confirmation.</p>
       {mfaEnabled ? <form onSubmit={(e) => void disableMfa(e)} style={{ display: "grid", gap: 12 }}>
