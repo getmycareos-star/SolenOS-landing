@@ -47,7 +47,7 @@ assert.match(styles, /\.structured-daily-capture input[^,]*,[\s\S]*?color: #172b
 assert.match(dailyCapture, /measured_at: toLocalDateTimeInput\(\)/);
 assert.match(dailyCapture, /heart_rate: 'bpm'/);
 assert.match(dailyCapture, /observed_at: toLocalDateTimeInput\(\)/);
-assert.match(dailyCapture, /Added to this daily-care-draft/);
+assert.match(dailyCapture, /Added to this daily-care draft/);
 assert.doesNotMatch(dailyCapture, /The backend did not provide a persistent review ID/);
 assert.doesNotMatch(dailyCapture, /Failed to add vital:/);
 assert.match(dailyCapture, /showPanel=\{false\}/);
