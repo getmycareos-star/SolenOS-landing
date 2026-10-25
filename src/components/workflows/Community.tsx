@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { CSSProperties, FormEvent } from 'react'
-import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, Send, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
-import { getJSON, postJSON, ensureAnonymousSession } from '@/api/client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { getJSON, postJSON, getCaregiverId } from '@/api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
 type CareStage = 'early' | 'moderate' | 'late' | 'unspecified'
 type Visibility = 'public' | 'circle' | 'anonymous'
-type PostType = 'experience' | 'question'
 
 interface CommunityPost {
   id: string
@@ -27,330 +25,512 @@ interface CommunityPost {
   comment_count: number
   user_reaction: ReactionType | null
 }
-interface CommunityPostSummary { identity: string; posts: CommunityPost[] }
-interface ExperienceMatch { post_id: string; author_label: string; author_type: string; content: string; tags: string[] }
-interface ExperienceResult {
-  summary: string | null
-  matches: ExperienceMatch[]
-  post_ids: string[]
-  provider_status: 'connected' | 'not_configured' | 'error' | 'not_needed'
-  ai_generated: boolean
-  notice: string
+
+interface CommunityPostSummary {
+  identity: string
+  posts: CommunityPost[]
 }
 
-const STAGES: { value: CareStage | 'all'; label: string }[] = [
-  { value: 'early', label: 'Early stage' },
-  { value: 'moderate', label: 'Moderate' },
-  { value: 'late', label: 'Late' },
-  { value: 'all', label: 'All stages' },
+const STAGE_LABELS: Record<CareStage, string> = {
+  early: 'Early stage',
+  moderate: 'Moderate',
+  late: 'Late stage',
+  unspecified: 'All stages',
+}
+
+const STAGE_COLORS: Record<CareStage, string> = {
+  early: 'var(--trust)',
+  moderate: 'var(--unknown)',
+  late: '#dc2626',
+  unspecified: 'var(--text-secondary)',
+}
+
+type PostType = 'experience' | 'question'
+
+const POST_TYPE_OPTIONS: { value: PostType; label: string; placeholder: string; emoji: string }[] = [
+  { value: 'experience', label: 'Share What Worked', placeholder: 'Share a tip, routine, or moment that helped...', emoji: '💡' },
+  { value: 'question', label: 'Ask the Community', placeholder: 'What are you struggling with? Other caregivers may have insight.', emoji: '❓' },
 ]
-const TAGS = ['All topics', 'sundowning', 'wandering', 'medication', 'behavior', 'sleep', 'safety', 'activities', 'nutrition']
-const baseButton: CSSProperties = {
-  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-  minHeight: 42, padding: '10px 15px', borderRadius: 12, border: '1px solid var(--border)',
-  background: 'var(--surface)', color: 'var(--text)', fontSize: 14, fontWeight: 600,
-  cursor: 'pointer', transition: 'background 150ms ease, border-color 150ms ease',
-}
-const cardStyle: CSSProperties = {
-  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18,
-  padding: 'clamp(16px, 3vw, 24px)', minWidth: 0,
-}
-const muted: CSSProperties = { color: 'var(--text-secondary)' }
 
-function timeLabel(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Recently shared'
-  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000))
-  if (minutes < 1) return 'Just now'
-  if (minutes < 60) return `${minutes}m ago`
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`
-  if (minutes < 10080) return `${Math.floor(minutes / 1440)}d ago`
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+const TAG_COLORS: Record<string, { bg: string; text: string }> = {
+  sundowning: { bg: 'var(--trust-soft)', text: 'var(--trust)' },
+  wandering: { bg: 'var(--unknown-soft)', text: 'var(--unknown)' },
+  medication: { bg: '#fef2f2', text: '#dc2626' },
+  behavior: { bg: '#ffefed', text: '#ea580c' },
+  sleep: { bg: '#f0fdfa', text: '#0d9488' },
+  communication: { bg: '#eff6ff', text: '#2563eb' },
+  mobility: { bg: '#faf5ff', text: '#7c3aed' },
+  nutrition: { bg: '#fff7ed', text: '#ea580c' },
+  safety: { bg: '#fff1f2', text: '#db2777' },
+  activities: { bg: 'var(--accent-soft)', text: 'var(--accent)' },
+  routine: { bg: '#f8faff', text: '#475569' },
+  appointments: { bg: '#f1f5f9', text: '#334159' },
+  hydration: { bg: '#ecfdf5', text: 'var(--trust)' },
+  general: { bg: 'var(--surface)', text: 'var(--text-secondary)' },
 }
-function authorDetails(type: AuthorType) {
-  if (type === 'solenos_verified') return { label: 'SolenOS verified', mark: '✓' }
-  if (type === 'professional') return { label: 'Care professional', mark: '✦' }
-  if (type === 'professional_pending') return { label: 'Professional profile', mark: '•' }
-  return { label: 'Caregiver', mark: '' }
+
+const DEFAULT_TAG_COLORS = { bg: 'var(--accent-soft)', text: 'var(--text-secondary)' }
+
+function authorBadge(authorType: AuthorType) {
+  switch (authorType) {
+    case 'solenos_verified':
+      return { emoji: '🛡️', label: 'SolenOS verified', bg: 'var(--trust-soft)', text: 'var(--trust)' }
+    case 'professional':
+      return { emoji: '👩‍⚕️', label: 'Professional', bg: '#eff6ff', text: '#2563eb' }
+    case 'professional_pending':
+      return { emoji: '👤', label: 'Professional (pending)', bg: 'var(--unknown-soft)', text: 'var(--unknown)' }
+    default:
+      return { emoji: '🧑', label: 'Peer caregiver', bg: 'var(--accent-soft)', text: 'var(--accent)' }
+  }
 }
-function safeCount(value: number | undefined): number { return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0 }
+
+function formatTime(createdAt: string): string {
+  const date = new Date(createdAt)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function tagColor(tag: string) {
+  return TAG_COLORS[tag] ?? DEFAULT_TAG_COLORS
+}
 
 export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
-  const [actionMessage, setActionMessage] = useState('')
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerText, setComposerText] = useState('')
-  const [postType, setPostType] = useState<PostType>('experience')
   const [submitting, setSubmitting] = useState(false)
-  const [activeTag, setActiveTag] = useState('All topics')
-  const [activeStage, setActiveStage] = useState<CareStage | 'all'>('all')
-  const [search, setSearch] = useState('')
+  const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [activeStage, setActiveStage] = useState<CareStage | null>(null)
+  const [postType, setPostType] = useState<PostType>('experience')
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set())
-  const [savedOnly, setSavedOnly] = useState(false)
-  const [wisdomQuery, setWisdomQuery] = useState('')
-  const [wisdomMatches, setWisdomMatches] = useState<ExperienceMatch[]>([])
-  const [wisdomSummary, setWisdomSummary] = useState<string | null>(null)
-  const [wisdomLoading, setWisdomLoading] = useState(false)
-  const [wisdomMessage, setWisdomMessage] = useState('')
 
-  async function loadPosts(showLoading = true) {
-    if (showLoading) setLoading(true)
-    setLoadError('')
-    try {
-      const result = await getJSON('/community') as CommunityPostSummary
-      if (!Array.isArray(result?.posts)) throw new Error('Invalid community response')
-      setPosts(result.posts)
-    } catch {
-      setLoadError('We couldn’t load community posts right now. Please try again.')
-    } finally {
-      if (showLoading) setLoading(false)
+  const caregiverId = getCaregiverId()
+
+  useEffect(() => {
+    const saved = localStorage.getItem('solenos_saved_posts')
+    if (saved) {
+      try {
+        setSavedPosts(new Set(JSON.parse(saved)))
+      } catch {}
     }
-  }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
-    try {
-      const raw = localStorage.getItem('solenos_saved_posts')
-      if (raw) {
-        const parsed: unknown = JSON.parse(raw)
-        if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) setSavedPosts(new Set(parsed))
+    async function load() {
+      setLoading(true)
+      setLoadError(null)
+      try {
+        const data = await getJSON('/community') as CommunityPostSummary
+        if (!data || !Array.isArray(data.posts)) throw new Error('The community response was incomplete.')
+        if (!cancelled) setPosts(data.posts)
+      } catch (e) {
+        if (!cancelled) {
+          setPosts([])
+          setLoadError('Community posts could not be loaded. Your data has not been replaced with sample content.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-    } catch { /* Ignore invalid local saved-post preferences. */ }
-    getJSON('/community')
-      .then((value) => {
-        const result = value as CommunityPostSummary
-        if (!Array.isArray(result?.posts)) throw new Error('Invalid community response')
-        if (!cancelled) { setPosts(result.posts); setLoadError('') }
-      })
-      .catch(() => {
-        if (!cancelled) { setPosts([]); setLoadError('We couldn’t load community posts right now. Please try again.') }
-      })
-      .finally(() => { if (!cancelled) setLoading(false) })
+    }
+    load()
     return () => { cancelled = true }
   }, [])
 
-  const filteredPosts = useMemo(() => posts.filter((post) => {
-    if (activeTag !== 'All topics' && !post.tags?.includes(activeTag)) return false
-    if (activeStage !== 'all' && post.care_stage !== activeStage) return false
-    if (savedOnly && !savedPosts.has(post.id)) return false
-    const query = search.trim().toLocaleLowerCase()
-    if (query && ![post.title, post.body, post.author_label, ...(post.tags ?? [])].some((value) => value?.toLocaleLowerCase().includes(query))) return false
-    return true
-  }), [posts, activeTag, activeStage, savedOnly, savedPosts, search])
-
-  function toggleSave(postId: string) {
-    setSavedPosts((previous) => {
-      const next = new Set(previous)
-      if (next.has(postId)) next.delete(postId)
-      else next.add(postId)
-      try { localStorage.setItem('solenos_saved_posts', JSON.stringify([...next])) } catch { /* Saving is local to this browser. */ }
-      return next
-    })
-  }
-
-  async function reactTo(postId: string, reactionType: ReactionType) {
-    setActionMessage('')
+  async function handleReaction(postId: string, reactionType: ReactionType) {
+    setActionError(null)
+    if (!caregiverId) {
+      setActionError('Reactions are unavailable because this browser has no valid SolenOS caregiver session. Your care record has not been changed.')
+      return
+    }
     try {
-      const session = await ensureAnonymousSession()
-      await postJSON(`/community/${encodeURIComponent(postId)}/reactions`, { caregiver_id: session.caregiver.id, reaction_type: reactionType })
-      await loadPosts(false)
-      setActionMessage('Your response was saved.')
+      await postJSON(`/community/${encodeURIComponent(postId)}/reactions`, {
+        caregiver_id: caregiverId,
+        reaction_type: reactionType,
+      })
     } catch {
-      setActionMessage('We couldn’t save that response. Check your connection and try again.')
+      setActionError('Your reaction could not be confirmed by the server.')
+      return
+    }
+    try {
+      const refreshed = await getJSON('/community') as CommunityPostSummary
+      if (!Array.isArray(refreshed?.posts)) throw new Error('Community response was incomplete.')
+      setPosts(refreshed.posts)
+    } catch {
+      setActionError('The reaction request succeeded, but updated community counts could not be loaded. Refresh before relying on the displayed counts.')
     }
   }
 
-  async function submitPost(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const content = composerText.trim()
-    if (!content || submitting) return
+  function toggleSave(postId: string) {
+    const newSaved = new Set(savedPosts)
+    if (newSaved.has(postId)) {
+      newSaved.delete(postId)
+    } else {
+      newSaved.add(postId)
+    }
+    setSavedPosts(newSaved)
+    localStorage.setItem('solenos_saved_posts', JSON.stringify([...newSaved]))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!composerText.trim()) return
+    if (!caregiverId) {
+      setActionError('Posting is unavailable because this browser has no valid SolenOS caregiver session. Your text has been kept.')
+      return
+    }
     setSubmitting(true)
-    setActionMessage('')
+    setActionError(null)
     try {
-      const session = await ensureAnonymousSession()
       await postJSON('/community', {
-        caregiver_id: session.caregiver.id,
+        caregiver_id: caregiverId,
         author_type: 'peer_caregiver',
         author_label: 'Anonymous caregiver',
         post_type: postType,
-        content,
+        content: composerText.trim(),
         visibility: 'public',
       })
-      setComposerText('')
-      setComposerOpen(false)
-      setActionMessage('Your experience was shared.')
-      await loadPosts(false)
     } catch {
-      setActionMessage('We couldn’t confirm your post. Your draft is still here so you can try again.')
-    } finally { setSubmitting(false) }
-  }
+      setActionError('The post could not be confirmed by the server. Your text has been kept so you can retry.')
+      setSubmitting(false)
+      return
+    }
 
-  async function findExperiences(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const query = wisdomQuery.trim()
-    if (!query || wisdomLoading) return
-    setWisdomLoading(true); setWisdomMessage(''); setWisdomMatches([]); setWisdomSummary(null)
+    // The write is confirmed. Clear the submitted text before refreshing the list
+    // so a refresh failure cannot imply that the original post failed.
+    setComposerText('')
+    setComposerOpen(false)
     try {
-      let result: ExperienceResult
-      try {
-        result = await postJSON('/community/experience/summary', { observation: query }) as ExperienceResult
-      } catch (error) {
-        if (!(error instanceof Error) || !/API 404/i.test(error.message)) throw error
-        const legacy = await postJSON('/community/experience', { observation: query }) as { matches?: ExperienceMatch[] }
-        if (!Array.isArray(legacy?.matches)) throw new Error('No matches')
-        setWisdomMatches(legacy.matches.slice(0, 4))
-        setWisdomMessage(legacy.matches.length ? 'Related published experiences. No automated summary was available.' : 'No related published experiences were found.')
-        return
-      }
-      if (!Array.isArray(result?.matches)) throw new Error('No matches')
-      setWisdomMatches(result.matches.slice(0, 4))
-      setWisdomSummary(result.ai_generated && typeof result.summary === 'string' ? result.summary : null)
-      setWisdomMessage(result.notice || (result.matches.length ? 'These are personal experiences, not medical instructions.' : 'No related published experiences were found.'))
+      const response = await getJSON('/community') as CommunityPostSummary
+      if (!Array.isArray(response?.posts)) throw new Error('Community response was incomplete.')
+      setPosts(response.posts)
+      setActionError(null)
     } catch {
-      setWisdomMessage('Experience search is unavailable right now. You can still browse published posts below.')
-    } finally { setWisdomLoading(false) }
+      setActionError('Your post was submitted, but the community list could not be refreshed. Reload to see the saved post.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const resetFilters = () => { setActiveTag('All topics'); setActiveStage('all'); setSavedOnly(false); setSearch('') }
+  const filteredPosts = posts.filter(p => {
+    if (activeTag && !p.tags.includes(activeTag)) return false
+    if (activeStage && p.care_stage !== activeStage) return false
+    return true
+  })
 
   return (
-    <section style={{ display: 'grid', gap: 22, color: 'var(--text)', minWidth: 0 }}>
-      <header style={{ ...cardStyle, background: 'linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 100%)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, ...muted, fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          <Users size={16} aria-hidden="true" /> CAREGIVERS, TOGETHER
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', marginTop: 12 }}>
-          <div style={{ maxWidth: 650 }}>
-            <h2 style={{ fontSize: 'clamp(25px, 4vw, 36px)', lineHeight: 1.15, letterSpacing: '-.035em', margin: '0 0 10px', fontWeight: 750 }}>
-              You don’t have to figure it all out alone.
-            </h2>
-            <p style={{ margin: 0, lineHeight: 1.7, fontSize: 15, ...muted }}>
-              Real experiences from people caring for someone with dementia. Find ideas, ask a question, or share what helped your family.
-            </p>
-          </div>
-          <div aria-label="Community actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 9, flexShrink: 0, width: 'min(100%, 420px)' }}>
-            <button type="button" onClick={() => { setPostType('experience'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'experience'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: '#173f4b', color: '#ffffff', borderColor: '#173f4b', fontWeight: 750, boxShadow: '0 2px 7px rgba(0,0,0,.08)' }}>
-              <Sparkles size={18} aria-hidden="true" /> Share what works
-            </button>
-            <button type="button" onClick={() => { setPostType('question'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'question'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: '#ffffff', color: '#172b35', borderColor: '#173f4b', fontWeight: 750 }}>
-              <MessageCircle size={18} aria-hidden="true" /> Ask the community
-            </button>
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
-          <span style={{ display: 'inline-flex', gap: 7, alignItems: 'center', fontSize: 12, borderRadius: 999, padding: '7px 11px', background: 'var(--surface)', border: '1px solid var(--border)' }}><ShieldCheck size={14} /> Respectful peer support</span>
-          <span style={{ display: 'inline-flex', gap: 7, alignItems: 'center', fontSize: 12, borderRadius: 999, padding: '7px 11px', background: 'var(--surface)', border: '1px solid var(--border)' }}><HeartHandshake size={14} /> Lived experience, shared carefully</span>
-        </div>
-      </header>
-
-      {composerOpen && <form onSubmit={submitPost} style={{ ...cardStyle, display: 'grid', gap: 14 }}>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
-          <h3 style={{ margin: '0 0 5px', fontSize: 19 }}>What would you like to share?</h3>
-          <p style={{ ...muted, margin: 0, fontSize: 13, lineHeight: 1.6 }}>Share only what you’re comfortable making public. Leave out names, addresses, and identifying details.</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Community</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '500px' }}>
+            Shared experiences from caregivers like you. When you capture what changed in "What Matters Today," similar experiences surface here.
+          </p>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.7, marginTop: '4px' }}>
+            Shared experience is not medical advice — always confirm with a clinician.
+          </p>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {([{ value: 'experience', label: 'Something that helped' }, { value: 'question', label: 'A question for caregivers' }] as const).map((option) => (
-            <button key={option.value} type="button" onClick={() => setPostType(option.value)} aria-pressed={postType === option.value} style={{ ...baseButton, background: postType === option.value ? 'var(--accent-soft)' : 'var(--surface)', borderColor: postType === option.value ? 'var(--accent)' : 'var(--border)' }}>{postType === option.value && <Check size={15} />}{option.label}</button>
-          ))}
-        </div>
-        <label htmlFor="community-post" style={{ display: 'grid', gap: 7, fontSize: 13, fontWeight: 650 }}>
-          {postType === 'question' ? 'Your question' : 'Your experience'}
-          <textarea id="community-post" required maxLength={5000} value={composerText} onChange={(event) => setComposerText(event.target.value)} placeholder={postType === 'question' ? 'What has been difficult lately? What have you already tried?' : 'What happened, what did you try, and what seemed to help?'} style={{ width: '100%', minHeight: 130, resize: 'vertical', border: '1px solid var(--border)', borderRadius: 12, padding: 14, background: '#ffffff', color: '#172b35', caretColor: '#172b35', WebkitTextFillColor: '#172b35', font: 'inherit', fontSize: 14, lineHeight: 1.65 }} />
-        </label>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ ...muted, fontSize: 12 }}>{composerText.length}/5000 · Peer experiences are not medical advice.</span>
-          <button type="submit" aria-label="Send community post" disabled={submitting || !composerText.trim()} style={{ ...baseButton, minHeight: 46, padding: '12px 18px', background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)', opacity: submitting || !composerText.trim() ? .55 : 1, whiteSpace: 'nowrap' }}><Send size={16} aria-hidden="true" />{submitting ? 'Sending…' : 'Send post'}</button>
-        </div>
-      </form>}
+        <Link href="/workspace" style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+          ← Back to capture
+        </Link>
+      </div>
 
-      <section style={{ ...cardStyle, display: 'grid', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 38, height: 38, display: 'grid', placeItems: 'center', borderRadius: 12, background: 'var(--accent-soft)', color: 'var(--accent)' }}><Search size={18} /></div>
-          <div><h3 style={{ margin: 0, fontSize: 17 }}>Find experiences like yours</h3><p style={{ margin: '3px 0 0', ...muted, fontSize: 13 }}>Search published peer stories by what’s happening today.</p></div>
-        </div>
-        <form onSubmit={findExperiences} style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
-          <input aria-label="Search community experiences" value={wisdomQuery} onChange={(event) => setWisdomQuery(event.target.value)} placeholder="e.g. evening restlessness, sleep, wandering" style={{ flex: '1 1 240px', minWidth: 0, minHeight: 44, padding: '10px 13px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', font: 'inherit', fontSize: 14 }} />
-          <button type="submit" disabled={wisdomLoading || !wisdomQuery.trim()} style={{ ...baseButton, background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)', opacity: wisdomLoading || !wisdomQuery.trim() ? .55 : 1 }}>{wisdomLoading ? 'Searching…' : 'Find experiences'}</button>
-        </form>
-        {wisdomMessage && <p role="status" style={{ ...muted, margin: 0, fontSize: 13 }}>{wisdomMessage}</p>}
-        {wisdomSummary && <div style={{ borderRadius: 12, background: 'var(--accent-soft)', padding: 14, lineHeight: 1.7, fontSize: 14 }}><strong style={{ display: 'block', marginBottom: 5 }}>A summary of shared experiences</strong>{wisdomSummary}</div>}
-        {wisdomMatches.map((match) => <article key={match.post_id} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 13 }}>
-          <strong style={{ fontSize: 13 }}>{match.author_label || 'Community member'}</strong>
-          <p style={{ margin: '5px 0 8px', lineHeight: 1.65, fontSize: 14 }}>{match.content}</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{match.tags?.map((tag) => <span key={tag} style={{ ...muted, border: '1px solid var(--border)', borderRadius: 999, padding: '3px 8px', fontSize: 11 }}>{tag}</span>)}</div>
-        </article>)}
-      </section>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setComposerOpen(!composerOpen)}
+          style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: '12px', padding: '12px 20px', fontSize: '13px',
+            cursor: 'pointer', color: 'var(--text)'
+          }}
+        >
+          {composerOpen ? 'Cancel' : '+ Share what worked'}
+        </button>
+        {activeTag && (
+          <button
+            onClick={() => setActiveTag(null)}
+            style={{
+              background: 'var(--accent-soft)', border: '1px solid var(--border)',
+              borderRadius: '999px', padding: '6px 14px', fontSize: '12px',
+              cursor: 'pointer', color: 'var(--accent)'
+            }}
+          >
+            ✕ Clear filter
+          </button>
+        )}
+      </div>
 
-      <section style={{ display: 'grid', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div><h3 style={{ margin: '0 0 4px', fontSize: 21, letterSpacing: '-.02em' }}>Community stories</h3><p style={{ margin: 0, ...muted, fontSize: 13 }}>{loading ? 'Loading shared experiences…' : `${filteredPosts.length} ${filteredPosts.length === 1 ? 'story' : 'stories'} to explore`}</p></div>
-          <button type="button" onClick={() => setSavedOnly((value) => !value)} aria-pressed={savedOnly} style={{ ...baseButton, background: savedOnly ? 'var(--accent-soft)' : 'var(--surface)' }}><Bookmark size={16} /> {savedOnly ? 'Saved stories' : 'Show saved'}</button>
-        </div>
-        <label style={{ position: 'relative', display: 'block' }}>
-          <Search size={17} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', ...muted }} />
-          <input aria-label="Search community posts" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search stories, topics, or keywords" style={{ width: '100%', minHeight: 46, padding: '11px 14px 11px 42px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', font: 'inherit', fontSize: 14 }} />
-        </label>
-        <section aria-label="Find community experiences" style={{ ...cardStyle, display: 'grid', gap: 16, padding: '16px clamp(14px, 2.5vw, 20px)' }}>
-          <div style={{ display: 'grid', gap: 9 }}>
-            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 750 }}>By tag</h4>
-            <div role="group" aria-label="Filter by tag" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {TAGS.map((tag) => <button key={tag} type="button" onClick={() => setActiveTag(tag)} aria-pressed={activeTag === tag} style={{ ...baseButton, minHeight: 40, padding: '8px 13px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: activeTag === tag ? 'var(--accent-soft)' : 'var(--surface)', color: 'var(--text)', borderColor: activeTag === tag ? 'var(--accent)' : 'var(--border)', borderWidth: activeTag === tag ? 2 : 1 }}>{tag}</button>)}
-            </div>
+      {composerOpen && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
+        }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            {POST_TYPE_OPTIONS.map(opt => {
+              const selected = postType === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setPostType(opt.value)}
+                  style={{
+                    flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none',
+                    background: selected ? 'var(--accent-soft)' : 'var(--bg)',
+                    color: selected ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontSize: '12px', fontWeight: selected ? 600 : 500, cursor: 'pointer',
+                  }}
+                >
+                  {opt.emoji} {opt.label}
+                </button>
+              )
+            })}
           </div>
-          <div style={{ display: 'grid', gap: 9 }}>
-            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 750 }}>By stage</h4>
-            <div role="group" aria-label="Filter by care stage" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {STAGES.map((stage) => <button key={stage.value} type="button" onClick={() => setActiveStage(stage.value)} aria-pressed={activeStage === stage.value} style={{ ...baseButton, minHeight: 40, padding: '8px 14px', borderRadius: 11, fontSize: 13, fontWeight: 700, background: activeStage === stage.value ? 'var(--accent-soft)' : 'var(--surface)', color: 'var(--text)', borderColor: activeStage === stage.value ? 'var(--accent)' : 'var(--border)', borderWidth: activeStage === stage.value ? 2 : 1 }}>{stage.label}</button>)}
-            </div>
+          <textarea
+            value={composerText}
+            onChange={(e) => setComposerText(e.target.value)}
+            placeholder={
+              postType === 'question'
+                ? 'What are you struggling with? Other caregivers may have insight.'
+                : 'Share a tip, routine, or moment that helped...'
+            }
+            style={{
+              width: '100%', border: '1px solid var(--border)', borderRadius: '8px',
+              padding: '12px 16px', fontSize: '14px', fontFamily: 'inherit',
+              resize: 'vertical', minHeight: '100px', outline: 'none',
+              background: 'var(--bg)', color: 'var(--text)'
+            }}
+          />
+          <div style={{ display: 'flex', gap: '12px', marginTop: '12px', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              {postType === 'question'
+                ? 'This will be posted as a community question. Peer caregivers and professionals will respond.'
+                : 'This will be shared as peer experience. Medical advice belongs in notes for your clinician.'}
+            </span>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !composerText.trim()}
+              style={{
+                background: 'var(--trust-soft)', border: '1px solid var(--trust)',
+                borderRadius: '8px', padding: '8px 16px', fontSize: '13px',
+                cursor: 'pointer', color: 'var(--trust)', fontWeight: 500,
+                opacity: submitting || !composerText.trim() ? 0.5 : 1
+              }}
+            >
+              {submitting ? 'Sharing...' : 'Share'}
+            </button>
           </div>
-        </section>
+        </div>
+      )}
 
-        {(activeTag !== 'All topics' || activeStage !== 'all' || savedOnly || search) && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}><span style={{ ...muted, fontSize: 12 }}>Filters are on</span><button type="button" onClick={resetFilters} style={{ ...baseButton, minHeight: 34, padding: '5px 10px', fontSize: 12 }}><X size={14} /> Clear filters</button></div>}
+      <div style={{ display: 'flex', gap: '24px' }}>
+        <aside style={{ minWidth: '200px', flexShrink: 0 }}>
+          <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+            By tag
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+            {['sundowning', 'wandering', 'medication', 'behavior', 'sleep', 'safety', 'activities', 'nutrition'].map(tag => {
+              const active = activeTag === tag
+              const colors = tagColor(tag)
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setActiveTag(active ? null : tag)}
+                  style={{
+                    background: active ? colors.bg : 'transparent',
+                    border: `1px solid ${colors.bg}`,
+                    borderRadius: '999px', padding: '4px 12px', fontSize: '12px',
+                    cursor: 'pointer', textAlign: 'center',
+                    color: colors.text, fontWeight: active ? 500 : 400,
+                  }}
+                >
+                  {tag}
+                </button>
+              )
+            })}
+          </div>
 
-        {loadError && <div role="alert" style={{ ...cardStyle, display: 'grid', gap: 10 }}><p style={{ margin: 0 }}>{loadError}</p><button type="button" onClick={() => void loadPosts()} style={{ ...baseButton, justifySelf: 'start' }}>Try again</button></div>}
-        {loading && <div aria-live="polite" style={{ ...cardStyle, textAlign: 'center', padding: 34 }}><div style={{ fontWeight: 650 }}>Loading community stories</div><p style={{ ...muted, marginBottom: 0, fontSize: 13 }}>Bringing the latest published experiences together.</p></div>}
-        {!loading && !loadError && filteredPosts.length === 0 && <div style={{ ...cardStyle, textAlign: 'center', padding: 'clamp(24px, 5vw, 44px)' }}>
-          <div style={{ width: 54, height: 54, margin: '0 auto 14px', borderRadius: 18, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)' }}><HeartHandshake size={25} /></div>
-          <h4 style={{ margin: '0 0 8px', fontSize: 18 }}>{posts.length === 0 && !savedOnly && activeTag === 'All topics' && activeStage === 'all' && !search ? 'Your community starts here' : 'No stories match these filters'}</h4>
-          <p style={{ ...muted, maxWidth: 430, margin: '0 auto 18px', lineHeight: 1.7, fontSize: 14 }}>{posts.length === 0 ? 'There are no published posts to show yet. You can be the first to share a helpful moment or ask a question.' : 'Try a different topic or clear your filters to see more shared experiences.'}</p>
-          {posts.length === 0 ? <button type="button" onClick={() => setComposerOpen(true)} style={{ ...baseButton, background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)' }}>Share the first experience <ChevronRight size={16} /></button> : <button type="button" onClick={resetFilters} style={baseButton}>Clear filters</button>}
-        </div>}
+          <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+            By stage
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {(['early', 'moderate', 'late', 'unspecified'] as CareStage[]).map(stage => {
+              const active = activeStage === stage
+              return (
+                <button
+                  key={stage}
+                  onClick={() => setActiveStage(active ? null : stage)}
+                  style={{
+                    background: active ? 'var(--accent-soft)' : 'transparent',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px', padding: '8px 12px', fontSize: '12px',
+                    cursor: 'pointer', textAlign: 'left',
+                    color: active ? 'var(--text)' : 'var(--text-secondary)',
+                    fontWeight: active ? 500 : 400,
+                  }}
+                >
+                  {STAGE_LABELS[stage]}
+                </button>
+              )
+            })}
+          </div>
+        </aside>
 
-        {!loading && !loadError && filteredPosts.map((post) => {
-          const author = authorDetails(post.author_type)
-          const saved = savedPosts.has(post.id)
-          const reactionCounts = post.reaction_counts ?? { like: 0, thank_you: 0, support: 0 }
-          return <article key={post.id} style={{ ...cardStyle, display: 'grid', gap: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <div style={{ display: 'flex', gap: 11, minWidth: 0, alignItems: 'center' }}>
-                <div aria-hidden="true" style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 15, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)', fontWeight: 750 }}>{(post.author_avatar_seed || post.author_label || 'C').slice(0, 1).toUpperCase()}</div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 7 }}><strong style={{ fontSize: 14 }}>{post.author_label || 'Community member'}</strong><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, borderRadius: 999, padding: '3px 8px', background: 'var(--accent-soft)', color: 'var(--accent)' }}>{author.mark && <span aria-hidden="true">{author.mark}</span>}{author.label}</span></div>
-                  <div style={{ ...muted, fontSize: 12, marginTop: 3 }}>{timeLabel(post.created_at)}{post.care_stage && post.care_stage !== 'unspecified' ? ` · ${STAGES.find((stage) => stage.value === post.care_stage)?.label || ''}` : ''}</div>
+        <main style={{ flex: 1 }}>
+          {loading && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading community posts...</p>
+          )}
+
+          {!loading && loadError && (
+            <p role="alert" style={{ color: 'var(--error)', fontSize: '14px' }}>{loadError}</p>
+          )}
+          {!loading && !loadError && filteredPosts.length === 0 && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+              {activeTag || activeStage
+                ? 'No posts match your filters. Try clearing them.'
+                : 'No community posts yet. Be the first to share.'}
+            </p>
+          )}
+
+          {!loading && !loadError && filteredPosts.map(post => {
+            const badge = authorBadge(post.author_type)
+            return (
+              <div key={post.id} style={{
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: '12px', padding: '20px', marginBottom: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{
+                    width: '32px', height: '32px', borderRadius: '50%',
+                    background: badge.bg, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: '14px'
+                  }}>
+                    {post.author_avatar_seed}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 500 }}>{post.author_label}</span>
+                      <span style={{
+                        fontSize: '10px', padding: '2px 8px', borderRadius: '999px',
+                        background: badge.bg, color: badge.text,
+                      }}>
+                        {badge.emoji} {badge.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {formatTime(post.created_at)}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <button type="button" onClick={() => toggleSave(post.id)} aria-label={saved ? 'Remove saved story' : 'Save story'} aria-pressed={saved} title={saved ? 'Saved' : 'Save story'} style={{ ...baseButton, minHeight: 38, width: 38, padding: 0, borderRadius: 11, color: saved ? 'var(--accent)' : 'var(--text-secondary)' }}>{saved ? <Check size={17} /> : <Bookmark size={17} />}</button>
-            </div>
-            {post.title && <h4 style={{ margin: 0, fontSize: 18, lineHeight: 1.4 }}>{post.title}</h4>}
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{post.body}</p>
-            {!!post.tags?.length && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{post.tags.map((tag) => <button key={tag} type="button" onClick={() => setActiveTag(tag)} style={{ ...muted, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '5px 9px', fontSize: 11, cursor: 'pointer' }}>#{tag}</button>)}</div>}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7 }}>
-              <button type="button" onClick={() => reactTo(post.id, 'like')} aria-pressed={post.user_reaction === 'like'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'like' ? 'var(--accent-soft)' : 'transparent' }}><ThumbsUp size={15} /> Helpful {safeCount(reactionCounts.like) > 0 && safeCount(reactionCounts.like)}</button>
-              <button type="button" onClick={() => reactTo(post.id, 'thank_you')} aria-pressed={post.user_reaction === 'thank_you'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'thank_you' ? 'var(--accent-soft)' : 'transparent' }}>Thank you {safeCount(reactionCounts.thank_you) > 0 && safeCount(reactionCounts.thank_you)}</button>
-              <button type="button" onClick={() => reactTo(post.id, 'support')} aria-pressed={post.user_reaction === 'support'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'support' ? 'var(--accent-soft)' : 'transparent' }}><HeartHandshake size={15} /> Support {safeCount(reactionCounts.support) > 0 && safeCount(reactionCounts.support)}</button>
-              <span style={{ ...muted, display: 'inline-flex', alignItems: 'center', gap: 5, marginLeft: 'auto', fontSize: 12 }}><MessageCircle size={15} /> {safeCount(post.comment_count)} responses</span>
-            </div>
-          </article>
-        })}
-      </section>
 
-      {actionMessage && <div role="status" aria-live="polite" style={{ ...cardStyle, padding: '12px 15px', fontSize: 13, display: 'flex', gap: 9, alignItems: 'center' }}><ShieldCheck size={17} style={{ color: 'var(--accent)', flexShrink: 0 }} />{actionMessage}<button type="button" aria-label="Dismiss message" onClick={() => setActionMessage('')} style={{ ...baseButton, marginLeft: 'auto', minHeight: 30, width: 30, padding: 0 }}><X size={14} /></button></div>}
-      <footer style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '4px 2px 12px', ...muted }}>
-        <ShieldCheck size={17} style={{ flexShrink: 0, marginTop: 2 }} />
-        <p style={{ margin: 0, fontSize: 12, lineHeight: 1.7 }}>Community stories describe personal experiences, not medical advice. Do not post identifying information. Confirm care decisions and medication changes with a qualified clinician. Community posts never update your Living Care Record automatically.</p>
-      </footer>
-    </section>
+                {post.title && (
+                  <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px' }}>{post.title}</h2>
+                )}
+
+                <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text)', marginBottom: '12px' }}>
+                  {post.body}
+                </p>
+
+                {post.tags.length > 0 && (
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                    {post.tags.map(tag => {
+                      const colors = tagColor(tag)
+                      return (
+                        <span key={tag} style={{
+                          fontSize: '11px', padding: '3px 10px', borderRadius: '999px',
+                          background: colors.bg, color: colors.text,
+                        }}>
+                          {tag}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  paddingTop: '8px', borderTop: '1px solid var(--border)'
+                }}>
+                  <button
+                    onClick={() => handleReaction(post.id, 'like')}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      border: 'none', background: 'transparent',
+                      padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
+                      color: post.user_reaction === 'like' ? 'var(--trust)' : 'var(--text-secondary)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    👍 {post.reaction_counts.like > 0 && post.reaction_counts.like}
+                  </button>
+                  <button
+                    onClick={() => handleReaction(post.id, 'thank_you')}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      border: 'none', background: 'transparent',
+                      padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
+                      color: post.user_reaction === 'thank_you' ? 'var(--trust)' : 'var(--text-secondary)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    🙏 {post.reaction_counts.thank_you > 0 && post.reaction_counts.thank_you}
+                  </button>
+                  <button
+                    onClick={() => handleReaction(post.id, 'support')}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      border: 'none', background: 'transparent',
+                      padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
+                      color: post.user_reaction === 'support' ? 'var(--trust)' : 'var(--text-secondary)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    💙 {post.reaction_counts.support > 0 && post.reaction_counts.support}
+                  </button>
+
+                   <span style={{ fontSize: '11px', color: STAGE_COLORS[post.care_stage],
+                     background: post.care_stage === 'unspecified' ? 'transparent' : `${STAGE_COLORS[post.care_stage]}10`,
+                     padding: '2px 8px', borderRadius: '999px', marginLeft: 'auto'
+                   }}>
+                     {STAGE_LABELS[post.care_stage]}
+                   </span>
+
+                   <button
+                     onClick={() => toggleSave(post.id)}
+                     style={{
+                       border: 'none', background: 'transparent',
+                       padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
+                       color: savedPosts.has(post.id) ? 'var(--accent)' : 'var(--text-secondary)',
+                       fontSize: '14px',
+                     }}
+                     title={savedPosts.has(post.id) ? 'Unsave' : 'Save this post'}
+                   >
+                     {savedPosts.has(post.id) ? '🔖' : '🔖'}
+                   </button>
+                 </div>
+              </div>
+            )
+          })}
+        </main>
+      </div>
+
+      {actionError && <p role="alert" style={{ color: 'var(--error)', fontSize: '13px' }}>{actionError}</p>}
+      <p style={{
+        fontSize: '11px', color: 'var(--text-secondary)', marginTop: '24px',
+        fontStyle: 'italic', textAlign: 'center'
+      }}>
+        SolenOS community — shared experience, not medical advice. Always confirm care decisions with your clinician.
+      </p>
+    </div>
   )
 }
