@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, postJSON } from "@/api/client";
 
 export type QwenWorkflow =
   | "daily_capture"
