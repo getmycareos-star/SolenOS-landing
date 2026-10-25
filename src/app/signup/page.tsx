@@ -25,8 +25,7 @@ export default function SignupPage() {
         password,
         display_name: displayName,
         care_recipient_name: careRecipientName,
-        existing_care_session_token: getAnonymousAccessToken() || undefined,
-      }) as AccountAuthResponse;
+      }, getAnonymousAccessToken()) as AccountAuthResponse;
       adoptAccountSession(session);
       router.replace("/workspace?enter=1");
     } catch (reason) {
