@@ -691,12 +691,16 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           "Hide this workspace on this device?\n\nThis only hides the workspace in this browser. It does not delete or server-archive care information, and you can restore the workspace later.",
         );
         if (!confirmed) return;
-        setIsArchived(true);
         try {
           window.localStorage.setItem("solenos_workspace_archived", "1");
         } catch {
-          /* ignore */
+          // Do not claim to archive or navigate away if the recovery flag cannot persist.
+          window.alert(
+            "This browser could not save the workspace's local archive state. Nothing was archived or deleted. Your workspace remains available; check browser storage settings and try again.",
+          );
+          break;
         }
+        setIsArchived(true);
         // The workspace page shows a recoverable, device-local archived state.
         window.location.href = "/workspace";
         break;
