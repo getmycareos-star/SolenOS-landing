@@ -13,6 +13,9 @@ interface Message {
   timestamp: Date
 }
 
+const CARE_REVIEW_SIGNAL = /\\b(sleep|slept|awake|wandering|wandered|sundowning|medication|medicine|dose|pill|missed|refused|pain|fall|fell|confused|agitated|agitation|behavio[u]?r|eating|drinking|hydration|appetite|appointment|doctor|nurse|hospital|toilet|continence|breathing|fever|symptom|memory|dementia|caregiver|mood|blood pressure|blood sugar|mobility|injury|rash|swelling|constipation|diarrh?ea|bowel|urine|infection|safety|unsafe|hurt|hit|shout|distress|anxiety|anxious|depressed|depression|weight|temperature)\\b/i
+const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\\s]*$/i
+
 export default function Companion() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -76,6 +79,21 @@ export default function Companion() {
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
+
+      // Automatically run the existing read-only Care Delta review for care-related
+      // caregiver messages. This is an internal background action, not a workflow
+      // choice exposed to the caregiver. It never promotes output into the LCR.
+      if (!isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
+        const nextToken = deltaToken + 1
+        setDeltaToken(nextToken)
+        setDeltaAutoInput({
+          personId: session.person.id,
+          content: submittedText,
+          source: 'AI Companion caregiver message (automatic background review)',
+          eventDate: new Date().toISOString(),
+          token: nextToken,
+        })
+      }
     } catch (e: unknown) {
       setMessages(prev => prev.filter(message => message !== userMsg))
       setRequestError('Your message couldn’t be sent. It is still in the message box. Please try again. If you are unsure whether it went through, check the conversation before resending.')
@@ -96,18 +114,6 @@ export default function Companion() {
     // Intentional one-time route handoff, not a reactive chat effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const compareMessageWithRecord = (message: string) => {
-    const nextToken = deltaToken + 1
-    setDeltaToken(nextToken)
-    setDeltaAutoInput({
-      personId,
-      content: message,
-      source: 'AI Companion caregiver message (explicitly selected for LCR reconciliation)',
-      eventDate: new Date().toISOString(),
-      token: nextToken,
-    })
-  }
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
