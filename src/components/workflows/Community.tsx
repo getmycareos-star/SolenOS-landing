@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
+import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, Send, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
 import { getJSON, postJSON, getCaregiverId } from '@/api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
@@ -258,7 +258,7 @@ export default function Community() {
         </label>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ ...muted, fontSize: 12 }}>{composerText.length}/5000 · Peer experiences are not medical advice.</span>
-          <button type="submit" disabled={submitting || !composerText.trim()} style={{ ...baseButton, background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', opacity: submitting || !composerText.trim() ? .55 : 1 }}>{submitting ? 'Sharing…' : 'Publish to community'} <ChevronRight size={16} /></button>
+          <button type="submit" aria-label="Send community post" disabled={submitting || !composerText.trim()} style={{ ...baseButton, minHeight: 46, padding: '12px 18px', background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', opacity: submitting || !composerText.trim() ? .55 : 1, whiteSpace: 'nowrap' }}><Send size={16} aria-hidden="true" />{submitting ? 'Sending…' : 'Send post'}</button>
         </div>
       </form>}
 
