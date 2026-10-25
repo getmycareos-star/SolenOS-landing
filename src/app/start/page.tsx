@@ -32,6 +32,15 @@ export default function StartPage() {
         />
       </section>
 
+      <section className="public-section" aria-labelledby="account-choice-title">
+        <h2 className="public-section-title" id="account-choice-title">Choose how to continue</h2>
+        <p className="public-prose">You can create a SolenOS account with an email and password, log in to an existing account, or continue anonymously. An account is optional.</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: ".75rem", marginTop: "1rem" }}>
+          <a className="solenos-btn solenos-btn--primary" href="/signup">Create account</a>
+          <a className="solenos-btn solenos-btn--secondary" href="/login">Log in</a>
+        </div>
+      </section>
+
       <section className="public-section">
         <h2 className="public-section-title">When SolenOS works, caregiving feels lighter</h2>
         <p className="public-prose">{WELCOME_HOME.promise}</p>
