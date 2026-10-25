@@ -123,28 +123,6 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
       </p>
 
       <form onSubmit={handleAccept} className="consent-gate-form">
-        <label className="consent-checkbox">
-          <input
-            type="checkbox"
-            checked={requiredAck}
-            disabled={submitting}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setRequiredAck(checked);
-              if (checked) void handleAccept(undefined, true);
-              else setError(null);
-            }}
-          />
-          <span>
-            I have read and accept the SolenOS{" "}
-            <Link href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</Link>
-            {" "}and{" "}
-            <Link href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
-            I understand SolenOS does not provide medical or emergency guidance, trusted contributors
-            may add notes to this Care Reality, and my care information is not sold or used for advertising.
-          </span>
-        </label>
-
         <fieldset className="consent-optional">
           <legend>Optional — help improve SolenOS</legend>
           <p className="panel-muted">
@@ -180,6 +158,30 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
               : "Optional improvement feedback use: off. Your care-record features remain available."}
           </p>
         </fieldset>
+
+        <label className="consent-checkbox">
+          <input
+            type="checkbox"
+            checked={requiredAck}
+            disabled={submitting}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setRequiredAck(checked);
+              if (checked) void handleAccept(undefined, true);
+              else setError(null);
+            }}
+          />
+          <span>
+            I have read and accept the SolenOS{" "}
+            <Link href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</Link>
+            {" "}and{" "}
+            <Link href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
+            I understand SolenOS does not provide medical or emergency guidance, trusted contributors
+            may add notes to this Care Reality, and my care information is not sold or used for advertising.
+          </span>
+        </label>
+
+
 
         {submitting && <p className="panel-muted" role="status">Saving your acknowledgement…</p>}
         {error && (
