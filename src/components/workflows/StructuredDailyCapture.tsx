@@ -246,7 +246,7 @@ export default function StructuredDailyCapture() {
   const handleMedicationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!personId || !caregiverId) {
-      alert('A signed-in caregiver and care record are required to add medication.');
+      alert('Open your care record first, then try adding this medication again.');
       return;
     }
     if (!medicationForm.medication_name.trim()) {
@@ -320,7 +320,7 @@ export default function StructuredDailyCapture() {
       // Reset image preview
       setMedicationImagePreview(null);
       
-      alert('Medication added successfully');
+      alert('Added to this daily-care draft. Save the daily care update below to keep it.');
     } catch (err: any) {
       setMedicationUploading(false);
       setMedicationCompressing(false);
@@ -392,7 +392,7 @@ export default function StructuredDailyCapture() {
         note: null,
       });
       
-      alert('Scale added successfully');
+      alert('Added to this daily-care draft. Save the daily care update below to keep it.');
     } catch (err: any) {
       alert("We couldn’t add this rating. Check the details and try again.");
     }
@@ -401,12 +401,12 @@ export default function StructuredDailyCapture() {
   async function reviewCaptureCandidate(index: number, decision: 'accept' | 'correct' | 'reject') {
     const analysisId = qwenAnalysis?.analysisId;
     if (!analysisId) {
-      setReviewFeedback('The capture is saved, but the backend did not provide a persistent review ID. No review decision was submitted.');
+      setReviewFeedback('We couldn’t save your review just now. Your original care entry is still saved.');
       return;
     }
     const candidate = qwenAnalysis?.candidates?.observations?.[index];
     if (!candidate) {
-      setReviewFeedback('This candidate is no longer available. Refresh the saved capture before reviewing it.');
+      setReviewFeedback('This suggestion is no longer available. Refresh the page and try again.');
       return;
     }
     const draft = reviewDrafts[index] || {
@@ -857,9 +857,9 @@ export default function StructuredDailyCapture() {
   return (
     <div className="structured-daily-capture">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>Daily Capture</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>Daily care update</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5', maxWidth: '500px' }}>
-          Record medications, vitals, and scales in a structured format for accurate tracking and reporting.
+          Keep track of medicines, measurements, and daily ratings in one place.
         </p>
       </div>
       
@@ -879,13 +879,13 @@ export default function StructuredDailyCapture() {
       )}
       
       {saved && qwenAnalysis && (
-        <section aria-label="Care information review" style={{
+        <section aria-label="Review suggested care details" style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '8px', padding: '12px 16px', marginBottom: '24px'
         }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Care information review</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Review suggested details</h2>
           <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            These are suggested observations for your review. They do not automatically become established facts in the Living Care Record.
+            These suggestions are not yet part of your care record. Check or correct them before using them to compare care updates.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
@@ -898,12 +898,12 @@ export default function StructuredDailyCapture() {
                 const alreadyReviewed = reviewStatus !== 'pending_review';
                 return (
                   <li key={index} style={{ fontSize: '12px', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
-                    <strong>Candidate {index + 1}</strong>
+                    <strong>Suggested detail {index + 1}</strong>
                     <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
-                      Unverified extraction · {reviewStatus.replace(/_/g, ' ')}
+                      {reviewStatus === 'pending_review' ? 'Please check this detail' : reviewStatus === 'accepted' ? 'Marked for comparison' : reviewStatus === 'corrected' ? 'Correction saved' : reviewStatus === 'rejected' ? 'Dismissed' : 'Reviewed'}
                     </p>
                     <label style={{ display: 'block', marginBottom: '8px' }}>
-                      Subject
+                      What is this about?
                       <input
                         aria-label={`Corrected subject ${index + 1}`}
                         value={draft.subject}
@@ -914,7 +914,7 @@ export default function StructuredDailyCapture() {
                       />
                     </label>
                     <label style={{ display: 'block', marginBottom: '8px' }}>
-                      Observation
+                      What was observed?
                       <textarea
                         aria-label={`Corrected observation ${index + 1}`}
                         value={draft.observation}
@@ -926,13 +926,13 @@ export default function StructuredDailyCapture() {
                       />
                     </label>
                     <div style={{ color: 'var(--text-secondary)', marginBottom: '8px', overflowWrap: 'anywhere' }}>
-                      Original source quote: {candidate.source_quote || 'Not returned by the extractor.'}
+                      {candidate.source_quote ? <>From your note: {candidate.source_quote}</> : null}
                     </div>
                     {!alreadyReviewed && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Accept for reconciliation</button>
+                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Use for care comparison</button>
                         <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
-                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Reject candidate</button>
+                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Dismiss suggestion</button>
                       </div>
                     )}
                   </li>
@@ -942,7 +942,7 @@ export default function StructuredDailyCapture() {
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               {qwenAnalysis.status === 'pending_review'
-                ? 'No observations could be confidently identified from this entry.'
+                ? 'No additional details stood out in this update. Your original entry is saved.'
                 : 'No additional observations are available. Your saved entry remains recorded.'}
             </p>
           )}
@@ -1612,10 +1612,10 @@ export default function StructuredDailyCapture() {
               cursor: submittingMutation ? 'default' : 'pointer' 
             }}
           >
-            {submittingMutation ? 'Saving...' : 'Save Daily Capture'}
+            {submittingMutation ? 'Saving…' : 'Save daily care update'}
           </button>
         </div>
-      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} />
+      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
       </div>
     );
 }
