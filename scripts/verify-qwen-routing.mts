@@ -21,6 +21,8 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
   "SolenOS workflow",
+  "const boundedContext = workflow === defaultWorkflow",
+  "const boundedEvidenceIds = workflow === defaultWorkflow",
   "care_history_search",
   "care_situation_change",
   "delta_engine",
