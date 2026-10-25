@@ -42,8 +42,14 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       const savedEventId = typeof data?.care_event_id === 'string'
         ? data.care_event_id
         : typeof data?.situation_id === 'string' ? data.situation_id : ''
-      setQwenAnalysis({ status: savedEventId ? 'processing' : 'unavailable', candidates: null })
-      if (savedEventId) {
+      const returnedCandidates = data?.qwen_candidates ?? null
+      setQwenAnalysis({
+        status: typeof data?.qwen_extraction_status === 'string'
+          ? data.qwen_extraction_status
+          : returnedCandidates ? 'pending_review' : savedEventId ? 'processing' : 'unavailable',
+        candidates: returnedCandidates,
+      })
+      if (savedEventId && !returnedCandidates) {
         // Analyze only after the durable care save. A Qwen outage never turns
         // the saved note into a retryable write or a duplicate care event.
         void requestQwenCandidateAnalysis(savedEventId)
