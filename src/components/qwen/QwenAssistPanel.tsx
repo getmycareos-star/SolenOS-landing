@@ -53,7 +53,7 @@ export default function QwenAssistPanel({
   title = "Help with your care information",
   compact = false,
 }: Props) {
-  const [workflow, setWorkflow] = useState<QwenWorkflow>(defaultWorkflow);
+  const workflow = defaultWorkflow;
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<QwenAssistResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +98,7 @@ export default function QwenAssistPanel({
         throw new Error("We couldn’t complete that request. Please try again.");
       }
       setReply(result);
-    } catch (cause) {
+    } catch {
       setError("We couldn’t complete that request. Your information has not been changed. Please try again.");
     } finally {
       setLoading(false);
