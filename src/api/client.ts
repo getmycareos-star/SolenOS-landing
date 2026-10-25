@@ -123,8 +123,12 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
   const expiresAt = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
+  const accountToken = window.localStorage.getItem(ACCOUNT_TOKEN_KEY);
 
   if (token) {
+    if (accountToken && (!expiresAt || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt) <= Date.now() + 60_000)) {
+      throw new Error("Your account session is expiring or cannot be verified. Sign in again to restore this care record.");
+    }
     if (expiresAt && Date.parse(expiresAt) <= Date.now()) {
       throw new Error(
         "This anonymous session has expired. SolenOS will not silently create a different care record."
@@ -135,7 +139,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       personId &&
       caregiverId &&
       expiresAt &&
-      Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.now() + (accountToken ? 60_000 : 30 * 24 * 60 * 60 * 1000)
     ) {
       setPersonId(personId);
       return {
