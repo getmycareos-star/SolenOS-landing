@@ -37,7 +37,7 @@ function formatDate(value?: string | null): string {
 }
 
 function eventTitle(event: PersistedEvent): string {
-  return event.title?.trim() || event.description?.trim() || event.event_type?.trim() || "Event details not returned";
+  return event.title?.trim() || event.description?.trim() || event.event_type?.trim() || "Care update details unavailable";
 }
 
 export function PersistedCareOrientation() {
@@ -51,23 +51,23 @@ export function PersistedCareOrientation() {
     setError("");
     try {
       const token = getAnonymousAccessToken();
-      if (!token) throw new Error("The active care-session credential is unavailable. The saved record was not verified.");
+      if (!token) throw new Error("Your saved care information isn't available right now.");
       const response = await fetch("/api/situation?offer_return_invite=0", {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
       if (!response.ok) {
-        throw new Error(`The saved care record could not be verified (HTTP ${response.status}).`);
+        throw new Error(`Your saved care information isn't available right now.`);
       }
       const data = (await response.json()) as CareSnapshot;
       if (!data || data.ok !== true || !Array.isArray(data.events) || typeof data.total_events !== "number") {
-        throw new Error("The backend did not return a verifiable care-record snapshot.");
+        throw new Error("Your saved care information isn't available right now.");
       }
       setSnapshot(data);
       setState("ready");
     } catch (reason) {
       setSnapshot(null);
-      setError(reason instanceof Error ? reason.message : "The saved care record could not be verified.");
+      setError(reason instanceof Error ? reason.message : "Your saved care information isn't available right now.");
       setState("unavailable");
     }
   }, []);
@@ -78,27 +78,27 @@ export function PersistedCareOrientation() {
 
   if (state === "loading") {
     return (
-      <section className="persisted-care-orientation" aria-busy="true" aria-label="Saved care context">
-        <p className="persisted-care-orientation-eyebrow">Saved care context</p>
-        <h2>Checking the saved care record…</h2>
+      <section className="persisted-care-orientation" aria-busy="true" aria-label="Your care record">
+        <p className="persisted-care-orientation-eyebrow">Your care record</p>
+        <h2>Loading your care information…</h2>
       </section>
     );
   }
 
   if (state === "unavailable" || !snapshot) {
     return (
-      <section className="persisted-care-orientation" aria-label="Saved care context">
+      <section className="persisted-care-orientation" aria-label="Your care record">
         <div className="persisted-care-orientation-header">
           <div>
-            <p className="persisted-care-orientation-eyebrow">Saved care context</p>
-            <h2>Current record state could not be confirmed</h2>
+            <p className="persisted-care-orientation-eyebrow">Your care record</p>
+            <h2>We couldn't load your care information</h2>
           </div>
           <button type="button" aria-label="Retry saved care record check" onClick={() => setAttempt((value) => value + 1)}>
             <RefreshCw size={16} aria-hidden />
           </button>
         </div>
-        <p className="persisted-care-orientation-error" role="alert">{error || "The backend did not confirm the saved record."}</p>
-        <p>Local display state is not treated as proof that the backend record is available.</p>
+        <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
+        <p></p>
       </section>
     );
   }
@@ -110,10 +110,10 @@ export function PersistedCareOrientation() {
   const hasServerEntries = snapshot.total_events > 0 || observations.length > 0;
 
   return (
-    <section className="persisted-care-orientation" aria-label="Saved care context">
+    <section className="persisted-care-orientation" aria-label="Your care record">
       <div className="persisted-care-orientation-header">
         <div>
-          <p className="persisted-care-orientation-eyebrow">Verified from the care backend</p>
+          <p className="persisted-care-orientation-eyebrow">Your care record</p>
           <h2>{snapshot.care_recipient_display_name?.trim() ? `Care record for ${snapshot.care_recipient_display_name.trim()}` : "Saved care record"}</h2>
         </div>
         <button type="button" aria-label="Refresh saved care context" onClick={() => setAttempt((value) => value + 1)}>
@@ -123,29 +123,29 @@ export function PersistedCareOrientation() {
 
       {hasServerEntries ? (
         <>
-          <p>{snapshot.total_events} saved care event{snapshot.total_events === 1 ? "" : "s"} returned by the backend. Evidence entries are shown only where the response includes them.</p>
+          <p>{snapshot.total_events} saved care update{snapshot.total_events === 1 ? "" : "s"} in your record.</p>
           {latestEvent ? (
             <div className="persisted-care-orientation-latest">
-              <strong>Latest returned event</strong>
+              <strong>Latest care update</strong>
               <p>{eventTitle(latestEvent)}</p>
               <p>{formatDate(latestEvent.occurred_at)}</p>
             </div>
           ) : snapshot.total_events > 0 ? (
-            <p role="status">The backend reports saved events, but did not return event details in this response.</p>
+            <p role="status">Some saved updates are unavailable to display right now. Try refreshing your record.</p>
           ) : null}
           {latestObservation ? (
             <div className="persisted-care-orientation-latest">
-              <strong>Latest returned evidence</strong>
-              <p>{latestObservation.human_fact?.trim() || latestObservation.raw_text?.trim() || "Evidence exists, but its text was not returned in this response."}</p>
+              <strong>Latest supporting information</strong>
+              <p>{latestObservation.human_fact?.trim() || latestObservation.raw_text?.trim() || "Supporting information is saved, but its details are not available to display right now."}</p>
               <p>{formatDate(latestObservation.captured_at)}</p>
             </div>
           ) : null}
         </>
       ) : (
-        <p>The backend confirms that no saved care events or evidence are available in this record response yet.</p>
+        <p>Your care record is ready to build. Add a note, daily update, or document to keep important care information in one place.</p>
       )}
 
-      <p>Change comparisons, unresolved questions, and action-completion status are not supplied by this record-hydration response; they are not inferred from local display data.</p>
+      <p></p>
       <div className="persisted-care-orientation-links">
         <Link href="/workspace/timeline">Review timeline</Link>
         <Link href="/workspace/documents">Review documents</Link>
