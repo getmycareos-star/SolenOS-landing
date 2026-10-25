@@ -4,18 +4,15 @@ import { useState } from "react";
 import { ensureAnonymousSession, postJSON } from "@/api/client";
 
 export type QwenWorkflow =
-  | "daily_capture"
-  | "document"
-  | "community"
-  | "appointment"
-  | "after_appointment"
-  | "handoff"
-  | "professional_summary"
-  | "open_loops"
-  | "two_week_review"
-  | "decision_outcome"
-  | "medication_day"
-  | "living_care_record";
+  | "daily_capture" | "add_record" | "document" | "living_care_record"
+  | "care_history_search" | "care_situation_change" | "delta_engine"
+  | "evidence_provenance" | "uncertainty_contradictions" | "returning_caregiver"
+  | "appointment" | "after_appointment" | "handoff" | "professional_summary"
+  | "open_loops" | "two_week_review" | "decision_outcome" | "medication_day"
+  | "reminders_notifications" | "care_coordination" | "companion"
+  | "caregiver_feedback" | "sharing_export" | "roles_access" | "account_recovery"
+  | "settings_security" | "record_lifecycle" | "offline_sync" | "ai_reliability"
+  | "audit_review";
 
 type QwenAssistResult = {
   workflow: QwenWorkflow;
@@ -53,11 +50,43 @@ export default function QwenAssistPanel({
   title = "Help with your care information",
   compact = false,
 }: Props) {
-  const workflow = defaultWorkflow;
+  const [workflow, setWorkflow] = useState<QwenWorkflow>(defaultWorkflow);
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<QwenAssistResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const workflows: Array<{ value: QwenWorkflow; label: string }> = [
+    { value: "daily_capture", label: "Daily Capture" },
+    { value: "add_record", label: "Add Record and correction" },
+    { value: "document", label: "Documents and extracted information" },
+    { value: "living_care_record", label: "Living Care Record" },
+    { value: "care_history_search", label: "Care history search and retrieval" },
+    { value: "care_situation_change", label: "Care situation and change" },
+    { value: "delta_engine", label: "Delta Engine and reconciliation" },
+    { value: "evidence_provenance", label: "Evidence and provenance" },
+    { value: "uncertainty_contradictions", label: "Uncertainty and contradictions" },
+    { value: "returning_caregiver", label: "Returning-caregiver orientation" },
+    { value: "appointment", label: "Appointment preparation" },
+    { value: "after_appointment", label: "After-appointment capture" },
+    { value: "handoff", label: "Care handoff" },
+    { value: "professional_summary", label: "Professional summary" },
+    { value: "open_loops", label: "Open loops and follow-ups" },
+    { value: "two_week_review", label: "Two-week review" },
+    { value: "decision_outcome", label: "Decision and outcome memory" },
+    { value: "medication_day", label: "Medication-day observations" },
+    { value: "reminders_notifications", label: "Reminders and notifications" },
+    { value: "care_coordination", label: "Care coordination and delegation" },
+    { value: "companion", label: "Companion support" },
+    { value: "caregiver_feedback", label: "Caregiver feedback and correction" },
+    { value: "sharing_export", label: "Sharing and export" },
+    { value: "roles_access", label: "Roles and professional access" },
+    { value: "account_recovery", label: "Signup, login and recovery" },
+    { value: "settings_security", label: "Settings, security and privacy" },
+    { value: "record_lifecycle", label: "Pin, archive, restore and delete" },
+    { value: "offline_sync", label: "Offline use and synchronization" },
+    { value: "ai_reliability", label: "Qwen availability and retry" },
+    { value: "audit_review", label: "Audit trail and review candidates" },
+  ];
 
   async function askQwen() {
     const requestText = question.trim();
@@ -126,6 +155,16 @@ export default function QwenAssistPanel({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "10px", marginTop: "12px" }}>
+        <label style={{ display: "grid", gap: "5px", fontSize: "12px", color: "var(--text-secondary)" }}>
+          SolenOS workflow
+          <select
+            value={workflow}
+            onChange={(event) => { setWorkflow(event.target.value as QwenWorkflow); setReply(null); setError(null); }}
+            style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px", background: "var(--surface)", color: "var(--text)", fontSize: "16px", minHeight: "44px" }}
+          >
+            {workflows.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          </select>
+        </label>
         <label style={{ display: "grid", gap: "5px", fontSize: "12px", color: "var(--text-secondary)" }}>
           What would you like help with?
           <textarea
