@@ -73,7 +73,7 @@ function authorDetails(type: AuthorType) {
   if (type === 'professional_pending') return { label: 'Professional profile', mark: '•' }
   return { label: 'Caregiver', mark: '' }
 }
-function safeCount(value: number | undefined) { return Number.isFinite(value) && value! > 0 ? value : 0 }
+function safeCount(value: number | undefined): number { return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0 }
 
 export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
@@ -310,7 +310,7 @@ export default function Community() {
 
         {(activeTag !== 'All topics' || activeStage !== 'all' || savedOnly || search) && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}><span style={{ ...muted, fontSize: 12 }}>Filters are on</span><button type="button" onClick={resetFilters} style={{ ...baseButton, minHeight: 34, padding: '5px 10px', fontSize: 12 }}><X size={14} /> Clear filters</button></div>}
 
-        {loadError && <div role="alert" style={{ ...cardStyle, display: 'grid', gap: 10 }}><p style={{ margin: 0 }}>{loadError}</p><button type="button" onClick={loadPosts} style={{ ...baseButton, justifySelf: 'start' }}>Try again</button></div>}
+        {loadError && <div role="alert" style={{ ...cardStyle, display: 'grid', gap: 10 }}><p style={{ margin: 0 }}>{loadError}</p><button type="button" onClick={() => void loadPosts()} style={{ ...baseButton, justifySelf: 'start' }}>Try again</button></div>}
         {loading && <div aria-live="polite" style={{ ...cardStyle, textAlign: 'center', padding: 34 }}><div style={{ fontWeight: 650 }}>Loading community stories</div><p style={{ ...muted, marginBottom: 0, fontSize: 13 }}>Bringing the latest published experiences together.</p></div>}
         {!loading && !loadError && filteredPosts.length === 0 && <div style={{ ...cardStyle, textAlign: 'center', padding: 'clamp(24px, 5vw, 44px)' }}>
           <div style={{ width: 54, height: 54, margin: '0 auto 14px', borderRadius: 18, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)' }}><HeartHandshake size={25} /></div>
@@ -322,6 +322,7 @@ export default function Community() {
         {!loading && !loadError && filteredPosts.map((post) => {
           const author = authorDetails(post.author_type)
           const saved = savedPosts.has(post.id)
+          const reactionCounts = post.reaction_counts ?? { like: 0, thank_you: 0, support: 0 }
           return <article key={post.id} style={{ ...cardStyle, display: 'grid', gap: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div style={{ display: 'flex', gap: 11, minWidth: 0, alignItems: 'center' }}>
@@ -337,9 +338,9 @@ export default function Community() {
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{post.body}</p>
             {!!post.tags?.length && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{post.tags.map((tag) => <button key={tag} type="button" onClick={() => setActiveTag(tag)} style={{ ...muted, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '5px 9px', fontSize: 11, cursor: 'pointer' }}>#{tag}</button>)}</div>}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7 }}>
-              <button type="button" onClick={() => reactTo(post.id, 'like')} aria-pressed={post.user_reaction === 'like'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'like' ? 'var(--accent-soft)' : 'transparent' }}><ThumbsUp size={15} /> Helpful {safeCount(post.reaction_counts?.like) > 0 && safeCount(post.reaction_counts?.like)}</button>
-              <button type="button" onClick={() => reactTo(post.id, 'thank_you')} aria-pressed={post.user_reaction === 'thank_you'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'thank_you' ? 'var(--accent-soft)' : 'transparent' }}>Thank you {safeCount(post.reaction_counts?.thank_you) > 0 && safeCount(post.reaction_counts?.thank_you)}</button>
-              <button type="button" onClick={() => reactTo(post.id, 'support')} aria-pressed={post.user_reaction === 'support'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'support' ? 'var(--accent-soft)' : 'transparent' }}><HeartHandshake size={15} /> Support {safeCount(post.reaction_counts?.support) > 0 && safeCount(post.reaction_counts?.support)}</button>
+              <button type="button" onClick={() => reactTo(post.id, 'like')} aria-pressed={post.user_reaction === 'like'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'like' ? 'var(--accent-soft)' : 'transparent' }}><ThumbsUp size={15} /> Helpful {safeCount(reactionCounts.like) > 0 && safeCount(reactionCounts.like)}</button>
+              <button type="button" onClick={() => reactTo(post.id, 'thank_you')} aria-pressed={post.user_reaction === 'thank_you'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'thank_you' ? 'var(--accent-soft)' : 'transparent' }}>Thank you {safeCount(reactionCounts.thank_you) > 0 && safeCount(reactionCounts.thank_you)}</button>
+              <button type="button" onClick={() => reactTo(post.id, 'support')} aria-pressed={post.user_reaction === 'support'} style={{ ...baseButton, minHeight: 36, padding: '6px 10px', fontSize: 12, background: post.user_reaction === 'support' ? 'var(--accent-soft)' : 'transparent' }}><HeartHandshake size={15} /> Support {safeCount(reactionCounts.support) > 0 && safeCount(reactionCounts.support)}</button>
               <span style={{ ...muted, display: 'inline-flex', alignItems: 'center', gap: 5, marginLeft: 'auto', fontSize: 12 }}><MessageCircle size={15} /> {safeCount(post.comment_count)} responses</span>
             </div>
           </article>
