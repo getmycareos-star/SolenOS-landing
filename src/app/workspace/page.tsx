@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations } from "@/lib/ui-runtime";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -130,6 +131,8 @@ function WorkspacePageInner() {
             Last updated: {formatLastUpdated(latestUpdated)}
           </p>
         </section>
+
+        <PersistedCareOrientation />
 
         <section className="workspace-entry-actions" aria-label="Care record actions">
           <button type="button" className="workspace-entry-action" onClick={() => router.push("/workspace/daily-care")}>
