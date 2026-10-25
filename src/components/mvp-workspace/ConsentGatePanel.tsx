@@ -15,6 +15,16 @@ type ConsentStatus = {
   signup_improvement_copy: string;
 };
 
+const FALLBACK_CONSENT_STATUS: ConsentStatus = {
+  verified: false,
+  required: true,
+  terms_version: "2026-10",
+  one_line_agreement: "SolenOS organizes caregiver-reported information and does not replace clinical judgment.",
+  data_improvement_statement: "Data improvement is optional and can be changed later.",
+  no_advertising_statement: "Your care information is not sold or used for advertising.",
+  signup_improvement_copy: "You can help improve SolenOS only if you choose to opt in.",
+};
+
 type Props = {
   caregiverId: string;
   onConsentAccepted?: () => void;
@@ -48,9 +58,10 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
       setStatus(data);
       onStatusChange?.(data.required ? "required" : "accepted");
     } catch {
-      setError("We couldn’t confirm your privacy acknowledgement. Check your connection and try again.");
-      setStatus(null);
-      onStatusChange?.("unavailable");
+      // Keep the required acknowledgement form available when the initial read fails.
+      // Never treat a local checkbox as saved consent; the POST response must confirm it.
+      setStatus(FALLBACK_CONSENT_STATUS);
+      onStatusChange?.("required");
     } finally {
       setLoading(false);
     }
@@ -85,10 +96,17 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
         }),
       });
 
-      const data = (await safeJson(res)) as { error?: string; detail?: string };
-      if (!res.ok) throw new Error(data.detail ?? data.error ?? "Consent submission failed");
+      const data = (await safeJson(res)) as ConsentStatus & { ok?: boolean; error?: string; detail?: string };
+      if (!res.ok) throw new Error(data.detail ?? data.error ?? "Your privacy acknowledgement could not be saved. Please try again.");
+      if (data.verified !== true || data.required !== false) {
+        throw new Error("SolenOS has not confirmed the required acknowledgement yet. Please try again.");
+      }
 
-      await loadStatus();
+      // The server's successful write response is authoritative. Do not make a second GET
+      // a prerequisite for opening the workspace after the save has already succeeded.
+      setStatus(data);
+      setError(null);
+      onStatusChange?.("accepted");
       onConsentAccepted?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Consent submission failed");
@@ -98,22 +116,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
   }
 
   if (loading) return null;
-  if (!status) {
-    return (
-      <section className="panel consent-gate-panel" aria-label="Consent status unavailable">
-        <h2 className="workspace-headline">We couldn’t confirm your privacy choice</h2>
-        <p role="alert" className="consent-error">
-          {error ?? "We couldn’t confirm your privacy acknowledgement."}
-        </p>
-        <p className="panel-muted">
-          Your workspace remains available for drafting. SolenOS will not save or send a new care update until this check succeeds.
-        </p>
-        <button type="button" className="workspace-secondary" onClick={() => void loadStatus()} disabled={loading}>
-          {loading ? "Checking…" : "Retry privacy check"}
-        </button>
-      </section>
-    );
-  }
+  if (!status) return null;
   if (!status.required) return null;
 
   const mandatoryReady =
