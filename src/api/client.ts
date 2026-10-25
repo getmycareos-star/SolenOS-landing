@@ -69,6 +69,39 @@ function authorizationHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/** Resolve the scoped bearer capability before protected API calls.
+ * Concurrent first-use requests share ensureAnonymousSession's in-flight promise.
+ * A complete, unexpired session is reused rather than refreshed on every request.
+ * Public time utilities remain available before a caregiver enters a care record.
+ */
+async function requestAuthorizationHeaders(path: string): Promise<Record<string, string>> {
+  if (typeof window === "undefined") {
+    throw new Error("Care-record API requests require a browser-scoped SolenOS session.");
+  }
+
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const isPublicTimeUtility = /^\\/time\\/(?:now|ago|until)(?:\\?|$)/.test(normalized);
+  if (isPublicTimeUtility) return authorizationHeaders();
+
+  const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
+  const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
+  const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
+  const expiresAt = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
+  const expiry = expiresAt ? Date.parse(expiresAt) : Number.NaN;
+  const hasUsableSession =
+    Boolean(token && personId && caregiverId) &&
+    Number.isFinite(expiry) &&
+    expiry > Date.now() + 60_000;
+
+  if (!hasUsableSession) await ensureAnonymousSession();
+
+  const headers = authorizationHeaders();
+  if (!headers.Authorization) {
+    throw new Error("A valid SolenOS care session is required before accessing this record.");
+  }
+  return headers;
+}
+
 /** Create or refresh a scoped anonymous session without account registration. */
 async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
   if (typeof window === "undefined") {
@@ -205,13 +238,15 @@ async function handleResponse(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(resolveApiUrl(path), { headers: authorizationHeaders() })
+  const headers = await requestAuthorizationHeaders(path);
+  const res = await fetch(resolveApiUrl(path), { headers })
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const res = await fetch(resolveApiUrl(path), { headers: authorizationHeaders() })
+  const headers = await requestAuthorizationHeaders(path);
+  const res = await fetch(resolveApiUrl(path), { headers })
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -219,18 +254,20 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 export async function postJSON(path: string, body: unknown) {
+  const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
 }
 
 export async function patchJSON(path: string, body: unknown) {
+  const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetch(resolveApiUrl(path), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -238,9 +275,10 @@ export async function patchJSON(path: string, body: unknown) {
 
 
 export async function putJSON(path: string, body: unknown) {
+  const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetch(resolveApiUrl(path), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authorizationHeaders() },
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -261,9 +299,10 @@ export async function revokeAnonymousSession(): Promise<void> {
 // Multipart upload helper. Do not set Content-Type manually: the browser must
 // add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
+  const headers = await requestAuthorizationHeaders(path);
   const res = await fetch(resolveApiUrl(path), {
     method: 'POST',
-    headers: authorizationHeaders(),
+    headers,
     body,
   })
   return handleResponse(res)
