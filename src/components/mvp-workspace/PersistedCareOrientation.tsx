@@ -68,14 +68,16 @@ export function PersistedCareOrientation() {
         throw new Error(`Your saved care information isn't available right now.`);
       }
       const data = (await response.json()) as CareSnapshot;
-      if (!data || typeof data !== "object" || (!Array.isArray(data.events) && !Array.isArray(data.ui_situations) && !data.what_i_understood && !data.active_care_situation)) {
+      // A successful response with no entries is a normal first-visit state,
+      // not a failed load. Render the empty-record guidance instead of an error.
+      if (!data || typeof data !== "object" || data.ok === false) {
         throw new Error("Your saved care information isn't available right now.");
       }
       setSnapshot(data);
       setState("ready");
-    } catch (reason) {
+    } catch {
       setSnapshot(null);
-      setError(reason instanceof Error ? reason.message : "Your saved care information isn't available right now.");
+      setError("Your care information isn't available right now. Check your connection and try again.");
       setState("unavailable");
     }
   }, []);
@@ -107,7 +109,6 @@ export function PersistedCareOrientation() {
           </button>
         </div>
         <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
-        <p></p>
       </section>
     );
   }
@@ -168,7 +169,6 @@ export function PersistedCareOrientation() {
         <p>Your care record is ready to build. Add a note, daily update, or document to keep important care information in one place.</p>
       )}
 
-      <p></p>
       <div className="persisted-care-orientation-links">
         <Link href="/workspace/timeline">Review timeline</Link>
         <Link href="/workspace/documents">Review documents</Link>
