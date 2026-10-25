@@ -42,18 +42,11 @@
     "SolenOS_backend",
     "frontend",
     "frontend2",
-    "archive/vite-pages",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/__tests__/**",
     "src/**/*.backup",
     "src/**/*.bak",
-    "src/App.tsx",
-    "src/main.tsx",
-    "src/vite-env.d.ts",
-    "vite.config.ts",
-    "vite.config.js",
-    "tsconfig.vite.json",
     "archive/**/*.tsx",
     "archive/**/*.ts"
   ]
