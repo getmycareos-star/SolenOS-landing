@@ -208,7 +208,7 @@ export default function Companion() {
           rows={Math.max(1, Math.floor(input.length / 50) + 1)}
           style={{
             flex: '1 1 auto', width: '0', minWidth: 0, boxSizing: 'border-box',
-            padding: '10px 14px', borderRadius: '14px', border: '1px solid var(--border)',
+            padding: '10px 14px', borderRadius: '14px',
             background: '#ffffff', color: '#172b35', caretColor: '#172b35', fontSize: '16px', resize: 'none', outline: 'none',
             minHeight: '48px', maxHeight: '160px', border: '2px solid #718477',
             WebkitTextFillColor: '#172b35',
