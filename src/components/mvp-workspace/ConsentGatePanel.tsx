@@ -112,22 +112,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
   }
 
   if (loading) return null;
-  if (!status) {
-    return (
-      <section className="panel consent-gate-panel" aria-label="Consent status unavailable">
-        <h2 className="workspace-headline">We couldn’t confirm your privacy choice</h2>
-        <p role="alert" className="consent-error">
-          {error ?? "We couldn’t confirm your privacy acknowledgement."}
-        </p>
-        <p className="panel-muted">
-          Your workspace remains available for drafting. SolenOS will not save or send a new care update until this check succeeds.
-        </p>
-        <button type="button" className="workspace-secondary" onClick={() => void loadStatus()} disabled={loading}>
-          {loading ? "Checking…" : "Retry privacy check"}
-        </button>
-      </section>
-    );
-  }
+  if (!status) return null;
   if (!status.required) return null;
 
   return (
