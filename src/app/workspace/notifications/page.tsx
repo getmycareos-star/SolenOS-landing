@@ -68,7 +68,7 @@ export default function WorkspaceNotificationsPage() {
           <Button variant="secondary" onClick={() => void load()} disabled={loading}>Refresh</Button>
         </div>
         <h1 className="workspace-headline mt-5"><Bell size={22} className="inline-block mr-2" />Notifications</h1>
-        <p className="mobile-settings-hint">Backend-backed notifications for this care-record session. Unread: {unreadCount}.</p>
+        <p className="mobile-settings-hint">Updates for this care record. Unread: {unreadCount}.</p>
         {error && <div role="alert" className="mobile-settings-hint"><p>{error}</p><Button variant="secondary" onClick={() => void load()} disabled={loading}>Try again</Button></div>}
         {loading ? <p role="status" className="mobile-settings-hint">Loading notifications…</p> :
           items.length === 0 ? <p className="mobile-settings-hint">No notifications have been recorded for this care record.</p> :
