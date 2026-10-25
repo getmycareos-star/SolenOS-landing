@@ -127,6 +127,10 @@ for (const root of SCAN_ROOTS) {
       /\bSam Johnson\b/,
       /\b142 caregivers\b/i,
       /\b4\.2 helpfulness\b/i,
+      /Tried to leave house at 8pm/i,
+      /Unknown caller requested account details/i,
+      /When did confusion start\? How has appetite changed\?/i,
+      /When did confusion begin\? Last fall\? Medication changes\?/i,
     ];
     if (
       containsIllustrationAsProduct(body) ||
