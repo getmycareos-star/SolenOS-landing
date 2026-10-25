@@ -232,7 +232,7 @@ export default function Companion() {
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             flex: '0 0 auto', minHeight: '44px', padding: '10px 16px', borderRadius: '14px',
-            border: '1px solid #b9d5b5', background: '#b9d5b5', color: '#17251c',
+            border: '1px solid var(--care-accent)', background: 'var(--care-accent)', color: '#ffffff',
             fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap',
             cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
             opacity: loading || !input.trim() ? 0.65 : 1,
