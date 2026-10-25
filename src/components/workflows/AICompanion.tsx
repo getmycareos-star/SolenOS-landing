@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
-import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -78,17 +77,7 @@ export default function Companion() {
       setMessages(prev => [...prev, assistantMsg])
     } catch (e: unknown) {
       setMessages(prev => prev.filter(message => message !== userMsg))
-      const detail = e instanceof Error ? e.message.trim() : ''
-      const routeMissing = /\bAPI 404\b|^not found$/i.test(detail)
-      const modelUnavailable = /\bAPI 503\b|model is not configured|model.*unavailable|ollama/i.test(detail)
-      setInput(submittedText)
-      setRequestError(
-        routeMissing
-          ? 'Companion is not available from the connected backend yet. The endpoint returned 404; your text remains in the input.'
-          : modelUnavailable
-            ? 'The Qwen model service is not configured or reachable. No reply was generated; your text remains in the input.'
-            : 'The server did not confirm whether it received this message. Your text remains in the input. Check the care record before retrying to avoid duplicates.'
-      )
+      setRequestError('Your message couldn’t be sent. It is still in the message box. Please try again. If you are unsure whether it went through, check the conversation before resending.')
     } finally {
       setLoading(false)
     }
@@ -134,12 +123,6 @@ export default function Companion() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
-      <QwenAssistPanel
-        title="Qwen support for your Living Care Record"
-        defaultWorkflow="living_care_record"
-        compact
-      />
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 600 }}>Companion chat</h1>
         <button
@@ -171,8 +154,7 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Companion responses are shown only after the connected backend returns a valid response.
-            Do not treat an unsent message as part of the care record.
+            Ask a question or share what is happening. Replies may be unavailable sometimes; your care record is only updated when you choose to save information.
           </div>
         )}
         {messages.map((msg, i) => (
