@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
 import Link from 'next/link'
 import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
 import { getJSON, postJSON, getCaregiverId } from '@/api/client'
@@ -45,17 +46,17 @@ const STAGES: { value: CareStage | 'all'; label: string }[] = [
   { value: 'late', label: 'Later stage' },
 ]
 const TAGS = ['All topics', 'sundowning', 'wandering', 'sleep', 'communication', 'behavior', 'safety', 'medication', 'nutrition', 'activities', 'routine']
-const baseButton: React.CSSProperties = {
+const baseButton: CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   minHeight: 42, padding: '10px 15px', borderRadius: 12, border: '1px solid var(--border)',
   background: 'var(--surface)', color: 'var(--text)', fontSize: 14, fontWeight: 600,
   cursor: 'pointer', transition: 'background 150ms ease, border-color 150ms ease',
 }
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18,
   padding: 'clamp(16px, 3vw, 24px)', minWidth: 0,
 }
-const muted: React.CSSProperties = { color: 'var(--text-secondary)' }
+const muted: CSSProperties = { color: 'var(--text-secondary)' }
 
 function timeLabel(value: string) {
   const date = new Date(value)
@@ -164,7 +165,7 @@ export default function Community() {
     }
   }
 
-  async function submitPost(event: React.FormEvent<HTMLFormElement>) {
+  async function submitPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const content = composerText.trim()
     if (!content || submitting) return
@@ -189,7 +190,7 @@ export default function Community() {
     } finally { setSubmitting(false) }
   }
 
-  async function findExperiences(event: React.FormEvent<HTMLFormElement>) {
+  async function findExperiences(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const query = wisdomQuery.trim()
     if (!query || wisdomLoading) return
