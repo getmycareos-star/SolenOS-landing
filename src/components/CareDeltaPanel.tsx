@@ -86,7 +86,7 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
     setSource('Caregiver report')
     setEventDate(new Date().toISOString().slice(0, 10))
     lastToken.current = null
-    if (!personId) {
+    if (!personId || !showPanel) {
       return () => { cancelled = true }
     }
     getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
@@ -100,7 +100,7 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
         if (!cancelled) setHistoryError("We couldn't load earlier care-change comparisons. You can still add a new note; try again to view saved comparisons.")
       })
     return () => { cancelled = true }
-  }, [personId])
+  }, [personId, showPanel])
 
   useEffect(() => {
     if (!autoInput || autoInput.personId !== personId || lastToken.current === autoInput.token) return
