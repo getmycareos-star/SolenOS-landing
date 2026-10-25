@@ -20,9 +20,28 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'result.authority !== "solenos_care_record_and_caregiver"',
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
+  "SolenOS workflow",
+  "care_history_search",
+  "care_situation_change",
+  "delta_engine",
+  "evidence_provenance",
+  "uncertainty_contradictions",
+  "returning_caregiver",
+  "reminders_notifications",
+  "care_coordination",
+  "caregiver_feedback",
+  "sharing_export",
+  "roles_access",
+  "account_recovery",
+  "settings_security",
+  "record_lifecycle",
+  "offline_sync",
+  "ai_reliability",
+  "audit_review",
   '{loading ? "Working…" : "Send"}',
 ]);
-assert(!assist.includes("<select"), "The shared assistance panel must not expose workflow selection.");
+assert(assist.includes("<select"), "The shared assistance panel must expose enabled workflow selection.");
+assert(!assist.includes('"community"'), "Community must remain excluded from Qwen workflow selection.");
 assert(!assist.includes("Railway-hosted local model"), "Internal runtime details must not be shown.");
 assert(!assist.includes("Check Qwen"), "Internal model status controls must not be shown.");
 assert(!assist.includes("reply.model"), "Provider/model names must not be shown to caregivers.");
@@ -85,7 +104,7 @@ requireText("src/api/client.ts", [
   'window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token)',
 ]);
 console.log("PASS: contextual assistance remains routed through the authenticated service with read-only care-record safeguards.");
-console.log("PASS: caregivers cannot select internal assistant workflows in the shared panel.");
+console.log("PASS: caregivers can select all 30 enabled SolenOS workflows; Community is excluded.");
 console.log("PASS: Daily Capture has no separate assistant workflow panel; saved observations remain reviewable.");
 console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
 console.log("PASS: documents and Community use product language rather than internal model labels.");
