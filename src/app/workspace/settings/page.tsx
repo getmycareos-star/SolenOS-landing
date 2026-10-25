@@ -241,9 +241,9 @@ function SecurityCard() {
       <div className="mobile-settings-buttons">
         <Button variant="primary" asChild><Link href="/signup">Create account</Link></Button>
         <Button variant="secondary" asChild><Link href="/login">Log in</Link></Button>
-        {status === "anonymous" && (
+        {(status === "anonymous" || status === "account") && (
           <Button variant="destructive" disabled={busy} loading={busy} onClick={() => void revoke()}>
-            {busy ? "Revoking…" : "Revoke anonymous session"}
+            {busy ? "Ending session…" : status === "account" ? "Log out" : "Revoke anonymous session"}
           </Button>
         )}
       </div>
