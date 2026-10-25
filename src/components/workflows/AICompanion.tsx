@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Send } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
+import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -232,6 +233,7 @@ export default function Companion() {
         </button>
       </form>
       <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
+      <QwenAssistPanel title="Qwen support for your Living Care Record" defaultWorkflow="companion" compact />
     </div>
   )
 }
