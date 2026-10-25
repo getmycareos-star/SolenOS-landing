@@ -136,7 +136,7 @@ export default function Companion() {
         <h1 style={{ fontSize: '24px', fontWeight: 600 }}>Companion chat</h1>
         <button
           onClick={startNewSession}
-          style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer' }}
+          style={{ fontSize: '14px', fontWeight: 700, color: '#172b35', background: '#ffffff', border: '2px solid #718477', borderRadius: '10px', padding: '10px 12px', minHeight: '44px', cursor: 'pointer', whiteSpace: 'nowrap' }}
         >
           New conversation
         </button>
