@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
+import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -12,9 +12,6 @@ interface Message {
   evidence_ids?: string[]
   timestamp: Date
 }
-
-const CARE_REVIEW_SIGNAL = /\b(sleep|slept|awake|wandering|wandered|sundowning|medication|medicine|dose|pill|missed|refused|pain|fall|fell|confused|agitated|agitation|behavio[u]?r|eating|drinking|hydration|appetite|appointment|doctor|nurse|hospital|toilet|continence|breathing|fever|symptom|memory|dementia|caregiver|mood|blood pressure|blood sugar|mobility|injury|rash|swelling|constipation|diarrh?ea|bowel|urine|infection|safety|unsafe|hurt|hit|shout|distress|anxiety|anxious|depressed|depression|weight|temperature)\b/i
-const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\s]*$/i
 
 export default function Companion() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -79,24 +76,19 @@ export default function Companion() {
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-
-      // Automatically run the existing read-only Care Delta review for care-related
-      // caregiver messages. This is an internal background action, not a workflow
-      // choice exposed to the caregiver. It never promotes output into the LCR.
-      if (!isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
-        const nextToken = deltaToken + 1
-        setDeltaToken(nextToken)
-        setDeltaAutoInput({
-          personId: session.person.id,
-          content: submittedText,
-          source: 'AI Companion caregiver message (automatic background review)',
-          eventDate: new Date().toISOString(),
-          token: nextToken,
-        })
-      }
     } catch (e: unknown) {
       setMessages(prev => prev.filter(message => message !== userMsg))
-      setRequestError('Your message couldn’t be sent. It is still in the message box. Please try again. If you are unsure whether it went through, check the conversation before resending.')
+      const detail = e instanceof Error ? e.message.trim() : ''
+      const routeMissing = /\bAPI 404\b|^not found$/i.test(detail)
+      const modelUnavailable = /\bAPI 503\b|model is not configured|model.*unavailable|ollama/i.test(detail)
+      setInput(submittedText)
+      setRequestError(
+        routeMissing
+          ? 'Companion is not available from the connected backend yet. The endpoint returned 404; your text remains in the input.'
+          : modelUnavailable
+            ? 'The Qwen model service is not configured or reachable. No reply was generated; your text remains in the input.'
+            : 'The server did not confirm whether it received this message. Your text remains in the input. Check the care record before retrying to avoid duplicates.'
+      )
     } finally {
       setLoading(false)
     }
@@ -115,6 +107,18 @@ export default function Companion() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const compareMessageWithRecord = (message: string) => {
+    const nextToken = deltaToken + 1
+    setDeltaToken(nextToken)
+    setDeltaAutoInput({
+      personId,
+      content: message,
+      source: 'AI Companion caregiver message (explicitly selected for LCR reconciliation)',
+      eventDate: new Date().toISOString(),
+      token: nextToken,
+    })
+  }
+
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -124,34 +128,38 @@ export default function Companion() {
 
   const startNewSession = () => {
     setMessages([])
-    setInput('')
     setSessionId(null)
     setEmergency(false)
-    setRequestError(null)
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 170px)', minHeight: '420px', maxHeight: '900px', minWidth: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+      <QwenAssistPanel
+        title="Qwen support for your Living Care Record"
+        defaultWorkflow="companion"
+        compact
+      />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 600 }}>Companion chat</h1>
         <button
           onClick={startNewSession}
-          style={{ fontSize: '14px', fontWeight: 700, color: '#172b35', background: '#ffffff', border: '2px solid #718477', borderRadius: '10px', padding: '10px 12px', minHeight: '44px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer' }}
         >
           New conversation
         </button>
       </div>
 
-      {requestError && <p role="alert" style={{ color: '#3b2e11', background: '#fff4dc', border: '1px solid #c8a85d', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', lineHeight: 1.5, marginBottom: '12px' }}>{requestError}</p>}
+      {requestError && <p role="alert" style={{ color: 'var(--error)', fontSize: '13px', marginBottom: '12px' }}>{requestError}</p>}
 
       {emergency && (
         <div style={{
           background: '#fef2f2', border: '2px solid #dc2626',
           borderRadius: '12px', padding: '16px 20px', marginBottom: '16px'
         }}>
-          <span style={{ fontSize: '14px', fontWeight: 700, color: '#991b1b' }}>Please check on the person</span>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: '#dc2626' }}>⚠️ Attention requested</span>
           <p style={{ fontSize: '12px', color: '#7f1d1d', marginTop: '4px' }}>
-            Please check on the person now. If anyone is in immediate danger, contact local emergency services.
+            The safety engine flagged this exchange. Review the conversation and check on the person.
           </p>
         </div>
       )}
@@ -163,75 +171,82 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Ask a question or share what’s happening. Your care record changes only when you choose to save an update.
+            Companion responses are shown only after the connected backend returns a valid response.
+            Do not treat an unsent message as part of the care record.
           </div>
         )}
         {messages.map((msg, i) => (
           <div key={i} style={{
             alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            maxWidth: 'min(88%, 680px)',
+            maxWidth: '70%',
           }}>
             <div style={{
               padding: '12px 16px', borderRadius: '16px',
-              background: msg.role === 'user' ? '#e3eee6' : '#ffffff',
-              color: '#172b35',
-              border: '1px solid #c7d8d2',
-              overflowWrap: 'anywhere',
+              background: msg.role === 'user' ? 'var(--accent-soft)' : 'var(--surface)',
+              border: '1px solid var(--border)',
             }}>
               <p style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{msg.text}</p>
-
+              {msg.safety_note && (
+                <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '6px', fontStyle: 'italic' }}>
+                  Safety: {msg.safety_note}
+                </p>
+              )}
+              {msg.guard_verdict && msg.guard_verdict !== 'passed' && (
+                <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>
+                  Guard: {msg.guard_verdict}
+                </p>
+              )}
+              {msg.confidence !== undefined && msg.confidence !== null && (
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Confidence: {Math.round(msg.confidence * 100)}%
+                </p>
+              )}
+              {msg.evidence_ids && msg.evidence_ids.length > 0 && (
+                <p style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Evidence: {msg.evidence_ids.slice(0, 3).join(', ')}{msg.evidence_ids.length > 3 && ' ...'}
+                </p>
+              )}
             </div>
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: msg.role === 'user' ? 'right' : 'left', marginTop: '4px' }}>
               {msg.role === 'user' ? 'You' : 'SolenOS'} · {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
-
+            {msg.role === 'user' && <button
+              type="button"
+              onClick={() => compareMessageWithRecord(msg.text)}
+              style={{ marginTop: 5, fontSize: 11, color: 'var(--text-secondary)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 8px', cursor: 'pointer' }}
+            >Compare this report with the Living Care Record</button>}
           </div>
         ))}
         <div ref={bottomRef} />
       </div>
 
-      <form
-        aria-label="Send a message to Companion"
-        onSubmit={(event) => { event.preventDefault(); void sendMessage() }}
-        style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px', width: '100%', minWidth: 0 }}
-      >
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px' }}>
         <textarea
-          aria-label="Your message to Companion"
           value={input}
-          onChange={e => {
-            setInput(e.target.value)
-            setRequestError(null)
-          }}
+          onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Write your message…"
+          placeholder="Type a message (Enter to send, Shift+Enter for new line)..."
           disabled={loading}
           rows={Math.max(1, Math.floor(input.length / 50) + 1)}
           style={{
-            flex: '1 1 auto', width: '0', minWidth: 0, boxSizing: 'border-box',
-            padding: '10px 14px', borderRadius: '14px',
-            background: '#ffffff', color: '#172b35', caretColor: '#172b35', fontSize: '16px', resize: 'none', outline: 'none',
-            minHeight: '48px', maxHeight: '160px', border: '2px solid #718477',
-            WebkitTextFillColor: '#172b35',
+            flex: 1, padding: '10px 14px', borderRadius: '16px', border: '1px solid var(--border)',
+            background: 'var(--surface)', fontSize: '14px', resize: 'none', outline: 'none',
+            minHeight: '40px', maxHeight: '120px',
           }}
         />
         <button
-          type="submit"
-          aria-label="Send message"
+          onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
           style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            flex: '0 0 auto', minWidth: '84px', minHeight: '48px', padding: '10px 16px', borderRadius: '14px',
-            border: '2px solid #8eae8a', background: loading || !input.trim() ? '#e8eee9' : '#b9d5b5', color: '#17251c',
-            fontSize: '14px', fontWeight: 800, whiteSpace: 'nowrap',
-            cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-            opacity: 1,
+            padding: '10px 20px', borderRadius: '16px', border: 'none',
+            background: loading || !input.trim() ? 'var(--text-secondary)' : 'var(--trust)',
+            color: 'white', fontSize: '13px', cursor: loading || !input.trim() ? 'default' : 'pointer',
           }}
         >
-          <Send size={16} aria-hidden="true" />
-          {loading ? 'Sending…' : 'Send'}
+          {loading ? '...' : 'Send'}
         </button>
-      </form>
-      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
+      </div>
+      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} />
     </div>
   )
 }
