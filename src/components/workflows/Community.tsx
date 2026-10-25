@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import Link from 'next/link'
 import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
 import { getJSON, postJSON, getCaregiverId } from '@/api/client'
 
@@ -97,8 +96,8 @@ export default function Community() {
   const [wisdomMessage, setWisdomMessage] = useState('')
   const caregiverId = getCaregiverId()
 
-  async function loadPosts() {
-    setLoading(true)
+  async function loadPosts(showLoading = true) {
+    if (showLoading) setLoading(true)
     setLoadError('')
     try {
       const result = await getJSON('/community') as CommunityPostSummary
@@ -108,7 +107,7 @@ export default function Community() {
       setPosts([])
       setLoadError('We couldn’t load community posts right now. Please try again.')
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
@@ -158,7 +157,7 @@ export default function Community() {
     if (!caregiverId) { setActionMessage('Please reopen SolenOS so your caregiver session can be restored before reacting.'); return }
     try {
       await postJSON(`/community/${encodeURIComponent(postId)}/reactions`, { caregiver_id: caregiverId, reaction_type: reactionType })
-      await loadPosts()
+      await loadPosts(false)
       setActionMessage('Your response was saved.')
     } catch {
       setActionMessage('We couldn’t confirm that response. Please try again.')
@@ -184,7 +183,7 @@ export default function Community() {
       setComposerText('')
       setComposerOpen(false)
       setActionMessage('Your experience was shared.')
-      await loadPosts()
+      await loadPosts(false)
     } catch {
       setActionMessage('We couldn’t confirm your post. Your draft is still here so you can try again.')
     } finally { setSubmitting(false) }
