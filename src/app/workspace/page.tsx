@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations } from "@/lib/ui-runtime";
 import { ErrorBoundary } from "@/components/error-boundary";
+import QwenSupportPanel from "@/components/workflows/QwenSupportPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -193,6 +194,7 @@ function WorkspacePageInner() {
             ))}
           </section>
         )}
+        <QwenSupportPanel />
       </div>
     </div>
   );
