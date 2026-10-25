@@ -32,26 +32,42 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
     setSubmitError(null);
     try {
       const session = await ensureAnonymousSession();
+      const consentResponse = await fetch(
+        apiUrl(`/api/v1/consent?person_id=${encodeURIComponent(session.person.id)}`),
+        {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+        },
+      );
+      if (!consentResponse.ok) throw new Error("We couldn't verify your improvement-feedback permission.");
+      const consent = (await consentResponse.json()) as {
+        verified?: boolean;
+        profile?: { data_improvement_consent?: boolean };
+      };
+      if (!consent.verified || consent.profile?.data_improvement_consent !== true) {
+        throw new Error("Turn on optional improvement feedback in Privacy settings before sending feedback.");
+      }
+
       const key = careKey?.trim() || "anonymous_feedback";
       const helped = option === "Response was helpful";
-      const res = await fetch(apiUrl("/api/v1/feedback"), {
+      // The backend feedback endpoint currently accepts these as query parameters,
+      // not a JSON body. Persist only deliberate feedback after checking opt-in.
+      const detail = JSON.stringify({
+        care_key: key,
+        helped_understand: helped,
+        missed: helped ? undefined : option || undefined,
+        expected_understanding: note.trim() || undefined,
+        source: "global_help_improve",
+      });
+      const query = new URLSearchParams({
+        person_id: session.person.id,
+        caregiver_id: session.caregiver.id,
+        category: "help_improve",
+        detail,
+      });
+      const res = await fetch(apiUrl(`/api/v1/feedback?${query.toString()}`), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          person_id: session.person.id,
-          caregiver_id: session.caregiver.id,
-          category: "help_improve",
-          detail: JSON.stringify({
-            care_key: key,
-            helped_understand: helped,
-            missed: helped ? undefined : option || undefined,
-            expected_understanding: note.trim() || undefined,
-            source: "global_help_improve",
-          }),
-        }),
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { detail?: string; error?: string };
