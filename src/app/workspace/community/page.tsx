@@ -1,14 +1,24 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { BrandLoading } from "@/components/brand";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const Community = dynamic(() => import("@/components/workflows/Community"), {
   ssr: false,
-  loading: () => <BrandLoading message="Opening caregiver community…" />,
 });
 
 export default function CommunityPage() {
+  const router = useRouter();
+  const enabled = FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity;
+
+  useEffect(() => {
+    if (!enabled) router.replace("/workspace");
+  }, [enabled, router]);
+
+  if (!enabled) return null;
+
   return (
     <div className="mobile-screen feature-page">
       <Community />
