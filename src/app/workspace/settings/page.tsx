@@ -248,9 +248,7 @@ function SecurityCard() {
           {busy ? "Revoking…" : "Revoke this session"}
         </Button>
       </div>
-      <p className="mobile-settings-hint">
-        Email/password account sign-in is available for this care record. Password reset, multi-factor authentication, and account recovery are not available yet.
-      </p>
+      <AccountCard />
       {render()}
     </section>
   );
@@ -322,7 +320,7 @@ function AccountCard() {
   };
 
   return (
-    <section className="mobile-settings-card">
+    <section className="mobile-settings-account-controls">
       <h2 className="mobile-settings-card-title"><UserPlus size={16} aria-hidden /> Account</h2>
       {!loaded && <p className="mobile-settings-hint" role="status">Checking account status…</p>}
       {loaded && !loadFailed && account && mode === "idle" && (
@@ -339,7 +337,7 @@ function AccountCard() {
           </div>
         </>
       )}
-      {loaded && !loadFailed && !account && mode === "idle" && (
+      {loaded && (!account || loadFailed) && mode === "idle" && (
         <>
           <p className="mobile-settings-hint">Keep access to this care record with an email and password. Anonymous use remains available; an account is optional.</p>
           <div className="mobile-settings-buttons">
@@ -622,7 +620,6 @@ export default function WorkspaceSettingsPage() {
         <ProfileCard />
         <NotificationsCard />
         <SecurityCard />
-        <AccountCard />
         <LegalCard />
         <PrivacyCard />
         <ProductCard />
