@@ -62,7 +62,7 @@ export function MemoryReconstructionPanel({ className }: Props) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="When did confusion start? How has appetite changed?"
+          placeholder="Enter the question or detail you want to reconstruct"
           aria-label="Memory reconstruction question"
         />
         <button type="submit" disabled={loading || !query.trim()}>
