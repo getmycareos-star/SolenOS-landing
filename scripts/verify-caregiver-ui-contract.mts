@@ -6,6 +6,7 @@ const root = process.cwd();
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 const orientation = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+const deltaPanel = fs.readFileSync(path.join(root, "src/components/CareDeltaPanel.tsx"), "utf8");
 
 // Errors must be event-driven, dismissible through correction/reset, and not stale.
 assert.match(companion, /\{requestError && <p role="alert"/);
