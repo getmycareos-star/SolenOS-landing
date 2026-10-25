@@ -1,3 +1,4 @@
+import { apiUrl } from "@/lib/api-url";
 // Use the same-origin API proxy in Next.js and Netlify production.
 // Netlify forwards /api/* to the backend, so browser requests do not expose a backend hostname.
 const API_BASE = '/api/v1'
@@ -299,13 +300,16 @@ export async function revokeAnonymousSession(): Promise<void> {
 // Multipart upload helper. Do not set Content-Type manually: the browser must
 // add the multipart boundary for FormData requests.
 export async function postFormData(path: string, body: FormData) {
-  const headers = await requestAuthorizationHeaders(path);
-  const res = await fetch(resolveApiUrl(path), {
-    method: 'POST',
-    headers,
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const backendPath = normalized.startsWith("/api/v1/")
+    ? normalized
+    : `/api/v1${normalized}`;
+  const res = await fetch(apiUrl(backendPath), {
+    method: "POST",
+    headers: await requestAuthorizationHeaders(backendPath),
     body,
-  })
-  return handleResponse(res)
+  });
+  return handleResponse(res);
 }
 
 // Caregiver identity is only accepted when explicitly stored by the current
