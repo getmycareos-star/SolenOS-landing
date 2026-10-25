@@ -28,6 +28,7 @@ export default function LandingPage() {
             <h1>You know something happened.<br /><em>You just don’t remember it as one story.</em></h1>
             <p>Care happens in moments.<br />But you’re expected to remember the whole story.</p>
             <Link href={start} className="el-button">Start your care record <span aria-hidden="true">↗</span></Link>
+            <p className="el-auth-links"><Link href="/signup">Create an account</Link><span aria-hidden="true">·</span><Link href="/login">Sign in</Link></p>
           </div>
           <div className="el-hero-photo" role="img" aria-label="A daughter sharing a quiet, affectionate moment with her elderly mother">
             <div className="el-photo-caption">Care is made of moments.</div>
@@ -89,7 +90,7 @@ export default function LandingPage() {
 
         <section className="el-final-cta">
           <div className="el-leaves el-leaves-left" aria-hidden="true">❧</div>
-          <div><h2>You already carry enough.</h2><p className="el-italic">You shouldn’t have to carry the whole care story in your head, too.</p><p>Give the story somewhere to live. Somewhere to return to. Somewhere the next person can understand.<br />Somewhere the past can help make sense of what is happening now.</p><Link href={start} className="el-button">Start care record <span aria-hidden="true">↗</span></Link><p className="el-tagline">The care journey, remembered.</p></div>
+          <div><h2>You already carry enough.</h2><p className="el-italic">You shouldn’t have to carry the whole care story in your head, too.</p><p>Give the story somewhere to live. Somewhere to return to. Somewhere the next person can understand.<br />Somewhere the past can help make sense of what is happening now.</p><Link href={start} className="el-button">Start care record <span aria-hidden="true">↗</span></Link><p className="el-auth-links"><Link href="/signup">Create an account</Link><span aria-hidden="true">·</span><Link href="/login">Sign in</Link></p><p className="el-tagline">The care journey, remembered.</p></div>
           <aside><strong>David Abuchi</strong><br />Founder &amp; CEO<br /><Link href="/our-story">Read our story →</Link></aside>
           <div className="el-leaves el-leaves-right" aria-hidden="true">❧</div>
         </section>
