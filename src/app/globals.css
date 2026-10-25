@@ -4746,9 +4746,9 @@ button, input, select, textarea { font: inherit; }
   outline: 3px solid var(--care-accent);
   outline-offset: 3px;
 }
-.solenos-btn--primary,
-.workspace-primary,
-.el-button {
+.solenos-shell .solenos-btn--primary,
+.solenos-shell .workspace-primary,
+.solenos-shell .el-button {
   background: var(--solenos-sage-button) !important;
   border-color: var(--solenos-sage-button) !important;
   color: var(--solenos-button-ink) !important;
@@ -5186,12 +5186,12 @@ input[type="file"] { width: 100%; white-space: normal; }
   border-color: var(--solenos-sage-button) !important;
   color: var(--solenos-button-ink) !important;
 }
-.solenos-btn--secondary {
+.solenos-shell .solenos-btn--secondary {
   background-color: #ffffff !important;
   border-color: #718477 !important;
   color: var(--ink) !important;
 }
-.solenos-btn--destructive {
+.solenos-shell .solenos-btn--destructive {
   background-color: #8f2525 !important;
   border-color: #8f2525 !important;
   color: #ffffff !important;
@@ -5217,16 +5217,16 @@ input[type="file"] { width: 100%; white-space: normal; }
 
 /* Catch custom workflow buttons that bypass the shared Button component.
    Inline white text must never be paired with unresolved accent/trust background tokens. */
-button[style*="var(--accent)"],
-button[style*="var(--trust)"],
-[role="button"][style*="var(--accent)"],
-[role="button"][style*="var(--trust)"] {
+.solenos-shell button[style*="var(--accent)"],
+.solenos-shell button[style*="var(--trust)"],
+.solenos-shell [role="button"][style*="var(--accent)"],
+.solenos-shell [role="button"][style*="var(--trust)"] {
   background-color: var(--solenos-sage-button) !important;
   border-color: #8eae8a !important;
   color: var(--solenos-button-ink) !important;
 }
-button[style*="var(--accent)"]:disabled,
-button[style*="var(--trust)"]:disabled {
+.solenos-shell button[style*="var(--accent)"]:disabled,
+.solenos-shell button[style*="var(--trust)"]:disabled {
   background-color: #e8eee9 !important;
   border-color: #aab9ad !important;
   color: #34463a !important;
@@ -5235,13 +5235,13 @@ button[style*="var(--trust)"]:disabled {
 
 
 /* Final visibility pass: make actions unmistakable without changing the brand palette. */
-.solenos-btn--primary,
-.workspace-primary,
-.el-button,
-button[style*="var(--accent)"],
-button[style*="var(--trust)"],
-[role="button"][style*="var(--accent)"],
-[role="button"][style*="var(--trust)"] {
+.solenos-shell .solenos-btn--primary,
+.solenos-shell .workspace-primary,
+.solenos-shell .el-button,
+.solenos-shell button[style*="var(--accent)"],
+.solenos-shell button[style*="var(--trust)"],
+.solenos-shell [role="button"][style*="var(--accent)"],
+.solenos-shell [role="button"][style*="var(--trust)"] {
   min-height: 46px;
   font-weight: 750 !important;
   border: 2px solid #8eae8a !important;
@@ -5249,17 +5249,17 @@ button[style*="var(--trust)"],
   box-shadow: 0 2px 0 rgba(23, 43, 32, 0.12), 0 4px 12px rgba(23, 43, 32, 0.08);
   cursor: pointer;
 }
-.solenos-btn--primary:hover:not(:disabled),
-.workspace-primary:hover:not(:disabled),
-.el-button:hover:not(:disabled),
-button[style*="var(--accent)"]:hover:not(:disabled),
-button[style*="var(--trust)"]:hover:not(:disabled) {
+.solenos-shell .solenos-btn--primary:hover:not(:disabled),
+.solenos-shell .workspace-primary:hover:not(:disabled),
+.solenos-shell .el-button:hover:not(:disabled),
+.solenos-shell button[style*="var(--accent)"]:hover:not(:disabled),
+.solenos-shell button[style*="var(--trust)"]:hover:not(:disabled) {
   background-color: var(--solenos-sage-button-hover) !important;
   border-color: #789775 !important;
   transform: translateY(-1px);
 }
-.solenos-btn--secondary,
-.mobile-settings-buttons > button:not([data-variant="primary"]):not([data-variant="destructive"]) {
+.solenos-shell .solenos-btn--secondary,
+.solenos-shell .mobile-settings-buttons > button:not([data-variant="primary"]):not([data-variant="destructive"]) {
   border: 2px solid #536c76 !important;
   font-weight: 700 !important;
 }
@@ -5268,8 +5268,8 @@ button[style*="var(--trust)"]:hover:not(:disabled) {
   border: 2px solid #9aafb6 !important;
   box-shadow: 0 2px 8px rgba(23, 63, 75, 0.08);
 }
-button:disabled,
-[role="button"][aria-disabled="true"] {
+.solenos-shell button:disabled,
+.solenos-shell [role="button"][aria-disabled="true"] {
   cursor: not-allowed;
 }
 
