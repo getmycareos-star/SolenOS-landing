@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { checkAuthState, getAnonymousAccessToken, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
+import { checkAuthState, ensureAnonymousSession, getAnonymousAccessToken, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
