@@ -46,6 +46,8 @@ export default function StructuredDailyCapture() {
   const [vitalFeedback, setVitalFeedback] = useState<string | null>(null);
   const [scaleError, setScaleError] = useState<string | null>(null);
   const [scaleFeedback, setScaleFeedback] = useState<string | null>(null);
+  const [medicationError, setMedicationError] = useState<string | null>(null);
+  const [medicationFeedback, setMedicationFeedback] = useState<string | null>(null);
   
   // Form state
   const [form, setForm] = useState({
@@ -203,7 +205,7 @@ export default function StructuredDailyCapture() {
       stopCam();
     } catch (err) {
       console.error('Failed to capture image:', err);
-      alert("We couldn't take that photo. Check camera permission or choose an image from your device.");
+      setMedicationError("We couldn’t take that photo. Check camera permission or choose an image from your device.");
       stopCam();
       setMedicationCompressing(false);
     }
@@ -214,7 +216,7 @@ export default function StructuredDailyCapture() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
+      setMedicationError('Choose an image file to add a medicine photo.');
       return;
     }
     
@@ -252,16 +254,18 @@ export default function StructuredDailyCapture() {
   // Handle medication form submission
   const handleMedicationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMedicationError(null);
+    setMedicationFeedback(null);
     if (!personId || !caregiverId) {
-      alert('Open your care record first, then try adding this medication again.');
+      setMedicationError('Open your care record first, then try adding this medicine again.');
       return;
     }
     if (!medicationForm.medication_name.trim()) {
-      alert('Medication name is required');
+      setMedicationError('Enter the medicine name.');
       return;
     }
     if (!medicationForm.status) {
-      alert('Select the actual medication status before adding this record.');
+      setMedicationError('Choose what happened with this medicine before adding it.');
       return;
     }
     setMedicationUploading(true);
@@ -327,11 +331,11 @@ export default function StructuredDailyCapture() {
       // Reset image preview
       setMedicationImagePreview(null);
       
-      alert('Added to this daily-care draft. Save the daily care update below to keep it.');
+      setMedicationFeedback('Added to this daily-care draft. Save the daily care update below to keep it.');
     } catch (err: any) {
       setMedicationUploading(false);
       setMedicationCompressing(false);
-      alert("We couldn’t add this medication. Check the details and try again.");
+      setMedicationError("We couldn’t add this medicine. Check the details and try again.");
     } finally {
       setMedicationUploading(false);
     }
@@ -992,7 +996,7 @@ export default function StructuredDailyCapture() {
       
       {/* Medications section */}
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medicines</h2>
         
         {/* Medication form */}
         <div style={{ 
@@ -1002,16 +1006,18 @@ export default function StructuredDailyCapture() {
           padding: '16px', 
           marginBottom: '24px' 
         }}>
-          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add Medication</h3>
+          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a medicine</h3>
           
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {medicationError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{medicationError}</p>}
+            {medicationFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{medicationFeedback}</p>}
             <div>
-              <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
+              <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medicine name</label>
               <input
                 id="capture-medication-name"
                 type="text"
                 value={medicationForm.medication_name}
-                onChange={(e) => setMedicationForm(prev => ({ ...prev, medication_name: e.target.value }))}
+                onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, medication_name: e.target.value })); }}
                 placeholder="Enter medication name"
                 style={{ 
                   width: '100%', 
@@ -1031,7 +1037,7 @@ export default function StructuredDailyCapture() {
                   id="capture-medication-status"
                   value={medicationForm.status}
                   required
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, status: e.target.value })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1041,7 +1047,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
-                  <option value="">Select actual status</option>
+                  <option value="">Choose status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
@@ -1125,7 +1131,7 @@ export default function StructuredDailyCapture() {
             
             {/* Image upload for medication */}
             <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg)', borderRadius: '6px' }}>
-              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Medication Photo (Optional)</h4>
+              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Medicine photo (optional)</h4>
               
               {medicationImagePreview ? (
                 <div>
@@ -1180,7 +1186,7 @@ export default function StructuredDailyCapture() {
                                : 'pointer' 
                       }}
                     >
-                      {medicationUploading ? 'Adding...' : 'Add Medication with Photo'}
+                      {medicationUploading ? 'Adding…' : 'Add medicine with photo'}
                     </button>
                   </div>
                 </div>
@@ -1244,7 +1250,7 @@ export default function StructuredDailyCapture() {
                                : 'pointer' 
                       }}
                     >
-                      {medicationUploading ? 'Adding...' : 'Add Medication'}
+                      {medicationUploading ? 'Adding…' : 'Add medicine'}
                     </button>
                   </div>
                 </div>
@@ -1256,7 +1262,7 @@ export default function StructuredDailyCapture() {
         {/* Display current medications */}
         {form.medications.length > 0 && (
           <div style={{ marginTop: '16px' }}>
-            <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>Current Medications</h3>
+            <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>Medicines in this draft</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {renderMedications()}
             </div>
