@@ -28,15 +28,15 @@ This register separates source implementation from CI, deployed integration, and
 | LCR-01 | Living Care Record continuity and identity isolation | Create/read persistence, refresh continuity, cross-record denial, missing/uncertain facts preserved | Not verified |
 | AI-01 | AI Companion | Authenticated request to deployed inference service; response is from the configured model/service, with honest unavailable/error states and no fabricated assistant messages | Not verified |
 | PRIV-01 | Privacy and consent before sensitive capture | First-use consent and policy explanation before sensitive capture; clear limits and data actions; no misleading retention/deletion claims | Not verified |
-| AUTH-01 | Real account signup, login, session lifecycle, and anonymous-record claiming | Backend model/migration and secure endpoints; frontend signup route; PostgreSQL integration tests; live signup → login → read/write → refresh/logout → login again; cross-record denial | Blocked — backend issue #81; do not show a fake-success signup flow |
+| AUTH-01 | Real account signup, login, session lifecycle, and anonymous-record claiming | Backend model/migration and secure endpoints; frontend signup route; PostgreSQL integration tests; live signup → login → read/write → refresh/logout → login again; cross-record denial | In progress — backend PR #85 and frontend PR #105; CI still being resolved; not merged or deployed. Anonymous-record claiming remains unimplemented |
 | NAV-01 | Public and workspace navigation | Every visible link/button resolves to the intended page; no dead links or Vite-era routes | In progress — archived Vite pages removed in PR #99; route-by-route verification outstanding |
 | QA-01 | Acceptance test suite and release gate | Latest CI passes; live API checks; mobile/desktop complete flows; explicit evidence log and remaining defects | In progress — GitHub Actions passed for commit `62a0900fc4c99b9c116cc037c6cb360f6993add4`; this does not establish live integration or full user-flow success |
 
 ## Signup/security gate
 
-The existing anonymous session is a scoped bearer capability, **not** a user account. The frontend API client currently returns an unauthenticated state from `checkAuthState()`; no account signup/login contract has been confirmed in the backend source. Do not label anonymous-session creation as account signup, do not persist a password locally, and do not report account creation as successful until a real backend response confirms it.
+The existing anonymous session is a scoped bearer capability, **not** a user account. Proposed account endpoints are implemented in backend PR #85 (`/sessions/register`, `/sessions/login`, `/sessions/me`, and `/sessions/revoke`) and wired to frontend routes in PR #105. These changes are not yet merged or deployed; do not claim live account creation or login until latest CI passes and the deployed frontend successfully exercises the real backend.
 
-The Security card should link to an enabled signup flow only after issue #81's backend contract and security tests exist. Keep anonymous entry available; signup must remain optional.
+Passwords are hashed server-side; the frontend never stores the password. Email verification, password reset, MFA, persistent login throttling, and claiming an existing anonymous record are not implemented. The frontend preserves an existing anonymous capability when switching to an account and offers a restore action, but this is not a record-claim/merge workflow. Keep anonymous entry available; signup must remain optional.
 
 ## Required evidence log
 
