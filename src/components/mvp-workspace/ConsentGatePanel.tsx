@@ -48,9 +48,19 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
       setStatus(data);
       onStatusChange?.(data.required ? "required" : "accepted");
     } catch {
-      setError("We couldn’t confirm your privacy acknowledgement. Check your connection and try again.");
-      setStatus(null);
-      onStatusChange?.("unavailable");
+      // A failed status read must not replace the acknowledgement form with a dead-end.
+      // Keep the required confirmations available; the POST below is authoritative.
+      setError(null);
+      setStatus({
+        verified: false,
+        required: true,
+        terms_version: "2026-10",
+        one_line_agreement: "SolenOS organizes caregiver-reported information and does not replace clinical judgment.",
+        data_improvement_statement: "Data improvement is optional and can be changed later.",
+        no_advertising_statement: "Your care information is not sold or used for advertising.",
+        signup_improvement_copy: "You can help improve SolenOS only if you choose to opt in.",
+      });
+      onStatusChange?.("required");
     } finally {
       setLoading(false);
     }
@@ -88,7 +98,20 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
       const data = (await safeJson(res)) as { error?: string; detail?: string };
       if (!res.ok) throw new Error(data.detail ?? data.error ?? "Consent submission failed");
 
-      await loadStatus();
+      // The successful authenticated POST is the confirmation. Do not immediately
+      // re-read via a potentially stale proxy and turn a saved acknowledgement into
+      // another blocking error screen.
+      setStatus((current) => current ? { ...current, verified: true, required: false } : {
+        verified: true,
+        required: false,
+        terms_version: "2026-10",
+        one_line_agreement: "SolenOS organizes caregiver-reported information and does not replace clinical judgment.",
+        data_improvement_statement: "Data improvement is optional and can be changed later.",
+        no_advertising_statement: "Your care information is not sold or used for advertising.",
+        signup_improvement_copy: "You can help improve SolenOS only if you choose to opt in.",
+      });
+      setError(null);
+      onStatusChange?.("accepted");
       onConsentAccepted?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Consent submission failed");
