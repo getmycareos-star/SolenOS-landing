@@ -29,7 +29,7 @@ const fieldStyle: React.CSSProperties = {
   borderRadius: 8, padding: 9, background: 'var(--bg)', color: 'var(--text)', fontSize: 13
 }
 
-export default function CareDeltaPanel({ personId, autoInput }: { personId: string; autoInput?: DeltaInput | null }) {
+export default function CareDeltaPanel({ personId, autoInput, showPanel = true }: { personId: string; autoInput?: DeltaInput | null; showPanel?: boolean }) {
   const [source, setSource] = useState('Caregiver report')
   const [eventDate, setEventDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('')
@@ -139,6 +139,10 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
       </div>
     </section>
   }
+
+  // Background reconciliation remains active when the caregiver-facing controls are hidden.
+  // The internal comparison panel exposes engine terms and is not part of the caregiver chat UI.
+  if (!showPanel) return null;
 
   return <section aria-label="SolenOS Delta Engine" style={panelStyle}>
     <div>
