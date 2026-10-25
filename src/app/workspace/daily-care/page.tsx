@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays } from "lucide-react";
@@ -55,7 +54,6 @@ export default function DailyCarePage() {
           <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
           <h1>How has today been?</h1>
           <p>Record observations about the day. You can leave anything you do not know blank.</p>
-          <Link href="/workspace/reminders" className="care-reminders-inline-link">Open care reminders</Link>
         </div>
       </div>
       {error ? (
