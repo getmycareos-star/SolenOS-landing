@@ -97,7 +97,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         }
       })
       .catch(() => {
-        if (!cancelled) setHistoryError('We couldn't load your saved care-change history. Your existing care information hasn't been changed.')
+        if (!cancelled) setHistoryError("We couldn't load your saved care-change history. Your existing care information hasn't been changed.")
       })
     return () => { cancelled = true }
   }, [personId])
