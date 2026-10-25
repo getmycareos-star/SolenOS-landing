@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { SituationDocument } from "@/lib/ui-runtime";
 import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
+import QwenSupportPanel from "@/components/workflows/QwenSupportPanel";
 
 const SOURCE_LABELS: Record<string, string> = {
   uploaded: "Uploaded",
@@ -169,6 +170,8 @@ export default function DocumentsPage() {
           );
         })}
       </div>
+
+      <QwenSupportPanel workflow="document" />
 
       {preview && (
         <div
