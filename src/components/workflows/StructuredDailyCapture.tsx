@@ -4,7 +4,6 @@ import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import CareDeltaPanel from '@/components/CareDeltaPanel';
-import QwenAssistPanel from '@/components/qwen/QwenAssistPanel';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
@@ -787,13 +786,13 @@ export default function StructuredDailyCapture() {
       )}
       
       {saved && qwenAnalysis && (
-        <section aria-label="Qwen care analysis" style={{
+        <section aria-label="Care information review" style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '8px', padding: '12px 16px', marginBottom: '24px'
         }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Qwen care analysis</h2>
+          <h2 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Care information review</h2>
           <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Extraction status: {qwenAnalysis.status}. Generated observations remain review candidates and do not automatically become established LCR facts.
+            These are suggested observations for your review. They do not automatically become established facts in the Living Care Record.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ margin: 0, paddingLeft: '18px' }}>
@@ -809,8 +808,8 @@ export default function StructuredDailyCapture() {
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               {qwenAnalysis.status === 'pending_review'
-                ? 'Qwen returned no verifiable observation candidates.'
-                : 'No Qwen-generated candidates are available. The saved capture remains recorded; no substitute analysis was invented.'}
+                ? 'No observations could be confidently identified from this entry.'
+                : 'No additional observations are available. Your saved entry remains recorded.'}
             </p>
           )}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
@@ -825,19 +824,6 @@ export default function StructuredDailyCapture() {
           )}
         </section>
       )}
-
-      <QwenAssistPanel
-        title="Qwen support for Daily Capture"
-        defaultWorkflow="daily_capture"
-        compact
-        contextText={[
-          form.notes.trim() ? "Caregiver-entered daily note (draft or saved): " + form.notes.trim() : "",
-          form.medications.length ? "Medication observations supplied by caregiver (not medical advice): " + JSON.stringify(form.medications) : "",
-          form.vitals.length ? "Vital measurements supplied by caregiver: " + JSON.stringify(form.vitals) : "",
-          form.scales.length ? "Caregiver-entered scales: " + JSON.stringify(form.scales) : "",
-        ].filter(Boolean).join("\n\n")}
-        evidenceIds={form.medications.map((item) => item.photo_evidence_id).filter((id): id is string => Boolean(id))}
-      />
 
       {/* Save error indicator */}
       {Boolean(saveError) && !saved && (
