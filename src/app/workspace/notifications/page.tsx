@@ -36,8 +36,8 @@ export default function WorkspaceNotificationsPage() {
       ]);
       setItems(feed.items);
       setUnreadCount(unread.unread_count);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load notifications from the care backend.");
+    } catch {
+      setError("We couldn't load your notifications. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -53,8 +53,8 @@ export default function WorkspaceNotificationsPage() {
       const updated = await patchJSON(`/notifications/${encodeURIComponent(item.id)}/read`, {}) as CareNotification;
       setItems((current) => current.map((row) => row.id === updated.id ? updated : row));
       setUnreadCount((current) => Math.max(0, current - 1));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not mark this notification read.");
+    } catch {
+      setError("We couldn't update this notification. Please try again.");
     } finally {
       setBusyId(null);
     }
@@ -69,7 +69,7 @@ export default function WorkspaceNotificationsPage() {
         </div>
         <h1 className="workspace-headline mt-5"><Bell size={22} className="inline-block mr-2" />Notifications</h1>
         <p className="mobile-settings-hint">Backend-backed notifications for this care-record session. Unread: {unreadCount}.</p>
-        {error && <p role="alert" className="mobile-settings-hint">{error}</p>}
+        {error && <div role="alert" className="mobile-settings-hint"><p>{error}</p><Button variant="secondary" onClick={() => void load()} disabled={loading}>Try again</Button></div>}
         {loading ? <p role="status" className="mobile-settings-hint">Loading notifications…</p> :
           items.length === 0 ? <p className="mobile-settings-hint">No notifications have been recorded for this care record.</p> :
           <div className="mt-4 space-y-3">
