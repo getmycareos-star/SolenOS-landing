@@ -6,6 +6,25 @@ import { useOptimisticMutation } from '@/lib/optimistic';
 import CareDeltaPanel from '@/components/CareDeltaPanel';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
+const VITAL_LABELS: Record<string, string> = {
+  bp_systolic: 'Blood pressure — systolic',
+  bp_diastolic: 'Blood pressure — diastolic',
+  heart_rate: 'Heart rate',
+  oxygen_sat: 'Oxygen level',
+  temperature: 'Temperature',
+  weight: 'Weight',
+};
+const VITAL_UNITS: Record<string, string> = {
+  bp_systolic: 'mmHg',
+  bp_diastolic: 'mmHg',
+  heart_rate: 'bpm',
+  oxygen_sat: '%',
+  temperature: '°C',
+  weight: 'kg',
+};
+function toLocalDateTimeInput(date = new Date()): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
 
 export default function StructuredDailyCapture() {
@@ -18,6 +37,8 @@ export default function StructuredDailyCapture() {
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
   const [deltaToken, setDeltaToken] = useState(0);
+  const [vitalError, setVitalError] = useState<string | null>(null);
+  const [vitalFeedback, setVitalFeedback] = useState<string | null>(null);
   
   // Form state
   const [form, setForm] = useState({
@@ -76,8 +97,8 @@ export default function StructuredDailyCapture() {
   }>({
     vital_type: 'bp_systolic',
     value: Number.NaN,
-    measured_at: new Date().toISOString(),
-    unit: null,
+    measured_at: toLocalDateTimeInput(),
+    unit: VITAL_UNITS.bp_systolic,
     note: null,
   });
   
@@ -309,41 +330,38 @@ export default function StructuredDailyCapture() {
     }
   };
   
-  // Handle vitals form submission
-  const handleVitalSubmit = async (e: React.FormEvent) => {
+  // Add a vital to the current daily-capture draft. It is persisted when the
+  // caregiver saves the complete daily capture below.
+  const handleVitalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      const vitalData = {
-        ...vitalForm,
-        measured_at: new Date(vitalForm.measured_at).toISOString(),
-      };
-      
-      // Validate required fields
-      if (!Number.isFinite(vitalData.value) || vitalData.value <= 0) {
-        alert('Please enter a valid value');
-        return;
-      }
-      
-      // Optimistically add to vitals list
-      setForm(prev => ({
-        ...prev,
-        vitals: [...prev.vitals, vitalData]
-      }));
-      
-      // Reset vitals form
-      setVitalForm({
-        vital_type: 'bp_systolic',
-        value: Number.NaN,
-        measured_at: new Date().toISOString(),
-        unit: null,
-        note: null,
-      });
-      
-      alert('Vital added successfully');
-    } catch (err: any) {
-      alert(`Failed to add vital: ${err.message}`);
+    setVitalError(null);
+    setVitalFeedback(null);
+
+    const measuredAt = new Date(vitalForm.measured_at);
+    if (!Number.isFinite(vitalForm.value) || vitalForm.value <= 0) {
+      setVitalError('Enter a value greater than zero.');
+      return;
     }
+    if (Number.isNaN(measuredAt.getTime())) {
+      setVitalError('Choose when this measurement was taken.');
+      return;
+    }
+
+    const vitalData = {
+      ...vitalForm,
+      unit: vitalForm.unit?.trim() || VITAL_UNITS[vitalForm.vital_type] || null,
+      measured_at: measuredAt.toISOString(),
+    };
+
+    setForm(prev => ({ ...prev, vitals: [...prev.vitals, vitalData] }));
+    setVitalForm({
+      vital_type: 'bp_systolic',
+      value: Number.NaN,
+      measured_at: toLocalDateTimeInput(),
+      unit: VITAL_UNITS.bp_systolic,
+      note: null,
+    });
+    setVitalFeedback('Added to this daily-care draft. Save daily capture below to keep it.');
   };
   
   // Handle scale form submission
@@ -540,7 +558,7 @@ export default function StructuredDailyCapture() {
       setVitalForm({
         vital_type: 'bp_systolic',
         value: Number.NaN,
-        measured_at: new Date().toISOString(),
+        measured_at: toLocalDateTimeInput(),
         unit: null,
         note: null,
       });
@@ -1006,7 +1024,7 @@ export default function StructuredDailyCapture() {
               />
             </div>
             
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
                 <label htmlFor="capture-medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
                 <select
@@ -1278,7 +1296,7 @@ export default function StructuredDailyCapture() {
               >
                 {VITAL_TYPES.map(type => (
                   <option key={type} value={type}>
-                    {type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    {VITAL_LABELS[type] ?? type.replace(/_/g, ' ')}
                   </option>
                 ))}
               </select>
@@ -1290,9 +1308,15 @@ export default function StructuredDailyCapture() {
                 <input
                   id="capture-vital-value"
                   type="number"
+                  min="0.01"
+                  step="any"
                   value={Number.isFinite(vitalForm.value) ? vitalForm.value : ''}
                   required
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: e.target.value === '' ? Number.NaN : Number(e.target.value) }))}
+                  onChange={(e) => {
+                  setVitalError(null);
+                  setVitalFeedback(null);
+                  setVitalForm(prev => ({ ...prev, value: e.target.value === '' ? Number.NaN : Number(e.target.value) }));
+                }}
                   placeholder="Enter value"
                   style={{ 
                     width: '100%', 
@@ -1310,8 +1334,12 @@ export default function StructuredDailyCapture() {
                 <input
                   type="text"
                   id="vital-unit"
-                  value={vitalForm.unit || ''}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, unit: e.target.value || null }))}
+                  value={vitalForm.unit || VITAL_UNITS[vitalForm.vital_type] || ''}
+                  onChange={(e) => {
+                    setVitalError(null);
+                    setVitalFeedback(null);
+                    setVitalForm(prev => ({ ...prev, unit: e.target.value || null }));
+                  }}
                   placeholder="Enter unit (e.g., mmHg, bpm)"
                   style={{ 
                     width: '100%', 
@@ -1325,11 +1353,16 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured At</label>
+                <label htmlFor="capture-vital-measured-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured at</label>
                 <input
                   type="datetime-local"
+                  id="capture-vital-measured-at"
                   value={vitalForm.measured_at}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, measured_at: e.target.value }))}
+                  onChange={(e) => {
+                    setVitalError(null);
+                    setVitalFeedback(null);
+                    setVitalForm(prev => ({ ...prev, measured_at: e.target.value }));
+                  }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1342,10 +1375,15 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="capture-vital-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
                 <textarea
+                  id="capture-vital-note"
                   value={vitalForm.note || ''}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, note: e.target.value || null }))}
+                  onChange={(e) => {
+                    setVitalError(null);
+                    setVitalFeedback(null);
+                    setVitalForm(prev => ({ ...prev, note: e.target.value || null }));
+                  }}
                   placeholder="Add any notes about the vital"
                   rows={2}
                   style={{ 
@@ -1361,22 +1399,16 @@ export default function StructuredDailyCapture() {
               </div>
             </div>
               
+              {vitalError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{vitalError}</p>}
+              {vitalFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{vitalFeedback}</p>}
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
-                  type="button"
-                  onClick={handleVitalSubmit}
+                  type="submit"
+                  className="workspace-primary"
                   disabled={submitting}
-                  style={{ 
-                    fontSize: '13px', 
-                    fontWeight: '500', 
-                    color: 'white', 
-                    background: submitting ? 'var(--text-secondary)' : 'var(--accent)', 
-                    padding: '8px 16px', 
-                    borderRadius: '6px', 
-                    cursor: submitting ? 'default' : 'pointer' 
-                  }}
+                  style={{ fontSize: '14px', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
                 >
-                  {submitting ? 'Adding...' : 'Add Vital'}
+                  {submitting ? 'Adding…' : 'Add vital'}
                 </button>
               </div>
             </form>
