@@ -80,7 +80,7 @@ async function requestAuthorizationHeaders(path: string): Promise<Record<string,
   }
 
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  const isPublicTimeUtility = /^\\/time\\/(?:now|ago|until)(?:\\?|$)/.test(normalized);
+  const isPublicTimeUtility = /^\/time\/(?:now|ago|until)(?:\?|$)/.test(normalized);
   if (isPublicTimeUtility) return authorizationHeaders();
 
   const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
