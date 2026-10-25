@@ -66,7 +66,7 @@ requireText("src/app/workspace/documents/page.tsx", [
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",
   "Your entry was saved, but the full care view could not be refreshed.",
-  "will not ask you to submit the same entry again",
+  "We won’t ask you to submit the same entry again.",
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("The backend confirmed"));
 console.log("PASS: contextual assistance remains routed through the authenticated service with read-only care-record safeguards.");
