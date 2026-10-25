@@ -44,10 +44,13 @@ assert(!capture.includes("QwenAssistPanel"), "Daily Capture must not expose a se
 assert(!capture.includes("Qwen care analysis"), "Daily Capture must not expose the model name.");
 
 requireText("src/components/workflows/Community.tsx", [
-  "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'",
   "postJSON('/community/experience/summary'",
-  "Help reflect on community experiences",
+  "Find experiences like yours",
+  "Community stories",
+  "Community posts never update your Living Care Record automatically.",
 ]);
+assert(!read("src/components/workflows/Community.tsx").includes("QwenAssistPanel"), "Community must not expose internal assistant workflow controls.");
+assert(!read("src/components/workflows/Community.tsx").includes("Qwen support for Community"), "Community must not show internal model branding.");
 requireText("src/components/workflows/AICompanion.tsx", [
   "postJSON('/conversation/message'",
   "Your message couldn’t be sent.",
@@ -74,3 +77,4 @@ console.log("PASS: caregivers cannot select internal assistant workflows in the 
 console.log("PASS: Daily Capture has no separate assistant workflow panel; saved observations remain reviewable.");
 console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
 console.log("PASS: documents and Community use product language rather than internal model labels.");
+console.log("PASS: Community uses searchable stories, simple filters, and no separate model/workflow panel.");
