@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -269,7 +270,7 @@ function AccountCard() {
 
   useEffect(() => { void refreshAccount(); }, [refreshAccount]);
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusy(true);
     setError("");
