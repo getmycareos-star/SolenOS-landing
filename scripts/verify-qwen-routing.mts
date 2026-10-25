@@ -64,11 +64,7 @@ requireText("src/components/workflows/AICompanion.tsx", [
   "postJSON('/conversation/message'",
   "Qwen support for your Living Care Record",
 ]);
-requireText("src/app/workspace/documents/page.tsx", [
-  'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
-  'defaultWorkflow="document"',
-  "Qwen support for Documents",
-]);
+// Document-screen Qwen integration is not mounted in this PR; do not assert it.
 requireText("src/app/workspace/notifications/page.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
   'defaultWorkflow="reminders_notifications"',
@@ -81,7 +77,7 @@ requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("<h3>Care record view unavailable</h3>"));
 
-console.log("PASS: shared Qwen assistance is available in Companion and notifications, with document support where mounted; Community Qwen integration is disabled.");
+console.log("PASS: shared Qwen assistance is available in Companion and notifications; Community Qwen integration is disabled.");
 console.log("PASS: all 30 enabled SolenOS workflow IDs are exposed by the shared Qwen selector; Community is excluded.");
 console.log("PASS: UI requires an actual local-Qwen response and explicitly verifies that assistance is read-only.");
 console.log("PASS: casual greetings are routed to Companion, and confirmed persisted captures never invite duplicate submission because the situation projection is missing.");
