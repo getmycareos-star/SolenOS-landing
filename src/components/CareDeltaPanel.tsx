@@ -97,7 +97,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         }
       })
       .catch(() => {
-        if (!cancelled) setHistoryError("We couldn't load your saved care-change history. Your existing care information hasn't been changed.")
+        if (!cancelled) setHistoryError("We couldn't load earlier care-change comparisons. You can still add a new note; try again to view saved comparisons.")
       })
     return () => { cancelled = true }
   }, [personId])
@@ -171,7 +171,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
           .then((rows) => {
             if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[]);
-            else setHistoryError("Your saved care-change history is still unavailable. Try again shortly.");
+            else setHistoryError("Earlier care-change comparisons are still unavailable. Please try again shortly.");
           })
           .catch(() => setHistoryError("Your saved care-change history is still unavailable. Try again shortly."));
       }} style={{ padding: "8px 12px", minHeight: 40, borderRadius: 8, border: "2px solid var(--solenos-slate, #173f4b)", background: "var(--solenos-slate, #173f4b)", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Try again</button>
