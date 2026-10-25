@@ -232,7 +232,7 @@ export default function Community() {
             </p>
           </div>
           <div aria-label="Community actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 9, flexShrink: 0, width: 'min(100%, 420px)' }}>
-            <button type="button" onClick={() => { setPostType('experience'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'experience'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: '#b9d5b5', color: '#17251c', borderColor: '#b9d5b5', fontWeight: 750, boxShadow: '0 2px 7px rgba(0,0,0,.08)' }}>
+            <button type="button" onClick={() => { setPostType('experience'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'experience'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)', fontWeight: 750, boxShadow: '0 2px 7px rgba(0,0,0,.08)' }}>
               <Sparkles size={18} aria-hidden="true" /> Share what works
             </button>
             <button type="button" onClick={() => { setPostType('question'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'question'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: 'var(--surface)', color: 'var(--text)', borderColor: 'var(--accent)', fontWeight: 750 }}>
@@ -262,7 +262,7 @@ export default function Community() {
         </label>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ ...muted, fontSize: 12 }}>{composerText.length}/5000 · Peer experiences are not medical advice.</span>
-          <button type="submit" aria-label="Send community post" disabled={submitting || !composerText.trim()} style={{ ...baseButton, minHeight: 46, padding: '12px 18px', background: '#b9d5b5', color: '#17251c', borderColor: '#b9d5b5', opacity: submitting || !composerText.trim() ? .55 : 1, whiteSpace: 'nowrap' }}><Send size={16} aria-hidden="true" />{submitting ? 'Sending…' : 'Send post'}</button>
+          <button type="submit" aria-label="Send community post" disabled={submitting || !composerText.trim()} style={{ ...baseButton, minHeight: 46, padding: '12px 18px', background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)', opacity: submitting || !composerText.trim() ? .55 : 1, whiteSpace: 'nowrap' }}><Send size={16} aria-hidden="true" />{submitting ? 'Sending…' : 'Send post'}</button>
         </div>
       </form>}
 
@@ -273,7 +273,7 @@ export default function Community() {
         </div>
         <form onSubmit={findExperiences} style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
           <input aria-label="Search community experiences" value={wisdomQuery} onChange={(event) => setWisdomQuery(event.target.value)} placeholder="e.g. evening restlessness, sleep, wandering" style={{ flex: '1 1 240px', minWidth: 0, minHeight: 44, padding: '10px 13px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', font: 'inherit', fontSize: 14 }} />
-          <button type="submit" disabled={wisdomLoading || !wisdomQuery.trim()} style={{ ...baseButton, background: '#b9d5b5', color: '#17251c', borderColor: '#b9d5b5', opacity: wisdomLoading || !wisdomQuery.trim() ? .55 : 1 }}>{wisdomLoading ? 'Searching…' : 'Find experiences'}</button>
+          <button type="submit" disabled={wisdomLoading || !wisdomQuery.trim()} style={{ ...baseButton, background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)', opacity: wisdomLoading || !wisdomQuery.trim() ? .55 : 1 }}>{wisdomLoading ? 'Searching…' : 'Find experiences'}</button>
         </form>
         {wisdomMessage && <p role="status" style={{ ...muted, margin: 0, fontSize: 13 }}>{wisdomMessage}</p>}
         {wisdomSummary && <div style={{ borderRadius: 12, background: 'var(--accent-soft)', padding: 14, lineHeight: 1.7, fontSize: 14 }}><strong style={{ display: 'block', marginBottom: 5 }}>A summary of shared experiences</strong>{wisdomSummary}</div>}
@@ -316,7 +316,7 @@ export default function Community() {
           <div style={{ width: 54, height: 54, margin: '0 auto 14px', borderRadius: 18, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)' }}><HeartHandshake size={25} /></div>
           <h4 style={{ margin: '0 0 8px', fontSize: 18 }}>{posts.length === 0 && !savedOnly && activeTag === 'All topics' && activeStage === 'all' && !search ? 'Your community starts here' : 'No stories match these filters'}</h4>
           <p style={{ ...muted, maxWidth: 430, margin: '0 auto 18px', lineHeight: 1.7, fontSize: 14 }}>{posts.length === 0 ? 'There are no published posts to show yet. You can be the first to share a helpful moment or ask a question.' : 'Try a different topic or clear your filters to see more shared experiences.'}</p>
-          {posts.length === 0 ? <button type="button" onClick={() => setComposerOpen(true)} style={{ ...baseButton, background: '#b9d5b5', color: '#17251c', borderColor: '#b9d5b5' }}>Share the first experience <ChevronRight size={16} /></button> : <button type="button" onClick={resetFilters} style={baseButton}>Clear filters</button>}
+          {posts.length === 0 ? <button type="button" onClick={() => setComposerOpen(true)} style={{ ...baseButton, background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)' }}>Share the first experience <ChevronRight size={16} /></button> : <button type="button" onClick={resetFilters} style={baseButton}>Clear filters</button>}
         </div>}
 
         {!loading && !loadError && filteredPosts.map((post) => {
