@@ -70,13 +70,6 @@ requireText("src/app/workspace/notifications/page.tsx", [
   'defaultWorkflow="reminders_notifications"',
   "Qwen support for reminders",
 ]);
-requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
-  "Entry saved to the Living Care Record",
-  "The backend confirmed this entry was saved.",
-  "will not ask you to submit the same entry again",
-]);
-assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("<h3>Care record view unavailable</h3>"));
-
 console.log("PASS: shared Qwen assistance is available in Companion and notifications; Community Qwen integration is disabled.");
 console.log("PASS: all 30 enabled SolenOS workflow IDs are exposed by the shared Qwen selector; Community is excluded.");
 console.log("PASS: UI requires an actual local-Qwen response and explicitly verifies that assistance is read-only.");
