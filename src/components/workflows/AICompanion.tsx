@@ -149,9 +149,9 @@ export default function Companion() {
           background: '#fef2f2', border: '2px solid #dc2626',
           borderRadius: '12px', padding: '16px 20px', marginBottom: '16px'
         }}>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: '#dc2626' }}>⚠️ Attention requested</span>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#991b1b' }}>Please check on the person</span>
           <p style={{ fontSize: '12px', color: '#7f1d1d', marginTop: '4px' }}>
-            The safety engine flagged this exchange. Review the conversation and check on the person.
+            Please check on the person now. If anyone is in immediate danger, contact local emergency services.
           </p>
         </div>
       )}
@@ -163,7 +163,7 @@ export default function Companion() {
       }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-            Ask a question or share what is happening. Replies may be unavailable sometimes; your care record is only updated when you choose to save information.
+            Ask a question or share what’s happening. Your care record changes only when you choose to save an update.
           </div>
         )}
         {messages.map((msg, i) => (
