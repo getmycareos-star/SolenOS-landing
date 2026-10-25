@@ -5219,14 +5219,17 @@ input[type="file"] { width: 100%; white-space: normal; }
    Inline white text must never be paired with unresolved accent/trust background tokens. */
 .solenos-shell button[style*="var(--accent)"],
 .solenos-shell button[style*="var(--trust)"],
+.solenos-shell button[style*="background: var(--text-secondary)"],
 .solenos-shell [role="button"][style*="var(--accent)"],
-.solenos-shell [role="button"][style*="var(--trust)"] {
+.solenos-shell [role="button"][style*="var(--trust)"],
+.solenos-shell [role="button"][style*="background: var(--text-secondary)"] {
   background-color: var(--solenos-sage-button) !important;
   border-color: #8eae8a !important;
   color: var(--solenos-button-ink) !important;
 }
 .solenos-shell button[style*="var(--accent)"]:disabled,
-.solenos-shell button[style*="var(--trust)"]:disabled {
+.solenos-shell button[style*="var(--trust)"]:disabled,
+.solenos-shell button[style*="background: var(--text-secondary)"]:disabled {
   background-color: #e8eee9 !important;
   border-color: #aab9ad !important;
   color: #34463a !important;
@@ -5240,8 +5243,10 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-shell .el-button,
 .solenos-shell button[style*="var(--accent)"],
 .solenos-shell button[style*="var(--trust)"],
+.solenos-shell button[style*="background: var(--text-secondary)"],
 .solenos-shell [role="button"][style*="var(--accent)"],
-.solenos-shell [role="button"][style*="var(--trust)"] {
+.solenos-shell [role="button"][style*="var(--trust)"],
+.solenos-shell [role="button"][style*="background: var(--text-secondary)"] {
   min-height: 46px;
   font-weight: 750 !important;
   border: 2px solid #8eae8a !important;
