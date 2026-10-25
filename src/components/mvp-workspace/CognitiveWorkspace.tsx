@@ -697,14 +697,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         } catch {
           /* ignore */
         }
-        // In a full implementation, this would navigate to an archive view.
-        // For MVP, we redirect to /workspace which will show the empty state.
+        // The workspace page shows a recoverable, device-local archived state.
         window.location.href = "/workspace";
         break;
       }
       case "delete": {
         const confirmed = window.confirm(
-          "Delete this care record?\n\nThis will permanently remove all care information from this device. This action cannot be undone.",
+          "Clear this workspace from this device?\n\nThis removes local session and workspace data from this browser. It does not delete care information already stored on SolenOS servers. Continue?",
         );
         if (!confirmed) return;
         try {
