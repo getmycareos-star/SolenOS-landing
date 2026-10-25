@@ -79,7 +79,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
         throw new Error(saved.detail ?? saved.error ?? "The server did not confirm the saved choice.");
       }
       // Only update the visible switch after the server response confirms the persisted value.
-      setDataImprovement(saved.profile.data_improvement_consent);
+      setDataImprovement(enabled);
       setMessage(
         enabled
           ? "Your choice is saved. Feedback you deliberately submit through the improvement route may be reviewed to improve SolenOS."
