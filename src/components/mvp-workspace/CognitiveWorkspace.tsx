@@ -86,7 +86,7 @@ function isCasualConversationOnly(text: string): boolean {
     .replace(/[.!?,;:]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return /^(hi|hello|hey|hiya|how are you|how are you doing|how's it going|hows it going|good morning|good afternoon|good evening|thanks|thank you|thank you so much|good night|bye|goodbye)$/.test(normalized);
+  return /^(hi|hello|hey|hiya|how are you|how are you doing|how are you today|how are you doing today|how's it going|hows it going|what's up|whats up|good morning|good afternoon|good evening|thanks|thank you|thank you so much|good night|bye|goodbye|see you)$/.test(normalized);
 }
 
 /** Build caregiver-facing + LCR display text from typed note and/or ready documents. */
