@@ -95,21 +95,15 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
         }),
       });
 
-      const data = (await safeJson(res)) as { error?: string; detail?: string };
-      if (!res.ok) throw new Error(data.detail ?? data.error ?? "Consent submission failed");
+      const data = (await safeJson(res)) as ConsentStatus & { ok?: boolean; error?: string; detail?: string };
+      if (!res.ok) throw new Error(data.detail ?? data.error ?? "Your privacy acknowledgement could not be saved. Please try again.");
+      if (data.verified !== true || data.required !== false) {
+        throw new Error("SolenOS has not confirmed the required acknowledgement yet. Please try again.");
+      }
 
-      // The successful authenticated POST is the confirmation. Do not immediately
-      // re-read via a potentially stale proxy and turn a saved acknowledgement into
-      // another blocking error screen.
-      setStatus((current) => current ? { ...current, verified: true, required: false } : {
-        verified: true,
-        required: false,
-        terms_version: "2026-10",
-        one_line_agreement: "SolenOS organizes caregiver-reported information and does not replace clinical judgment.",
-        data_improvement_statement: "Data improvement is optional and can be changed later.",
-        no_advertising_statement: "Your care information is not sold or used for advertising.",
-        signup_improvement_copy: "You can help improve SolenOS only if you choose to opt in.",
-      });
+      // The authenticated server response confirms the persisted write. Open immediately
+      // from that confirmation; a second GET must not block the caregiver.
+      setStatus(data);
       setError(null);
       onStatusChange?.("accepted");
       onConsentAccepted?.();
