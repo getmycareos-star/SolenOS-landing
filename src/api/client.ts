@@ -299,6 +299,7 @@ export type AccountCredentials = { email: string; password: string };
 export type AccountRegistration = AccountCredentials & {
   caregiver_name: string;
   care_recipient_name: string;
+  anonymous_access_token?: string;
 };
 
 export async function authenticateAccount(
@@ -308,7 +309,9 @@ export async function authenticateAccount(
   const response = await fetch(resolveApiUrl(`/sessions/${action}`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(action === "register" && typeof window !== "undefined"
+      ? { ...payload, anonymous_access_token: (payload as AccountRegistration).anonymous_access_token ?? window.localStorage.getItem(ANONYMOUS_TOKEN_KEY) ?? undefined }
+      : payload),
   });
   const session = await handleResponse(response) as {
     account: { id: string; email: string };
@@ -316,16 +319,17 @@ export async function authenticateAccount(
     caregiver: AnonymousSession["caregiver"];
     access_token: string;
     expires_at: string;
+    claimed_existing_record?: boolean;
   };
   if (!session.access_token || !session.account?.id || !session.person?.id || !session.caregiver?.id) {
     throw new Error("The server did not return a complete account session.");
   }
   if (typeof window === "undefined") throw new Error("Account sessions require a browser.");
-  // Preserve an existing anonymous capability before switching this browser to an account.
-  // Anonymous records are not silently claimed or discarded by account registration/login.
+  // Preserve an existing anonymous capability when logging into a different account.
+  // Signup may claim it only when the backend verifies that exact bearer token and revokes the old anonymous capabilities.
   const currentToken = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
   const currentAccountId = window.localStorage.getItem("solenos_account_id");
-  if (currentToken && !currentAccountId) {
+  if (currentToken && !currentAccountId && !session.claimed_existing_record) {
     window.localStorage.setItem("solenos_saved_anonymous_session", JSON.stringify({
       token: currentToken,
       personId: window.localStorage.getItem(ANONYMOUS_PERSON_KEY),
