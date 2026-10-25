@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { sanitizeCaregiverErrorMessage } from "../src/lib/mvp-input-architecture/first-input";
 
 const root = process.cwd();
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
@@ -20,6 +21,8 @@ assert.match(companion, /const startNewSession = \(\) => \{[\s\S]*?setRequestErr
 assert.match(companion, /onChange=\{e => \{[\s\S]*?setRequestError\(null\)/);
 assert.match(workspaceComposer, /setRawInput\(value\);\s*setCaregiverError\(null\)/);
 assert.match(workspaceComposer, /setDocuments\(nextDocuments\);\s*setCaregiverError\(null\)/);
+assert.match(sanitizeCaregiverErrorMessage("Situation hydration failed (404)"), /We couldn’t complete that step/);
+assert.match(sanitizeCaregiverErrorMessage("Failed to fetch /api/situation"), /We couldn’t complete that step/);
 
 // Internal evaluation metadata must never be rendered into the caregiver conversation.
 assert.doesNotMatch(companion, /Safety: \{msg\.safety_note\}/);
