@@ -11,14 +11,13 @@ import {
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 
 type Props = {
-  careKey?: string | null;
   compact?: boolean;
 };
 
 /**
  * Always-available improvement signal — not only after AI responses.
  */
-export function HelpImproveSolenos({ careKey, compact }: Props) {
+export function HelpImproveSolenos({ compact }: Props) {
   const [open, setOpen] = useState(false);
   const [option, setOption] = useState("");
   const [note, setNote] = useState("");
@@ -48,12 +47,10 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
         throw new Error("Turn on optional improvement feedback in Privacy settings before sending feedback.");
       }
 
-      const key = careKey?.trim() || "anonymous_feedback";
       const helped = option === "Response was helpful";
       // The backend feedback endpoint currently accepts these as query parameters,
       // not a JSON body. Persist only deliberate feedback after checking opt-in.
       const detail = JSON.stringify({
-        care_key: key,
         helped_understand: helped,
         missed: helped ? undefined : option || undefined,
         expected_understanding: note.trim() || undefined,
@@ -82,7 +79,7 @@ export function HelpImproveSolenos({ careKey, compact }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [careKey, note, option, saving]);
+  }, [note, option, saving]);
 
   if (done) {
     return (
