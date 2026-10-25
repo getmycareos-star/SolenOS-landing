@@ -1064,7 +1064,7 @@ export default function StructuredDailyCapture() {
                   type="text"
                   id="medication-dose"
                   value={medicationForm.dose || ''}
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, dose: e.target.value || null }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, dose: e.target.value || null })); }}
                   placeholder="Enter dose (e.g., 10mg)"
                   style={{ 
                     width: '100%', 
@@ -1084,7 +1084,7 @@ export default function StructuredDailyCapture() {
                 <input
                   type="datetime-local"
                   value={medicationForm.scheduled_for || ''}
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1101,7 +1101,7 @@ export default function StructuredDailyCapture() {
                 <input
                   type="datetime-local"
                   value={medicationForm.administered_at || ''}
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1118,7 +1118,7 @@ export default function StructuredDailyCapture() {
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
               <textarea
                 value={medicationForm.note || ''}
-                onChange={(e) => setMedicationForm(prev => ({ ...prev, note: e.target.value || null }))}
+                onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, note: e.target.value || null })); }}
                 placeholder="Add any notes about the medication"
                 rows={2}
                 style={{ 
