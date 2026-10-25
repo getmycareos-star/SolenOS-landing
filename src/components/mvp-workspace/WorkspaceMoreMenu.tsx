@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/Button";
 export type WorkspaceAction =
   | "share_care_summary"
   | "pin"
+  | "unpin"
   | "archive"
+  | "restore"
   | "delete"
   | "add_to_home";
 
@@ -50,10 +52,22 @@ const MENU_ITEMS: {
     condition: (props) => !props.isPinned && !props.isArchived,
   },
   {
+    id: "unpin",
+    label: "Unpin",
+    icon: Pin,
+    condition: (props) => props.isPinned,
+  },
+  {
     id: "archive",
     label: "Archive",
     icon: Archive,
     condition: (props) => !props.isArchived,
+  },
+  {
+    id: "restore",
+    label: "Restore",
+    icon: Archive,
+    condition: (props) => props.isArchived,
   },
   {
     id: "delete",
