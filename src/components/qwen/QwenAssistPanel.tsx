@@ -149,7 +149,7 @@ export default function QwenAssistPanel({
         </div>
       </div>
 
-      {error && <p role="alert" style={{ color: "var(--error)", fontSize: "12px", marginTop: "10px" }}>{error}</p>}
+      {error && <p role="alert" style={{ color: "#3b2e11", background: "#fff4dc", border: "1px solid #c8a85d", borderRadius: "8px", padding: "10px 12px", fontSize: "14px", lineHeight: 1.5, marginTop: "10px" }}>{error}</p>}
       {reply && (
         <div style={{ marginTop: "12px", border: "1px solid var(--border)", borderRadius: "9px", padding: "12px", background: "var(--bg)" }}>
           <p style={{ fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{reply.reply}</p>
