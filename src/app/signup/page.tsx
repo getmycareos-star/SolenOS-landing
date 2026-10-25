@@ -63,7 +63,7 @@ export default function SignupPage() {
         </form>
         <p className="public-prose" style={{ marginTop: "1.25rem" }}>Already have an account? <Link href="/login">Log in</Link>.</p>
         <p className="public-prose">Prefer not to create an account? <Link href="/start">Continue with the available anonymous option</Link>.</p>
-        <p className="public-prose" style={{ fontSize: ".9rem" }}>Creating an account starts a new care record. Claiming an existing anonymous record is not yet available; keep its current browser session until a safe transfer flow is released.</p>
+        <p className="public-prose" style={{ fontSize: ".9rem" }}>Creating an account starts a separate care record; it does not merge an existing anonymous record. If this browser already has an anonymous session, SolenOS preserves it so you can switch back from Settings → Security.</p>
       </section>
     </PublicShell>
   );
