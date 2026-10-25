@@ -205,11 +205,16 @@ function SecurityCard() {
         if (!cancelled) setStatus("unavailable");
       });
     };
-    window.addEventListener("personIdChanged", syncSession);
+    const onIdentityChanged = () => {
+      // Revocation intentionally clears the token; do not silently bootstrap a replacement session.
+      if (!window.localStorage.getItem("solenos_anonymous_access_token")) return;
+      syncSession();
+    };
+    window.addEventListener("personIdChanged", onIdentityChanged);
     syncSession();
     return () => {
       cancelled = true;
-      window.removeEventListener("personIdChanged", syncSession);
+      window.removeEventListener("personIdChanged", onIdentityChanged);
     };
   }, []);
 
