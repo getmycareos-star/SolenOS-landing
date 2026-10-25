@@ -43,11 +43,11 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
   async function reconcile(input: { content: string; source: string; eventDate: string; evidenceIds?: string[]; sourceEventId?: string }) {
     const scopedPersonId = getPersonId()
     if (!scopedPersonId || scopedPersonId !== personId) {
-      setError('Select an authorized care record before reconciling an event.')
+      setError('Open the care record you want to update, then try again.')
       return
     }
     if (!input.content.trim()) {
-      setError('Add care-event text before running reconciliation.')
+      setError('Add a care update before comparing changes.')
       return
     }
     setBusy(true)
@@ -67,10 +67,10 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         const rows = await getJSON(`/care-delta/runs/${encodeURIComponent(scopedPersonId)}`)
         if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[])
       } catch {
-        setHistoryError('The delta was returned, but saved history could not be refreshed.')
+        setHistoryError('The comparison finished, but earlier comparisons could not be refreshed.')
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The Delta Engine could not reconcile this event. Existing records were not overwritten.')
+      setError('We couldn’t compare this care update right now. Your existing care record has not been changed. Please try again.')
     } finally {
       setBusy(false)
     }
