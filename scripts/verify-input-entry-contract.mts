@@ -143,6 +143,17 @@ assert(community.includes('aria-label="Send community post"'));
 assert(community.includes("Send post"));
 assert(community.includes("onSubmit={submitPost}"));
 assert(community.includes("postJSON('/community'"));
+assert(community.includes("Share what works"));
+assert(community.includes("Ask the community"));
+assert(community.includes(">By tag</h4>"));
+assert(community.includes(">By stage</h4>"));
+for (const tag of ["sundowning", "wandering", "medication", "behavior", "sleep", "safety", "activities", "nutrition"]) {
+  assert(community.includes(`'${tag}'`), `Community must expose the ${tag} topic filter`);
+}
+for (const stage of ["Early stage", "Moderate", "Late", "All stages"]) {
+  assert(community.includes(`label: '${stage}'`), `Community must expose the ${stage} stage filter`);
+}
+
 
 assert(workspace.includes('err.detail.code === "conversation_only"'));
 assert(workspace.includes("/workspace/companion?draft="));
