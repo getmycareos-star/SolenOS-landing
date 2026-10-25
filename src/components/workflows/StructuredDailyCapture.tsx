@@ -157,6 +157,8 @@ export default function StructuredDailyCapture() {
 
   // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
+    setMedicationError(null);
+    setMedicationFeedback(null);
     try {
       const stream = await requestCam();
       if (!stream) throw new Error('Camera access was not granted.');
@@ -213,6 +215,8 @@ export default function StructuredDailyCapture() {
   
   // Handle image upload for medication
   const handleMedicationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMedicationError(null);
+    setMedicationFeedback(null);
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
