@@ -73,32 +73,6 @@ export function PolicySettingsPanel(_props: Props = {}) {
     }
   }
 
-  async function revoke() {
-    setSaving(true);
-    setMessage(null);
-    try {
-      const session = await ensureAnonymousSession();
-      const res = await fetch(apiUrl("/api/v1/consent"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          person_id: session.person.id,
-          caregiver_id: session.caregiver.id,
-          action: "revoke",
-        }),
-      });
-      if (!res.ok) throw new Error("Revoke failed");
-      await load();
-      setMessage("Consent revoked — limited mode active. New care events are blocked.");
-    } catch {
-      setMessage("Could not revoke consent.");
-    } finally {
-      setSaving(false);
-    }
-  }
 
   if (loading) return <section className="policy-settings-panel"><h4>Data &amp; system improvement</h4><p className="panel-muted" role="status">Loading your privacy choice…</p></section>;
 
@@ -110,6 +84,8 @@ export function PolicySettingsPanel(_props: Props = {}) {
       </p>
       {loadError && <p className="panel-muted" role="alert">{loadError} <button type="button" className="workspace-secondary" onClick={() => void load()}>Try again</button></p>}
 
+      {!verified && <p className="panel-muted">Please complete the required privacy acknowledgement before changing this optional preference.</p>}
+      {limitedMode && <p className="panel-muted">Optional system improvement is unavailable while limited privacy mode is active.</p>}
       <label className="consent-checkbox">
         <input
           type="checkbox"
