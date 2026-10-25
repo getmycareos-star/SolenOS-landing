@@ -87,7 +87,6 @@ function NotificationsCard() {
       <div className="mobile-settings-actions">
         <Button variant="secondary" asChild><Link href="/workspace/notifications">View notifications</Link></Button>
       </div>
-      <Link href="/workspace/reminders" className="care-reminders-settings-link">Manage care reminders</Link>
       {render()}
     </section>
   );
