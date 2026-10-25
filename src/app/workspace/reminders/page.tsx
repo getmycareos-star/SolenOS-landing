@@ -73,7 +73,7 @@ export default function CareRemindersPage() {
     void refresh()
       .catch((reason: unknown) => {
         if (!active) return;
-        setError(reason instanceof Error ? reason.message : "Care reminders could not be loaded.");
+        setError("We couldn’t load your reminders. Check your connection and try again.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -106,7 +106,7 @@ export default function CareRemindersPage() {
       setNote("");
       setNotice("Reminder saved to this care record. It will appear in this in-app list; no notification was sent.");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The reminder could not be saved.");
+      setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -121,7 +121,7 @@ export default function CareRemindersPage() {
       await refresh(personId);
       setNotice("Reminder marked complete. No notification was sent.");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The reminder could not be completed.");
+      setError("We couldn’t update this reminder. Please try again.");
     } finally {
       setBusyId("");
     }
@@ -136,7 +136,7 @@ export default function CareRemindersPage() {
       await refresh(personId);
       setNotice("Reminder cancelled. The record keeps its status and attribution.");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The reminder could not be cancelled.");
+      setError("We couldn’t cancel this reminder. Please try again.");
     } finally {
       setBusyId("");
     }
