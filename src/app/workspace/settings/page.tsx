@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { checkAuthState, ensureAnonymousSession, getAnonymousAccessToken, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
+import { checkAuthState, ensureAnonymousSession, getAnonymousAccessToken, getJSON, hasSavedAnonymousSession, putJSON, restoreSavedAnonymousSession, revokeAnonymousSession } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
@@ -192,9 +192,11 @@ function SecurityCard() {
   const [busy, setBusy] = useState(false);
   const [accountEmail, setAccountEmail] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [hasSavedAnonymous, setHasSavedAnonymous] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setHasSavedAnonymous(hasSavedAnonymousSession());
     void checkAuthState().then((result) => {
       if (cancelled) return;
       if (result.authenticated) {
@@ -219,11 +221,25 @@ function SecurityCard() {
       await revokeAnonymousSession();
       setStatus("revoked");
       setExpiresAt("");
-      show("This care-record session was revoked by the backend.", "success");
+      setAccountEmail("");
+      show("This session was revoked by the backend.", "success");
     } catch (e) {
       show(e instanceof Error ? e.message : "The backend could not revoke this session.", "error");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const restoreAnonymous = () => {
+    try {
+      restoreSavedAnonymousSession();
+      setStatus("anonymous");
+      setHasSavedAnonymous(false);
+      setAccountEmail("");
+      setExpiresAt(window.localStorage.getItem("solenos_anonymous_session_expires_at") || "");
+      show("Switched back to the saved anonymous care record.", "success");
+    } catch (e) {
+      show(e instanceof Error ? e.message : "Could not restore the anonymous session.", "error");
     }
   };
 
@@ -244,6 +260,11 @@ function SecurityCard() {
         {(status === "anonymous" || status === "account") && (
           <Button variant="destructive" disabled={busy} loading={busy} onClick={() => void revoke()}>
             {busy ? "Ending session…" : status === "account" ? "Log out" : "Revoke anonymous session"}
+          </Button>
+        )}
+        {status === "account" && hasSavedAnonymous && (
+          <Button variant="secondary" disabled={busy} onClick={restoreAnonymous}>
+            Switch back to saved anonymous record
           </Button>
         )}
       </div>
