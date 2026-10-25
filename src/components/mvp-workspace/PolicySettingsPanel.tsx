@@ -114,7 +114,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
       ) : (
         <p className="panel-muted">Off: your information is not permitted for optional system improvement. Your care record still works for your own care continuity.</p>
       )}
-      {message && <p className="panel-muted" role="status">{message}</p>
+      {message && <p className="panel-muted" role="status">{message}</p>}
     </section>
   );
 }
