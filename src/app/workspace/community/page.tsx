@@ -1,15 +1,23 @@
-import { redirect } from "next/navigation";
-import { FEATURE_FLAGS } from "@/lib/feature-flags";
-import Community from "@/components/workflows/Community";
+"use client";
 
-/**
- * Keep the Community implementation and route in source control, but make it
- * inaccessible while the feature is suspended. Re-enable through the flag.
- */
+import dynamic from "next/dynamic";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
+
+const Community = dynamic(() => import("@/components/workflows/Community"), {
+  ssr: false,
+});
+
 export default function CommunityPage() {
-  if (!FEATURE_FLAGS.community || !FEATURE_FLAGS.professionalCommunity) {
-    redirect("/workspace");
-  }
+  const router = useRouter();
+  const enabled = FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity;
+
+  useEffect(() => {
+    if (!enabled) router.replace("/workspace");
+  }, [enabled, router]);
+
+  if (!enabled) return null;
 
   return (
     <div className="mobile-screen feature-page">
