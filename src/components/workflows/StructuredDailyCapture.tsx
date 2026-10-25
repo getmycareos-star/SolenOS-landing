@@ -1456,7 +1456,7 @@ export default function StructuredDailyCapture() {
                 <select
                   id="capture-scale-type"
                   value={scaleForm.axis}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, axis: e.target.value }))}
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, axis: e.target.value })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1484,7 +1484,7 @@ export default function StructuredDailyCapture() {
                   max={5}
                   value={Number.isFinite(scaleForm.score) ? scaleForm.score : ''}
                   required
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? Number.NaN : Number.parseInt(e.target.value, 10) }))}
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? Number.NaN : Number.parseInt(e.target.value, 10) })); }}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 
@@ -1521,7 +1521,7 @@ export default function StructuredDailyCapture() {
                   id="capture-scale-note"
                   value={scaleForm.note || ''}
                   onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, note: e.target.value || null })); }}
-                  placeholder="Add any notes about the scale observation"
+                  placeholder="Add any notes about this rating"
                   rows={2}
                   style={{ 
                     width: '100%', 
