@@ -96,7 +96,9 @@ export function PolicySettingsPanel(_props: Props = {}) {
         <span>Allow system improvement using my data</span>
       </label>
 
-      {dataImprovement ? (
+      {loadError ? (
+        <p className="panel-muted">We couldn't confirm your current preference, so we won't assume it is on or off. Try loading it again before changing this setting.</p>
+      ) : dataImprovement ? (
         <div className="policy-improvement-details" role="status">
           <h5>What may be used</h5>
           <ul>
