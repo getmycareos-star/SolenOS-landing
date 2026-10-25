@@ -40,7 +40,7 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "audit_review",
   '{loading ? "Working…" : "Send"}',
 ]);
-assert(assist.includes("<select"), "The shared assistance panel must expose enabled workflow selection.");
+assert(!assist.includes("<select"), "The shared assistance panel must not expose internal workflow selection.");
 const enabledWorkflows = [
   "daily_capture", "add_record", "document", "living_care_record",
   "care_history_search", "care_situation_change", "delta_engine",
@@ -119,7 +119,7 @@ requireText("src/api/client.ts", [
   'window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token)',
 ]);
 console.log("PASS: contextual assistance remains routed through the authenticated service with read-only care-record safeguards.");
-console.log("PASS: caregivers can select all 30 enabled SolenOS workflows; Community is excluded.");
+console.log("PASS: Qwen workflow routing stays internal; caregivers are not asked to select workflows.");
 console.log("PASS: Daily Capture has no separate assistant workflow panel; saved observations remain reviewable.");
 console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
 console.log("PASS: documents and Community use product language rather than internal model labels.");
