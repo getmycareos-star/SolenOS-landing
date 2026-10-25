@@ -55,7 +55,7 @@ const MENU_ITEMS: {
     id: "unpin",
     label: "Unpin",
     icon: Pin,
-    condition: (props) => props.isPinned,
+    condition: (props) => Boolean(props.isPinned),
   },
   {
     id: "archive",
@@ -67,7 +67,7 @@ const MENU_ITEMS: {
     id: "restore",
     label: "Restore",
     icon: Archive,
-    condition: (props) => props.isArchived,
+    condition: (props) => Boolean(props.isArchived),
   },
   {
     id: "delete",
