@@ -417,6 +417,7 @@ export async function checkAuthState(): Promise<{ authenticated: boolean; sessio
       sessionInfo: {
         authenticated: true,
         account_id: data.account.id,
+        account_email: data.account.email,
         session_type: "account",
         authorized_person_ids: [data.person_id],
         caregiver_roles: { [data.person_id]: "owner" },
@@ -434,6 +435,7 @@ export async function checkAuthState(): Promise<{ authenticated: boolean; sessio
 export function subscribeToAuthState(
   callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
+  if (typeof window === "undefined") return () => undefined;
   let active = true;
   const refresh = () => {
     void checkAuthState().then(state => {
