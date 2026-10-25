@@ -105,3 +105,37 @@ export async function deleteProfessionalAccount(): Promise<void> {
   window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem(PROFILE_KEY);
 }
+
+
+export type ProfessionalContribution = {
+  id: string;
+  title: string;
+  body: string;
+  contribution_type: string;
+  status: string;
+  created_at: string | null;
+};
+
+export async function getProfessionalContributions(): Promise<ProfessionalContribution[]> {
+  const token = window.localStorage.getItem(TOKEN_KEY);
+  if (!token) throw new Error("Log in with your professional account to continue.");
+  const result = await request<{ contributions: ProfessionalContribution[] }>("/contributions", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!Array.isArray(result.contributions)) throw new Error("The server returned an invalid contributions list.");
+  return result.contributions;
+}
+
+export async function createProfessionalContribution(input: {
+  title: string;
+  body: string;
+  contribution_type: "knowledge" | "service";
+}): Promise<ProfessionalContribution> {
+  const token = window.localStorage.getItem(TOKEN_KEY);
+  if (!token) throw new Error("Log in with your professional account to continue.");
+  return await request<ProfessionalContribution>("/contributions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
