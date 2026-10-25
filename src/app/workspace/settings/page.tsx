@@ -249,7 +249,7 @@ function AccountCard() {
   return (
     <section className="mobile-settings-account-controls">
       <h2 className="mobile-settings-card-title"><UserPlus size={16} aria-hidden /> Account</h2>
-      {!loaded && <p className="mobile-settings-hint" role="status">Checking account status…</p>}
+      {!loaded && <p className="mobile-settings-hint" role="status">Loading account options…</p>}
       {loaded && account && mode === "idle" && (
         <div className="mobile-settings-buttons">
           <Button variant="destructive" onClick={() => { setMode("delete"); setPassword(""); setError(""); setMessage(""); }}>
@@ -279,7 +279,7 @@ function AccountCard() {
             {mode === "delete" ? "Enter your password to confirm" : "Password"}
             <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
-          {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters. Email verification, password reset, and multi-factor authentication are not available yet.</p>}
+          {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
           {mode === "delete" && <p className="mobile-settings-hint">This deletes the email/password account, not the Living Care Record or its care history. Those remain under the current anonymous session.</p>}
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <div className="mobile-settings-actions">
