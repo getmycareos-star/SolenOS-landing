@@ -321,6 +321,18 @@ export async function authenticateAccount(
     throw new Error("The server did not return a complete account session.");
   }
   if (typeof window === "undefined") throw new Error("Account sessions require a browser.");
+  // Preserve an existing anonymous capability before switching this browser to an account.
+  // Anonymous records are not silently claimed or discarded by account registration/login.
+  const currentToken = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
+  const currentAccountId = window.localStorage.getItem("solenos_account_id");
+  if (currentToken && !currentAccountId) {
+    window.localStorage.setItem("solenos_saved_anonymous_session", JSON.stringify({
+      token: currentToken,
+      personId: window.localStorage.getItem(ANONYMOUS_PERSON_KEY),
+      caregiverId: window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY),
+      expiresAt: window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY),
+    }));
+  }
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, session.access_token);
   window.localStorage.setItem(ANONYMOUS_PERSON_KEY, session.person.id);
   window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, session.caregiver.id);
@@ -330,6 +342,30 @@ export async function authenticateAccount(
   setPersonId(session.person.id);
   window.dispatchEvent(new Event("solenosAuthStateChanged"));
   return session;
+}
+
+export function hasSavedAnonymousSession(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(window.localStorage.getItem("solenos_saved_anonymous_session"));
+}
+
+export function restoreSavedAnonymousSession(): void {
+  if (typeof window === "undefined") throw new Error("Session switching requires a browser.");
+  const raw = window.localStorage.getItem("solenos_saved_anonymous_session");
+  if (!raw) throw new Error("No saved anonymous session is available in this browser.");
+  const saved = JSON.parse(raw) as { token?: string; personId?: string | null; caregiverId?: string | null; expiresAt?: string | null };
+  if (!saved.token || !saved.personId || !saved.caregiverId || !saved.expiresAt || Date.parse(saved.expiresAt) <= Date.now()) {
+    throw new Error("The saved anonymous session is incomplete or expired. It cannot be restored safely.");
+  }
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, saved.token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, saved.personId);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, saved.caregiverId);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, saved.expiresAt);
+  window.localStorage.removeItem("solenos_account_id");
+  window.localStorage.removeItem("solenos_account_email");
+  window.localStorage.removeItem("solenos_saved_anonymous_session");
+  setPersonId(saved.personId);
+  window.dispatchEvent(new Event("solenosAuthStateChanged"));
 }
 
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
