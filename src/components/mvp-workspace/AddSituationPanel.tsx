@@ -16,15 +16,8 @@ import Link from "next/link";
 import { extractAttachedDocument } from "./capture/extract-attached";
 import { SnapCameraCapture } from "./capture/SnapCameraCapture";
 import { ScanDocumentCapture } from "./capture/ScanDocumentCapture";
-import { WorkspaceMoreMenu } from "./WorkspaceMoreMenu";
+import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
 import { ShareCareSummaryPanel } from "./share/ShareCareSummaryPanel";
-
-type WorkspaceAction =
-  | "share_care_summary"
-  | "pin"
-  | "archive"
-  | "delete"
-  | "add_to_home";
 
 type Props = {
   value: string;
