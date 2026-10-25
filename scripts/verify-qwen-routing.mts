@@ -42,6 +42,9 @@ requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
   "Qwen support across SolenOS",
   "evidenceIds={documents.map",
   "isCasualConversationOnly(text)",
+  "how are you today",
+  "what's up",
+  "see you",
   "/workspace/companion?draft=",
 ]);
 requireText("src/components/workflows/StructuredDailyCapture.tsx", [
