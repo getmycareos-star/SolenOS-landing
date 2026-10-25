@@ -52,6 +52,7 @@ function WorkspacePageInner() {
   const { runtime, hydrated, entryReady } = useWorkspace();
   const [displayName, setDisplayName] = useState("");
   const [isArchived, setIsArchived] = useState(false);
+  const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const compose = searchParams.get("compose") === "1";
 
   // Read localStorage only after mount — prevents server/client hydration mismatch.
@@ -64,6 +65,8 @@ function WorkspacePageInner() {
     } catch {
       setDisplayName("");
       setIsArchived(false);
+    } finally {
+      setArchiveStateLoaded(true);
     }
   }, []);
 
@@ -74,7 +77,7 @@ function WorkspacePageInner() {
     [router],
   );
 
-  if (!hydrated || !entryReady) {
+  if (!hydrated || !entryReady || !archiveStateLoaded) {
     return <BrandLoading message="Loading your care context…" />;
   }
 
