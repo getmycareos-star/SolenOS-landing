@@ -688,7 +688,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       }
       case "archive": {
         const confirmed = window.confirm(
-          "Archive this care record?\n\nArchived records are hidden from the active view but not deleted. You can recover them later.",
+          "Hide this workspace on this device?\n\nThis only hides the workspace in this browser. It does not delete or server-archive care information, and you can restore the workspace later.",
         );
         if (!confirmed) return;
         setIsArchived(true);
