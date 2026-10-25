@@ -262,9 +262,9 @@ function SecurityCard() {
             {busy ? "Ending session…" : status === "account" ? "Log out" : "Revoke anonymous session"}
           </Button>
         )}
-        {status === "account" && hasSavedAnonymous && (
+        {status !== "checking" && status !== "anonymous" && hasSavedAnonymous && (
           <Button variant="secondary" disabled={busy} onClick={restoreAnonymous}>
-            Switch back to saved anonymous record
+            Restore saved anonymous record
           </Button>
         )}
       </div>
