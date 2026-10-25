@@ -65,7 +65,7 @@ type ShareFormat = "copy" | "print" | "native";
 async function copyTextToClipboard(text: string): Promise<void> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     try {
-      await copyTextToClipboard(text);
+      await navigator.clipboard.writeText(text);
       return;
     } catch {
       // Fall through to the selection-based copy for browsers with restricted clipboard access.
