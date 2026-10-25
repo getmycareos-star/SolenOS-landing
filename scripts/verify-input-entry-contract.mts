@@ -131,8 +131,47 @@ assert(companion.includes("sendMessage(draft)"));
 assert(companion.includes("postJSON('/conversation/message'"));
 assert(companion.includes("ensureAnonymousSession()"));
 assert(companion.includes("person_id: session.person.id"));
+assert(companion.includes('aria-label="Send a message to Companion"'));
+assert(companion.includes('aria-label="Send message"'));
+assert(companion.includes("void sendMessage()"));
+assert(companion.includes("type=\"submit\""));
+const community = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "Community.tsx"),
+  "utf8",
+);
+assert(community.includes('aria-label="Send community post"'));
+assert(community.includes("Send post"));
+assert(community.includes("onSubmit={submitPost}"));
+assert(community.includes("postJSON('/community'"));
+assert(community.includes("Share what works"));
+assert(community.includes("Ask the community"));
+assert(community.includes(">By tag</h4>"));
+assert(community.includes(">By stage</h4>"));
+for (const tag of ["sundowning", "wandering", "medication", "behavior", "sleep", "safety", "activities", "nutrition"]) {
+  assert(community.includes(`'${tag}'`), `Community must expose the ${tag} topic filter`);
+}
+for (const stage of ["Early stage", "Moderate", "Late", "All stages"]) {
+  assert(community.includes(`label: '${stage}'`), `Community must expose the ${stage} stage filter`);
+}
+
+
 assert(workspace.includes('err.detail.code === "conversation_only"'));
 assert(workspace.includes("/workspace/companion?draft="));
+console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
+console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");
+const companionSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "AICompanion.tsx"), "utf8");
+assert(companionSource.includes("CARE_REVIEW_SIGNAL.test(submittedText)"), "Companion care-related messages must trigger automatic background review");
+assert(companionSource.includes("automatic background review"), "Companion background review must not require a caregiver to select a workflow");
+assert(!companionSource.includes("Compare this report with the Living Care Record"), "Companion must not require manual selection to start care review");
+assert(!companionSource.includes("compareMessageWithRecord"), "Manual-only Companion review trigger must be removed");
+
+assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
+assert(companionSource.includes("setDeltaAutoInput({"), "Companion must enqueue the review through the existing Delta panel");
+assert(companionSource.includes("written_to_lcr") === false, "Frontend must not claim the background review writes the LCR");
+const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
+assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
+assert(dailyCaptureSource.includes("setDeltaAutoInput({"), "Daily Capture must trigger automatic care-delta reconciliation after a successful save");
+
 console.log("✓ greetings use the server-issued session and Companion endpoint; they are not written as care evidence");
 
 const sot = fs.readFileSync(

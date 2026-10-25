@@ -16,66 +16,79 @@ function requireText(file: string, snippets: string[]): void {
 const assist = read("src/components/qwen/QwenAssistPanel.tsx");
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'postJSON("/assistant/assist"',
-  'getJSON("/assistant/status"',
-  '"local_ollama"',
-  '"ollama_native_http"',
   "result.written_to_lcr !== false",
-  "result.authority !== \"solenos_care_record_and_caregiver\"",
-  "No substitute response was shown.",
-  "appointment",
-  "after_appointment",
-  "handoff",
-  "professional_summary",
-  "open_loops",
-  "two_week_review",
-  "decision_outcome",
-  "medication_day",
-  "living_care_record",
+  'result.authority !== "solenos_care_record_and_caregiver"',
+  "Suggestions are not saved to the Living Care Record automatically.",
+  "What would you like help with?",
+  '{loading ? "Working…" : "Send"}',
 ]);
-
-const statusFunction = assist.slice(assist.indexOf("async function checkQwen"), assist.indexOf("async function askQwen"));
-assert(statusFunction.includes("await ensureAnonymousSession()"), "The care-session-scoped Qwen status route requires a real bearer session.");
-assert(statusFunction.indexOf("await ensureAnonymousSession()") < statusFunction.indexOf('getJSON("/assistant/status"'));
+assert(!assist.includes("<select"), "The shared assistance panel must not expose workflow selection.");
+assert(!assist.includes("Railway-hosted local model"), "Internal runtime details must not be shown.");
+assert(!assist.includes("Check Qwen"), "Internal model status controls must not be shown.");
+assert(!assist.includes("reply.model"), "Provider/model names must not be shown to caregivers.");
 
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
-  "Qwen support across SolenOS",
+  "Help with your care information",
   "evidenceIds={documents.map",
   "isCasualConversationOnly(text)",
-  "how are you today",
-  "what's up",
-  "see you",
   "/workspace/companion?draft=",
 ]);
+const capture = read("src/components/workflows/StructuredDailyCapture.tsx");
 requireText("src/components/workflows/StructuredDailyCapture.tsx", [
-  "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel';",
-  'postJSON(\'/daily/log\'',
-  "Qwen support for Daily Capture",
+  "postJSON('/daily/log'",
   "qwen_extraction_status",
+  "Care information review",
 ]);
+assert(!capture.includes("QwenAssistPanel"), "Daily Capture must not expose a separate assistant workflow panel.");
+assert(!capture.includes("Qwen care analysis"), "Daily Capture must not expose the model name.");
+
 requireText("src/components/workflows/Community.tsx", [
-  "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'",
   "postJSON('/community/experience/summary'",
-  "Qwen support for Community",
+  "Find experiences like yours",
+  "Community stories",
+  "Community posts never update your Living Care Record automatically.",
 ]);
+assert(!read("src/components/workflows/Community.tsx").includes("QwenAssistPanel"), "Community must not expose internal assistant workflow controls.");
+assert(!read("src/components/workflows/Community.tsx").includes("Qwen support for Community"), "Community must not show internal model branding.");
 requireText("src/components/workflows/AICompanion.tsx", [
-  "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'",
   "postJSON('/conversation/message'",
-  "Qwen support for your Living Care Record",
+  "Your message couldn’t be sent.",
+  "{loading ? 'Sending…' : 'Send'}",
 ]);
+const companion = read("src/components/workflows/AICompanion.tsx");
+assert(!companion.includes("QwenAssistPanel"), "Companion must not show a second workflow selector/panel.");
+assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
+assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
+
 requireText("src/app/workspace/documents/page.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
   'defaultWorkflow="document"',
-  "Qwen support for Documents",
+  "Help with your documents",
 ]);
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",
-  "The backend confirmed this entry was saved.",
-  "will not ask you to submit the same entry again",
+  "Your entry was saved, but the full care view could not be refreshed.",
+  "We won’t ask you to submit the same entry again.",
 ]);
-assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("<h3>Care record view unavailable</h3>"));
+assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("The backend confirmed"));
+requireText("src/app/workspace/settings/page.tsx", [
+  "function AccountCard()",
+  'postJSON("/accounts"',
+  'deleteJSON("/accounts/me"',
+  'signInToAccount(email, password)',
+  "Email verification, password reset, and multi-factor authentication are not available yet.",
+]);
+requireText("src/api/client.ts", [
+  'export async function deleteJSON(path: string, body?: unknown)',
+  "export async function signInToAccount(email: string, password: string)",
+  'window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token)',
+]);
+console.log("PASS: contextual assistance remains routed through the authenticated service with read-only care-record safeguards.");
+console.log("PASS: caregivers cannot select internal assistant workflows in the shared panel.");
+console.log("PASS: Daily Capture has no separate assistant workflow panel; saved observations remain reviewable.");
+console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
+console.log("PASS: documents and Community use product language rather than internal model labels.");
+console.log("PASS: Community uses searchable stories, simple filters, and no separate model/workflow panel.");
 
-console.log("PASS: Qwen is routed through authenticated backend support across workspace, documents, Daily Capture, Community, and Companion.");
-console.log("PASS: appointment, after-appointment, handoff, professional summary, open loops, two-week review, decision/outcome, medication observations and LCR are selectable workflows.");
-console.log("PASS: UI requires an actual local-Qwen response and explicitly verifies that assistance is read-only.");
-console.log("PASS: casual greetings are routed to Companion, and confirmed persisted captures never invite duplicate submission because the situation projection is missing.");
+console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");

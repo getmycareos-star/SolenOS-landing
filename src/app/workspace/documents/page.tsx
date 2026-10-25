@@ -106,7 +106,7 @@ export default function DocumentsPage() {
             Documents will appear here as you add them to the care record.
           </p>
           <QwenAssistPanel
-          title="Qwen support for Documents"
+          title="Help with your documents"
           defaultWorkflow="document"
           compact
         />
@@ -132,7 +132,7 @@ export default function DocumentsPage() {
       </div>
 
       <QwenAssistPanel
-        title="Qwen support for Documents"
+        title="Help with your documents"
         defaultWorkflow="document"
         compact
         contextText={preview

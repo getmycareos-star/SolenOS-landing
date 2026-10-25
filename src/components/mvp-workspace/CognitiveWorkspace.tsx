@@ -947,7 +947,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         <>
       <HelpImproveSolenos careKey={caregiverId} compact />
       <QwenAssistPanel
-        title="Qwen support across SolenOS"
+        title="Help with your care information"
         defaultWorkflow="living_care_record"
         contextText={[
           rawInput.trim() ? "Current caregiver input (not necessarily saved): " + rawInput.trim() : "",
@@ -1071,8 +1071,8 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
               </p>
             )}
             {situationResponse.qwen_extraction_status === "available" && situationResponse.qwen_candidates && (
-              <section className="panel panel-response" aria-label="Qwen source review" role="status">
-                <h3>Qwen suggestions — review required</h3>
+              <section className="panel panel-response" aria-label="Suggested observations for review" role="status">
+                <h3>Suggested observations — review required</h3>
                 <p>These suggestions were generated from the submitted source. They are not confirmed facts and were not written to the Living Care Record.</p>
                 {(situationResponse.qwen_candidates.observations ?? []).length > 0 ? (
                   <ul>
@@ -1083,14 +1083,14 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                       </li>
                     ))}
                   </ul>
-                ) : <p>Qwen found no source-grounded observation to suggest for review.</p>}
+                ) : <p>No source-grounded observations are available to suggest for review.</p>}
                 {(situationResponse.qwen_candidates.open_questions ?? []).map((question, index) => (
                   <p key={`${question}-${index}`}>Question for clarification: {question}</p>
                 ))}
               </section>
             )}
             {situationResponse.qwen_extraction_status === "unavailable" && (
-              <p className="workspace-status-warning" role="status">The care entry was saved, but Qwen analysis was unavailable. No AI suggestions were generated and the saved entry was not changed.</p>
+              <p className="workspace-status-warning" role="status">The care entry was saved, but additional suggestions are unavailable right now. The saved entry was not changed.</p>
             )}
             {situationResponse.ok === true && !situationResponse.active_care_situation ? (
               savedEventReceipt ? (
@@ -1098,7 +1098,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                   <h3>{savedEventReceipt.readbackVerified ? "Care entry saved" : "Care entry accepted"}</h3>
                   <p>{savedEventReceipt.readbackVerified
                     ? "The saved event was found on read-back. SolenOS did not infer a separate active care situation from this entry."
-                    : "The backend returned a saved-entry receipt, but a separate read-back could not be verified. Do not submit the same information again; refresh the record to check the entry."}</p>
+                    : "Your entry was saved, but we couldn’t refresh the full record view. Please refresh the record before trying again."}</p>
                   <p><strong>Entry:</strong> {savedEventReceipt.title}</p>
                   <p><strong>Record reference:</strong> {savedEventReceipt.id}</p>
                   {savedEventReceipt.description && <p>{savedEventReceipt.description}</p>}
@@ -1106,7 +1106,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
               ) : (
                 <section className="panel panel-response" role="status" aria-live="polite">
                   <h3>Care record view unavailable</h3>
-                  <p>The server did not return a persisted event receipt or an active care-record view. Do not submit the same information again; refresh the record before retrying.</p>
+                  <p>We couldn’t confirm the saved entry in the care record. Please refresh the record before trying again. Do not submit the same information again yet.</p>
                 </section>
               )
             ) : (

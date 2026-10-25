@@ -274,6 +274,43 @@ export async function patchJSON(path: string, body: unknown) {
 }
 
 
+export async function deleteJSON(path: string, body?: unknown) {
+  const authHeaders = await requestAuthorizationHeaders(path);
+  const res = await fetch(resolveApiUrl(path), {
+    method: "DELETE",
+    headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...authHeaders },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return handleResponse(res);
+}
+
+export type AccountLoginResponse = {
+  account: { id: string; email: string; created_at: string | null };
+  session_id: string;
+  person_id: string;
+  caregiver_id: string;
+  access_token: string;
+  token_type: "Bearer";
+  expires_at: string;
+  expires_in_seconds: number;
+};
+
+/** Sign in through the backend and replace the local anonymous capability with the account's scoped session. */
+export async function signInToAccount(email: string, password: string): Promise<AccountLoginResponse> {
+  const res = await fetch("/api/v1/accounts/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const result = await handleResponse(res) as AccountLoginResponse;
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, result.person_id);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, result.caregiver_id);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
+  setPersonId(result.person_id);
+  return result;
+}
+
 export async function putJSON(path: string, body: unknown) {
   const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetch(resolveApiUrl(path), {

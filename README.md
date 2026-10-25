@@ -1,17 +1,19 @@
 # SolenOS
 
-**A Living Care Record for family caregivers.**
+**A Living Care Record for family caregivers.** The care journey, remembered.
 
 SolenOS helps families preserve care context over time: what happened, what changed, what remains uncertain, and what needs to be clarified next.
 
-## Hosting
+## Architecture and hosting
 
-- Frontend: React + TypeScript + Vite on **Netlify only**.
-- Backend: FastAPI on Railway.
-- Database: PostgreSQL, migrated with Alembic.
-- Vercel is not a supported or intended deployment target for SolenOS.
+- **Frontend:** Next.js App Router + React + TypeScript.
+- **Frontend hosting:** Netlify only, using the Netlify Next.js runtime.
+- **Backend:** FastAPI, hosted separately on Railway.
+- **Database:** PostgreSQL, migrated with Alembic.
+- **API boundary:** The Next.js frontend calls the same-origin `/api/v1` proxy configured in `netlify.toml`; it does not connect directly to PostgreSQL.
+- **Vite:** Not the active frontend framework. Historical Vite material, where present in the archive, is not part of the Next.js application.
 
-The Netlify build configuration is in [`netlify.toml`](./netlify.toml). The frontend build command is `npm run build`, and the publish directory is `dist`.
+The active build scripts are `next dev`, `next build`, and `next start`. Netlify's configuration is in `netlify.toml`; do not replace it with a Vite `dist` build.
 
 ## Run locally (PowerShell)
 
@@ -20,18 +22,18 @@ npm ci
 npm run dev
 ```
 
-Vite normally serves the frontend at [http://localhost:5173](http://localhost:5173).
+The Next.js development server normally opens at `http://localhost:3000`.
 
 ## Verify a frontend change
 
 ```powershell
 npm run typecheck
-npm test -- --runInBand
+npm test
 npm run build
 ```
 
-Passing these checks does not prove the current Netlify deployment or the live backend is healthy. Check the Netlify deploy's commit and separately verify live API/database behavior.
+Passing repository checks does not prove the current Netlify deployment or live backend is healthy. Check the exact Netlify deploy commit and separately verify live API/database behavior.
 
 ## Product boundaries
 
-SolenOS is not an AI doctor. Document extraction creates source evidence and review-only candidates; it does not silently convert extracted text into verified medical instructions or authoritative care facts. Preserve uncertainty, source attribution, and caregiver review decisions.
+SolenOS is not an AI doctor. Community posts are peer experiences, not authoritative care facts, and do not automatically modify the Living Care Record. Document extraction creates source evidence and review-only candidates; it does not silently convert extracted text into verified medical instructions or authoritative care facts. Preserve uncertainty, source attribution, and caregiver review decisions.
