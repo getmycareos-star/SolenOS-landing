@@ -4835,7 +4835,9 @@ input[type="file"] { width: 100%; white-space: normal; }
   border: 1px solid #c7d2ca !important;
   border-radius: 10px !important;
   background: #fff !important;
-  color: #ffffff !important;
+  color: #172b35 !important;
+  caret-color: #172b35;
+  -webkit-text-fill-color: #172b35;
   font-size: 1rem !important;
   line-height: 1.45;
 }
