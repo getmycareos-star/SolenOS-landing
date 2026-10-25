@@ -5173,11 +5173,11 @@ input[type="file"] { width: 100%; white-space: normal; }
 
 
 
-/* UI reliability fix — explicit contrast for custom inline-style workflows and Settings account actions. */
+/* UI reliability fix — established sage controls with dark, readable text. */
 :root {
-  --solenos-sage-button: var(--care-accent);
-  --solenos-sage-button-hover: var(--solenos-slate);
-  --solenos-button-ink: #ffffff;
+  --solenos-sage-button: #b9d5b5;
+  --solenos-sage-button-hover: #a8c9a3;
+  --solenos-button-ink: #17251c;
 }
 .solenos-btn--primary,
 .workspace-primary,
@@ -5221,15 +5221,15 @@ button[style*="var(--accent)"],
 button[style*="var(--trust)"],
 [role="button"][style*="var(--accent)"],
 [role="button"][style*="var(--trust)"] {
-  background-color: var(--solenos-slate) !important;
-  border-color: var(--solenos-slate) !important;
-  color: #ffffff !important;
+  background-color: var(--solenos-sage-button) !important;
+  border-color: #8eae8a !important;
+  color: var(--solenos-button-ink) !important;
 }
 button[style*="var(--accent)"]:disabled,
 button[style*="var(--trust)"]:disabled {
-  background-color: #e8eef0 !important;
-  border-color: #c6d3d8 !important;
-  color: #40535b !important;
+  background-color: #e8eee9 !important;
+  border-color: #aab9ad !important;
+  color: #34463a !important;
   opacity: 1 !important;
 }
 
@@ -5244,8 +5244,9 @@ button[style*="var(--trust)"],
 [role="button"][style*="var(--trust)"] {
   min-height: 46px;
   font-weight: 750 !important;
-  border: 2px solid var(--solenos-slate) !important;
-  box-shadow: 0 2px 0 rgba(23, 63, 75, 0.18), 0 4px 12px rgba(23, 63, 75, 0.12);
+  border: 2px solid #8eae8a !important;
+  color: var(--solenos-button-ink) !important;
+  box-shadow: 0 2px 0 rgba(23, 43, 32, 0.12), 0 4px 12px rgba(23, 43, 32, 0.08);
   cursor: pointer;
 }
 .solenos-btn--primary:hover:not(:disabled),
@@ -5253,8 +5254,8 @@ button[style*="var(--trust)"],
 .el-button:hover:not(:disabled),
 button[style*="var(--accent)"]:hover:not(:disabled),
 button[style*="var(--trust)"]:hover:not(:disabled) {
-  background-color: #115f5b !important;
-  border-color: #115f5b !important;
+  background-color: var(--solenos-sage-button-hover) !important;
+  border-color: #789775 !important;
   transform: translateY(-1px);
 }
 .solenos-btn--secondary,
