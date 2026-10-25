@@ -8,7 +8,7 @@ export const metadata = {
 export default async function RecoverAccountPage({
   searchParams,
 }: {
-  searchParams: { token?: string } | Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const params = await searchParams;
   return <main style={{ minHeight: "70vh", padding: "48px 18px", background: "#f7faf7" }}>
