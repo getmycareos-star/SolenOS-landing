@@ -690,6 +690,15 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         }
         break;
       }
+      case "unpin": {
+        setIsPinned(false);
+        try {
+          window.localStorage.removeItem("solenos_workspace_pinned");
+        } catch {
+          /* ignore */
+        }
+        break;
+      }
       case "archive": {
         const confirmed = window.confirm(
           "Archive this care record?\n\nArchived records are hidden from the active view but not deleted. You can recover them later.",
@@ -704,6 +713,15 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         // In a full implementation, this would navigate to an archive view.
         // For MVP, we redirect to /workspace which will show the empty state.
         window.location.href = "/workspace";
+        break;
+      }
+      case "restore": {
+        setIsArchived(false);
+        try {
+          window.localStorage.removeItem("solenos_workspace_archived");
+        } catch {
+          /* ignore */
+        }
         break;
       }
       case "delete": {
