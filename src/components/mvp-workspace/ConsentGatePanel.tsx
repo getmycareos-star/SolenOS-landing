@@ -27,11 +27,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [medicalAck, setMedicalAck] = useState(false);
-  const [privacyAck, setPrivacyAck] = useState(false);
-  const [multiCaregiverAck, setMultiCaregiverAck] = useState(false);
-  const [noAdvertisingAck, setNoAdvertisingAck] = useState(false);
+  const [requiredAck, setRequiredAck] = useState(false);
   const [dataImprovement, setDataImprovement] = useState(false);
 
   const loadStatus = useCallback(async () => {
@@ -70,8 +66,9 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
     void loadStatus();
   }, [loadStatus]);
 
-  async function handleAccept(event: React.FormEvent) {
-    event.preventDefault();
+  async function handleAccept(event?: React.FormEvent, accepted = requiredAck) {
+    event?.preventDefault();
+    if (!accepted) return;
     setSubmitting(true);
     setError(null);
 
@@ -86,10 +83,10 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
         body: JSON.stringify({
           person_id: session.person.id,
           caregiver_id: session.caregiver.id,
-          medical_disclaimer_acknowledged: medicalAck,
-          privacy_model_acknowledged: privacyAck,
-          multi_caregiver_acknowledged: multiCaregiverAck,
-          no_advertising_acknowledged: noAdvertisingAck,
+          medical_disclaimer_acknowledged: accepted,
+          privacy_model_acknowledged: accepted,
+          multi_caregiver_acknowledged: accepted,
+          no_advertising_acknowledged: accepted,
           data_improvement_consent: dataImprovement,
           accepted_terms_version: status?.terms_version,
         }),
@@ -115,97 +112,17 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
   }
 
   if (loading) return null;
-  if (!status) {
-    return (
-      <section className="panel consent-gate-panel" aria-label="Consent status unavailable">
-        <h2 className="workspace-headline">We couldn’t confirm your privacy choice</h2>
-        <p role="alert" className="consent-error">
-          {error ?? "We couldn’t confirm your privacy acknowledgement."}
-        </p>
-        <p className="panel-muted">
-          Your workspace remains available for drafting. SolenOS will not save or send a new care update until this check succeeds.
-        </p>
-        <button type="button" className="workspace-secondary" onClick={() => void loadStatus()} disabled={loading}>
-          {loading ? "Checking…" : "Retry privacy check"}
-        </button>
-      </section>
-    );
-  }
+  if (!status) return null;
   if (!status.required) return null;
-
-  const mandatoryReady =
-    termsAccepted && medicalAck && privacyAck && multiCaregiverAck && noAdvertisingAck;
 
   return (
     <section className="panel consent-gate-panel" aria-label="Privacy and consent">
-      <h2 className="workspace-headline">A few confirmations</h2>
+      <h2 className="workspace-headline">One privacy acknowledgement</h2>
       <p className="workspace-lede">
-        We respect your information. Please confirm these basics — you can open Privacy and Terms
-        anytime.
+        Confirm the required terms once. After SolenOS confirms the save, your Living Care Record opens immediately.
       </p>
 
       <form onSubmit={handleAccept} className="consent-gate-form">
-        <label className="consent-checkbox">
-          <input
-            type="checkbox"
-            checked={termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
-          />
-          <span>
-            {status.one_line_agreement}{" "}
-            <Link href="/terms" target="_blank" rel="noopener noreferrer">
-              Terms of Service
-            </Link>
-          </span>
-        </label>
-
-        <label className="consent-checkbox">
-          <input
-            type="checkbox"
-            checked={medicalAck}
-            onChange={(e) => setMedicalAck(e.target.checked)}
-          />
-          <span>I acknowledge SolenOS does not provide medical advice or emergency guidance.</span>
-        </label>
-
-        <label className="consent-checkbox">
-          <input
-            type="checkbox"
-            checked={privacyAck}
-            onChange={(e) => setPrivacyAck(e.target.checked)}
-          />
-          <span>
-            I have read and understand the SolenOS{" "}
-            <Link href="/privacy" target="_blank" rel="noopener noreferrer">
-              Privacy Policy
-            </Link>
-            . The Living Care Record belongs to the person receiving care. Trusted contributors
-            may add to the same Care Reality; SolenOS keeps who contributed for understanding —
-            it is not a family chat.
-          </span>
-        </label>
-
-        <label className="consent-checkbox">
-          <input
-            type="checkbox"
-            checked={multiCaregiverAck}
-            onChange={(e) => setMultiCaregiverAck(e.target.checked)}
-          />
-          <span>
-            I accept that other trusted contributors may add notes to this Care Reality
-            without turning SolenOS into a messaging feed.
-          </span>
-        </label>
-
-        <label className="consent-checkbox">
-          <input
-            type="checkbox"
-            checked={noAdvertisingAck}
-            onChange={(e) => setNoAdvertisingAck(e.target.checked)}
-          />
-          <span>{status.no_advertising_statement}</span>
-        </label>
-
         <fieldset className="consent-optional">
           <legend>Optional — help improve SolenOS</legend>
           <p className="panel-muted">
@@ -242,11 +159,39 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
           </p>
         </fieldset>
 
-        {error && <p className="consent-error">{error}</p>}
+        <label className="consent-checkbox">
+          <input
+            type="checkbox"
+            checked={requiredAck}
+            disabled={submitting}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setRequiredAck(checked);
+              if (checked) void handleAccept(undefined, true);
+              else setError(null);
+            }}
+          />
+          <span>
+            I have read and accept the SolenOS{" "}
+            <Link href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</Link>
+            {" "}and{" "}
+            <Link href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
+            I understand SolenOS does not provide medical or emergency guidance, trusted contributors
+            may add notes to this Care Reality, and my care information is not sold or used for advertising.
+          </span>
+        </label>
 
-        <button type="submit" className="workspace-primary" disabled={!mandatoryReady || submitting}>
-          {submitting ? "Recording consent…" : "Accept and continue"}
-        </button>
+
+
+        {submitting && <p className="panel-muted" role="status">Saving your acknowledgement…</p>}
+        {error && (
+          <>
+            <p role="alert" className="consent-error">{error}</p>
+            <button type="submit" className="workspace-primary" disabled={!requiredAck || submitting}>
+              {submitting ? "Saving…" : "Retry and open Living Care Record"}
+            </button>
+          </>
+        )}
       </form>
     </section>
   );
