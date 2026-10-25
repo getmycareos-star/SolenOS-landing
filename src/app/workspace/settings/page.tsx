@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { ensureAnonymousSession, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
+import { checkAuthState, ensureAnonymousSession, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
@@ -191,11 +191,16 @@ function SecurityCard() {
   const [status, setStatus] = useState<"checking" | "active" | "unavailable" | "revoked">("checking");
   const [busy, setBusy] = useState(false);
   const [expiresAt, setExpiresAt] = useState("");
+  const [accountEmail, setAccountEmail] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    void ensureAnonymousSession().then((session) => {
-      if (!cancelled) { setStatus("active"); setExpiresAt(session.expires_at); }
+    void Promise.all([checkAuthState(), ensureAnonymousSession()]).then(([account, session]) => {
+      if (!cancelled) {
+        setStatus("active");
+        setExpiresAt(session.expires_at);
+        setAccountEmail(account.authenticated ? account.sessionInfo?.account_email || "" : "");
+      }
     }).catch(() => {
       if (!cancelled) setStatus("unavailable");
     });
@@ -208,7 +213,8 @@ function SecurityCard() {
       await revokeAnonymousSession();
       setStatus("revoked");
       setExpiresAt("");
-      show("This care-record session was revoked by the backend.", "success");
+      setAccountEmail("");
+      show(accountEmail ? "Account sessions and linked care sessions were revoked by the backend." : "This care-record session was revoked by the backend.", "success");
     } catch (e) {
       show(e instanceof Error ? e.message : "The backend could not revoke this session.", "error");
     } finally {
@@ -221,18 +227,22 @@ function SecurityCard() {
       <h2 className="mobile-settings-card-title"><Shield size={16} aria-hidden /> Security</h2>
       <p className="mobile-settings-hint" role="status">
         {status === "checking" ? "Checking the backend-issued care-record session…" :
-          status === "active" ? "An active, scoped anonymous bearer session is protecting this care record. This is not an account login." :
+          status === "active" ? (accountEmail ? `Signed in as ${accountEmail}. Care APIs also use a record-scoped bearer capability.` : "An active, scoped anonymous bearer session is protecting this care record. No account login is active.") :
           status === "revoked" ? "This session has been revoked. Care APIs will reject its token." :
           "No valid session could be confirmed. Protected care operations should remain unavailable until the backend confirms a session."}
       </p>
       {expiresAt && <p className="mobile-settings-hint">Session expires: {new Date(expiresAt).toLocaleString()}</p>}
       <div className="mobile-settings-buttons">
         <Button variant="destructive" disabled={status !== "active" || busy} loading={busy} onClick={() => void revoke()}>
-          {busy ? "Revoking…" : "Revoke this session"}
+          {busy ? "Revoking…" : accountEmail ? "Sign out and revoke sessions" : "Revoke this session"}
         </Button>
       </div>
+      <div className="mobile-settings-buttons">
+        <Button variant="secondary" asChild><Link href="/signup">Create account</Link></Button>
+        <Button variant="secondary" asChild><Link href="/login">Sign in</Link></Button>
+      </div>
       <p className="mobile-settings-hint">
-        Account creation, password changes, MFA, and cross-device account recovery are not implemented yet; this screen does not pretend they are enabled.
+        Account sign-up is optional; anonymous care sessions remain available. Email verification, password reset, and MFA are not implemented.
       </p>
       {render()}
     </section>

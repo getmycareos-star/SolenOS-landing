@@ -49,6 +49,17 @@ const ANONYMOUS_PERSON_KEY = "solenos_backend_person_id";
 const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
 
+export type AccountAuthResponse = AnonymousSession & {
+  account: { id: string; email: string; display_name: string };
+  account_token: string;
+  account_expires_at: string;
+  auth_mode: "account";
+};
+
+const ACCOUNT_TOKEN_KEY = "solenos_account_access_token";
+const ACCOUNT_ID_KEY = "solenos_account_id";
+const ACCOUNT_EMAIL_KEY = "solenos_account_email";
+
 export type AnonymousSession = {
   session_id?: string;
   person: { id: string; name: string; date_of_birth: string | null };
@@ -112,8 +123,12 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
   const expiresAt = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
+  const accountToken = window.localStorage.getItem(ACCOUNT_TOKEN_KEY);
 
   if (token) {
+    if (accountToken && (!expiresAt || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt) <= Date.now() + 60_000)) {
+      throw new Error("Your account session is expiring or cannot be verified. Sign in again to restore this care record.");
+    }
     if (expiresAt && Date.parse(expiresAt) <= Date.now()) {
       throw new Error(
         "This anonymous session has expired. SolenOS will not silently create a different care record."
@@ -124,7 +139,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       personId &&
       caregiverId &&
       expiresAt &&
-      Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.now() + (accountToken ? 60_000 : 30 * 24 * 60 * 60 * 1000)
     ) {
       setPersonId(personId);
       return {
@@ -253,6 +268,47 @@ export async function getBlob(path: string): Promise<Blob> {
   return res.blob()
 }
 
+/** Public authentication requests must work before an anonymous care session exists. */
+export async function postPublicJSON(path: string, body: unknown, bearerToken?: string | null) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+  const res = await fetch(resolveApiUrl(path), {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  return handleResponse(res);
+}
+
+export function getAccountToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ACCOUNT_TOKEN_KEY);
+}
+
+export function adoptAccountSession(session: AccountAuthResponse): void {
+  if (typeof window === "undefined") throw new Error("Account sessions can only be stored in the browser.");
+  if (!session.access_token || !session.account_token || !session.person?.id || !session.caregiver?.id) {
+    throw new Error("The backend did not return a complete account and care-record session.");
+  }
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, session.access_token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, session.person.id);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, session.caregiver.id);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, session.expires_at);
+  window.localStorage.setItem(ACCOUNT_TOKEN_KEY, session.account_token);
+  window.localStorage.setItem(ACCOUNT_ID_KEY, session.account.id);
+  window.localStorage.setItem(ACCOUNT_EMAIL_KEY, session.account.email);
+  setPersonId(session.person.id);
+  window.dispatchEvent(new Event("authStateChanged"));
+}
+
+function clearStoredAccountSession(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(ACCOUNT_TOKEN_KEY);
+  window.localStorage.removeItem(ACCOUNT_ID_KEY);
+  window.localStorage.removeItem(ACCOUNT_EMAIL_KEY);
+  window.dispatchEvent(new Event("authStateChanged"));
+}
+
 export async function postJSON(path: string, body: unknown) {
   const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetch(resolveApiUrl(path), {
@@ -284,14 +340,29 @@ export async function putJSON(path: string, body: unknown) {
   return handleResponse(res)
 }
 
-/** Revoke the current server-issued bearer session; never silently replace it. */
+/** Revoke the current server-issued account/care session; never silently replace it. */
 export async function revokeAnonymousSession(): Promise<void> {
-  await postJSON("/sessions/revoke", {});
+  const accountToken = getAccountToken();
+  if (accountToken) {
+    try {
+      const response = await fetch("/api/v1/auth/logout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accountToken}` },
+      });
+      await handleResponse(response);
+    } catch {
+      // If the account token is expired, still attempt to revoke the current care capability.
+      await postJSON("/sessions/revoke", {});
+    }
+  } else {
+    await postJSON("/sessions/revoke", {});
+  }
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
     window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
     window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
     window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
+    clearStoredAccountSession();
     window.dispatchEvent(new Event("personIdChanged"));
   }
 }
@@ -322,6 +393,7 @@ export function getCaregiverId(): string | null {
 export interface AuthSessionInfo {
   authenticated: boolean
   account_id: string | null
+  account_email?: string
   session_type: string
   authorized_person_ids: string[]
   caregiver_roles: Record<string, string>
@@ -332,14 +404,58 @@ export interface AuthSessionInfo {
 }
 
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (typeof window === "undefined") return { authenticated: false, sessionInfo: null };
+  const token = getAccountToken();
+  if (!token) return { authenticated: false, sessionInfo: null };
+  try {
+    const response = await fetch("/api/v1/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      clearStoredAccountSession();
+      return { authenticated: false, sessionInfo: null };
+    }
+    const data = await response.json() as {
+      account: { id: string; email: string; display_name: string };
+      person_id: string;
+      caregiver_id: string;
+      expires_at: string;
+    };
+    return {
+      authenticated: true,
+      sessionInfo: {
+        authenticated: true,
+        account_id: data.account.id,
+        account_email: data.account.email,
+        session_type: "account",
+        authorized_person_ids: [data.person_id],
+        caregiver_roles: { [data.person_id]: "owner" },
+        professional_roles: {},
+        anonymous_session_id: null,
+        expires_at: data.expires_at,
+        mfa_verified: false,
+      },
+    };
+  } catch {
+    return { authenticated: false, sessionInfo: null };
+  }
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
+  callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
-  // No backend session event stream exists yet.
-  return () => undefined
+  if (typeof window === "undefined") return () => undefined;
+  let active = true;
+  const refresh = () => {
+    void checkAuthState().then(state => {
+      if (active) callback(state.authenticated, state.sessionInfo);
+    });
+  };
+  window.addEventListener("authStateChanged", refresh);
+  window.addEventListener("storage", refresh);
+  return () => {
+    active = false;
+    window.removeEventListener("authStateChanged", refresh);
+    window.removeEventListener("storage", refresh);
+  };
 }
 
 export function startTokenRefresh(): void {
