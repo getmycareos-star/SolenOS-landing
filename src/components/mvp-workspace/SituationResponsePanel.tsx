@@ -30,13 +30,59 @@ export function SituationResponsePanel({
   careKey = null,
 }: Props) {
   if (!response.active_care_situation && !response.active_care_situation_turn) {
+    const receipt = response as SituationResponse & {
+      ok?: boolean;
+      care_event_id?: string;
+      evidence_id?: string;
+      message?: string;
+      events?: Array<{ id?: string; title?: string; description?: string | null; occurred_at?: string }>;
+    };
+    const persistedEvent =
+      receipt.ok === true &&
+      Boolean(
+        receipt.care_event_id ||
+        receipt.evidence_id ||
+        receipt.events_created?.some((event) => Boolean(event.id)) ||
+        receipt.events?.some((event) => Boolean(event.id)),
+      );
+    const savedTitle =
+      receipt.events?.find((event) => event.id === receipt.care_event_id)?.title ||
+      receipt.events_created?.find((event) => event.id === receipt.care_event_id)?.raw_input ||
+      rawInput.trim();
+
+    if (persistedEvent) {
+      return (
+        <section className="panel panel-output situation-response" aria-label="Living Care Record" role="status">
+          <div className="workspace-panel-inner lcr-side">
+            <h3>Entry saved to the Living Care Record</h3>
+            <p>
+              The backend confirmed this entry was saved. It did not return the full situation view, so SolenOS will not ask you to submit the same entry again.
+            </p>
+            {savedTitle && <p className="saved-entry-receipt">{savedTitle}</p>}
+            {receipt.care_event_id && (
+              <p className="panel-muted">Saved record reference: {receipt.care_event_id}</p>
+            )}
+            {onContinue && (
+              <button type="button" onClick={onContinue}>
+                Continue
+              </button>
+            )}
+            {onAddUpdate && (
+              <button type="button" onClick={onAddUpdate}>
+                Add another update
+              </button>
+            )}
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className="panel panel-output situation-response" aria-label="Living Care Record" role="status">
         <div className="workspace-panel-inner lcr-side">
-          <h3>Care record view unavailable</h3>
+          <h3>Saved status could not be confirmed</h3>
           <p>
-            SolenOS did not return a persisted Active Care Situation for this response.
-            Refresh the record to verify saved information before submitting the same information again.
+            SolenOS did not receive a persisted care-record view or a saved-entry reference. Your input has not been resubmitted. Refresh the record to check its status before retrying.
           </p>
         </div>
       </section>

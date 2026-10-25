@@ -146,6 +146,7 @@
     "verify:nav-journey": "tsx scripts/verify-nav-journey.mts",
     "verify:mvp-faq": "tsx scripts/verify-mvp-faq.mts",
     "verify:input-entry-contract": "tsx scripts/verify-input-entry-contract.mts",
+    "verify:qwen-routing": "tsx scripts/verify-qwen-routing.mts",
     "verify:mvp-input-experience": "tsx scripts/verify-mvp-input-experience.mts",
     "verify:learning-first-release": "tsx scripts/verify-learning-first-release.mts",
     "verify:dementia-entry-extended": "tsx scripts/verify-dementia-entry-extended.mts",
@@ -233,7 +234,7 @@
     "verify:document-intelligence-care": "tsx scripts/verify-document-intelligence-care.mts",
     "verify:document-intelligence-quality": "tsx scripts/verify-document-intelligence-quality.mts",
     "typecheck": "tsc --noEmit",
-    "test": "npm run verify:care-identity && npm run verify:return-continuity && npm run verify:illustration-vs-implementation"
+    "test": "npm run verify:care-identity && npm run verify:return-continuity && npm run verify:illustration-vs-implementation && npm run verify:qwen-routing"
   },
   "dependencies": {
     "@aws-sdk/client-polly": "^3.1100.0",

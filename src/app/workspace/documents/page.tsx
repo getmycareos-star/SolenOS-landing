@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { SituationDocument } from "@/lib/ui-runtime";
+import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 
 const SOURCE_LABELS: Record<string, string> = {
   uploaded: "Uploaded",
@@ -104,7 +105,12 @@ export default function DocumentsPage() {
           <p className="mobile-empty-body">
             Documents will appear here as you add them to the care record.
           </p>
-          <div className="mobile-empty-actions">
+          <QwenAssistPanel
+          title="Qwen support for Documents"
+          defaultWorkflow="document"
+          compact
+        />
+        <div className="mobile-empty-actions">
             <Button
               variant="primary"
               onClick={() => router.push("/workspace?compose=1")}
@@ -124,6 +130,15 @@ export default function DocumentsPage() {
         <h1>Documents</h1>
         <p>Uploaded, scanned, and captured documents in the record.</p>
       </div>
+
+      <QwenAssistPanel
+        title="Qwen support for Documents"
+        defaultWorkflow="document"
+        compact
+        contextText={preview
+          ? "Selected document title: " + preview.title + "\nSituation: " + preview.situationTitle + "\nAvailable document summary: " + (preview.summary || "No summary is available in this view.")
+          : documents.map((doc) => "Document: " + doc.title + " · situation: " + doc.situationTitle + " · summary: " + (doc.summary || "not available")).join("\n")}
+      />
 
       <div className="mobile-documents">
         {documents.map((doc) => {
