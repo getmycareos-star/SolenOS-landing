@@ -199,11 +199,7 @@ export default function Companion() {
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: msg.role === 'user' ? 'right' : 'left', marginTop: '4px' }}>
               {msg.role === 'user' ? 'You' : 'SolenOS'} · {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
-            {msg.role === 'user' && <button
-              type="button"
-              onClick={() => compareMessageWithRecord(msg.text)}
-              style={{ marginTop: 5, fontSize: 11, color: 'var(--text-secondary)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 8px', cursor: 'pointer' }}
-            >Compare this report with the Living Care Record</button>}
+
           </div>
         ))}
         <div ref={bottomRef} />
