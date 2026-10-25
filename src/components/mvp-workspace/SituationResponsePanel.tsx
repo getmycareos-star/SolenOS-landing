@@ -56,7 +56,7 @@ export function SituationResponsePanel({
           <div className="workspace-panel-inner lcr-side">
             <h3>Entry saved to the Living Care Record</h3>
             <p>
-              The backend confirmed this entry was saved. It did not return the full situation view, so SolenOS will not ask you to submit the same entry again.
+              Your entry was saved, but the full care view could not be refreshed. We won’t ask you to submit the same entry again.
             </p>
             {savedTitle && <p className="saved-entry-receipt">{savedTitle}</p>}
             {receipt.care_event_id && (
@@ -82,7 +82,7 @@ export function SituationResponsePanel({
         <div className="workspace-panel-inner lcr-side">
           <h3>Saved status could not be confirmed</h3>
           <p>
-            SolenOS did not receive a persisted care-record view or a saved-entry reference. Your input has not been resubmitted. Refresh the record to check its status before retrying.
+            We couldn’t confirm the saved entry from the care record. Your input has not been resubmitted. Refresh the record to check its status before trying again.
           </p>
         </div>
       </section>
