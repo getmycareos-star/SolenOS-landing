@@ -103,6 +103,7 @@ export function PersistedCareOrientation() {
           </div>
           <button type="button" aria-label="Retry saved care record check" onClick={() => setAttempt((value) => value + 1)}>
             <RefreshCw size={16} aria-hidden />
+            <span>Try again</span>
           </button>
         </div>
         <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
@@ -130,6 +131,7 @@ export function PersistedCareOrientation() {
         </div>
         <button type="button" aria-label="Refresh saved care context" onClick={() => setAttempt((value) => value + 1)}>
           <RefreshCw size={16} aria-hidden />
+          <span>Refresh</span>
         </button>
       </div>
 
