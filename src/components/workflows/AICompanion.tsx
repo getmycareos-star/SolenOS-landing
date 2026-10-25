@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Send } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 
@@ -202,32 +203,43 @@ export default function Companion() {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px' }}>
+      <form
+        aria-label="Send a message to Companion"
+        onSubmit={(event) => { event.preventDefault(); void sendMessage() }}
+        style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px', width: '100%', minWidth: 0 }}
+      >
         <textarea
+          aria-label="Your message to Companion"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Type a message (Enter to send, Shift+Enter for new line)..."
+          placeholder="Write your message…"
           disabled={loading}
           rows={Math.max(1, Math.floor(input.length / 50) + 1)}
           style={{
-            flex: 1, padding: '10px 14px', borderRadius: '16px', border: '1px solid var(--border)',
-            background: 'var(--surface)', fontSize: '14px', resize: 'none', outline: 'none',
-            minHeight: '40px', maxHeight: '120px',
+            flex: '1 1 auto', width: '0', minWidth: 0, boxSizing: 'border-box',
+            padding: '10px 14px', borderRadius: '14px', border: '1px solid var(--border)',
+            background: 'var(--surface)', color: 'var(--text)', fontSize: '14px', resize: 'none', outline: 'none',
+            minHeight: '44px', maxHeight: '120px',
           }}
         />
         <button
-          onClick={() => sendMessage()}
+          type="submit"
+          aria-label="Send message"
           disabled={loading || !input.trim()}
           style={{
-            padding: '10px 20px', borderRadius: '16px', border: 'none',
-            background: loading || !input.trim() ? 'var(--text-secondary)' : 'var(--trust)',
-            color: 'white', fontSize: '13px', cursor: loading || !input.trim() ? 'default' : 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            flex: '0 0 auto', minHeight: '44px', padding: '10px 16px', borderRadius: '14px',
+            border: '1px solid var(--trust)', background: 'var(--trust)', color: '#fff',
+            fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap',
+            cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
+            opacity: loading || !input.trim() ? 0.65 : 1,
           }}
         >
-          {loading ? '...' : 'Send'}
+          <Send size={16} aria-hidden="true" />
+          {loading ? 'Sending…' : 'Send'}
         </button>
-      </div>
+      </form>
       <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} />
     </div>
   )
