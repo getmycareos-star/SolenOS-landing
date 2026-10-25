@@ -5211,3 +5211,22 @@ input[type="file"] { width: 100%; white-space: normal; }
   color: #17251c;
   background: #ffffff;
 }
+
+
+/* Catch custom workflow buttons that bypass the shared Button component.
+   Inline white text must never be paired with unresolved accent/trust background tokens. */
+button[style*="var(--accent)"],
+button[style*="var(--trust)"],
+[role="button"][style*="var(--accent)"],
+[role="button"][style*="var(--trust)"] {
+  background-color: #b9d5b5 !important;
+  border-color: #b9d5b5 !important;
+  color: #17251c !important;
+}
+button[style*="var(--accent)"]:disabled,
+button[style*="var(--trust)"]:disabled {
+  background-color: #e2e8e3 !important;
+  border-color: #b7c3b9 !important;
+  color: #39483e !important;
+  opacity: 1 !important;
+}
