@@ -46,7 +46,8 @@ assert.match(dailyCapture, /showPanel=\{false\}/);
 assert.match(dailyCapture, /Added to this daily-care draft/);
 assert.doesNotMatch(dailyCapture, /Unverified extraction/);
 assert.doesNotMatch(dailyCapture, /Not returned by the extractor/);
-assert.doesNotMatch(landingStyles, /\.editorial-landing \.el-button/);
+assert.doesNotMatch(landingStyles, /Strong, high-contrast calls to action/);
+assert.doesNotMatch(landingStyles, /box-shadow: 0 3px 0 rgba\(23, 63, 75, 0\.18\)/);
 assert.doesNotMatch(notifications, /Backend-backed notifications/);
 
 console.log("Caregiver UI contract checks passed.");
