@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { CSSProperties, FormEvent } from "react";
 
 type Mode = "account" | "verify-email" | "reset-password" | "recover-account";
 
@@ -26,7 +27,7 @@ async function post(path: string, body: unknown, bearer?: string) {
   return data;
 }
 
-const fieldStyle: React.CSSProperties = {
+const fieldStyle: CSSProperties = {
   width: "100%", boxSizing: "border-box", border: "1px solid #cbd5cf",
   borderRadius: 10, padding: "12px 14px", fontSize: 16, background: "#fff",
   color: "#17211c", minHeight: 46,
