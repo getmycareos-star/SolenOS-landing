@@ -12,6 +12,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations } from "@/lib/ui-runtime";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
+import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -133,6 +134,7 @@ function WorkspacePageInner() {
         </section>
 
         <PersistedCareOrientation />
+        <QwenAssistPanel defaultWorkflow="living_care_record" title="Qwen support across SolenOS" />
 
         <section className="workspace-entry-actions" aria-label="Care record actions">
           <button type="button" className="workspace-entry-action" onClick={() => router.push("/workspace/daily-care")}>

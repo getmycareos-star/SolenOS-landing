@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { postJSON, getPersonId, getCaregiverId } from '../api/client'
+import { postJSON, getPersonId, getCaregiverId, requestQwenCandidateAnalysis } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
 
 interface CareCaptureProps {
@@ -38,13 +38,27 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       return { caregiverId, personId, rawInput };
     },
     onSuccess: async (data, variables) => {
-      // The backend currently returns a saved situation, not community matches.
-      // Do not call the nonexistent /community/experience endpoint or invent matches.
       setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
+      const savedEventId = typeof data?.care_event_id === 'string'
+        ? data.care_event_id
+        : typeof data?.situation_id === 'string' ? data.situation_id : ''
+      const returnedCandidates = data?.qwen_candidates ?? null
       setQwenAnalysis({
-        status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
-        candidates: data?.qwen_candidates ?? null,
+        status: typeof data?.qwen_extraction_status === 'string'
+          ? data.qwen_extraction_status
+          : returnedCandidates ? 'pending_review' : savedEventId ? 'processing' : 'unavailable',
+        candidates: returnedCandidates,
       })
+      if (savedEventId && !returnedCandidates) {
+        // Analyze only after the durable care save. A Qwen outage never turns
+        // the saved note into a retryable write or a duplicate care event.
+        void requestQwenCandidateAnalysis(savedEventId)
+          .then((analysis) => setQwenAnalysis({
+            status: analysis.qwen_extraction_status,
+            candidates: analysis.qwen_candidates,
+          }))
+          .catch(() => setQwenAnalysis({ status: 'unavailable', candidates: null }))
+      }
       setIdentityError(null)
       setText('')
       onCapture?.(variables.rawInput)
