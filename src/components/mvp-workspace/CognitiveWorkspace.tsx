@@ -341,6 +341,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   }, []);
 
   async function handleAddSituation(provenance: InputProvenance) {
+    if (consentState !== "accepted") {
+      setCaregiverError("Your note is still a draft. Retry the privacy check before saving or sending care information.");
+      return;
+    }
     const readyDocs = documents.filter((d) => d.status === "ready" && (d.extractedText.trim() || d.evidenceId));
     const text = rawInput.trim();
     const sharedDisplay = buildSharedDisplayText(text, readyDocs);
@@ -985,10 +989,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         {IN_APP_IMPROVING_NOTICE}
       </p>
       <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
-      {consentState === "accepted" && (
+      {(consentState === "accepted" || consentState === "unavailable") && (
         <>
       <HelpImproveSolenos careKey={caregiverId} compact />
-      <QwenAssistPanel
+      {consentState === "accepted" && <QwenAssistPanel
         title="Help with your care information"
         defaultWorkflow="living_care_record"
         contextText={[
@@ -999,7 +1003,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           lastSharedDisplay?.trim() ? "Current displayed care context: " + lastSharedDisplay.trim() : "",
         ].filter(Boolean).join("\n\n")}
         evidenceIds={documents.map((document) => document.evidenceId).filter((id): id is string => Boolean(id))}
-      />
+      />}
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
           What you share stays in the Living Care Record for this care journey. It is not sold or used
