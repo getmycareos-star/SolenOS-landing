@@ -248,6 +248,7 @@ function AccountCard() {
   const { show, render } = useToast();
   const [account, setAccount] = useState<{ id: string; email: string; created_at: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [mode, setMode] = useState<"idle" | "create" | "login" | "delete">("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -261,7 +262,9 @@ function AccountCard() {
       const result = await getJSON("/accounts/me") as { account: typeof account };
       setAccount(result.account ?? null);
       setError("");
+      setLoadFailed(false);
     } catch {
+      setLoadFailed(true);
       setError("We couldn’t check account status. Please try again.");
     } finally {
       setLoaded(true);
@@ -309,7 +312,7 @@ function AccountCard() {
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title"><UserPlus size={16} aria-hidden /> Account</h2>
       {!loaded && <p className="mobile-settings-hint" role="status">Checking account status…</p>}
-      {loaded && account && mode === "idle" && (
+      {loaded && !loadFailed && account && mode === "idle" && (
         <>
           <div className="mobile-settings-row">
             <span className="mobile-settings-label">Account email</span>
@@ -323,7 +326,7 @@ function AccountCard() {
           </div>
         </>
       )}
-      {loaded && !account && mode === "idle" && (
+      {loaded && !loadFailed && !account && mode === "idle" && (
         <>
           <p className="mobile-settings-hint">Keep access to this care record with an email and password. Anonymous use remains available; an account is optional.</p>
           <div className="mobile-settings-buttons">
@@ -351,7 +354,7 @@ function AccountCard() {
             {mode === "delete" ? "Enter your password to confirm" : "Password"}
             <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
-          {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters. Password reset and multi-factor authentication are not available yet.</p>}
+          {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters. Email verification, password reset, and multi-factor authentication are not available yet.</p>}
           {mode === "delete" && <p className="mobile-settings-hint">This deletes the email/password account, not the Living Care Record or its care history. Those remain under the current anonymous session.</p>}
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <div className="mobile-settings-actions">
