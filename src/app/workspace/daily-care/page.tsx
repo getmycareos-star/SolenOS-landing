@@ -30,11 +30,7 @@ export default function DailyCarePage() {
       })
       .catch((reason: unknown) => {
         if (!active) return;
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : "Daily care could not be opened. Please try again.",
-        );
+        setError("We couldn’t open daily care. Check your connection and try again.");
       });
     return () => {
       active = false;

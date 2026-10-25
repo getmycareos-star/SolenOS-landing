@@ -7,8 +7,6 @@ import {
   Bell,
   FileText,
   Info,
-  Lock,
-  LogIn,
   Share2,
   Shield,
   Trash2,
@@ -21,7 +19,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
@@ -35,26 +33,24 @@ function NotificationsCard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        await ensureAnonymousSession();
-        const prefs = await getJSON("/notifications/preferences") as {
-          quiet_hours_enabled: boolean; reminders_enabled: boolean;
-        };
-        if (!cancelled) {
-          setQuietHours(prefs.quiet_hours_enabled);
-          setReminders(prefs.reminders_enabled);
-        }
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load backend notification preferences.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const loadPreferences = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await ensureAnonymousSession();
+      const prefs = await getJSON("/notifications/preferences") as {
+        quiet_hours_enabled: boolean; reminders_enabled: boolean;
+      };
+      setQuietHours(prefs.quiet_hours_enabled);
+      setReminders(prefs.reminders_enabled);
+    } catch {
+      setError("We couldn't load your notification settings. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void loadPreferences(); }, [loadPreferences]);
 
   const persist = async (key: "quiet_hours_enabled" | "reminders_enabled", value: boolean) => {
     setSaving(true);
@@ -66,10 +62,10 @@ function NotificationsCard() {
       };
       setQuietHours(result.quiet_hours_enabled);
       setReminders(result.reminders_enabled);
-      show("Notification preferences saved to this care record.", "success");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save notification preferences.");
-      show("Notification preferences were not saved.", "error");
+      show("Notification settings saved.", "success");
+    } catch {
+      setError("We couldn't save your notification settings. Your previous settings are unchanged.");
+      show("Notification settings weren't saved.", "error");
     } finally {
       setSaving(false);
     }
@@ -78,8 +74,11 @@ function NotificationsCard() {
   return (
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title"><Bell size={16} aria-hidden /> Notifications</h2>
-      {loading && <p className="mobile-settings-hint" role="status">Loading preferences from the care backend…</p>}
-      {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
+      {loading && <p className="mobile-settings-hint" role="status">Loading your notification settings…</p>}
+      {error && <div className="mobile-settings-hint" role="alert">
+        <p>{error}</p>
+        <Button variant="secondary" onClick={() => void loadPreferences()} disabled={loading || saving}>Try again</Button>
+      </div>}
       <label className="mobile-settings-row">
         <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Suppress non-emergency reminders. Emergency handling is not disabled by this preference.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("quiet_hours_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
@@ -190,79 +189,13 @@ function ProfileCard() {
   );
 }
 
-/** Security — show actual bearer-session status and allow server-side revocation. */
-function SecurityCard() {
-  const { show, render } = useToast();
-  const [status, setStatus] = useState<"checking" | "active" | "unavailable" | "revoked">("checking");
-  const [busy, setBusy] = useState(false);
-  const [expiresAt, setExpiresAt] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    const syncSession = () => {
-      void ensureAnonymousSession().then((session) => {
-        if (!cancelled) { setStatus("active"); setExpiresAt(session.expires_at); }
-      }).catch(() => {
-        if (!cancelled) setStatus("unavailable");
-      });
-    };
-    const onIdentityChanged = () => {
-      // Revocation intentionally clears the token; do not silently bootstrap a replacement session.
-      if (!window.localStorage.getItem("solenos_anonymous_access_token")) return;
-      syncSession();
-    };
-    window.addEventListener("personIdChanged", onIdentityChanged);
-    syncSession();
-    return () => {
-      cancelled = true;
-      window.removeEventListener("personIdChanged", onIdentityChanged);
-    };
-  }, []);
-
-  const revoke = async () => {
-    setBusy(true);
-    try {
-      await revokeAnonymousSession();
-      setStatus("revoked");
-      setExpiresAt("");
-      show("This care-record session was revoked by the backend.", "success");
-    } catch (e) {
-      show(e instanceof Error ? e.message : "The backend could not revoke this session.", "error");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section className="mobile-settings-card">
-      <h2 className="mobile-settings-card-title"><Shield size={16} aria-hidden /> Security</h2>
-      <p className="mobile-settings-hint" role="status">
-        {status === "checking" ? "Checking the backend-issued care-record session…" :
-          status === "active" ? "An active, scoped anonymous bearer session is protecting this care record. This is not an account login." :
-          status === "revoked" ? "This session has been revoked. Care APIs will reject its token." :
-          "No valid session could be confirmed. Protected care operations should remain unavailable until the backend confirms a session."}
-      </p>
-      {expiresAt && <p className="mobile-settings-hint">Session expires: {new Date(expiresAt).toLocaleString()}</p>}
-      <div className="mobile-settings-buttons">
-        <Button variant="destructive" disabled={status !== "active" || busy} loading={busy} onClick={() => void revoke()}>
-          {busy ? "Revoking…" : "Revoke this session"}
-        </Button>
-      </div>
-      <p className="mobile-settings-hint">
-        Email/password account sign-in is available for this care record. Password reset, multi-factor authentication, and account recovery are not available yet.
-      </p>
-      {render()}
-    </section>
-  );
-}
-
 /** Account controls use the backend and remain scoped to the current care record. */
 function AccountCard() {
   const { show, render } = useToast();
   const [account, setAccount] = useState<{ id: string; email: string; created_at: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [mode, setMode] = useState<"idle" | "create" | "login" | "delete">("idle");
+  const [mode, setMode] = useState<"idle" | "create" | "delete">("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -299,13 +232,6 @@ function AccountCard() {
         setMode("idle");
         setPassword("");
         show("Account created.", "success");
-      } else if (mode === "login") {
-        const result = await signInToAccount(email, password);
-        setAccount(result.account);
-        setMessage("Signed in. This device now has access to the care record linked to your account.");
-        setMode("idle");
-        setPassword("");
-        show("Signed in successfully.", "success");
       } else if (mode === "delete") {
         await deleteJSON("/accounts/me", { password });
         setAccount(null);
@@ -315,49 +241,36 @@ function AccountCard() {
         show("Account deleted. Care history was retained.", "success");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn’t complete that account action. Please try again.");
+      setError("We couldn’t complete that account action. Please check your details and try again.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <section className="mobile-settings-card">
+    <section className="mobile-settings-account-controls">
       <h2 className="mobile-settings-card-title"><UserPlus size={16} aria-hidden /> Account</h2>
-      {!loaded && <p className="mobile-settings-hint" role="status">Checking account status…</p>}
-      {loaded && !loadFailed && account && mode === "idle" && (
-        <>
-          <div className="mobile-settings-row">
-            <span className="mobile-settings-label">Account email</span>
-            <span className="mobile-settings-value">{account.email}</span>
-          </div>
-          <p className="mobile-settings-hint">This account can sign in to the care record linked to it. It does not grant access to other care records.</p>
-          <div className="mobile-settings-buttons">
-            <Button variant="destructive" onClick={() => { setMode("delete"); setPassword(""); setError(""); setMessage(""); }}>
-              <Trash2 size={16} aria-hidden /> Delete account
-            </Button>
-          </div>
-        </>
+      {!loaded && <p className="mobile-settings-hint" role="status">Loading account options…</p>}
+      {loaded && account && mode === "idle" && (
+        <div className="mobile-settings-buttons">
+          <Button variant="destructive" onClick={() => { setMode("delete"); setPassword(""); setError(""); setMessage(""); }}>
+            <Trash2 size={16} aria-hidden /> Delete account
+          </Button>
+        </div>
       )}
-      {loaded && !loadFailed && !account && mode === "idle" && (
-        <>
-          <p className="mobile-settings-hint">Keep access to this care record with an email and password. Anonymous use remains available; an account is optional.</p>
-          <div className="mobile-settings-buttons">
-            <Button variant="primary" onClick={() => { setMode("create"); setError(""); setMessage(""); }}>
-              <UserPlus size={16} aria-hidden /> Create account
-            </Button>
-            <Button variant="secondary" onClick={() => { setMode("login"); setError(""); setMessage(""); }}>
-              <LogIn size={16} aria-hidden /> Sign in
-            </Button>
-          </div>
-        </>
+      {loaded && (!account || loadFailed) && mode === "idle" && (
+        <div className="mobile-settings-buttons">
+          <Button variant="primary" onClick={() => { setMode("create"); setError(""); setMessage(""); }}>
+            <UserPlus size={16} aria-hidden /> Create account
+          </Button>
+        </div>
       )}
       {mode !== "idle" && (
         <form onSubmit={(event) => void submit(event)} style={{ display: "grid", gap: "0.8rem", marginTop: "0.8rem" }}>
           <h3 className="mobile-settings-label" style={{ margin: 0 }}>
-            {mode === "create" ? "Create your account" : mode === "login" ? "Sign in to SolenOS" : "Confirm account deletion"}
+            {mode === "create" ? "Create your account" : "Confirm account deletion"}
           </h3>
-          {mode !== "delete" && (
+          {mode === "create" && (
             <label className="mobile-settings-label" htmlFor="account-email">
               Email address
               <input id="account-email" className="mobile-settings-input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
@@ -367,12 +280,12 @@ function AccountCard() {
             {mode === "delete" ? "Enter your password to confirm" : "Password"}
             <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
-          {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters. Email verification, password reset, and multi-factor authentication are not available yet.</p>}
+          {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
           {mode === "delete" && <p className="mobile-settings-hint">This deletes the email/password account, not the Living Care Record or its care history. Those remain under the current anonymous session.</p>}
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <div className="mobile-settings-actions">
             <Button type="submit" variant={mode === "delete" ? "destructive" : "primary"} loading={busy} disabled={busy}>
-              {busy ? "Please wait…" : mode === "create" ? "Create account" : mode === "login" ? "Sign in" : "Delete account"}
+              {busy ? "Please wait…" : mode === "create" ? "Create account" : "Delete account"}
             </Button>
             <Button type="button" variant="secondary" disabled={busy} onClick={() => { setMode("idle"); setPassword(""); setError(""); }}>Cancel</Button>
           </div>
@@ -539,21 +452,47 @@ function ProductCard() {
   ];
 
   const handleShareSolenos = useCallback(async () => {
+    const url = typeof window !== "undefined" ? window.location.origin : "https://solenosai.netlify.app/";
     const shareData = {
       title: "SolenOS",
       text: "I am using SolenOS to keep care information organized.",
-      url: typeof window !== "undefined" ? window.location.origin : undefined,
+      url,
     };
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        show("Shared ✓", "success");
-      } else {
-        await navigator.clipboard.writeText(shareData.url ?? "https://solenosai.netlify.app/");
-        show("SolenOS link copied", "success");
+      if (typeof navigator.share === "function") {
+        try {
+          await navigator.share(shareData);
+          show("SolenOS shared.", "success");
+          return;
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            show("Sharing cancelled.", "info");
+            return;
+          }
+        }
       }
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(url);
+          show("SolenOS link copied. You can paste it into a message.", "success");
+          return;
+        } catch {
+          // Try the fallback below for browsers that restrict clipboard access.
+        }
+      }
+      const field = document.createElement("textarea");
+      field.value = url;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.appendChild(field);
+      field.select();
+      const copied = document.execCommand("copy");
+      document.body.removeChild(field);
+      if (!copied) throw new Error("Copy failed");
+      show("SolenOS link copied. You can paste it into a message.", "success");
     } catch {
-      show("Could not share", "error");
+      show("We couldn't open sharing or copy the link. Please copy the page address from your browser.", "error");
     }
   }, [show]);
 
@@ -616,12 +555,11 @@ export default function WorkspaceSettingsPage() {
     <div className="mobile-screen">
       <div className="mobile-page-head">
         <h1>Settings</h1>
-        <p>Manage your care record, notifications, security, and privacy.</p>
+        <p>Manage your care record and preferences.</p>
       </div>
       <div className="mobile-settings">
         <ProfileCard />
         <NotificationsCard />
-        <SecurityCard />
         <AccountCard />
         <LegalCard />
         <PrivacyCard />

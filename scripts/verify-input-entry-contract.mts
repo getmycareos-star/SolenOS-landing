@@ -186,9 +186,10 @@ console.log("\nAll input-entry-contract checks passed.");
 
 const settingsPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "settings", "page.tsx"), "utf8");
 assert(settingsPage.includes('putJSON("/notifications/preferences"'));
-assert(settingsPage.includes("revokeAnonymousSession"));
+assert(!settingsPage.includes("revokeAnonymousSession"));
+assert(!settingsPage.includes("SecurityCard"));
 assert(settingsPage.includes('href="/workspace/notifications"'));
 const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "notifications", "page.tsx"), "utf8");
 assert(notificationPage.includes('getJSON("/notifications/unread-count")'));
 assert(notificationPage.includes('patchJSON(`/notifications/${encodeURIComponent(item.id)}/read`, {})'));
-console.log("✓ Security session revocation and notification actions use authenticated backend APIs");
+console.log("✓ Notification actions use authenticated backend APIs; technical security controls stay out of caregiver-facing Settings");

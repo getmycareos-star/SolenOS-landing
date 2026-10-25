@@ -130,11 +130,11 @@ export default function QwenAssistPanel({
           What would you like help with?
           <textarea
             value={question}
-            onChange={(event) => setQuestion(event.target.value)}
+            onChange={(event) => { setQuestion(event.target.value); setError(null); }}
             rows={compact ? 2 : 3}
             maxLength={1800}
             placeholder="Ask a question about the information here…"
-            style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px", background: "var(--bg)", color: "var(--text)", fontSize: "13px", resize: "vertical" }}
+            style={{ width: "100%", boxSizing: "border-box", border: "2px solid #718477", borderRadius: "8px", padding: "10px", background: "#ffffff", color: "#172b35", caretColor: "#172b35", WebkitTextFillColor: "#172b35", fontSize: "16px", resize: "vertical" }}
           />
         </label>
         <div>
@@ -142,23 +142,23 @@ export default function QwenAssistPanel({
             type="button"
             onClick={askQwen}
             disabled={loading || !question.trim()}
-            style={{ border: 0, borderRadius: "8px", padding: "9px 14px", background: loading || !question.trim() ? "var(--text-secondary)" : "var(--accent)", color: "white", fontSize: "13px", cursor: loading || !question.trim() ? "wait" : "pointer" }}
+            style={{ border: "2px solid #8eae8a", borderRadius: "8px", padding: "10px 16px", minHeight: "44px", background: loading || !question.trim() ? "#e8eee9" : "#b9d5b5", color: "#17251c", fontSize: "14px", fontWeight: 750, opacity: 1, cursor: loading || !question.trim() ? "not-allowed" : "pointer" }}
           >
             {loading ? "Working…" : "Send"}
           </button>
         </div>
       </div>
 
-      {error && <p role="alert" style={{ color: "var(--error)", fontSize: "12px", marginTop: "10px" }}>{error}</p>}
+      {error && <p role="alert" style={{ color: "#3b2e11", background: "#fff4dc", border: "1px solid #c8a85d", borderRadius: "8px", padding: "10px 12px", fontSize: "14px", lineHeight: 1.5, marginTop: "10px" }}>{error}</p>}
       {reply && (
         <div style={{ marginTop: "12px", border: "1px solid var(--border)", borderRadius: "9px", padding: "12px", background: "var(--bg)" }}>
           <p style={{ fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{reply.reply}</p>
           <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "10px" }}>
-            Suggestion · Please review before using. Not saved to the Living Care Record.
+            Suggestion · Please review it. This does not change your care record.
           </p>
           {(reply.source_event_ids.length > 0 || reply.source_evidence_ids.length > 0) && (
             <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
-              Context used: {reply.source_event_ids.length} recorded event(s), {reply.source_evidence_ids.length} supplied evidence item(s).
+              Based on {reply.source_event_ids.length} saved care update(s) and {reply.source_evidence_ids.length} attached item(s).
             </p>
           )}
         </div>

@@ -6,7 +6,31 @@ import { useOptimisticMutation } from '@/lib/optimistic';
 import CareDeltaPanel from '@/components/CareDeltaPanel';
 
 const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
+const VITAL_LABELS: Record<string, string> = {
+  bp_systolic: 'Blood pressure — systolic',
+  bp_diastolic: 'Blood pressure — diastolic',
+  heart_rate: 'Heart rate',
+  oxygen_sat: 'Oxygen level',
+  temperature: 'Temperature',
+  weight: 'Weight',
+};
+const VITAL_UNITS: Record<string, string> = {
+  bp_systolic: 'mmHg',
+  bp_diastolic: 'mmHg',
+  heart_rate: 'bpm',
+  oxygen_sat: '%',
+  temperature: '°C',
+  weight: 'kg',
+};
+function toLocalDateTimeInput(date = new Date()): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
 const SCALE_AXES = ['mood', 'agitation', 'wellbeing_stress'];
+const SCALE_LABELS: Record<string, string> = {
+  mood: 'Mood',
+  agitation: 'Agitation',
+  wellbeing_stress: 'Stress and wellbeing',
+};
 
 export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
@@ -18,6 +42,12 @@ export default function StructuredDailyCapture() {
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
   const [deltaToken, setDeltaToken] = useState(0);
+  const [vitalError, setVitalError] = useState<string | null>(null);
+  const [vitalFeedback, setVitalFeedback] = useState<string | null>(null);
+  const [scaleError, setScaleError] = useState<string | null>(null);
+  const [scaleFeedback, setScaleFeedback] = useState<string | null>(null);
+  const [medicationError, setMedicationError] = useState<string | null>(null);
+  const [medicationFeedback, setMedicationFeedback] = useState<string | null>(null);
   
   // Form state
   const [form, setForm] = useState({
@@ -76,8 +106,8 @@ export default function StructuredDailyCapture() {
   }>({
     vital_type: 'bp_systolic',
     value: Number.NaN,
-    measured_at: new Date().toISOString(),
-    unit: null,
+    measured_at: toLocalDateTimeInput(),
+    unit: VITAL_UNITS.bp_systolic,
     note: null,
   });
   
@@ -90,7 +120,7 @@ export default function StructuredDailyCapture() {
   }>({
     axis: 'mood',
     score: Number.NaN,
-    observed_at: new Date().toISOString(),
+    observed_at: toLocalDateTimeInput(),
     note: null,
   });
   
@@ -127,6 +157,8 @@ export default function StructuredDailyCapture() {
 
   // Handle image capture for medication
   const handleMedicationImageCapture = async () => {
+    setMedicationError(null);
+    setMedicationFeedback(null);
     try {
       const stream = await requestCam();
       if (!stream) throw new Error('Camera access was not granted.');
@@ -175,7 +207,7 @@ export default function StructuredDailyCapture() {
       stopCam();
     } catch (err) {
       console.error('Failed to capture image:', err);
-      alert('Failed to capture image: ' + (err instanceof Error ? err.message : String(err)));
+      setMedicationError("We couldn’t take that photo. Check camera permission or choose an image from your device.");
       stopCam();
       setMedicationCompressing(false);
     }
@@ -183,10 +215,12 @@ export default function StructuredDailyCapture() {
   
   // Handle image upload for medication
   const handleMedicationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMedicationError(null);
+    setMedicationFeedback(null);
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
+      setMedicationError('Choose an image file to add a medicine photo.');
       return;
     }
     
@@ -224,16 +258,18 @@ export default function StructuredDailyCapture() {
   // Handle medication form submission
   const handleMedicationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMedicationError(null);
+    setMedicationFeedback(null);
     if (!personId || !caregiverId) {
-      alert('A signed-in caregiver and care record are required to add medication.');
+      setMedicationError('Open your care record first, then try adding this medicine again.');
       return;
     }
     if (!medicationForm.medication_name.trim()) {
-      alert('Medication name is required');
+      setMedicationError('Enter the medicine name.');
       return;
     }
     if (!medicationForm.status) {
-      alert('Select the actual medication status before adding this record.');
+      setMedicationError('Choose what happened with this medicine before adding it.');
       return;
     }
     setMedicationUploading(true);
@@ -299,96 +335,84 @@ export default function StructuredDailyCapture() {
       // Reset image preview
       setMedicationImagePreview(null);
       
-      alert('Medication added successfully');
-    } catch (err: any) {
+      setMedicationFeedback('Added to this daily-care draft. Save the daily care update below to keep it.');
+    } catch {
       setMedicationUploading(false);
       setMedicationCompressing(false);
-      alert(`Failed to add medication: ${err.message}`);
+      setMedicationError("We couldn’t add this medicine. Check the details and try again.");
     } finally {
       setMedicationUploading(false);
     }
   };
   
-  // Handle vitals form submission
-  const handleVitalSubmit = async (e: React.FormEvent) => {
+  // Add a vital to the current daily-capture draft. It is persisted when the
+  // caregiver saves the complete daily capture below.
+  const handleVitalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      const vitalData = {
-        ...vitalForm,
-        measured_at: new Date(vitalForm.measured_at).toISOString(),
-      };
-      
-      // Validate required fields
-      if (!Number.isFinite(vitalData.value) || vitalData.value <= 0) {
-        alert('Please enter a valid value');
-        return;
-      }
-      
-      // Optimistically add to vitals list
-      setForm(prev => ({
-        ...prev,
-        vitals: [...prev.vitals, vitalData]
-      }));
-      
-      // Reset vitals form
-      setVitalForm({
-        vital_type: 'bp_systolic',
-        value: Number.NaN,
-        measured_at: new Date().toISOString(),
-        unit: null,
-        note: null,
-      });
-      
-      alert('Vital added successfully');
-    } catch (err: any) {
-      alert(`Failed to add vital: ${err.message}`);
+    setVitalError(null);
+    setVitalFeedback(null);
+
+    const measuredAt = new Date(vitalForm.measured_at);
+    if (!Number.isFinite(vitalForm.value) || vitalForm.value <= 0) {
+      setVitalError('Enter a value greater than zero.');
+      return;
     }
+    if (Number.isNaN(measuredAt.getTime())) {
+      setVitalError('Choose when this measurement was taken.');
+      return;
+    }
+
+    const vitalData = {
+      ...vitalForm,
+      unit: vitalForm.unit?.trim() || VITAL_UNITS[vitalForm.vital_type] || null,
+      measured_at: measuredAt.toISOString(),
+    };
+
+    setForm(prev => ({ ...prev, vitals: [...prev.vitals, vitalData] }));
+    setVitalForm({
+      vital_type: 'bp_systolic',
+      value: Number.NaN,
+      measured_at: toLocalDateTimeInput(),
+      unit: VITAL_UNITS.bp_systolic,
+      note: null,
+    });
+    setVitalFeedback('Added to this daily-care draft. Save daily capture below to keep it.');
   };
   
-  // Handle scale form submission
-  const handleScaleSubmit = async (e: React.FormEvent) => {
+  // Add a daily rating to the draft; it is saved with the complete daily-care update.
+  const handleScaleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      const scaleData = {
-        ...scaleForm,
-        observed_at: new Date(scaleForm.observed_at).toISOString(),
-      };
-      if (!Number.isInteger(scaleData.score) || scaleData.score < 1 || scaleData.score > 5) {
-        alert('Select the observed score before adding this record.');
-        return;
-      }
-      
-      // Optimistically add to scales list
-      setForm(prev => ({
-        ...prev,
-        scales: [...prev.scales, scaleData]
-      }));
-      
-      // Reset scale form
-      setScaleForm({
-        axis: 'mood',
-        score: Number.NaN,
-        observed_at: new Date().toISOString(),
-        note: null,
-      });
-      
-      alert('Scale added successfully');
-    } catch (err: any) {
-      alert(`Failed to add scale: ${err.message}`);
+    setScaleError(null);
+    setScaleFeedback(null);
+    const observedAt = new Date(scaleForm.observed_at);
+    if (!Number.isInteger(scaleForm.score) || scaleForm.score < 1 || scaleForm.score > 5) {
+      setScaleError('Choose a rating from 1 to 5 before adding it.');
+      return;
     }
+    if (Number.isNaN(observedAt.getTime())) {
+      setScaleError('Choose when this was observed.');
+      return;
+    }
+    const scaleData = { ...scaleForm, observed_at: observedAt.toISOString() };
+    setForm(prev => ({ ...prev, scales: [...prev.scales, scaleData] }));
+    setScaleForm({
+      axis: 'mood',
+      score: Number.NaN,
+      observed_at: toLocalDateTimeInput(),
+      note: null,
+    });
+    setScaleFeedback('Added to this daily-care draft. Save the daily care update below to keep it.');
   };
   
   async function reviewCaptureCandidate(index: number, decision: 'accept' | 'correct' | 'reject') {
     const analysisId = qwenAnalysis?.analysisId;
     if (!analysisId) {
-      setReviewFeedback('The capture is saved, but the backend did not provide a persistent review ID. No review decision was submitted.');
+      setReviewFeedback('We couldn’t save your review just now. Your original care entry is still saved.');
       return;
     }
     const candidate = qwenAnalysis?.candidates?.observations?.[index];
     if (!candidate) {
-      setReviewFeedback('This candidate is no longer available. Refresh the saved capture before reviewing it.');
+      setReviewFeedback('This suggestion is no longer available. Refresh the page and try again.');
       return;
     }
     const draft = reviewDrafts[index] || {
@@ -441,7 +465,7 @@ export default function StructuredDailyCapture() {
         });
       }
     } catch (reason) {
-      setReviewFeedback(reason instanceof Error ? reason.message : 'The review decision could not be saved.');
+      setReviewFeedback('We couldn’t save that review. Please try again.');
     } finally {
       setReviewingCandidate(null);
     }
@@ -540,7 +564,7 @@ export default function StructuredDailyCapture() {
       setVitalForm({
         vital_type: 'bp_systolic',
         value: Number.NaN,
-        measured_at: new Date().toISOString(),
+        measured_at: toLocalDateTimeInput(),
         unit: null,
         note: null,
       });
@@ -549,7 +573,7 @@ export default function StructuredDailyCapture() {
       setScaleForm({
         axis: 'mood',
         score: Number.NaN,
-        observed_at: new Date().toISOString(),
+        observed_at: toLocalDateTimeInput(),
         note: null,
       });
       
@@ -597,7 +621,7 @@ export default function StructuredDailyCapture() {
       
       setSaveError(error);
       setSaved(false);
-      alert(`Failed to save: ${error instanceof Error ? error.message : String(error)}`);
+      // The inline save-error state provides a clear retry path without exposing service details.
     },
     onSettled: () => {
       setSubmitting(false);
@@ -839,9 +863,9 @@ export default function StructuredDailyCapture() {
   return (
     <div className="structured-daily-capture">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>Daily Capture</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>Daily care update</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5', maxWidth: '500px' }}>
-          Record medications, vitals, and scales in a structured format for accurate tracking and reporting.
+          Keep track of medicines, measurements, and daily ratings in one place.
         </p>
       </div>
       
@@ -861,13 +885,13 @@ export default function StructuredDailyCapture() {
       )}
       
       {saved && qwenAnalysis && (
-        <section aria-label="Care information review" style={{
+        <section aria-label="Review suggested care details" style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '8px', padding: '12px 16px', marginBottom: '24px'
         }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Care information review</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Review suggested details</h2>
           <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            These are suggested observations for your review. They do not automatically become established facts in the Living Care Record.
+            These suggestions are not yet part of your care record. Check or correct them before using them to compare care updates.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
@@ -880,12 +904,12 @@ export default function StructuredDailyCapture() {
                 const alreadyReviewed = reviewStatus !== 'pending_review';
                 return (
                   <li key={index} style={{ fontSize: '12px', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
-                    <strong>Candidate {index + 1}</strong>
+                    <strong>Suggested detail {index + 1}</strong>
                     <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
-                      Unverified extraction · {reviewStatus.replace(/_/g, ' ')}
+                      {reviewStatus === 'pending_review' ? 'Please check this detail' : reviewStatus === 'accepted' ? 'Marked for comparison' : reviewStatus === 'corrected' ? 'Correction saved' : reviewStatus === 'rejected' ? 'Dismissed' : 'Reviewed'}
                     </p>
                     <label style={{ display: 'block', marginBottom: '8px' }}>
-                      Subject
+                      What is this about?
                       <input
                         aria-label={`Corrected subject ${index + 1}`}
                         value={draft.subject}
@@ -896,7 +920,7 @@ export default function StructuredDailyCapture() {
                       />
                     </label>
                     <label style={{ display: 'block', marginBottom: '8px' }}>
-                      Observation
+                      What was observed?
                       <textarea
                         aria-label={`Corrected observation ${index + 1}`}
                         value={draft.observation}
@@ -907,14 +931,16 @@ export default function StructuredDailyCapture() {
                         style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '4px', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'var(--text)' }}
                       />
                     </label>
-                    <div style={{ color: 'var(--text-secondary)', marginBottom: '8px', overflowWrap: 'anywhere' }}>
-                      Original source quote: {candidate.source_quote || 'Not returned by the extractor.'}
-                    </div>
+                    {candidate.source_quote && (
+                      <div style={{ color: 'var(--text-secondary)', marginBottom: '8px', overflowWrap: 'anywhere' }}>
+                        From your note: {candidate.source_quote}
+                      </div>
+                    )}
                     {!alreadyReviewed && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Accept for reconciliation</button>
-                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
-                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Reject candidate</button>
+                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Use for care comparison</button>
+                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
+                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Dismiss suggestion</button>
                       </div>
                     )}
                   </li>
@@ -924,7 +950,7 @@ export default function StructuredDailyCapture() {
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               {qwenAnalysis.status === 'pending_review'
-                ? 'No observations could be confidently identified from this entry.'
+                ? 'No additional details stood out in this update. Your original entry is saved.'
                 : 'No additional observations are available. Your saved entry remains recorded.'}
             </p>
           )}
@@ -974,7 +1000,7 @@ export default function StructuredDailyCapture() {
       
       {/* Medications section */}
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medications</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medicines</h2>
         
         {/* Medication form */}
         <div style={{ 
@@ -984,16 +1010,18 @@ export default function StructuredDailyCapture() {
           padding: '16px', 
           marginBottom: '24px' 
         }}>
-          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add Medication</h3>
+          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a medicine</h3>
           
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {medicationError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{medicationError}</p>}
+            {medicationFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{medicationFeedback}</p>}
             <div>
-              <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medication Name</label>
+              <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medicine name</label>
               <input
                 id="capture-medication-name"
                 type="text"
                 value={medicationForm.medication_name}
-                onChange={(e) => setMedicationForm(prev => ({ ...prev, medication_name: e.target.value }))}
+                onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, medication_name: e.target.value })); }}
                 placeholder="Enter medication name"
                 style={{ 
                   width: '100%', 
@@ -1006,14 +1034,14 @@ export default function StructuredDailyCapture() {
               />
             </div>
             
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
                 <label htmlFor="capture-medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
                 <select
                   id="capture-medication-status"
                   value={medicationForm.status}
                   required
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, status: e.target.value })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1023,7 +1051,7 @@ export default function StructuredDailyCapture() {
                     fontSize: '14px' 
                   }}
                 >
-                  <option value="">Select actual status</option>
+                  <option value="">Choose status</option>
                   <option value="given">Given</option>
                   <option value="refused">Refused</option>
                   <option value="missed">Missed</option>
@@ -1036,7 +1064,7 @@ export default function StructuredDailyCapture() {
                   type="text"
                   id="medication-dose"
                   value={medicationForm.dose || ''}
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, dose: e.target.value || null }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, dose: e.target.value || null })); }}
                   placeholder="Enter dose (e.g., 10mg)"
                   style={{ 
                     width: '100%', 
@@ -1056,7 +1084,7 @@ export default function StructuredDailyCapture() {
                 <input
                   type="datetime-local"
                   value={medicationForm.scheduled_for || ''}
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1073,7 +1101,7 @@ export default function StructuredDailyCapture() {
                 <input
                   type="datetime-local"
                   value={medicationForm.administered_at || ''}
-                  onChange={(e) => setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null }))}
+                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1090,7 +1118,7 @@ export default function StructuredDailyCapture() {
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
               <textarea
                 value={medicationForm.note || ''}
-                onChange={(e) => setMedicationForm(prev => ({ ...prev, note: e.target.value || null }))}
+                onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, note: e.target.value || null })); }}
                 placeholder="Add any notes about the medication"
                 rows={2}
                 style={{ 
@@ -1107,7 +1135,7 @@ export default function StructuredDailyCapture() {
             
             {/* Image upload for medication */}
             <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg)', borderRadius: '6px' }}>
-              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Medication Photo (Optional)</h4>
+              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Medicine photo (optional)</h4>
               
               {medicationImagePreview ? (
                 <div>
@@ -1162,7 +1190,7 @@ export default function StructuredDailyCapture() {
                                : 'pointer' 
                       }}
                     >
-                      {medicationUploading ? 'Adding...' : 'Add Medication with Photo'}
+                      {medicationUploading ? 'Adding…' : 'Add medicine with photo'}
                     </button>
                   </div>
                 </div>
@@ -1226,7 +1254,7 @@ export default function StructuredDailyCapture() {
                                : 'pointer' 
                       }}
                     >
-                      {medicationUploading ? 'Adding...' : 'Add Medication'}
+                      {medicationUploading ? 'Adding…' : 'Add medicine'}
                     </button>
                   </div>
                 </div>
@@ -1238,7 +1266,7 @@ export default function StructuredDailyCapture() {
         {/* Display current medications */}
         {form.medications.length > 0 && (
           <div style={{ marginTop: '16px' }}>
-            <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>Current Medications</h3>
+            <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>Medicines in this draft</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {renderMedications()}
             </div>
@@ -1266,7 +1294,18 @@ export default function StructuredDailyCapture() {
               <select
                 id="capture-vital-type"
                 value={vitalForm.vital_type}
-                onChange={(e) => setVitalForm(prev => ({ ...prev, vital_type: e.target.value }))}
+                onChange={(e) => {
+                  const nextType = e.target.value;
+                  setVitalError(null);
+                  setVitalFeedback(null);
+                  setVitalForm(prev => ({
+                    ...prev,
+                    vital_type: nextType,
+                    unit: !prev.unit || Object.values(VITAL_UNITS).includes(prev.unit)
+                      ? VITAL_UNITS[nextType]
+                      : prev.unit,
+                  }));
+                }}
                 style={{ 
                   width: '100%', 
                   padding: '10px 12px', 
@@ -1278,21 +1317,27 @@ export default function StructuredDailyCapture() {
               >
                 {VITAL_TYPES.map(type => (
                   <option key={type} value={type}>
-                    {type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    {VITAL_LABELS[type] ?? type.replace(/_/g, ' ')}
                   </option>
                 ))}
               </select>
             </div>
             
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
                 <label htmlFor="capture-vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
                 <input
                   id="capture-vital-value"
                   type="number"
+                  min="0.01"
+                  step="any"
                   value={Number.isFinite(vitalForm.value) ? vitalForm.value : ''}
                   required
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, value: e.target.value === '' ? Number.NaN : Number(e.target.value) }))}
+                  onChange={(e) => {
+                  setVitalError(null);
+                  setVitalFeedback(null);
+                  setVitalForm(prev => ({ ...prev, value: e.target.value === '' ? Number.NaN : Number(e.target.value) }));
+                }}
                   placeholder="Enter value"
                   style={{ 
                     width: '100%', 
@@ -1310,8 +1355,12 @@ export default function StructuredDailyCapture() {
                 <input
                   type="text"
                   id="vital-unit"
-                  value={vitalForm.unit || ''}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, unit: e.target.value || null }))}
+                  value={vitalForm.unit || VITAL_UNITS[vitalForm.vital_type] || ''}
+                  onChange={(e) => {
+                    setVitalError(null);
+                    setVitalFeedback(null);
+                    setVitalForm(prev => ({ ...prev, unit: e.target.value || null }));
+                  }}
                   placeholder="Enter unit (e.g., mmHg, bpm)"
                   style={{ 
                     width: '100%', 
@@ -1325,11 +1374,16 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured At</label>
+                <label htmlFor="capture-vital-measured-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured at</label>
                 <input
                   type="datetime-local"
+                  id="capture-vital-measured-at"
                   value={vitalForm.measured_at}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, measured_at: e.target.value }))}
+                  onChange={(e) => {
+                    setVitalError(null);
+                    setVitalFeedback(null);
+                    setVitalForm(prev => ({ ...prev, measured_at: e.target.value }));
+                  }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1342,10 +1396,15 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="capture-vital-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
                 <textarea
+                  id="capture-vital-note"
                   value={vitalForm.note || ''}
-                  onChange={(e) => setVitalForm(prev => ({ ...prev, note: e.target.value || null }))}
+                  onChange={(e) => {
+                    setVitalError(null);
+                    setVitalFeedback(null);
+                    setVitalForm(prev => ({ ...prev, note: e.target.value || null }));
+                  }}
                   placeholder="Add any notes about the vital"
                   rows={2}
                   style={{ 
@@ -1361,22 +1420,16 @@ export default function StructuredDailyCapture() {
               </div>
             </div>
               
+              {vitalError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{vitalError}</p>}
+              {vitalFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{vitalFeedback}</p>}
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
-                  type="button"
-                  onClick={handleVitalSubmit}
+                  type="submit"
+                  className="workspace-primary"
                   disabled={submitting}
-                  style={{ 
-                    fontSize: '13px', 
-                    fontWeight: '500', 
-                    color: 'white', 
-                    background: submitting ? 'var(--text-secondary)' : 'var(--accent)', 
-                    padding: '8px 16px', 
-                    borderRadius: '6px', 
-                    cursor: submitting ? 'default' : 'pointer' 
-                  }}
+                  style={{ fontSize: '14px', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
                 >
-                  {submitting ? 'Adding...' : 'Add Vital'}
+                  {submitting ? 'Adding…' : 'Add vital'}
                 </button>
               </div>
             </form>
@@ -1395,7 +1448,7 @@ export default function StructuredDailyCapture() {
         
         {/* Scales section */}
         <section>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Scales</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Daily ratings</h2>
           
           {/* Scales form */}
           <div style={{ 
@@ -1405,15 +1458,15 @@ export default function StructuredDailyCapture() {
             padding: '16px', 
             marginBottom: '24px' 
           }}>
-            <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add Scale Observation</h3>
+            <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a daily rating</h3>
             
             <form onSubmit={handleScaleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label htmlFor="capture-scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scale Type</label>
+                <label htmlFor="capture-scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Rating type</label>
                 <select
                   id="capture-scale-type"
                   value={scaleForm.axis}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, axis: e.target.value }))}
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, axis: e.target.value })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1425,15 +1478,15 @@ export default function StructuredDailyCapture() {
                 >
                   {SCALE_AXES.map(axis => (
                     <option key={axis} value={axis}>
-                      {axis.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      {SCALE_LABELS[axis] ?? axis.replace(/_/g, ' ')}
                     </option>
                   ))}
                 </select>
               </div>
               
-              <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label htmlFor="capture-scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Score (1-5)</label>
+                  <label htmlFor="capture-scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Rating (1–5)</label>
                 <input
                   id="capture-scale-score"
                   type="number"
@@ -1441,7 +1494,7 @@ export default function StructuredDailyCapture() {
                   max={5}
                   value={Number.isFinite(scaleForm.score) ? scaleForm.score : ''}
                   required
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? Number.NaN : Number.parseInt(e.target.value, 10) }))}
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, score: e.target.value === '' ? Number.NaN : Number.parseInt(e.target.value, 10) })); }}
                   placeholder="Enter score"
                   style={{ 
                     width: '100%', 
@@ -1455,11 +1508,12 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed At</label>
+                <label htmlFor="capture-scale-observed-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed at</label>
                 <input
+                  id="capture-scale-observed-at"
                   type="datetime-local"
                   value={scaleForm.observed_at}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, observed_at: e.target.value }))}
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, observed_at: e.target.value })); }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1472,11 +1526,12 @@ export default function StructuredDailyCapture() {
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+                <label htmlFor="capture-scale-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
                 <textarea
+                  id="capture-scale-note"
                   value={scaleForm.note || ''}
-                  onChange={(e) => setScaleForm(prev => ({ ...prev, note: e.target.value || null }))}
-                  placeholder="Add any notes about the scale observation"
+                  onChange={(e) => { setScaleError(null); setScaleFeedback(null); setScaleForm(prev => ({ ...prev, note: e.target.value || null })); }}
+                  placeholder="Add any notes about this rating"
                   rows={2}
                   style={{ 
                     width: '100%', 
@@ -1492,22 +1547,16 @@ export default function StructuredDailyCapture() {
               
             </div>
               
+              {scaleError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{scaleError}</p>}
+              {scaleFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{scaleFeedback}</p>}
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
-                  type="button"
-                  onClick={handleScaleSubmit}
+                  type="submit"
+                  className="workspace-primary"
                   disabled={submitting}
-                  style={{ 
-                    fontSize: '13px', 
-                    fontWeight: '500', 
-                    color: 'white', 
-                    background: submitting ? 'var(--text-secondary)' : 'var(--accent)', 
-                    padding: '8px 16px', 
-                    borderRadius: '6px', 
-                    cursor: submitting ? 'default' : 'pointer' 
-                  }}
+                  style={{ fontSize: '14px', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
                 >
-                  {submitting ? 'Adding...' : 'Add Scale'}
+                  {submitting ? 'Adding…' : 'Add rating'}
                 </button>
               </div>
             </form>
@@ -1569,10 +1618,10 @@ export default function StructuredDailyCapture() {
               cursor: submittingMutation ? 'default' : 'pointer' 
             }}
           >
-            {submittingMutation ? 'Saving...' : 'Save Daily Capture'}
+            {submittingMutation ? 'Saving…' : 'Save daily care update'}
           </button>
         </div>
-      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} />
+      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
       </div>
     );
 }

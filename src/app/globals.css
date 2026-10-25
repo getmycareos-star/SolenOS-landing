@@ -4734,21 +4734,21 @@ img, video, svg { max-width: 100%; }
 
 /* Accessible, calm, responsive care workspace refresh (Next.js). */
 :root {
-  --solenos-sage-button: #b9d5b5;
-  --solenos-sage-button-hover: #a8c9a3;
-  --solenos-button-ink: #17251c;
+  --solenos-sage-button: var(--solenos-slate);
+  --solenos-sage-button-hover: var(--solenos-slate);
+  --solenos-button-ink: #ffffff;
   --text-base: 1.0625rem;
 }
 html { font-size: 100%; }
 body { overflow-x: clip; }
 button, input, select, textarea { font: inherit; }
 :where(button, a, input, select, textarea, [role="button"]):focus-visible {
-  outline: 3px solid #477c56;
+  outline: 3px solid var(--care-accent);
   outline-offset: 3px;
 }
-.solenos-btn--primary,
-.workspace-primary,
-.el-button {
+.solenos-shell .solenos-btn--primary,
+.solenos-shell .workspace-primary,
+.solenos-shell .el-button {
   background: var(--solenos-sage-button) !important;
   border-color: var(--solenos-sage-button) !important;
   color: var(--solenos-button-ink) !important;
@@ -4835,7 +4835,9 @@ input[type="file"] { width: 100%; white-space: normal; }
   border: 1px solid #c7d2ca !important;
   border-radius: 10px !important;
   background: #fff !important;
-  color: #17251c !important;
+  color: #172b35 !important;
+  caret-color: #172b35;
+  -webkit-text-fill-color: #172b35;
   font-size: 1rem !important;
   line-height: 1.45;
 }
@@ -5169,3 +5171,198 @@ input[type="file"] { width: 100%; white-space: normal; }
   outline-offset: 3px;
 }
 
+
+
+/* UI reliability fix — established sage controls with dark, readable text. */
+:root {
+  --solenos-sage-button: #b9d5b5;
+  --solenos-sage-button-hover: #a8c9a3;
+  --solenos-button-ink: #17251c;
+}
+.solenos-shell .solenos-btn--primary,
+.solenos-shell .workspace-primary,
+.solenos-shell .el-button {
+  background-color: var(--solenos-sage-button) !important;
+  border-color: var(--solenos-sage-button) !important;
+  color: var(--solenos-button-ink) !important;
+}
+.solenos-shell .solenos-btn--secondary {
+  background-color: #ffffff !important;
+  border-color: #718477 !important;
+  color: var(--ink) !important;
+}
+.solenos-shell .solenos-btn--destructive {
+  background-color: #8f2525 !important;
+  border-color: #8f2525 !important;
+  color: #ffffff !important;
+}
+.mobile-settings-account-controls {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #d7ded8);
+  min-width: 0;
+}
+.mobile-settings-account-controls .mobile-settings-buttons > button,
+.mobile-settings-account-controls .mobile-settings-actions > button {
+  min-height: 44px;
+  font-weight: 700;
+}
+.mobile-settings-account-controls .mobile-settings-input {
+  color: var(--ink);
+  background: #ffffff;
+}
+
+
+/* Catch custom workflow buttons that bypass the shared Button component.
+   Inline white text must never be paired with unresolved accent/trust background tokens. */
+.solenos-shell button[style*="var(--accent)"],
+.solenos-shell button[style*="var(--trust)"],
+.solenos-shell button[style*="background: var(--text-secondary)"],
+.solenos-shell [role="button"][style*="var(--accent)"],
+.solenos-shell [role="button"][style*="var(--trust)"],
+.solenos-shell [role="button"][style*="background: var(--text-secondary)"] {
+  background-color: var(--solenos-sage-button) !important;
+  border-color: #8eae8a !important;
+  color: var(--solenos-button-ink) !important;
+}
+.solenos-shell button[style*="var(--accent)"]:disabled,
+.solenos-shell button[style*="var(--trust)"]:disabled,
+.solenos-shell button[style*="background: var(--text-secondary)"]:disabled {
+  background-color: #e8eee9 !important;
+  border-color: #aab9ad !important;
+  color: #34463a !important;
+  opacity: 1 !important;
+}
+
+
+/* Final visibility pass: make actions unmistakable without changing the brand palette. */
+.solenos-shell .solenos-btn--primary,
+.solenos-shell .workspace-primary,
+.solenos-shell .el-button,
+.solenos-shell button[style*="var(--accent)"],
+.solenos-shell button[style*="var(--trust)"],
+.solenos-shell button[style*="background: var(--text-secondary)"],
+.solenos-shell [role="button"][style*="var(--accent)"],
+.solenos-shell [role="button"][style*="var(--trust)"],
+.solenos-shell [role="button"][style*="background: var(--text-secondary)"] {
+  min-height: 46px;
+  font-weight: 750 !important;
+  border: 2px solid #8eae8a !important;
+  color: var(--solenos-button-ink) !important;
+  box-shadow: 0 2px 0 rgba(23, 43, 32, 0.12), 0 4px 12px rgba(23, 43, 32, 0.08);
+  cursor: pointer;
+}
+.solenos-shell .solenos-btn--primary:hover:not(:disabled),
+.solenos-shell .workspace-primary:hover:not(:disabled),
+.solenos-shell .el-button:hover:not(:disabled),
+.solenos-shell button[style*="var(--accent)"]:hover:not(:disabled),
+.solenos-shell button[style*="var(--trust)"]:hover:not(:disabled) {
+  background-color: var(--solenos-sage-button-hover) !important;
+  border-color: #789775 !important;
+  transform: translateY(-1px);
+}
+.solenos-shell .solenos-btn--secondary,
+.solenos-shell .mobile-settings-buttons > button:not([data-variant="primary"]):not([data-variant="destructive"]) {
+  border: 2px solid #536c76 !important;
+  font-weight: 700 !important;
+}
+.workspace-entry-action,
+.workspace-secondary-tools > button {
+  border: 2px solid #9aafb6 !important;
+  box-shadow: 0 2px 8px rgba(23, 63, 75, 0.08);
+}
+.solenos-shell button:disabled,
+.solenos-shell [role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+
+/* Readable privacy-choice explanation and clear consent controls. */
+.policy-improvement-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 2px solid #9aafb6;
+  border-radius: 12px;
+  background: #f5f7f8;
+  color: #172b35;
+  line-height: 1.65;
+}
+.policy-improvement-details h5 {
+  margin: .4rem 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #173f4b;
+}
+.policy-improvement-details ul {
+  margin: .35rem 0 1rem;
+  padding-left: 1.25rem;
+}
+.policy-improvement-details li {
+  margin: .35rem 0;
+}
+.policy-settings-panel .consent-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .9rem;
+  border: 2px solid #536c76;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #172b35;
+  font-weight: 750;
+  line-height: 1.5;
+}
+.policy-settings-panel .consent-checkbox input[type="checkbox"] {
+  width: 1.35rem;
+  height: 1.35rem;
+  min-width: 1.35rem;
+  accent-color: #173f4b;
+}
+.policy-settings-panel .consent-checkbox input[type="checkbox"]:focus-visible {
+  outline: 3px solid #173f4b;
+  outline-offset: 3px;
+}
+
+
+.persisted-care-orientation-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 44px;
+  padding: .55rem .8rem;
+  border: 2px solid #173f4b !important;
+  border-radius: 9px;
+  background: #173f4b !important;
+  color: #ffffff !important;
+  font-weight: 750;
+  box-shadow: 0 2px 0 rgba(23, 63, 75, .16);
+}
+.persisted-care-orientation-header button:hover {
+  background: #115f5b !important;
+  border-color: #115f5b !important;
+}
+
+
+/* Daily Capture fields always use readable text on a light input surface. */
+.structured-daily-capture input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.structured-daily-capture select,
+.structured-daily-capture textarea {
+  background-color: #ffffff !important;
+  color: #172b35 !important;
+  caret-color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+  border-color: #718477 !important;
+}
+.structured-daily-capture input::placeholder,
+.structured-daily-capture textarea::placeholder {
+  color: #5f7179 !important;
+  -webkit-text-fill-color: #5f7179 !important;
+  opacity: 1;
+}
+.structured-daily-capture select option {
+  background: #ffffff;
+  color: #172b35;
+}

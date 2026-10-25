@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, Send, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
-import { getJSON, postJSON, getCaregiverId } from '@/api/client'
+import { getJSON, postJSON, ensureAnonymousSession } from '@/api/client'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -94,7 +94,6 @@ export default function Community() {
   const [wisdomSummary, setWisdomSummary] = useState<string | null>(null)
   const [wisdomLoading, setWisdomLoading] = useState(false)
   const [wisdomMessage, setWisdomMessage] = useState('')
-  const caregiverId = getCaregiverId()
 
   async function loadPosts(showLoading = true) {
     if (showLoading) setLoading(true)
@@ -153,13 +152,13 @@ export default function Community() {
 
   async function reactTo(postId: string, reactionType: ReactionType) {
     setActionMessage('')
-    if (!caregiverId) { setActionMessage('Please reopen SolenOS so your caregiver session can be restored before reacting.'); return }
     try {
-      await postJSON(`/community/${encodeURIComponent(postId)}/reactions`, { caregiver_id: caregiverId, reaction_type: reactionType })
+      const session = await ensureAnonymousSession()
+      await postJSON(`/community/${encodeURIComponent(postId)}/reactions`, { caregiver_id: session.caregiver.id, reaction_type: reactionType })
       await loadPosts(false)
       setActionMessage('Your response was saved.')
     } catch {
-      setActionMessage('We couldn’t confirm that response. Please try again.')
+      setActionMessage('We couldn’t save that response. Check your connection and try again.')
     }
   }
 
@@ -167,12 +166,12 @@ export default function Community() {
     event.preventDefault()
     const content = composerText.trim()
     if (!content || submitting) return
-    if (!caregiverId) { setActionMessage('Please reopen SolenOS so your caregiver session can be restored before sharing. Your draft is still here.'); return }
     setSubmitting(true)
     setActionMessage('')
     try {
+      const session = await ensureAnonymousSession()
       await postJSON('/community', {
-        caregiver_id: caregiverId,
+        caregiver_id: session.caregiver.id,
         author_type: 'peer_caregiver',
         author_label: 'Anonymous caregiver',
         post_type: postType,
@@ -232,10 +231,10 @@ export default function Community() {
             </p>
           </div>
           <div aria-label="Community actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 9, flexShrink: 0, width: 'min(100%, 420px)' }}>
-            <button type="button" onClick={() => { setPostType('experience'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'experience'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', fontWeight: 750, boxShadow: '0 2px 7px rgba(0,0,0,.08)' }}>
+            <button type="button" onClick={() => { setPostType('experience'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'experience'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: '#173f4b', color: '#ffffff', borderColor: '#173f4b', fontWeight: 750, boxShadow: '0 2px 7px rgba(0,0,0,.08)' }}>
               <Sparkles size={18} aria-hidden="true" /> Share what works
             </button>
-            <button type="button" onClick={() => { setPostType('question'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'question'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: 'var(--surface)', color: 'var(--text)', borderColor: 'var(--accent)', fontWeight: 750 }}>
+            <button type="button" onClick={() => { setPostType('question'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'question'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: '#ffffff', color: '#172b35', borderColor: '#173f4b', fontWeight: 750 }}>
               <MessageCircle size={18} aria-hidden="true" /> Ask the community
             </button>
           </div>
@@ -258,11 +257,11 @@ export default function Community() {
         </div>
         <label htmlFor="community-post" style={{ display: 'grid', gap: 7, fontSize: 13, fontWeight: 650 }}>
           {postType === 'question' ? 'Your question' : 'Your experience'}
-          <textarea id="community-post" required maxLength={5000} value={composerText} onChange={(event) => setComposerText(event.target.value)} placeholder={postType === 'question' ? 'What has been difficult lately? What have you already tried?' : 'What happened, what did you try, and what seemed to help?'} style={{ width: '100%', minHeight: 130, resize: 'vertical', border: '1px solid var(--border)', borderRadius: 12, padding: 14, background: 'var(--bg)', color: 'var(--text)', font: 'inherit', fontSize: 14, lineHeight: 1.65 }} />
+          <textarea id="community-post" required maxLength={5000} value={composerText} onChange={(event) => setComposerText(event.target.value)} placeholder={postType === 'question' ? 'What has been difficult lately? What have you already tried?' : 'What happened, what did you try, and what seemed to help?'} style={{ width: '100%', minHeight: 130, resize: 'vertical', border: '1px solid var(--border)', borderRadius: 12, padding: 14, background: '#ffffff', color: '#172b35', caretColor: '#172b35', WebkitTextFillColor: '#172b35', font: 'inherit', fontSize: 14, lineHeight: 1.65 }} />
         </label>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ ...muted, fontSize: 12 }}>{composerText.length}/5000 · Peer experiences are not medical advice.</span>
-          <button type="submit" aria-label="Send community post" disabled={submitting || !composerText.trim()} style={{ ...baseButton, minHeight: 46, padding: '12px 18px', background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', opacity: submitting || !composerText.trim() ? .55 : 1, whiteSpace: 'nowrap' }}><Send size={16} aria-hidden="true" />{submitting ? 'Sending…' : 'Send post'}</button>
+          <button type="submit" aria-label="Send community post" disabled={submitting || !composerText.trim()} style={{ ...baseButton, minHeight: 46, padding: '12px 18px', background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)', opacity: submitting || !composerText.trim() ? .55 : 1, whiteSpace: 'nowrap' }}><Send size={16} aria-hidden="true" />{submitting ? 'Sending…' : 'Send post'}</button>
         </div>
       </form>}
 
@@ -273,7 +272,7 @@ export default function Community() {
         </div>
         <form onSubmit={findExperiences} style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
           <input aria-label="Search community experiences" value={wisdomQuery} onChange={(event) => setWisdomQuery(event.target.value)} placeholder="e.g. evening restlessness, sleep, wandering" style={{ flex: '1 1 240px', minWidth: 0, minHeight: 44, padding: '10px 13px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', font: 'inherit', fontSize: 14 }} />
-          <button type="submit" disabled={wisdomLoading || !wisdomQuery.trim()} style={{ ...baseButton, background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', opacity: wisdomLoading || !wisdomQuery.trim() ? .55 : 1 }}>{wisdomLoading ? 'Searching…' : 'Find experiences'}</button>
+          <button type="submit" disabled={wisdomLoading || !wisdomQuery.trim()} style={{ ...baseButton, background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)', opacity: wisdomLoading || !wisdomQuery.trim() ? .55 : 1 }}>{wisdomLoading ? 'Searching…' : 'Find experiences'}</button>
         </form>
         {wisdomMessage && <p role="status" style={{ ...muted, margin: 0, fontSize: 13 }}>{wisdomMessage}</p>}
         {wisdomSummary && <div style={{ borderRadius: 12, background: 'var(--accent-soft)', padding: 14, lineHeight: 1.7, fontSize: 14 }}><strong style={{ display: 'block', marginBottom: 5 }}>A summary of shared experiences</strong>{wisdomSummary}</div>}
@@ -316,7 +315,7 @@ export default function Community() {
           <div style={{ width: 54, height: 54, margin: '0 auto 14px', borderRadius: 18, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)' }}><HeartHandshake size={25} /></div>
           <h4 style={{ margin: '0 0 8px', fontSize: 18 }}>{posts.length === 0 && !savedOnly && activeTag === 'All topics' && activeStage === 'all' && !search ? 'Your community starts here' : 'No stories match these filters'}</h4>
           <p style={{ ...muted, maxWidth: 430, margin: '0 auto 18px', lineHeight: 1.7, fontSize: 14 }}>{posts.length === 0 ? 'There are no published posts to show yet. You can be the first to share a helpful moment or ask a question.' : 'Try a different topic or clear your filters to see more shared experiences.'}</p>
-          {posts.length === 0 ? <button type="button" onClick={() => setComposerOpen(true)} style={{ ...baseButton, background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' }}>Share the first experience <ChevronRight size={16} /></button> : <button type="button" onClick={resetFilters} style={baseButton}>Clear filters</button>}
+          {posts.length === 0 ? <button type="button" onClick={() => setComposerOpen(true)} style={{ ...baseButton, background: 'var(--care-accent)', color: '#ffffff', borderColor: 'var(--care-accent)' }}>Share the first experience <ChevronRight size={16} /></button> : <button type="button" onClick={resetFilters} style={baseButton}>Clear filters</button>}
         </div>}
 
         {!loading && !loadError && filteredPosts.map((post) => {

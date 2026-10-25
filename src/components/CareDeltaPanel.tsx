@@ -29,7 +29,7 @@ const fieldStyle: React.CSSProperties = {
   borderRadius: 8, padding: 9, background: 'var(--bg)', color: 'var(--text)', fontSize: 13
 }
 
-export default function CareDeltaPanel({ personId, autoInput }: { personId: string; autoInput?: DeltaInput | null }) {
+export default function CareDeltaPanel({ personId, autoInput, showPanel = true }: { personId: string; autoInput?: DeltaInput | null; showPanel?: boolean }) {
   const [source, setSource] = useState('Caregiver report')
   const [eventDate, setEventDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('')
@@ -43,11 +43,11 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
   async function reconcile(input: { content: string; source: string; eventDate: string; evidenceIds?: string[]; sourceEventId?: string }) {
     const scopedPersonId = getPersonId()
     if (!scopedPersonId || scopedPersonId !== personId) {
-      setError('Select an authorized care record before reconciling an event.')
+      setError('Open the care record you want to update, then try again.')
       return
     }
     if (!input.content.trim()) {
-      setError('Add care-event text before running reconciliation.')
+      setError('Add a care update before comparing changes.')
       return
     }
     setBusy(true)
@@ -67,10 +67,10 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         const rows = await getJSON(`/care-delta/runs/${encodeURIComponent(scopedPersonId)}`)
         if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[])
       } catch {
-        setHistoryError('The delta was returned, but saved history could not be refreshed.')
+        setHistoryError('The comparison finished, but earlier comparisons could not be refreshed.')
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The Delta Engine could not reconcile this event. Existing records were not overwritten.')
+      setError('We couldn’t compare this care update right now. Your existing care record has not been changed. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -86,7 +86,7 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
     setSource('Caregiver report')
     setEventDate(new Date().toISOString().slice(0, 10))
     lastToken.current = null
-    if (!personId) {
+    if (!personId || !showPanel) {
       return () => { cancelled = true }
     }
     getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
@@ -97,10 +97,10 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
         }
       })
       .catch(() => {
-        if (!cancelled) setHistoryError('Saved Delta history is unavailable until the backend route and database migration are deployed.')
+        if (!cancelled) setHistoryError("We couldn't load earlier care-change comparisons. You can still add a new note; try again to view saved comparisons.")
       })
     return () => { cancelled = true }
-  }, [personId])
+  }, [personId, showPanel])
 
   useEffect(() => {
     if (!autoInput || autoInput.personId !== personId || lastToken.current === autoInput.token) return
@@ -140,6 +140,10 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
     </section>
   }
 
+  // Background reconciliation remains active when the caregiver-facing controls are hidden.
+  // The internal comparison panel exposes engine terms and is not part of the caregiver chat UI.
+  if (!showPanel) return null;
+
   return <section aria-label="SolenOS Delta Engine" style={panelStyle}>
     <div>
       <h2 style={{ fontSize: 18, margin: 0 }}>Care changes over time</h2>
@@ -164,7 +168,18 @@ export default function CareDeltaPanel({ personId, autoInput }: { personId: stri
       </button></div>
     </form>
     {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12, marginTop: 8 }}>{error}</p>}
-    {historyError && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 11, marginTop: 6 }}>{historyError}</p>}
+    {historyError && <div role="status" style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 6 }}>
+      <p style={{ margin: "0 0 6px" }}>{historyError}</p>
+      <button type="button" onClick={() => {
+        setHistoryError("");
+        getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
+          .then((rows) => {
+            if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[]);
+            else setHistoryError("Earlier care-change comparisons are still unavailable. Please try again shortly.");
+          })
+          .catch(() => setHistoryError("Your saved care-change history is still unavailable. Try again shortly."));
+      }} style={{ padding: "8px 12px", minHeight: 40, borderRadius: 8, border: "2px solid var(--solenos-slate, #173f4b)", background: "var(--solenos-slate, #173f4b)", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Try again</button>
+    </div>}
     {history.length > 0 && <section style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 10 }}>
       <h3 style={{ fontSize: 13, margin: '0 0 7px' }}>Previous reconciliations</h3>
       <div style={{ display: 'grid', gap: 6 }}>
