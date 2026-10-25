@@ -76,9 +76,9 @@ requireText("src/app/workspace/settings/page.tsx", [
   "function AccountCard()",
   'postJSON("/accounts"',
   'deleteJSON("/accounts/me"',
-  'signInToAccount(email, password)',
-  "Email verification, password reset, and multi-factor authentication are not available yet.",
 ]);
+assert(!read("src/app/workspace/settings/page.tsx").includes("Sign in"), "Settings account controls must not expose a Sign in button.");
+assert(!read("src/app/workspace/settings/page.tsx").includes("multi-factor authentication"), "Settings must not show technical account capability messaging.");
 requireText("src/api/client.ts", [
   'export async function deleteJSON(path: string, body?: unknown)',
   "export async function signInToAccount(email: string, password: string)",
