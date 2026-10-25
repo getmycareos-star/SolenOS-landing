@@ -104,7 +104,6 @@ export default function Community() {
       if (!Array.isArray(result?.posts)) throw new Error('Invalid community response')
       setPosts(result.posts)
     } catch {
-      setPosts([])
       setLoadError('We couldn’t load community posts right now. Please try again.')
     } finally {
       if (showLoading) setLoading(false)
