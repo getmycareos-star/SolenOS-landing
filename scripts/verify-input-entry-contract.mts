@@ -159,6 +159,16 @@ assert(workspace.includes('err.detail.code === "conversation_only"'));
 assert(workspace.includes("/workspace/companion?draft="));
 console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
 console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");
+const companionSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "AICompanion.tsx"), "utf8");
+assert(companionSource.includes("CARE_REVIEW_SIGNAL.test(submittedText)"), "Companion care-related messages must trigger automatic background review");
+assert(companionSource.includes("automatic background review"), "Companion background review must not require a caregiver to select a workflow");
+assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
+assert(companionSource.includes("setDeltaAutoInput({"), "Companion must enqueue the review through the existing Delta panel");
+assert(companionSource.includes("written_to_lcr") === false, "Frontend must not claim the background review writes the LCR");
+const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
+assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
+assert(dailyCaptureSource.includes("setDeltaAutoInput({"), "Daily Capture must trigger automatic care-delta reconciliation after a successful save");
+
 console.log("✓ greetings use the server-issued session and Companion endpoint; they are not written as care evidence");
 
 const sot = fs.readFileSync(
