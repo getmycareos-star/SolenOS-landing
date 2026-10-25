@@ -451,21 +451,47 @@ function ProductCard() {
   ];
 
   const handleShareSolenos = useCallback(async () => {
+    const url = typeof window !== "undefined" ? window.location.origin : "https://solenosai.netlify.app/";
     const shareData = {
       title: "SolenOS",
       text: "I am using SolenOS to keep care information organized.",
-      url: typeof window !== "undefined" ? window.location.origin : undefined,
+      url,
     };
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        show("Shared ✓", "success");
-      } else {
-        await navigator.clipboard.writeText(shareData.url ?? "https://solenosai.netlify.app/");
-        show("SolenOS link copied", "success");
+      if (typeof navigator.share === "function") {
+        try {
+          await navigator.share(shareData);
+          show("SolenOS shared.", "success");
+          return;
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            show("Sharing cancelled.", "info");
+            return;
+          }
+        }
       }
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(url);
+          show("SolenOS link copied. You can paste it into a message.", "success");
+          return;
+        } catch {
+          // Try the fallback below for browsers that restrict clipboard access.
+        }
+      }
+      const field = document.createElement("textarea");
+      field.value = url;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.appendChild(field);
+      field.select();
+      const copied = document.execCommand("copy");
+      document.body.removeChild(field);
+      if (!copied) throw new Error("Copy failed");
+      show("SolenOS link copied. You can paste it into a message.", "success");
     } catch {
-      show("Could not share", "error");
+      show("We couldn't open sharing or copy the link. Please copy the page address from your browser.", "error");
     }
   }, [show]);
 
