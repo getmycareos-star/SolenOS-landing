@@ -191,9 +191,11 @@ function SecurityCard() {
   const [status, setStatus] = useState<"checking" | "active" | "unavailable" | "revoked">("checking");
   const [busy, setBusy] = useState(false);
   const [expiresAt, setExpiresAt] = useState("");
+  const [accountSession, setAccountSession] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    try { setAccountSession(Boolean(window.localStorage.getItem("solenos_backend_account_id"))); } catch { /* unavailable storage */ }
     void ensureAnonymousSession().then((session) => {
       if (!cancelled) { setStatus("active"); setExpiresAt(session.expires_at); }
     }).catch(() => {
@@ -221,7 +223,7 @@ function SecurityCard() {
       <h2 className="mobile-settings-card-title"><Shield size={16} aria-hidden /> Security</h2>
       <p className="mobile-settings-hint" role="status">
         {status === "checking" ? "Checking the backend-issued care-record session…" :
-          status === "active" ? "An active, scoped anonymous bearer session is protecting this care record. This is not an account login." :
+          status === "active" ? (accountSession ? "An active caregiver account session is protecting this care record." : "An active, scoped anonymous bearer session is protecting this care record. This is not an account login.") :
           status === "revoked" ? "This session has been revoked. Care APIs will reject its token." :
           "No valid session could be confirmed. Protected care operations should remain unavailable until the backend confirms a session."}
       </p>
@@ -231,8 +233,13 @@ function SecurityCard() {
           {busy ? "Revoking…" : "Revoke this session"}
         </Button>
       </div>
+      <div className="mobile-settings-buttons">
+        <Button variant="secondary" asChild><Link href="/account">Sign in or create account</Link></Button>
+        <Button variant="secondary" asChild><Link href="/reset-password">Reset password</Link></Button>
+        <Button variant="secondary" asChild><Link href="/recover-account">Recover account</Link></Button>
+      </div>
       <p className="mobile-settings-hint">
-        Account creation, password changes, MFA, and cross-device account recovery are not implemented yet; this screen does not pretend they are enabled.
+        Account sign-in requires a verified email. MFA enrollment and recovery are handled by the account-security API; anonymous care access remains optional.
       </p>
       {render()}
     </section>
