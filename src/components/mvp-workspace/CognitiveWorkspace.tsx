@@ -1023,7 +1023,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
       {(consentState === "accepted" || consentState === "unavailable") && (
         <>
-      <HelpImproveSolenos careKey={caregiverId} compact />
+      <HelpImproveSolenos compact />
       {consentState === "accepted" && <QwenAssistPanel
         title="Help with your care information"
         defaultWorkflow="living_care_record"
