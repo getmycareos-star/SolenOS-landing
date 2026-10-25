@@ -12,7 +12,10 @@ export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
-  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null);
+  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId: string | null; recordedAt: string | null } | null>(null);
+  const [reviewDrafts, setReviewDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
+  const [reviewingCandidate, setReviewingCandidate] = useState<number | null>(null);
+  const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
   const [deltaToken, setDeltaToken] = useState(0);
   
@@ -377,6 +380,74 @@ export default function StructuredDailyCapture() {
     }
   };
   
+  async function reviewCaptureCandidate(index: number, decision: 'accept' | 'correct' | 'reject') {
+    const analysisId = qwenAnalysis?.analysisId;
+    if (!analysisId) {
+      setReviewFeedback('The capture is saved, but the backend did not provide a persistent review ID. No review decision was submitted.');
+      return;
+    }
+    const candidate = qwenAnalysis?.candidates?.observations?.[index];
+    if (!candidate) {
+      setReviewFeedback('This candidate is no longer available. Refresh the saved capture before reviewing it.');
+      return;
+    }
+    const draft = reviewDrafts[index] || {
+      subject: candidate.subject || '',
+      observation: candidate.observation || '',
+    };
+    if (decision === 'correct' && !(draft.subject.trim() || draft.observation.trim())) {
+      setReviewFeedback('Enter a corrected subject or observation before saving a correction.');
+      return;
+    }
+    setReviewingCandidate(index);
+    setReviewFeedback(null);
+    try {
+      const result = await postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {
+        candidate_index: index,
+        decision,
+        corrected_subject: decision === 'correct' ? draft.subject.trim() || undefined : undefined,
+        corrected_observation: decision === 'correct' ? draft.observation.trim() || undefined : undefined,
+      }) as {
+        candidate?: any;
+        message?: string;
+        source_event_id?: string | null;
+        written_to_lcr?: boolean;
+      };
+      if (!result?.candidate || result.written_to_lcr !== false) {
+        throw new Error('The backend did not confirm a review-only decision. No reconciliation was started.');
+      }
+      setQwenAnalysis(current => {
+        if (!current || !Array.isArray(current.candidates?.observations)) return current;
+        const observations = [...current.candidates.observations];
+        observations[index] = result.candidate;
+        return { ...current, candidates: { ...current.candidates, observations } };
+      });
+      setReviewFeedback(result.message || 'Review decision saved. The Living Care Record was not changed.');
+      if (decision !== 'reject' && personId && typeof result.source_event_id === 'string') {
+        const reviewedText = [
+          result.candidate.subject ? `Subject: ${result.candidate.subject}` : '',
+          result.candidate.observation ? `Caregiver-reviewed observation: ${result.candidate.observation}` : '',
+          result.candidate.source_quote ? `Original source quote: ${result.candidate.source_quote}` : '',
+        ].filter(Boolean).join('\n');
+        const nextToken = deltaToken + 1;
+        setDeltaToken(nextToken);
+        setDeltaAutoInput({
+          personId,
+          content: reviewedText,
+          source: 'Caregiver-reviewed Daily Capture candidate',
+          eventDate: qwenAnalysis.recordedAt || new Date().toISOString(),
+          token: nextToken,
+          sourceEventId: result.source_event_id,
+        });
+      }
+    } catch (reason) {
+      setReviewFeedback(reason instanceof Error ? reason.message : 'The review decision could not be saved.');
+    } finally {
+      setReviewingCandidate(null);
+    }
+  }
+
+
   // Handle form submission to backend with optimistic update
   const { mutate: submitDailyLog, loading: submittingMutation } = useOptimisticMutation<
     any,
@@ -441,7 +512,11 @@ export default function StructuredDailyCapture() {
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
+        analysisId: typeof data?.qwen_analysis_id === 'string' ? data.qwen_analysis_id : null,
+        recordedAt: typeof data?.recorded_at === 'string' ? data.recorded_at : null,
       });
+      setReviewDrafts({});
+      setReviewFeedback(null);
       // On success, reset the form
       setForm({
         medications: [],
@@ -795,15 +870,56 @@ export default function StructuredDailyCapture() {
             These are suggested observations for your review. They do not automatically become established facts in the Living Care Record.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
-            <ul style={{ margin: 0, paddingLeft: '18px' }}>
-              {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => (
-                <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
-                  <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
-                  <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Source: “{candidate.source_quote}” · Review: {candidate.review_status || 'pending_review'}
-                  </div>
-                </li>
-              ))}
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+              {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => {
+                const draft = reviewDrafts[index] || {
+                  subject: candidate.subject || '',
+                  observation: candidate.observation || '',
+                };
+                const reviewStatus = String(candidate.review_status || 'pending_review');
+                const alreadyReviewed = reviewStatus !== 'pending_review';
+                return (
+                  <li key={index} style={{ fontSize: '12px', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
+                    <strong>Candidate {index + 1}</strong>
+                    <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
+                      Unverified extraction · {reviewStatus.replace(/_/g, ' ')}
+                    </p>
+                    <label style={{ display: 'block', marginBottom: '8px' }}>
+                      Subject
+                      <input
+                        aria-label={`Corrected subject ${index + 1}`}
+                        value={draft.subject}
+                        disabled={alreadyReviewed || reviewingCandidate !== null}
+                        onChange={event => setReviewDrafts(current => ({ ...current, [index]: { ...(current[index] || { subject: candidate.subject || '', observation: candidate.observation || '' }), subject: event.target.value } }))}
+                        maxLength={160}
+                        style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '4px', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'var(--text)' }}
+                      />
+                    </label>
+                    <label style={{ display: 'block', marginBottom: '8px' }}>
+                      Observation
+                      <textarea
+                        aria-label={`Corrected observation ${index + 1}`}
+                        value={draft.observation}
+                        disabled={alreadyReviewed || reviewingCandidate !== null}
+                        onChange={event => setReviewDrafts(current => ({ ...current, [index]: { ...(current[index] || { subject: candidate.subject || '', observation: candidate.observation || '' }), observation: event.target.value } }))}
+                        maxLength={500}
+                        rows={3}
+                        style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '4px', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'var(--text)' }}
+                      />
+                    </label>
+                    <div style={{ color: 'var(--text-secondary)', marginBottom: '8px', overflowWrap: 'anywhere' }}>
+                      Original source quote: {candidate.source_quote || 'Not returned by the extractor.'}
+                    </div>
+                    {!alreadyReviewed && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Accept for reconciliation</button>
+                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
+                        <button type="button" disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Reject candidate</button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -812,6 +928,7 @@ export default function StructuredDailyCapture() {
                 : 'No additional observations are available. Your saved entry remains recorded.'}
             </p>
           )}
+          {reviewFeedback && <p role="status" style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '10px' }}>
               <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
