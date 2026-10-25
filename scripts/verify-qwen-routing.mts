@@ -34,8 +34,8 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
 ]);
 
 const statusFunction = assist.slice(assist.indexOf("async function checkQwen"), assist.indexOf("async function askQwen"));
-assert(statusFunction.includes('getJSON("/assistant/status"'));
-assert(!statusFunction.includes("ensureAnonymousSession"), "Infrastructure status checks must not create synthetic care records.");
+assert(statusFunction.includes("await ensureAnonymousSession()"), "The care-session-scoped Qwen status route requires a real bearer session.");
+assert(statusFunction.indexOf("await ensureAnonymousSession()") < statusFunction.indexOf('getJSON("/assistant/status"'));
 
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
