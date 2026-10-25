@@ -38,7 +38,7 @@ const capture = read("src/components/workflows/StructuredDailyCapture.tsx");
 requireText("src/components/workflows/StructuredDailyCapture.tsx", [
   "postJSON('/daily/log'",
   "qwen_extraction_status",
-  "Care information review",
+  "Review suggested details",
 ]);
 assert(!capture.includes("QwenAssistPanel"), "Daily Capture must not expose a separate assistant workflow panel.");
 assert(!capture.includes("Qwen care analysis"), "Daily Capture must not expose the model name.");
