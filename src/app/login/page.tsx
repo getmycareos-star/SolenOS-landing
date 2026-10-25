@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { AccountAuthResponse, adoptAccountSession, postPublicJSON } from "@/api/client";
+import { AccountAuthResponse, adoptAccountSession, getAnonymousAccessToken, postPublicJSON } from "@/api/client";
 import { PublicShell } from "@/components/public/PublicShell";
 
 export default function LoginPage() {
@@ -18,7 +18,7 @@ export default function LoginPage() {
     setBusy(true);
     setError("");
     try {
-      const session = await postPublicJSON("/auth/login", { email, password }) as AccountAuthResponse;
+      const session = await postPublicJSON("/auth/login", { email, password }, getAnonymousAccessToken()) as AccountAuthResponse;
       adoptAccountSession(session);
       router.replace("/workspace?enter=1");
     } catch (reason) {
@@ -34,7 +34,7 @@ export default function LoginPage() {
         <div className="account-auth-card">
           <p className="account-auth-kicker">ACCOUNT SIGN-IN</p>
           <h1>Return to your care record</h1>
-          <p>Sign in with the email and password you used when creating your account. If you started anonymously, continue without an account instead.</p>
+          <p>Sign in with the email and password you used when creating your account. If you started anonymously with a different care record in this browser, SolenOS will refuse to switch or merge it silently.</p>
           <form onSubmit={submit} className="account-auth-form">
             <label>Email
               <input type="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} />
