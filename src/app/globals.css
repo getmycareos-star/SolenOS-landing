@@ -5269,3 +5269,50 @@ button:disabled,
 [role="button"][aria-disabled="true"] {
   cursor: not-allowed;
 }
+
+
+/* Readable privacy-choice explanation and clear consent controls. */
+.policy-improvement-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 2px solid #9aafb6;
+  border-radius: 12px;
+  background: #f5f7f8;
+  color: #172b35;
+  line-height: 1.65;
+}
+.policy-improvement-details h5 {
+  margin: .4rem 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #173f4b;
+}
+.policy-improvement-details ul {
+  margin: .35rem 0 1rem;
+  padding-left: 1.25rem;
+}
+.policy-improvement-details li {
+  margin: .35rem 0;
+}
+.policy-settings-panel .consent-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .9rem;
+  border: 2px solid #536c76;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #172b35;
+  font-weight: 750;
+  line-height: 1.5;
+}
+.policy-settings-panel .consent-checkbox input[type="checkbox"] {
+  width: 1.35rem;
+  height: 1.35rem;
+  min-width: 1.35rem;
+  accent-color: #173f4b;
+}
+.policy-settings-panel .consent-checkbox input[type="checkbox"]:focus-visible {
+  outline: 3px solid #173f4b;
+  outline-offset: 3px;
+}
