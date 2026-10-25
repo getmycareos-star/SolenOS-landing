@@ -24,7 +24,6 @@ export type QwenWorkflow =
   | "medication_day"
   | "reminders_notifications"
   | "care_coordination"
-  | "community"
   | "companion"
   | "caregiver_feedback"
   | "sharing_export"
@@ -80,9 +79,8 @@ const WORKFLOWS: Array<{ value: QwenWorkflow; label: string }> = [
   { value: "medication_day", label: "Coordination — Medication-day observations" },
   { value: "reminders_notifications", label: "Coordination — Reminders and notifications" },
   { value: "care_coordination", label: "Coordination — Care coordination and delegation" },
-  { value: "community", label: "Community — Dementia-focused peer experiences" },
-  { value: "companion", label: "Community — Qwen Companion" },
-  { value: "caregiver_feedback", label: "Community — Caregiver feedback and AI correction" },
+  { value: "companion", label: "Companion — Qwen support" },
+  { value: "caregiver_feedback", label: "Caregiver support — Feedback and correction" },
   { value: "sharing_export", label: "Sharing and access — Sharing and export" },
   { value: "roles_access", label: "Sharing and access — Roles and professional access" },
   { value: "account_recovery", label: "Sharing and access — Signup, login and recovery" },
