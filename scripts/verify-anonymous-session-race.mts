@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import {
-  ensureAnonymousSession,
   getJSON,
   getPersonId,
 } from "../src/api/client";
