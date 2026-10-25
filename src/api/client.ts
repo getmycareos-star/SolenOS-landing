@@ -269,10 +269,12 @@ export async function getBlob(path: string): Promise<Blob> {
 }
 
 /** Public authentication requests must work before an anonymous care session exists. */
-export async function postPublicJSON(path: string, body: unknown) {
+export async function postPublicJSON(path: string, body: unknown, bearerToken?: string | null) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
   const res = await fetch(resolveApiUrl(path), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
   return handleResponse(res);
