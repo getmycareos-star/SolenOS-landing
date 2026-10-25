@@ -31,6 +31,26 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "decision_outcome",
   "medication_day",
   "living_care_record",
+  "daily_capture",
+  "add_record",
+  "care_history_search",
+  "care_situation_change",
+  "delta_engine",
+  "evidence_provenance",
+  "uncertainty_contradictions",
+  "returning_caregiver",
+  "reminders_notifications",
+  "care_coordination",
+  "companion",
+  "caregiver_feedback",
+  "sharing_export",
+  "roles_access",
+  "account_recovery",
+  "settings_security",
+  "record_lifecycle",
+  "offline_sync",
+  "ai_reliability",
+  "audit_review",
 ]);
 
 const statusFunction = assist.slice(assist.indexOf("async function checkQwen"), assist.indexOf("async function askQwen"));
@@ -68,6 +88,11 @@ requireText("src/app/workspace/documents/page.tsx", [
   'defaultWorkflow="document"',
   "Qwen support for Documents",
 ]);
+requireText("src/app/workspace/notifications/page.tsx", [
+  'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
+  'defaultWorkflow="reminders_notifications"',
+  "Qwen support for reminders",
+]);
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",
   "The backend confirmed this entry was saved.",
@@ -75,7 +100,7 @@ requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("<h3>Care record view unavailable</h3>"));
 
-console.log("PASS: Qwen is routed through authenticated backend support across workspace, documents, Daily Capture, Community, and Companion.");
-console.log("PASS: appointment, after-appointment, handoff, professional summary, open loops, two-week review, decision/outcome, medication observations and LCR are selectable workflows.");
+console.log("PASS: shared Qwen assistance is available across the workspace, documents, Daily Capture, Community, Companion, and notifications.");
+console.log("PASS: all 31 SolenOS workflow IDs are exposed by the shared Qwen selector.");
 console.log("PASS: UI requires an actual local-Qwen response and explicitly verifies that assistance is read-only.");
 console.log("PASS: casual greetings are routed to Companion, and confirmed persisted captures never invite duplicate submission because the situation projection is missing.");
