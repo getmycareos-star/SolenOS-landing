@@ -226,3 +226,26 @@
 .editorial-landing .el-more-links a { display: none; }
 .editorial-landing .el-more-links a[href="/how-it-works"],
 .editorial-landing .el-more-links a[href="/privacy"] { display: inline-flex; align-items: center; min-height: 44px; padding: .35rem .25rem; font-size: 1rem; font-weight: 600; text-decoration: underline; text-underline-offset: .2em; }
+
+
+/* Strong, high-contrast calls to action on the landing page. Keep the established teal palette. */
+.editorial-landing .el-button {
+  background: #173f4b !important;
+  color: #ffffff !important;
+  border: 2px solid #173f4b !important;
+  min-height: 50px;
+  font-size: 1.0625rem;
+  font-weight: 750;
+  box-shadow: 0 3px 0 rgba(23, 63, 75, 0.18), 0 6px 14px rgba(23, 63, 75, 0.14);
+}
+.editorial-landing .el-button:hover,
+.editorial-landing .el-button:focus-visible {
+  background: #115f5b !important;
+  border-color: #115f5b !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+.editorial-landing .el-button:focus-visible {
+  outline: 3px solid #173f4b;
+  outline-offset: 4px;
+}
