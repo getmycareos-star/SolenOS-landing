@@ -137,7 +137,7 @@ export function PersistedCareOrientation() {
 
       {hasServerEntries ? (
         <>
-          <p>{snapshot.total_events ?? events.length} saved care update{(snapshot.total_events ?? events.length) === 1 ? "" : "s"} in your record.</p>
+          <p>{snapshot.total_events ?? (events.length || situations.length)} saved care update{(snapshot.total_events ?? (events.length || situations.length)) === 1 ? "" : "s"} in your record.</p>
           {understanding.trim() && <div className="persisted-care-orientation-latest"><strong>Current understanding</strong><p>{understanding}</p></div>}
           {situations.map((situation, index) => (
             <div className="persisted-care-orientation-latest" key={situation.id || `situation-${index}`}>
