@@ -5179,9 +5179,9 @@ input[type="file"] { width: 100%; white-space: normal; }
   --solenos-sage-button-hover: #a8c9a3;
   --solenos-button-ink: #17251c;
 }
-.solenos-btn--primary,
-.workspace-primary,
-.el-button {
+.solenos-shell .solenos-btn--primary,
+.solenos-shell .workspace-primary,
+.solenos-shell .el-button {
   background-color: var(--solenos-sage-button) !important;
   border-color: var(--solenos-sage-button) !important;
   color: var(--solenos-button-ink) !important;
