@@ -1050,9 +1050,15 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                   )}
                   <AddSituationPanel
                     value={rawInput}
-                    onChange={setRawInput}
+                    onChange={(value) => {
+                      setRawInput(value);
+                      setCaregiverError(null);
+                    }}
                     documents={documents}
-                    onDocumentsChange={setDocuments}
+                    onDocumentsChange={(nextDocuments) => {
+                      setDocuments(nextDocuments);
+                      setCaregiverError(null);
+                    }}
                     onSubmit={(provenance) => {
                       setReturnInvite(null);
                       setReturnOrientation(null);
