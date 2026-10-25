@@ -1,0 +1,86 @@
+/* Product-wide accessibility and responsive polish — October 2026. */
+:root {
+  --care-accent: #dce9dc;
+  --care-button-ink: #18251b;
+  --care-button-border: #b8cdb9;
+}
+html { font-size: 16px; }
+body { font-size: 1rem; line-height: 1.65; }
+button, input, select, textarea { font: inherit; }
+button, [role="button"], input[type="button"], input[type="submit"] {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.workspace-primary, .workspace-primary button, .care-reality-fab {
+  background-color: var(--care-accent);
+  color: var(--care-button-ink);
+  border-color: var(--care-button-border);
+}
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid #315d3a;
+  outline-offset: 3px;
+}
+input, select, textarea { min-width: 0; max-width: 100%; line-height: 1.5; }
+img, video, canvas, svg { max-width: 100%; }
+main, section, article, aside, form, fieldset,
+.panel, .panel-input, .panel-output, .cognitive-workspace,
+.mobile-screen, .structured-daily-capture {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.workspace-more-menu { position: relative; min-width: 0; }
+.workspace-more-menu-dropdown {
+  position: absolute;
+  z-index: 1000;
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+  width: min(19rem, calc(100vw - 1.25rem));
+  max-width: calc(100vw - 1.25rem);
+  max-height: min(70vh, 28rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: .4rem;
+  border: 1px solid var(--solenos-hairline);
+  border-radius: .75rem;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 12px 32px rgb(23 43 53 / 16%);
+}
+.workspace-more-menu-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  width: 100%;
+  min-height: 44px;
+  padding: .7rem .75rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: start;
+  line-height: 1.4;
+  border-radius: .45rem;
+}
+.workspace-more-menu-item span { min-width: 0; overflow-wrap: anywhere; }
+.workspace-more-menu-item--destructive { color: #8b2424; }
+.structured-daily-capture, .structured-daily-capture * { min-width: 0; }
+.structured-daily-capture input, .structured-daily-capture select,
+.structured-daily-capture textarea { width: 100%; }
+@media (max-width: 640px) {
+  .shell-body { grid-template-columns: minmax(0, 1fr); }
+  .shell-body.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
+  .mvp-header.shell-header { flex-wrap: wrap; align-items: center; }
+  .shell-brand { min-width: 0; }
+  .shell-website-link { white-space: normal; }
+  .workspace-more-menu-dropdown {
+    position: fixed;
+    inset-inline-end: .625rem;
+    bottom: max(.625rem, env(safe-area-inset-bottom));
+    width: min(22rem, calc(100vw - 1.25rem));
+    max-height: min(70dvh, 30rem);
+  }
+  .care-reality-fab { right: max(.75rem, env(safe-area-inset-right)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
