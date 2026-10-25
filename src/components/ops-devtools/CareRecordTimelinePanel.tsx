@@ -74,7 +74,7 @@ export function CareRecordTimelinePanel({ className }: Props) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="When did confusion begin? Last fall? Medication changes?"
+          placeholder="Search care history by date, event, or keyword"
           aria-label="Search care history"
         />
         <button type="submit" disabled={loading}>
