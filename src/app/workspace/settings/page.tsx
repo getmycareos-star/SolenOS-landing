@@ -198,12 +198,19 @@ function SecurityCard() {
 
   useEffect(() => {
     let cancelled = false;
-    void ensureAnonymousSession().then((session) => {
-      if (!cancelled) { setStatus("active"); setExpiresAt(session.expires_at); }
-    }).catch(() => {
-      if (!cancelled) setStatus("unavailable");
-    });
-    return () => { cancelled = true; };
+    const syncSession = () => {
+      void ensureAnonymousSession().then((session) => {
+        if (!cancelled) { setStatus("active"); setExpiresAt(session.expires_at); }
+      }).catch(() => {
+        if (!cancelled) setStatus("unavailable");
+      });
+    };
+    window.addEventListener("personIdChanged", syncSession);
+    syncSession();
+    return () => {
+      cancelled = true;
+      window.removeEventListener("personIdChanged", syncSession);
+    };
   }, []);
 
   const revoke = async () => {
