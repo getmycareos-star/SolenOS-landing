@@ -5187,7 +5187,7 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-btn--secondary {
   background-color: #ffffff !important;
   border-color: #718477 !important;
-  color: #ffffff !important;
+  color: var(--ink) !important;
 }
 .solenos-btn--destructive {
   background-color: #8f2525 !important;
