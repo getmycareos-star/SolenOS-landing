@@ -49,7 +49,9 @@ assert(
 const startPage = fs.readFileSync(path.join(root, "src/app/start/page.tsx"), "utf8");
 assert(startPage.includes("WELCOME_HOME"), "start page uses WELCOME_HOME");
 assert(startPage.includes("SolenosWordmark"), "start brand is hero-level");
-assert(startPage.includes("primaryCtaHref"), "start uses enter CTA");
+assert(startPage.includes('primaryHref="/signup"'), "start offers account creation first");
+assert(startPage.includes('secondaryHref="/login"'), "start offers login");
+assert(startPage.includes('href="/workspace?enter=1"'), "anonymous entry is an explicit option");
 
 const welcomePage = fs.readFileSync(path.join(root, "src/app/welcome/page.tsx"), "utf8");
 assert(welcomePage.includes('redirect("/start")'), "legacy /welcome redirects to /start");
