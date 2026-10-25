@@ -1106,7 +1106,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
               ) : (
                 <section className="panel panel-response" role="status" aria-live="polite">
                   <h3>Care record view unavailable</h3>
-                  <p>The server did not return a persisted event receipt or an active care-record view. Do not submit the same information again; refresh the record before retrying.</p>
+                  <p>We couldn’t confirm the saved entry in the care record. Please refresh the record before trying again. Do not submit the same information again yet.</p>
                 </section>
               )
             ) : (
