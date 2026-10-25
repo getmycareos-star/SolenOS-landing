@@ -25,11 +25,19 @@ export default function StartPage() {
         <h1 className="public-hero-title">{WELCOME_HOME.headline}</h1>
         <p className="public-hero-lede">{WELCOME_HOME.subheadline}</p>
         <PublicCtaGroup
-          primaryHref={WELCOME_HOME.primaryCtaHref}
-          primaryLabel={WELCOME_HOME.primaryCtaLabel}
-          secondaryHref={WELCOME_HOME.secondaryCtaHref}
-          secondaryLabel={WELCOME_HOME.secondaryCtaLabel}
+          primaryHref="/signup"
+          primaryLabel="Create an account"
+          secondaryHref="/login"
+          secondaryLabel="Log in"
         />
+      </section>
+
+      <section className="public-section" aria-labelledby="account-choice-title">
+        <h2 className="public-section-title" id="account-choice-title">Prefer not to create an account?</h2>
+        <p className="public-prose">Anonymous use is available too. Choose it explicitly to continue without registering; it is not required to use SolenOS.</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: ".75rem", marginTop: "1rem" }}>
+          <a className="solenos-btn solenos-btn--secondary" href="/workspace?enter=1">Continue anonymously</a>
+        </div>
       </section>
 
       <section className="public-section">

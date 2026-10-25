@@ -254,7 +254,10 @@ export async function revokeAnonymousSession(): Promise<void> {
     window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
     window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
     window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
+    window.localStorage.removeItem("solenos_account_id");
+    window.localStorage.removeItem("solenos_account_email");
     window.dispatchEvent(new Event("personIdChanged"));
+    window.dispatchEvent(new Event("solenosAuthStateChanged"));
   }
 }
 
@@ -292,8 +295,112 @@ export interface AuthSessionInfo {
   mfa_verified: boolean
 }
 
+export type AccountCredentials = { email: string; password: string };
+export type AccountRegistration = AccountCredentials & {
+  caregiver_name: string;
+  care_recipient_name: string;
+  anonymous_access_token?: string;
+};
+
+export async function authenticateAccount(
+  action: "register" | "login",
+  payload: AccountCredentials | AccountRegistration,
+): Promise<{ account: { id: string; email: string }; person: AnonymousSession["person"]; caregiver: AnonymousSession["caregiver"]; expires_at: string }> {
+  const response = await fetch(resolveApiUrl(`/sessions/${action}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(action === "register" && typeof window !== "undefined"
+      ? { ...payload, anonymous_access_token: (payload as AccountRegistration).anonymous_access_token ?? window.localStorage.getItem(ANONYMOUS_TOKEN_KEY) ?? undefined }
+      : payload),
+  });
+  const session = await handleResponse(response) as {
+    account: { id: string; email: string };
+    person: AnonymousSession["person"];
+    caregiver: AnonymousSession["caregiver"];
+    access_token: string;
+    expires_at: string;
+    claimed_existing_record?: boolean;
+  };
+  if (!session.access_token || !session.account?.id || !session.person?.id || !session.caregiver?.id) {
+    throw new Error("The server did not return a complete account session.");
+  }
+  if (typeof window === "undefined") throw new Error("Account sessions require a browser.");
+  // Preserve an existing anonymous capability when logging into a different account.
+  // Signup may claim it only when the backend verifies that exact bearer token and revokes the old anonymous capabilities.
+  const currentToken = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
+  const currentAccountId = window.localStorage.getItem("solenos_account_id");
+  if (currentToken && !currentAccountId && !session.claimed_existing_record) {
+    window.localStorage.setItem("solenos_saved_anonymous_session", JSON.stringify({
+      token: currentToken,
+      personId: window.localStorage.getItem(ANONYMOUS_PERSON_KEY),
+      caregiverId: window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY),
+      expiresAt: window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY),
+    }));
+  }
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, session.access_token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, session.person.id);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, session.caregiver.id);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, session.expires_at);
+  window.localStorage.setItem("solenos_account_id", session.account.id);
+  window.localStorage.setItem("solenos_account_email", session.account.email);
+  setPersonId(session.person.id);
+  window.dispatchEvent(new Event("solenosAuthStateChanged"));
+  return session;
+}
+
+export function hasSavedAnonymousSession(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(window.localStorage.getItem("solenos_saved_anonymous_session"));
+}
+
+export function restoreSavedAnonymousSession(): void {
+  if (typeof window === "undefined") throw new Error("Session switching requires a browser.");
+  const raw = window.localStorage.getItem("solenos_saved_anonymous_session");
+  if (!raw) throw new Error("No saved anonymous session is available in this browser.");
+  const saved = JSON.parse(raw) as { token?: string; personId?: string | null; caregiverId?: string | null; expiresAt?: string | null };
+  if (!saved.token || !saved.personId || !saved.caregiverId || !saved.expiresAt || Date.parse(saved.expiresAt) <= Date.now()) {
+    throw new Error("The saved anonymous session is incomplete or expired. It cannot be restored safely.");
+  }
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, saved.token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, saved.personId);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, saved.caregiverId);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, saved.expiresAt);
+  window.localStorage.removeItem("solenos_account_id");
+  window.localStorage.removeItem("solenos_account_email");
+  window.localStorage.removeItem("solenos_saved_anonymous_session");
+  setPersonId(saved.personId);
+  window.dispatchEvent(new Event("solenosAuthStateChanged"));
+}
+
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (typeof window === "undefined" || !getAnonymousAccessToken()) {
+    return { authenticated: false, sessionInfo: null };
+  }
+  try {
+    const response = await fetch(resolveApiUrl("/sessions/me"), { headers: authorizationHeaders() });
+    const result = await handleResponse(response) as {
+      authenticated: boolean;
+      account: { id: string; email: string } | null;
+      session_type: string;
+    };
+    if (!result.authenticated || !result.account) return { authenticated: false, sessionInfo: null };
+    const sessionInfo: AuthSessionInfo = {
+      authenticated: true,
+      account_id: result.account.id,
+      session_type: "account",
+      authorized_person_ids: getPersonId() ? [getPersonId()] : [],
+      caregiver_roles: {},
+      professional_roles: {},
+      anonymous_session_id: null,
+      expires_at: window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY) || "",
+      mfa_verified: false,
+    };
+    window.localStorage.setItem("solenos_account_id", result.account.id);
+    window.localStorage.setItem("solenos_account_email", result.account.email);
+    return { authenticated: true, sessionInfo };
+  } catch {
+    return { authenticated: false, sessionInfo: null };
+  }
 }
 
 export function subscribeToAuthState(
