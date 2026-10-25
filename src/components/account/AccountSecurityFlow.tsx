@@ -57,6 +57,8 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
   const [error, setError] = useState("");
   const [accountToken, setAccountToken] = useState("");
   const [mfaSecret, setMfaSecret] = useState("");
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [disableCode, setDisableCode] = useState("");
   const [mfaCodeToConfirm, setMfaCodeToConfirm] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [mfaBusy, setMfaBusy] = useState(false);
@@ -65,7 +67,13 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     try {
       const accountId = window.localStorage.getItem("solenos_backend_account_id");
       const tokenValue = window.localStorage.getItem("solenos_anonymous_access_token");
-      if (accountId && tokenValue) setAccountToken(tokenValue);
+      if (accountId && tokenValue) {
+        setAccountToken(tokenValue);
+        void fetch(`${API}/account-security/mfa/status`, { headers: { Authorization: `Bearer ${tokenValue}` } })
+          .then(async (response) => response.ok ? response.json() : { enabled: false })
+          .then((result) => setMfaEnabled(Boolean(result.enabled)))
+          .catch(() => setMfaEnabled(false));
+      }
     } catch { /* storage may be unavailable */ }
   }, []);
 
@@ -91,12 +99,14 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     window.localStorage.setItem("solenos_backend_account_id", result.account?.id || "");
     window.dispatchEvent(new Event("personIdChanged"));
     setAccountToken(result.access_token);
+    setMfaEnabled(Boolean(result.mfa_enabled));
     setMessage("Signed in. Your account session is active on this device.");
   };
 
   const signUp = async () => {
     const result = await post("/sessions/register", {
       email, password, caregiver_name: caregiverName.trim(), care_recipient_name: recipientName.trim(),
+      anonymous_access_token: window.localStorage.getItem("solenos_anonymous_access_token") || undefined,
     });
     setMessage(result.message || "Account created. Check your email to verify your address before signing in.");
     setTab("login");
@@ -121,10 +131,24 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     try {
       const result = await post("/account-security/mfa/confirm", { code: mfaCodeToConfirm.trim() }, accountToken);
       setRecoveryCodes(result.recovery_codes || []);
+      setMfaEnabled(true);
       setMfaSecret("");
       setMfaCodeToConfirm("");
       setMessage("Multi-factor authentication is enabled. Save the recovery codes now; they will not be shown again.");
     } catch (e) { setError(e instanceof Error ? e.message : "MFA confirmation failed."); }
+    finally { setMfaBusy(false); }
+  };
+
+
+  const disableMfa = async (event: FormEvent) => {
+    event.preventDefault();
+    setMfaBusy(true); setError(""); setMessage("");
+    try {
+      await post("/account-security/mfa/disable", { code: disableCode.trim() }, accountToken);
+      setMfaEnabled(false);
+      setDisableCode("");
+      setMessage("MFA disabled. Your account is protected by password and email verification only.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not disable MFA."); }
     finally { setMfaBusy(false); }
   };
 
@@ -229,7 +253,13 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     {accountToken && <section style={cardStyle}>
       <h2 style={{ fontSize: 22, marginTop: 0 }}>Multi-factor authentication</h2>
       <p style={{ color: "#526157", lineHeight: 1.6 }}>Enable an authenticator app as a second factor for future sign-ins. Recovery codes are displayed once after confirmation.</p>
-      {!mfaSecret ? <button style={buttonStyle} disabled={mfaBusy} onClick={() => void startMfa()}>{mfaBusy ? "Starting…" : "Set up MFA"}</button> : <>
+      {mfaEnabled ? <form onSubmit={(e) => void disableMfa(e)} style={{ display: "grid", gap: 12 }}>
+        <p role="status">MFA is enabled for this account. Disabling it requires a current authenticator code.</p>
+        <label style={{ display: "grid", gap: 6 }}>Authenticator code to disable MFA
+          <input style={fieldStyle} inputMode="numeric" autoComplete="one-time-code" required minLength={6} maxLength={6} value={disableCode} onChange={(e) => setDisableCode(e.target.value)} />
+        </label>
+        <button style={buttonStyle} disabled={mfaBusy}>{mfaBusy ? "Updating…" : "Disable MFA"}</button>
+      </form> : !mfaSecret ? <button style={buttonStyle} disabled={mfaBusy} onClick={() => void startMfa()}>{mfaBusy ? "Starting…" : "Set up MFA"}</button> : <>
         <p><strong>Authenticator secret</strong></p>
         <code style={{ display: "block", padding: 12, overflowWrap: "anywhere", background: "#f2f5f2", borderRadius: 8 }}>{mfaSecret}</code>
         <form onSubmit={(e) => void confirmMfa(e)} style={{ display: "grid", gap: 12, marginTop: 16 }}>
