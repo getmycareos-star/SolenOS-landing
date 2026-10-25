@@ -284,6 +284,39 @@ export async function requestQwenCandidateAnalysis(eventId: string): Promise<Qwe
   return postJSON('/assistant/extract-candidates', { event_id: eventId }) as Promise<QwenCandidateAnalysis>;
 }
 
+export type QwenCandidateReviewDecision = "accepted" | "rejected";
+
+export type QwenCandidateReviewResult = {
+  id: string;
+  status: QwenCandidateReviewDecision;
+  reviewed_by_caregiver_id: string;
+  reviewed_at: string | null;
+  written_to_lcr: false;
+  message: string;
+};
+
+/** Persist the caregiver's explicit review; this never writes an LCR fact. */
+export async function reviewQwenCandidate(
+  candidateId: string,
+  decision: QwenCandidateReviewDecision,
+  reviewNote?: string,
+): Promise<QwenCandidateReviewResult> {
+  if (!candidateId.trim()) throw new Error("A saved Qwen candidate ID is required.");
+  const result = await postJSON(
+    `/assistant/candidates/${encodeURIComponent(candidateId)}/review`,
+    { decision, review_note: reviewNote?.trim() || null },
+  ) as QwenCandidateReviewResult;
+  if (
+    result.id !== candidateId ||
+    result.status !== decision ||
+    result.written_to_lcr !== false ||
+    !result.reviewed_by_caregiver_id
+  ) {
+    throw new Error("The backend did not confirm the candidate review. Refresh the review list before trying again.");
+  }
+  return result;
+}
+
 export async function patchJSON(path: string, body: unknown) {
   const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetch(resolveApiUrl(path), {
