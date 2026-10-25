@@ -100,7 +100,14 @@ export default function QwenAssistPanel({
     setReply(null);
     try {
       await ensureAnonymousSession();
-      const boundedContext = contextText.trim().slice(0, 5_500);
+      // Page-specific context is valid only for the workflow the page explicitly supplied.
+      // Switching workflow must not silently carry document or appointment context into another task.
+      const boundedContext = workflow === defaultWorkflow ? contextText.trim().slice(0, 5_500) : "";
+      const boundedEvidenceIds = workflow === defaultWorkflow ? [...new Set(evidenceIds)].slice(0, 10) : [];
+      const scopedAppointmentId =
+        workflow === defaultWorkflow || ["appointment", "after_appointment", "handoff", "professional_summary"].includes(workflow)
+          ? appointmentId
+          : null;
       const text = [
         "Caregiver request:",
         requestText.slice(0, 1_800),
@@ -111,8 +118,8 @@ export default function QwenAssistPanel({
       const result = (await postJSON("/assistant/assist", {
         workflow,
         text,
-        evidence_ids: [...new Set(evidenceIds)].slice(0, 10),
-        ...(appointmentId ? { appointment_id: appointmentId } : {}),
+        evidence_ids: boundedEvidenceIds,
+        ...(scopedAppointmentId ? { appointment_id: scopedAppointmentId } : {}),
       })) as QwenAssistResult;
 
       if (
