@@ -13,7 +13,7 @@ export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown | null>(null);
-  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId: string | null } | null>(null);
+  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId: string | null; recordedAt: string | null } | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
   const [reviewingCandidate, setReviewingCandidate] = useState<number | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
@@ -446,6 +446,7 @@ export default function StructuredDailyCapture() {
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
         analysisId: typeof data?.qwen_analysis_id === 'string' ? data.qwen_analysis_id : null,
+        recordedAt: typeof data?.recorded_at === 'string' ? data.recorded_at : null,
       });
       setReviewDrafts({});
       setReviewFeedback(null);
@@ -591,7 +592,7 @@ export default function StructuredDailyCapture() {
           personId,
           content: reviewedText,
           source: 'Caregiver-reviewed Daily Capture candidate',
-          eventDate: new Date().toISOString(),
+          eventDate: qwenAnalysis.recordedAt || new Date().toISOString(),
           token: nextToken,
           sourceEventId: result.source_event_id,
         });
