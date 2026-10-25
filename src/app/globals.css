@@ -5169,3 +5169,45 @@ input[type="file"] { width: 100%; white-space: normal; }
   outline-offset: 3px;
 }
 
+
+
+/* UI reliability fix — explicit contrast for custom inline-style workflows and Settings account actions. */
+:root {
+  --solenos-sage-button: #b9d5b5;
+  --solenos-sage-button-hover: #a8c9a3;
+  --solenos-button-ink: #17251c;
+}
+.solenos-btn--primary,
+.workspace-primary,
+.el-button {
+  background-color: var(--solenos-sage-button) !important;
+  border-color: var(--solenos-sage-button) !important;
+  color: var(--solenos-button-ink) !important;
+}
+.solenos-btn--secondary {
+  background-color: #ffffff !important;
+  border-color: #718477 !important;
+  color: #17251c !important;
+}
+.solenos-btn--destructive {
+  background-color: #8f2525 !important;
+  border-color: #8f2525 !important;
+  color: #ffffff !important;
+}
+.mobile-settings-account-controls {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #d7ded8);
+  min-width: 0;
+}
+.mobile-settings-account-controls .mobile-settings-buttons > button,
+.mobile-settings-account-controls .mobile-settings-actions > button {
+  min-height: 44px;
+  font-weight: 700;
+}
+.mobile-settings-account-controls .mobile-settings-input {
+  color: #17251c;
+  background: #ffffff;
+}
