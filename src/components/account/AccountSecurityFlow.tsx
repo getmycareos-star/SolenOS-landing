@@ -152,6 +152,12 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     finally { setMfaBusy(false); }
   };
 
+  const resendVerification = async () => {
+    if (!email.trim()) throw new Error("Enter the account email address first.");
+    const result = await post("/account-security/verification/request", { email: email.trim() });
+    setMessage(result.message || "If the account exists and needs verification, instructions will be sent.");
+  };
+
   const requestEmailAction = async (purpose: "password-reset" | "recovery") => {
     const path = purpose === "password-reset" ? "/account-security/password-reset/request" : "/account-security/recovery/request";
     const result = await post(path, { email: email.trim() });
@@ -254,6 +260,7 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 18, fontSize: 14 }}>
         <a href="/reset-password" style={{ color: "#315d40" }}>Forgot password?</a>
         <a href="/recover-account" style={{ color: "#315d40" }}>Recover account</a>
+        <button type="button" disabled={busy} onClick={(e) => void run(e as any, resendVerification)} style={{ border: 0, background: "transparent", color: "#315d40", textDecoration: "underline", cursor: "pointer" }}>Resend verification email</button>
       </div>
       {error && <p role="alert" style={{ color: "#9b2525" }}>{error}</p>}
       {message && <p role="status" style={{ color: "#315d40" }}>{message}</p>}
