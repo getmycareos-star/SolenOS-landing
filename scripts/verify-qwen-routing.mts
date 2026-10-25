@@ -72,9 +72,23 @@ requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "We won’t ask you to submit the same entry again.",
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("The backend confirmed"));
+requireText("src/app/workspace/settings/page.tsx", [
+  "function AccountCard()",
+  'postJSON("/accounts"',
+  'deleteJSON("/accounts/me"',
+  'signInToAccount(email, password)',
+  "Email verification, password reset, and multi-factor authentication are not available yet.",
+]);
+requireText("src/api/client.ts", [
+  'export async function deleteJSON(path: string, body?: unknown)',
+  "export async function signInToAccount(email: string, password: string)",
+  'window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token)',
+]);
 console.log("PASS: contextual assistance remains routed through the authenticated service with read-only care-record safeguards.");
 console.log("PASS: caregivers cannot select internal assistant workflows in the shared panel.");
 console.log("PASS: Daily Capture has no separate assistant workflow panel; saved observations remain reviewable.");
 console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
 console.log("PASS: documents and Community use product language rather than internal model labels.");
 console.log("PASS: Community uses searchable stories, simple filters, and no separate model/workflow panel.");
+
+console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");
