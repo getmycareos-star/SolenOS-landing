@@ -134,7 +134,7 @@ export default function CareContinuityIntegrityPanel({
       }
       setData({ assertions, freshness, revisions, outcomes, questions, contradictions })
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Care continuity could not be loaded.')
+      setError('We couldn’t load the care history. Check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -178,7 +178,7 @@ export default function CareContinuityIntegrityPanel({
       setNotice('Report saved. It remains unreviewed until explicitly confirmed.')
       await load()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The report could not be saved.')
+      setError('We couldn’t save this care review. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -203,7 +203,7 @@ export default function CareContinuityIntegrityPanel({
       setNotice('Contradiction review saved. The original reports remain preserved.')
       await load()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The contradiction review could not be saved.')
+      setError('We couldn’t save this review. Please try again.')
     }
   }
 
@@ -225,7 +225,7 @@ export default function CareContinuityIntegrityPanel({
       setNotice('Marked as caregiver-reviewed. This is not independent clinical verification.')
       await load()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The review status could not be saved.')
+      setError('We couldn’t update this review. Please try again.')
     }
   }
 
@@ -252,7 +252,7 @@ export default function CareContinuityIntegrityPanel({
       setNotice('Outcome recorded. SolenOS has not inferred that the underlying care issue is resolved.')
       await load()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The outcome could not be recorded.')
+      setError('We couldn’t save the outcome. Please try again.')
     }
   }
 
@@ -329,7 +329,7 @@ export default function CareContinuityIntegrityPanel({
                   </label>
                 ))}
               </div>}
-          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 0 }}>Selected evidence IDs are validated by the backend against this care record before saving.</p>
+          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 0 }}>SolenOS checks that the selected information belongs to this care record before saving.</p>
         </fieldset>
         <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving…' : 'Save report'}</button>
       </form>
@@ -416,7 +416,7 @@ export default function CareContinuityIntegrityPanel({
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Care-state history</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Before-and-after snapshots of tracked backend care-state changes. This is an audit trail, not a claim that every frontend workflow has been migrated to it.</p>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A history of how recorded care information has changed over time.</p>
         {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No tracked revisions returned.</p> : data.revisions.slice(0, 20).map((item) =>
           <details key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <summary style={{ cursor: 'pointer', fontSize: 13 }}>
