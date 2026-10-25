@@ -6,12 +6,13 @@ const root = process.cwd();
 const component = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
 const workspace = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
-assert.match(component, /getAnonymousAccessToken/);
-assert.match(component, /fetch\("\/api\/situation\?offer_return_invite=0"/);
+assert.match(component, /ensureAnonymousSession/);
+assert.match(component, /fetch\(`\/api\/situation\?\${params\.toString\(\)}`/);
 assert.match(component, /response\.ok/);
-assert.match(component, /Current record state could not be confirmed/);
-assert.match(component, /no saved care events or evidence are available/i);
-assert.match(component, /not supplied by this record-hydration response/);
+assert.match(component, /We couldn't load your care information/);
+assert.match(component, /Your care record is ready to build/);
+assert.match(component, /what_i_understood/);
+assert.match(component, /ui_situations/);
 assert.doesNotMatch(component, /sample care event|demo caregiver|fabricated/i);
 assert.match(workspace, /<PersistedCareOrientation\s*\/>/);
 
