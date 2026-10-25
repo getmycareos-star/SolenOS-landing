@@ -51,6 +51,8 @@ function WorkspacePageInner() {
   const searchParams = useSearchParams();
   const { runtime, hydrated, entryReady } = useWorkspace();
   const [displayName, setDisplayName] = useState("");
+  const [isArchived, setIsArchived] = useState(false);
+  const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const compose = searchParams.get("compose") === "1";
 
   // Read localStorage only after mount — prevents server/client hydration mismatch.
@@ -59,8 +61,12 @@ function WorkspacePageInner() {
       setDisplayName(
         window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE)?.trim() ?? "",
       );
+      setIsArchived(window.localStorage.getItem("solenos_workspace_archived") === "1");
     } catch {
       setDisplayName("");
+      setIsArchived(false);
+    } finally {
+      setArchiveStateLoaded(true);
     }
   }, []);
 
@@ -71,8 +77,37 @@ function WorkspacePageInner() {
     [router],
   );
 
-  if (!hydrated || !entryReady) {
+  if (!hydrated || !entryReady || !archiveStateLoaded) {
     return <BrandLoading message="Loading your care context…" />;
+  }
+
+  if (isArchived) {
+    return (
+      <div className="mobile-screen">
+        <section className="mobile-care-cards" aria-labelledby="archived-workspace-title">
+          <div className="mobile-empty">
+            <h1 id="archived-workspace-title" className="mobile-empty-title">Workspace archived on this device</h1>
+            <p className="mobile-empty-body">
+              This hides the workspace on this device only. It does not delete care information stored by SolenOS or archive it for other caregivers.
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => {
+                try {
+                  window.localStorage.removeItem("solenos_workspace_archived");
+                } catch {
+                  // State still updates so the caregiver can continue on this device.
+                }
+                setIsArchived(false);
+                router.replace("/workspace");
+              }}
+            >
+              Restore workspace
+            </Button>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   if (compose) {
