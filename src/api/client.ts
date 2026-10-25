@@ -387,6 +387,7 @@ export function getCaregiverId(): string | null {
 export interface AuthSessionInfo {
   authenticated: boolean
   account_id: string | null
+  account_email?: string
   session_type: string
   authorized_person_ids: string[]
   caregiver_roles: Record<string, string>
