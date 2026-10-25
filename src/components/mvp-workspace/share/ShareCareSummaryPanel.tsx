@@ -62,6 +62,28 @@ interface ShareCareSummaryPanelProps {
 
 type ShareFormat = "copy" | "print" | "native";
 
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await copyTextToClipboard(text);
+      return;
+    } catch {
+      // Fall through to the selection-based copy for browsers with restricted clipboard access.
+    }
+  }
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  field.style.pointerEvents = "none";
+  document.body.appendChild(field);
+  field.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(field);
+  if (!copied) throw new Error("Copy isn't available in this browser. Try Print / PDF instead.");
+}
+
 export function ShareCareSummaryPanel({
   caregiverId,
   careSessionId,
@@ -178,7 +200,7 @@ export function ShareCareSummaryPanel({
     try {
       if (format === "copy") {
         const text = buildPlainTextSummary(summary, selectedContent);
-        await navigator.clipboard.writeText(text);
+        await copyTextToClipboard(text);
         setSharingResult("Summary copied to clipboard.");
         recordShareHistory(summary.preparedFor, "text", "shared");
         setState("shared");
@@ -248,7 +270,7 @@ export function ShareCareSummaryPanel({
     if (!summary || !selectedContent) return;
     try {
       const text = buildPlainTextSummary(summary, selectedContent);
-      await navigator.clipboard.writeText(text);
+      await copyTextToClipboard(text);
       setSharingResult("Summary copied to clipboard.");
       recordShareHistory(summary.preparedFor, "text", "shared");
       setState("shared");
