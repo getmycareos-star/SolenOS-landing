@@ -1284,7 +1284,18 @@ export default function StructuredDailyCapture() {
               <select
                 id="capture-vital-type"
                 value={vitalForm.vital_type}
-                onChange={(e) => setVitalForm(prev => ({ ...prev, vital_type: e.target.value }))}
+                onChange={(e) => {
+                  const nextType = e.target.value;
+                  setVitalError(null);
+                  setVitalFeedback(null);
+                  setVitalForm(prev => ({
+                    ...prev,
+                    vital_type: nextType,
+                    unit: !prev.unit || Object.values(VITAL_UNITS).includes(prev.unit)
+                      ? VITAL_UNITS[nextType]
+                      : prev.unit,
+                  }));
+                }}
                 style={{ 
                   width: '100%', 
                   padding: '10px 12px', 
@@ -1302,7 +1313,7 @@ export default function StructuredDailyCapture() {
               </select>
             </div>
             
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
                 <label htmlFor="capture-vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
                 <input
