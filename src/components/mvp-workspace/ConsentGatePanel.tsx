@@ -190,16 +190,39 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
         </label>
 
         <fieldset className="consent-optional">
-          <legend>Optional</legend>
-          <p className="panel-muted">{status.signup_improvement_copy}</p>
+          <legend>Optional — help improve SolenOS</legend>
+          <p className="panel-muted">
+            This choice is separate from using SolenOS to maintain the care record you request.
+            It is off unless you tick the box below.
+          </p>
+          <h3>What may be used if you opt in</h3>
+          <ul>
+            <li>Feedback you deliberately submit to help improve or validate SolenOS.</li>
+            <li>The feedback category and related details needed to review that submission.</li>
+          </ul>
+          <h3>What this checkbox does not permit</h3>
+          <ul>
+            <li>Publishing your care record or sharing it with other caregivers.</li>
+            <li>Selling personal information or using it for targeted advertising.</li>
+            <li>Automatically submitting every private care note, document, or Companion conversation as improvement feedback.</li>
+          </ul>
+          <p className="panel-muted">
+            SolenOS must continue to protect access to care information and remove direct identifiers
+            where appropriate. You can change this optional choice later in Settings → Privacy &amp; Data.
+          </p>
           <label className="consent-checkbox">
             <input
               type="checkbox"
               checked={dataImprovement}
               onChange={(e) => setDataImprovement(e.target.checked)}
             />
-            <span>{status.data_improvement_statement}</span>
+            <span>Yes, allow feedback I submit for improvement to be used for that purpose.</span>
           </label>
+          <p className="panel-muted" role="status">
+            {dataImprovement
+              ? "Optional improvement feedback use: on. You can turn it off later in Privacy & Data settings."
+              : "Optional improvement feedback use: off. Your care-record features remain available."}
+          </p>
         </fieldset>
 
         {error && <p className="consent-error">{error}</p>}
