@@ -39,12 +39,12 @@ interface ExperienceResult {
 }
 
 const STAGES: { value: CareStage | 'all'; label: string }[] = [
-  { value: 'all', label: 'All stages' },
   { value: 'early', label: 'Early stage' },
-  { value: 'moderate', label: 'Moderate stage' },
-  { value: 'late', label: 'Later stage' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'late', label: 'Late' },
+  { value: 'all', label: 'All stages' },
 ]
-const TAGS = ['All topics', 'sundowning', 'wandering', 'sleep', 'communication', 'behavior', 'safety', 'medication', 'nutrition', 'activities', 'routine']
+const TAGS = ['All topics', 'sundowning', 'wandering', 'medication', 'behavior', 'sleep', 'safety', 'activities', 'nutrition']
 const baseButton: CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   minHeight: 42, padding: '10px 15px', borderRadius: 12, border: '1px solid var(--border)',
@@ -231,10 +231,14 @@ export default function Community() {
               Real experiences from people caring for someone with dementia. Find ideas, ask a question, or share what helped your family.
             </p>
           </div>
-          <button type="button" onClick={() => setComposerOpen((open) => !open)} style={{ ...baseButton, background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', flexShrink: 0 }}>
-            {composerOpen ? <X size={17} /> : <Sparkles size={17} />}
-            {composerOpen ? 'Close editor' : 'Share an experience'}
-          </button>
+          <div aria-label="Community actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 9, flexShrink: 0, width: 'min(100%, 420px)' }}>
+            <button type="button" onClick={() => { setPostType('experience'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'experience'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', fontWeight: 750, boxShadow: '0 2px 7px rgba(0,0,0,.08)' }}>
+              <Sparkles size={18} aria-hidden="true" /> Share what works
+            </button>
+            <button type="button" onClick={() => { setPostType('question'); setComposerOpen(true) }} aria-pressed={composerOpen && postType === 'question'} style={{ ...baseButton, flex: '1 1 175px', minHeight: 48, padding: '12px 16px', background: 'var(--surface)', color: 'var(--text)', borderColor: 'var(--accent)', fontWeight: 750 }}>
+              <MessageCircle size={18} aria-hidden="true" /> Ask the community
+            </button>
+          </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
           <span style={{ display: 'inline-flex', gap: 7, alignItems: 'center', fontSize: 12, borderRadius: 999, padding: '7px 11px', background: 'var(--surface)', border: '1px solid var(--border)' }}><ShieldCheck size={14} /> Respectful peer support</span>
@@ -289,14 +293,20 @@ export default function Community() {
           <Search size={17} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', ...muted }} />
           <input aria-label="Search community posts" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search stories, topics, or keywords" style={{ width: '100%', minHeight: 46, padding: '11px 14px 11px 42px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', font: 'inherit', fontSize: 14 }} />
         </label>
-        <div style={{ display: 'grid', gap: 10 }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }} aria-label="Filter by topic">
-            {TAGS.map((tag) => <button key={tag} type="button" onClick={() => setActiveTag(tag)} aria-pressed={activeTag === tag} style={{ ...baseButton, minHeight: 35, padding: '6px 11px', borderRadius: 999, fontSize: 12, background: activeTag === tag ? 'var(--accent-soft)' : 'var(--surface)', borderColor: activeTag === tag ? 'var(--accent)' : 'var(--border)' }}>{tag}</button>)}
+        <section aria-label="Find community experiences" style={{ ...cardStyle, display: 'grid', gap: 16, padding: '16px clamp(14px, 2.5vw, 20px)' }}>
+          <div style={{ display: 'grid', gap: 9 }}>
+            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 750 }}>By tag</h4>
+            <div role="group" aria-label="Filter by tag" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {TAGS.map((tag) => <button key={tag} type="button" onClick={() => setActiveTag(tag)} aria-pressed={activeTag === tag} style={{ ...baseButton, minHeight: 40, padding: '8px 13px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: activeTag === tag ? 'var(--accent-soft)' : 'var(--surface)', color: 'var(--text)', borderColor: activeTag === tag ? 'var(--accent)' : 'var(--border)', borderWidth: activeTag === tag ? 2 : 1 }}>{tag}</button>)}
+            </div>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }} aria-label="Filter by care stage">
-            {STAGES.map((stage) => <button key={stage.value} type="button" onClick={() => setActiveStage(stage.value)} aria-pressed={activeStage === stage.value} style={{ ...baseButton, minHeight: 35, padding: '6px 11px', borderRadius: 10, fontSize: 12, background: activeStage === stage.value ? 'var(--accent-soft)' : 'var(--surface)', borderColor: activeStage === stage.value ? 'var(--accent)' : 'var(--border)' }}>{stage.label}</button>)}
+          <div style={{ display: 'grid', gap: 9 }}>
+            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 750 }}>By stage</h4>
+            <div role="group" aria-label="Filter by care stage" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {STAGES.map((stage) => <button key={stage.value} type="button" onClick={() => setActiveStage(stage.value)} aria-pressed={activeStage === stage.value} style={{ ...baseButton, minHeight: 40, padding: '8px 14px', borderRadius: 11, fontSize: 13, fontWeight: 700, background: activeStage === stage.value ? 'var(--accent-soft)' : 'var(--surface)', color: 'var(--text)', borderColor: activeStage === stage.value ? 'var(--accent)' : 'var(--border)', borderWidth: activeStage === stage.value ? 2 : 1 }}>{stage.label}</button>)}
+            </div>
           </div>
-        </div>
+        </section>
 
         {(activeTag !== 'All topics' || activeStage !== 'all' || savedOnly || search) && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}><span style={{ ...muted, fontSize: 12 }}>Filters are on</span><button type="button" onClick={resetFilters} style={{ ...baseButton, minHeight: 34, padding: '5px 10px', fontSize: 12 }}><X size={14} /> Clear filters</button></div>}
 
