@@ -231,7 +231,7 @@ export default function Companion() {
           {loading ? 'Sending…' : 'Send'}
         </button>
       </form>
-      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} />
+      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
     </div>
   )
 }
