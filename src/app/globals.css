@@ -4876,3 +4876,72 @@ input[type="file"] { width: 100%; white-space: normal; }
   .structured-daily-capture form > div[style*="display: flex"] > div { flex-basis: 100% !important; }
   .workspace-more-menu-dropdown { right: 0; }
 }
+
+
+/* Returning-caregiver orientation is grounded in a fresh server read, not local cache. */
+.persisted-care-orientation {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid #d8e4e5;
+  border-radius: 16px;
+  background: #f7faf9;
+  color: #173f4b;
+}
+.persisted-care-orientation-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.persisted-care-orientation-eyebrow {
+  margin: 0 0 0.25rem;
+  color: #267c78;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.persisted-care-orientation h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+.persisted-care-orientation p {
+  margin: 0;
+  color: #536a70;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.persisted-care-orientation-latest {
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e1e9e9;
+}
+.persisted-care-orientation-latest strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #173f4b;
+  font-size: 0.95rem;
+}
+.persisted-care-orientation-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.persisted-care-orientation-links a {
+  color: #176e6b;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.persisted-care-orientation-error {
+  padding: 0.75rem;
+  border: 1px solid #e7c5c1;
+  border-radius: 12px;
+  background: #fff4f2;
+  color: #873b34 !important;
+}
