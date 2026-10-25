@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { getAnonymousAccessToken } from "@/api/client";
+import { ensureAnonymousSession } from "@/api/client";
 
 type PersistedEvent = {
   id: string;
@@ -20,12 +20,18 @@ type PersistedObservation = {
   captured_at?: string;
 };
 type CareSnapshot = {
-  ok: true;
+  ok?: boolean;
   care_recipient_display_name?: string;
-  total_events: number;
-  events: PersistedEvent[];
+  total_events?: number;
+  events?: PersistedEvent[];
   has_context_root?: boolean;
-  active_care_situation?: { observations?: PersistedObservation[] } | null;
+  what_i_understood?: string | { summary?: string; text?: string } | null;
+  ui_situations?: Array<{ id?: string; title?: string; context_summary?: string; status?: string; updated_at?: string }>;
+  active_care_situation?: {
+    observations?: PersistedObservation[];
+    summary?: string;
+    current_situation?: string;
+  } | null;
 };
 type LoadState = "loading" | "ready" | "unavailable";
 
@@ -50,17 +56,19 @@ export function PersistedCareOrientation() {
     setState("loading");
     setError("");
     try {
-      const token = getAnonymousAccessToken();
-      if (!token) throw new Error("Your saved care information isn't available right now.");
-      const response = await fetch("/api/situation?offer_return_invite=0", {
-        headers: { Authorization: `Bearer ${token}` },
+      const session = await ensureAnonymousSession();
+      const storedCareSessionId = window.localStorage.getItem("solenos_care_session_id");
+      const params = new URLSearchParams({ caregiver_id: session.caregiver.id, offer_return_invite: "0" });
+      if (storedCareSessionId) params.set("care_session_id", storedCareSessionId);
+      const response = await fetch(`/api/situation?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
         cache: "no-store",
       });
       if (!response.ok) {
         throw new Error(`Your saved care information isn't available right now.`);
       }
       const data = (await response.json()) as CareSnapshot;
-      if (!data || data.ok !== true || !Array.isArray(data.events) || typeof data.total_events !== "number") {
+      if (!data || typeof data !== "object" || (!Array.isArray(data.events) && !Array.isArray(data.ui_situations) && !data.what_i_understood && !data.active_care_situation)) {
         throw new Error("Your saved care information isn't available right now.");
       }
       setSnapshot(data);
@@ -104,10 +112,14 @@ export function PersistedCareOrientation() {
   }
 
   const events = snapshot.events ?? [];
+  const situations = snapshot.ui_situations ?? [];
   const observations = snapshot.active_care_situation?.observations ?? [];
   const latestEvent = events.length > 0 ? events[events.length - 1] : null;
   const latestObservation = observations.length > 0 ? observations[observations.length - 1] : null;
-  const hasServerEntries = snapshot.total_events > 0 || observations.length > 0;
+  const understanding = typeof snapshot.what_i_understood === "string"
+    ? snapshot.what_i_understood
+    : snapshot.what_i_understood?.summary || snapshot.what_i_understood?.text || "";
+  const hasServerEntries = (snapshot.total_events ?? 0) > 0 || events.length > 0 || situations.length > 0 || observations.length > 0 || Boolean(understanding.trim()) || Boolean(snapshot.active_care_situation?.summary || snapshot.active_care_situation?.current_situation);
 
   return (
     <section className="persisted-care-orientation" aria-label="Your care record">
@@ -123,14 +135,23 @@ export function PersistedCareOrientation() {
 
       {hasServerEntries ? (
         <>
-          <p>{snapshot.total_events} saved care update{snapshot.total_events === 1 ? "" : "s"} in your record.</p>
+          <p>{snapshot.total_events ?? events.length} saved care update{(snapshot.total_events ?? events.length) === 1 ? "" : "s"} in your record.</p>
+          {understanding.trim() && <div className="persisted-care-orientation-latest"><strong>Current understanding</strong><p>{understanding}</p></div>}
+          {situations.map((situation, index) => (
+            <div className="persisted-care-orientation-latest" key={situation.id || `situation-${index}`}>
+              <strong>{situation.title?.trim() || "Care update"}</strong>
+              {situation.context_summary && <p>{situation.context_summary}</p>}
+              {situation.status && <p>{situation.status.replace(/_/g, " ")}</p>}
+              {situation.updated_at && <p>{formatDate(situation.updated_at)}</p>}
+            </div>
+          ))}
           {latestEvent ? (
             <div className="persisted-care-orientation-latest">
               <strong>Latest care update</strong>
               <p>{eventTitle(latestEvent)}</p>
               <p>{formatDate(latestEvent.occurred_at)}</p>
             </div>
-          ) : snapshot.total_events > 0 ? (
+          ) : (snapshot.total_events ?? 0) > 0 ? (
             <p role="status">Some saved updates are unavailable to display right now. Try refreshing your record.</p>
           ) : null}
           {latestObservation ? (
