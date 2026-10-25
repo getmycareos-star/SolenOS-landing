@@ -131,8 +131,23 @@ assert(companion.includes("sendMessage(draft)"));
 assert(companion.includes("postJSON('/conversation/message'"));
 assert(companion.includes("ensureAnonymousSession()"));
 assert(companion.includes("person_id: session.person.id"));
+assert(companion.includes('aria-label="Send a message to Companion"'));
+assert(companion.includes('aria-label="Send message"'));
+assert(companion.includes("void sendMessage()"));
+assert(companion.includes("type=\"submit\""));
+const community = fs.readFileSync(
+  path.join(root, "src", "components", "workflows", "Community.tsx"),
+  "utf8",
+);
+assert(community.includes('aria-label="Send community post"'));
+assert(community.includes("Send post"));
+assert(community.includes("onSubmit={submitPost}"));
+assert(community.includes("postJSON('/community'"));
+
 assert(workspace.includes('err.detail.code === "conversation_only"'));
 assert(workspace.includes("/workspace/companion?draft="));
+console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
+console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");
 console.log("✓ greetings use the server-issued session and Companion endpoint; they are not written as care evidence");
 
 const sot = fs.readFileSync(
