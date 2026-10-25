@@ -229,11 +229,11 @@ export default function Community() {
         if (!Array.isArray(legacy?.matches)) throw new Error('Legacy experience response was incomplete.')
         setWisdomMatches(legacy.matches.slice(0, 4))
         setWisdomProviderStatus('not_configured')
-        setWisdomNotice('The Qwen Community endpoint is not deployed yet. These are literal peer-post matches, not an AI summary.')
+        setWisdomNotice('This summary is temporarily unavailable. You can still read published peer experiences below.')
         return
       }
       if (!Array.isArray(data?.matches) || typeof data?.provider_status !== 'string') {
-        throw new Error('Community Qwen response was incomplete.')
+        throw new Error('The community summary could not be prepared.')
       }
       setWisdomMatches(data.matches.slice(0, 4))
       setWisdomSummary(data.ai_generated && typeof data.summary === 'string' ? data.summary : null)
@@ -241,7 +241,7 @@ export default function Community() {
       setWisdomNotice(typeof data.notice === 'string' ? data.notice : null)
     } catch {
       setWisdomMatches([])
-      setWisdomError('Community Qwen assistance could not be confirmed. No generated summary or sample stories are shown.')
+      setWisdomError('The community summary is unavailable right now. Only published peer experiences are shown.')
     } finally {
       setLoadingWisdom(false)
     }
@@ -353,7 +353,7 @@ export default function Community() {
         {wisdomError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px' }}>{wisdomError}</p>}
         {!loadingWisdom && !wisdomError && wisdomProviderStatus && !wisdomSummary && wisdomProviderStatus !== 'not_needed' && (
           <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-            Qwen summary unavailable ({wisdomProviderStatus}). Showing only published peer posts below; no AI summary was substituted.
+            Summary unavailable right now. Showing only published peer experiences below.
           </p>
         )}
         {wisdomNotice && !wisdomSummary && (
@@ -361,7 +361,7 @@ export default function Community() {
         )}
         {wisdomSummary && (
           <div style={{ padding: '12px 14px', marginBottom: '10px', background: 'var(--accent-soft)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Qwen summary of published peer experiences</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Summary of published peer experiences</div>
             <p style={{ fontSize: '13px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{wisdomSummary}</p>
             {wisdomNotice && <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '8px' }}>{wisdomNotice}</p>}
           </div>
@@ -385,7 +385,7 @@ export default function Community() {
       </div>
 
       <QwenAssistPanel
-        title="Qwen support for Community"
+        title="Help reflect on community experiences"
         defaultWorkflow="community"
         compact
         contextText={[
