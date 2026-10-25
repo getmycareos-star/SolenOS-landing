@@ -152,6 +152,12 @@ export function sanitizeCaregiverErrorMessage(raw: string | null | undefined): s
     if (pattern.test(t)) return replacement;
   }
 
+  // Never surface raw transport, HTTP, database, or framework diagnostics to caregivers.
+  // The message is only shown after a real failed action; keep it useful without leaking internals.
+  if (/situation hydration failed|failed to fetch|fetch failed|network error|request failed|timed? out|connection refused|service unavailable|internal server error|\\bHTTP\\s*\\d{3}\\b|\\b(?:401|403|404|408|429|500|502|503|504)\\b|\\b(?:backend|endpoint|database|postgres(?:ql)?|sqlalchemy|alembic|traceback|stack trace)\\b/i.test(t)) {
+    return "We couldn’t complete that step. Check your connection and try again. Your existing care information has not been changed.";
+  }
+
   t = t
     .replace(/\bCareEvents?\b/gi, "care record entry")
     .replace(/\bcare_events?\b/gi, "care record entry")
