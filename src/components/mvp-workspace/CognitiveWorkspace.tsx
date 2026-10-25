@@ -983,6 +983,20 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     .filter(Boolean)
     .join(" ");
 
+  // Keep the caregiver workspace behind the required privacy acknowledgement.
+  // If the consent service is unavailable, show only the retryable consent screen;
+  // never expose the workspace while the acknowledgement state is unknown.
+  if (consentState !== "accepted") {
+    return (
+      <div className={shellClass}>
+        <p className="panel-muted research-preview-notice" role="note">
+          {IN_APP_IMPROVING_NOTICE}
+        </p>
+        <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
+      </div>
+    );
+  }
+
   return (
     <div className={shellClass}>
       <p className="panel-muted research-preview-notice" role="note">
