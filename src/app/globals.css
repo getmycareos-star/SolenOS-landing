@@ -5316,3 +5316,23 @@ button:disabled,
   outline: 3px solid #173f4b;
   outline-offset: 3px;
 }
+
+
+.persisted-care-orientation-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 44px;
+  padding: .55rem .8rem;
+  border: 2px solid #173f4b !important;
+  border-radius: 9px;
+  background: #173f4b !important;
+  color: #ffffff !important;
+  font-weight: 750;
+  box-shadow: 0 2px 0 rgba(23, 63, 75, .16);
+}
+.persisted-care-orientation-header button:hover {
+  background: #115f5b !important;
+  border-color: #115f5b !important;
+}
