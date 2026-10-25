@@ -19,6 +19,9 @@ assert.doesNotMatch(companion, /Safety: \{msg\.safety_note\}/);
 assert.doesNotMatch(companion, /Guard: \{msg\.guard_verdict\}/);
 assert.doesNotMatch(companion, /Confidence: \{Math\.round/);
 assert.doesNotMatch(companion, /Evidence: \{msg\.evidence_ids/);
+assert.match(companion, /showPanel=\{false\}/);
+assert.match(deltaPanel, /if \(!showPanel\) return null/);
+assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);
 
 // A successful empty response is a first-visit state, not a load error.
 assert.match(orientation, /Your care record is ready to build/);
