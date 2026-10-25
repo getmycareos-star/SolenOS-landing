@@ -254,7 +254,10 @@ export async function revokeAnonymousSession(): Promise<void> {
     window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
     window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
     window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
+    window.localStorage.removeItem("solenos_account_id");
+    window.localStorage.removeItem("solenos_account_email");
     window.dispatchEvent(new Event("personIdChanged"));
+    window.dispatchEvent(new Event("solenosAuthStateChanged"));
   }
 }
 
