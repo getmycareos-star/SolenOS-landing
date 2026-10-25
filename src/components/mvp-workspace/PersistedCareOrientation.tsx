@@ -22,8 +22,8 @@ type PersistedObservation = {
 type CareSnapshot = {
   ok: true;
   care_recipient_display_name?: string;
-  total_events?: number;
-  events?: PersistedEvent[];
+  total_events: number;
+  events: PersistedEvent[];
   has_context_root?: boolean;
   active_care_situation?: { observations?: PersistedObservation[] } | null;
 };
