@@ -4734,7 +4734,7 @@ img, video, svg { max-width: 100%; }
 
 /* Accessible, calm, responsive care workspace refresh (Next.js). */
 :root {
-  --solenos-sage-button: var(--care-accent);
+  --solenos-sage-button: var(--solenos-slate);
   --solenos-sage-button-hover: var(--solenos-slate);
   --solenos-button-ink: #ffffff;
   --text-base: 1.0625rem;
@@ -5219,8 +5219,8 @@ button[style*="var(--accent)"],
 button[style*="var(--trust)"],
 [role="button"][style*="var(--accent)"],
 [role="button"][style*="var(--trust)"] {
-  background-color: var(--care-accent) !important;
-  border-color: var(--care-accent) !important;
+  background-color: var(--solenos-slate) !important;
+  border-color: var(--solenos-slate) !important;
   color: #ffffff !important;
 }
 button[style*="var(--accent)"]:disabled,
@@ -5229,4 +5229,43 @@ button[style*="var(--trust)"]:disabled {
   border-color: #c6d3d8 !important;
   color: #40535b !important;
   opacity: 1 !important;
+}
+
+
+/* Final visibility pass: make actions unmistakable without changing the brand palette. */
+.solenos-btn--primary,
+.workspace-primary,
+.el-button,
+button[style*="var(--accent)"],
+button[style*="var(--trust)"],
+[role="button"][style*="var(--accent)"],
+[role="button"][style*="var(--trust)"] {
+  min-height: 46px;
+  font-weight: 750 !important;
+  border: 2px solid var(--solenos-slate) !important;
+  box-shadow: 0 2px 0 rgba(23, 63, 75, 0.18), 0 4px 12px rgba(23, 63, 75, 0.12);
+  cursor: pointer;
+}
+.solenos-btn--primary:hover:not(:disabled),
+.workspace-primary:hover:not(:disabled),
+.el-button:hover:not(:disabled),
+button[style*="var(--accent)"]:hover:not(:disabled),
+button[style*="var(--trust)"]:hover:not(:disabled) {
+  background-color: #115f5b !important;
+  border-color: #115f5b !important;
+  transform: translateY(-1px);
+}
+.solenos-btn--secondary,
+.mobile-settings-buttons > button:not([data-variant="primary"]):not([data-variant="destructive"]) {
+  border: 2px solid #536c76 !important;
+  font-weight: 700 !important;
+}
+.workspace-entry-action,
+.workspace-secondary-tools > button {
+  border: 2px solid #9aafb6 !important;
+  box-shadow: 0 2px 8px rgba(23, 63, 75, 0.08);
+}
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
 }
