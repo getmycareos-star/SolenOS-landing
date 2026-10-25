@@ -292,8 +292,72 @@ export interface AuthSessionInfo {
   mfa_verified: boolean
 }
 
+export type AccountCredentials = { email: string; password: string };
+export type AccountRegistration = AccountCredentials & {
+  caregiver_name: string;
+  care_recipient_name: string;
+};
+
+export async function authenticateAccount(
+  action: "register" | "login",
+  payload: AccountCredentials | AccountRegistration,
+): Promise<{ account: { id: string; email: string }; person: AnonymousSession["person"]; caregiver: AnonymousSession["caregiver"]; expires_at: string }> {
+  const response = await fetch(resolveApiUrl(`/sessions/${action}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const session = await handleResponse(response) as {
+    account: { id: string; email: string };
+    person: AnonymousSession["person"];
+    caregiver: AnonymousSession["caregiver"];
+    access_token: string;
+    expires_at: string;
+  };
+  if (!session.access_token || !session.account?.id || !session.person?.id || !session.caregiver?.id) {
+    throw new Error("The server did not return a complete account session.");
+  }
+  if (typeof window === "undefined") throw new Error("Account sessions require a browser.");
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, session.access_token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, session.person.id);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, session.caregiver.id);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, session.expires_at);
+  window.localStorage.setItem("solenos_account_id", session.account.id);
+  window.localStorage.setItem("solenos_account_email", session.account.email);
+  setPersonId(session.person.id);
+  window.dispatchEvent(new Event("solenosAuthStateChanged"));
+  return session;
+}
+
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (typeof window === "undefined" || !getAnonymousAccessToken()) {
+    return { authenticated: false, sessionInfo: null };
+  }
+  try {
+    const response = await fetch(resolveApiUrl("/sessions/me"), { headers: authorizationHeaders() });
+    const result = await handleResponse(response) as {
+      authenticated: boolean;
+      account: { id: string; email: string } | null;
+      session_type: string;
+    };
+    if (!result.authenticated || !result.account) return { authenticated: false, sessionInfo: null };
+    const sessionInfo: AuthSessionInfo = {
+      authenticated: true,
+      account_id: result.account.id,
+      session_type: "account",
+      authorized_person_ids: getPersonId() ? [getPersonId()] : [],
+      caregiver_roles: {},
+      professional_roles: {},
+      anonymous_session_id: null,
+      expires_at: window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY) || "",
+      mfa_verified: false,
+    };
+    window.localStorage.setItem("solenos_account_id", result.account.id);
+    window.localStorage.setItem("solenos_account_email", result.account.email);
+    return { authenticated: true, sessionInfo };
+  } catch {
+    return { authenticated: false, sessionInfo: null };
+  }
 }
 
 export function subscribeToAuthState(
