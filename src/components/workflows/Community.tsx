@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getJSON, postJSON, getCaregiverId } from '@/api/client'
-import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -30,23 +29,6 @@ interface CommunityPost {
 interface CommunityPostSummary {
   identity: string
   posts: CommunityPost[]
-}
-
-interface ExperienceMatch {
-  post_id: string
-  author_label: string
-  author_type: string
-  content: string
-  tags: string[]
-}
-
-interface ExperienceResult {
-  summary: string | null
-  matches: ExperienceMatch[]
-  post_ids: string[]
-  provider_status: 'connected' | 'not_configured' | 'error' | 'not_needed'
-  ai_generated: boolean
-  notice: string
 }
 
 const STAGE_LABELS: Record<CareStage, string> = {
@@ -133,13 +115,6 @@ export default function Community() {
   const [activeStage, setActiveStage] = useState<CareStage | null>(null)
   const [postType, setPostType] = useState<PostType>('experience')
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set())
-  const [wisdomQuery, setWisdomQuery] = useState('')
-  const [wisdomMatches, setWisdomMatches] = useState<ExperienceMatch[]>([])
-  const [wisdomSummary, setWisdomSummary] = useState<string | null>(null)
-  const [wisdomProviderStatus, setWisdomProviderStatus] = useState<string | null>(null)
-  const [wisdomNotice, setWisdomNotice] = useState<string | null>(null)
-  const [loadingWisdom, setLoadingWisdom] = useState(false)
-  const [wisdomError, setWisdomError] = useState<string | null>(null)
 
   const caregiverId = getCaregiverId()
 
@@ -209,44 +184,6 @@ export default function Community() {
     localStorage.setItem('solenos_saved_posts', JSON.stringify([...newSaved]))
   }
 
-  async function fetchWisdom() {
-    if (!wisdomQuery.trim()) return
-    setLoadingWisdom(true)
-    setWisdomError(null)
-    setWisdomMatches([])
-    setWisdomSummary(null)
-    setWisdomProviderStatus(null)
-    setWisdomNotice(null)
-    try {
-      let data: ExperienceResult
-      try {
-        data = await postJSON('/community/experience/summary', { observation: wisdomQuery.trim() }) as ExperienceResult
-      } catch (error) {
-        // Keep the deployed UI usable while the backend PR is awaiting deployment.
-        // The legacy endpoint is literal search only; it is never labelled as Qwen output.
-        if (!(error instanceof Error) || !/API 404/i.test(error.message)) throw error
-        const legacy = await postJSON('/community/experience', { observation: wisdomQuery.trim() }) as { matches?: ExperienceMatch[] }
-        if (!Array.isArray(legacy?.matches)) throw new Error('Legacy experience response was incomplete.')
-        setWisdomMatches(legacy.matches.slice(0, 4))
-        setWisdomProviderStatus('not_configured')
-        setWisdomNotice('The Qwen Community endpoint is not deployed yet. These are literal peer-post matches, not an AI summary.')
-        return
-      }
-      if (!Array.isArray(data?.matches) || typeof data?.provider_status !== 'string') {
-        throw new Error('Community Qwen response was incomplete.')
-      }
-      setWisdomMatches(data.matches.slice(0, 4))
-      setWisdomSummary(data.ai_generated && typeof data.summary === 'string' ? data.summary : null)
-      setWisdomProviderStatus(data.provider_status)
-      setWisdomNotice(typeof data.notice === 'string' ? data.notice : null)
-    } catch {
-      setWisdomMatches([])
-      setWisdomError('Community Qwen assistance could not be confirmed. No generated summary or sample stories are shown.')
-    } finally {
-      setLoadingWisdom(false)
-    }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!composerText.trim()) return
@@ -309,93 +246,6 @@ export default function Community() {
           ← Back to capture
         </Link>
       </div>
-
-      {/* Care-Record Wisdom section — connects community to care context */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: '12px', padding: '16px 20px', marginBottom: '24px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <span style={{ fontSize: '14px' }}>💡</span>
-          <h2 style={{ fontSize: '14px', fontWeight: 600, margin: 0 }}>
-            Wisdom from your care record
-          </h2>
-        </div>
-        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-          Enter something you're managing today to find how other caregivers handled it.
-        </p>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-          <input
-            type="text"
-            value={wisdomQuery}
-            onChange={(e) => setWisdomQuery(e.target.value)}
-            placeholder="e.g. wandering overnight, evening agitation, medication refusal"
-            style={{
-              flex: 1, padding: '8px 12px', borderRadius: '8px',
-              border: '1px solid var(--border)', background: 'var(--bg)',
-              fontSize: '13px', outline: 'none',
-            }}
-          />
-          <button
-            onClick={fetchWisdom}
-            disabled={loadingWisdom || !wisdomQuery.trim()}
-            style={{
-              padding: '8px 16px', borderRadius: '8px', border: 'none',
-              background: loadingWisdom || !wisdomQuery.trim()
-                ? 'var(--text-secondary)' : 'var(--accent)',
-              color: 'white', fontSize: '13px', cursor: 'default',
-            }}
-          >
-            {loadingWisdom ? '...' : 'Find wisdom'}
-          </button>
-        </div>
-
-        {wisdomError && <p role="alert" style={{ color: 'var(--error)', fontSize: '12px' }}>{wisdomError}</p>}
-        {!loadingWisdom && !wisdomError && wisdomProviderStatus && !wisdomSummary && wisdomProviderStatus !== 'not_needed' && (
-          <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-            Qwen summary unavailable ({wisdomProviderStatus}). Showing only published peer posts below; no AI summary was substituted.
-          </p>
-        )}
-        {wisdomNotice && !wisdomSummary && (
-          <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '11px', marginBottom: '8px' }}>{wisdomNotice}</p>
-        )}
-        {wisdomSummary && (
-          <div style={{ padding: '12px 14px', marginBottom: '10px', background: 'var(--accent-soft)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Qwen summary of published peer experiences</div>
-            <p style={{ fontSize: '13px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{wisdomSummary}</p>
-            {wisdomNotice && <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '8px' }}>{wisdomNotice}</p>}
-          </div>
-        )}
-        {!loadingWisdom && !wisdomError && wisdomMatches.length === 0 && wisdomQuery.trim() && (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>No matching published community experiences were returned.</p>
-        )}
-        {wisdomMatches.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {wisdomMatches.map(m => (
-              <div key={m.post_id} style={{
-                padding: '10px 14px', background: 'var(--bg)',
-                borderRadius: '8px', border: '1px solid var(--border)'
-              }}>
-                <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text)' }}>{m.author_label}</div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{m.content}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <QwenAssistPanel
-        title="Qwen support for Community"
-        defaultWorkflow="community"
-        compact
-        contextText={[
-          wisdomQuery.trim() ? "Caregiver's community search topic: " + wisdomQuery.trim() : "",
-          wisdomMatches.length
-            ? "Published peer experiences returned by the community search (personal reports, not authoritative care facts): " +
-              JSON.stringify(wisdomMatches.map((match) => ({ post_id: match.post_id, content: match.content, tags: match.tags })))
-            : "",
-        ].filter(Boolean).join("\n\n")}
-      />
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button
