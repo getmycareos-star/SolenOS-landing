@@ -7,7 +7,6 @@ import { ArrowLeft, CalendarDays } from "lucide-react";
 import { ensureAnonymousSession } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
-import QwenSupportPanel from "@/components/workflows/QwenSupportPanel";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -68,7 +67,6 @@ export default function DailyCarePage() {
       ) : (
         <BrandLoading message="Preparing your private care record…" />
       )}
-      {ready && <QwenSupportPanel workflow="daily_capture" />}
     </div>
   );
 }
