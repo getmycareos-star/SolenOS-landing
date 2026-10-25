@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { ensureAnonymousSession, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
+import { checkAuthState, getAnonymousAccessToken, getJSON, putJSON, revokeAnonymousSession } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
@@ -185,19 +185,30 @@ function ProfileCard() {
   );
 }
 
-/** Security — show actual bearer-session status and allow server-side revocation. */
+/** Security — account auth is optional; opening settings must not create an anonymous session. */
 function SecurityCard() {
   const { show, render } = useToast();
-  const [status, setStatus] = useState<"checking" | "active" | "unavailable" | "revoked">("checking");
+  const [status, setStatus] = useState<"checking" | "account" | "anonymous" | "unavailable" | "revoked">("checking");
   const [busy, setBusy] = useState(false);
+  const [accountEmail, setAccountEmail] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    void ensureAnonymousSession().then((session) => {
-      if (!cancelled) { setStatus("active"); setExpiresAt(session.expires_at); }
+    void checkAuthState().then((result) => {
+      if (cancelled) return;
+      if (result.authenticated) {
+        setStatus("account");
+        setAccountEmail(window.localStorage.getItem("solenos_account_email") || "");
+        setExpiresAt(result.sessionInfo?.expires_at || "");
+      } else if (getAnonymousAccessToken()) {
+        setStatus("anonymous");
+        setExpiresAt(window.localStorage.getItem("solenos_anonymous_session_expires_at") || "");
+      } else {
+        setStatus("unavailable");
+      }
     }).catch(() => {
-      if (!cancelled) setStatus("unavailable");
+      if (!cancelled) setStatus(getAnonymousAccessToken() ? "anonymous" : "unavailable");
     });
     return () => { cancelled = true; };
   }, []);
@@ -220,20 +231,23 @@ function SecurityCard() {
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title"><Shield size={16} aria-hidden /> Security</h2>
       <p className="mobile-settings-hint" role="status">
-        {status === "checking" ? "Checking the backend-issued care-record session…" :
-          status === "active" ? "An active, scoped anonymous bearer session is protecting this care record. This is not an account login." :
-          status === "revoked" ? "This session has been revoked. Care APIs will reject its token." :
-          "No valid session could be confirmed. Protected care operations should remain unavailable until the backend confirms a session."}
+        {status === "checking" ? "Checking your backend session…" :
+          status === "account" ? `Signed in with a SolenOS account${accountEmail ? ` (${accountEmail})` : ""}. Your account is stored by the backend and linked to its care record.` :
+          status === "anonymous" ? "You are using an anonymous care-record session. Creating an account is optional." :
+          status === "revoked" ? "This anonymous session was revoked by the backend." :
+          "No active account or anonymous session is confirmed in this browser."}
       </p>
       {expiresAt && <p className="mobile-settings-hint">Session expires: {new Date(expiresAt).toLocaleString()}</p>}
       <div className="mobile-settings-buttons">
-        <Button variant="destructive" disabled={status !== "active" || busy} loading={busy} onClick={() => void revoke()}>
-          {busy ? "Revoking…" : "Revoke this session"}
-        </Button>
+        <Button variant="primary" asChild><Link href="/signup">Create account</Link></Button>
+        <Button variant="secondary" asChild><Link href="/login">Log in</Link></Button>
+        {status === "anonymous" && (
+          <Button variant="destructive" disabled={busy} loading={busy} onClick={() => void revoke()}>
+            {busy ? "Revoking…" : "Revoke anonymous session"}
+          </Button>
+        )}
       </div>
-      <p className="mobile-settings-hint">
-        Account creation, password changes, MFA, and cross-device account recovery are not implemented yet; this screen does not pretend they are enabled.
-      </p>
+      <p className="mobile-settings-hint">Anonymous use remains available without an account. Account signup and login use the SolenOS backend; the backend must confirm success before the app signs you in.</p>
       {render()}
     </section>
   );
