@@ -4734,16 +4734,16 @@ img, video, svg { max-width: 100%; }
 
 /* Accessible, calm, responsive care workspace refresh (Next.js). */
 :root {
-  --solenos-sage-button: #b9d5b5;
-  --solenos-sage-button-hover: #a8c9a3;
-  --solenos-button-ink: #17251c;
+  --solenos-sage-button: var(--care-accent);
+  --solenos-sage-button-hover: var(--solenos-slate);
+  --solenos-button-ink: #ffffff;
   --text-base: 1.0625rem;
 }
 html { font-size: 100%; }
 body { overflow-x: clip; }
 button, input, select, textarea { font: inherit; }
 :where(button, a, input, select, textarea, [role="button"]):focus-visible {
-  outline: 3px solid #477c56;
+  outline: 3px solid var(--care-accent);
   outline-offset: 3px;
 }
 .solenos-btn--primary,
@@ -4835,7 +4835,7 @@ input[type="file"] { width: 100%; white-space: normal; }
   border: 1px solid #c7d2ca !important;
   border-radius: 10px !important;
   background: #fff !important;
-  color: #17251c !important;
+  color: #ffffff !important;
   font-size: 1rem !important;
   line-height: 1.45;
 }
@@ -5173,9 +5173,9 @@ input[type="file"] { width: 100%; white-space: normal; }
 
 /* UI reliability fix — explicit contrast for custom inline-style workflows and Settings account actions. */
 :root {
-  --solenos-sage-button: #b9d5b5;
-  --solenos-sage-button-hover: #a8c9a3;
-  --solenos-button-ink: #17251c;
+  --solenos-sage-button: var(--care-accent);
+  --solenos-sage-button-hover: var(--solenos-slate);
+  --solenos-button-ink: #ffffff;
 }
 .solenos-btn--primary,
 .workspace-primary,
@@ -5187,7 +5187,7 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-btn--secondary {
   background-color: #ffffff !important;
   border-color: #718477 !important;
-  color: #17251c !important;
+  color: #ffffff !important;
 }
 .solenos-btn--destructive {
   background-color: #8f2525 !important;
@@ -5208,7 +5208,7 @@ input[type="file"] { width: 100%; white-space: normal; }
   font-weight: 700;
 }
 .mobile-settings-account-controls .mobile-settings-input {
-  color: #17251c;
+  color: var(--ink);
   background: #ffffff;
 }
 
@@ -5219,14 +5219,14 @@ button[style*="var(--accent)"],
 button[style*="var(--trust)"],
 [role="button"][style*="var(--accent)"],
 [role="button"][style*="var(--trust)"] {
-  background-color: #b9d5b5 !important;
-  border-color: #b9d5b5 !important;
-  color: #17251c !important;
+  background-color: var(--care-accent) !important;
+  border-color: var(--care-accent) !important;
+  color: #ffffff !important;
 }
 button[style*="var(--accent)"]:disabled,
 button[style*="var(--trust)"]:disabled {
-  background-color: #e2e8e3 !important;
-  border-color: #b7c3b9 !important;
-  color: #39483e !important;
+  background-color: #e8eef0 !important;
+  border-color: #c6d3d8 !important;
+  color: #40535b !important;
   opacity: 1 !important;
 }
