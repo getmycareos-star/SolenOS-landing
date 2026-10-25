@@ -241,7 +241,7 @@ function AccountCard() {
         show("Account deleted. Care history was retained.", "success");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn’t complete that account action. Please try again.");
+      setError("We couldn’t complete that account action. Please check your details and try again.");
     } finally {
       setBusy(false);
     }
