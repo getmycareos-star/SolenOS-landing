@@ -213,7 +213,8 @@ function SecurityCard() {
       await revokeAnonymousSession();
       setStatus("revoked");
       setExpiresAt("");
-      show("This care-record session was revoked by the backend.", "success");
+      setAccountEmail("");
+      show(accountEmail ? "Account sessions and linked care sessions were revoked by the backend." : "This care-record session was revoked by the backend.", "success");
     } catch (e) {
       show(e instanceof Error ? e.message : "The backend could not revoke this session.", "error");
     } finally {
@@ -233,7 +234,7 @@ function SecurityCard() {
       {expiresAt && <p className="mobile-settings-hint">Session expires: {new Date(expiresAt).toLocaleString()}</p>}
       <div className="mobile-settings-buttons">
         <Button variant="destructive" disabled={status !== "active" || busy} loading={busy} onClick={() => void revoke()}>
-          {busy ? "Revoking…" : "Revoke this session"}
+          {busy ? "Revoking…" : accountEmail ? "Sign out and revoke sessions" : "Revoke this session"}
         </Button>
       </div>
       <div className="mobile-settings-buttons">
