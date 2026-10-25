@@ -10,6 +10,7 @@ const deltaPanel = fs.readFileSync(path.join(root, "src/components/CareDeltaPane
 const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
 const landingStyles = fs.readFileSync(path.join(root, "src/app/landing.css"), "utf8");
 const notifications = fs.readFileSync(path.join(root, "src/app/workspace/notifications/page.tsx"), "utf8");
+const qwenPanel = fs.readFileSync(path.join(root, "src/components/qwen/QwenAssistPanel.tsx"), "utf8");
 
 // Errors must be event-driven, dismissible through correction/reset, and not stale.
 assert.match(companion, /\{requestError && <p role="alert"/);
@@ -49,5 +50,9 @@ assert.doesNotMatch(dailyCapture, /Not returned by the extractor/);
 assert.doesNotMatch(landingStyles, /Strong, high-contrast calls to action/);
 assert.doesNotMatch(landingStyles, /box-shadow: 0 3px 0 rgba\(23, 63, 75, 0\.18\)/);
 assert.doesNotMatch(notifications, /Backend-backed notifications/);
+assert.match(qwenPanel, /background: "#ffffff", color: "#172b35"/);
+assert.match(qwenPanel, /background: loading \|\| !question\.trim\(\) \? "#e8eee9" : "#b9d5b5"/);
+assert.match(qwenPanel, /setError\(null\)/);
+assert.doesNotMatch(qwenPanel, /Context used:/);
 
 console.log("Caregiver UI contract checks passed.");
