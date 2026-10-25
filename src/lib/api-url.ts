@@ -13,6 +13,12 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 export function apiUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
+  // Consent requests stay same-origin so the browser does not issue a
+  // cross-origin Authorization preflight. Netlify forwards this small JSON
+  // contract to the canonical Railway backend using the explicit API proxy.
+  if (normalized === "/api/v1/consent" || normalized.startsWith("/api/v1/consent?")) {
+    return normalized;
+  }
   // Keep extraction same-origin: the Next.js handler forwards the bearer token
   // to Railway and uses local OCR only for formats the backend cannot extract.
   if (normalized === "/api/extract" || normalized.startsWith("/api/extract?")) return normalized;
