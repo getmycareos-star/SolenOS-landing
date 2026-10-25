@@ -33,26 +33,24 @@ function NotificationsCard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        await ensureAnonymousSession();
-        const prefs = await getJSON("/notifications/preferences") as {
-          quiet_hours_enabled: boolean; reminders_enabled: boolean;
-        };
-        if (!cancelled) {
-          setQuietHours(prefs.quiet_hours_enabled);
-          setReminders(prefs.reminders_enabled);
-        }
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load backend notification preferences.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const loadPreferences = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await ensureAnonymousSession();
+      const prefs = await getJSON("/notifications/preferences") as {
+        quiet_hours_enabled: boolean; reminders_enabled: boolean;
+      };
+      setQuietHours(prefs.quiet_hours_enabled);
+      setReminders(prefs.reminders_enabled);
+    } catch {
+      setError("We couldn't load your notification settings. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void loadPreferences(); }, [loadPreferences]);
 
   const persist = async (key: "quiet_hours_enabled" | "reminders_enabled", value: boolean) => {
     setSaving(true);
@@ -64,10 +62,10 @@ function NotificationsCard() {
       };
       setQuietHours(result.quiet_hours_enabled);
       setReminders(result.reminders_enabled);
-      show("Notification preferences saved to this care record.", "success");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save notification preferences.");
-      show("Notification preferences were not saved.", "error");
+      show("Notification settings saved.", "success");
+    } catch {
+      setError("We couldn't save your notification settings. Your previous settings are unchanged.");
+      show("Notification settings weren't saved.", "error");
     } finally {
       setSaving(false);
     }
@@ -76,8 +74,11 @@ function NotificationsCard() {
   return (
     <section className="mobile-settings-card">
       <h2 className="mobile-settings-card-title"><Bell size={16} aria-hidden /> Notifications</h2>
-      {loading && <p className="mobile-settings-hint" role="status">Loading preferences from the care backend…</p>}
-      {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
+      {loading && <p className="mobile-settings-hint" role="status">Loading your notification settings…</p>}
+      {error && <div className="mobile-settings-hint" role="alert">
+        <p>{error}</p>
+        <Button variant="secondary" onClick={() => void loadPreferences()} disabled={loading || saving}>Try again</Button>
+      </div>}
       <label className="mobile-settings-row">
         <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Suppress non-emergency reminders. Emergency handling is not disabled by this preference.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("quiet_hours_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
