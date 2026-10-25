@@ -11,12 +11,15 @@ const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/S
 const landingStyles = fs.readFileSync(path.join(root, "src/app/landing.css"), "utf8");
 const notifications = fs.readFileSync(path.join(root, "src/app/workspace/notifications/page.tsx"), "utf8");
 const qwenPanel = fs.readFileSync(path.join(root, "src/components/qwen/QwenAssistPanel.tsx"), "utf8");
+const workspaceComposer = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 
 // Errors must be event-driven, dismissible through correction/reset, and not stale.
 assert.match(companion, /\{requestError && <p role="alert"/);
 assert.match(companion, /setRequestError\(null\)/);
 assert.match(companion, /const startNewSession = \(\) => \{[\s\S]*?setRequestError\(null\)/);
 assert.match(companion, /onChange=\{e => \{[\s\S]*?setRequestError\(null\)/);
+assert.match(workspaceComposer, /setRawInput\(value\);\s*setCaregiverError\(null\)/);
+assert.match(workspaceComposer, /setDocuments\(nextDocuments\);\s*setCaregiverError\(null\)/);
 
 // Internal evaluation metadata must never be rendered into the caregiver conversation.
 assert.doesNotMatch(companion, /Safety: \{msg\.safety_note\}/);
