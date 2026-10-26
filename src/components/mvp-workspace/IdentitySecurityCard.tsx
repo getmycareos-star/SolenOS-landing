@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { KeyRound, MonitorSmartphone, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -61,7 +62,7 @@ export function IdentitySecurityCard() {
     setError("");
     try {
       await ensureAnonymousSession();
-      const result = await postJSON("/identity/devices", {
+      await postJSON("/identity/devices", {
         installation_key: getInstallationKey(),
         label: "This browser/device",
         platform: typeof navigator === "undefined" ? "unknown" : navigator.platform || "browser",
@@ -89,7 +90,7 @@ export function IdentitySecurityCard() {
     }
   };
 
-  const requestRecovery = async (event: React.FormEvent<HTMLFormElement>) => {
+  const requestRecovery = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setRecoveryBusy(true);
     setRecoveryMessage("");
