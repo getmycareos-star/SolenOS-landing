@@ -106,9 +106,11 @@ export function PolicySettingsPanel(_props: Props = {}) {
     <section className="policy-settings-panel" aria-labelledby="improvement-consent-heading">
       <h4 id="improvement-consent-heading">Help improve SolenOS (optional)</h4>
       <p className="panel-muted">
-        You control whether feedback you deliberately submit to help improve SolenOS may be used
-        for that purpose. This is separate from using your care record to provide the features
-        you request. Your choice can be changed here at any time.
+        This optional setting controls whether SolenOS may use improvement feedback you deliberately
+        submit, plus context you choose to include with that feedback, to improve product features
+        and AI behavior. It does not automatically submit every private care note, document, or
+        Companion conversation. Processing needed to provide the care features you request is
+        separate. You can change this choice here at any time.
       </p>
 
       {loadError && (
@@ -150,7 +152,8 @@ export function PolicySettingsPanel(_props: Props = {}) {
           <h5>What may be used when this is on</h5>
           <ul>
             <li>Feedback you deliberately submit using an improvement or validation option.</li>
-            <li>The feedback category and related information needed to review that submission.</li>
+            <li>Context you choose to include with that feedback, plus the feedback category and related details needed to review it.</li>
+            <li>Use of those submitted materials to improve SolenOS product features and AI behavior, subject to access controls and appropriate de-identification.</li>
           </ul>
           <h5>What this choice does not allow</h5>
           <ul>
@@ -165,8 +168,9 @@ export function PolicySettingsPanel(_props: Props = {}) {
         </div>
       ) : (
         <p className="panel-muted">
-          <strong>Off.</strong> Optional improvement feedback use is not permitted. You can still
-          use your care record for the care features you request.
+          <strong>Off — you have opted out.</strong> SolenOS must not accept your submissions for
+          optional improvement processing. Your care record remains available for the features you
+          request; required processing to provide those features is separate.
         </p>
       )}
 
