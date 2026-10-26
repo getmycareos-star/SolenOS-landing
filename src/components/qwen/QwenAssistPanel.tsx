@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ensureAnonymousSession, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 export type QwenWorkflow =
   | "daily_capture" | "add_record" | "document" | "living_care_record"
@@ -17,15 +17,12 @@ export type QwenWorkflow =
 type QwenAssistResult = {
   workflow: QwenWorkflow;
   reply: string;
-  ai_generated: boolean;
-  model: string;
-  authority: "solenos_care_record_and_caregiver";
   review_required: boolean;
   written_to_lcr: false;
   persistence: "read_only_assistance";
   source_event_ids: string[];
   source_evidence_ids: string[];
-  provider_status: string;
+  status: "completed";
 };
 
 type Props = {
@@ -43,18 +40,17 @@ type Props = {
  * only explicit caregiver actions can create or change records.
  */
 export default function QwenAssistPanel({
-  defaultWorkflow = "living_care_record",
   contextText = "",
   evidenceIds = [],
   appointmentId = null,
   title = "Help with your care information",
   compact = false,
 }: Props) {
-  const workflow = defaultWorkflow;
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<QwenAssistResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
   async function askQwen() {
     const requestText = question.trim();
@@ -75,26 +71,46 @@ export default function QwenAssistPanel({
           ? "\nContext supplied for this request (may be an unsaved draft; do not claim it is saved):\n" + boundedContext
           : "",
       ].filter(Boolean).join("\n").slice(0, 7_900);
-      const result = (await postJSON("/assistant/assist", {
-        workflow,
-        text,
-        evidence_ids: [...new Set(evidenceIds)].slice(0, 10),
-        ...(appointmentId ? { appointment_id: appointmentId } : {}),
-      })) as QwenAssistResult;
-
-      if (
-        result?.ai_generated !== true ||
-        result.provider_status !== "available" ||
-        result.authority !== "solenos_care_record_and_caregiver" ||
-        result.review_required !== true ||
-        result.written_to_lcr !== false ||
-        result.persistence !== "read_only_assistance" ||
-        typeof result.reply !== "string" ||
-        !result.reply.trim()
-      ) {
-        throw new Error("We couldn’t complete that request. Please try again.");
+      let jobId = activeJobId;
+      if (!jobId) {
+        const queued = await postJSON("/assistant/jobs", {
+          task_text: requestText.slice(0, 1_800),
+          context_text: boundedContext,
+          evidence_ids: [...new Set(evidenceIds)].slice(0, 10),
+          ...(appointmentId ? { appointment_id: appointmentId } : {}),
+        }) as { job_id?: string; status?: string };
+        if (typeof queued?.job_id !== "string" || !queued.job_id) {
+          throw new Error("The request could not be queued.");
+        }
+        jobId = queued.job_id;
+        setActiveJobId(jobId);
       }
-      setReply(result);
+
+      // The worker runs independently of this browser request. Poll only the
+      // durable job record; never ask the caregiver to choose an internal workflow.
+      for (let attempt = 0; attempt < 120; attempt += 1) {
+        const result = await getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`) as QwenAssistResult & { status: string; error?: string };
+        if (result.status === "completed") {
+          if (
+            result.review_required !== true ||
+            result.written_to_lcr !== false ||
+            result.persistence !== "read_only_assistance" ||
+            typeof result.reply !== "string" ||
+            !result.reply.trim()
+          ) {
+            throw new Error("The completed suggestion could not be verified.");
+          }
+          setReply(result);
+          setActiveJobId(null);
+          return;
+        }
+        if (result.status === "failed") {
+          setActiveJobId(null);
+          throw new Error(result.error || "The request could not be completed.");
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+      setError("Your request is still being processed. Select “Check result” to continue waiting; it will not create a duplicate request.");
     } catch {
       setError("We couldn’t complete that request. Your information has not been changed. Please try again.");
     } finally {
@@ -141,7 +157,7 @@ export default function QwenAssistPanel({
             disabled={loading || !question.trim()}
             style={{ border: "2px solid #8eae8a", borderRadius: "8px", padding: "10px 16px", minHeight: "44px", background: loading || !question.trim() ? "#e8eee9" : "#b9d5b5", color: "#17251c", fontSize: "14px", fontWeight: 750, opacity: 1, cursor: loading || !question.trim() ? "not-allowed" : "pointer" }}
           >
-            {loading ? "Working…" : "Send"}
+            {loading ? "Working…" : activeJobId ? "Check result" : "Send"}
           </button>
         </div>
       </div>
