@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ensureAnonymousSession, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 export type QwenWorkflow =
   | "daily_capture" | "add_record" | "document" | "living_care_record"
@@ -18,14 +18,14 @@ type QwenAssistResult = {
   workflow: QwenWorkflow;
   reply: string;
   ai_generated: boolean;
-  model: string;
+  model?: string;
   authority: "solenos_care_record_and_caregiver";
   review_required: boolean;
   written_to_lcr: false;
   persistence: "read_only_assistance";
   source_event_ids: string[];
   source_evidence_ids: string[];
-  provider_status: string;
+  provider_status?: string;
 };
 
 type Props = {
@@ -43,14 +43,12 @@ type Props = {
  * only explicit caregiver actions can create or change records.
  */
 export default function QwenAssistPanel({
-  defaultWorkflow = "living_care_record",
   contextText = "",
   evidenceIds = [],
   appointmentId = null,
   title = "Help with your care information",
   compact = false,
 }: Props) {
-  const workflow = defaultWorkflow;
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<QwenAssistResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,33 +66,62 @@ export default function QwenAssistPanel({
     try {
       await ensureAnonymousSession();
       const boundedContext = contextText.trim().slice(0, 5_500);
-      const text = [
-        "Caregiver request:",
-        requestText.slice(0, 1_800),
-        boundedContext
-          ? "\nContext supplied for this request (may be an unsaved draft; do not claim it is saved):\n" + boundedContext
-          : "",
-      ].filter(Boolean).join("\n").slice(0, 7_900);
-      const result = (await postJSON("/assistant/assist", {
-        workflow,
-        text,
+      const queued = (await postJSON("/assistant/jobs", {
+        task_text: requestText.slice(0, 1_800),
+        context_text: boundedContext,
         evidence_ids: [...new Set(evidenceIds)].slice(0, 10),
         ...(appointmentId ? { appointment_id: appointmentId } : {}),
-      })) as QwenAssistResult;
-
-      if (
-        result?.ai_generated !== true ||
-        result.provider_status !== "available" ||
-        result.authority !== "solenos_care_record_and_caregiver" ||
-        result.review_required !== true ||
-        result.written_to_lcr !== false ||
-        result.persistence !== "read_only_assistance" ||
-        typeof result.reply !== "string" ||
-        !result.reply.trim()
-      ) {
-        throw new Error("We couldn’t complete that request. Please try again.");
+      })) as { job_id?: string; status?: string };
+      if (!queued?.job_id) {
+        throw new Error("The request could not be queued.");
       }
-      setReply(result);
+
+      let completed: QwenAssistResult | null = null;
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 2000));
+        const status = (await getJSON(`/assistant/jobs/${encodeURIComponent(queued.job_id)}`)) as {
+          status?: string;
+          workflow?: QwenWorkflow | null;
+          reply?: string | null;
+          error?: string | null;
+          source_event_ids?: string[];
+          source_evidence_ids?: string[];
+          review_required?: boolean;
+          written_to_lcr?: boolean;
+          persistence?: string;
+        };
+        if (status.status === "failed") {
+          throw new Error(status.error || "The request could not be completed.");
+        }
+        if (status.status === "completed") {
+          if (
+            status.written_to_lcr !== false ||
+            status.review_required !== true ||
+            status.persistence !== "read_only_assistance" ||
+            typeof status.reply !== "string" ||
+            !status.reply.trim() ||
+            !status.workflow
+          ) {
+            throw new Error("The request did not return a valid reviewed suggestion.");
+          }
+          completed = {
+            workflow: status.workflow,
+            reply: status.reply,
+            ai_generated: true,
+            authority: "solenos_care_record_and_caregiver",
+            review_required: true,
+            written_to_lcr: false,
+            persistence: "read_only_assistance",
+            source_event_ids: status.source_event_ids || [],
+            source_evidence_ids: status.source_evidence_ids || [],
+          };
+          break;
+        }
+      }
+      if (!completed) {
+        throw new Error("The request is still processing. Please try again shortly.");
+      }
+      setReply(completed);
     } catch {
       setError("We couldn’t complete that request. Your information has not been changed. Please try again.");
     } finally {
