@@ -19,42 +19,23 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "result.written_to_lcr !== false",
   'result.authority !== "solenos_care_record_and_caregiver"',
   "Suggestions are not saved to the Living Care Record automatically.",
-  "SolenOS workflow",
   "What would you like help with?",
-  "daily_capture",
-  "add_record",
-  "document",
-  "living_care_record",
-  "care_history_search",
-  "care_situation_change",
-  "delta_engine",
-  "evidence_provenance",
-  "uncertainty_contradictions",
-  "returning_caregiver",
-  "appointment",
-  "after_appointment",
-  "handoff",
-  "professional_summary",
-  "open_loops",
-  "two_week_review",
-  "decision_outcome",
-  "medication_day",
-  "reminders_notifications",
-  "care_coordination",
-  "companion",
-  "caregiver_feedback",
-  "sharing_export",
-  "roles_access",
-  "account_recovery",
-  "settings_security",
-  "record_lifecycle",
-  "offline_sync",
-  "ai_reliability",
-  "audit_review",
   '{loading ? "Working…" : "Send"}',
 ]);
-assert(assist.includes("<select"), "The shared assistance panel must expose workflow selection.");
+assert(!assist.includes("<select"), "The shared assistance panel must not expose internal workflow selection.");
+assert(assist.includes("const workflow = defaultWorkflow;"), "Workflow routing must come from internal page context, not caregiver selection.");
 assert(!assist.includes('"community"'), "Community must remain excluded while disabled.");
+for (const workflow of [
+  "daily_capture", "add_record", "document", "living_care_record",
+  "care_history_search", "care_situation_change", "delta_engine",
+  "evidence_provenance", "uncertainty_contradictions", "returning_caregiver",
+  "appointment", "after_appointment", "handoff", "professional_summary",
+  "open_loops", "two_week_review", "decision_outcome", "medication_day",
+  "reminders_notifications", "care_coordination", "companion",
+  "caregiver_feedback", "sharing_export", "roles_access", "account_recovery",
+  "settings_security", "record_lifecycle", "offline_sync", "ai_reliability",
+  "audit_review",
+]) assert(assist.includes(JSON.stringify(workflow)), `Internal workflow contract must include ${workflow}.`);
 assert(!assist.includes("Railway-hosted local model"), "Internal runtime details must not be shown.");
 assert(!assist.includes("Check Qwen"), "Internal model status controls must not be shown.");
 assert(!assist.includes("reply.model"), "Provider/model names must not be shown to caregivers.");
@@ -117,7 +98,7 @@ requireText("src/api/client.ts", [
   'window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token)',
 ]);
 console.log("PASS: contextual assistance remains routed through the authenticated service with read-only care-record safeguards.");
-console.log("PASS: caregivers can select all 30 enabled SolenOS workflows; Community is excluded.");
+console.log("PASS: Qwen workflow routing remains internal; caregivers are not asked to select workflows.");
 console.log("PASS: Daily Capture has no separate assistant workflow panel; saved observations remain reviewable.");
 console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
 console.log("PASS: documents and Community use product language rather than internal model labels.");
