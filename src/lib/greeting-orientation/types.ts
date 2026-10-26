@@ -48,7 +48,7 @@ export type GreetingOrientationOutput = {
   /** Whether to show orientation at all (false for care-event inputs that don't need greeting) */
   should_orient: boolean;
   /** The type of orientation applied */
-  orientation_kind: "new_caregiver" | "returning_no_threads" | "returning_with_threads" | "casual_greeting" | "how_are_you" | "gratitude" | "change_detected" | "none";
+  orientation_kind: "new_caregiver" | "returning_no_threads" | "returning_with_threads" | "casual_greeting" | "how_are_you" | "gratitude" | "change_detected" | "frustration_or_insult" | "none";
 };
 
 /** Memory summary shape used by orientation — derived from existing care systems. */
