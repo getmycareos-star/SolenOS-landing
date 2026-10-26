@@ -171,18 +171,6 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     finally { setMfaBusy(false); }
   };
 
-  const resendVerification = async () => {
-    if (!email.trim()) throw new Error("Enter the account email address first.");
-    const result = await post("/account-security/verification/request", { email: email.trim() });
-    setMessage(result.message || "If the account exists and needs verification, instructions will be sent.");
-  };
-
-  const requestEmailAction = async (purpose: "password-reset" | "recovery") => {
-    const path = purpose === "password-reset" ? "/account-security/password-reset/request" : "/account-security/recovery/request";
-    const result = await post(path, { email: email.trim() });
-    setMessage(result.message || "If the account exists, instructions will be sent to its email address.");
-  };
-
   const clearSavedSession = () => {
     try {
       window.localStorage.removeItem("solenos_anonymous_access_token");
