@@ -111,7 +111,18 @@ const consentGate = fs.readFileSync(
 );
 assert(consentGate.includes('href="/terms"'));
 assert(consentGate.includes('href="/privacy"'));
-console.log("✓ in-product consent gate links to legal docs");
+assert.equal((consentGate.match(/type="checkbox"/g) ?? []).length, 1, "recovery consent gate must also have exactly one required checkbox");
+assert(!consentGate.includes("dataImprovement"), "optional improvement choice must not appear in onboarding");
+assert(!consentGate.includes("consent-optional"), "optional improvement choice belongs only in Settings");
+const policySettings = fs.readFileSync(
+  path.join(root, "src", "components", "mvp-workspace", "PolicySettingsPanel.tsx"),
+  "utf8",
+);
+assert(policySettings.includes("Help improve SolenOS (optional)"));
+assert(policySettings.includes("data_improvement_consent: enabled"));
+assert(policySettings.includes("update_data_improvement"));
+assert.equal((policySettings.match(/type="checkbox"/g) ?? []).length, 1, "optional improvement choice must remain in Settings");
+console.log("✓ recovery consent gate has one required checkbox; optional improvement consent lives in Settings only");
 
 assert.ok(RESEARCH_PREVIEW_SECTION.ackLabel.includes("early version"));
 assert.ok(FREE_EARLY_ACCESS_SECTION.body.some((p) => /early access period at no cost/i.test(p)));
