@@ -63,14 +63,7 @@ export default function QwenAssistPanel({
     setReply(null);
     try {
       await ensureAnonymousSession();
-      const boundedContext = contextText.trim().slice(0, 5_500);
-      const text = [
-        "Caregiver request:",
-        requestText.slice(0, 1_800),
-        boundedContext
-          ? "\nContext supplied for this request (may be an unsaved draft; do not claim it is saved):\n" + boundedContext
-          : "",
-      ].filter(Boolean).join("\n").slice(0, 7_900);
+      const boundedContext = contextText.trim().slice(0, 3_000);
       let jobId = activeJobId;
       if (!jobId) {
         const queued = await postJSON("/assistant/jobs", {
