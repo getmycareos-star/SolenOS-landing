@@ -21,6 +21,7 @@ import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
+import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -561,6 +562,7 @@ export default function WorkspaceSettingsPage() {
         <ProfileCard />
         <NotificationsCard />
         <AccountCard />
+        <IdentityDeviceRecoveryPanel />
         <LegalCard />
         <PrivacyCard />
         <ProductCard />
