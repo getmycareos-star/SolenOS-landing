@@ -23,6 +23,7 @@ function response(payload: unknown, status = 200): Response {
     status,
     headers: { get: (name: string) => name.toLowerCase() === "content-type" ? "application/json" : null },
     text: async () => JSON.stringify(payload),
+    json: async () => payload,
   } as unknown as Response;
 }
 
