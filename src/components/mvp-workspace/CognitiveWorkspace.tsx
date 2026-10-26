@@ -87,7 +87,7 @@ function isLcrOrientationOnly(text: string): boolean {
     .replace(/\s+/g, " ")
     .trim();
   const greeting = /^(hi|hello|hey|hiya|howdy|yo|good morning|good afternoon|good evening|good night|how are you|how are you doing|how are you today|how are you doing today|how's it going|hows it going|what's up|whats up|sup|thanks|thank you|thank you so much|i appreciate your help|appreciate it|bye|goodbye|see you)$/i;
-  const frustration = /^(this is useless|this thing is useless|you are stupid|you're stupid|you are useless|you're useless|you suck|you don't understand anything|you never get anything right|you got this wrong|that is wrong|that's wrong|fuck you|f\*ck you|idiot|stupid|useless)$/i;
+  const frustration = /^(this is useless|this thing is useless|you are stupid|you're stupid|you are dumb|you're dumb|you are useless|you're useless|you are incompetent|you're incompetent|you suck|you don't understand anything|you never get anything right|you got this wrong|that is wrong|that's wrong|fuck you|f\*ck you|idiot|stupid|useless)$/i;
   return greeting.test(normalized) || frustration.test(normalized);
 }
 
