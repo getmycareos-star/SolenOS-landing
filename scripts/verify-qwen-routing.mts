@@ -17,8 +17,9 @@ const assist = read("src/components/qwen/QwenAssistPanel.tsx");
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'postJSON("/assistant/jobs"',
   'getJSON(`/assistant/jobs/${encodeURIComponent(queued.job_id)}`)',
-  "result.written_to_lcr !== false",
-  'result.authority !== "solenos_care_record_and_caregiver"',
+  "status.written_to_lcr !== false",
+  "status.review_required !== true",
+  "status.persistence !== \"read_only_assistance\"",
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
   '{loading ? "Working…" : "Send"}',
