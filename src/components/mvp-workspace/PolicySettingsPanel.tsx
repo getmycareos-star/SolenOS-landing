@@ -82,8 +82,8 @@ export function PolicySettingsPanel(_props: Props = {}) {
       setDataImprovement(enabled);
       setMessage(
         enabled
-          ? "Your choice is saved. Feedback you deliberately submit through the improvement route may be reviewed to improve SolenOS."
-          : "Your choice is saved. Optional improvement feedback is now off; new feedback submissions will be rejected until you opt in again.",
+          ? "Saved. New feedback you deliberately submit is eligible for SolenOS improvement review."
+          : "Saved. New optional improvement feedback is blocked. Your personal care history and existing care continuity remain available.",
       );
     } catch {
       setMessage("We couldn't save this choice. Your previous saved setting remains in place.");
@@ -106,11 +106,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
     <section className="policy-settings-panel" aria-labelledby="improvement-consent-heading">
       <h4 id="improvement-consent-heading">Help improve SolenOS (optional)</h4>
       <p className="panel-muted">
-        This optional setting controls whether SolenOS may use improvement feedback you deliberately
-        submit, plus context you choose to include with that feedback, to improve product features
-        and AI behavior. It does not automatically submit every private care note, document, or
-        Companion conversation. Processing needed to provide the care features you request is
-        separate. You can change this choice here at any time.
+        When this is on, feedback you deliberately submit and any context you choose to attach may be used in SolenOS's improvement review. This setting does not automatically send every private care note, document, or Companion conversation, and it does not mean an AI model's weights are retrained immediately. Your personal care history and the processing needed to provide the care features you request remain available whether this setting is on or off. You can change this choice here at any time.
       </p>
 
       {loadError && (
@@ -139,7 +135,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
           disabled={!verified || limitedMode || saving || Boolean(loadError)}
           onChange={(e) => void toggleImprovement(e.target.checked)}
         />
-        <span>{saving ? "Saving your choice…" : "Allow my submitted improvement feedback to be used"}</span>
+        <span>{saving ? "Saving your choice…" : "Allow submitted feedback to contribute to SolenOS improvements"}</span>
       </label>
 
       {loadError ? (
