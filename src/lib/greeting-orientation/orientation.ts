@@ -132,7 +132,7 @@ export function isGratitudeInput(text: string): boolean {
 /** Detect abusive/frustrated interaction for LCR response routing, not reply selection. */
 export function isInsultOrFrustrationInput(text: string): boolean {
   const t = text.trim().toLowerCase().replace(/[.!?,;:]+/g, " ").replace(/\s+/g, " ").trim();
-  return /\b(?:you(?:'re| are) (?:stupid|useless|wrong|useless)|you suck|you never get anything right|you don'?t understand|this (?:thing )?is useless|fuck you|f\*ck you|idiot|stupid|useless|that(?:'s| is) wrong)\b/i.test(t);
+  return /\b(?:you(?:'re| are) (?:stupid|dumb|fool|incompetent|pathetic|useless|wrong)|you suck|you never get anything right|you don'?t understand|this (?:thing )?is useless|fuck you|f\*ck you|idiot|stupid|useless|that(?:'s| is) wrong)\b/i.test(t);
 }
 
 export function isChangeOrientedInput(text: string): boolean {
