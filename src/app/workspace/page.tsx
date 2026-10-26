@@ -53,6 +53,7 @@ function WorkspacePageInner() {
   const [displayName, setDisplayName] = useState("");
   const [isArchived, setIsArchived] = useState(false);
   const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
+  const [archiveRestoreError, setArchiveRestoreError] = useState("");
   const compose = searchParams.get("compose") === "1";
 
   // Read localStorage only after mount — prevents server/client hydration mismatch.
@@ -90,16 +91,25 @@ function WorkspacePageInner() {
             <p className="mobile-empty-body">
               This hides the workspace on this device only. It does not delete care information stored by SolenOS or archive it for other caregivers.
             </p>
+            {archiveRestoreError && (
+              <p role="alert" className="mobile-empty-body">
+                {archiveRestoreError}
+              </p>
+            )}
             <Button
               variant="primary"
               onClick={() => {
                 try {
                   window.localStorage.removeItem("solenos_workspace_archived");
+                  setArchiveRestoreError("");
+                  setIsArchived(false);
+                  router.replace("/workspace");
                 } catch {
-                  // State still updates so the caregiver can continue on this device.
+                  // Keep the archived screen visible if the restore flag cannot be cleared.
+                  setArchiveRestoreError(
+                    "This browser could not restore the workspace because its local storage is unavailable. Your care information has not been deleted. Check browser storage settings and try again.",
+                  );
                 }
-                setIsArchived(false);
-                router.replace("/workspace");
               }}
             >
               Restore workspace
