@@ -7,10 +7,22 @@ import { getJSON, postJSON } from "@/api/client";
 
 type Row = Record<string, unknown>;
 type Summary = { resources: Record<string, number> };
-const resources = ["facts", "decisions", "integrity-findings", "reconciliations", "delta-items"];
+const resources = ["facts", "fact-evidence", "relationships", "decisions", "decision-outcomes", "integrity-findings", "integrity-resolutions", "reconciliations", "delta-items", "follow-up-links", "review-decisions", "provenance", "timeline", "change-assessments", "events", "evidence", "changes", "situations", "state-revisions", "temporal-facts", "temporal-relations", "temporal-relationships", "temporal-reference-frames", "temporal-contradictions", "uncertainty-assessments", "causal-hypotheses", "causal-evidence", "contradictions", "significance-assessments", "delta-runs", "open-questions", "information-gaps", "assertions"];
 const labels: Record<string, string> = {
- facts: "Care facts", decisions: "Care decisions", "integrity-findings": "Integrity findings",
- reconciliations: "Reconciliation history", "delta-items": "Detected changes"
+ facts: "Care facts", "fact-evidence": "Fact evidence links", relationships: "Record relationships",
+ decisions: "Care decisions", "decision-outcomes": "Decision outcomes",
+ "integrity-findings": "Integrity findings", "integrity-resolutions": "Integrity resolutions",
+ reconciliations: "Reconciliation history", "delta-items": "Detected changes",
+ "follow-up-links": "Follow-up links", "review-decisions": "Review decisions",
+ provenance: "Source provenance", timeline: "Care timeline", "change-assessments": "Change assessments",
+ events: "Care events", evidence: "Evidence", changes: "Changes", situations: "Situations",
+ "state-revisions": "Care state revisions", "temporal-facts": "Temporal facts",
+ "temporal-relations": "Temporal relations", "temporal-relationships": "Temporal relationships",
+ "temporal-reference-frames": "Temporal reference frames", "temporal-contradictions": "Temporal contradictions",
+ "uncertainty-assessments": "Uncertainty assessments", "causal-hypotheses": "Causal hypotheses",
+ "causal-evidence": "Hypothesis evidence", contradictions: "Care contradictions",
+ "significance-assessments": "Significance assessments", "delta-runs": "Delta Engine runs",
+ "open-questions": "Open questions", "information-gaps": "Information gaps", assertions: "Care assertions"
 };
 function rowText(r: Row) {
  return String(r.fact_value ?? r.decision_text ?? r.description ?? r.decision_notes ?? r.after_state ?? r.reconciliation_status ?? r.status ?? "Care record");
