@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload, MessageCircle } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
-import { ResearchPreviewAckGate } from "@/components/mvp-workspace/ResearchPreviewAckGate";
+import { ConsentGatePanel } from "@/components/mvp-workspace/ConsentGatePanel";
 import { CognitiveWorkspace } from "@/components/mvp-workspace";
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -134,16 +134,14 @@ function WorkspacePageInner() {
             <p>Notes, messages, documents, or photos — fragments are fine.</p>
           </div>
         </div>
-        <ResearchPreviewAckGate>
-          <ErrorBoundary name="CognitiveWorkspace" fallback={
-            <div style={{ padding: "24px", textAlign: "center" }}>
-              <p style={{ color: "#78716c" }}>The workspace encountered an error. Please try again.</p>
-              <Button variant="primary" onClick={() => window.location.reload()}>Refresh</Button>
-            </div>
-          }>
-            <CognitiveWorkspace />
-          </ErrorBoundary>
-        </ResearchPreviewAckGate>
+        <ErrorBoundary name="CognitiveWorkspace" fallback={
+          <div style={{ padding: "24px", textAlign: "center" }}>
+            <p style={{ color: "#78716c" }}>The workspace encountered an error. Please try again.</p>
+            <Button variant="primary" onClick={() => window.location.reload()}>Refresh</Button>
+          </div>
+        }>
+          <CognitiveWorkspace />
+        </ErrorBoundary>
       </div>
     );
   }
@@ -245,11 +243,35 @@ function WorkspacePageInner() {
   );
 }
 
-export default function WorkspacePage() {
+/**
+ * Enforce the server-persisted privacy acknowledgement before any workspace
+ * route content is exposed, including the care-record overview (not just Add
+ * Record). ConsentGatePanel reads/writes the authenticated backend contract;
+ * the workspace opens immediately after the server confirms the save.
+ */
+function WorkspacePrivacyBoundary() {
+  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
+
+  if (consentState !== "accepted") {
+    return (
+      <div className="mobile-screen">
+        {consentState === "loading" && <BrandLoading message="Checking your privacy choice…" />}
+        <ConsentGatePanel
+          caregiverId=""
+          onStatusChange={setConsentState}
+        />
+      </div>
+    );
+  }
+
   return (
     <Suspense fallback={<BrandLoading message="Loading your care context…" />}>
       <WorkspacePageInner />
     </Suspense>
   );
+}
+
+export default function WorkspacePage() {
+  return <WorkspacePrivacyBoundary />;
 }
 
