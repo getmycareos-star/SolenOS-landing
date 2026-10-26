@@ -141,8 +141,9 @@ assert(trustStack.includes("FREE_EARLY_ACCESS_SECTION"));
 assert(trustStack.includes("YOUR_INFORMATION_SECTION"));
 
 const productPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "page.tsx"), "utf8");
-assert(productPage.includes("WorkspacePrivacyBoundary"));
-assert(productPage.includes("ConsentGatePanel"));
+const workspaceLayout = fs.readFileSync(path.join(root, "src", "app", "workspace", "layout.tsx"), "utf8");
+assert(workspaceLayout.includes("WorkspacePrivacyBoundary"));
+assert(workspaceLayout.includes("ConsentGatePanel"));
 assert(!productPage.includes("ResearchPreviewAckGate"), "workspace must not show a second local-only acknowledgement after server consent");
 const workspaceRuntime = fs.readFileSync(path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"), "utf8");
 assert(!workspaceRuntime.includes("ConsentGatePanel"), "workspace runtime must not render a duplicate consent prompt");
