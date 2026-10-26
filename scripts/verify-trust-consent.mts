@@ -38,7 +38,7 @@ assert.equal(canSubmitEarlyAccessConsent({ termsAccepted: false, privacyAccepted
 assert.equal(canSubmitEarlyAccessConsent({ termsAccepted: true, privacyAccepted: false }), false);
 assert.equal(canSubmitEarlyAccessConsent({ termsAccepted: false, privacyAccepted: true }), false);
 assert.equal(canSubmitEarlyAccessConsent({ termsAccepted: true, privacyAccepted: true }), true);
-console.log("✓ signup submit requires both Terms + Privacy");
+console.log("✓ one acknowledgement satisfies Terms + Privacy together");
 
 const footerLabels = TRUST_FOOTER_LINKS.map((l) => l.label);
 for (const required of ["Privacy Policy", "Terms of Service", "Contact", "Help"]) {
@@ -89,9 +89,14 @@ const consentForm = fs.readFileSync(
 assert(consentForm.includes('href="/terms"'));
 assert(consentForm.includes('href="/privacy"'));
 assert(consentForm.includes("Terms of Service"));
-assert(consentForm.includes("disabled={!ready}"));
+assert(consentForm.includes("Privacy Policy"));
+assert(consentForm.includes("disabled={!ready || submitting}"));
 assert(consentForm.includes('target="_blank"'));
-console.log("✓ early-access consent form links + disabled submit");
+assert.equal((consentForm.match(/type="checkbox"/g) ?? []).length, 1, "onboarding must use exactly one required checkbox");
+assert(consentForm.includes("termsAccepted: acknowledged"));
+assert(consentForm.includes("privacyAccepted: acknowledged"));
+assert(consentForm.includes("api/v1/consent"), "onboarding must persist acknowledgement with the backend");
+console.log("✓ single onboarding checkbox covers both legal documents and persists server-side");
 
 const earlyAccessPage = fs.readFileSync(
   path.join(root, "src", "app", "early-access", "page.tsx"),
@@ -141,7 +146,7 @@ assert(trustStack.includes("FREE_EARLY_ACCESS_SECTION"));
 assert(trustStack.includes("YOUR_INFORMATION_SECTION"));
 
 const productPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "page.tsx"), "utf8");
-assert(productPage.includes("ResearchPreviewAckGate"));
+assert(!productPage.includes("ResearchPreviewAckGate"), "Add Record must not ask for a second local-only acknowledgement");
 assert(productPage.includes("EARLY_ACCESS_BADGE"));
 
 const landing = fs.readFileSync(path.join(root, "src", "app", "page.tsx"), "utf8");
