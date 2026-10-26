@@ -23,7 +23,7 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   '{loading ? "Working…" : "Send"}',
 ]);
 assert(!assist.includes("<select"), "The shared assistance panel must not expose internal workflow selection.");
-assert(assist.includes("const workflow = defaultWorkflow;"), "Workflow routing must come from internal page context, not caregiver selection.");
+assert(!assist.includes("workflow,"), "The caregiver client must not send a selected workflow ID.");
 assert(!assist.includes('"community"'), "Community must remain excluded while disabled.");
 for (const workflow of [
   "daily_capture", "add_record", "document", "living_care_record",
@@ -97,7 +97,7 @@ requireText("src/api/client.ts", [
   "export async function signInToAccount(email: string, password: string)",
   'window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token)',
 ]);
-console.log("PASS: contextual assistance remains routed through the authenticated service with read-only care-record safeguards.");
+console.log("PASS: contextual assistance uses the authenticated durable background queue with read-only care-record safeguards.");
 console.log("PASS: Qwen workflow routing remains internal; caregivers are not asked to select workflows.");
 console.log("PASS: Daily Capture has no separate assistant workflow panel; saved observations remain reviewable.");
 console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
