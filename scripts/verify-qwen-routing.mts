@@ -86,6 +86,24 @@ requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "We won’t ask you to submit the same entry again.",
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("The backend confirmed"));
+requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
+  'import { LcrQwenInterpretation } from "./LcrQwenInterpretation";',
+  "persistedSourceEventId(response)",
+  "<LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />",
+]);
+requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
+  'postJSON("/assistant/assist"',
+  'workflow: "living_care_record"',
+  "result.ai_generated !== true",
+  "result.review_required !== true",
+  "result.written_to_lcr !== false",
+  'result.persistence !== "read_only_assistance"',
+  "AI-generated interpretation for caregiver review.",
+  "The Living Care Record remains authoritative; this response did not change it.",
+]);
+const lcrInterpretation = read("src/components/mvp-workspace/LcrQwenInterpretation.tsx");
+assert(!/reply\s*:\s*["'`]/.test(lcrInterpretation), "LCR interpretation must not include canned reply text.");
+assert(!lcrInterpretation.includes("workflow: rawInput"), "Caregiver input must not select the internal workflow.");
 requireText("src/app/workspace/settings/page.tsx", [
   "function AccountCard()",
   'postJSON("/accounts"',
@@ -104,5 +122,6 @@ console.log("PASS: Daily Capture has no separate assistant workflow panel; saved
 console.log("PASS: Companion has a Send button and uses user-facing retry language without provider/runtime details.");
 console.log("PASS: documents and Community use product language rather than internal model labels.");
 console.log("PASS: Community uses searchable stories, simple filters, and no separate model/workflow panel.");
+console.log("PASS: LCR context interpretation only runs after a persisted event receipt and rejects responses without the read-only contract.");
 
 console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");
