@@ -1027,38 +1027,38 @@
 }
 
 
-/* First-run welcome and confirmation: color-only sage refresh.
-   Typography and layout intentionally remain unchanged. */
+/* First-run welcome and confirmation: match the deployed SolenOS landing palette.
+   Color-only override; typography, font sizes, and layout remain unchanged. */
 .onboarding-shell {
-  background: #f4f7f1;
+  background: #f5f7f8;
 }
 .onboarding-title {
-  color: #24352b;
+  color: #172b35;
 }
 .onboarding-lede {
-  color: #56665a;
+  color: #5f7179;
 }
 .onboarding-trust-signal {
-  color: #304533;
-  background: #e5eee1;
-  border-color: #b7cbb0;
+  color: #173f4b;
+  background: #e9f2f1;
+  border-color: #dce5e8;
 }
 .onboarding-shell .solenos-btn--primary {
-  background: #b8d0b0;
-  border-color: #b8d0b0;
-  color: #172b35;
+  background: #267c78;
+  border-color: #267c78;
+  color: #fff;
   box-shadow: none;
 }
 .onboarding-shell .solenos-btn--primary:hover:not(:disabled) {
-  background: #a6c39e;
-  border-color: #a6c39e;
-  color: #172b35;
+  background: #167d78;
+  border-color: #167d78;
+  color: #fff;
 }
 .onboarding-shell .solenos-btn--primary:active:not(:disabled) {
-  background: #95b88b;
-  border-color: #95b88b;
-  color: #172b35;
+  background: #115f5b;
+  border-color: #115f5b;
+  color: #fff;
 }
 .onboarding-legal-note a {
-  color: #466b4a;
+  color: #167d78;
 }
