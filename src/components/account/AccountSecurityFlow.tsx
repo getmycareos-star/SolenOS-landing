@@ -48,6 +48,7 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [recoveryKeyToShow, setRecoveryKeyToShow] = useState("");
   const [caregiverName, setCaregiverName] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -115,6 +116,20 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     setMessage(result.message || "Account created. Save the recovery key now; it will not be shown again.");
     setTab("login");
     setPassword("");
+  };
+
+  const changePassword = async (event: FormEvent) => {
+    event.preventDefault();
+    setMfaBusy(true); setError(""); setMessage("");
+    try {
+      if (newPassword.length < 10) throw new Error("Use a password with at least 10 characters.");
+      if (newPassword !== confirmPassword) throw new Error("The passwords do not match.");
+      await post("/account-security/password/change", { current_password: currentPassword, new_password: newPassword }, accountToken);
+      clearSavedSession();
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+      setMessage("Password changed. For security, all sessions were revoked. Sign in again with the new password.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not change password."); }
+    finally { setMfaBusy(false); }
   };
 
   const startMfa = async () => {
@@ -300,6 +315,19 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     </div>
     {accountToken && <section style={cardStyle}>
       <p><a href="/workspace" style={{ color: "#315d40" }}>Continue to your care record</a></p>
+      <h2 style={{ fontSize: 22, marginTop: 0 }}>Change password</h2>
+      <form onSubmit={(e) => void changePassword(e)} style={{ display: "grid", gap: 12, marginBottom: 28 }}>
+        <label style={{ display: "grid", gap: 6 }}>Current password
+          <input style={fieldStyle} type="password" autoComplete="current-password" required value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+        </label>
+        <label style={{ display: "grid", gap: 6 }}>New password
+          <input style={fieldStyle} type="password" autoComplete="new-password" minLength={10} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+        </label>
+        <label style={{ display: "grid", gap: 6 }}>Confirm new password
+          <input style={fieldStyle} type="password" autoComplete="new-password" minLength={10} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        </label>
+        <button style={buttonStyle} disabled={mfaBusy}>{mfaBusy ? "Updating…" : "Change password and sign out"}</button>
+      </form>
       <h2 style={{ fontSize: 22, marginTop: 0 }}>Multi-factor authentication</h2>
       <p style={{ color: "#526157", lineHeight: 1.6 }}>Enable an authenticator app as a second factor for future sign-ins. Recovery codes are displayed once after confirmation.</p>
       {mfaEnabled ? <form onSubmit={(e) => void disableMfa(e)} style={{ display: "grid", gap: 12 }}>
