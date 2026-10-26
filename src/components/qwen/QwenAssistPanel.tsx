@@ -40,6 +40,7 @@ type Props = {
  * only explicit caregiver actions can create or change records.
  */
 export default function QwenAssistPanel({
+  defaultWorkflow = "living_care_record",
   contextText = "",
   evidenceIds = [],
   appointmentId = null,
@@ -63,7 +64,8 @@ export default function QwenAssistPanel({
     setReply(null);
     try {
       await ensureAnonymousSession();
-      const boundedContext = contextText.trim().slice(0, 3_000);
+      const routingHint = `Internal screen context for routing only (not a care fact): workflow=${defaultWorkflow}`;
+      const boundedContext = [routingHint, contextText.trim()].filter(Boolean).join("\n").slice(0, 3_000);
       let jobId = activeJobId;
       if (!jobId) {
         const queued = await postJSON("/assistant/jobs", {
@@ -136,6 +138,7 @@ export default function QwenAssistPanel({
           What would you like help with?
           <textarea
             value={question}
+            disabled={loading || !!activeJobId}
             onChange={(event) => { setQuestion(event.target.value); setError(null); }}
             rows={compact ? 2 : 3}
             maxLength={1800}
