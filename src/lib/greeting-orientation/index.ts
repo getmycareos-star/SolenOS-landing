@@ -12,6 +12,7 @@ export {
   isCasualGreetingInput,
   isHowAreYouInput,
   isGratitudeInput,
+  isInsultOrFrustrationInput,
   isChangeOrientedInput,
   buildMemorySummary,
 } from "./orientation";
