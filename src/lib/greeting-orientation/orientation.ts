@@ -33,282 +33,63 @@ import type {
  * Dementia Wedge: The first experience is "Something changed? Help me understand it."
  * not "Create your dementia record." — the caregiver brings a problem, SolenOS builds the memory.
  */
-export function buildGreetingOrientation(
+/**
+ * Generate an LCR orientation response from the authenticated server-side care
+ * context. This module defines behavior and safety constraints; it does not
+ * contain caregiver-facing canned replies.
+ *
+ * If Qwen is unavailable, the caller receives an error instead of a fabricated
+ * or hardcoded response. The endpoint is read-only and never writes to LCR or
+ * Companion history.
+ */
+export async function buildGreetingOrientation(
   context: GreetingOrientationContext,
-): GreetingOrientationOutput {
-  // If this is a substantive care event (not a greeting), no orientation needed.
-  if (!context.is_casual_greeting && !context.is_how_are_you && !context.is_gratitude) {
+): Promise<GreetingOrientationOutput> {
+  const input = context.raw_input.trim();
+  const isInteraction = Boolean(
+    context.is_casual_greeting ||
+    context.is_how_are_you ||
+    context.is_gratitude ||
+    isInsultOrFrustrationInput(input)
+  );
+  if (!isInteraction) {
     return { orientation_line: null, should_orient: false, orientation_kind: "none" };
   }
 
-  // CHANGE ORIENTED — the caregiver is reporting a change.
-  // This is the Dementia Wedge entry point. Route to change detection experience.
-  if (context.is_change_oriented) {
-    return buildChangeDetectedOrientation(context);
+  const { ensureAnonymousSession } = await import("@/api/client");
+  const { apiUrl, safeJson } = await import("@/lib/api-url");
+  const session = await ensureAnonymousSession();
+  if (!session.access_token) {
+    throw new Error("A secure care session is required to generate an LCR response.");
   }
 
-  // HOW ARE YOU — never simulate emotions. Communicate readiness.
-  if (context.is_how_are_you) {
-    return buildHowAreYouOrientation(context);
+  const response = await fetch(apiUrl("/api/lcr/orientation"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ raw_input: input }),
+  });
+  const data = (await safeJson(response)) as { reply?: string; detail?: string };
+  if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) {
+    throw new Error(data.detail || "LCR response generation is unavailable. Nothing was saved.");
   }
 
-  // GRATITUDE — reinforce continuity, not close the interaction.
-  if (context.is_gratitude) {
-    return buildGratitudeOrientation(context);
-  }
-
-  // FIRST SESSION — no care record exists yet.
-  if (context.is_first_session) {
-    return buildNewCaregiverOrientation();
-  }
-
-  // RETURNING with open continuity threads (unresolved hooks, unknowns)
-  const hooks = context.crs?.continuity_hooks ?? context.memory?.continuity_hooks ?? [];
-  if (hooks.length > 0) {
-    return buildReturningWithThreadsOrientation(context, hooks);
-  }
-
-  // RETURNING with care memory but no open threads
-  if (
-    context.continuity.should_acknowledge_return &&
-    !context.is_first_session
-  ) {
-    return buildReturningOrientation(context);
-  }
-
-  // CASUAL GREETING — brief acknowledge, transition to care.
-  if (context.is_casual_greeting) {
-    return buildCasualGreetingOrientation(context);
-  }
-
-  // Fallback: minimal orientation
-  return {
-    orientation_line: null,
-    should_orient: false,
-    orientation_kind: "none",
-  };
-}
-
-/**
- * Returning caregiver with no open continuity threads.
- * Remind that care record exists. Transition to capture.
- */
-function buildReturningOrientation(
-  context: GreetingOrientationContext,
-): GreetingOrientationOutput {
-  const recipient = context.crs?.care_recipient_label?.trim();
-  const hasCareData =
-    (context.memory?.observation_count ?? 0) > 0 || (context.memory?.event_count ?? 0) > 0;
-
-  if (hasCareData && recipient && recipient !== "Your loved one" && recipient !== "they" && recipient !== "person") {
-    return {
-      orientation_line: `I'm keeping your updates about ${recipient} ready. What has changed since the last update?`,
-      should_orient: true,
-      orientation_kind: "returning_no_threads",
-    };
-  }
-
-  if (hasCareData) {
-    return {
-      orientation_line: "Your previous updates are still here. What has changed since then?",
-      should_orient: true,
-      orientation_kind: "returning_no_threads",
-    };
-  }
+  const orientation_kind: GreetingOrientationOutput["orientation_kind"] =
+    context.is_change_oriented ? "change_detected" :
+    context.is_how_are_you ? "how_are_you" :
+    context.is_gratitude ? "gratitude" :
+    isInsultOrFrustrationInput(input) ? "frustration_or_insult" :
+    context.is_first_session ? "new_caregiver" : "returning_no_threads";
 
   return {
-    orientation_line: "Welcome back. Share an update about the person you care for when you are ready.",
+    orientation_line: data.reply.trim(),
     should_orient: true,
-    orientation_kind: "returning_no_threads",
+    orientation_kind,
   };
 }
 
-/**
- * Returning caregiver with open continuity threads.
- * Surface ONE natural continuity hook.
- * Do not overwhelm. Do not list every stored item.
- */
-function buildReturningWithThreadsOrientation(
-  context: GreetingOrientationContext,
-  hooks: string[],
-): GreetingOrientationOutput {
-  const recipient = context.crs?.care_recipient_label?.trim();
-  const named =
-    recipient && recipient !== "Your loved one" && recipient !== "they" && recipient !== "person"
-      ? recipient
-      : null;
-
-  // Pick the most relevant continuity thread
-  const hooksToShow = hooks
-    .filter((h: string) => h.trim().length > 0)
-    .slice(0, 1);
-
-  // Check if there are open unknowns that are more specific than generic hooks
-  const unknowns = context.crs?.open_uncertainties ?? context.memory?.open_unknowns ?? [];
-  const specificUnknown: string | undefined = unknowns.find(
-    (u: string) => u.length > 10 && /\b(?:medication|mobility|fall|sleep|eat|appetite|pain|when|started|timing|change)\b/i.test(u),
-  ) as string | undefined;
-
-  if (hooksToShow.length > 0) {
-    const h = hooksToShow[0]!.replace(/\.$/m, "").toLowerCase();
-    if (named) {
-      return {
-        orientation_line: `The last update about ${named} mentioned ${h}. Has anything changed since then?`,
-        should_orient: true,
-        orientation_kind: "returning_with_threads",
-      };
-    }
-    return {
-      orientation_line: `The last update mentioned ${h}. Has anything changed since then?`,
-      should_orient: true,
-      orientation_kind: "returning_with_threads",
-    };
-  }
-
-  if (specificUnknown) {
-    const q = specificUnknown.replace(/[.?]+$/, "").toLowerCase();
-    if (named) {
-      return {
-        orientation_line: `There's still an open question about ${named}: ${q}. Have you learned anything new?`,
-        should_orient: true,
-        orientation_kind: "returning_with_threads",
-      };
-    }
-    return {
-      orientation_line: `There's still an open question from the last update: ${q}. Have you learned anything new?`,
-      should_orient: true,
-      orientation_kind: "returning_with_threads",
-    };
-  }
-
-  // Fallback: generic returning with threads
-  if (named) {
-    return {
-      orientation_line: `What you shared about ${named} is still here. Let me know if anything has changed.`,
-      should_orient: true,
-      orientation_kind: "returning_with_threads",
-    };
-  }
-
-  return {
-    orientation_line: "Your earlier updates are still here. Share what has changed since then.",
-    should_orient: true,
-    orientation_kind: "returning_with_threads",
-  };
-}
-
-/**
- * Casual greeting (hi, hello, good morning).
- * Acknowledge briefly. Transition immediately toward care orientation.
- */
-function buildCasualGreetingOrientation(
-  context: GreetingOrientationContext,
-): GreetingOrientationOutput {
-  const recipient = context.crs?.care_recipient_label?.trim();
-  const named =
-    recipient && recipient !== "Your loved one" && recipient !== "they" && recipient !== "person"
-      ? recipient
-      : null;
-  const hasCareData =
-    (context.memory?.observation_count ?? 0) > 0 || (context.memory?.event_count ?? 0) > 0;
-
-  if (hasCareData && named) {
-    return {
-      orientation_line: `What you shared about ${named} is still here. Has anything changed since then?`,
-      should_orient: true,
-      orientation_kind: "casual_greeting",
-    };
-  }
-
-  if (hasCareData) {
-    return {
-      orientation_line: "Your earlier updates are still here. Has anything changed since then?",
-      should_orient: true,
-      orientation_kind: "casual_greeting",
-    };
-  }
-
-  // No care data yet — transition new user
-  return buildNewCaregiverOrientation();
-}
-
-/**
- * "How are you?" — never simulate emotions. Communicate operational readiness.
- */
-function buildHowAreYouOrientation(
-  context: GreetingOrientationContext,
-): GreetingOrientationOutput {
-  const recipient = context.crs?.care_recipient_label?.trim();
-  const named =
-    recipient && recipient !== "Your loved one" && recipient !== "they" && recipient !== "person"
-      ? recipient
-      : null;
-  const hasCareData =
-    (context.memory?.observation_count ?? 0) > 0 || (context.memory?.event_count ?? 0) > 0;
-
-  if (hasCareData && named) {
-    return {
-      orientation_line: `Updates about ${named} are ready. Share what has changed or check what we understand so far.`,
-      should_orient: true,
-      orientation_kind: "how_are_you",
-    };
-  }
-
-  if (hasCareData) {
-    return {
-      orientation_line: "Your earlier updates are ready. Share what has changed or check what we understand so far.",
-      should_orient: true,
-      orientation_kind: "how_are_you",
-    };
-  }
-
-  return {
-    orientation_line: "Ready to organize care information. Share details about the person you care for when you are ready.",
-    should_orient: true,
-    orientation_kind: "how_are_you",
-  };
-}
-
-/**
- * Gratitude ("thank you"). Reinforce continuity — do not close the interaction.
- */
-function buildGratitudeOrientation(
-  context: GreetingOrientationContext,
-): GreetingOrientationOutput {
-  const recipient = context.crs?.care_recipient_label?.trim();
-  const named =
-    recipient && recipient !== "Your loved one" && recipient !== "they" && recipient !== "person"
-      ? recipient
-      : null;
-  const hasCareData =
-    (context.memory?.observation_count ?? 0) > 0 || (context.memory?.event_count ?? 0) > 0;
-
-  if (hasCareData && named) {
-    return {
-      orientation_line: `What you shared about ${named} is kept here. Come back whenever something changes.`,
-      should_orient: true,
-      orientation_kind: "gratitude",
-    };
-  }
-
-  if (hasCareData) {
-    return {
-      orientation_line: "All your updates are kept here. Come back whenever something changes.",
-      should_orient: true,
-      orientation_kind: "gratitude",
-    };
-  }
-
-  return {
-    orientation_line: "Nothing has been added to the care record yet. Share an update about the person you care for when you are ready.",
-    should_orient: true,
-    orientation_kind: "gratitude",
-  };
-}
-
-/**
- * Detect whether raw input is a casual greeting.
- */
 export function isCasualGreetingInput(text: string): boolean {
   const t = text.trim().toLowerCase();
   // Pure greetings
@@ -337,7 +118,7 @@ export function isHowAreYouInput(text: string): boolean {
  */
 export function isGratitudeInput(text: string): boolean {
   const t = text.trim().toLowerCase();
-  if (/^(thanks|thank\s+you|thankyou|appreciate\s+(?:it|that|this))[,.!\s]*$/i.test(t)) return true;
+  if (/^(thanks|thank\s+you(?:\s+so\s+much)?|thankyou|appreciate\s+(?:it|that|this))[,.!\s]*$/i.test(t)) return true;
   if (/^(?:i\s+)?appreciate\s+(?:your\s+)?(?:help|assistance|support)[,.!\s]*$/i.test(t)) return true;
   return false;
 }
@@ -348,6 +129,12 @@ export function isGratitudeInput(text: string): boolean {
  * Change-oriented inputs are the entry point for the "Something Changed" product experience.
  * Examples: "Mom has been more confused lately", "He stopped eating", "She's not sleeping well"
  */
+/** Detect abusive/frustrated interaction for LCR response routing, not reply selection. */
+export function isInsultOrFrustrationInput(text: string): boolean {
+  const t = text.trim().toLowerCase().replace(/[.!?,;:]+/g, " ").replace(/\s+/g, " ").trim();
+  return /\b(?:you(?:'re| are) (?:stupid|dumb|fool|incompetent|pathetic|useless|wrong)|you suck|you never get anything right|you don'?t understand|this (?:thing )?is useless|fuck you|f\*ck you|idiot|stupid|useless|that(?:'s| is) wrong)\b/i.test(t);
+}
+
 export function isChangeOrientedInput(text: string): boolean {
   const t = text.trim().toLowerCase();
   if (t.length < 8) return false;

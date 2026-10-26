@@ -18,7 +18,7 @@
 import type { ComposedCaregiverResponse } from "../../lib/caregiver-response-composer";
 import type { CommunicationInput, CommunicationResult } from "../types";
 import { projectCareSituationToResponseContract } from "../../lib/caregiver-response-composer/project-to-response-contract";
-import { buildGreetingOrientation, isCasualGreetingInput } from "../../lib/greeting-orientation";
+import { buildGreetingOrientation, isCasualGreetingInput, isHowAreYouInput, isGratitudeInput, isInsultOrFrustrationInput } from "../../lib/greeting-orientation";
 import type { CareSituationUnderstanding } from "../../lib/care-situation-understanding/types";
 import type { FinalOutputContract, DecisionTrace, TrustLayerOutput } from "../../lib/final-output-contract/types";
 import type { CareTransparencyPanel } from "../../lib/care-transparency-layer/types";
@@ -129,7 +129,7 @@ export async function communicateFromReasoning(
   const responseContract = projectCareSituationToResponseContract(understanding);
 
   // 2. Build orientation for greeting inputs (hi, hello, how are you)
-  const isGreeting = isCasualGreetingInput(raw_input);
+  const isGreeting = isCasualGreetingInput(raw_input) || isHowAreYouInput(raw_input) || isGratitudeInput(raw_input) || isInsultOrFrustrationInput(raw_input);
   let orientationLine: string | null = null;
 
   if (isGreeting || raw_input.trim().length === 0) {
@@ -158,13 +158,13 @@ export async function communicateFromReasoning(
       crs,
       memory: memorySummary,
       raw_input,
-      is_casual_greeting: isGreeting,
-      is_how_are_you: false,
-      is_gratitude: false,
+      is_casual_greeting: isCasualGreetingInput(raw_input),
+      is_how_are_you: isHowAreYouInput(raw_input),
+      is_gratitude: isGratitudeInput(raw_input),
       is_change_oriented: false,
     };
 
-    const orientation = buildGreetingOrientation(greetingContext);
+    const orientation = await buildGreetingOrientation(greetingContext);
     orientationLine = orientation.orientation_line;
   }
 

@@ -20,8 +20,8 @@ assert.match(companion, /\{requestError && <p role="alert"/);
 assert.match(companion, /setRequestError\(null\)/);
 assert.match(companion, /const startNewSession = \(\) => \{[\s\S]*?setRequestError\(null\)/);
 assert.match(companion, /onChange=\{e => \{[\s\S]*?setRequestError\(null\)/);
-assert.match(workspaceComposer, /setRawInput\(value\);\s*setCaregiverError\(null\)/);
-assert.match(workspaceComposer, /setDocuments\(nextDocuments\);\s*setCaregiverError\(null\)/);
+assert.match(workspaceComposer, /setRawInput\(value\);\s*setLcrOrientationReply\(null\);\s*setCaregiverError\(null\)/);
+assert.match(workspaceComposer, /setDocuments\(nextDocuments\);\s*setLcrOrientationReply\(null\);\s*setCaregiverError\(null\)/);
 assert.match(sanitizeCaregiverErrorMessage("Situation hydration failed (404)"), /We couldn’t complete that step/);
 assert.match(sanitizeCaregiverErrorMessage("Failed to fetch /api/situation"), /We couldn’t complete that step/);
 
