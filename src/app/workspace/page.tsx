@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload, MessageCircle } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
-import { ConsentGatePanel } from "@/components/mvp-workspace/ConsentGatePanel";
 import { CognitiveWorkspace } from "@/components/mvp-workspace";
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -243,35 +242,10 @@ function WorkspacePageInner() {
   );
 }
 
-/**
- * Enforce the server-persisted privacy acknowledgement before any workspace
- * route content is exposed, including the care-record overview (not just Add
- * Record). ConsentGatePanel reads/writes the authenticated backend contract;
- * the workspace opens immediately after the server confirms the save.
- */
-function WorkspacePrivacyBoundary() {
-  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
-
-  if (consentState !== "accepted") {
-    return (
-      <div className="mobile-screen">
-        {consentState === "loading" && <BrandLoading message="Checking your privacy choice…" />}
-        <ConsentGatePanel
-          caregiverId=""
-          onStatusChange={setConsentState}
-        />
-      </div>
-    );
-  }
-
+export default function WorkspacePage() {
   return (
     <Suspense fallback={<BrandLoading message="Loading your care context…" />}>
       <WorkspacePageInner />
     </Suspense>
   );
 }
-
-export default function WorkspacePage() {
-  return <WorkspacePrivacyBoundary />;
-}
-
