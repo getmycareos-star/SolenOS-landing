@@ -177,7 +177,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     );
   }
 
-  const response = await fetch("/api/v1/sessions/anonymous", {
+  const response = await fetchWithTimeout("/api/v1/sessions/anonymous", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ caregiver_name: "Caregiver" }),
@@ -299,7 +299,7 @@ export async function postJSON(path: string, body: unknown) {
 
 export async function patchJSON(path: string, body: unknown) {
   const authHeaders = await requestAuthorizationHeaders(path);
-  const res = await fetch(resolveApiUrl(path), {
+  const res = await fetchWithTimeout(resolveApiUrl(path), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
@@ -310,7 +310,7 @@ export async function patchJSON(path: string, body: unknown) {
 
 export async function deleteJSON(path: string, body?: unknown) {
   const authHeaders = await requestAuthorizationHeaders(path);
-  const res = await fetch(resolveApiUrl(path), {
+  const res = await fetchWithTimeout(resolveApiUrl(path), {
     method: "DELETE",
     headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...authHeaders },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -347,7 +347,7 @@ export async function signInToAccount(email: string, password: string): Promise<
 
 export async function putJSON(path: string, body: unknown) {
   const authHeaders = await requestAuthorizationHeaders(path);
-  const res = await fetch(resolveApiUrl(path), {
+  const res = await fetchWithTimeout(resolveApiUrl(path), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
