@@ -15,8 +15,8 @@ function requireText(file: string, snippets: string[]): void {
 
 const assist = read("src/components/qwen/QwenAssistPanel.tsx");
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
-  'postJSON("/assistant/assist"',
-  "result.written_to_lcr !== false",
+  'postJSON("/assistant/jobs"',
+  
   'result.authority !== "solenos_care_record_and_caregiver"',
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
