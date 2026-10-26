@@ -47,6 +47,8 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [recoveryKeyToShow, setRecoveryKeyToShow] = useState("");
   const [caregiverName, setCaregiverName] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [mfaCode, setMfaCode] = useState("");
@@ -108,7 +110,9 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
       email, password, caregiver_name: caregiverName.trim(), care_recipient_name: recipientName.trim(),
       anonymous_access_token: window.localStorage.getItem("solenos_anonymous_access_token") || undefined,
     });
-    setMessage(result.message || "Account created. Check your email to verify your address before signing in.");
+    if (!result.recovery_code) throw new Error("Account was created, but the server did not return a recovery key. Do not close this screen; contact support before relying on recovery.");
+    setRecoveryKeyToShow(result.recovery_code);
+    setMessage(result.message || "Account created. Save the recovery key now; it will not be shown again.");
     setTab("login");
     setPassword("");
   };
@@ -164,12 +168,7 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     setMessage(result.message || "If the account exists, instructions will be sent to its email address.");
   };
 
-  const confirmTokenAction = async (purpose: "password-reset" | "recovery") => {
-    if (!token) throw new Error("The secure link is missing its token. Request a new email.");
-    if (newPassword.length < 10) throw new Error("Use a password with at least 10 characters.");
-    if (newPassword !== confirmPassword) throw new Error("The passwords do not match.");
-    const path = purpose === "password-reset" ? "/account-security/password-reset/confirm" : "/account-security/recovery/confirm";
-    await post(path, { token, new_password: newPassword });
+  const clearSavedSession = () => {
     try {
       window.localStorage.removeItem("solenos_anonymous_access_token");
       window.localStorage.removeItem("solenos_backend_person_id");
@@ -178,9 +177,30 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
       window.localStorage.removeItem("solenos_backend_account_id");
     } catch { /* storage may be unavailable */ }
     setAccountToken("");
-    setMessage(purpose === "password-reset"
-      ? "Password changed. Existing sessions have been revoked. Sign in again with your new password."
-      : "Account recovered. Existing sessions and MFA enrollment have been revoked/reset. Sign in again and set up MFA again.");
+    window.dispatchEvent(new Event("personIdChanged"));
+  };
+
+  const confirmRecoveryKey = async () => {
+    if (newPassword.length < 10) throw new Error("Use a password with at least 10 characters.");
+    if (newPassword !== confirmPassword) throw new Error("The passwords do not match.");
+    await post("/account-security/recovery/confirm", {
+      email: email.trim(), recovery_code: recoveryCode.trim(), new_password: newPassword,
+    });
+    clearSavedSession();
+    setRecoveryCode("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setMessage("Password reset. The recovery key has been used and all existing sessions were revoked. Sign in with your new password.");
+  };
+
+  const confirmTokenAction = async (purpose: "password-reset" | "recovery") => {
+    if (!token) throw new Error("The secure link is missing its token.");
+    if (newPassword.length < 10) throw new Error("Use a password with at least 10 characters.");
+    if (newPassword !== confirmPassword) throw new Error("The passwords do not match.");
+    const path = purpose === "password-reset" ? "/account-security/password-reset/confirm" : "/account-security/recovery/confirm";
+    await post(path, { token, new_password: newPassword });
+    clearSavedSession();
+    setMessage("Password changed. Existing sessions have been revoked. Sign in again with your new password.");
   };
 
   if (mode === "verify-email") {
@@ -204,16 +224,22 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     return <section style={cardStyle}>
       <h1 style={{ fontSize: 26, margin: "0 0 8px" }}>{title}</h1>
       <p style={{ color: "#526157", lineHeight: 1.6 }}>
-        {token ? "Choose a new password. The secure link is single-use and expires after 30 minutes." :
-          "Enter the email address associated with the account. If it exists, we will send a secure link."}
+        {token ? "Choose a new password. This link is single-use and expires after 30 minutes." :
+          recovery ? "Use the recovery key you saved when creating your account. The key is single-use. No email service is required." :
+          "Password reset by email is unavailable until an email provider is configured. Use your saved recovery key instead."}
       </p>
       <form onSubmit={(e) => void run(e, async () => {
         if (token) await confirmTokenAction(recovery ? "recovery" : "password-reset");
-        else await requestEmailAction(recovery ? "recovery" : "password-reset");
+        else if (recovery) await confirmRecoveryKey();
+        else throw new Error("Email reset is not configured. Use the saved recovery key.");
       })} style={{ display: "grid", gap: 12 }}>
-        {!token ? <label style={{ display: "grid", gap: 6 }}>Email address
+        {!token && <label style={{ display: "grid", gap: 6 }}>Email address
           <input style={fieldStyle} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label> : <>
+        </label>}
+        {!token && recovery && <label style={{ display: "grid", gap: 6 }}>Saved recovery key
+          <input style={fieldStyle} autoComplete="off" required value={recoveryCode} onChange={(e) => setRecoveryCode(e.target.value)} />
+        </label>}
+        {(token || recovery) && <>
           <label style={{ display: "grid", gap: 6 }}>New password
             <input style={fieldStyle} type="password" autoComplete="new-password" minLength={10} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
           </label>
@@ -221,7 +247,7 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
             <input style={fieldStyle} type="password" autoComplete="new-password" minLength={10} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
           </label>
         </>}
-        <button style={buttonStyle} disabled={busy}>{busy ? "Working…" : token ? "Save new password" : "Send secure link"}</button>
+        <button style={buttonStyle} disabled={busy}>{busy ? "Working…" : token || recovery ? "Reset password" : "Unavailable without email setup"}</button>
       </form>
       {error && <p role="alert" style={{ color: "#9b2525" }}>{error}</p>}
       {message && <p role="status" style={{ color: "#315d40" }}>{message}</p>}
@@ -232,7 +258,7 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
   return <main style={{ minHeight: "70vh", padding: "48px 18px", background: "#f7faf7", color: "#17211c" }}>
     <div style={{ ...cardStyle, marginBottom: 24 }}>
       <h1 style={{ fontSize: 28, margin: "0 0 8px" }}>SolenOS account</h1>
-      <p style={{ color: "#526157", lineHeight: 1.6 }}>Your care record stays under your control. Email verification is required before account sign-in; anonymous use remains available separately.</p>
+      <p style={{ color: "#526157", lineHeight: 1.6 }}>Your care record stays under your control. Sign in with your email and password on any device. Save your one-time recovery key somewhere safe; anonymous use remains available separately.</p>
       <div role="tablist" aria-label="Account action" style={{ display: "flex", gap: 8, margin: "20px 0" }}>
         <button type="button" role="tab" aria-selected={tab === "login"} onClick={() => setTab("login")} style={{ ...buttonStyle, background: tab === "login" ? "#dce9df" : "#f0f4f0" }}>Sign in</button>
         <button type="button" role="tab" aria-selected={tab === "register"} onClick={() => setTab("register")} style={{ ...buttonStyle, background: tab === "register" ? "#dce9df" : "#f0f4f0" }}>Create account</button>
@@ -255,15 +281,22 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
         {tab === "login" && <label style={{ display: "grid", gap: 6 }}>Authenticator or recovery code (if MFA is enabled)
           <input style={fieldStyle} autoComplete="one-time-code" inputMode="numeric" value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="6-digit code or recovery code" />
         </label>}
-        <button style={buttonStyle} disabled={busy}>{busy ? "Working…" : tab === "login" ? "Sign in" : "Create account and verify email"}</button>
+        <button style={buttonStyle} disabled={busy}>{busy ? "Working…" : tab === "login" ? "Sign in" : "Create account"}</button>
       </form>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 18, fontSize: 14 }}>
-        <a href="/reset-password" style={{ color: "#315d40" }}>Forgot password?</a>
+        <a href="/recover-account" style={{ color: "#315d40" }}>Forgot password?</a>
         <a href="/recover-account" style={{ color: "#315d40" }}>Recover account</a>
-        <button type="button" disabled={busy} onClick={(e) => void run(e as any, resendVerification)} style={{ border: 0, background: "transparent", color: "#315d40", textDecoration: "underline", cursor: "pointer" }}>Resend verification email</button>
+ 
       </div>
       {error && <p role="alert" style={{ color: "#9b2525" }}>{error}</p>}
       {message && <p role="status" style={{ color: "#315d40" }}>{message}</p>}
+      {recoveryKeyToShow && <section role="alert" style={{ marginTop: 18, padding: 16, border: "1px solid #b9cdbd", borderRadius: 12, background: "#f5faf5" }}>
+        <h2 style={{ marginTop: 0, fontSize: 18 }}>Save your account recovery key now</h2>
+        <p>This key is shown only once. Store it somewhere separate from this device. Anyone who has both your email and this key can reset your password.</p>
+        <code style={{ display: "block", overflowWrap: "anywhere", padding: 12, background: "#fff", borderRadius: 8 }}>{recoveryKeyToShow}</code>
+        <button type="button" style={{ ...buttonStyle, marginTop: 10 }} onClick={() => { void navigator.clipboard?.writeText(recoveryKeyToShow).then(() => setMessage("Recovery key copied. Save it somewhere safe.")).catch(() => setMessage("Copy failed. Select and copy the recovery key manually.")); }}>Copy recovery key</button>
+        <button type="button" style={{ ...buttonStyle, marginTop: 8, background: "#f0f4f0" }} onClick={() => setRecoveryKeyToShow("")}>I saved it — hide key</button>
+      </section>}
     </div>
     {accountToken && <section style={cardStyle}>
       <p><a href="/workspace" style={{ color: "#315d40" }}>Continue to your care record</a></p>
