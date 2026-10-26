@@ -1,27 +1,13 @@
-"use client";
-
-import dynamic from "next/dynamic";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
-
-const Community = dynamic(() => import("@/components/workflows/Community"), {
-  ssr: false,
-});
+import CommunityClient from "./CommunityClient";
 
 export default function CommunityPage() {
-  const router = useRouter();
-  const enabled = FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity;
+  // Enforce the disabled state on the server so direct URL requests never
+  // render Community UI or depend on client-side JavaScript to redirect.
+  if (!FEATURE_FLAGS.community || !FEATURE_FLAGS.professionalCommunity) {
+    redirect("/workspace");
+  }
 
-  useEffect(() => {
-    if (!enabled) router.replace("/workspace");
-  }, [enabled, router]);
-
-  if (!enabled) return null;
-
-  return (
-    <div className="mobile-screen feature-page">
-      <Community />
-    </div>
-  );
+  return <CommunityClient />;
 }
