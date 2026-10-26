@@ -5,6 +5,8 @@ import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { useEffect, useState, type ReactNode } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { BrandLoading } from "@/components/brand";
+import { ConsentGatePanel } from "@/components/mvp-workspace/ConsentGatePanel";
 
 const WORKSPACE_NAV = [
   { href: "/workspace", label: "Living Care Record", icon: "◉" },
@@ -66,24 +68,47 @@ function CareContextBar() {
   );
 }
 
+/**
+ * One backend-persisted privacy gate for every /workspace route. Children,
+ * care state, and the app shell are not mounted until the server confirms the
+ * required acknowledgement. A successful checkbox click opens the workspace
+ * immediately; no local-only second acknowledgement is shown later.
+ */
+function WorkspacePrivacyBoundary({ children }: { children: ReactNode }) {
+  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
+
+  if (consentState !== "accepted") {
+    return (
+      <div className="mobile-screen">
+        {consentState === "loading" && <BrandLoading message="Checking your privacy choice…" />}
+        <ConsentGatePanel caregiverId="" onStatusChange={setConsentState} />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
-    <WorkspaceProvider>
-      <OnboardingGate>
-        <ErrorBoundary name="Workspace" fallback={
-          <div style={{ padding: "24px", textAlign: "center" }}>
-            <p style={{ color: "#78716c" }}>The workspace encountered an error. Please refresh the page.</p>
-          </div>
-        }>
-          <AppShell
-            navItems={WORKSPACE_NAV}
-            brandHref="/workspace"
-            careContext={<CareContextBar />}
-          >
-            {children}
-          </AppShell>
-        </ErrorBoundary>
-      </OnboardingGate>
-    </WorkspaceProvider>
+    <WorkspacePrivacyBoundary>
+      <WorkspaceProvider>
+        <OnboardingGate>
+          <ErrorBoundary name="Workspace" fallback={
+            <div style={{ padding: "24px", textAlign: "center" }}>
+              <p style={{ color: "#78716c" }}>The workspace encountered an error. Please refresh the page.</p>
+            </div>
+          }>
+            <AppShell
+              navItems={WORKSPACE_NAV}
+              brandHref="/workspace"
+              careContext={<CareContextBar />}
+            >
+              {children}
+            </AppShell>
+          </ErrorBoundary>
+        </OnboardingGate>
+      </WorkspaceProvider>
+    </WorkspacePrivacyBoundary>
   );
 }
