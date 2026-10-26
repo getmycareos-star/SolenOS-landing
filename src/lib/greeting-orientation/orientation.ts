@@ -118,7 +118,7 @@ export function isHowAreYouInput(text: string): boolean {
  */
 export function isGratitudeInput(text: string): boolean {
   const t = text.trim().toLowerCase();
-  if (/^(thanks|thank\s+you|thankyou|appreciate\s+(?:it|that|this))[,.!\s]*$/i.test(t)) return true;
+  if (/^(thanks|thank\s+you(?:\s+so\s+much)?|thankyou|appreciate\s+(?:it|that|this))[,.!\s]*$/i.test(t)) return true;
   if (/^(?:i\s+)?appreciate\s+(?:your\s+)?(?:help|assistance|support)[,.!\s]*$/i.test(t)) return true;
   return false;
 }
