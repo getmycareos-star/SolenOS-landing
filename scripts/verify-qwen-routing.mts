@@ -24,6 +24,22 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
 ]);
 assert(!assist.includes("<select"), "The shared assistance panel must not expose internal workflow selection.");
 assert(assist.includes("const workflow = defaultWorkflow;"), "Workflow routing must come from internal page context, not caregiver selection.");
+const enabledWorkflowIds = [
+  "daily_capture", "add_record", "document", "living_care_record",
+  "care_history_search", "care_situation_change", "delta_engine",
+  "evidence_provenance", "uncertainty_contradictions", "returning_caregiver",
+  "appointment", "after_appointment", "handoff", "professional_summary",
+  "open_loops", "two_week_review", "decision_outcome", "medication_day",
+  "reminders_notifications", "care_coordination", "companion",
+  "caregiver_feedback", "sharing_export", "roles_access", "account_recovery",
+  "settings_security", "record_lifecycle", "offline_sync", "ai_reliability",
+  "audit_review",
+];
+for (const workflow of enabledWorkflowIds) {
+  assert(assist.includes(JSON.stringify(workflow)), `Qwen must support internal workflow ${workflow}.`);
+}
+assert(!assist.includes('"community"'), "Community must stay excluded while disabled.");
+
 assert(!assist.includes('"community"'), "Community must remain excluded while disabled.");
 for (const workflow of [
   "daily_capture", "add_record", "document", "living_care_record",
