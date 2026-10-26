@@ -168,7 +168,8 @@ assert(!companionSource.includes("compareMessageWithRecord"), "Manual-only Compa
 
 assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
 assert(companionSource.includes("setDeltaAutoInput({"), "Companion must enqueue the review through the existing Delta panel");
-assert(companionSource.includes("written_to_lcr") === false, "Frontend must not claim the background review writes the LCR");
+assert(companionSource.includes("Conversation only — not added to the Living Care Record."), "Companion must disclose that chat messages are not added to the LCR");
+assert(companionSource.includes("never promotes output into the LCR"), "Automatic background review must remain read-only");
 const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
 assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
 assert(dailyCaptureSource.includes("setDeltaAutoInput({"), "Daily Capture must trigger automatic care-delta reconciliation after a successful save");
