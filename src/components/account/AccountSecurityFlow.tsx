@@ -118,6 +118,20 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
     setPassword("");
   };
 
+  const resetPasswordOnDevice = async (event: FormEvent) => {
+    event.preventDefault();
+    setMfaBusy(true); setError(""); setMessage("");
+    try {
+      if (newPassword.length < 10) throw new Error("Use a password with at least 10 characters.");
+      if (newPassword !== confirmPassword) throw new Error("The passwords do not match.");
+      await post("/account-security/password/reset-on-device", { new_password: newPassword }, accountToken);
+      clearSavedSession();
+      setNewPassword(""); setConfirmPassword("");
+      setMessage("Password reset using this signed-in device. All sessions were revoked; sign in again with the new password.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not reset password on this device."); }
+    finally { setMfaBusy(false); }
+  };
+
   const changePassword = async (event: FormEvent) => {
     event.preventDefault();
     setMfaBusy(true); setError(""); setMessage("");
@@ -315,6 +329,17 @@ export default function AccountSecurityFlow({ mode, token = "" }: Props) {
           <input style={fieldStyle} type="password" autoComplete="new-password" minLength={10} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
         </label>
         <button style={buttonStyle} disabled={mfaBusy}>{mfaBusy ? "Updating…" : "Change password and sign out"}</button>
+      </form>
+      <h2 style={{ fontSize: 22, marginTop: 0 }}>Forgot your password but still signed in?</h2>
+      <p style={{ color: "#526157", lineHeight: 1.6 }}>You can reset it using this active device session. Only do this on a device you trust. This signs out all devices, including this one.</p>
+      <form onSubmit={(e) => void resetPasswordOnDevice(e)} style={{ display: "grid", gap: 12, marginBottom: 28 }}>
+        <label style={{ display: "grid", gap: 6 }}>New password
+          <input style={fieldStyle} type="password" autoComplete="new-password" minLength={10} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+        </label>
+        <label style={{ display: "grid", gap: 6 }}>Confirm new password
+          <input style={fieldStyle} type="password" autoComplete="new-password" minLength={10} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        </label>
+        <button style={buttonStyle} disabled={mfaBusy}>{mfaBusy ? "Resetting…" : "Reset password using this device"}</button>
       </form>
       <h2 style={{ fontSize: 22, marginTop: 0 }}>Multi-factor authentication</h2>
       <p style={{ color: "#526157", lineHeight: 1.6 }}>Enable an authenticator app as a second factor for future sign-ins. Recovery codes are displayed once after confirmation.</p>
