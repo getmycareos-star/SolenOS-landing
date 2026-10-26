@@ -45,8 +45,8 @@ requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
   "Help with your care information",
   "evidenceIds={documents.map",
-  "isCasualConversationOnly(text)",
-  "/workspace/companion?draft=",
+  "isLcrOrientationOnly(text)",
+  "/api/lcr/orientation",
 ]);
 const capture = read("src/components/workflows/StructuredDailyCapture.tsx");
 requireText("src/components/workflows/StructuredDailyCapture.tsx", [
