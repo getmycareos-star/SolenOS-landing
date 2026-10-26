@@ -20,43 +20,11 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'result.authority !== "solenos_care_record_and_caregiver"',
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
-  "SolenOS workflow",
-  "care_history_search",
-  "care_situation_change",
-  "delta_engine",
-  "evidence_provenance",
-  "uncertainty_contradictions",
-  "returning_caregiver",
-  "reminders_notifications",
-  "care_coordination",
-  "caregiver_feedback",
-  "sharing_export",
-  "roles_access",
-  "account_recovery",
-  "settings_security",
-  "record_lifecycle",
-  "offline_sync",
-  "ai_reliability",
-  "audit_review",
   '{loading ? "Working…" : "Send"}',
 ]);
 assert(!assist.includes("<select"), "The shared assistance panel must not expose internal workflow selection.");
-const enabledWorkflows = [
-  "daily_capture", "add_record", "document", "living_care_record",
-  "care_history_search", "care_situation_change", "delta_engine",
-  "evidence_provenance", "uncertainty_contradictions", "returning_caregiver",
-  "appointment", "after_appointment", "handoff", "professional_summary",
-  "open_loops", "two_week_review", "decision_outcome", "medication_day",
-  "reminders_notifications", "care_coordination", "companion",
-  "caregiver_feedback", "sharing_export", "roles_access", "account_recovery",
-  "settings_security", "record_lifecycle", "offline_sync", "ai_reliability",
-  "audit_review",
-];
-for (const workflow of enabledWorkflows) {
-  assert(assist.includes(`value: "${workflow}"`), `Qwen panel must offer ${workflow}`);
-}
-assert.equal(enabledWorkflows.length, 30);
-assert(!assist.includes('"community"'), "Community must remain excluded from Qwen workflow selection.");
+assert(assist.includes("const workflow = defaultWorkflow;"), "Workflow routing must come from internal page context, not caregiver selection.");
+assert(!assist.includes('"community"'), "Community must remain excluded while disabled.");
 assert(!assist.includes("Railway-hosted local model"), "Internal runtime details must not be shown.");
 assert(!assist.includes("Check Qwen"), "Internal model status controls must not be shown.");
 assert(!assist.includes("reply.model"), "Provider/model names must not be shown to caregivers.");
