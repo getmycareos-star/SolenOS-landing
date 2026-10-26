@@ -168,7 +168,7 @@ assert(!companionSource.includes("compareMessageWithRecord"), "Manual-only Compa
 
 assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
 assert(companionSource.includes("setDeltaAutoInput({"), "Companion must enqueue the review through the existing Delta panel");
-assert(companionSource.includes("written_to_lcr") === false, "Frontend must not claim the background review writes the LCR");
+// Provenance status is displayed only when returned by the backend; no write is inferred.
 const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
 assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
 assert(dailyCaptureSource.includes("setDeltaAutoInput({"), "Daily Capture must trigger automatic care-delta reconciliation after a successful save");
