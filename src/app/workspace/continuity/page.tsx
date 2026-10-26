@@ -7,10 +7,10 @@ import { getJSON, postJSON } from "@/api/client";
 
 type Row = Record<string, unknown>;
 type Summary = { resources: Record<string, number> };
-const resources = ["facts", "decisions", "integrity-findings", "reconciliations", "delta-items"];
+const resources = ["facts", "decisions", "integrity-findings", "reconciliations", "delta-items", "follow-up-links", "review-decisions", "provenance", "timeline", "change-assessments"];
 const labels: Record<string, string> = {
  facts: "Care facts", decisions: "Care decisions", "integrity-findings": "Integrity findings",
- reconciliations: "Reconciliation history", "delta-items": "Detected changes"
+ reconciliations: "Reconciliation history", "delta-items": "Detected changes", "follow-up-links": "Follow-up links", "review-decisions": "Review decisions", provenance: "Source provenance", timeline: "Care timeline", "change-assessments": "Change assessments"
 };
 function rowText(r: Row) {
  return String(r.fact_value ?? r.decision_text ?? r.description ?? r.decision_notes ?? r.after_state ?? r.reconciliation_status ?? r.status ?? "Care record");
