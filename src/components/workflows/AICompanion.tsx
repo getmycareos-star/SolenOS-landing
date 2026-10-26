@@ -202,7 +202,7 @@ export default function Companion() {
                 style={{ fontSize: '11px', lineHeight: 1.5, color: 'var(--text-secondary)', marginTop: '3px' }}
               >
                 {((msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0)) > 0
-                  ? `Context checked: ${msg.source_event_ids?.length ?? 0} care entries, ${msg.source_evidence_ids?.length ?? 0} evidence items, ${msg.source_appointment_ids?.length ?? 0} appointments.`
+                  ? `Context supplied: ${msg.source_event_ids?.length ?? 0} care entries, ${msg.source_evidence_ids?.length ?? 0} evidence items, ${msg.source_appointment_ids?.length ?? 0} appointments.`
                   : 'No matching care context was returned for this response.'}
                 {' '}Conversation only — not added to the Living Care Record.
               </div>
