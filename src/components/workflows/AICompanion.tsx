@@ -10,6 +10,12 @@ interface Message {
   safety_note?: string | null
   confidence?: number | null
   evidence_ids?: string[]
+  source_event_ids?: string[]
+  source_evidence_ids?: string[]
+  source_appointment_ids?: string[]
+  ai_generated?: boolean
+  written_to_lcr?: boolean
+  persistence?: string
   timestamp: Date
 }
 
@@ -76,6 +82,12 @@ export default function Companion() {
         safety_note: response.safety_note,
         confidence: response.confidence,
         evidence_ids: response.evidence_ids,
+        source_event_ids: response.source_event_ids,
+        source_evidence_ids: response.source_evidence_ids,
+        source_appointment_ids: response.source_appointment_ids,
+        ai_generated: response.ai_generated,
+        written_to_lcr: response.written_to_lcr,
+        persistence: response.persistence,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
@@ -184,6 +196,17 @@ export default function Companion() {
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: msg.role === 'user' ? 'right' : 'left', marginTop: '4px' }}>
               {msg.role === 'user' ? 'You' : 'SolenOS'} · {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
+            {msg.role === 'assistant' && msg.ai_generated && (
+              <div
+                aria-label="Response provenance"
+                style={{ fontSize: '11px', lineHeight: 1.5, color: 'var(--text-secondary)', marginTop: '3px' }}
+              >
+                {((msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0)) > 0
+                  ? `Context supplied: ${msg.source_event_ids?.length ?? 0} care entries, ${msg.source_evidence_ids?.length ?? 0} evidence items, ${msg.source_appointment_ids?.length ?? 0} appointments.`
+                  : 'No matching care context was returned for this response.'}
+                {' '}Conversation only — not added to the Living Care Record.
+              </div>
+            )}
 
           </div>
         ))}
