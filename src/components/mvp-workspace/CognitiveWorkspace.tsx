@@ -701,29 +701,35 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       }
       case "archive": {
         const confirmed = window.confirm(
-          "Archive this care record?\n\nArchived records are hidden from the active view but not deleted. You can recover them later.",
+          "Hide this workspace on this device?\n\nThis only hides the workspace in this browser. It does not delete or server-archive care information, and you can restore the workspace later.",
         );
         if (!confirmed) return;
-        setIsArchived(true);
         try {
           window.localStorage.setItem("solenos_workspace_archived", "1");
         } catch {
-          /* ignore */
+          window.alert(
+            "This browser could not save the workspace's local archive state. Nothing was archived or deleted. Your workspace remains available; check browser storage settings and try again.",
+          );
+          break;
         }
+        setIsArchived(true);
+        window.location.href = "/workspace";
         break;
       }
       case "restore": {
-        setIsArchived(false);
         try {
           window.localStorage.removeItem("solenos_workspace_archived");
+          setIsArchived(false);
         } catch {
-          /* ignore */
+          window.alert(
+            "This browser could not restore the workspace because local storage is unavailable. The archive state has not changed.",
+          );
         }
         break;
       }
       case "delete": {
         const confirmed = window.confirm(
-          "Clear this workspace from this device?\n\nThis clears locally stored workspace information. It does not delete server-held care records.",
+          "Clear this workspace from this device?\n\nThis removes local session and workspace data from this browser. It does not delete care information already stored on SolenOS servers. Continue?",
         );
         if (!confirmed) return;
         try {
