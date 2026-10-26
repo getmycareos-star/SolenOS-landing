@@ -139,7 +139,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       };
     }
 
-    const refreshResponse = await fetch("/api/v1/sessions/refresh", {
+    const refreshResponse = await fetchWithTimeout("/api/v1/sessions/refresh", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -203,6 +203,38 @@ export function ensureAnonymousSession(): Promise<AnonymousSession> {
   return anonymousSessionPromise;
 }
 
+const API_REQUEST_TIMEOUT_MS = 15_000;
+const RETRYABLE_GET_STATUSES = new Set([502, 503, 504]);
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: init.signal ?? controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("The SolenOS API request timed out. Check your connection and try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// Only idempotent reads are retried. Never replay writes after an ambiguous network failure.
+async function fetchGetWithRetry(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(input, { ...init, method: "GET" });
+      if (attempt === 0 && RETRYABLE_GET_STATUSES.has(response.status)) continue;
+      return response;
+    } catch (error) {
+      if (attempt === 1) throw error;
+    }
+  }
+  throw new Error("The SolenOS API read could not be completed.");
+}
+
 async function handleResponse(res: Response) {
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
@@ -241,14 +273,14 @@ async function handleResponse(res: Response) {
 
 export async function getJSON(path: string) {
   const headers = await requestAuthorizationHeaders(path);
-  const res = await fetch(resolveApiUrl(path), { headers })
+  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers })
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
   const headers = await requestAuthorizationHeaders(path);
-  const res = await fetch(resolveApiUrl(path), { headers })
+  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers })
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
@@ -257,7 +289,7 @@ export async function getBlob(path: string): Promise<Blob> {
 
 export async function postJSON(path: string, body: unknown) {
   const authHeaders = await requestAuthorizationHeaders(path);
-  const res = await fetch(resolveApiUrl(path), {
+  const res = await fetchWithTimeout(resolveApiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify(body),
@@ -299,7 +331,7 @@ export type AccountLoginResponse = {
 
 /** Sign in through the backend and replace the local anonymous capability with the account's scoped session. */
 export async function signInToAccount(email: string, password: string): Promise<AccountLoginResponse> {
-  const res = await fetch("/api/v1/accounts/login", {
+  const res = await fetchWithTimeout("/api/v1/accounts/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -343,7 +375,7 @@ export async function postFormData(path: string, body: FormData) {
     ? normalized
     : `/api/v1${normalized}`;
   const headers = await requestAuthorizationHeaders(backendPath);
-  const res = await fetch(apiUrl(backendPath), {
+  const res = await fetchWithTimeout(apiUrl(backendPath), {
     method: "POST",
     headers,
     body,
