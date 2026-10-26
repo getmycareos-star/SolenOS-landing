@@ -3,6 +3,7 @@
 import type { SituationResponse } from "@/lib/situation-entry";
 import { buildLivingCareRecordResponse } from "@/lib/living-care-record-ux";
 import { LivingCareRecordPanel } from "./LivingCareRecordPanel";
+import { LcrQwenInterpretation } from "./LcrQwenInterpretation";
 
 type Props = {
   response: SituationResponse;
@@ -14,11 +15,30 @@ type Props = {
   careKey?: string | null;
 };
 
+type PersistedReceipt = {
+  ok?: boolean;
+  care_event_id?: string;
+  evidence_id?: string;
+  events?: Array<{ id?: string }>;
+  events_created?: Array<{ id?: string }>;
+};
+
+function persistedSourceEventId(response: SituationResponse): string | null {
+  const receipt = response as SituationResponse & PersistedReceipt;
+  if (receipt.ok !== true) return null;
+  const id =
+    receipt.care_event_id ||
+    receipt.events?.find((event) => Boolean(event.id))?.id ||
+    receipt.events_created?.find((event) => Boolean(event.id))?.id;
+  return typeof id === "string" && id.trim() ? id.trim() : null;
+}
+
 /**
  * Caregiver-facing surface: Living Care Record only.
  * Active Care Situation grows understanding across related observations.
  *
- * Product truth: `buildLivingCareRecordResponse` from ACS/composer — never `response.final_output`.
+ * Product truth: buildLivingCareRecordResponse from ACS/composer — never response.final_output.
+ * Qwen provides an additional review-only interpretation; it cannot replace or write the LCR.
  * @see docs/17-canonical-architecture/product-truth-path.md
  */
 export function SituationResponsePanel({
@@ -51,6 +71,7 @@ export function SituationResponsePanel({
       rawInput.trim();
 
     if (persistedEvent) {
+      const sourceEventId = persistedSourceEventId(response);
       return (
         <section className="panel panel-output situation-response" aria-label="Living Care Record" role="status">
           <div className="workspace-panel-inner lcr-side">
@@ -62,6 +83,7 @@ export function SituationResponsePanel({
             {receipt.care_event_id && (
               <p className="panel-muted">Saved record reference: {receipt.care_event_id}</p>
             )}
+            <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
             {onContinue && (
               <button type="button" onClick={onContinue}>
                 Continue
@@ -103,6 +125,7 @@ export function SituationResponsePanel({
   const isReconstructedProjection =
     activeProjection?.persistence_source === "relational_evidence_and_events_projection" &&
     activeProjection.reasoning_state_persisted === false;
+  const sourceEventId = persistedSourceEventId(response);
 
   return (
     <section className="panel panel-output situation-response" aria-label="Living Care Record">
@@ -119,6 +142,7 @@ export function SituationResponsePanel({
           careKey={careKey}
           rawInputExcerpt={rawInput}
         />
+        <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
       </div>
     </section>
   );
