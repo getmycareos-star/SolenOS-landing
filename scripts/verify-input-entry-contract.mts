@@ -111,8 +111,9 @@ console.log("✓ Document extraction route is not redirected to an unregistered 
 
 console.log("✓ Original documents persist and link to care events");
 
-assert(workspace.includes("isCasualConversationOnly"));
-assert(workspace.includes("/workspace/companion?draft="));
+assert(workspace.includes("isLcrOrientationOnly"));
+assert(workspace.includes("/api/lcr/orientation"));
+assert(workspace.includes("setLcrOrientationReply"));
 assert(workspace.includes('method: "GET"') && workspace.includes("hydrationRes"));
 assert(workspace.includes("active_care_situation_turn"));
 assert(workspace.includes("let hydrated = situationData"), "Use the POST read-after-write projection first");
@@ -120,7 +121,7 @@ assert(
   workspace.indexOf("let hydrated = situationData") < workspace.indexOf("const hydrationUrl"),
   "A second GET must be a fallback only when the POST lacks a persisted view",
 );
-console.log("✓ greeting-only notes route to Companion; care captures prefer the persisted POST projection");
+console.log("✓ LCR interaction-only inputs use Qwen orientation in LCR; care captures prefer the persisted POST projection");
 
 const companion = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
@@ -156,7 +157,7 @@ for (const stage of ["Early stage", "Moderate", "Late", "All stages"]) {
 
 
 assert(workspace.includes('err.detail.code === "conversation_only"'));
-assert(workspace.includes("/workspace/companion?draft="));
+assert(!workspace.includes("/workspace/companion?draft="), "LCR must not redirect greetings or insults to Companion");
 console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
 console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");
 const companionSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "AICompanion.tsx"), "utf8");
@@ -172,7 +173,7 @@ const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", 
 assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
 assert(dailyCaptureSource.includes("setDeltaAutoInput({"), "Daily Capture must trigger automatic care-delta reconciliation after a successful save");
 
-console.log("✓ greetings use the server-issued session and Companion endpoint; they are not written as care evidence");
+console.log("✓ LCR greetings and insults use the server-issued session and read-only LCR endpoint; they are not written as care evidence");
 
 const sot = fs.readFileSync(
   path.join(root, "docs", "02-product", "solenos-input-entry-contract.md"),
