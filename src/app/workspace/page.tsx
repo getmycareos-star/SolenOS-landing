@@ -189,6 +189,10 @@ function WorkspacePageInner() {
         </section>
 
         <section className="workspace-secondary-tools" aria-label="More care tools">
+          <button type="button" onClick={() => router.push("/workspace/continuity")}>
+            <FileText size={18} aria-hidden />
+            <span><strong>Deep care continuity</strong><small>Review saved facts, decisions, uncertainty and record integrity</small></span>
+          </button>
           {FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity && (
             <button type="button" onClick={() => router.push("/workspace/community")}>
               <span><strong>Caregiver community</strong><small>Shared dementia-care experiences</small></span>
