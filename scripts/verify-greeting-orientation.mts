@@ -27,7 +27,7 @@ const implementation = readFileSync(
   "utf8",
 );
 assert.match(implementation, /api\/lcr\/orientation/);
-assert.match(implementation, /api\\/lcr\\/orientation/);
+assert.ok(implementation.includes("api/lcr/orientation"));
 assert.doesNotMatch(implementation, /Your previous updates are still here/);
 assert.doesNotMatch(implementation, /Ready to organize care information/);
 console.log("Greeting orientation classification and non-hardcoded generation contract passed.");
