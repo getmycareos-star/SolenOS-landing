@@ -42,7 +42,6 @@ type Props = {
  * IDs. Qwen suggestions are read-only and never write to the LCR.
  */
 export default function QwenAssistPanel({
-  defaultWorkflow = "living_care_record",
   contextText = "",
   evidenceIds = [],
   appointmentId = null,
