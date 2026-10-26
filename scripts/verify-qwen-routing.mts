@@ -15,15 +15,15 @@ function requireText(file: string, snippets: string[]): void {
 
 const assist = read("src/components/qwen/QwenAssistPanel.tsx");
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
-  'postJSON("/assistant/assist"',
-  "result.written_to_lcr !== false",
-  'result.authority !== "solenos_care_record_and_caregiver"',
+  'postJSON("/assistant/jobs"',
+  'getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`)',
+  "setActiveJobId(jobId)",
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
-  '{loading ? "Working…" : "Send"}',
+  '{loading ? "Working…" : activeJobId ? "Check result" : "Send"}',
 ]);
 assert(!assist.includes("<select"), "The shared assistance panel must not expose internal workflow selection.");
-assert(assist.includes("const workflow = defaultWorkflow;"), "Workflow routing must come from internal page context, not caregiver selection.");
+assert(!assist.includes("const workflow = defaultWorkflow;"), "The caregiver-facing panel must not select or dictate a workflow.");
 assert(!assist.includes('"community"'), "Community must remain excluded while disabled.");
 for (const workflow of [
   "daily_capture", "add_record", "document", "living_care_record",
