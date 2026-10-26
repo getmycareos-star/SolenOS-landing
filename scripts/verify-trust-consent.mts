@@ -141,8 +141,17 @@ assert(trustStack.includes("FREE_EARLY_ACCESS_SECTION"));
 assert(trustStack.includes("YOUR_INFORMATION_SECTION"));
 
 const productPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "page.tsx"), "utf8");
-assert(productPage.includes("ResearchPreviewAckGate"));
-assert(productPage.includes("EARLY_ACCESS_BADGE"));
+assert(productPage.includes("WorkspacePrivacyBoundary"));
+assert(productPage.includes("ConsentGatePanel"));
+assert(!productPage.includes("ResearchPreviewAckGate"), "workspace must not show a second local-only acknowledgement after server consent");
+const workspaceRuntime = fs.readFileSync(path.join(root, "src", "components", "mvp-workspace", "CognitiveWorkspace.tsx"), "utf8");
+assert(!workspaceRuntime.includes("ConsentGatePanel"), "workspace runtime must not render a duplicate consent prompt");
+const improvementSettings = fs.readFileSync(path.join(root, "src", "components", "mvp-workspace", "PolicySettingsPanel.tsx"), "utf8");
+assert(improvementSettings.includes("update_data_improvement"));
+assert(improvementSettings.includes("data_improvement_consent: enabled"));
+const improvementFeedback = fs.readFileSync(path.join(root, "src", "components", "mvp-workspace", "HelpImproveSolenos.tsx"), "utf8");
+assert(improvementFeedback.includes("consent.profile?.data_improvement_consent !== true"));
+assert(improvementFeedback.includes("/api/v1/feedback?"));
 
 const landing = fs.readFileSync(path.join(root, "src", "app", "page.tsx"), "utf8");
 assert(landing.includes("Enter SolenOS"));
