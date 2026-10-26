@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ensureAnonymousSession, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 export type QwenWorkflow =
   | "daily_capture" | "add_record" | "document" | "living_care_record"
@@ -14,18 +14,17 @@ export type QwenWorkflow =
   | "settings_security" | "record_lifecycle" | "offline_sync" | "ai_reliability"
   | "audit_review";
 
-type QwenAssistResult = {
-  workflow: QwenWorkflow;
-  reply: string;
-  ai_generated: boolean;
-  model: string;
-  authority: "solenos_care_record_and_caregiver";
+type QwenBackgroundJobResult = {
+  job_id: string;
+  status: string;
+  workflow?: QwenWorkflow | null;
+  reply: string | null;
+  error?: string | null;
+  source_event_ids: string[];
+  source_evidence_ids: string[];
   review_required: boolean;
   written_to_lcr: false;
   persistence: "read_only_assistance";
-  source_event_ids: string[];
-  source_evidence_ids: string[];
-  provider_status: string;
 };
 
 type Props = {
@@ -38,21 +37,19 @@ type Props = {
 };
 
 /**
- * Routes optional language assistance through Railway's private/bundled Ollama
- * Qwen endpoint. This panel is read-only: the LCR remains authoritative and
- * only explicit caregiver actions can create or change records.
+ * Sends the caregiver's request to a durable background queue. The backend
+ * classifies the workflow internally; caregivers never select or see workflow
+ * IDs. Qwen suggestions are read-only and never write to the LCR.
  */
 export default function QwenAssistPanel({
-  defaultWorkflow = "living_care_record",
   contextText = "",
   evidenceIds = [],
   appointmentId = null,
   title = "Help with your care information",
   compact = false,
 }: Props) {
-  const workflow = defaultWorkflow;
   const [question, setQuestion] = useState("");
-  const [reply, setReply] = useState<QwenAssistResult | null>(null);
+  const [reply, setReply] = useState<QwenBackgroundJobResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -67,34 +64,45 @@ export default function QwenAssistPanel({
     setReply(null);
     try {
       await ensureAnonymousSession();
-      const boundedContext = contextText.trim().slice(0, 5_500);
-      const text = [
-        "Caregiver request:",
-        requestText.slice(0, 1_800),
-        boundedContext
-          ? "\nContext supplied for this request (may be an unsaved draft; do not claim it is saved):\n" + boundedContext
-          : "",
-      ].filter(Boolean).join("\n").slice(0, 7_900);
-      const result = (await postJSON("/assistant/assist", {
-        workflow,
-        text,
+      const boundedContext = contextText.trim().slice(0, 3_000);
+      const created = (await postJSON("/assistant/jobs", {
+        task_text: requestText.slice(0, 1_800),
+        context_text: boundedContext,
         evidence_ids: [...new Set(evidenceIds)].slice(0, 10),
         ...(appointmentId ? { appointment_id: appointmentId } : {}),
-      })) as QwenAssistResult;
+      })) as { job_id: string; status: string };
 
-      if (
-        result?.ai_generated !== true ||
-        result.provider_status !== "available" ||
-        result.authority !== "solenos_care_record_and_caregiver" ||
-        result.review_required !== true ||
-        result.written_to_lcr !== false ||
-        result.persistence !== "read_only_assistance" ||
-        typeof result.reply !== "string" ||
-        !result.reply.trim()
-      ) {
-        throw new Error("We couldn’t complete that request. Please try again.");
+      if (!created?.job_id || !["queued", "processing"].includes(created.status)) {
+        throw new Error("The request could not be queued.");
       }
-      setReply(result);
+
+      // The backend classifies the task and runs Qwen in its durable worker.
+      // Poll the job resource; never fall back to a canned or guessed response.
+      let completed: QwenBackgroundJobResult | null = null;
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+        const status = (await getJSON("/assistant/jobs/" + encodeURIComponent(created.job_id))) as QwenBackgroundJobResult;
+        if (status.status === "completed") {
+          if (
+            status.written_to_lcr !== false ||
+            status.persistence !== "read_only_assistance" ||
+            status.review_required !== true ||
+            typeof status.reply !== "string" ||
+            !status.reply.trim()
+          ) {
+            throw new Error("The completed response failed safety checks.");
+          }
+          completed = status;
+          break;
+        }
+        if (status.status === "failed") {
+          throw new Error(status.error || "The background request failed.");
+        }
+      }
+      if (!completed) {
+        throw new Error("The request is taking longer than expected. You can try again shortly.");
+      }
+      setReply(completed);
     } catch {
       setError("We couldn’t complete that request. Your information has not been changed. Please try again.");
     } finally {
