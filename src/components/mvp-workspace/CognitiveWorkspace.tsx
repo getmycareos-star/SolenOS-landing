@@ -139,6 +139,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [lcrOrientationReply, setLcrOrientationReply] = useState<string | null>(null);
+  const [lcrOrientationContextLayers, setLcrOrientationContextLayers] = useState<{ care_events: number; evidence_items: number; appointments: number } | null>(null);
   const setCaregiverError = useCallback((message: string | null) => {
     setError(message == null ? null : sanitizeCaregiverErrorMessage(message));
   }, []);
@@ -360,11 +361,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       detail?: string;
       care_record_unchanged?: boolean;
       companion_history_unchanged?: boolean;
+      context_layers?: { care_events: number; evidence_items: number; appointments: number };
     };
     if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) {
       throw new Error(data.detail || "LCR could not generate a grounded response. Your message was not saved.");
     }
     setLcrOrientationReply(data.reply.trim());
+    setLcrOrientationContextLayers(data.context_layers ?? null);
     setCaregiverError(null);
     setRawInput("");
   }
@@ -389,6 +392,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       setLoading(true);
       setCaregiverError(null);
       setLcrOrientationReply(null);
+      setLcrOrientationContextLayers(null);
       try {
         await requestLcrOrientation(text);
       } catch (error) {
@@ -1140,7 +1144,16 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                       <div className="workspace-panel-inner">
                         <p className="workspace-lede">Living Care Record</p>
                         <p>{lcrOrientationReply}</p>
-                        <p className="workspace-muted">This response used the available care context. No care record entry or Companion message was created.</p>
+                        {lcrOrientationContextLayers ? (
+                          <p className="workspace-muted">
+                            Context supplied: {lcrOrientationContextLayers.care_events} care events,{" "}
+                            {lcrOrientationContextLayers.evidence_items} source records, and{" "}
+                            {lcrOrientationContextLayers.appointments} appointments. Stored reports and documents are not independently verified.
+                          </p>
+                        ) : (
+                          <p className="workspace-muted">Context provenance details were not returned by the backend.</p>
+                        )}
+                        <p className="workspace-muted">No care record entry or Companion message was created.</p>
                       </div>
                     </section>
                   )}
@@ -1149,12 +1162,14 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                     onChange={(value) => {
                       setRawInput(value);
                       setLcrOrientationReply(null);
+      setLcrOrientationContextLayers(null);
                       setCaregiverError(null);
                     }}
                     documents={documents}
                     onDocumentsChange={(nextDocuments) => {
                       setDocuments(nextDocuments);
                       setLcrOrientationReply(null);
+      setLcrOrientationContextLayers(null);
                       setCaregiverError(null);
                     }}
                     onSubmit={(provenance) => {
