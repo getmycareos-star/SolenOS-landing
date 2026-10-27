@@ -33,6 +33,7 @@ type Props = {
   evidenceIds?: string[];
   appointmentId?: string | null;
   title?: string;
+  description?: string;
   compact?: boolean;
 };
 
@@ -42,10 +43,12 @@ type Props = {
  * IDs. Qwen suggestions are read-only and never write to the LCR.
  */
 export default function QwenAssistPanel({
+  defaultWorkflow,
   contextText = "",
   evidenceIds = [],
   appointmentId = null,
   title = "Help with your care information",
+  description = "Get help understanding or organizing the information here. Suggestions are not saved to the Living Care Record automatically.",
   compact = false,
 }: Props) {
   const [question, setQuestion] = useState("");
@@ -65,8 +68,11 @@ export default function QwenAssistPanel({
     try {
       await ensureAnonymousSession();
       const boundedContext = contextText.trim().slice(0, 3_000);
+      const taskText = defaultWorkflow === "document"
+        ? "Explain the document text and answer only from uploaded document evidence. Caregiver request: " + requestText
+        : requestText;
       const created = (await postJSON("/assistant/jobs", {
-        task_text: requestText.slice(0, 1_800),
+        task_text: taskText.slice(0, 1_800),
         context_text: boundedContext,
         evidence_ids: [...new Set(evidenceIds)].slice(0, 10),
         ...(appointmentId ? { appointment_id: appointmentId } : {}),
@@ -125,7 +131,7 @@ export default function QwenAssistPanel({
         <div>
           <h2 style={{ fontSize: "15px", fontWeight: 650, margin: 0 }}>{title}</h2>
           <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginTop: "4px", lineHeight: 1.5 }}>
-            Get help understanding or organizing the information here. Suggestions are not saved to the Living Care Record automatically.
+            {description}
           </p>
         </div>
       </div>
