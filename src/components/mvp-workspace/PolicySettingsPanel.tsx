@@ -138,7 +138,8 @@ export function PolicySettingsPanel(_props: Props = {}) {
           : "Your opt-out preference is saved. New submissions are blocked from optional improvement processing, and queued review-stage contributions are removed. Your Living Care Record remains available.",
       );
     } catch {
-      setMessage("We couldn't save this choice. Your previous saved setting remains in place.");
+      // Keep the previously confirmed preference as the source of truth.
+      // Do not show a status message unless the user explicitly changes the choice successfully.
       await load();
     } finally {
       setSaving(false);
@@ -229,14 +230,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
             Direct identifiers are redacted from supported feedback fields before review where the processing path provides that safeguard; this is not a promise that every possible identifier in every attachment is automatically removed. Optional improvement opt-in does not itself satisfy the separate required privacy acknowledgement, and feedback will not be accepted until required consent checks pass. See the Privacy Policy for the applicable retention and handling rules.
           </p>
         </div>
-      ) : (
-        <div className="policy-improvement-details">
-          <h5>Optional improvement is off</h5>
-          <p><strong>Off — you have opted out.</strong> SolenOS must not accept your submissions for optional improvement processing while this setting is off.</p>
-          <p>Your Living Care Record remains available for the features you request. Processing necessary to provide those features is separate from optional improvement processing.</p>
-          <p>Turning this off removes queued or review-stage improvement contributions associated with this session. It does not promise deletion of material already processed before you opted out. This preference remains off until you turn it on again.</p>
-        </div>
-      )}
+      ) : null}
 
       {message && <p className="policy-consent-message" role="status">{message}</p>}
     </section>
