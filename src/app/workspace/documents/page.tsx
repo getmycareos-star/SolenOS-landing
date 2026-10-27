@@ -162,8 +162,7 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     image.src = sourceUrl;
     await image.decode();
 
-    // The crop controls are defined against the rotated page preview. Rotate first
-    // so the crop coordinates match what the caregiver sees in the review UI.
+    // Crop coordinates are defined against the rotated page preview, so rotate first.
     const radians = rotationDegrees * Math.PI / 180;
     const sin = Math.abs(Math.sin(radians));
     const cos = Math.abs(Math.cos(radians));
@@ -180,7 +179,6 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     rotatedContext.rotate(radians);
     rotatedContext.drawImage(image, -image.width / 2, -image.height / 2);
 
-    // Apply insets to the rotated page, matching the editor's crop coordinate space.
     const left = Math.round(rotatedWidth * crop.left / 100);
     const top = Math.round(rotatedHeight * crop.top / 100);
     const width = Math.max(1, Math.round(rotatedWidth * (100 - crop.left - crop.right) / 100));
@@ -203,7 +201,7 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     outputContext.drawImage(cropped, 0, 0, output.width, output.height);
 
     const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.86));
-    const baseName = file.name.replace(/\\.[^.]+$/, "");
+    const baseName = file.name.replace(/\.[^.]+$/, "");
     return new File([blob], `${baseName || "scan"}-processed.jpg`, { type: "image/jpeg", lastModified: Date.now() });
   } finally {
     URL.revokeObjectURL(sourceUrl);
