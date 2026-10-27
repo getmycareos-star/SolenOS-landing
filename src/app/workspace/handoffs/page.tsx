@@ -1,0 +1,431 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, CheckCircle2, Clock3, Inbox, RefreshCw, ShieldCheck, Share2 } from "lucide-react";
+import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+
+type Row = Record<string, unknown>;
+type Recipient = {
+  caregiver_id: string;
+  name: string;
+  relationship: string;
+  can_receive_handoff: boolean;
+};
+type InboxItem = {
+  id: string;
+  from_caregiver_id: string;
+  from_caregiver_name: string;
+  from_caregiver_relationship?: string | null;
+  scope: string[];
+  status: "pending" | "accepted" | string;
+  created_at: string | null;
+  expires_at: string | null;
+  has_summary: boolean;
+};
+type OutboxItem = {
+  id: string;
+  status: string;
+  scope: string[];
+  created_at: string | null;
+  expires_at: string | null;
+  has_summary: boolean;
+  is_expired?: boolean;
+  recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
+};
+type HandoffSnapshot = {
+  sections?: Record<string, unknown>;
+  content_sha256?: string;
+  review_attestation?: string;
+  source_id_validation?: string;
+  caregiver_reviewed?: boolean;
+  prepared_at?: string | null;
+};
+
+const panelStyle = {
+  border: "1px solid var(--border, #d7ddd7)",
+  borderRadius: 14,
+  padding: 16,
+  marginBottom: 16,
+  background: "var(--surface, #fff)",
+} as const;
+const buttonStyle = {
+  border: "1px solid var(--border, #cbd5cb)",
+  borderRadius: 9,
+  padding: "10px 14px",
+  background: "#dce9dc",
+  color: "#172117",
+  fontWeight: 650,
+  cursor: "pointer",
+} as const;
+const mutedButtonStyle = {
+  ...buttonStyle,
+  background: "transparent",
+  fontWeight: 550,
+} as const;
+const fieldStyle = {
+  width: "100%",
+  border: "1px solid var(--border, #cbd5cb)",
+  borderRadius: 9,
+  padding: 11,
+  background: "var(--surface, #fff)",
+  color: "var(--foreground, #172117)",
+} as const;
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) return "Not recorded";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Not recorded" : date.toLocaleString();
+}
+
+function valueText(row: Row, keys: string[]): string {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (value && typeof value === "object") return JSON.stringify(value);
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+  }
+  return "";
+}
+
+function renderRow(row: Row, keys: string[]): string {
+  const text = valueText(row, keys);
+  if (!text) return "";
+  const status = typeof row.epistemic_status === "string" ? ` · status: ${row.epistemic_status}` : "";
+  const when = valueText(row, ["effective_at", "occurred_at", "recorded_at", "created_at", "observed_at"]);
+  return `${text.slice(0, 700)}${status}${when ? ` · recorded: ${when}` : ""}`;
+}
+
+async function buildReviewedDraft(): Promise<string> {
+  const [facts, decisions, questions, gaps, timeline] = await Promise.all([
+    getJSON("/care-continuity/facts?limit=25") as Promise<Row[]>,
+    getJSON("/care-continuity/decisions?limit=25") as Promise<Row[]>,
+    getJSON("/care-continuity/open-questions?limit=25") as Promise<Row[]>,
+    getJSON("/care-continuity/information-gaps?limit=25") as Promise<Row[]>,
+    getJSON("/care-continuity/timeline?limit=25") as Promise<Row[]>,
+  ]);
+
+  const sections: Array<{ title: string; items: string[] }> = [
+    { title: "Care facts", items: facts.map(r => renderRow(r, ["fact_value", "description", "title"])).filter(Boolean).slice(0, 12) },
+    { title: "Care decisions", items: decisions.map(r => renderRow(r, ["decision_text", "title", "description"])).filter(Boolean).slice(0, 8) },
+    { title: "Open questions", items: questions.map(r => renderRow(r, ["question", "description", "title"])).filter(Boolean).slice(0, 8) },
+    { title: "Information gaps", items: gaps.map(r => renderRow(r, ["description", "topic", "title"])).filter(Boolean).slice(0, 8) },
+    { title: "Recent timeline", items: timeline.map(r => renderRow(r, ["summary", "title", "description", "entry_type"])).filter(Boolean).slice(0, 8) },
+  ].filter(section => section.items.length > 0);
+
+  if (sections.length === 0) {
+    throw new Error("There are no saved care facts, decisions, questions, gaps, or timeline entries to include yet. Add real care information first.");
+  }
+
+  const preparedAt = new Date().toLocaleString();
+  const body = [
+    "SOLENOS CARE HANDOFF SUMMARY",
+    `Prepared for caregiver review: ${preparedAt}`,
+    "This summary reflects saved records only. Status labels are preserved where available; missing information is not treated as false.",
+    ...sections.flatMap(section => [
+      "",
+      section.title.toUpperCase(),
+      ...section.items.map(item => `• ${item}`),
+    ]),
+    "",
+    "LIMITATIONS",
+    "This is a caregiver-reviewed summary, not a clinical judgment. SolenOS stores the reviewed text and an integrity hash; it does not independently verify every statement in this text against source records.",
+  ].join("\n");
+  return body.slice(0, 18000);
+}
+
+export default function CareHandoffsPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [directory, setDirectory] = useState<Recipient[]>([]);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [outbox, setOutbox] = useState<OutboxItem[]>([]);
+  const [directoryError, setDirectoryError] = useState("");
+  const [inboxError, setInboxError] = useState("");
+  const [outboxError, setOutboxError] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [expiryDays, setExpiryDays] = useState("7");
+  const [draft, setDraft] = useState("");
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
+  const [activeSnapshot, setActiveSnapshot] = useState<HandoffSnapshot | null>(null);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await ensureAnonymousSession();
+      const [directoryResult, inboxResult, outboxResult] = await Promise.allSettled([
+        getJSON("/handoffs/directory/recipients") as Promise<{ items?: Recipient[] }>,
+        getJSON("/handoffs/inbox") as Promise<{ items?: InboxItem[] }>,
+        getJSON("/handoffs/outbox") as Promise<{ items?: OutboxItem[] }>,
+      ]);
+      setDirectory(directoryResult.status === "fulfilled" ? directoryResult.value.items ?? [] : []);
+      setInbox(inboxResult.status === "fulfilled" ? inboxResult.value.items ?? [] : []);
+      setOutbox(outboxResult.status === "fulfilled" ? outboxResult.value.items ?? [] : []);
+      setDirectoryError(directoryResult.status === "rejected" ? String(directoryResult.reason?.message ?? directoryResult.reason) : "");
+      setInboxError(inboxResult.status === "rejected" ? String(inboxResult.reason?.message ?? inboxResult.reason) : "");
+      setOutboxError(outboxResult.status === "rejected" ? String(outboxResult.reason?.message ?? outboxResult.reason) : "");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The care session could not be verified.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function prepareDraft() {
+    setDraftBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const text = await buildReviewedDraft();
+      setDraft(text);
+      setDraftReady(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The care summary could not be prepared from saved records.");
+    } finally {
+      setDraftBusy(false);
+    }
+  }
+
+  async function createHandoff() {
+    if (!draft.trim()) {
+      setError("Prepare and review the summary before sharing.");
+      return;
+    }
+    if (selectedRecipients.length === 0) {
+      setError("Select at least one linked caregiver who is eligible to receive a handoff.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    let handoffId = "";
+    try {
+      const session = await ensureAnonymousSession();
+      const expiresAt = new Date(Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000).toISOString();
+      const created = await postJSON("/handoffs", {
+        person_id: session.person.id,
+        recipient_caregiver_ids: selectedRecipients,
+        scope: ["lcr_summary"],
+        expires_at: expiresAt,
+      }) as { id: string };
+      handoffId = created.id;
+      try {
+        await putJSON(`/handoffs/${handoffId}/summary`, {
+          sections: { lcr_summary: draft.trim() },
+          source_record_ids: [],
+          caregiver_reviewed: true,
+          prepared_at: new Date().toISOString(),
+        });
+      } catch (attachError) {
+        try {
+          await postJSON(`/handoffs/${handoffId}/revoke`, {});
+        } catch {
+          throw new Error("A handoff was created but its summary could not be attached, and automatic revocation could not be confirmed. Refresh the outbox and revoke it manually.");
+        }
+        throw new Error(`The summary could not be attached, so SolenOS revoked the empty handoff. ${attachError instanceof Error ? attachError.message : ""}`);
+      }
+      await load();
+      setNotice(`Secure handoff created. It expires ${formatDate(expiresAt)}. You can revoke it from the outgoing handoffs list.`);
+      setDraft("");
+      setDraftReady(false);
+      setSelectedRecipients([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The secure handoff could not be created.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revokeHandoff(item: OutboxItem) {
+    if (!window.confirm("Revoke this handoff now? Recipients will lose access to the shared summary.")) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON(`/handoffs/${item.id}/revoke`, {});
+      await load();
+      setNotice("Handoff revoked. Recipients can no longer read its summary.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The handoff could not be revoked.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reviewIncoming(item: InboxItem) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    setActiveInbox(item);
+    setActiveSnapshot(null);
+    setReviewConfirmed(false);
+    try {
+      const result = await getJSON(`/handoffs/${item.id}/summary`) as { summary?: HandoffSnapshot };
+      setActiveSnapshot(result.summary ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The shared summary could not be opened.");
+      setActiveInbox(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function acceptAndAcknowledge() {
+    if (!activeInbox || !activeSnapshot || !reviewConfirmed) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      if (activeInbox.status !== "accepted") {
+        await postJSON(`/handoffs/${activeInbox.id}/accept`, {});
+      }
+      await postJSON(`/handoffs/${activeInbox.id}/acknowledge`, {
+        acknowledgement: "I reviewed the caregiver-provided care summary.",
+      });
+      setNotice("Handoff accepted and your review acknowledgment was recorded.");
+      setActiveInbox(null);
+      setActiveSnapshot(null);
+      setReviewConfirmed(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The handoff acceptance or acknowledgment could not be saved.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const eligibleRecipients = directory.filter(item => item.can_receive_handoff);
+  const ineligibleRecipients = directory.filter(item => !item.can_receive_handoff);
+
+  return (
+    <main className="mobile-screen" style={{ padding: "20px 16px 40px", maxWidth: 920, margin: "0 auto" }}>
+      <button type="button" onClick={() => router.push("/workspace")} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+        <ArrowLeft size={18} /> Back to Living Care Record
+      </button>
+
+      <header style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <ShieldCheck size={25} aria-hidden />
+          <h1 style={{ fontSize: 26, margin: 0 }}>Care handoffs</h1>
+        </div>
+        <p style={{ lineHeight: 1.6, maxWidth: 720 }}>
+          Share a caregiver-reviewed snapshot with a caregiver already linked to this same care record. Access expires automatically and can be revoked.
+        </p>
+      </header>
+
+      {error && <p role="alert" style={{ ...panelStyle, borderColor: "#b45309", color: "#92400e" }}>{error}</p>}
+      {notice && <p role="status" style={{ ...panelStyle, color: "#14532d" }}>{notice}</p>}
+
+      <section style={panelStyle} aria-labelledby="incoming-handoffs-heading">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <h2 id="incoming-handoffs-heading" style={{ margin: 0, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><Inbox size={19} /> Incoming handoffs</h2>
+          <button type="button" style={mutedButtonStyle} onClick={() => void load()} disabled={loading || busy}><RefreshCw size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />Refresh</button>
+        </div>
+        {inboxError && <p role="alert">Inbox unavailable: {inboxError}. Check required privacy consent in Settings, then refresh.</p>}
+        {!inboxError && !loading && inbox.length === 0 && <p>No incoming handoffs are available for this caregiver session.</p>}
+        {inbox.map(item => (
+          <article key={item.id} style={{ borderTop: "1px solid var(--border, #e5e7eb)", paddingTop: 12, marginTop: 12 }}>
+            <strong>{item.from_caregiver_name || "Another caregiver"}</strong>
+            <p style={{ margin: "5px 0", lineHeight: 1.5 }}>Status: {item.status} · Expires: {formatDate(item.expires_at)}</p>
+            <p style={{ margin: "5px 0", fontSize: 13 }}>Scope: {item.scope.join(", ")} · {item.has_summary ? "Reviewed summary attached" : "Summary not attached"}</p>
+            <button type="button" style={buttonStyle} onClick={() => void reviewIncoming(item)} disabled={busy || !item.has_summary}>Review summary</button>
+          </article>
+        ))}
+      </section>
+
+      {activeInbox && activeSnapshot && (
+        <section style={panelStyle} aria-labelledby="incoming-summary-heading">
+          <h2 id="incoming-summary-heading" style={{ marginTop: 0, fontSize: 19 }}>Review shared summary</h2>
+          <p style={{ lineHeight: 1.5 }}>From {activeInbox.from_caregiver_name || "another caregiver"}. Review the contents before accepting. This is a caregiver-provided summary, not a clinical verification.</p>
+          {Object.entries(activeSnapshot.sections ?? {}).map(([name, value]) => (
+            <div key={name} style={{ marginBottom: 14 }}>
+              <h3 style={{ fontSize: 15, marginBottom: 6 }}>{name.replaceAll("_", " ")}</h3>
+              <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", lineHeight: 1.55, margin: 0 }}>{String(value ?? "")}</pre>
+            </div>
+          ))}
+          {activeSnapshot.content_sha256 && <p style={{ fontSize: 12, overflowWrap: "anywhere" }}>Integrity hash: {activeSnapshot.content_sha256}</p>}
+          <p style={{ fontSize: 13 }}>Source record IDs: {activeSnapshot.source_id_validation === "not_supplied" ? "not supplied" : "not independently verified by SolenOS"}.</p>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 9, lineHeight: 1.5, margin: "14px 0" }}>
+            <input type="checkbox" checked={reviewConfirmed} onChange={event => setReviewConfirmed(event.target.checked)} />
+            <span>I have reviewed this caregiver-provided summary. This acknowledgment does not mean every statement is clinically verified.</span>
+          </label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" style={buttonStyle} disabled={busy || !reviewConfirmed} onClick={() => void acceptAndAcknowledge()}><CheckCircle2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{activeInbox.status === "accepted" ? "Record acknowledgment" : "Accept and acknowledge"}</button>
+            <button type="button" style={mutedButtonStyle} onClick={() => { setActiveInbox(null); setActiveSnapshot(null); setReviewConfirmed(false); }}>Close review</button>
+          </div>
+        </section>
+      )}
+
+      <section style={panelStyle} aria-labelledby="share-handoff-heading">
+        <h2 id="share-handoff-heading" style={{ marginTop: 0, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><Share2 size={19} /> Create a secure handoff</h2>
+        <p style={{ lineHeight: 1.55 }}>SolenOS prepares a draft from saved care facts, decisions, open questions, information gaps and timeline entries. You must review and can edit it before sharing.</p>
+        {directoryError && <p role="alert">Recipient directory unavailable: {directoryError}. Required privacy consent may be missing or revoked.</p>}
+        {!directoryError && directory.length === 0 && !loading && <p>No other caregivers are linked to this care record yet. SolenOS will not send a summary to an unlinked recipient.</p>}
+        {eligibleRecipients.length > 0 && (
+          <fieldset style={{ border: "0", padding: 0, margin: "12px 0" }}>
+            <legend style={{ fontWeight: 650, marginBottom: 8 }}>Choose recipients</legend>
+            {eligibleRecipients.map(recipient => (
+              <label key={recipient.caregiver_id} style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: 10, lineHeight: 1.4 }}>
+                <input
+                  type="checkbox"
+                  checked={selectedRecipients.includes(recipient.caregiver_id)}
+                  onChange={event => setSelectedRecipients(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id))}
+                />
+                <span><strong>{recipient.name}</strong><br /><small>{recipient.relationship || "Caregiver"} · consent verified for handoff</small></span>
+              </label>
+            ))}
+            {ineligibleRecipients.map(recipient => (
+              <p key={recipient.caregiver_id} style={{ fontSize: 13, opacity: 0.8 }}>{recipient.name} — not eligible until required privacy consent is active.</p>
+            ))}
+          </fieldset>
+        )}
+        <label style={{ display: "block", fontWeight: 650, marginBottom: 6 }} htmlFor="handoff-expiry">Access expiry</label>
+        <select id="handoff-expiry" style={{ ...fieldStyle, maxWidth: 260, marginBottom: 14 }} value={expiryDays} onChange={event => setExpiryDays(event.target.value)}>
+          <option value="1">24 hours</option>
+          <option value="7">7 days</option>
+          <option value="14">14 days</option>
+          <option value="30">30 days</option>
+        </select>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" style={buttonStyle} disabled={draftBusy || loading || busy} onClick={() => void prepareDraft()}>{draftBusy ? "Preparing…" : draftReady ? "Regenerate draft from saved records" : "Prepare summary for review"}</button>
+        </div>
+        {draftReady && (
+          <>
+            <label htmlFor="handoff-summary-draft" style={{ display: "block", fontWeight: 650, margin: "14px 0 6px" }}>Review and edit the summary</label>
+            <textarea id="handoff-summary-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={14} maxLength={18000} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.5 }} />
+            <p style={{ fontSize: 12, lineHeight: 1.5 }}>Only saved records are included; the draft is limited to the most recent records returned by each section. Source IDs are not supplied to the handoff API. Sharing creates an immutable reviewed snapshot; to change it later, create a new handoff.</p>
+            <button type="button" style={buttonStyle} disabled={busy || !draft.trim() || selectedRecipients.length === 0 || eligibleRecipients.length === 0} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
+          </>
+        )}
+      </section>
+
+      <section style={panelStyle} aria-labelledby="outgoing-handoffs-heading">
+        <h2 id="outgoing-handoffs-heading" style={{ marginTop: 0, fontSize: 19 }}>Outgoing handoffs</h2>
+        {outboxError && <p role="alert">Outgoing handoffs unavailable: {outboxError}</p>}
+        {!outboxError && !loading && outbox.length === 0 && <p>No outgoing handoffs are recorded for this caregiver session.</p>}
+        {outbox.map(item => (
+          <article key={item.id} style={{ borderTop: "1px solid var(--border, #e5e7eb)", paddingTop: 12, marginTop: 12 }}>
+            <strong>{item.recipients?.map(recipient => recipient.name || "Caregiver").join(", ") || "Caregiver handoff"}</strong>
+            <p style={{ margin: "5px 0" }}>Status: {item.status}{item.is_expired ? " · expired" : ""}</p>
+            <p style={{ margin: "5px 0", fontSize: 13 }}>Created: {formatDate(item.created_at)} · Expires: {formatDate(item.expires_at)}</p>
+            <p style={{ margin: "5px 0", fontSize: 13 }}>Scope: {item.scope.join(", ")} · {item.has_summary ? "Reviewed summary attached" : "No summary attached"}</p>
+            {item.status !== "revoked" && !item.is_expired && (
+              <button type="button" style={mutedButtonStyle} disabled={busy} onClick={() => void revokeHandoff(item)}>Revoke access</button>
+            )}
+          </article>
+        ))}
+      </section>
+
+      <p style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.8 }}><Clock3 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} />Access expires automatically. Revocation blocks future access but cannot retract information a recipient has already viewed or saved.</p>
+    </main>
+  );
+}
