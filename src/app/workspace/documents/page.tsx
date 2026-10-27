@@ -259,7 +259,7 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
 export default function DocumentsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
-  const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
+  const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; rotation: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
   const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
@@ -547,14 +547,19 @@ export default function DocumentsPage() {
                     const stageElement = event.currentTarget.closest("[data-scan-crop-stage]");
                     if (!stageElement) return;
                     const bounds = stageElement.getBoundingClientRect();
-                    cropDrag.current = { index, startX: event.clientX, startY: event.clientY, width: bounds.width, height: bounds.height, crop: page.crop };
+                    cropDrag.current = { index, startX: event.clientX, startY: event.clientY, width: stageElement.offsetWidth, height: stageElement.offsetHeight, rotation: page.rotation, crop: page.crop };
                     event.currentTarget.setPointerCapture(event.pointerId);
                   }}
                   onPointerMove={(event) => {
                     const drag = cropDrag.current;
                     if (!drag || drag.index !== index || drag.width <= 0 || drag.height <= 0) return;
-                    const dx = (event.clientX - drag.startX) / drag.width * 100;
-                    const dy = (event.clientY - drag.startY) / drag.height * 100;
+                    const screenDx = event.clientX - drag.startX;
+                    const screenDy = event.clientY - drag.startY;
+                    const radians = drag.rotation * Math.PI / 180;
+                    const imageDx = screenDx * Math.cos(radians) + screenDy * Math.sin(radians);
+                    const imageDy = -screenDx * Math.sin(radians) + screenDy * Math.cos(radians);
+                    const dx = imageDx / drag.width * 100;
+                    const dy = imageDy / drag.height * 100;
                     const left = Math.max(0, Math.min(80 - drag.crop.right, drag.crop.left + dx));
                     const top = Math.max(0, Math.min(80 - drag.crop.bottom, drag.crop.top + dy));
                     setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply adjustments and re-extract text." } : item));
@@ -583,7 +588,7 @@ export default function DocumentsPage() {
                 <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
                 <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
               </div>
-              <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>Straightening: {page.rotation.toFixed(1)}°. Crop margins are percentages of the rotated page.</p>
+              <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>Straightening: {page.rotation.toFixed(1)}°. Crop margins follow the source image and are applied before rotation.</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>
                 {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, reviewed: false, text: "", note: "Crop changed. Apply adjustments and re-extract text." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
               </div>
