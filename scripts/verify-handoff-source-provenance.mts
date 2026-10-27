@@ -88,5 +88,17 @@ const companionPage = await readFile(new URL("../src/components/workflows/AIComp
 for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Doctor's appointment", "Full care overview"]) {
   assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
 }
+assert.match(companionPage, /postJSON\('\/handoff-drafts\/prepare'/,
+  "handoff draft must be prepared by the authorised backend, not fabricated in the browser");
+assert.match(companionPage, /audience: handoffAudience/,
+  "family and professional audiences must remain distinct in the backend request");
+assert.match(companionPage, /source_references/,
+  "draft review must expose source references returned by the backend");
+assert.match(companionPage, /Information coverage and gaps/,
+  "draft review must show source availability and gaps");
+assert.match(companionPage, /Handoff receipt and acceptance|Handoff acceptance/,
+  "the family and professional templates must include a receipt/acceptance section");
+assert.match(companionPage, /No information has been inferred/,
+  "fallback template must explicitly state that missing field coverage was not inferred");
 
 console.log("PASS: handoff draft provenance tracks only rendered source records, handles missing IDs, rejects empty source data, and respects the 18,000-character cap.");
