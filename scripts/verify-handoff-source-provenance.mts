@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { buildReviewedHandoffDraft } from "../src/lib/handoffs/reviewed-draft";
 
 const base = {
@@ -79,5 +80,13 @@ assert.throws(() => buildReviewedHandoffDraft({
   facts: [], decisions: [], questions: [], gaps: [], timeline: [],
   preparedAt: "fixed",
 }), /no saved care facts/);
+
+const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.tsx", import.meta.url), "utf8");
+assert.match(handoffPage, /if \(!draftReviewConfirmed\)/,
+  "sharing must fail closed until the sender explicitly confirms review");
+assert.match(handoffPage, /setDraft\(event\.target\.value\); setDraftReviewConfirmed\(false\)/,
+  "editing the summary must invalidate the previous review confirmation");
+assert.match(handoffPage, /!draftReviewConfirmed/,
+  "the share button must remain disabled until the review confirmation is checked");
 
 console.log("PASS: handoff draft provenance tracks only rendered source records, handles missing IDs, rejects empty source data, and respects the 18,000-character cap.");
