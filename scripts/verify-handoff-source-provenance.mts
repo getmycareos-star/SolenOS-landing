@@ -98,7 +98,7 @@ assert.match(companionPage, /Information coverage and gaps/,
   "draft review must show source availability and gaps");
 assert.match(companionPage, /Handoff receipt and acceptance|Handoff acceptance/,
   "the family and professional templates must include a receipt/acceptance section");
-assert.match(companionPage, /No information has been inferred/,
+assert.match(companionPage, /no information has been inferred/i,
   "fallback template must explicitly state that missing field coverage was not inferred");
 const sharingComponent = await readFile(new URL("../src/components/workflows/CareHandoffSharing.tsx", import.meta.url), "utf8");
 assert.match(companionPage, /CareHandoffSharing/,
