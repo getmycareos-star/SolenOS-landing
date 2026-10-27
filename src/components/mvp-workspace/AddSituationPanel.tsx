@@ -210,15 +210,14 @@ export function AddSituationPanel({
   return (
     <div className="workspace-panel-inner add-situation">
       <h2 className="workspace-headline">
-        {mode === "update" ? "What changed?" : "What is happening right now?"}
+        {mode === "update" ? "Add a new detail" : "Add to your care record"}
       </h2>
       {isFirstCapture ? (
         <p className="workspace-lede">
-          Help SolenOS understand the current care situation. Start by telling what has been
-          happening — notes, messages, documents, or photos. Fragments are fine.
+          Write a few words, paste a message, or add a document or photo. You do not need to organise it first.
         </p>
       ) : mode === "update" ? (
-        <p className="workspace-lede">Add whatever changed — fragments are fine.</p>
+        <p className="workspace-lede">Tell us what changed since the last entry. Short notes are enough.</p>
       ) : null}
 
       <div className="composer-shell">
@@ -311,7 +310,7 @@ export function AddSituationPanel({
           placeholder={
             mode === "update"
               ? "What changed since last time?"
-              : "What happened? Notes, messages, or documents — as they are."
+              : "Start with what you want to remember…"
           }
           rows={6}
           disabled={busy}
