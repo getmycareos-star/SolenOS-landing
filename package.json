@@ -35,6 +35,7 @@
     "verify:system-identity": "tsx scripts/verify-system-identity.mts",
     "verify:emotional-stabilization": "tsx scripts/verify-emotional-stabilization.mts",
     "verify:document-intake": "tsx scripts/verify-document-intake.mts",
+    "verify:document-scan-processing": "tsx scripts/verify-document-scan-processing.mts",
     "verify:document-intelligence": "tsx scripts/verify-document-intelligence.mts",
     "verify:calibrated-uncertainty": "tsx scripts/verify-calibrated-uncertainty.mts",
     "verify:cognitive-clarity": "tsx scripts/verify-cognitive-clarity.mts",
