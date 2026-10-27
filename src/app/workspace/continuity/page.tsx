@@ -58,7 +58,7 @@ function rowText(r: Row) {
 export default function CareContinuityPage() {
  const router = useRouter();
  const [summary, setSummary] = useState<Summary | null>(null);
- const [rows, setRows] = useState<Record<string, Row[]>>({});
+ const [rows, setRows] = useState<Record<string, Row[] | null>>({});
  const [fact, setFact] = useState("");
  const [decision, setDecision] = useState("");
  const [error, setError] = useState("");
@@ -73,14 +73,25 @@ export default function CareContinuityPage() {
    const s = await getJSON("/care-continuity/summary") as Summary;
    setSummary(s);
    const missing: string[] = [];
-   const values = await Promise.all(resources.map(async key => {
-    try {
-     return [key, await getJSON(`/care-continuity/${key}?limit=25`) as Row[]] as const;
-    } catch {
-     missing.push(key);
-     return [key, [] as Row[]] as const;
+   // Keep the history inventory bounded: firing every resource query at once
+   // overwhelms a cold database connection and makes the browser abandon slow
+   // requests. Five concurrent reads still load the inventory without a burst.
+   const values: Array<readonly [string, Row[] | null]> = new Array(resources.length);
+   let nextIndex = 0;
+   const loadWorker = async () => {
+    while (true) {
+     const index = nextIndex++;
+     if (index >= resources.length) return;
+     const key = resources[index];
+     try {
+      values[index] = [key, await getJSON(`/care-continuity/${key}?limit=25`) as Row[]];
+     } catch {
+      missing.push(key);
+      values[index] = [key, null];
+     }
     }
-   }));
+   };
+   await Promise.all(Array.from({ length: Math.min(5, resources.length) }, () => loadWorker()));
    setRows(Object.fromEntries(values));
    setUnavailableResources(missing);
   } catch (e) { setError(e instanceof Error ? e.message : "Unable to load the saved care record."); }
@@ -173,7 +184,7 @@ export default function CareContinuityPage() {
   {error && <p role="alert" style={{ padding: 12, border: "1px solid #b42318", borderRadius: 8, marginBottom: 16 }}>{error}</p>}
   {Object.entries(rows).map(([key, items]) => <section key={key} style={panel}>
    <h2 style={{ fontSize: 18, fontWeight: 650 }}>{labels[key]}</h2>
-   {items.length ? <ul style={{ display: "grid", gap: 10, paddingLeft: 18, marginTop: 12 }}>{items.map((r, i) => <li key={String(r.id ?? i)}><p style={{ overflowWrap: "anywhere" }}>{rowText(r)}</p><small style={{ opacity: .75 }}>{String(r.epistemic_status ?? r.reconciliation_status ?? r.status ?? r.decision_status ?? "Recorded")} · {String(r.created_at ?? r.recorded_at ?? "")}</small></li>)}</ul> : <p style={{ marginTop: 8 }}>No saved records in this category yet.</p>}
+   {items === null ? <p style={{ marginTop: 8 }}>Unable to load this category. Its records are not confirmed empty; retry the inventory refresh.</p> : items.length ? <ul style={{ display: "grid", gap: 10, paddingLeft: 18, marginTop: 12 }}>{items.map((r, i) => <li key={String(r.id ?? i)}><p style={{ overflowWrap: "anywhere" }}>{rowText(r)}</p><small style={{ opacity: .75 }}>{String(r.epistemic_status ?? r.reconciliation_status ?? r.status ?? r.decision_status ?? "Recorded")} · {String(r.created_at ?? r.recorded_at ?? "")}</small></li>)}</ul> : <p style={{ marginTop: 8 }}>No saved records in this category yet.</p>}
   </section>)}
   <p style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, opacity: .8 }}><ShieldCheck size={16}/> Access is scoped by the active SolenOS session. Existing source records are reused, not duplicated.</p>
  </main>;
