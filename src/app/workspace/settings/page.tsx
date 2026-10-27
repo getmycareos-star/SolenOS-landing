@@ -249,7 +249,7 @@ function AccountCard() {
         show("Account deleted. Care history was retained.", "success");
       }
     } catch (e) {
-      setError("We couldn’t complete that account action. Please check your details and try again.");
+      setError(e instanceof Error ? e.message : "We couldn’t complete that account action. Please check your details and try again.");
     } finally {
       setBusy(false);
     }
@@ -368,6 +368,13 @@ function PrivacyCard() {
       "solenos_durable_care_key",
       "solenos_care_session_id",
       "solenos_telemetry_user_id",
+      // Current server-issued session credentials. Clearing them removes this browser's access.
+      "solenos_anonymous_access_token",
+      "solenos_backend_person_id",
+      "solenos_backend_caregiver_id",
+      "solenos_anonymous_session_expires_at",
+      "solenos_person_id",
+      "solenos_device_installation_key_v1",
       // record
       "solenos_situations",
       "solenos_timeline",
@@ -413,6 +420,7 @@ function PrivacyCard() {
 
       <PolicySettingsPanel />
 
+      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes saved information and sign-in credentials from this browser. If you have no other recovery method, you may not be able to reopen this care record on this device. It does not delete the server-held care history.</p>}
       <div className="mobile-settings-buttons">
         {confirmClear ? (
           <div className="mobile-settings-actions">
