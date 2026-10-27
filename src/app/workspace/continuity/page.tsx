@@ -7,7 +7,7 @@ import { getJSON, postJSON } from "@/api/client";
 
 type Row = Record<string, unknown>;
 type Summary = { resources: Record<string, number> };
-const resources = ["facts", "fact-evidence", "relationships", "decisions", "decision-outcomes", "integrity-findings", "integrity-resolutions", "reconciliations", "delta-items", "follow-up-links", "review-decisions", "provenance", "timeline", "change-assessments", "events", "evidence", "changes", "situations", "state-revisions", "temporal-facts", "temporal-relations", "temporal-relationships", "temporal-reference-frames", "temporal-contradictions", "uncertainty-assessments", "causal-hypotheses", "causal-evidence", "contradictions", "significance-assessments", "delta-runs", "open-questions", "information-gaps", "assertions", "living-records", "record-provenance", "record-provenance-links", "record-change-sets", "record-change-items", "corrections", "amendments", "amendment-items", "record-audit", "uncertainties", "missing-information", "conflicts", "action-outcomes", "caregiver-contexts", "caregiver-perspectives", "caregiver-observations", "record-versions", "record-snapshots"];
+const resources = ["facts", "fact-evidence", "relationships", "decisions", "decision-outcomes", "integrity-findings", "integrity-resolutions", "reconciliations", "delta-items", "follow-up-links", "review-decisions", "provenance", "timeline", "change-assessments", "events", "evidence", "changes", "situations", "state-revisions", "temporal-facts", "temporal-relations", "temporal-relationships", "temporal-reference-frames", "temporal-contradictions", "uncertainty-assessments", "causal-hypotheses", "causal-evidence", "contradictions", "significance-assessments", "delta-runs", "open-questions", "information-gaps", "assertions", "living-records", "record-provenance", "record-provenance-links", "record-change-sets", "record-change-items", "corrections", "amendments", "amendment-items", "record-audit", "uncertainties", "missing-information", "conflicts", "action-outcomes", "caregiver-contexts", "caregiver-perspectives", "caregiver-observations", "record-versions", "record-snapshots", "record-identifiers", "record-sections", "record-links", "record-status-history", "fact-revisions", "assertion-revisions", "decision-revisions", "event-revisions", "observation-revisions", "change-revisions", "situation-revisions", "evidence-revisions", "record-retractions", "record-restorations"];
 const labels: Record<string, string> = {
  facts: "Care facts", "fact-evidence": "Fact evidence links", relationships: "Record relationships",
  decisions: "Care decisions", "decision-outcomes": "Decision outcomes",
@@ -31,7 +31,14 @@ const labels: Record<string, string> = {
  "missing-information": "Missing care information", conflicts: "Conflicting claims",
  "action-outcomes": "Action outcomes", "caregiver-contexts": "Caregiver context",
  "caregiver-perspectives": "Caregiver perspectives", "caregiver-observations": "Caregiver observations",
- "record-versions": "Immutable record versions", "record-snapshots": "Record snapshots"
+ "record-versions": "Immutable record versions", "record-snapshots": "Record snapshots",
+ "record-identifiers": "Protected record identifiers", "record-sections": "Record sections",
+ "record-links": "Linked care records", "record-status-history": "Record status history",
+ "fact-revisions": "Care fact revisions", "assertion-revisions": "Care assertion revisions",
+ "decision-revisions": "Decision revisions", "event-revisions": "Care event revisions",
+ "observation-revisions": "Observation revisions", "change-revisions": "Care change revisions",
+ "situation-revisions": "Care situation revisions", "evidence-revisions": "Evidence revisions",
+ "record-retractions": "Record retractions", "record-restorations": "Record restorations"
 };
 function rowText(r: Row) {
  if (r.version_number !== undefined) {
