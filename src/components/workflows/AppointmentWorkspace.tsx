@@ -210,6 +210,7 @@ export default function AppointmentWorkspace() {
                   {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {item.status} · Source {item.source_id}</small></li>)}</ul> : <p>No appointment records were returned.</p>}
                 </div>
               </div>
+              <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{source.replaceAll('_', ' ')}</b><small>{status.replaceAll('_', ' ')}</small></span>)}</div></div>
               <p className="appointment-brief-limitations">{lcrBrief.limitations.join(' ')}</p>
             </>}
           </section>
@@ -308,6 +309,12 @@ export default function AppointmentWorkspace() {
         .appointment-brief-grid li p { margin:4px 0 0; font-size:10px; }
         .appointment-brief-grid > div > p,.appointment-brief-limitations { color:#758075; font-size:10px; line-height:1.55; }
         .appointment-brief-warning { padding:9px; border-radius:8px; background:#fff4e8; color:#815a28; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+        .appointment-source-coverage { margin-top:12px; }
+        .appointment-source-coverage > strong { display:block; color:#536653; font-size:10px; margin-bottom:7px; }
+        .appointment-source-coverage > div { display:flex; flex-wrap:wrap; gap:6px; }
+        .appointment-coverage-item { display:flex; flex-direction:column; gap:2px; max-width:100%; padding:6px 8px; border:1px solid #e2e9df; border-radius:8px; background:#fff; }
+        .appointment-coverage-item b { color:#526352; font-size:9px; text-transform:capitalize; }
+        .appointment-coverage-item small { color:#788276; font-size:9px; }
         .appointment-brief-limitations { margin:12px 0 0; }
         .appointment-stages { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 0; padding-bottom:14px; border-bottom:1px solid #e8eee7; }
         .appointment-stage { min-height:40px; padding:9px 12px; border:1px solid #dfe8df; border-radius:10px; background:#fff; color:#506354; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
