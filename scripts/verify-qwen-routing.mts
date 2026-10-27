@@ -67,7 +67,7 @@ assert(!read("src/components/workflows/Community.tsx").includes("QwenAssistPanel
 assert(!read("src/components/workflows/Community.tsx").includes("Qwen support for Community"), "Community must not show internal model branding.");
 requireText("src/components/workflows/AICompanion.tsx", [
   "postJSON('/conversation/message'",
-  "Your message couldn’t be sent.",
+  "Your message could not be sent.",
   "{loading ? 'Sending…' : 'Send'}",
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
