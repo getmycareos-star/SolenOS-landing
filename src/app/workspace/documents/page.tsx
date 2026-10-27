@@ -178,17 +178,19 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     const cos = Math.abs(Math.cos(radians));
     const rotatedWidth = Math.max(1, Math.ceil(width * cos + height * sin));
     const rotatedHeight = Math.max(1, Math.ceil(width * sin + height * cos));
+    const scale = Math.min(1, 2200 / Math.max(rotatedWidth, rotatedHeight));
     const output = document.createElement("canvas");
-    output.width = rotatedWidth;
-    output.height = rotatedHeight;
+    output.width = Math.max(1, Math.round(rotatedWidth * scale));
+    output.height = Math.max(1, Math.round(rotatedHeight * scale));
     const outputContext = output.getContext("2d");
     if (!outputContext) throw new Error("Image rotation is unavailable.");
     outputContext.fillStyle = "#fff";
     outputContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
-    outputContext.translate(rotatedWidth / 2, rotatedHeight / 2);
+    outputContext.translate(output.width / 2, output.height / 2);
     outputContext.rotate(radians);
+    outputContext.scale(scale, scale);
     outputContext.drawImage(cropped, -width / 2, -height / 2);
-    const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.92));
+    const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.86));
     const baseName = file.name.replace(/\.[^.]+$/, "");
     return new File([blob], `${baseName || "scan"}-processed.jpg`, { type: "image/jpeg", lastModified: Date.now() });
   } finally {
@@ -381,6 +383,7 @@ export default function DocumentsPage() {
     setUploadMessage(null);
     try {
       const pdfFile = await createMultiPagePdf(imagePages);
+      if (pdfFile.size > MAX_FILE_BYTES) throw new Error("The combined PDF exceeds the 10 MiB upload limit. Combine fewer pages or split this document into smaller PDFs.");
       const combinedText = imagePages.map((page, index) => `[Page ${index + 1}]\\n${page.uncertain ? "[UNCERTAIN EXTRACTION] " : ""}${page.text.trim() || "[No readable text extracted; consult original page.]"}`).join("\\n\\n");
       const existingPdf = reviewPages.some((page) => page.file.type === "application/pdf" && page.file.name === pdfFile.name);
       if (existingPdf) {
