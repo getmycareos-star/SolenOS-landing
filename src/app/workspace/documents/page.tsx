@@ -222,7 +222,7 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
   const offsets: number[] = [0];
   let byteOffset = 0;
   const pushObject = (id: number, chunks: Uint8Array[]) => {
-    const objectBytes = joinBytes([encoder.encode(`${id} 0 obj\\n`), ...chunks, encoder.encode("\\nendobj\\n")]);
+    const objectBytes = joinBytes([encoder.encode(`${id} 0 obj\n`), ...chunks, encoder.encode("\nendobj\n")]);
     offsets[id] = byteOffset;
     objects.push(objectBytes);
     byteOffset += objectBytes.length;
@@ -236,22 +236,21 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
     const pageId = 3 + index * 3;
     const contentId = pageId + 1;
     const imageId = pageId + 2;
-    const content = encoder.encode(`q\\n${page.width} 0 0 ${page.height} 0 0 cm\\n/Im0 Do\\nQ\\n`);
+    const content = encoder.encode(`q\n${page.width} 0 0 ${page.height} 0 0 cm\n/Im0 Do\nQ\n`);
     pushObject(pageId, [encoder.encode(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Resources << /XObject << /Im0 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`)]);
-    pushObject(contentId, [encoder.encode(`<< /Length ${content.length} >>\\nstream\\n`), content, encoder.encode("endstream")]);
+    pushObject(contentId, [encoder.encode(`<< /Length ${content.length} >>\nstream\n`), content, encoder.encode("endstream")]);
     pushObject(imageId, [
-      encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${page.width} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.bytes.length} >>\\nstream\\n`),
+      encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${page.width} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.bytes.length} >>\nstream\n`),
       page.bytes,
-      encoder.encode("\\nendstream"),
+      encoder.encode("\nendstream"),
     ]);
   });
 
-  const xrefOffset = byteOffset + encoder.encode("%PDF-1.4\\n").length;
-  const header = encoder.encode("%PDF-1.4\\n%âãÏÓ\\n");
+  const header = encoder.encode("%PDF-1.4\n%âãÏÓ\n");
   const allObjects = joinBytes(objects);
   const finalOffset = header.length + allObjects.length;
   const xrefRows = ["0000000000 65535 f ", ...Array.from({ length: maxObjectId }, (_, index) => `${String(offsets[index + 1] + header.length).padStart(10, "0")} 00000 n `)];
-  const xref = encoder.encode(`xref\\n0 ${maxObjectId + 1}\\n${xrefRows.join("\\n")}\\ntrailer\\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\\nstartxref\\n${finalOffset}\\n%%EOF`);
+  const xref = encoder.encode(`xref\n0 ${maxObjectId + 1}\n${xrefRows.join("\n")}\ntrailer\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\nstartxref\n${finalOffset}\n%%EOF`);
   return new File([joinBytes([header, allObjects, xref])], `SolenOS-scan-${new Date().toISOString().slice(0, 10)}.pdf`, { type: "application/pdf", lastModified: Date.now() });
 }
 
