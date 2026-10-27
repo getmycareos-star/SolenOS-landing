@@ -17,7 +17,6 @@ import {
 import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
-import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
@@ -332,25 +331,6 @@ function LegalCard() {
 function PrivacyCard() {
   const { show, render } = useToast();
   const [confirmClear, setConfirmClear] = useState(false);
-  const [consentDate, setConsentDate] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Read consent date only after mount — prevents server/client mismatch.
-    try {
-      const consentAt = getOnboardingCompletedAt();
-      setConsentDate(
-        consentAt
-          ? new Date(consentAt).toLocaleDateString(undefined, {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })
-          : null,
-      );
-    } catch {
-      setConsentDate(null);
-    }
-  }, []);
 
   const clearLocalData = () => {
     const keys = [
@@ -400,13 +380,6 @@ function PrivacyCard() {
       <h2 className="mobile-settings-card-title">
         <Shield size={16} aria-hidden /> Privacy &amp; Data
       </h2>
-
-      {consentDate && (
-        <div className="mobile-settings-row">
-          <span className="mobile-settings-label">Consent</span>
-          <span className="mobile-settings-value">Accepted on {consentDate}</span>
-        </div>
-      )}
 
       <PolicySettingsPanel />
 
