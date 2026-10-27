@@ -4,7 +4,7 @@
 **Authority:** Same force as Product North Star + Living Care Record UX  
 **Companions:** Input Reality · First-time caregiver · Emotional language safety · Research validation · Learning-first release
 
-**Implementation:** `src/lib/trust-content` · `src/lib/early-access-trust` · public pages `/privacy` `/terms` `/contact` `/support` (`/help` → `/support`) `/about` · `EarlyAccessConsentForm` · `WelcomeTrustStack` · `ResearchPreviewAckGate` · Sidebar About links · `verify:trust-consent`
+**Implementation:** `src/lib/trust-content` · public pages `/privacy` `/terms` `/contact` `/support` (`/help` → `/support`) `/about` · informational `WelcomeTrustStack` · Sidebar About links · `verify:direct-lcr-entry`
 
 **Support email:** `davidsolenos@gmail.com`
 
@@ -28,15 +28,15 @@ Transparency should support trust, not slow down the caregiver.
 
 | Surface | Role |
 |---------|------|
-| Landing (`/`) | Discover SolenOS — **Enter SolenOS** → `/start` |
-| Entry Home (`/start`) | Purpose + Research Preview + Free Early Access + short FAQ + trust stack (legacy `/welcome` redirects here) |
-| Care Workspace (`/workspace`) | Living Care Record + Research Preview ack |
+| Landing (`/`) | Discover SolenOS — **Start your care record** → `/workspace?enter=1` |
+| Entry Home (`/start`) | Optional product explanation and trust information; its LCR CTA routes directly to `/workspace?enter=1` |
+| Care Workspace (`/workspace`) | Living Care Record; no pre-workspace privacy or early-version checkbox |
 | Why SolenOS | Problem / belief |
 | How It Works | Continuity understanding |
 | About SolenOS | Story / who we are (`/about`) |
 | Help (`/support`, `/help`) | Help Center + **full FAQ** |
 | Capabilities (`/capabilities`) | Current capabilities (works well / still improving) |
-| Early Access | Join with consent |
+| Early Access | Optional product information with direct LCR entry; no pre-workspace checkbox |
 | Terms / Privacy / Contact | Always reachable |
 
 **Footer (always):** How It Works · About · Terms of Service · Privacy Policy · Help · Contact · © SolenOS · emergency boundary (quiet)
@@ -66,18 +66,18 @@ Below the main welcome / CTA, include:
 
 Do **not** create another welcome page or legal wall before value.
 
-### First product entry (`/?enter=1`)
+### First product entry (`/workspace?enter=1`)
 
-The onboarding gate shows the welcome screen once, then one required Terms + Privacy acknowledgement. The acknowledgement is saved to the backend and the completed onboarding flag is stored locally. Returning users skip the welcome and confirmation screens unless local browser data is cleared or the server-side consent record is deleted.
+The user enters the Living Care Record immediately. Do not show a privacy acknowledgement checkbox, early-version checkbox, welcome gate, or consent overlay before the workspace mounts. Privacy and Terms remain accessible through public and in-product links. This UI rule does not bypass server-issued authentication, record ownership, audit requirements, or consent required for a specific sensitive action; those controls must be enforced at the relevant operation rather than as a blanket workspace-entry wall.
 
 In-app: subtle improving notice + Help improve / Report misunderstanding — never a large warning banner.  
 Header: small **Early Access** badge (`SolenOS · Early Access` feel).
 
 ---
 
-## Sign-up / early access consent
+## LCR entry and action-specific consent
 
-Before submission, show exactly one checkbox combining both requirements: “I agree to the SolenOS Terms of Service and confirm that I have read and understand the Privacy Policy.” Keep both document links clickable and opening in a new tab. The Continue button stays disabled until the single checkbox is checked.
+Do not require a checkbox to enter the LCR. A click on any action that explicitly opens or uses the Living Care Record routes directly to `/workspace?enter=1`. Keep Privacy Policy and Terms of Service accessible as information links. Where a particular sensitive operation legally or technically requires consent (for example, a sharing workflow), request and record the relevant permission in that operation’s context; do not reuse a blanket checkbox as a substitute for authentication, authorisation, or purpose-specific consent.
 
 ### UX rule — no legal wall
 
@@ -108,10 +108,10 @@ Pass only if:
 
 1. Privacy Policy + Terms of Service visible on public site  
 2. Help Center answers what SolenOS is / how to use / trust / information / contact  
-3. Early access includes consent checkboxes with clickable links  
-4. User cannot submit early access without agreement  
-5. `/welcome` carries Research Preview + Free Early Access (not forever)  
-6. New product entrants ack once; returning users are not interrupted  
+3. LCR entry has no privacy or early-version checkbox gate  
+4. Every use-the-LCR CTA routes directly to `/workspace?enter=1`  
+5. `/start` may carry optional Research Preview + Free Early Access information  
+6. Action-specific consent remains enforced where required; it never becomes a blanket workspace-entry wall  
 7. Legal pages do not interrupt caregiver experience  
 8. In-product Help / Privacy / Terms / About / Contact remain reachable  
 9. Upload privacy notice present  
