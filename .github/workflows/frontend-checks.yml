@@ -10,6 +10,7 @@ on:
       - "netlify.toml"
       - "tsconfig*.json"
       - ".github/workflows/frontend-checks.yml"
+      - ".github/workflows/netlify-production-deploy.yml"
   pull_request:
     paths:
       - "src/**"
