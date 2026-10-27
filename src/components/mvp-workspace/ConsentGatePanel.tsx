@@ -152,11 +152,6 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
             />
             <span>Yes, allow feedback I submit for improvement to be used for that purpose.</span>
           </label>
-          <p className="panel-muted" role="status">
-            {dataImprovement
-              ? "Optional improvement feedback use: on. You can turn it off later in Privacy & Data settings."
-              : "Optional improvement feedback use: off. Your care-record features remain available."}
-          </p>
         </fieldset>
 
         <label className="consent-checkbox">
