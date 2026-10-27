@@ -388,6 +388,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
                 <strong>{item.recipients?.map(recipient => recipient.name || "Caregiver").join(", ") || "Caregiver handoff"}</strong>
                 <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {item.status}{item.is_expired ? " · expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
                 <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Scope: {item.scope.join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
+                {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: 11, color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status || "receipt status unavailable"}</p>)}
                 {item.status !== "revoked" && !item.is_expired && <button type="button" style={quietButton} disabled={busy} onClick={() => void revoke(item)}>Revoke access</button>}
               </article>
             ))}
