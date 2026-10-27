@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarDays } from "lucide-react";
 import { ensureAnonymousSession } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
+import DailyCareQwen from "@/components/workflows/DailyCareQwen";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -61,7 +62,10 @@ export default function DailyCarePage() {
           <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
         </section>
       ) : ready ? (
-        <StructuredDailyCapture />
+        <>
+          <DailyCareQwen />
+          <StructuredDailyCapture />
+        </>
       ) : (
         <BrandLoading message="Preparing your private care record…" />
       )}
