@@ -82,15 +82,50 @@ assert.throws(() => buildReviewedHandoffDraft({
 }), /no saved care facts/);
 
 const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.tsx", import.meta.url), "utf8");
-assert.match(handoffPage, /if \(!draftReviewConfirmed\)/,
-  "sharing must fail closed until the sender explicitly confirms review");
-assert.match(handoffPage, /setDraft\(event\.target\.value\); setDraftReviewConfirmed\(false\)/,
-  "editing the summary must invalidate the previous review confirmation");
-assert.match(handoffPage, /!draftReviewConfirmed/,
-  "the share button must remain disabled until the review confirmation is checked");
-assert.match(handoffPage, /setSelectedRecipients\(current => event\.target\.checked[\s\S]*?setDraftReviewConfirmed\(false\)/,
-  "changing recipients must invalidate the previous sender approval");
-assert.match(handoffPage, /setExpiryDays\(event\.target\.value\); setDraftReviewConfirmed\(false\)/,
-  "changing the expiry duration must invalidate the previous sender approval");
+assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
+  "standalone handoff page must route caregivers into AI Companion");
+const companionPage = await readFile(new URL("../src/components/workflows/AICompanion.tsx", import.meta.url), "utf8");
+for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Full care overview"]) {
+  assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
+}
+assert.ok(companionPage.includes('<AppointmentWorkspace />'), "appointments must have their own AI Companion workflow, separate from handoff");
+assert.ok(!companionPage.includes("handoffPurpose === 'appointment'"), "doctor appointment must not remain a care handoff purpose");
+const appointmentWorkspace = await readFile(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
+assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-brief?window_days=90"), "appointment preparation must request a bounded source-linked LCR brief");
+assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
+assert.ok(appointmentWorkspace.includes("Source availability") && appointmentWorkspace.includes("Object.entries(lcrBrief.source_coverage)"), "appointment preparation must expose unavailable and excluded sources");
+assert.ok(appointmentWorkspace.includes("getJSON('/appointment-workspaces')"), "appointment workspace must hydrate durable backend records");
+assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
+assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
+assert.ok(appointmentWorkspace.includes("expected_version: recordVersion"), "appointment saves must use optimistic concurrency to avoid silently overwriting edits");
+assert.ok(appointmentWorkspace.includes("lcr_reconciliation: 'not_performed'"), "saving appointment notes must not silently promote them into LCR facts");
+for (const label of ["Before the visit", "During the visit", "After the visit", "Clinician findings", "Medication reconciliation", "Follow-up actions", "Not yet reconciled into LCR facts"]) {
+  assert.ok(appointmentWorkspace.includes(label), "appointment workflow must include " + label);
+}
+assert.match(companionPage, /postJSON\('\/handoff-drafts\/prepare'/,
+  "handoff draft must be prepared by the authorised backend, not fabricated in the browser");
+assert.match(companionPage, /audience: handoffAudience/,
+  "family and professional audiences must remain distinct in the backend request");
+assert.match(companionPage, /source_references/,
+  "draft review must expose source references returned by the backend");
+assert.match(companionPage, /Information coverage and gaps/,
+  "draft review must show source availability and gaps");
+assert.match(companionPage, /Handoff receipt and acceptance|Handoff acceptance/,
+  "the family and professional templates must include a receipt/acceptance section");
+assert.match(companionPage, /no information has been inferred/i,
+  "fallback template must explicitly state that missing field coverage was not inferred");
+const sharingComponent = await readFile(new URL("../src/components/workflows/CareHandoffSharing.tsx", import.meta.url), "utf8");
+assert.match(companionPage, /CareHandoffSharing/,
+  "sharing, receipt and revocation controls must be embedded inside AI Companion");
+assert.match(sharingComponent, /Share reviewed family handoff/,
+  "family sharing requires a reviewed summary");
+assert.match(sharingComponent, /Professional sharing is unavailable until SolenOS can verify professional identity/,
+  "professional sharing must fail closed until recipient identity and role are verified");
+assert.match(sharingComponent, /source_record_ids: summaryText\.trim\(\) === originalSummaryText\.trim\(\) \? sourceIds : \[\]/,
+  "editing the summary must drop provenance IDs rather than falsely attest edits");
+assert.match(sharingComponent, /Accept and record receipt/,
+  "receiving caregiver must explicitly review and accept/acknowledge the handoff");
+assert.match(sharingComponent, /revoke\(item\)/,
+  "sender must have a revocation path");
 
 console.log("PASS: handoff draft provenance tracks only rendered source records, handles missing IDs, rejects empty source data, and respects the 18,000-character cap.");
