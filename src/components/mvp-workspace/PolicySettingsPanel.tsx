@@ -12,6 +12,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
   const [dataImprovement, setDataImprovement] = useState(false);
   const [verified, setVerified] = useState(false);
   const [requiredAck, setRequiredAck] = useState(false);
+  const [acknowledgementBusy, setAcknowledgementBusy] = useState(false);
   const [acceptedAt, setAcceptedAt] = useState<string | null>(null);
   const [limitedMode, setLimitedMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
   async function acknowledgeRequiredTerms() {
     if (!requiredAck || saving || loadError || verified) return;
     setSaving(true);
+    setAcknowledgementBusy(true);
     setMessage(null);
     try {
       const session = await ensureAnonymousSession();
@@ -92,6 +94,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
       setMessage(error instanceof Error ? error.message : "We couldn't save the acknowledgement. Please try again.");
     } finally {
       setSaving(false);
+      setAcknowledgementBusy(false);
     }
   }
 
@@ -181,14 +184,14 @@ export function PolicySettingsPanel(_props: Props = {}) {
             <input type="checkbox" checked={requiredAck} disabled={saving} onChange={(event) => setRequiredAck(event.target.checked)} />
             <span>I have read and accept the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. I understand SolenOS is not medical or emergency guidance, care information is not sold or used for advertising, and trusted contributors may add notes to the care record.</span>
           </label>
-          <button type="button" className="workspace-primary" onClick={() => void acknowledgeRequiredTerms()} disabled={!requiredAck || saving}>
-            {saving ? "Saving acknowledgement…" : "Accept required terms"}
+          <button type="button" className="workspace-primary policy-acknowledge-button" onClick={() => void acknowledgeRequiredTerms()} disabled={!requiredAck || acknowledgementBusy || saving}>
+            {acknowledgementBusy ? "Saving acknowledgement…" : "Confirm and save acknowledgement"}
           </button>
         </div>
       )}
       {limitedMode && (
-        <p className="panel-muted">
-          Optional improvement use is unavailable while privacy access is limited.
+        <p className="panel-muted" role="status">
+          Optional improvement use is unavailable while privacy access is limited. Your care history has not been deleted.
         </p>
       )}
 
@@ -206,6 +209,10 @@ export function PolicySettingsPanel(_props: Props = {}) {
         <p className="panel-muted">
           We couldn't confirm whether this is on or off, so the control is disabled until your
           saved choice can be checked.
+        </p>
+      ) : !verified ? (
+        <p className="policy-consent-status" role="status">
+          <strong>Not yet available.</strong> Complete and save the required acknowledgement above. Your optional improvement preference has not been changed by this screen.
         </p>
       ) : dataImprovement ? (
         <div className="policy-improvement-details">
@@ -234,7 +241,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
         </p>
       )}
 
-      {message && <p className="panel-muted" role="status">{message}</p>}
+      {message && <p className="policy-consent-message" role="status">{message}</p>}
     </section>
   );
 }
