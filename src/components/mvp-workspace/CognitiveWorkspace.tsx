@@ -1067,7 +1067,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           lastSharedDisplay?.trim() ? "Current displayed care context: " + lastSharedDisplay.trim() : "",
         ].filter(Boolean).join("\n\n")}
         evidenceIds={documents.map((document) => document.evidenceId).filter((id): id is string => Boolean(id))}
-      />}
+      />
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
           What you share stays in the Living Care Record for this care journey. It is not sold or used
