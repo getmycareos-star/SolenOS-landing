@@ -18,7 +18,7 @@ import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
@@ -195,7 +195,7 @@ function AccountCard() {
   const [account, setAccount] = useState<{ id: string; email: string; created_at: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [mode, setMode] = useState<"idle" | "create" | "delete">("idle");
+  const [mode, setMode] = useState<"idle" | "create" | "login" | "delete">("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -232,6 +232,13 @@ function AccountCard() {
         setMode("idle");
         setPassword("");
         show("Account created.", "success");
+      } else if (mode === "login") {
+        const result = await signInToAccount(email, password);
+        setAccount(result.account);
+        setMessage("Signed in. This device is now connected to the care record linked to your account.");
+        setMode("idle");
+        setPassword("");
+        show("Signed in to your care record.", "success");
       } else if (mode === "delete") {
         await deleteJSON("/accounts/me", { password });
         setAccount(null);
@@ -260,8 +267,11 @@ function AccountCard() {
       )}
       {loaded && !account && !loadFailed && mode === "idle" && (
         <div className="mobile-settings-buttons">
-          <Button variant="primary" onClick={() => { setMode("create"); setError(""); setMessage(""); }}>
+          <Button variant="primary" onClick={() => { setMode("create"); setError(""); setMessage(""); setEmail(""); setPassword(""); }}>
             <UserPlus size={16} aria-hidden /> Create account
+          </Button>
+          <Button variant="secondary" onClick={() => { setMode("login"); setError(""); setMessage(""); setEmail(""); setPassword(""); }}>
+            Sign in to an existing account
           </Button>
         </div>
       )}
@@ -273,9 +283,9 @@ function AccountCard() {
       {mode !== "idle" && (
         <form onSubmit={(event) => void submit(event)} style={{ display: "grid", gap: "0.8rem", marginTop: "0.8rem" }}>
           <h3 className="mobile-settings-label" style={{ margin: 0 }}>
-            {mode === "create" ? "Create your account" : "Confirm account deletion"}
+            {mode === "create" ? "Create your account" : mode === "login" ? "Sign in to your care record" : "Confirm account deletion"}
           </h3>
-          {mode === "create" && (
+          {(mode === "create" || mode === "login") && (
             <label className="mobile-settings-label" htmlFor="account-email">
               Email address
               <input id="account-email" className="mobile-settings-input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
@@ -286,12 +296,13 @@ function AccountCard() {
             <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
           {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
+          {mode === "login" && <p className="mobile-settings-hint">Sign in with the account already linked to your care record on another device. This replaces this browser’s current care-session scope.</p>}
 
           {mode === "delete" && <p className="mobile-settings-hint">This deletes the email/password account, not the Living Care Record or its care history. Those remain under the current anonymous session.</p>}
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <div className="mobile-settings-actions">
             <Button type="submit" variant={mode === "delete" ? "destructive" : "primary"} loading={busy} disabled={busy}>
-              {busy ? "Please wait…" : mode === "create" ? "Create account" : "Delete account"}
+              {busy ? "Please wait…" : mode === "create" ? "Create account" : mode === "login" ? "Sign in" : "Delete account"}
             </Button>
             <Button type="button" variant="secondary" disabled={busy} onClick={() => { setMode("idle"); setPassword(""); setError(""); }}>Cancel</Button>
           </div>
