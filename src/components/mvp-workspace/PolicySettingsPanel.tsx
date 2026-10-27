@@ -134,8 +134,8 @@ export function PolicySettingsPanel(_props: Props = {}) {
       setDataImprovement(enabled);
       setMessage(
         enabled
-          ? "Saved. New feedback you deliberately submit is eligible for SolenOS improvement review."
-          : "Saved. New optional improvement feedback is blocked. Your personal care history and existing care continuity remain available.",
+          ? "Your opt-in preference is saved. Only eligible feedback you deliberately submit can enter optional improvement review; required terms must also be acknowledged before feedback is accepted."
+          : "Your opt-out preference is saved. New submissions are blocked from optional improvement processing, and queued review-stage contributions are removed. Your Living Care Record remains available.",
       );
     } catch {
       setMessage("We couldn't save this choice. Your previous saved setting remains in place.");
@@ -158,7 +158,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
     <section className="policy-settings-panel" aria-labelledby="improvement-consent-heading">
       <h4 id="improvement-consent-heading">Help improve SolenOS (optional)</h4>
       <p className="panel-muted">
-        When this is on, feedback you deliberately submit and any context you choose to attach may be used in SolenOS's improvement review. This setting does not automatically send every private care note, document, or Companion conversation, and it does not mean an AI model's weights are retrained immediately. Your personal care history and the processing needed to provide the care features you request remain available whether this setting is on or off. You can change this choice here at any time.
+        This optional choice controls whether eligible feedback you deliberately submit may be considered for SolenOS improvement. It does not automatically submit your care notes, documents, or Companion conversations. Your Living Care Record and the processing needed to provide the features you request are separate from optional improvement processing. This preference stays saved until you change it.
       </p>
 
       {loadError && (
@@ -177,7 +177,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
       {!verified && !loadError && !limitedMode && (
         <div className="policy-required-ack">
           <p className="panel-muted">
-            The server has no confirmed required privacy acknowledgement for this care-record session. Confirm the Terms of Service and Privacy Policy below before changing the optional setting.
+            Required privacy acknowledgement has not yet been confirmed for this care-record session. Review and accept the Terms of Service and Privacy Policy below to complete the required acknowledgement. This is separate from your optional improvement preference; changing that preference does not accept these terms.
           </p>
           <label className="consent-checkbox">
             <input type="checkbox" checked={requiredAck} disabled={saving} onChange={(event) => setRequiredAck(event.target.checked)} />
@@ -211,29 +211,31 @@ export function PolicySettingsPanel(_props: Props = {}) {
         </p>
       ) : dataImprovement ? (
         <div className="policy-improvement-details">
-          <h5>What may be used when this is on</h5>
+          <h5>Optional improvement is on</h5>
+          <p>Your preference is saved. It remains on until you turn it off.</p>
+          <h5>What may be used</h5>
           <ul>
-            <li>Feedback you deliberately submit using an improvement or validation option.</li>
-            <li>Context you choose to include with that feedback, plus the feedback category and related details needed to review it.</li>
-            <li>Use of those submitted materials to improve SolenOS product features and AI behavior, subject to access controls and appropriate de-identification.</li>
+            <li>Feedback you deliberately submit through an improvement or validation option.</li>
+            <li>The feedback category and any context you explicitly include with that submission, plus details needed to review it.</li>
+            <li>Eligible submitted material for SolenOS product and service improvement, subject to access controls and the safeguards described in the Privacy Policy.</li>
           </ul>
-          <h5>What this choice does not allow</h5>
+          <h5>What is not included just because you opted in</h5>
           <ul>
-            <li>Publishing your care record or making it visible to other caregivers.</li>
-            <li>Using this checkbox as permission to sell your personal information or show you targeted ads.</li>
-            <li>Automatically sending every private care note, document, or Companion conversation as improvement feedback.</li>
+            <li>Your entire Living Care Record or all of your personal care history.</li>
+            <li>Automatic collection of every care note, uploaded document, or Companion conversation as improvement feedback.</li>
+            <li>Publishing your care details, selling your personal information, or using it for targeted advertising.</li>
           </ul>
           <p className="panel-muted">
-            SolenOS must still apply access controls and remove direct identifiers where appropriate.
-            This setting does not mean your care details are made public.
+            Direct identifiers are redacted from supported feedback fields before review where the processing path provides that safeguard; this is not a promise that every possible identifier in every attachment is automatically removed. Optional improvement opt-in does not itself satisfy the separate required privacy acknowledgement, and feedback will not be accepted until required consent checks pass. See the Privacy Policy for the applicable retention and handling rules.
           </p>
         </div>
       ) : (
-        <p className="panel-muted">
-          <strong>Off — you have opted out.</strong> SolenOS must not accept your submissions for
-          optional improvement processing. Your care record remains available for the features you
-          request; required processing to provide those features is separate.
-        </p>
+        <div className="policy-improvement-details">
+          <h5>Optional improvement is off</h5>
+          <p><strong>Off — you have opted out.</strong> SolenOS must not accept your submissions for optional improvement processing while this setting is off.</p>
+          <p>Your Living Care Record remains available for the features you request. Processing necessary to provide those features is separate from optional improvement processing.</p>
+          <p>Turning this off removes queued or review-stage improvement contributions associated with this session. It does not promise deletion of material already processed before you opted out. This preference remains off until you turn it on again.</p>
+        </div>
       )}
 
       {message && <p className="policy-consent-message" role="status">{message}</p>}
