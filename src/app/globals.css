@@ -5390,3 +5390,52 @@ input[type="file"] { width: 100%; white-space: normal; }
 .settings-section-wrap :is(button, a):focus-visible { outline: 3px solid #7e9c84; outline-offset: 2px; }
 @media (min-width: 900px) { .settings-section-nav { position: sticky; top: .5rem; z-index: 5; } .settings-page-grid { gap: 1.8rem; } }
 @media (max-width: 560px) { .settings-section-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .settings-section-nav a { justify-content: center; padding-inline: .4rem; text-align: center; font-size: .88rem; } .settings-section-intro { gap: .65rem; } .settings-section-intro > span { flex-basis: 2rem; width: 2rem; height: 2rem; } }
+
+
+/* Privacy & Data consent flow: make the next required action and saved state unmistakable. */
+.policy-required-ack {
+  display: grid;
+  gap: .85rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid #879b8b;
+  border-radius: 14px;
+  background: #f4f7f2;
+  color: #1d3028;
+}
+.policy-required-ack a {
+  color: #244f40;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.policy-acknowledge-button {
+  width: 100%;
+  min-height: 48px;
+  white-space: normal;
+}
+.policy-acknowledge-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+.policy-consent-status,
+.policy-consent-message {
+  margin: .85rem 0 0;
+  padding: .85rem 1rem;
+  border-left: 4px solid #879b8b;
+  border-radius: 0 10px 10px 0;
+  background: #f4f7f2;
+  color: #24362c;
+  line-height: 1.6;
+}
+.policy-settings-panel .consent-checkbox:has(input:disabled) {
+  opacity: .78;
+}
+.policy-settings-panel .consent-checkbox input[type="checkbox"]:not(:disabled) {
+  cursor: pointer;
+}
+@media (max-width: 480px) {
+  .policy-required-ack { padding: .8rem; }
+  .policy-settings-panel .consent-checkbox { padding: .8rem; }
+  .policy-acknowledge-button { min-height: 52px; }
+}
