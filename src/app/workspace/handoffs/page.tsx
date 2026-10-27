@@ -107,6 +107,7 @@ export default function CareHandoffsPage() {
   const [draft, setDraft] = useState("");
   const [preparedDraft, setPreparedDraft] = useState("");
   const [draftSourceRecordIds, setDraftSourceRecordIds] = useState<string[]>([]);
+  const [draftReviewConfirmed, setDraftReviewConfirmed] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftBusy, setDraftBusy] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
@@ -147,6 +148,7 @@ export default function CareHandoffsPage() {
       setDraft(prepared.text);
       setPreparedDraft(prepared.text);
       setDraftSourceRecordIds(prepared.sourceRecordIds);
+      setDraftReviewConfirmed(false);
       setDraftReady(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "The care summary could not be prepared from saved records.");
@@ -158,6 +160,10 @@ export default function CareHandoffsPage() {
   async function createHandoff() {
     if (!draft.trim()) {
       setError("Prepare and review the summary before sharing.");
+      return;
+    }
+    if (!draftReviewConfirmed) {
+      setError("Confirm that you have reviewed the summary before sharing it.");
       return;
     }
     if (selectedRecipients.length === 0) {
@@ -201,6 +207,7 @@ export default function CareHandoffsPage() {
       setDraft("");
       setPreparedDraft("");
       setDraftSourceRecordIds([]);
+      setDraftReviewConfirmed(false);
       setDraftReady(false);
       setSelectedRecipients([]);
     } catch (err) {
@@ -366,9 +373,13 @@ export default function CareHandoffsPage() {
         {draftReady && (
           <>
             <label htmlFor="handoff-summary-draft" style={{ display: "block", fontWeight: 650, margin: "14px 0 6px" }}>Review and edit the summary</label>
-            <textarea id="handoff-summary-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={14} maxLength={18000} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.5 }} />
+            <textarea id="handoff-summary-draft" value={draft} onChange={event => { setDraft(event.target.value); setDraftReviewConfirmed(false); }} rows={14} maxLength={18000} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.5 }} />
             <p style={{ fontSize: 12, lineHeight: 1.5 }}>Only saved records are included; the draft is limited to the most recent records returned by each section. {draft.trim() === preparedDraft.trim() ? `${draftSourceRecordIds.length} source record ID(s) will be attached as unverified provenance metadata.` : "You edited the generated draft, so source IDs are omitted rather than implying your edits are verified against the original records."} SolenOS does not independently verify that every statement is supported by its source IDs. Sharing creates an immutable reviewed snapshot; to change it later, create a new handoff.</p>
-            <button type="button" style={buttonStyle} disabled={busy || !draft.trim() || selectedRecipients.length === 0 || eligibleRecipients.length === 0} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, lineHeight: 1.5, margin: "12px 0" }}>
+              <input type="checkbox" checked={draftReviewConfirmed} onChange={event => setDraftReviewConfirmed(event.target.checked)} />
+              <span>I have reviewed this entire summary, checked it against the care information available to me, and approve sharing this snapshot with the selected caregiver(s). I understand that SolenOS does not independently verify every statement.</span>
+            </label>
+            <button type="button" style={buttonStyle} disabled={busy || !draft.trim() || !draftReviewConfirmed || selectedRecipients.length === 0 || eligibleRecipients.length === 0} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
           </>
         )}
       </section>
