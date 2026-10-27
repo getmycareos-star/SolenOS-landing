@@ -189,6 +189,7 @@ export default function Companion() {
       }
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
+      setInput(submittedText)
       setRequestError('Your message could not be sent. It remains in the box below. Check your connection and try again.')
     } finally {
       setLoading(false)
@@ -390,7 +391,7 @@ export default function Companion() {
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
-                  return <button className="companion-starter" type="button" key={item.title} onClick={() => { setInput(item.prompt); setRequestError(null); textareaRef.current?.focus() }}>
+                  return <button className="companion-starter" type="button" key={item.title} onClick={() => { void sendMessage(item.prompt) }}>
                     <span className="companion-starter-icon"><Icon size={18} aria-hidden="true" /></span>
                     <span className="companion-starter-copy"><strong>{item.title}</strong><span>{item.description}</span></span>
                     <span className="companion-starter-arrow" aria-hidden="true">↗</span>
