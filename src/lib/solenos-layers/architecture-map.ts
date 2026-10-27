@@ -212,7 +212,7 @@ export const PUBLIC_TRUST_LAYER = {
     "Contact",
   ] as const,
   earlyAccessConsent:
-    "EarlyAccessConsentForm — Terms + Privacy checkboxes; submit disabled until both checked; links open docs without a legal wall (verify:trust-consent)",
+    "EarlyAccessConsentForm — one required checkbox covers Terms + Privacy; server-persisted acknowledgement; links open docs without a legal wall (verify:trust-consent)",
   researchPreview:
     "WelcomeTrustStack on /welcome + ResearchPreviewAckGate one-time ack; Free Early Access (not forever); Early Access badge; upload privacy notice; understanding feedback (src/lib/early-access-trust); MVP FAQ home excerpt + /support full + /capabilities (src/lib/mvp-faq; verify:mvp-faq)",
   inProduct: "sidebar → About SolenOS (Help, Privacy, Terms, About, Contact)",
