@@ -18,6 +18,8 @@ interface HandoffDraftItem {
 interface HandoffDraft {
   draft_id: string
   purpose: string
+  audience: 'family' | 'professional'
+  template_sections: Array<{ key: string; title: string; required_fields: string[]; source_tables: string[]; coverage_status: string; coverage_note: string }>
   prepared_at: string
   window: { days: number; from: string; to: string }
   read_only: boolean
@@ -91,6 +93,7 @@ export default function Companion() {
       const windowDays = handoffPurpose === 'today' ? 7 : handoffPurpose === 'appointment' ? 30 : 90
       const draft = await postJSON('/handoff-drafts/prepare', {
         purpose,
+        audience: handoffAudience,
         window_days: windowDays,
       }) as HandoffDraft
       if (!draft || !Array.isArray(draft.sections) || !draft.source_statuses) {
@@ -327,6 +330,19 @@ export default function Companion() {
                   </section>
                 ))}
                 <section className="companion-handoff-source-section">
+                  <h5>{handoffAudience === 'family' ? 'Family handoff checklist' : 'Professional handoff checklist'}</h5>
+                  <p className="companion-handoff-section-note">Required sections are shown even when information is missing. Coverage is not verification; review each item before use.</p>
+                  {handoffDraft.template_sections.map(section => (
+                    <article className="companion-handoff-template-section" key={section.key}>
+                      <div className="companion-handoff-coverage-row">
+                        <span><strong>{section.title}</strong><small>{section.required_fields.join(' · ')}</small></span>
+                        <span className={'companion-handoff-status status-' + section.coverage_status}>{section.coverage_status.replaceAll('_', ' ')}</span>
+                      </div>
+                      <small className="companion-handoff-section-note">{section.coverage_note}</small>
+                    </article>
+                  ))}
+                </section>
+                <section className="companion-handoff-source-section">
                   <h5>Information coverage and gaps</h5>
                   <p className="companion-handoff-section-note">These statuses describe source availability, not the person's clinical status.</p>
                   {Object.entries(handoffDraft.source_statuses).map(([source, info]) => (
@@ -449,6 +465,8 @@ export default function Companion() {
         .companion-handoff-source-item p { margin:0; color:#34463a; font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
         .companion-handoff-source-meta { display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:8px; color:#748075; font-size:10px; line-height:1.5; overflow-wrap:anywhere; }
         .companion-handoff-source-meta strong { color:#8b5c1c; }
+        .companion-handoff-template-section { padding:8px 0; border-bottom:1px solid #edf1eb; }
+        .companion-handoff-template-section .companion-handoff-coverage-row { border-bottom:0; }
         .companion-handoff-coverage-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid #edf1eb; }
         .companion-handoff-coverage-row>span:first-child { min-width:0; }
         .companion-handoff-coverage-row strong,.companion-handoff-coverage-row small { display:block; overflow-wrap:anywhere; }
