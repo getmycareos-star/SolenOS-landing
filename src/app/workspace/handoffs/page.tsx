@@ -80,6 +80,7 @@ export default function CareHandoffsPage() {
   const [expiryDays, setExpiryDays] = useState("7");
   const [draft, setDraft] = useState("");
   const [draftReady, setDraftReady] = useState(false);
+  const [summaryApproved, setSummaryApproved] = useState(false);
   const [draftBusy, setDraftBusy] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -111,12 +112,13 @@ export default function CareHandoffsPage() {
 
   async function prepareDraft() {
     setDraftBusy(true); setError(""); setNotice("");
-    try { setDraft(await buildDraft()); setDraftReady(true); }
+    try { setDraft(await buildDraft()); setDraftReady(true); setSummaryApproved(false); }
     catch (err) { setError(err instanceof Error ? err.message : "The summary could not be prepared from saved records."); }
     finally { setDraftBusy(false); }
   }
   async function createHandoff() {
     if (!draft.trim()) { setError("Prepare and review the summary before sharing."); return; }
+    if (!summaryApproved) { setError("Confirm that you reviewed and approve the exact summary before sharing."); return; }
     if (!selected.length) { setError("Select at least one eligible linked caregiver."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
@@ -136,7 +138,7 @@ export default function CareHandoffsPage() {
       }
       await load();
       setNotice(`Secure handoff created. It expires ${dateLabel(expiresAt)}. You can revoke it from outgoing handoffs.`);
-      setDraft(""); setDraftReady(false); setSelected([]);
+      setDraft(""); setDraftReady(false); setSummaryApproved(false); setSelected([]);
     } catch (err) { setError(err instanceof Error ? err.message : "The secure handoff could not be created."); }
     finally { setBusy(false); }
   }
@@ -233,9 +235,13 @@ export default function CareHandoffsPage() {
       <button type="button" style={button} disabled={draftBusy || loading || busy} onClick={() => void prepareDraft()}>{draftBusy ? "Preparing…" : draftReady ? "Regenerate draft from saved records" : "Prepare summary for review"}</button>
       {draftReady && <>
         <label htmlFor="handoff-draft" style={{ display: "block", fontWeight: 650, margin: "14px 0 6px" }}>Review and edit the summary</label>
-        <textarea id="handoff-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={14} maxLength={18000} style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+        <textarea id="handoff-draft" value={draft} onChange={event => { setDraft(event.target.value); setSummaryApproved(false); }} rows={14} maxLength={18000} style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
         <p style={{ fontSize: 12, lineHeight: 1.5 }}>Only saved records are included; the draft is limited to recent entries. Source IDs are not supplied. Sharing creates an immutable reviewed snapshot; create a new handoff to share a changed summary.</p>
-        <button type="button" style={button} disabled={busy || !draft.trim() || !selected.length || !eligible.length} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 9, lineHeight: 1.5, margin: "12px 0" }}>
+          <input type="checkbox" checked={summaryApproved} onChange={event => setSummaryApproved(event.target.checked)} />
+          <span>I reviewed the exact text above and approve sharing it with the selected caregivers.</span>
+        </label>
+        <button type="button" style={button} disabled={busy || !draft.trim() || !summaryApproved || !selected.length || !eligible.length} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
       </>}
     </section>
 
