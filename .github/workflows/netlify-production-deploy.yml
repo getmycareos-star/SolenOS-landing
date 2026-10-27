@@ -1,6 +1,7 @@
 name: Netlify production deployment
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -48,7 +49,7 @@ jobs:
   deploy:
     name: Deploy production to Netlify
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
