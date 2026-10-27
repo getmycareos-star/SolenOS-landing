@@ -158,7 +158,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   /** Soft privacy line after first capture — never a consent wall. */
   const [showSoftPrivacyNote, setShowSoftPrivacyNote] = useState(false);
   const [caregiverId, setCaregiverId] = useState("");
-  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
   /** Care Reality id — shared Living Care Record (Locked B). Distinct from contributor session. */
   const [careRecipientId, setCareRecipientId] = useState<string | null>(null);
   /** Null = still loading; "" = needs ask-once; string = set. */
@@ -1057,7 +1056,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         {IN_APP_IMPROVING_NOTICE}
       </p>
       <HelpImproveSolenos compact />
-      {consentState === "accepted" && <QwenAssistPanel
+      <QwenAssistPanel
         title="Help with your care information"
         defaultWorkflow="living_care_record"
         contextText={[
@@ -1068,7 +1067,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           lastSharedDisplay?.trim() ? "Current displayed care context: " + lastSharedDisplay.trim() : "",
         ].filter(Boolean).join("\n\n")}
         evidenceIds={documents.map((document) => document.evidenceId).filter((id): id is string => Boolean(id))}
-      />}
+      />
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
           What you share stays in the Living Care Record for this care journey. It is not sold or used
