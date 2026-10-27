@@ -42,7 +42,6 @@ import {
   EMERGENCY_BOUNDARY,
 } from "@/lib/early-access-trust";
 import { HelpImproveSolenos } from "./HelpImproveSolenos";
-import { ConsentGatePanel } from "./ConsentGatePanel";
 
 function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string {
   const observations = response.active_care_situation?.observations ?? [];
