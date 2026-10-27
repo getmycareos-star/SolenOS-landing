@@ -85,8 +85,14 @@ const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.t
 assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
   "standalone handoff page must route caregivers into AI Companion");
 const companionPage = await readFile(new URL("../src/components/workflows/AICompanion.tsx", import.meta.url), "utf8");
-for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Doctor's appointment", "Full care overview"]) {
+for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Full care overview"]) {
   assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
+}
+assert.ok(companionPage.includes('<AppointmentWorkspace />'), "appointments must have their own AI Companion workflow, separate from handoff");
+assert.ok(!companionPage.includes("handoffPurpose === 'appointment'"), "doctor appointment must not remain a care handoff purpose");
+const appointmentWorkspace = await readFile(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
+for (const label of ["Before the visit", "During the visit", "After the visit", "Clinician findings", "Medication reconciliation", "Follow-up actions", "not yet persisted to the LCR"]) {
+  assert.ok(appointmentWorkspace.includes(label), "appointment workflow must include " + label);
 }
 assert.match(companionPage, /postJSON\('\/handoff-drafts\/prepare'/,
   "handoff draft must be prepared by the authorised backend, not fabricated in the browser");
