@@ -1,10 +1,11 @@
 "use client";
 
 import { AppShell } from "@/components/app-shell/AppShell";
-import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { useEffect, useState, type ReactNode } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { BrandLoading } from "@/components/brand";
+import { ConsentGatePanel } from "@/components/mvp-workspace/ConsentGatePanel";
 
 const WORKSPACE_NAV = [
   { href: "/workspace", label: "Living Care Record", icon: "◉" },
@@ -68,10 +69,31 @@ function CareContextBar() {
   );
 }
 
+/**
+ * Enforce the server-persisted privacy acknowledgement before mounting any
+ * workspace state, navigation, or care-record content. Browser onboarding flags
+ * are not proof of consent. A failed status read remains fail-closed until the
+ * caregiver submits the required acknowledgement and the backend confirms it.
+ */
+function WorkspacePrivacyBoundary({ children }: { children: ReactNode }) {
+  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
+
+  if (consentState !== "accepted") {
+    return (
+      <div className="mobile-screen">
+        {consentState === "loading" && <BrandLoading message="Checking your privacy choice…" />}
+        <ConsentGatePanel caregiverId="" onStatusChange={setConsentState} />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
-    <WorkspaceProvider>
-      <OnboardingGate>
+    <WorkspacePrivacyBoundary>
+      <WorkspaceProvider>
         <ErrorBoundary name="Workspace" fallback={
           <div style={{ padding: "24px", textAlign: "center" }}>
             <p style={{ color: "#78716c" }}>The workspace encountered an error. Please refresh the page.</p>
@@ -85,7 +107,7 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
             {children}
           </AppShell>
         </ErrorBoundary>
-      </OnboardingGate>
-    </WorkspaceProvider>
+      </WorkspaceProvider>
+    </WorkspacePrivacyBoundary>
   );
 }
