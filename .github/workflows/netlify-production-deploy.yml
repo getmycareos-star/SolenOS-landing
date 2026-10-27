@@ -1,0 +1,73 @@
+name: Netlify production deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "netlify.toml"
+      - ".github/workflows/netlify-production-deploy.yml"
+      - ".github/workflows/frontend-checks.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "netlify.toml"
+      - ".github/workflows/netlify-production-deploy.yml"
+      - ".github/workflows/frontend-checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solenos-netlify-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify production build before deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run product and safety regression checks
+        run: npm test
+      - name: Build Next.js production app
+        run: npm run build
+
+  deploy:
+    name: Deploy production to Netlify
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: dfbe1cd8-6450-4ed7-b9d8-e3bb39a0acbe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Fail clearly if Netlify credentials are not configured
+        shell: bash
+        run: |
+          if [[ -z "${NETLIFY_AUTH_TOKEN}" ]]; then
+            echo "::error::Missing GitHub Actions secret NETLIFY_AUTH_TOKEN. Configure the Netlify personal access token before production deployment."
+            exit 1
+          fi
+      - name: Build with Netlify's configured Next.js plugin and publish production
+        run: npx --yes netlify-cli@latest deploy --prod --build --site "$NETLIFY_SITE_ID"
