@@ -100,5 +100,18 @@ assert.match(companionPage, /Handoff receipt and acceptance|Handoff acceptance/,
   "the family and professional templates must include a receipt/acceptance section");
 assert.match(companionPage, /No information has been inferred/,
   "fallback template must explicitly state that missing field coverage was not inferred");
+const sharingComponent = await readFile(new URL("../src/components/workflows/CareHandoffSharing.tsx", import.meta.url), "utf8");
+assert.match(companionPage, /CareHandoffSharing/,
+  "sharing, receipt and revocation controls must be embedded inside AI Companion");
+assert.match(sharingComponent, /Share reviewed family handoff/,
+  "family sharing requires a reviewed summary");
+assert.match(sharingComponent, /Professional sharing is unavailable until SolenOS can verify professional identity/,
+  "professional sharing must fail closed until recipient identity and role are verified");
+assert.match(sharingComponent, /source_record_ids: summaryText\.trim\(\) === originalSummaryText\.trim\(\) \? sourceIds : \[\]/,
+  "editing the summary must drop provenance IDs rather than falsely attest edits");
+assert.match(sharingComponent, /Accept and record receipt/,
+  "receiving caregiver must explicitly review and accept/acknowledge the handoff");
+assert.match(sharingComponent, /revoke\(item\)/,
+  "sender must have a revocation path");
 
 console.log("PASS: handoff draft provenance tracks only rendered source records, handles missing IDs, rejects empty source data, and respects the 18,000-character cap.");
