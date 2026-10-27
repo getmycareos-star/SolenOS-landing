@@ -6,6 +6,20 @@ const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const consentPanel = fs.readFileSync("src/components/mvp-workspace/ConsentGatePanel.tsx", "utf8");
 const previewGate = fs.readFileSync("src/components/mvp-workspace/ResearchPreviewAckGate.tsx", "utf8");
 
+const cognitiveWorkspace = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
+const lcrPreview = fs.readFileSync("src/app/lcr-preview/page.tsx", "utf8");
+
+assert.doesNotMatch(cognitiveWorkspace, /ConsentGatePanel|consentState !== "accepted"|privacy check before saving/,
+  "LCR opens and accepts record submissions without a privacy checkbox gate");
+assert.match(lcrPreview, /Your care journey/,
+  "caregiver-first LCR preview page exists");
+assert.match(lcrPreview, /Design preview/,
+  "preview is clearly distinguished from live care data");
+assert.match(lcrPreview, /href="\/workspace\?compose=1"/,
+  "preview add-record action routes to the existing composer");
+assert.match(lcrPreview, /href="\/workspace\/daily-care"/,
+  "preview Daily Care action routes to the existing workspace");
+
 assert.doesNotMatch(layout, /WorkspacePrivacyBoundary|ConsentGatePanel|consentState !== "accepted"/,
   "workspace layout must not block entry behind a privacy checkbox");
 assert.match(layout, /<WorkspaceProvider>\s*<ErrorBoundary/,
