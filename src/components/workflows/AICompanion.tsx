@@ -202,7 +202,7 @@ export default function Companion() {
         {handoffStep === 'purpose' && (
           <div className="companion-handoff-step">
             <div className="companion-handoff-step-top">
-              <div><h4>What do you need?</h4><p>Describe the handoff you want to prepare.</p></div>
+              <div><span className="companion-handoff-recipient">{handoffAudience === 'family' ? 'FOR A FAMILY CAREGIVER' : 'FOR A PROFESSIONAL'}</span><h4>What do you need?</h4><p>Describe the handoff you want to prepare.</p></div>
               <button className="companion-handoff-back" type="button" onClick={() => { setHandoffStep('audience'); setHandoffPurpose(null) }}>Change recipient</button>
             </div>
             <div className="companion-handoff-purpose-options">
