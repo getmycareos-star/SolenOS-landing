@@ -350,7 +350,10 @@ export default function CareHandoffsPage() {
                 <input
                   type="checkbox"
                   checked={selectedRecipients.includes(recipient.caregiver_id)}
-                  onChange={event => setSelectedRecipients(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id))}
+                  onChange={event => {
+                    setSelectedRecipients(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id));
+                    setDraftReviewConfirmed(false);
+                  }}
                 />
                 <span><strong>{recipient.name}</strong><br /><small>{recipient.relationship || "Caregiver"} · consent verified for handoff</small></span>
               </label>
@@ -361,7 +364,7 @@ export default function CareHandoffsPage() {
           </fieldset>
         )}
         <label style={{ display: "block", fontWeight: 650, marginBottom: 6 }} htmlFor="handoff-expiry">Access expiry</label>
-        <select id="handoff-expiry" style={{ ...fieldStyle, maxWidth: 260, marginBottom: 14 }} value={expiryDays} onChange={event => setExpiryDays(event.target.value)}>
+        <select id="handoff-expiry" style={{ ...fieldStyle, maxWidth: 260, marginBottom: 14 }} value={expiryDays} onChange={event => { setExpiryDays(event.target.value); setDraftReviewConfirmed(false); }}>
           <option value="1">24 hours</option>
           <option value="7">7 days</option>
           <option value="14">14 days</option>
