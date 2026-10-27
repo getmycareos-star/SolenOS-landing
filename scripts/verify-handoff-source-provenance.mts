@@ -43,6 +43,8 @@ const bounded = buildReviewedHandoffDraft({
   preparedAt: "fixed",
 });
 assert.ok(bounded.text.length <= 18000, `summary exceeded limit: ${bounded.text.length}`);
+assert.match(bounded.text, /LIMITATIONS/,
+  "long summaries must preserve the caregiver-review and provenance limitation text");
 assert.ok(bounded.sourceRecordIds.length < longFacts.length + longDecisions.length,
   "truncated rows must not be listed as included source IDs");
 for (const row of [...longFacts, ...longDecisions]) {
