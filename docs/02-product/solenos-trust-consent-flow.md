@@ -68,9 +68,7 @@ Do **not** create another welcome page or legal wall before value.
 
 ### First product entry (`/?enter=1`)
 
-`ResearchPreviewAckGate`: one lightweight acknowledgement (“I understand this is an early version”) + Terms/Privacy links.  
-Store acceptance in local storage (`solenos_research_preview_ack_v1`).  
-Returning users skip the gate.
+The onboarding gate shows the welcome screen once, then one required Terms + Privacy acknowledgement. The acknowledgement is saved to the backend and the completed onboarding flag is stored locally. Returning users skip the welcome and confirmation screens unless local browser data is cleared or the server-side consent record is deleted.
 
 In-app: subtle improving notice + Help improve / Report misunderstanding — never a large warning banner.  
 Header: small **Early Access** badge (`SolenOS · Early Access` feel).
@@ -79,13 +77,7 @@ Header: small **Early Access** badge (`SolenOS · Early Access` feel).
 
 ## Sign-up / early access consent
 
-Before submission, show:
-
-- ☐ I agree to the SolenOS Terms of Service (link)  
-- ☐ I have read and understand the SolenOS Privacy Policy (link)  
-
-Links must open the documents (new tab preferred).  
-**Submit stays disabled** until both boxes are checked.
+Before submission, show exactly one checkbox combining both requirements: “I agree to the SolenOS Terms of Service and confirm that I have read and understand the Privacy Policy.” Keep both document links clickable and opening in a new tab. The Continue button stays disabled until the single checkbox is checked.
 
 ### UX rule — no legal wall
 
