@@ -64,8 +64,9 @@ export function buildReviewedHandoffDraft(input: {
     "This summary reflects saved records only. Status labels are preserved where available; missing information is not treated as false.",
   ];
   const includedSourceIds: string[] = [];
-  const appendIfWithinLimit = (part: string) => {
-    if ([...parts, part].join("\n").length > 18000) return false;
+  const appendIfWithinLimit = (part: string, finalLimitations = false) => {
+    const maximum = finalLimitations ? 18000 : 17500;
+    if ([...parts, part].join("\n").length > maximum) return false;
     parts.push(part);
     return true;
   };
@@ -79,7 +80,8 @@ export function buildReviewedHandoffDraft(input: {
   }
 
   appendIfWithinLimit(
-    "\nLIMITATIONS\nThis is a caregiver-reviewed summary, not a clinical judgment. Source IDs identify saved records used to prepare this draft; SolenOS does not independently verify that every edited statement is supported by those records."
+    "\nLIMITATIONS\nThis is a caregiver-reviewed summary, not a clinical judgment. Source IDs identify saved records used to prepare this draft; SolenOS does not independently verify that every edited statement is supported by those records.",
+    true,
   );
 
   return {
