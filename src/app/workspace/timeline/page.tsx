@@ -5,13 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   Activity,
   AlertCircle,
-  ArrowDown,
-  ArrowUp,
-  CalendarClock,
   ChevronDown,
   Clock3,
-  FileText,
-  GitCompareArrows,
   History,
   Plus,
   RefreshCw,
