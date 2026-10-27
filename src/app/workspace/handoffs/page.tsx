@@ -223,13 +223,13 @@ export default function CareHandoffsPage() {
       {eligible.length > 0 && <fieldset style={{ border: 0, padding: 0, margin: "12px 0" }}>
         <legend style={{ fontWeight: 650, marginBottom: 8 }}>Choose recipients</legend>
         {eligible.map(recipient => <label key={recipient.caregiver_id} style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: 10, lineHeight: 1.4 }}>
-          <input type="checkbox" checked={selected.includes(recipient.caregiver_id)} onChange={event => setSelected(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id))} />
+          <input type="checkbox" checked={selected.includes(recipient.caregiver_id)} onChange={event => { setSelected(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id)); setSummaryApproved(false); }} />
           <span><strong>{recipient.name}</strong><br /><small>{recipient.relationship || "Caregiver"} · consent verified for handoff</small></span>
         </label>)}
         {ineligible.map(recipient => <p key={recipient.caregiver_id} style={{ fontSize: 13, opacity: 0.8 }}>{recipient.name} — not eligible until required privacy consent is active.</p>)}
       </fieldset>}
       <label htmlFor="handoff-expiry" style={{ display: "block", fontWeight: 650, marginBottom: 6 }}>Access expiry</label>
-      <select id="handoff-expiry" style={{ ...field, maxWidth: 260, marginBottom: 14 }} value={expiryDays} onChange={event => setExpiryDays(event.target.value)}>
+      <select id="handoff-expiry" style={{ ...field, maxWidth: 260, marginBottom: 14 }} value={expiryDays} onChange={event => { setExpiryDays(event.target.value); setSummaryApproved(false); }}>
         <option value="1">24 hours</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option>
       </select>
       <button type="button" style={button} disabled={draftBusy || loading || busy} onClick={() => void prepareDraft()}>{draftBusy ? "Preparing…" : draftReady ? "Regenerate draft from saved records" : "Prepare summary for review"}</button>
