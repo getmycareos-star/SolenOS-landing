@@ -12,6 +12,7 @@ interface HandoffDraftItem {
   source_id: string
   recorded_at: string | null
   epistemic_status: string
+  record_status?: string
   text: string
   stale_warning?: boolean
 }
@@ -28,7 +29,7 @@ interface HandoffDraft {
   updates_lcr: boolean
   source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>
   sections: Array<{ title: string; items: HandoffDraftItem[] }>
-  source_references: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; stale_warning: boolean }>
+  source_references: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; record_status?: string; stale_warning: boolean }>
   limitations: Array<{ source: string; status: string; reason?: string }>
   warning: string
 }
@@ -336,7 +337,8 @@ export default function Companion() {
                         <p>{item.text}</p>
                         <div className="companion-handoff-source-meta">
                           <span>{item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Date not recorded'}</span>
-                          <span>Status: {item.epistemic_status.replaceAll('_', ' ')}</span>
+                          <span>Evidence status: {item.epistemic_status.replaceAll('_', ' ')}</span>
+                          {item.record_status && item.record_status !== 'not_recorded' && <span>Record status: {item.record_status.replaceAll('_', ' ')}</span>}
                           <span>Source: {item.source_table} · {item.source_id}</span>
                           {item.stale_warning && <strong>Older information — re-check before relying on it</strong>}
                         </div>
