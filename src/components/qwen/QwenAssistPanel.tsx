@@ -43,6 +43,7 @@ type Props = {
  * IDs. Qwen suggestions are read-only and never write to the LCR.
  */
 export default function QwenAssistPanel({
+  defaultWorkflow,
   contextText = "",
   evidenceIds = [],
   appointmentId = null,
@@ -67,8 +68,11 @@ export default function QwenAssistPanel({
     try {
       await ensureAnonymousSession();
       const boundedContext = contextText.trim().slice(0, 3_000);
+      const taskText = defaultWorkflow === "document"
+        ? "Explain the document text and answer only from uploaded document evidence. Caregiver request: " + requestText
+        : requestText;
       const created = (await postJSON("/assistant/jobs", {
-        task_text: requestText.slice(0, 1_800),
+        task_text: taskText.slice(0, 1_800),
         context_text: boundedContext,
         evidence_ids: [...new Set(evidenceIds)].slice(0, 10),
         ...(appointmentId ? { appointment_id: appointmentId } : {}),
