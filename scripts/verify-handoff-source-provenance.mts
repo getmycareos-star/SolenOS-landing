@@ -46,7 +46,7 @@ assert.ok(bounded.text.length <= 18000, `summary exceeded limit: ${bounded.text.
 assert.ok(bounded.sourceRecordIds.length < longFacts.length + longDecisions.length,
   "truncated rows must not be listed as included source IDs");
 for (const row of [...longFacts, ...longDecisions]) {
-  const marker = row.fact_value ?? row.decision_text;
+  const marker = "fact_value" in row ? row.fact_value : row.decision_text;
   assert.equal(
     bounded.sourceRecordIds.includes(row.id),
     bounded.text.includes(marker.slice(0, 40)),
