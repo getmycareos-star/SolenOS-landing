@@ -7,7 +7,7 @@ import { getJSON, postJSON } from "@/api/client";
 
 type Row = Record<string, unknown>;
 type Summary = { resources: Record<string, number> };
-const resources = ["facts", "fact-evidence", "relationships", "decisions", "decision-outcomes", "integrity-findings", "integrity-resolutions", "reconciliations", "delta-items", "follow-up-links", "review-decisions", "provenance", "timeline", "change-assessments", "events", "evidence", "changes", "situations", "state-revisions", "temporal-facts", "temporal-relations", "temporal-relationships", "temporal-reference-frames", "temporal-contradictions", "uncertainty-assessments", "causal-hypotheses", "causal-evidence", "contradictions", "significance-assessments", "delta-runs", "open-questions", "information-gaps", "assertions"];
+const resources = ["facts", "fact-evidence", "relationships", "decisions", "decision-outcomes", "integrity-findings", "integrity-resolutions", "reconciliations", "delta-items", "follow-up-links", "review-decisions", "provenance", "timeline", "change-assessments", "events", "evidence", "changes", "situations", "state-revisions", "temporal-facts", "temporal-relations", "temporal-relationships", "temporal-reference-frames", "temporal-contradictions", "uncertainty-assessments", "causal-hypotheses", "causal-evidence", "contradictions", "significance-assessments", "delta-runs", "open-questions", "information-gaps", "assertions", "living-records", "record-provenance", "record-provenance-links", "record-change-sets", "record-change-items", "corrections", "amendments", "amendment-items", "record-audit", "uncertainties", "missing-information", "conflicts", "action-outcomes", "caregiver-contexts", "caregiver-perspectives", "caregiver-observations", "record-versions", "record-snapshots", "record-identifiers", "record-sections", "record-links", "record-status-history", "fact-revisions", "assertion-revisions", "decision-revisions", "event-revisions", "observation-revisions", "change-revisions", "situation-revisions", "evidence-revisions", "record-retractions", "record-restorations"];
 const labels: Record<string, string> = {
  facts: "Care facts", "fact-evidence": "Fact evidence links", relationships: "Record relationships",
  decisions: "Care decisions", "decision-outcomes": "Decision outcomes",
@@ -22,10 +22,37 @@ const labels: Record<string, string> = {
  "uncertainty-assessments": "Uncertainty assessments", "causal-hypotheses": "Causal hypotheses",
  "causal-evidence": "Hypothesis evidence", contradictions: "Care contradictions",
  "significance-assessments": "Significance assessments", "delta-runs": "Delta Engine runs",
- "open-questions": "Open questions", "information-gaps": "Information gaps", assertions: "Care assertions"
+ "open-questions": "Open questions", "information-gaps": "Information gaps", assertions: "Care assertions",
+ "living-records": "Living Care Record", "record-provenance": "Record provenance",
+ "record-provenance-links": "Provenance links", "record-change-sets": "Record change sets",
+ "record-change-items": "Record change items", corrections: "Corrections",
+ amendments: "Record amendments", "amendment-items": "Amendment items",
+ "record-audit": "Record audit history", uncertainties: "Open uncertainties",
+ "missing-information": "Missing care information", conflicts: "Conflicting claims",
+ "action-outcomes": "Action outcomes", "caregiver-contexts": "Caregiver context",
+ "caregiver-perspectives": "Caregiver perspectives", "caregiver-observations": "Caregiver observations",
+ "record-versions": "Immutable record versions", "record-snapshots": "Record snapshots",
+ "record-identifiers": "Protected record identifiers", "record-sections": "Record sections",
+ "record-links": "Linked care records", "record-status-history": "Record status history",
+ "fact-revisions": "Care fact revisions", "assertion-revisions": "Care assertion revisions",
+ "decision-revisions": "Decision revisions", "event-revisions": "Care event revisions",
+ "observation-revisions": "Observation revisions", "change-revisions": "Care change revisions",
+ "situation-revisions": "Care situation revisions", "evidence-revisions": "Evidence revisions",
+ "record-retractions": "Record retractions", "record-restorations": "Record restorations"
 };
 function rowText(r: Row) {
- return String(r.fact_value ?? r.decision_text ?? r.description ?? r.decision_notes ?? r.after_state ?? r.reconciliation_status ?? r.status ?? "Care record");
+ if (r.version_number !== undefined) {
+  const digest = typeof r.record_digest === "string" ? r.record_digest.slice(0, 12) : "digest unavailable";
+  return `Version ${String(r.version_number)} · ${String(r.reason ?? "record snapshot")} · SHA-256 ${digest}…`;
+ }
+ if (r.as_of !== undefined) {
+  const digest = typeof r.record_digest === "string" ? r.record_digest.slice(0, 12) : "digest unavailable";
+  return `Snapshot as of ${String(r.as_of)} · SHA-256 ${digest}…`;
+ }
+ const value = r.fact_value ?? r.decision_text ?? r.perspective_text ?? r.context_payload ?? r.correction_reason ?? r.question ?? r.description ?? r.decision_notes ?? r.after_state ?? r.reconciliation_status ?? r.reason ?? r.status ?? "Care record";
+ if (typeof value === "string") return value;
+ if (value && typeof value === "object") return JSON.stringify(value);
+ return String(value);
 }
 
 export default function CareContinuityPage() {
@@ -36,17 +63,50 @@ export default function CareContinuityPage() {
  const [decision, setDecision] = useState("");
  const [error, setError] = useState("");
  const [busy, setBusy] = useState(false);
+ const [snapshotBusy, setSnapshotBusy] = useState(false);
+ const [snapshotMessage, setSnapshotMessage] = useState("");
+ const [unavailableResources, setUnavailableResources] = useState<string[]>([]);
 
  const load = useCallback(async () => {
   setError("");
   try {
    const s = await getJSON("/care-continuity/summary") as Summary;
    setSummary(s);
-   const values = await Promise.all(resources.map(async key => [key, await getJSON(`/care-continuity/${key}?limit=25`) as Row[]] as const));
+   const missing: string[] = [];
+   const values = await Promise.all(resources.map(async key => {
+    try {
+     return [key, await getJSON(`/care-continuity/${key}?limit=25`) as Row[]] as const;
+    } catch {
+     missing.push(key);
+     return [key, [] as Row[]] as const;
+    }
+   }));
    setRows(Object.fromEntries(values));
+   setUnavailableResources(missing);
   } catch (e) { setError(e instanceof Error ? e.message : "Unable to load the saved care record."); }
  }, []);
  useEffect(() => { void load(); }, [load]);
+
+ async function captureSnapshot() {
+  setSnapshotBusy(true); setError(""); setSnapshotMessage("");
+  try {
+   let records = await getJSON("/care-continuity/living-records?limit=1") as Row[];
+   let record = records[0];
+   if (!record?.id) {
+    record = await postJSON("/care-continuity/living-records", { record_status: "active", schema_version: "lcr.v1" }) as Row;
+   }
+   const saved = await postJSON("/care-continuity/record-versions", {
+    care_record_id: String(record.id),
+    reason: "Caregiver-requested Living Care Record snapshot",
+   }) as Row;
+   setSnapshotMessage(`Saved version ${String(saved.version_number)} · SHA-256 ${String(saved.record_digest).slice(0, 12)}…`);
+   await load();
+  } catch (err) {
+   setError(err instanceof Error ? err.message : "The record snapshot could not be saved.");
+  } finally {
+   setSnapshotBusy(false);
+  }
+ }
 
  async function saveFact(e: FormEvent) {
   e.preventDefault(); if (!fact.trim()) return;
@@ -87,6 +147,12 @@ export default function CareContinuityPage() {
    </div> : <p>Loading saved records…</p>}
   </section>
   <section style={panel}>
+   <h2 style={{ fontSize: 18, fontWeight: 650, marginBottom: 8 }}>Record history checkpoint</h2>
+   <p style={{ marginBottom: 12 }}>Capture an immutable version of the persisted Living Care Record. The snapshot is generated from saved records, not text supplied to this button.</p>
+   <button type="button" disabled={snapshotBusy} onClick={() => void captureSnapshot()} style={submit}>{snapshotBusy ? "Saving snapshot…" : "Capture record snapshot"}</button>
+   {snapshotMessage && <p role="status" style={{ marginTop: 10, overflowWrap: "anywhere" }}>{snapshotMessage}</p>}
+  </section>
+  <section style={panel}>
    <h2 style={{ fontSize: 18, fontWeight: 650, marginBottom: 10 }}>Add a care fact</h2>
    <form onSubmit={saveFact} style={{ display: "grid", gap: 10 }}>
     <label htmlFor="care-fact">Care information</label>
@@ -103,6 +169,7 @@ export default function CareContinuityPage() {
     <button type="submit" disabled={busy || !decision.trim()} style={submit}>Save decision</button>
    </form>
   </section>
+  {unavailableResources.length > 0 && <p role="status" style={{ padding: 12, border: "1px solid var(--border, #d7ddd7)", borderRadius: 8, marginBottom: 16 }}>Some advanced history APIs are not available on the connected backend yet: {unavailableResources.map(key => labels[key] ?? key).join(", ")}. Other saved record sections remain available.</p>}
   {error && <p role="alert" style={{ padding: 12, border: "1px solid #b42318", borderRadius: 8, marginBottom: 16 }}>{error}</p>}
   {Object.entries(rows).map(([key, items]) => <section key={key} style={panel}>
    <h2 style={{ fontSize: 18, fontWeight: 650 }}>{labels[key]}</h2>
