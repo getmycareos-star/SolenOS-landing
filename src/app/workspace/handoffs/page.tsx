@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clock3, Inbox, RefreshCw, ShieldCheck, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
-import { buildReviewedHandoffDraft, type CareRecordRow } from "@/lib/handoffs/reviewed-draft";
+
 
 type Recipient = {
   caregiver_id: string;
@@ -78,16 +78,56 @@ function formatDate(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? "Not recorded" : date.toLocaleString();
 }
 
-async function buildReviewedDraft(): Promise<{ text: string; sourceRecordIds: string[] }> {
-  const [facts, decisions, questions, gaps, timeline] = await Promise.all([
-    getJSON("/care-continuity/facts?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/decisions?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/open-questions?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/information-gaps?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/timeline?limit=25") as Promise<CareRecordRow[]>,
-  ]);
+type PreparedHandoffDraft = {
+  draft_id: string;
+  purpose: string;
+  prepared_at: string;
+  window: { days: number; from: string; to: string };
+  source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>;
+  sections: Array<{ title: string; items: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; text: string; stale_warning: boolean }> }>;
+  source_references: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; stale_warning: boolean }>;
+  limitations: Array<{ source: string; status: string; reason?: string }>;
+  warning: string;
+};
 
-  return buildReviewedHandoffDraft({ facts, decisions, questions, gaps, timeline });
+async function buildReviewedDraft(purpose: string, windowDays: number): Promise<{ text: string; sourceRecordIds: string[] }> {
+  const prepared = await postJSON("/handoff-drafts/prepare", {
+    purpose,
+    window_days: windowDays,
+  }) as PreparedHandoffDraft;
+
+  const lines = [
+    "SOLENOS CARE HANDOFF DRAFT",
+    `Purpose: ${prepared.purpose.replaceAll("_", " ")}`,
+    `Prepared: ${new Date(prepared.prepared_at).toLocaleString()}`,
+    `Records window: ${prepared.window.days} days (${new Date(prepared.window.from).toLocaleDateString()} – ${new Date(prepared.window.to).toLocaleDateString()})`,
+    "",
+    "SAVED CARE RECORDS",
+  ];
+  for (const section of prepared.sections ?? []) {
+    lines.push("", section.title);
+    for (const item of section.items ?? []) {
+      const when = item.recorded_at ? `; recorded ${item.recorded_at}` : "; time not recorded";
+      const status = item.epistemic_status && item.epistemic_status !== "not_recorded" ? `; status ${item.epistemic_status}` : "; status not recorded";
+      const stale = item.stale_warning ? "; WARNING: record may be stale" : "";
+      lines.push(`- ${item.text} [source ${item.source_table}/${item.source_id}${when}${status}${stale}]`);
+    }
+  }
+  lines.push("", "SOURCE AVAILABILITY");
+  for (const [name, source] of Object.entries(prepared.source_statuses ?? {})) {
+    lines.push(`- ${source.label ?? name}: ${source.status}${source.reason ? ` (${source.reason})` : ""}; records returned: ${source.count}`);
+  }
+  lines.push("", "LIMITATIONS / MISSING SOURCES");
+  if (prepared.limitations?.length) {
+    for (const item of prepared.limitations) lines.push(`- ${item.source}: ${item.status}${item.reason ? ` — ${item.reason}` : ""}`);
+  } else {
+    lines.push("- No unavailable sources reported by the backend.");
+  }
+  lines.push("", prepared.warning, "Caregiver review required. This draft does not itself create or share a handoff.");
+  return {
+    text: lines.join("\n"),
+    sourceRecordIds: [...new Set((prepared.source_references ?? []).map(item => item.source_id).filter(Boolean))],
+  };
 }
 
 export default function CareHandoffsPage() {
@@ -110,9 +150,12 @@ export default function CareHandoffsPage() {
   const [draftReviewConfirmed, setDraftReviewConfirmed] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftBusy, setDraftBusy] = useState(false);
+  const [draftPurpose, setDraftPurpose] = useState("family_transition");
+  const [draftWindowDays, setDraftWindowDays] = useState("30");
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<HandoffSnapshot | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const autoPrepareStarted = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -139,12 +182,29 @@ export default function CareHandoffsPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function prepareDraft() {
+  useEffect(() => {
+    if (autoPrepareStarted.current || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("prepare") !== "1") return;
+    autoPrepareStarted.current = true;
+    const rawPurpose = params.get("purpose") ?? "family_transition";
+    const allowedPurposes = new Set(["family_transition", "professional_appointment", "hospital_discharge", "return_to_care", "period_summary"]);
+    const parsedDays = Number.parseInt(params.get("window_days") ?? "30", 10);
+    const purpose = allowedPurposes.has(rawPurpose) ? rawPurpose : "family_transition";
+    const windowDays = Number.isFinite(parsedDays) ? Math.min(90, Math.max(1, parsedDays)) : 30;
+    setDraftPurpose(purpose);
+    setDraftWindowDays(String(windowDays));
+    void prepareDraft(purpose, windowDays);
+    // One-time Companion-to-review workflow handoff.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function prepareDraft(purpose = draftPurpose, windowDays = Number(draftWindowDays) || 30) {
     setDraftBusy(true);
     setError("");
     setNotice("");
     try {
-      const prepared = await buildReviewedDraft();
+      const prepared = await buildReviewedDraft(purpose, windowDays);
       setDraft(prepared.text);
       setPreparedDraft(prepared.text);
       setDraftSourceRecordIds(prepared.sourceRecordIds);
@@ -339,7 +399,41 @@ export default function CareHandoffsPage() {
 
       <section style={panelStyle} aria-labelledby="share-handoff-heading">
         <h2 id="share-handoff-heading" style={{ marginTop: 0, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><Share2 size={19} /> Create a secure handoff</h2>
-        <p style={{ lineHeight: 1.55 }}>SolenOS prepares a draft from saved care facts, decisions, open questions, information gaps and timeline entries. You must review and can edit it before sharing.</p>
+        <p style={{ lineHeight: 1.55 }}>Purpose and time window guide the draft only; they do not grant access to additional sources. Review both before preparing the summary.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 14 }}>
+          <label style={{ display: "block", fontWeight: 650 }} htmlFor="handoff-purpose">Handoff purpose
+            <select id="handoff-purpose" style={{ ...fieldStyle, display: "block", marginTop: 6 }} value={draftPurpose} onChange={event => {
+              setDraftPurpose(event.target.value);
+              setDraftReviewConfirmed(false);
+              setDraftReady(false);
+              setDraft("");
+              setPreparedDraft("");
+              setDraftSourceRecordIds([]);
+            }}>
+              <option value="family_transition">Family caregiver transition</option>
+              <option value="professional_appointment">Professional appointment</option>
+              <option value="hospital_discharge">Hospital discharge</option>
+              <option value="return_to_care">Return to care</option>
+              <option value="period_summary">Period summary</option>
+            </select>
+          </label>
+          <label style={{ display: "block", fontWeight: 650 }} htmlFor="handoff-window">Records time window
+            <select id="handoff-window" style={{ ...fieldStyle, display: "block", marginTop: 6 }} value={draftWindowDays} onChange={event => {
+              setDraftWindowDays(event.target.value);
+              setDraftReviewConfirmed(false);
+              setDraftReady(false);
+              setDraft("");
+              setPreparedDraft("");
+              setDraftSourceRecordIds([]);
+            }}>
+              <option value="7">Past 7 days</option>
+              <option value="14">Past 14 days</option>
+              <option value="30">Past 30 days</option>
+              <option value="60">Past 60 days</option>
+              <option value="90">Past 90 days</option>
+            </select>
+          </label>
+        </div>
         {directoryError && <p role="alert">Recipient directory unavailable: {directoryError}. Required privacy consent may be missing or revoked.</p>}
         {!directoryError && directory.length === 0 && !loading && <p>No other caregivers are linked to this care record yet. SolenOS will not send a summary to an unlinked recipient.</p>}
         {eligibleRecipients.length > 0 && (

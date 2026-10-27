@@ -53,6 +53,31 @@ export default function Companion() {
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText || loading) return
+
+    // Explicit handoff intent goes to the review workflow; do not send it as
+    // ordinary chat and do not create/share anything from the Companion.
+    const explicitHandoffIntent =
+      /\\b(?:prepare|make|draft|organize|organise|put together|plan)\\b[\\s\\S]{0,80}\\b(?:care\\s+)?hand[ -]?off\\b|\\b(?:care\\s+)?hand[ -]?off\\b[\\s\\S]{0,60}\\b(?:for|to|prepare|make|draft)\\b/i.test(submittedText)
+    if (explicitHandoffIntent && typeof window !== "undefined") {
+      const lower = submittedText.toLowerCase()
+      const purpose = /hospital\\s+discharge|discharge\\s+from\\s+hospital/.test(lower)
+        ? "hospital_discharge"
+        : /appointment|doctor|nurse|clinician|professional/.test(lower)
+          ? "professional_appointment"
+          : /return\\s+to\\s+care|back\\s+from/.test(lower)
+            ? "return_to_care"
+            : /summari[sz]e|summary|period review|last month/.test(lower)
+              ? "period_summary"
+              : "family_transition"
+      const twoWeeks = /(?:last|past|previous)\\s+(?:two|2)\\s+weeks?/.test(lower)
+      const oneWeek = /(?:last|past|previous)\\s+week/.test(lower)
+      const oneMonth = /(?:last|past|previous)\\s+month/.test(lower)
+      const windowDays = twoWeeks ? 14 : oneWeek ? 7 : oneMonth ? 30 : 30
+      const params = new URLSearchParams({ prepare: "1", purpose, window_days: String(windowDays) })
+      window.location.assign(`/workspace/handoffs?${params.toString()}`)
+      return
+    }
+
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
