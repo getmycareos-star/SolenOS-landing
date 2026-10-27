@@ -96,7 +96,7 @@ function renderRow(row: Row, keys: string[]): string {
   return `${text.slice(0, 700)}${status}${when ? ` · recorded: ${when}` : ""}`;
 }
 
-async function buildReviewedDraft(): Promise<string> {
+async function buildReviewedDraft(): Promise<{ text: string; sourceRecordIds: string[] }> {
   const [facts, decisions, questions, gaps, timeline] = await Promise.all([
     getJSON("/care-continuity/facts?limit=25") as Promise<Row[]>,
     getJSON("/care-continuity/decisions?limit=25") as Promise<Row[]>,
@@ -105,12 +105,23 @@ async function buildReviewedDraft(): Promise<string> {
     getJSON("/care-continuity/timeline?limit=25") as Promise<Row[]>,
   ]);
 
-  const sections: Array<{ title: string; items: string[] }> = [
-    { title: "Care facts", items: facts.map(r => renderRow(r, ["fact_value", "description", "title"])).filter(Boolean).slice(0, 12) },
-    { title: "Care decisions", items: decisions.map(r => renderRow(r, ["decision_text", "title", "description"])).filter(Boolean).slice(0, 8) },
-    { title: "Open questions", items: questions.map(r => renderRow(r, ["question", "description", "title"])).filter(Boolean).slice(0, 8) },
-    { title: "Information gaps", items: gaps.map(r => renderRow(r, ["description", "topic", "title"])).filter(Boolean).slice(0, 8) },
-    { title: "Recent timeline", items: timeline.map(r => renderRow(r, ["summary", "title", "description", "entry_type"])).filter(Boolean).slice(0, 8) },
+  const makeSection = (title: string, rows: Row[], keys: string[], maxItems: number) => {
+    const selected = rows
+      .map(row => ({ row, text: renderRow(row, keys) }))
+      .filter(item => item.text)
+      .slice(0, maxItems);
+    return {
+      title,
+      items: selected.map(item => ({ text: item.text, id: typeof item.row.id === "string" ? item.row.id.trim() : "" })),
+    };
+  };
+
+  const sections = [
+    makeSection("Care facts", facts, ["fact_value", "description", "title"], 12),
+    makeSection("Care decisions", decisions, ["decision_text", "title", "description"], 8),
+    makeSection("Open questions", questions, ["question", "description", "title"], 8),
+    makeSection("Information gaps", gaps, ["description", "topic", "title"], 8),
+    makeSection("Recent timeline", timeline, ["summary", "title", "description", "entry_type"], 8),
   ].filter(section => section.items.length > 0);
 
   if (sections.length === 0) {
@@ -118,20 +129,35 @@ async function buildReviewedDraft(): Promise<string> {
   }
 
   const preparedAt = new Date().toLocaleString();
-  const body = [
+  const parts = [
     "SOLENOS CARE HANDOFF SUMMARY",
     `Prepared for caregiver review: ${preparedAt}`,
     "This summary reflects saved records only. Status labels are preserved where available; missing information is not treated as false.",
-    ...sections.flatMap(section => [
-      "",
-      section.title.toUpperCase(),
-      ...section.items.map(item => `• ${item}`),
-    ]),
-    "",
-    "LIMITATIONS",
-    "This is a caregiver-reviewed summary, not a clinical judgment. SolenOS stores the reviewed text and an integrity hash; it does not independently verify every statement in this text against source records.",
-  ].join("\n");
-  return body.slice(0, 18000);
+  ];
+  const includedSourceIds: string[] = [];
+  const appendIfWithinLimit = (part: string) => {
+    const candidate = [...parts, part].join("\\n");
+    if (candidate.length > 18000) return false;
+    parts.push(part);
+    return true;
+  };
+
+  for (const section of sections) {
+    if (!appendIfWithinLimit(`\\n${section.title.toUpperCase()}`)) break;
+    for (const item of section.items) {
+      if (!appendIfWithinLimit(`• ${item.text}`)) break;
+      if (item.id) includedSourceIds.push(item.id);
+    }
+  }
+
+  appendIfWithinLimit(
+    "\\nLIMITATIONS\\nThis is a caregiver-reviewed summary, not a clinical judgment. Source IDs identify saved records used to prepare this draft; SolenOS does not independently verify that every edited statement is supported by those records."
+  );
+
+  return {
+    text: parts.join("\\n"),
+    sourceRecordIds: [...new Set(includedSourceIds)].slice(0, 100),
+  };
 }
 
 export default function CareHandoffsPage() {
@@ -149,6 +175,8 @@ export default function CareHandoffsPage() {
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [expiryDays, setExpiryDays] = useState("7");
   const [draft, setDraft] = useState("");
+  const [preparedDraft, setPreparedDraft] = useState("");
+  const [draftSourceRecordIds, setDraftSourceRecordIds] = useState<string[]>([]);
   const [draftReady, setDraftReady] = useState(false);
   const [draftBusy, setDraftBusy] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
@@ -185,8 +213,10 @@ export default function CareHandoffsPage() {
     setError("");
     setNotice("");
     try {
-      const text = await buildReviewedDraft();
-      setDraft(text);
+      const prepared = await buildReviewedDraft();
+      setDraft(prepared.text);
+      setPreparedDraft(prepared.text);
+      setDraftSourceRecordIds(prepared.sourceRecordIds);
       setDraftReady(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "The care summary could not be prepared from saved records.");
@@ -221,7 +251,10 @@ export default function CareHandoffsPage() {
       try {
         await putJSON(`/handoffs/${handoffId}/summary`, {
           sections: { lcr_summary: draft.trim() },
-          source_record_ids: [],
+          // If the caregiver edits the generated text, do not imply the original
+          // source list still proves the edited content. The backend also labels
+          // source IDs as unverified and does not treat them as established facts.
+          source_record_ids: draft.trim() === preparedDraft.trim() ? draftSourceRecordIds : [],
           caregiver_reviewed: true,
           prepared_at: new Date().toISOString(),
         });
@@ -236,6 +269,8 @@ export default function CareHandoffsPage() {
       await load();
       setNotice(`Secure handoff created. It expires ${formatDate(expiresAt)}. You can revoke it from the outgoing handoffs list.`);
       setDraft("");
+      setPreparedDraft("");
+      setDraftSourceRecordIds([]);
       setDraftReady(false);
       setSelectedRecipients([]);
     } catch (err) {
@@ -402,7 +437,7 @@ export default function CareHandoffsPage() {
           <>
             <label htmlFor="handoff-summary-draft" style={{ display: "block", fontWeight: 650, margin: "14px 0 6px" }}>Review and edit the summary</label>
             <textarea id="handoff-summary-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={14} maxLength={18000} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.5 }} />
-            <p style={{ fontSize: 12, lineHeight: 1.5 }}>Only saved records are included; the draft is limited to the most recent records returned by each section. Source IDs are not supplied to the handoff API. Sharing creates an immutable reviewed snapshot; to change it later, create a new handoff.</p>
+            <p style={{ fontSize: 12, lineHeight: 1.5 }}>Only saved records are included; the draft is limited to the most recent records returned by each section. {draft.trim() === preparedDraft.trim() ? `${draftSourceRecordIds.length} source record ID(s) will be attached as unverified provenance metadata.` : "You edited the generated draft, so source IDs are omitted rather than implying your edits are verified against the original records."} SolenOS does not independently verify that every statement is supported by its source IDs. Sharing creates an immutable reviewed snapshot; to change it later, create a new handoff.</p>
             <button type="button" style={buttonStyle} disabled={busy || !draft.trim() || selectedRecipients.length === 0 || eligibleRecipients.length === 0} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
           </>
         )}
