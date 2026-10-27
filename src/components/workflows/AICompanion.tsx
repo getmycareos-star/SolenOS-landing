@@ -6,6 +6,7 @@ import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
+import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
 
 interface HandoffDraftItem {
   source_type: string
@@ -88,7 +89,7 @@ export default function Companion() {
   const [requestError, setRequestError] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
-  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
+  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'overview' | null>(null)
   const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null)
   const [handoffDraftLoading, setHandoffDraftLoading] = useState(false)
   const [handoffDraftError, setHandoffDraftError] = useState<string | null>(null)
@@ -106,12 +107,8 @@ export default function Companion() {
     setHandoffDraft(null)
     try {
       await ensureAnonymousSession()
-      const purpose = handoffPurpose === 'today'
-        ? 'family_transition'
-        : handoffPurpose === 'appointment'
-          ? 'professional_appointment'
-          : 'period_summary'
-      const windowDays = handoffPurpose === 'today' ? 7 : handoffPurpose === 'appointment' ? 30 : 90
+      const purpose = handoffPurpose === 'today' ? 'family_transition' : 'period_summary'
+      const windowDays = handoffPurpose === 'today' ? 7 : 90
       const draft = await postJSON('/handoff-drafts/prepare', {
         purpose,
         audience: handoffAudience,
@@ -248,6 +245,8 @@ export default function Companion() {
         <div className="companion-boundary"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Your care record stays in your hands</strong><span>Suggestions here do not become Living Care Record facts automatically.</span></div></div>
       </section>
 
+      <AppointmentWorkspace />
+
       <section className="companion-handoff" aria-labelledby="companion-handoff-title">
         <div className="companion-handoff-heading">
           <div className="companion-handoff-icon" aria-hidden="true"><ClipboardList size={21} /></div>
@@ -296,11 +295,6 @@ export default function Companion() {
                 <strong>Taking over today</strong>
                 <small>What the next caregiver needs to know for the day or shift.</small>
               </button>
-              <button className={'companion-handoff-purpose' + (handoffPurpose === 'appointment' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'appointment'} onClick={() => setHandoffPurpose('appointment')}>
-                <span className="companion-handoff-purpose-icon"><Stethoscope size={19} aria-hidden="true" /></span>
-                <strong>Doctor's appointment</strong>
-                <small>Organise relevant information for a healthcare appointment.</small>
-              </button>
               <button className={'companion-handoff-purpose' + (handoffPurpose === 'overview' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'overview'} onClick={() => setHandoffPurpose('overview')}>
                 <span className="companion-handoff-purpose-icon"><FileText size={19} aria-hidden="true" /></span>
                 <strong>Full care overview</strong>
@@ -309,7 +303,7 @@ export default function Companion() {
             </div>
             {handoffPurpose && !handoffDraft && (
               <div className="companion-handoff-prepare">
-                <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : handoffPurpose === 'appointment' ? "Doctor's appointment" : 'Full care overview'}. SolenOS will prepare a reviewable draft from saved, authorised care records only.</p>
+                <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : 'Full care overview'}. SolenOS will prepare a reviewable draft from saved, authorised care records only.</p>
                 <button className="companion-handoff-primary" type="button" onClick={() => void prepareHandoffDraft()} disabled={handoffDraftLoading}>
                   {handoffDraftLoading ? 'Preparing from saved records…' : 'Prepare handoff draft'}
                 </button>
