@@ -68,7 +68,7 @@ assert(!read("src/components/workflows/Community.tsx").includes("Qwen support fo
 requireText("src/components/workflows/AICompanion.tsx", [
   "postJSON('/conversation/message'",
   "Your message could not be sent.",
-  "{loading ? 'Sending…' : 'Send'}",
+  "{loading ? 'Sending' : 'Send'}",
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
 assert(!companion.includes("QwenAssistPanel"), "Companion must not show a second workflow selector/panel.");
