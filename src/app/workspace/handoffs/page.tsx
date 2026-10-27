@@ -176,7 +176,7 @@ export default function CareHandoffsPage() {
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}><ShieldCheck size={25} aria-hidden /><h1 style={{ fontSize: 26, margin: 0 }}>Care handoffs</h1></div>
       <p style={{ lineHeight: 1.6, maxWidth: 720 }}>Share a caregiver-reviewed snapshot with a caregiver already linked to this same care record. Access expires automatically and can be revoked.</p>
     </header>
-    {error && <p role="alert" style={{ ...panel, color: "var(--foreground, #172117)" }}>{error}</p>}
+    {error && <p role="alert" style={{ ...panel, borderColor: "var(--border, #d7ddd7)", color: "var(--foreground, #172117)" }}>{error}</p>}
     {notice && <p role="status" style={{ ...panel, color: "var(--foreground, #172117)" }}>{notice}</p>}
 
     <section style={panel} aria-labelledby="incoming-heading">
