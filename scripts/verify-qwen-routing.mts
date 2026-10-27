@@ -17,7 +17,8 @@ const assist = read("src/components/qwen/QwenAssistPanel.tsx");
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'postJSON("/assistant/jobs"',
   'getJSON("/assistant/jobs/"',
-  "task_text: requestText.slice",
+  "task_text: taskText.slice",
+  "Explain the document text and answer only from uploaded document evidence.",
   "context_text: boundedContext",
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
