@@ -5,7 +5,6 @@ import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { useEffect, useState, type ReactNode } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BrandLoading } from "@/components/brand";
-import { ConsentGatePanel } from "@/components/mvp-workspace/ConsentGatePanel";
 
 const WORKSPACE_NAV = [
   { href: "/workspace", label: "Living Care Record", icon: "◉" },
@@ -28,7 +27,7 @@ function formatUpdatedDate(iso: string | null): string {
 }
 
 function CareContextBar() {
-  const { runtime, careKey } = useWorkspace();
+  const { runtime } = useWorkspace();
   const active = runtime.situations.find((s) => s.status === "active");
   const hasSituations = runtime.situations.length > 0;
   const [mounted, setMounted] = useState(false);
@@ -61,7 +60,7 @@ function CareContextBar() {
               </span>
             </>
           ) : (
-            <span className="care-context-meta">No care situations yet</span>
+            <span className="care-context-meta">Your Living Care Record</span>
           )}
         </div>
       </div>
@@ -70,44 +69,28 @@ function CareContextBar() {
 }
 
 /**
- * Enforce the server-persisted privacy acknowledgement before mounting any
- * workspace state, navigation, or care-record content. Browser onboarding flags
- * are not proof of consent. A failed status read remains fail-closed until the
- * caregiver submits the required acknowledgement and the backend confirms it.
+ * LCR entry is intentionally direct: no privacy checkbox, early-version
+ * acknowledgement, or onboarding confirmation blocks workspace access.
+ * Privacy and Terms remain discoverable through in-product navigation.
+ * Authentication, record ownership, and action-specific authorisation remain
+ * enforced by the server; removing a UI gate does not grant data permissions.
  */
-function WorkspacePrivacyBoundary({ children }: { children: ReactNode }) {
-  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
-
-  if (consentState !== "accepted") {
-    return (
-      <div className="mobile-screen">
-        {consentState === "loading" && <BrandLoading message="Checking your privacy choice…" />}
-        <ConsentGatePanel caregiverId="" onStatusChange={setConsentState} />
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-}
-
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
-    <WorkspacePrivacyBoundary>
-      <WorkspaceProvider>
-        <ErrorBoundary name="Workspace" fallback={
-          <div style={{ padding: "24px", textAlign: "center" }}>
-            <p style={{ color: "#78716c" }}>The workspace encountered an error. Please refresh the page.</p>
-          </div>
-        }>
-          <AppShell
-            navItems={WORKSPACE_NAV}
-            brandHref="/workspace"
-            careContext={<CareContextBar />}
-          >
-            {children}
-          </AppShell>
-        </ErrorBoundary>
-      </WorkspaceProvider>
-    </WorkspacePrivacyBoundary>
+    <WorkspaceProvider>
+      <ErrorBoundary name="Workspace" fallback={
+        <div style={{ padding: "24px", textAlign: "center" }}>
+          <p style={{ color: "#78716c" }}>The workspace encountered an error. Please refresh the page.</p>
+        </div>
+      }>
+        <AppShell
+          navItems={WORKSPACE_NAV}
+          brandHref="/workspace"
+          careContext={<CareContextBar />}
+        >
+          {children}
+        </AppShell>
+      </ErrorBoundary>
+    </WorkspaceProvider>
   );
 }

@@ -2,18 +2,24 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
+const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const consentPanel = fs.readFileSync("src/components/mvp-workspace/ConsentGatePanel.tsx", "utf8");
+const previewGate = fs.readFileSync("src/components/mvp-workspace/ResearchPreviewAckGate.tsx", "utf8");
 
-assert.match(layout, /function WorkspacePrivacyBoundary/);
-assert.match(layout, /consentState !== "accepted"/, "workspace content must remain hidden until backend consent is confirmed");
-assert.match(layout, /<ConsentGatePanel caregiverId="" onStatusChange={setConsentState}\s*\/>/);
-assert.match(layout, /<WorkspacePrivacyBoundary>\s*<WorkspaceProvider>/, "consent gate must wrap provider and all workspace route content");
-assert.match(layout, /return <>\{children\}<\/>;/, "children should mount only after accepted state");
-assert.doesNotMatch(layout, /<OnboardingGate>/, "do not show a second local-only consent wall inside the workspace");
+assert.doesNotMatch(layout, /WorkspacePrivacyBoundary|ConsentGatePanel|consentState !== "accepted"/,
+  "workspace layout must not block entry behind a privacy checkbox");
+assert.match(layout, /<WorkspaceProvider>\s*<ErrorBoundary/,
+  "workspace provider and shell mount directly");
+assert.doesNotMatch(layout, /type="checkbox"|ResearchPreviewAckGate|EarlyAccessConsentForm/,
+  "no acknowledgement checkbox may gate workspace routes");
+assert.doesNotMatch(workspacePage, /ResearchPreviewAckGate/,
+  "the LCR page must not mount an early-version acknowledgement gate");
+assert.match(workspacePage, /Living Care Record/,
+  "the destination is the Living Care Record workspace");
+assert.match(previewGate, /RESEARCH_PREVIEW_SECTION\.ackLabel|early version/i,
+  "legacy component remains identifiable for regression detection, but must not be mounted in the workspace");
+assert.match(consentPanel, /api\/v1\/consent/,
+  "legacy consent API integration may remain for action-specific backend policy; it must not gate workspace entry");
 
-assert.match(consentPanel, /apiUrl\("\/api\/v1\/consent"\)/, "required acknowledgement must be sent to backend");
-assert.match(consentPanel, /data\.verified !== true \|\| data\.required !== false/, "gate must trust only backend confirmation");
-assert.match(consentPanel, /onStatusChange\?\.\("accepted"\)/, "only confirmed server response releases the workspace");
-console.log("✓ every workspace route is hidden until persisted consent is confirmed");
-console.log("✓ browser onboarding flags are not accepted as consent proof");
-console.log("✓ backend confirmation is required before workspace children mount");
+console.log("✓ workspace routes mount without a privacy or early-version checkbox gate");
+console.log("✓ direct workspace entry does not disable server-side authentication or authorisation");
