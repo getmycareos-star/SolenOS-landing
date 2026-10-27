@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getJSON, postJSON } from "@/api/client";
+import { getPersonId, postJSON } from "@/api/client";
 
 type SourceRecord = {
   source_type: string;
@@ -65,7 +65,10 @@ export default function DailyCareQwen() {
     setFeedback("");
     setResult(null);
     try {
+      const personId = getPersonId();
+      if (!personId) throw new Error("Your care session could not be verified. Reopen Daily Care and try again.");
       const response = (await postJSON("/daily-care/intelligence/ask", {
+        person_id: personId,
         question: prompt,
         history_query: historyQuery.trim() || null,
         prepare_lcr_proposals: true,
@@ -95,6 +98,7 @@ export default function DailyCareQwen() {
       const response = (await postJSON(
         `/daily-care/intelligence/proposals/${encodeURIComponent(result.proposal_analysis_id)}/${index}/review`,
         {
+          person_id: getPersonId(),
           decision,
           corrected_value: decision === "correct" ? correctedValue : undefined,
         },
