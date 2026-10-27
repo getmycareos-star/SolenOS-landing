@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clock3, Inbox, RefreshCw, ShieldCheck, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
-import { buildReviewedHandoffDraft, type CareRecordRow } from "@/lib/handoffs/reviewed-draft";
+
 
 type Recipient = {
   caregiver_id: string;
@@ -78,16 +78,56 @@ function formatDate(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? "Not recorded" : date.toLocaleString();
 }
 
-async function buildReviewedDraft(): Promise<{ text: string; sourceRecordIds: string[] }> {
-  const [facts, decisions, questions, gaps, timeline] = await Promise.all([
-    getJSON("/care-continuity/facts?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/decisions?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/open-questions?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/information-gaps?limit=25") as Promise<CareRecordRow[]>,
-    getJSON("/care-continuity/timeline?limit=25") as Promise<CareRecordRow[]>,
-  ]);
+type PreparedHandoffDraft = {
+  draft_id: string;
+  purpose: string;
+  prepared_at: string;
+  window: { days: number; from: string; to: string };
+  source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>;
+  sections: Array<{ title: string; items: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; text: string; stale_warning: boolean }> }>;
+  source_references: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; stale_warning: boolean }>;
+  limitations: Array<{ source: string; status: string; reason?: string }>;
+  warning: string;
+};
 
-  return buildReviewedHandoffDraft({ facts, decisions, questions, gaps, timeline });
+async function buildReviewedDraft(purpose: string, windowDays: number): Promise<{ text: string; sourceRecordIds: string[] }> {
+  const prepared = await postJSON("/handoff-drafts/prepare", {
+    purpose,
+    window_days: windowDays,
+  }) as PreparedHandoffDraft;
+
+  const lines = [
+    "SOLENOS CARE HANDOFF DRAFT",
+    `Purpose: ${prepared.purpose.replaceAll("_", " ")}`,
+    `Prepared: ${new Date(prepared.prepared_at).toLocaleString()}`,
+    `Records window: ${prepared.window.days} days (${new Date(prepared.window.from).toLocaleDateString()} – ${new Date(prepared.window.to).toLocaleDateString()})`,
+    "",
+    "SAVED CARE RECORDS",
+  ];
+  for (const section of prepared.sections ?? []) {
+    lines.push("", section.title);
+    for (const item of section.items ?? []) {
+      const when = item.recorded_at ? `; recorded ${item.recorded_at}` : "; time not recorded";
+      const status = item.epistemic_status && item.epistemic_status !== "not_recorded" ? `; status ${item.epistemic_status}` : "; status not recorded";
+      const stale = item.stale_warning ? "; WARNING: record may be stale" : "";
+      lines.push(`- ${item.text} [source ${item.source_table}/${item.source_id}${when}${status}${stale}]`);
+    }
+  }
+  lines.push("", "SOURCE AVAILABILITY");
+  for (const [name, source] of Object.entries(prepared.source_statuses ?? {})) {
+    lines.push(`- ${source.label ?? name}: ${source.status}${source.reason ? ` (${source.reason})` : ""}; records returned: ${source.count}`);
+  }
+  lines.push("", "LIMITATIONS / MISSING SOURCES");
+  if (prepared.limitations?.length) {
+    for (const item of prepared.limitations) lines.push(`- ${item.source}: ${item.status}${item.reason ? ` — ${item.reason}` : ""}`);
+  } else {
+    lines.push("- No unavailable sources reported by the backend.");
+  }
+  lines.push("", prepared.warning, "Caregiver review required. This draft does not itself create or share a handoff.");
+  return {
+    text: lines.join("\n"),
+    sourceRecordIds: [...new Set((prepared.source_references ?? []).map(item => item.source_id).filter(Boolean))],
+  };
 }
 
 export default function CareHandoffsPage() {
@@ -112,7 +152,7 @@ export default function CareHandoffsPage() {
   const [draftBusy, setDraftBusy] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<HandoffSnapshot | null>(null);
-  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);\n  const autoPrepareStarted = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -139,12 +179,26 @@ export default function CareHandoffsPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function prepareDraft() {
+  useEffect(() => {
+    if (autoPrepareStarted.current || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("prepare") !== "1") return;
+    autoPrepareStarted.current = true;
+    const rawPurpose = params.get("purpose") ?? "family_transition";
+    const allowedPurposes = new Set(["family_transition", "professional_appointment", "hospital_discharge", "return_to_care", "period_summary"]);
+    const parsedDays = Number.parseInt(params.get("window_days") ?? "30", 10);
+    const windowDays = Number.isFinite(parsedDays) ? Math.min(90, Math.max(1, parsedDays)) : 30;
+    void prepareDraft(allowedPurposes.has(rawPurpose) ? rawPurpose : "family_transition", windowDays);
+    // One-time Companion-to-review workflow handoff.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function prepareDraft(purpose = "family_transition", windowDays = 30) {
     setDraftBusy(true);
     setError("");
     setNotice("");
     try {
-      const prepared = await buildReviewedDraft();
+      const prepared = await buildReviewedDraft(purpose, windowDays);
       setDraft(prepared.text);
       setPreparedDraft(prepared.text);
       setDraftSourceRecordIds(prepared.sourceRecordIds);
