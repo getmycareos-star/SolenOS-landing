@@ -6,6 +6,31 @@ import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 
+interface HandoffDraftItem {
+  source_type: string
+  source_table: string
+  source_id: string
+  recorded_at: string | null
+  epistemic_status: string
+  text: string
+  stale_warning?: boolean
+}
+interface HandoffDraft {
+  draft_id: string
+  purpose: string
+  prepared_at: string
+  window: { days: number; from: string; to: string }
+  read_only: boolean
+  requires_caregiver_review: boolean
+  creates_handoff: boolean
+  updates_lcr: boolean
+  source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>
+  sections: Array<{ title: string; items: HandoffDraftItem[] }>
+  source_references: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; stale_warning: boolean }>
+  limitations: Array<{ source: string; status: string; reason?: string }>
+  warning: string
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -41,12 +66,50 @@ export default function Companion() {
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
   const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
+  const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null)
+  const [handoffDraftLoading, setHandoffDraftLoading] = useState(false)
+  const [handoffDraftError, setHandoffDraftError] = useState<string | null>(null)
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
+
+  const prepareHandoffDraft = async () => {
+    if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
+    setHandoffDraftLoading(true)
+    setHandoffDraftError(null)
+    setHandoffDraft(null)
+    try {
+      await ensureAnonymousSession()
+      const purpose = handoffPurpose === 'today'
+        ? 'family_transition'
+        : handoffPurpose === 'appointment'
+          ? 'professional_appointment'
+          : 'period_summary'
+      const windowDays = handoffPurpose === 'today' ? 7 : handoffPurpose === 'appointment' ? 30 : 90
+      const draft = await postJSON('/handoff-drafts/prepare', {
+        purpose,
+        window_days: windowDays,
+      }) as HandoffDraft
+      if (!draft || !Array.isArray(draft.sections) || !draft.source_statuses) {
+        throw new Error('The care record returned an incomplete handoff draft.')
+      }
+      setHandoffDraft(draft)
+    } catch (error) {
+      setHandoffDraftError(error instanceof Error
+        ? error.message
+        : 'The handoff could not be prepared from the saved care record. Please try again.')
+    } finally {
+      setHandoffDraftLoading(false)
+    }
+  }
+
+  const resetHandoffDraft = () => {
+    setHandoffDraft(null)
+    setHandoffDraftError(null)
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -172,11 +235,11 @@ export default function Companion() {
             <p>Prepare a clear handoff for the person who will be supporting care next.</p>
           </div>
           {handoffStep === 'closed' ? (
-            <button className="companion-handoff-primary" type="button" onClick={() => { setHandoffStep('audience'); setHandoffAudience(null); setHandoffPurpose(null) }}>
+            <button className="companion-handoff-primary" type="button" onClick={() => { setHandoffStep('audience'); setHandoffAudience(null); setHandoffPurpose(null); resetHandoffDraft() }}>
               <Plus size={17} aria-hidden="true" /> Create care handoff
             </button>
           ) : (
-            <button className="companion-handoff-close" type="button" aria-label="Close care handoff setup" onClick={() => { setHandoffStep('closed'); setHandoffAudience(null); setHandoffPurpose(null) }}>Close</button>
+            <button className="companion-handoff-close" type="button" aria-label="Close care handoff setup" onClick={() => { setHandoffStep('closed'); setHandoffAudience(null); setHandoffPurpose(null); resetHandoffDraft() }}>Close</button>
           )}
         </div>
 
@@ -185,12 +248,12 @@ export default function Companion() {
             <h4>Who is this handoff for?</h4>
             <p>Choose the person who needs to understand the care situation.</p>
             <div className="companion-handoff-options">
-              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('family'); setHandoffPurpose(null); setHandoffStep('purpose') }}>
+              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('family'); setHandoffPurpose(null); resetHandoffDraft(); setHandoffStep('purpose') }}>
                 <span className="companion-handoff-option-icon"><Users size={20} aria-hidden="true" /></span>
                 <span><strong>Family caregiver</strong><small>Help a family member or another trusted caregiver take over care.</small></span>
                 <span className="companion-handoff-arrow" aria-hidden="true">→</span>
               </button>
-              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('professional'); setHandoffPurpose(null); setHandoffStep('purpose') }}>
+              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('professional'); setHandoffPurpose(null); resetHandoffDraft(); setHandoffStep('purpose') }}>
                 <span className="companion-handoff-option-icon"><Stethoscope size={20} aria-hidden="true" /></span>
                 <span><strong>Professional</strong><small>Prepare information for a doctor, nurse, or care professional.</small></span>
                 <span className="companion-handoff-arrow" aria-hidden="true">→</span>
@@ -203,7 +266,7 @@ export default function Companion() {
           <div className="companion-handoff-step">
             <div className="companion-handoff-step-top">
               <div><span className="companion-handoff-recipient">{handoffAudience === 'family' ? 'FOR A FAMILY CAREGIVER' : 'FOR A PROFESSIONAL'}</span><h4>What do you need?</h4><p>Describe the handoff you want to prepare.</p></div>
-              <button className="companion-handoff-back" type="button" onClick={() => { setHandoffStep('audience'); setHandoffPurpose(null) }}>Change recipient</button>
+              <button className="companion-handoff-back" type="button" onClick={() => { setHandoffStep('audience'); setHandoffPurpose(null); resetHandoffDraft() }}>Change recipient</button>
             </div>
             <div className="companion-handoff-purpose-options">
               <button className={'companion-handoff-purpose' + (handoffPurpose === 'today' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'today'} onClick={() => setHandoffPurpose('today')}>
@@ -222,7 +285,60 @@ export default function Companion() {
                 <small>Give someone a broader understanding of the care situation.</small>
               </button>
             </div>
-            {handoffPurpose && <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : handoffPurpose === 'appointment' ? "Doctor's appointment" : 'Full care overview'}. The next step will be added after the handoff details are defined.</p>}
+            {handoffPurpose && !handoffDraft && (
+              <div className="companion-handoff-prepare">
+                <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : handoffPurpose === 'appointment' ? "Doctor's appointment" : 'Full care overview'}. SolenOS will prepare a reviewable draft from saved, authorised care records only.</p>
+                <button className="companion-handoff-primary" type="button" onClick={() => void prepareHandoffDraft()} disabled={handoffDraftLoading}>
+                  {handoffDraftLoading ? 'Preparing from saved records…' : 'Prepare handoff draft'}
+                </button>
+                {handoffDraftError && <p className="companion-handoff-error" role="alert">{handoffDraftError}</p>}
+              </div>
+            )}
+            {handoffDraft && (
+              <div className="companion-handoff-draft" aria-label="Care handoff draft review">
+                <div className="companion-handoff-draft-heading">
+                  <div>
+                    <span className="companion-handoff-recipient">{handoffAudience === 'family' ? 'FAMILY CARE HANDOFF' : 'PROFESSIONAL CARE HANDOFF'}</span>
+                    <h4>{handoffAudience === 'family' ? 'SolenOS Family Care Handoff' : 'SolenOS Professional Care Handoff'}</h4>
+                    <p>Prepared {new Date(handoffDraft.prepared_at).toLocaleString()} · {handoffDraft.window.days}-day source window</p>
+                  </div>
+                  <button className="companion-handoff-back" type="button" onClick={resetHandoffDraft}>Discard draft</button>
+                </div>
+                <p className="companion-handoff-draft-warning">{handoffDraft.warning}</p>
+                <div className="companion-handoff-draft-boundary">
+                  <ShieldCheck size={16} aria-hidden="true" />
+                  <span>Read-only draft · {handoffDraft.source_references.length} source references · not shared · Living Care Record unchanged</span>
+                </div>
+                {handoffDraft.sections.length === 0 && <p className="companion-handoff-empty-source">No readable records were returned for this time window. This does not establish that no care information exists.</p>}
+                {handoffDraft.sections.map(section => (
+                  <section className="companion-handoff-source-section" key={section.title}>
+                    <h5>{section.title}</h5>
+                    {section.items.map(item => (
+                      <article className="companion-handoff-source-item" key={item.source_table + ':' + item.source_id}>
+                        <p>{item.text}</p>
+                        <div className="companion-handoff-source-meta">
+                          <span>{item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Date not recorded'}</span>
+                          <span>Status: {item.epistemic_status.replaceAll('_', ' ')}</span>
+                          <span>Source: {item.source_table} · {item.source_id}</span>
+                          {item.stale_warning && <strong>Older information — re-check before relying on it</strong>}
+                        </div>
+                      </article>
+                    ))}
+                  </section>
+                ))}
+                <section className="companion-handoff-source-section">
+                  <h5>Information coverage and gaps</h5>
+                  <p className="companion-handoff-section-note">These statuses describe source availability, not the person's clinical status.</p>
+                  {Object.entries(handoffDraft.source_statuses).map(([source, info]) => (
+                    <div className="companion-handoff-coverage-row" key={source}>
+                      <span><strong>{info.label ?? source.replaceAll('_', ' ')}</strong><small>{info.reason ? info.reason.replaceAll('_', ' ') : info.count + ' saved records returned'}</small></span>
+                      <span className={'companion-handoff-status status-' + info.status}>{info.status.replaceAll('_', ' ')}</span>
+                    </div>
+                  ))}
+                </section>
+                <p className="companion-handoff-draft-warning">Before sharing, review every item, confirm current medications and instructions against an authoritative source, resolve discrepancies where possible, and explicitly identify unknown or conflicting information. This draft has not been accepted by a recipient.</p>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -316,6 +432,31 @@ export default function Companion() {
         .companion-handoff-purpose:hover { background:#f7faf6; border-color:#b9d1b8; }
         .companion-handoff-purpose.is-selected { border-color:#7ea47d; background:#f0f7ee; box-shadow:0 0 0 2px rgba(111,151,109,.12); }
         .companion-handoff-selection { margin-top:14px !important; padding:11px 13px; border-radius:11px; background:#f3f7f1; color:#4c674e !important; font-size:12px !important; }
+        .companion-handoff-prepare { display:flex; align-items:flex-start; flex-direction:column; gap:10px; margin-top:12px; }
+        .companion-handoff-error { color:#9b2c2c !important; font-size:13px !important; }
+        .companion-handoff-draft { display:flex; flex-direction:column; gap:14px; margin-top:20px; padding:16px; border:1px solid #dce7dc; border-radius:16px; background:#fbfdfb; }
+        .companion-handoff-draft-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .companion-handoff-draft-heading h4 { margin:0; font-size:18px; color:#24372a; }
+        .companion-handoff-draft-heading p { margin:5px 0 0; font-size:12px; color:#6a786e; }
+        .companion-handoff-draft-warning { margin:0; padding:12px; border-radius:10px; background:#f4f7f1; color:#4e6250; font-size:12px; line-height:1.65; }
+        .companion-handoff-draft-boundary { display:flex; align-items:flex-start; gap:8px; color:#426849; font-size:12px; line-height:1.5; }
+        .companion-handoff-draft-boundary svg { flex:0 0 auto; }
+        .companion-handoff-empty-source { margin:0; color:#6b786e; font-size:13px; line-height:1.6; }
+        .companion-handoff-source-section { display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid #e5ece4; }
+        .companion-handoff-source-section h5 { margin:0; color:#293b2e; font-size:13px; }
+        .companion-handoff-section-note { margin:0; color:#6a786e; font-size:11px; line-height:1.5; }
+        .companion-handoff-source-item { padding:12px; border:1px solid #e4ebe2; border-radius:11px; background:#fff; }
+        .companion-handoff-source-item p { margin:0; color:#34463a; font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .companion-handoff-source-meta { display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:8px; color:#748075; font-size:10px; line-height:1.5; overflow-wrap:anywhere; }
+        .companion-handoff-source-meta strong { color:#8b5c1c; }
+        .companion-handoff-coverage-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid #edf1eb; }
+        .companion-handoff-coverage-row>span:first-child { min-width:0; }
+        .companion-handoff-coverage-row strong,.companion-handoff-coverage-row small { display:block; overflow-wrap:anywhere; }
+        .companion-handoff-coverage-row strong { color:#34463a; font-size:12px; }
+        .companion-handoff-coverage-row small { margin-top:3px; color:#748075; font-size:10px; }
+        .companion-handoff-status { flex:0 0 auto; padding:4px 7px; border-radius:8px; background:#edf2ec; color:#4d654f; font-size:10px; text-transform:capitalize; }
+        .companion-handoff-status.status-unavailable,.companion-handoff-status.status-not_authorized { background:#f8eee5; color:#87552c; }
+        .companion-handoff-status.status-empty { background:#f2f3ef; color:#687368; }
         .companion-shell { --cc-ink:#1d3028; --cc-muted:#68776e; --cc-line:#dfe8e1; width:100%; max-width:1180px; min-width:0; margin:0 auto; display:flex; flex-direction:column; gap:20px; color:var(--cc-ink); font-family:inherit; }
         .companion-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:4px 0 16px; border-bottom:1px solid var(--cc-line); }
         .companion-brand { display:flex; align-items:center; gap:12px; min-width:0; }
