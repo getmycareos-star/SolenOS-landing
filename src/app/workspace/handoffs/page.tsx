@@ -150,6 +150,8 @@ export default function CareHandoffsPage() {
   const [draftReviewConfirmed, setDraftReviewConfirmed] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftBusy, setDraftBusy] = useState(false);
+  const [draftPurpose, setDraftPurpose] = useState("family_transition");
+  const [draftWindowDays, setDraftWindowDays] = useState("30");
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<HandoffSnapshot | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
@@ -188,13 +190,16 @@ export default function CareHandoffsPage() {
     const rawPurpose = params.get("purpose") ?? "family_transition";
     const allowedPurposes = new Set(["family_transition", "professional_appointment", "hospital_discharge", "return_to_care", "period_summary"]);
     const parsedDays = Number.parseInt(params.get("window_days") ?? "30", 10);
+    const purpose = allowedPurposes.has(rawPurpose) ? rawPurpose : "family_transition";
     const windowDays = Number.isFinite(parsedDays) ? Math.min(90, Math.max(1, parsedDays)) : 30;
-    void prepareDraft(allowedPurposes.has(rawPurpose) ? rawPurpose : "family_transition", windowDays);
+    setDraftPurpose(purpose);
+    setDraftWindowDays(String(windowDays));
+    void prepareDraft(purpose, windowDays);
     // One-time Companion-to-review workflow handoff.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function prepareDraft(purpose = "family_transition", windowDays = 30) {
+  async function prepareDraft(purpose = draftPurpose, windowDays = Number(draftWindowDays) || 30) {
     setDraftBusy(true);
     setError("");
     setNotice("");
@@ -394,7 +399,41 @@ export default function CareHandoffsPage() {
 
       <section style={panelStyle} aria-labelledby="share-handoff-heading">
         <h2 id="share-handoff-heading" style={{ marginTop: 0, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><Share2 size={19} /> Create a secure handoff</h2>
-        <p style={{ lineHeight: 1.55 }}>SolenOS prepares a draft from saved care facts, decisions, open questions, information gaps and timeline entries. You must review and can edit it before sharing.</p>
+        <p style={{ lineHeight: 1.55 }}>Purpose and time window guide the draft only; they do not grant access to additional sources. Review both before preparing the summary.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 14 }}>
+          <label style={{ display: "block", fontWeight: 650 }} htmlFor="handoff-purpose">Handoff purpose
+            <select id="handoff-purpose" style={{ ...fieldStyle, display: "block", marginTop: 6 }} value={draftPurpose} onChange={event => {
+              setDraftPurpose(event.target.value);
+              setDraftReviewConfirmed(false);
+              setDraftReady(false);
+              setDraft("");
+              setPreparedDraft("");
+              setDraftSourceRecordIds([]);
+            }}>
+              <option value="family_transition">Family caregiver transition</option>
+              <option value="professional_appointment">Professional appointment</option>
+              <option value="hospital_discharge">Hospital discharge</option>
+              <option value="return_to_care">Return to care</option>
+              <option value="period_summary">Period summary</option>
+            </select>
+          </label>
+          <label style={{ display: "block", fontWeight: 650 }} htmlFor="handoff-window">Records time window
+            <select id="handoff-window" style={{ ...fieldStyle, display: "block", marginTop: 6 }} value={draftWindowDays} onChange={event => {
+              setDraftWindowDays(event.target.value);
+              setDraftReviewConfirmed(false);
+              setDraftReady(false);
+              setDraft("");
+              setPreparedDraft("");
+              setDraftSourceRecordIds([]);
+            }}>
+              <option value="7">Past 7 days</option>
+              <option value="14">Past 14 days</option>
+              <option value="30">Past 30 days</option>
+              <option value="60">Past 60 days</option>
+              <option value="90">Past 90 days</option>
+            </select>
+          </label>
+        </div>
         {directoryError && <p role="alert">Recipient directory unavailable: {directoryError}. Required privacy consent may be missing or revoked.</p>}
         {!directoryError && directory.length === 0 && !loading && <p>No other caregivers are linked to this care record yet. SolenOS will not send a summary to an unlinked recipient.</p>}
         {eligibleRecipients.length > 0 && (
