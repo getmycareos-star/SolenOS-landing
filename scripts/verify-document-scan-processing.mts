@@ -3,7 +3,7 @@ import { strict as assert } from "node:assert";
 
 const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 assert.match(source, /async function createProcessedImage\(/, "image processing must be implemented");
-assert.match(source, /cropContext\.drawImage\(image, left, top, width, height, 0, 0, width, height\)/, "crop must affect source pixels");
+assert.match(source, /rotatedContext\.rotate\(radians\)[\s\S]*?cropContext\.drawImage\(rotated, left, top, width, height, 0, 0, width, height\)/, "rotation must happen before crop so crop coordinates match the rotated preview");
 assert.match(source, /outputContext\.rotate\(radians\)/, "straightening must affect OCR pixels, not only CSS");
 assert.match(source, /await extractText\(processed\)/, "OCR must run on the adjusted scan");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
