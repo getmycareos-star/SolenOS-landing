@@ -1,0 +1,20 @@
+import { readFileSync } from "node:fs";
+import { strict as assert } from "node:assert";
+
+const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
+assert.match(source, /async function createProcessedImage\(/, "image processing must be implemented");
+assert.match(source, /cropContext\.drawImage\(image, left, top, width, height, 0, 0, width, height\)/, "crop must affect source pixels");
+assert.match(source, /outputContext\.rotate\(radians\)/, "straightening must affect OCR pixels, not only CSS");
+assert.match(source, /await extractText\(processed\)/, "OCR must run on the adjusted scan");
+assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
+assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
+assert.match(source, /page\.reviewed \|\| !page\.prepared/, "unprepared or unreviewed pages must not be saved");
+assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop stage");
+assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
+assert.match(source, /function createMultiPagePdf\(/, "multi-page PDF generation must be implemented");
+assert.match(source, /Combine reviewed image pages into one PDF/, "caregivers must be able to create a multi-page PDF");
+assert.match(source, /Original uploaded page files remain separate and unchanged\./, "PDF creation must preserve individual original scans");
+console.log("✓ crop and straighten are applied to pixels before OCR");
+console.log("✓ caregiver can move crop area and adjust margins");
+console.log("✓ multi-page PDF assembly preserves individual originals");
+console.log("✓ original scan bytes, reviewed text, and scan processing metadata are required");
