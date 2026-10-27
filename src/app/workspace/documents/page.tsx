@@ -384,7 +384,7 @@ export default function DocumentsPage() {
     try {
       const pdfFile = await createMultiPagePdf(imagePages);
       if (pdfFile.size > MAX_FILE_BYTES) throw new Error("The combined PDF exceeds the 10 MiB upload limit. Combine fewer pages or split this document into smaller PDFs.");
-      const combinedText = imagePages.map((page, index) => `[Page ${index + 1}]\\n${page.uncertain ? "[UNCERTAIN EXTRACTION] " : ""}${page.text.trim() || "[No readable text extracted; consult original page.]"}`).join("\\n\\n");
+      const combinedText = imagePages.map((page, index) => `[Page ${index + 1}]\n${page.uncertain ? "[UNCERTAIN EXTRACTION] " : ""}${page.text.trim() || "[No readable text extracted; consult original page.]"}`).join("\n\n");
       const existingPdf = reviewPages.some((page) => page.file.type === "application/pdf" && page.file.name === pdfFile.name);
       if (existingPdf) {
         setUploadMessage({ kind: "error", text: "A combined PDF with this name is already in the review list. Save or discard this batch before creating another." });
@@ -425,7 +425,7 @@ export default function DocumentsPage() {
         form.append("person_id", session.person.id);
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
-        form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\\n" + page.text.trim() : page.text.trim());
+        form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\n" + page.text.trim() : page.text.trim());
         form.append("scan_review_status", page.reviewed ? "caregiver_reviewed" : "not_reviewed");
         form.append("scan_rotation_degrees", String(page.rotation));
         form.append("scan_crop_json", JSON.stringify(page.crop));
