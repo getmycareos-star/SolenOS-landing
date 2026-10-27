@@ -10,8 +10,6 @@ const WORKSPACE_NAV = [
   { href: "/workspace", label: "Living Care Record", icon: "◉" },
   { href: "/workspace/timeline", label: "Care Timeline", icon: "◷" },
   { href: "/workspace/documents", label: "Documents", icon: "📄" },
-  { href: "/workspace/handoffs", label: "Care handoffs", icon: "↔" },
-  { href: "/workspace/notifications", label: "Notifications", icon: "♧" },
   { href: "/workspace/settings", label: "Settings", icon: "⚙" },
 ] as const;
 
