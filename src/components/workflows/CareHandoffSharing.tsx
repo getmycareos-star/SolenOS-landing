@@ -8,7 +8,10 @@ type DraftItem = {
   source_type: string;
   source_table: string;
   source_id: string;
+  event_at?: string | null;
   recorded_at: string | null;
+  due_at?: string | null;
+  details?: Record<string, string>;
   epistemic_status: string;
   record_status?: string;
   text: string;
@@ -80,7 +83,10 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     for (const item of section.items) {
       const itemText = [
         "- " + item.text,
-        "  Recorded: " + formatDate(item.recorded_at),
+        "  Event/effective time: " + formatDate(item.event_at),
+        "  Record entered/updated: " + formatDate(item.recorded_at),
+        item.due_at ? "  Due: " + formatDate(item.due_at) : "",
+        ...Object.entries(item.details ?? {}).map(([key, value]) => "  " + key.replaceAll("_", " ") + ": " + value),
         "  Evidence status: " + (item.epistemic_status || "not_recorded"),
         "  Record status: " + (item.record_status || "not_recorded"),
         "  Source: " + item.source_table + "#" + item.source_id,
