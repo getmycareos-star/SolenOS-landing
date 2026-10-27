@@ -65,7 +65,8 @@ console.log("✓ entry methods do not branch reasoning");
   assert.ok(/ScanDocumentCapture/.test(panel));
   assert.ok(/Upload/.test(panel));
   assert.ok(/Share/.test(panel) || /shareHint/.test(panel));
-  assert.ok(/What is happening right now|What changed/i.test(panel));
+  assert.ok(/Add to your care record|Add a new detail/i.test(panel));
+  assert.ok(!/What is happening right now\?/.test(panel), "capture screen avoids a second competing question heading");
   // Must not force account before submit
   assert.ok(!/must.?sign.?up|requireLogin|loginRequired/i.test(panel));
   console.log("✓ AddSituationPanel: Snap/Scan/Upload/Share; no login gate");
