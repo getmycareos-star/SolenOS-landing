@@ -1060,7 +1060,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <p className="panel-muted research-preview-notice" role="note">
         {IN_APP_IMPROVING_NOTICE}
       </p>
-      <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
       {(consentState === "accepted" || consentState === "unavailable") && (
         <>
       <HelpImproveSolenos compact />
