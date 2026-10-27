@@ -28,7 +28,6 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
   const [error, setError] = useState<string | null>(null);
 
   const [requiredAck, setRequiredAck] = useState(false);
-  const [dataImprovement, setDataImprovement] = useState(false);
 
   const loadStatus = useCallback(async () => {
     setLoading(true);
@@ -87,7 +86,6 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
           privacy_model_acknowledged: accepted,
           multi_caregiver_acknowledged: accepted,
           no_advertising_acknowledged: accepted,
-          data_improvement_consent: dataImprovement,
           accepted_terms_version: status?.terms_version,
         }),
       });
@@ -117,44 +115,13 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
 
   return (
     <section className="panel consent-gate-panel" aria-label="Privacy and consent">
-      <h2 className="workspace-headline">One privacy acknowledgement</h2>
+      <h2 className="workspace-headline">One quick confirmation</h2>
       <p className="workspace-lede">
-        Confirm the required terms once. After SolenOS confirms the save, your Living Care Record opens immediately.
+        Before you begin, please confirm you agree to how SolenOS treats your information. This is required once; optional improvement feedback is available separately in Settings.
       </p>
 
       <form onSubmit={handleAccept} className="consent-gate-form">
-        <fieldset className="consent-optional">
-          <legend>Optional — help improve SolenOS</legend>
-          <p className="panel-muted">
-            This choice is separate from using SolenOS to maintain the care record you request.
-            It is off unless you tick the box below.
-          </p>
-          <h3>What may be used if you opt in</h3>
-          <ul>
-            <li>Feedback you deliberately submit to help improve or validate SolenOS.</li>
-            <li>The feedback category and related details needed to review that submission.</li>
-          </ul>
-          <h3>What this checkbox does not permit</h3>
-          <ul>
-            <li>Publishing your care record or sharing it with other caregivers.</li>
-            <li>Selling personal information or using it for targeted advertising.</li>
-            <li>Automatically submitting every private care note, document, or Companion conversation as improvement feedback.</li>
-          </ul>
-          <p className="panel-muted">
-            SolenOS must continue to protect access to care information and remove direct identifiers
-            where appropriate. You can change this optional choice later in Settings → Privacy &amp; Data.
-          </p>
-          <label className="consent-checkbox">
-            <input
-              type="checkbox"
-              checked={dataImprovement}
-              onChange={(e) => setDataImprovement(e.target.checked)}
-            />
-            <span>Yes, allow feedback I submit for improvement to be used for that purpose.</span>
-          </label>
-        </fieldset>
-
-        <label className="consent-checkbox">
+<label className="consent-checkbox">
           <input
             type="checkbox"
             checked={requiredAck}
@@ -167,12 +134,11 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
             }}
           />
           <span>
-            I have read and accept the SolenOS{" "}
+            I agree to the SolenOS{" "}
             <Link href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</Link>
-            {" "}and{" "}
+            {" "}and confirm that I have read and understand the{" "}
             <Link href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
-            I understand SolenOS does not provide medical or emergency guidance, trusted contributors
-            may add notes to this Care Reality, and my care information is not sold or used for advertising.
+            I understand my care information is not sold or used for advertising.
           </span>
         </label>
 
