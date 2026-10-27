@@ -198,7 +198,7 @@ export default function CareHandoffsPage() {
       <h2 id="review-heading" style={{ marginTop: 0, fontSize: 19 }}>Review shared summary</h2>
       <p style={{ lineHeight: 1.5 }}>From {activeInbox.from_caregiver_name || "another caregiver"}. This is a caregiver-provided summary, not a clinical verification.</p>
       {Object.entries(snapshot.sections ?? {}).map(([name, value]) => <div key={name} style={{ marginBottom: 14 }}>
-        <h3 style={{ fontSize: 15, marginBottom: 6 }}>{name.replaceAll("_", " ")}</h3>
+        <h3 style={{ fontSize: 15, marginBottom: 6 }}>{name.replace(/_/g, " ")}</h3>
         <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", lineHeight: 1.55, margin: 0 }}>{String(value ?? "")}</pre>
       </div>)}
       {snapshot.content_sha256 && <p style={{ fontSize: 12, overflowWrap: "anywhere" }}>Integrity hash: {snapshot.content_sha256}</p>}
