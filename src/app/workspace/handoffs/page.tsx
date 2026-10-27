@@ -136,14 +136,14 @@ async function buildReviewedDraft(): Promise<{ text: string; sourceRecordIds: st
   ];
   const includedSourceIds: string[] = [];
   const appendIfWithinLimit = (part: string) => {
-    const candidate = [...parts, part].join("\\n");
+    const candidate = [...parts, part].join("\n");
     if (candidate.length > 18000) return false;
     parts.push(part);
     return true;
   };
 
   for (const section of sections) {
-    if (!appendIfWithinLimit(`\\n${section.title.toUpperCase()}`)) break;
+    if (!appendIfWithinLimit(`\n${section.title.toUpperCase()}`)) break;
     for (const item of section.items) {
       if (!appendIfWithinLimit(`• ${item.text}`)) break;
       if (item.id) includedSourceIds.push(item.id);
@@ -151,11 +151,11 @@ async function buildReviewedDraft(): Promise<{ text: string; sourceRecordIds: st
   }
 
   appendIfWithinLimit(
-    "\\nLIMITATIONS\\nThis is a caregiver-reviewed summary, not a clinical judgment. Source IDs identify saved records used to prepare this draft; SolenOS does not independently verify that every edited statement is supported by those records."
+    "\nLIMITATIONS\nThis is a caregiver-reviewed summary, not a clinical judgment. Source IDs identify saved records used to prepare this draft; SolenOS does not independently verify that every edited statement is supported by those records."
   );
 
   return {
-    text: parts.join("\\n"),
+    text: parts.join("\n"),
     sourceRecordIds: [...new Set(includedSourceIds)].slice(0, 100),
   };
 }
