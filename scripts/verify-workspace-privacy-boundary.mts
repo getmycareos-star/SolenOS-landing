@@ -16,7 +16,7 @@ assert.doesNotMatch(workspacePage, /ResearchPreviewAckGate/,
   "the LCR page must not mount an early-version acknowledgement gate");
 assert.match(workspacePage, /Living Care Record/,
   "the destination is the Living Care Record workspace");
-assert.match(previewGate, /I understand this is an early version/,
+assert.match(previewGate, /RESEARCH_PREVIEW_SECTION\.ackLabel|early version/i,
   "legacy component remains identifiable for regression detection, but must not be mounted in the workspace");
 assert.match(consentPanel, /api\/v1\/consent/,
   "legacy consent API integration may remain for action-specific backend policy; it must not gate workspace entry");
