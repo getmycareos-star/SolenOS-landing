@@ -79,7 +79,25 @@ requireText("src/app/workspace/documents/page.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
   'defaultWorkflow="document"',
   "Help with your documents",
+  'getJSON("/evidence/"',
+  'postFormData("/upload"',
+  'getBlob("/upload/"',
+  'defaultWorkflow="document"',
+  "Document intelligence",
+  "Original document saved",
+  "evidenceIds={aiEvidenceIds}",
+  "Suggestions remain reviewable",
 ]);
+const documentPage = read("src/app/workspace/documents/page.tsx");
+assert(!documentPage.includes("setTimeout(() => setPreviewLoading"), "Document preview must not simulate loading with a timer.");
+assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
+assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
+assert(documentPage.includes('postFormData("/upload"'), "Documents must persist original uploads through the backend.");
+assert(documentPage.includes('evidenceIds={aiEvidenceIds}'), "Document intelligence must receive saved document evidence IDs.");
+assert(documentPage.includes('description="This assistant is scoped to saved document evidence.'), "Document AI must be explicitly scoped to document evidence.");
+assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
+assert(!documentPage.includes('router.push("/workspace?compose=1")'), "Document upload must not redirect to the general capture composer.");
+
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",
   "Your entry was saved, but the full care view could not be refreshed.",
