@@ -92,7 +92,7 @@ export default function TimelinePage() {
       summary: entry.summary,
       timestamp: entry.timestamp,
       epistemicStatus: "workspace entry",
-      origin: "current workspace",
+      origin: "current workspace" as const,
     }));
     const savedItems = savedRows.map(toSavedTimelineItem);
     // A true chronological record: earliest first, with occurrence/effective time
