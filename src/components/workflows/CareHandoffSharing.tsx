@@ -92,6 +92,16 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     }
     if (truncated) break;
   }
+  lines.push("\n## Required handoff sections and coverage");
+  const fallbackSections = audience === "family"
+    ? ["What matters most right now", "How the person is doing", "How to care for them", "Health and medication information", "What needs to happen next", "Safety and when to seek help", "Family coordination", "Handoff acceptance"]
+    : ["Executive summary and current situation", "Relevant history and baseline", "Evidence and provenance register", "Medication reconciliation", "Current clinical and functional assessment", "Active problems, risks, and uncertainty", "Treatment and care plan", "Action register and accountability", "Person-centred and family context", "Transition-specific information", "Contingency planning", "Document and record integrity", "Handoff receipt and acceptance"];
+  const templateSections = draft.template_sections ?? fallbackSections.map(title => ({ title, coverage_status: "not_assessed", required_fields: [], coverage_note: "This backend response does not include verified field-level coverage. Review manually; no value has been inferred." }));
+  for (const section of templateSections) {
+    const line = "- " + section.title + ": " + section.coverage_status.replaceAll("_", " ") + (section.required_fields.length ? ". Required fields: " + section.required_fields.join(", ") : "") + ". " + section.coverage_note;
+    if (lines.join("\n").length + line.length > 16500) { truncated = true; break; }
+    lines.push(line);
+  }
   lines.push("\n## Coverage and limitations");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
     const line = "- " + (value.label || name) + ": " + value.status + (value.reason ? " (" + value.reason + ")" : "") + "; " + value.count + " record(s) returned";
@@ -196,6 +206,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
         scope: ["lcr_summary"],
         expires_at: expiresAt,
       }) as { id: string };
+      if (!created?.id) throw new Error("The backend did not confirm a handoff ID. No summary was attached.");
       try {
         await putJSON("/handoffs/" + encodeURIComponent(created.id) + "/summary", {
           sections: { lcr_summary: summaryText.trim() },
