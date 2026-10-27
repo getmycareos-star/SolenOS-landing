@@ -18,8 +18,8 @@ interface HandoffDraftItem {
 interface HandoffDraft {
   draft_id: string
   purpose: string
-  audience: 'family' | 'professional'
-  template_sections: Array<{ key: string; title: string; required_fields: string[]; source_tables: string[]; coverage_status: string; coverage_note: string }>
+  audience?: 'family' | 'professional'
+  template_sections?: Array<{ key: string; title: string; required_fields: string[]; source_tables: string[]; coverage_status: string; coverage_note: string }>
   prepared_at: string
   window: { days: number; from: string; to: string }
   read_only: boolean
@@ -50,6 +50,22 @@ interface Message {
 }
 
 const CARE_REVIEW_SIGNAL = /\b(sleep|slept|awake|wandering|wandered|sundowning|medication|medicine|dose|pill|missed|refused|pain|fall|fell|confused|agitated|agitation|behavio[u]?r|eating|drinking|hydration|appetite|appointment|doctor|nurse|hospital|toilet|continence|breathing|fever|symptom|memory|dementia|caregiver|mood|blood pressure|blood sugar|mobility|injury|rash|swelling|constipation|diarrh?ea|bowel|urine|infection|safety|unsafe|hurt|hit|shout|distress|anxiety|anxious|depressed|depression|weight|temperature)\b/i
+const HANDOFF_TEMPLATE_FALLBACK = {
+  family: [
+    'What matters most right now', 'How the person is doing', 'How to care for them',
+    'Health and medication information', 'What needs to happen next',
+    'Safety and when to seek help', 'Family coordination', 'Handoff acceptance',
+  ],
+  professional: [
+    'Executive summary and current situation', 'Relevant history and baseline',
+    'Evidence and provenance register', 'Medication reconciliation',
+    'Current clinical and functional assessment', 'Active problems, risks, and uncertainty',
+    'Treatment and care plan', 'Action register and accountability',
+    'Person-centred and family context', 'Transition-specific information',
+    'Contingency planning', 'Document and record integrity', 'Handoff receipt and acceptance',
+  ],
+} as const
+
 const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\s]*$/i
 
 const STARTER_PROMPTS = [
@@ -101,9 +117,7 @@ export default function Companion() {
       }
       setHandoffDraft(draft)
     } catch (error) {
-      setHandoffDraftError(error instanceof Error
-        ? error.message
-        : 'The handoff could not be prepared from the saved care record. Please try again.')
+      setHandoffDraftError('The handoff could not be prepared from the saved care record. Check your connection and try again. No handoff was shared.')
     } finally {
       setHandoffDraftLoading(false)
     }
@@ -332,7 +346,7 @@ export default function Companion() {
                 <section className="companion-handoff-source-section">
                   <h5>{handoffAudience === 'family' ? 'Family handoff checklist' : 'Professional handoff checklist'}</h5>
                   <p className="companion-handoff-section-note">Required sections are shown even when information is missing. Coverage is not verification; review each item before use.</p>
-                  {handoffDraft.template_sections.map(section => (
+                  {(handoffDraft.template_sections ?? HANDOFF_TEMPLATE_FALLBACK[handoffAudience === 'family' ? 'family' : 'professional'].map((title, index) => ({ key: 'fallback-' + index, title, required_fields: [], source_tables: [], coverage_status: 'not_assessed', coverage_note: 'The deployed backend has not returned field-level coverage for this template. Verify this section manually; no information has been inferred.' }))).map(section => (
                     <article className="companion-handoff-template-section" key={section.key}>
                       <div className="companion-handoff-coverage-row">
                         <span><strong>{section.title}</strong><small>{section.required_fields.join(' · ')}</small></span>
