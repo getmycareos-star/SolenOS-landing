@@ -152,7 +152,8 @@ export default function CareHandoffsPage() {
   const [draftBusy, setDraftBusy] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<HandoffSnapshot | null>(null);
-  const [reviewConfirmed, setReviewConfirmed] = useState(false);\n  const autoPrepareStarted = useRef(false);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const autoPrepareStarted = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
