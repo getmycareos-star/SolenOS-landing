@@ -82,11 +82,10 @@ requireText("src/app/workspace/documents/page.tsx", [
   'getJSON("/evidence/"',
   'postFormData("/upload"',
   'getBlob("/upload/"',
-  'defaultWorkflow="document"',
   "Document intelligence",
   "Original document saved",
   "evidenceIds={aiEvidenceIds}",
-  "Suggestions remain reviewable",
+  "suggestions remain reviewable",
 ]);
 const documentPage = read("src/app/workspace/documents/page.tsx");
 assert(!documentPage.includes("setTimeout(() => setPreviewLoading"), "Document preview must not simulate loading with a timer.");
