@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload, MessageCircle, Share2 } from "lucide-react";
+import { Activity, CalendarDays, FileText, MessageCircle, Plus, Users } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
 import { CognitiveWorkspace } from "@/components/mvp-workspace";
@@ -16,30 +16,22 @@ import { FEATURE_FLAGS } from "@/lib/feature-flags";
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
 function formatLastUpdated(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "Not yet updated";
   try {
-    const d = new Date(iso);
+    const date = new Date(iso);
     const today = new Date();
-    const sameDay =
-      d.getFullYear() === today.getFullYear() &&
-      d.getMonth() === today.getMonth() &&
-      d.getDate() === today.getDate();
-    if (sameDay) return "Today";
+    if (date.toDateString() === today.toDateString()) return "Today";
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
-    const isYesterday =
-      d.getFullYear() === yesterday.getFullYear() &&
-      d.getMonth() === yesterday.getMonth() &&
-      d.getDate() === yesterday.getDate();
-    if (isYesterday) return "Yesterday";
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   } catch {
-    return "—";
+    return "Not yet updated";
   }
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  active: "Active",
+  active: "Current",
   blocked: "Needs attention",
   waiting: "Waiting",
   paused: "Paused",
@@ -56,12 +48,9 @@ function WorkspacePageInner() {
   const [archiveRestoreError, setArchiveRestoreError] = useState("");
   const compose = searchParams.get("compose") === "1";
 
-  // Read localStorage only after mount — prevents server/client hydration mismatch.
   useEffect(() => {
     try {
-      setDisplayName(
-        window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE)?.trim() ?? "",
-      );
+      setDisplayName(window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE)?.trim() ?? "");
       setIsArchived(window.localStorage.getItem("solenos_workspace_archived") === "1");
     } catch {
       setDisplayName("");
@@ -71,190 +60,166 @@ function WorkspacePageInner() {
     }
   }, []);
 
-  const openComposer = useCallback(
-    (mode?: string) => {
-      router.push(mode ? `/workspace?compose=1&entry=${mode}` : "/workspace?compose=1");
-    },
-    [router],
-  );
+  const openComposer = useCallback(() => {
+    router.push("/workspace?compose=1");
+  }, [router]);
 
   if (!hydrated || !entryReady || !archiveStateLoaded) {
-    return <BrandLoading message="Loading your care context…" />;
+    return <BrandLoading message="Opening your Living Care Record…" />;
   }
 
   if (isArchived) {
     return (
-      <div className="mobile-screen">
-        <section className="mobile-care-cards" aria-labelledby="archived-workspace-title">
-          <div className="mobile-empty">
-            <h1 id="archived-workspace-title" className="mobile-empty-title">Workspace archived on this device</h1>
-            <p className="mobile-empty-body">
-              This hides the workspace on this device only. It does not delete care information stored by SolenOS or archive it for other caregivers.
-            </p>
-            {archiveRestoreError && (
-              <p role="alert" className="mobile-empty-body">{archiveRestoreError}</p>
-            )}
-            <Button
-              variant="primary"
-              onClick={() => {
-                try {
-                  window.localStorage.removeItem("solenos_workspace_archived");
-                  setArchiveRestoreError("");
-                  setIsArchived(false);
-                  router.replace("/workspace");
-                } catch {
-                  setArchiveRestoreError(
-                    "This browser could not restore the workspace because its local storage is unavailable. Your care information has not been deleted. Check browser storage settings and try again.",
-                  );
-                }
-              }}
-            >
-              Restore workspace
-            </Button>
-          </div>
+      <main className="mobile-screen lcr-screen">
+        <section className="lcr-empty-state" aria-labelledby="archived-workspace-title">
+          <h1 id="archived-workspace-title">Your record is archived on this device</h1>
+          <p>This only hides the workspace on this device. It does not delete care information stored by SolenOS.</p>
+          {archiveRestoreError && <p role="alert">{archiveRestoreError}</p>}
+          <Button
+            variant="primary"
+            onClick={() => {
+              try {
+                window.localStorage.removeItem("solenos_workspace_archived");
+                setArchiveRestoreError("");
+                setIsArchived(false);
+                router.replace("/workspace");
+              } catch {
+                setArchiveRestoreError("This browser could not restore the workspace. Your care information has not been deleted.");
+              }
+            }}
+          >
+            Restore my record
+          </Button>
         </section>
-      </div>
+      </main>
     );
   }
 
   if (compose) {
     return (
-      <div className="mobile-screen">
-        <div className="mobile-page-head mobile-page-head--back">
-          <Button
-            variant="icon"
-            aria-label="Back to care record"
-            onClick={() => router.push("/workspace")}
-          >
-            <ArrowLeft size={20} aria-hidden />
+      <main className="mobile-screen lcr-screen lcr-add-screen">
+        <div className="lcr-add-heading">
+          <Button variant="icon" aria-label="Back to Living Care Record" onClick={() => router.push("/workspace")}>
+            <span aria-hidden="true">←</span>
           </Button>
-          <div className="mobile-compose-heading">
-            <h2>Add to record</h2>
-            <p>Notes, messages, documents, or photos — fragments are fine.</p>
+          <div>
+            <p className="lcr-eyebrow">LIVING CARE RECORD</p>
+            <h1>Add to the record</h1>
+            <p>Notes, messages, documents, or photos. Fragments are fine.</p>
           </div>
         </div>
         <ErrorBoundary name="CognitiveWorkspace" fallback={
-          <div style={{ padding: "24px", textAlign: "center" }}>
-            <p style={{ color: "#78716c" }}>The workspace encountered an error. Please try again.</p>
-            <Button variant="primary" onClick={() => window.location.reload()}>Refresh</Button>
-          </div>
+          <section className="lcr-empty-state">
+            <p>The record entry could not open correctly.</p>
+            <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
+          </section>
         }>
           <CognitiveWorkspace />
         </ErrorBoundary>
-      </div>
+      </main>
     );
   }
 
   const activeSituations = listActiveSituations(runtime.situations);
-  const situations = [...runtime.situations].sort((a, b) =>
-    b.updatedAt.localeCompare(a.updatedAt),
-  );
+  const situations = [...runtime.situations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const latestUpdated = situations[0]?.updatedAt ?? null;
   const hasAnyContent = situations.length > 0;
 
   return (
-    <div className="mobile-screen">
-      <div className="mobile-care-record">
-        {/* Header card — name, status pill, last updated */}
-        <section className="mobile-care-header" aria-label="Care record summary">
-          <div className="mobile-care-name-row">
-            <h1 className="mobile-care-name">
-              {displayName || "Living Care Record"}
-            </h1>
-            {activeSituations.length > 0 && (
-              <span className="mobile-care-status">
-                {STATUS_LABELS[activeSituations[0].status] ?? "Active"}
-              </span>
-            )}
+    <main className="mobile-screen lcr-screen">
+      <div className="lcr-home">
+        <header className="lcr-header">
+          <div>
+            <p className="lcr-eyebrow">SOLENOS · LIVING CARE RECORD</p>
+            <h1>{displayName || "Your care record"}</h1>
+            <p className="lcr-intro">The care journey, remembered. Keep the details together, one moment at a time.</p>
           </div>
-          <p className="mobile-care-meta">
-            Last updated: {formatLastUpdated(latestUpdated)}
-          </p>
-        </section>
+          <div className="lcr-record-meta">
+            <span className="lcr-status-dot" aria-hidden="true" />
+            <span>{activeSituations.length > 0 ? (STATUS_LABELS[activeSituations[0].status] ?? "Current") : "Ready when you are"}</span>
+            <span className="lcr-meta-divider" aria-hidden="true">·</span>
+            <span>Updated {formatLastUpdated(latestUpdated)}</span>
+          </div>
+        </header>
 
         <PersistedCareOrientation />
 
-        <section className="workspace-entry-actions" aria-label="Care record actions">
-          <button type="button" className="workspace-entry-action" onClick={() => router.push("/workspace/daily-care")}>
-            <CalendarDays size={19} aria-hidden />
-            <span><strong>Daily care</strong><small>Record how today is going</small></span>
+        <section className="lcr-primary-actions" aria-label="Record actions">
+          <button type="button" className="lcr-add-primary" onClick={openComposer}>
+            <span className="lcr-action-icon" aria-hidden="true"><Plus size={22} /></span>
+            <span><strong>Add to record</strong><small>Write a note or add a message, document, or photo</small></span>
+            <span className="lcr-action-arrow" aria-hidden="true">→</span>
           </button>
-          <button type="button" className="workspace-entry-action" onClick={() => openComposer()}>
-            <Plus size={19} aria-hidden />
-            <span><strong>Add record</strong><small>Add a note, message, or document</small></span>
+          <button type="button" className="lcr-daily-action" onClick={() => router.push("/workspace/daily-care")}>
+            <CalendarDays size={21} aria-hidden="true" />
+            <span><strong>Daily care</strong><small>Capture how today is going</small></span>
           </button>
         </section>
 
-        <section className="workspace-secondary-tools" aria-label="More care tools">
-          <button type="button" onClick={() => router.push("/workspace/continuity")}>
-            <FileText size={18} aria-hidden />
-            <span><strong>Deep care continuity</strong><small>Review saved facts, decisions, uncertainty and record integrity</small></span>
+        <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
+          <div className="lcr-section-heading">
+            <div>
+              <p className="lcr-eyebrow">YOUR CARE HISTORY</p>
+              <h2 id="lcr-record-heading">Record timeline</h2>
+            </div>
+            {hasAnyContent && <span className="lcr-count">{situations.length} {situations.length === 1 ? "entry" : "entries"}</span>}
+          </div>
+
+          {!hasAnyContent ? (
+            <div className="lcr-empty-state">
+              <div className="lcr-empty-icon" aria-hidden="true"><FileText size={27} /></div>
+              <h3>Your record starts with what you know.</h3>
+              <p>Add a small detail from today, a message you received, or a document you want to keep connected to the care journey. You do not need to organise it first.</p>
+              <button type="button" className="lcr-text-action" onClick={openComposer}>Add the first detail <span aria-hidden="true">→</span></button>
+            </div>
+          ) : (
+            <div className="lcr-timeline">
+              {situations.map((situation) => (
+                <article key={situation.id} className="lcr-timeline-item">
+                  <span className="lcr-timeline-marker" aria-hidden="true"><FileText size={17} /></span>
+                  <div className="lcr-timeline-content">
+                    <div className="lcr-entry-heading">
+                      <h3>{situation.title}</h3>
+                      <span>{formatLastUpdated(situation.updatedAt)}</span>
+                    </div>
+                    {situation.contextSummary && <p>{situation.contextSummary}</p>}
+                    <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? situation.status}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="lcr-support-section" aria-label="Other care tools">
+          <div>
+            <p className="lcr-eyebrow">WHEN YOU NEED IT</p>
+            <h2>More ways to work with your record</h2>
+          </div>
+          <button type="button" className="lcr-tool-link" onClick={() => router.push("/workspace/companion")}>
+            <span className="lcr-tool-icon" aria-hidden="true"><MessageCircle size={20} /></span>
+            <span><strong>AI Companion</strong><small>Think through care questions using the available context</small></span>
+            <span aria-hidden="true">→</span>
           </button>
           {FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity && (
-            <button type="button" onClick={() => router.push("/workspace/community")}>
-              <span><strong>Caregiver community</strong><small>Shared dementia-care experiences</small></span>
+            <button type="button" className="lcr-tool-link" onClick={() => router.push("/workspace/community")}>
+              <span className="lcr-tool-icon" aria-hidden="true"><Users size={20} /></span>
+              <span><strong>Caregiver community</strong><small>Learn from other dementia-care experiences</small></span>
+              <span aria-hidden="true">→</span>
             </button>
           )}
-          <button type="button" onClick={() => router.push("/workspace/handoffs")}>
-            <Share2 size={18} aria-hidden />
-            <span><strong>Care handoffs</strong><small>Review incoming shares, share a reviewed summary, or revoke access</small></span>
-          </button>
-          <button type="button" onClick={() => router.push("/workspace/companion")}>
-            <MessageCircle size={18} aria-hidden />
-            <span><strong>AI Companion</strong><small>Organise thoughts and questions</small></span>
-          </button>
         </section>
 
-        {!hasAnyContent ? (
-          /* Empty state — no dead end, real action buttons */
-          <section className="mobile-care-cards">
-            <div className="mobile-empty">
-              <div className="mobile-empty-icon" aria-hidden="true">
-                <Activity size={40} />
-              </div>
-              <h2 className="mobile-empty-title">Your care record is ready.</h2>
-              <p className="mobile-empty-body">
-                Start by adding information about the person you care for — a
-                note, a message, a document, or a photo.
-              </p>
-
-            </div>
-          </section>
-        ) : (
-          /* Content as cards */
-          <section className="mobile-care-cards" aria-label="Record entries">
-            <div className="mobile-page-head">
-              <h2>Record</h2>
-            </div>
-            {situations.map((s) => (
-              <article key={s.id} className="mobile-care-card">
-                <span className="mobile-care-card-icon" aria-hidden="true">
-                  <FileText size={20} />
-                </span>
-                <div className="mobile-care-card-body">
-                  <h3 className="mobile-care-card-title">{s.title}</h3>
-                  {s.contextSummary && (
-                    <p className="mobile-care-card-line">{s.contextSummary}</p>
-                  )}
-                  <p className="mobile-care-meta">
-                    {STATUS_LABELS[s.status] ?? s.status} · Updated{" "}
-                    {formatLastUpdated(s.updatedAt)}
-                  </p>
-</div>
-              </article>
-            ))}
-          </section>
-        )}
+        <p className="lcr-footer-note">Your record brings together what has been shared over time. Suggestions and uncertain information should remain distinguishable from confirmed care details.</p>
       </div>
-    </div>
+    </main>
   );
 }
 
 export default function WorkspacePage() {
   return (
-    <Suspense fallback={<BrandLoading message="Loading your care context…" />}>
+    <Suspense fallback={<BrandLoading message="Opening your Living Care Record…" />}>
       <WorkspacePageInner />
     </Suspense>
   );
 }
-
