@@ -25,6 +25,16 @@ import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/Identity
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
+type CareNotification = {
+  id: string;
+  title: string;
+  body: string;
+  category: string;
+  priority: string;
+  created_at: string | null;
+  is_read: boolean;
+};
+
 /** Notification controls persist to the authenticated care-record backend. */
 function NotificationsCard() {
   const { show, render } = useToast();
@@ -33,6 +43,46 @@ function NotificationsCard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [notifications, setNotifications] = useState<CareNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [inboxLoading, setInboxLoading] = useState(true);
+  const [inboxError, setInboxError] = useState("");
+  const [busyNotificationId, setBusyNotificationId] = useState<string | null>(null);
+
+  const loadInbox = useCallback(async () => {
+    setInboxLoading(true);
+    setInboxError("");
+    try {
+      await ensureAnonymousSession();
+      const [feed, unread] = await Promise.all([
+        getJSON("/notifications?limit=100&offset=0") as Promise<{ items: CareNotification[] }>,
+        getJSON("/notifications/unread-count") as Promise<{ unread_count: number }>,
+      ]);
+      setNotifications(feed.items ?? []);
+      setUnreadCount(unread.unread_count ?? 0);
+    } catch {
+      setInboxError("We couldn't load notifications. Check your connection and try again.");
+    } finally {
+      setInboxLoading(false);
+    }
+  }, []);
+
+  const markNotificationRead = async (item: CareNotification) => {
+    if (item.is_read) return;
+    setBusyNotificationId(item.id);
+    setInboxError("");
+    try {
+      const updated = await patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {}) as CareNotification;
+      setNotifications((current) => current.map((row) => row.id === updated.id ? updated : row));
+      setUnreadCount((current) => Math.max(0, current - 1));
+    } catch {
+      setInboxError("We couldn't update this notification. Please try again.");
+    } finally {
+      setBusyNotificationId(null);
+    }
+  };
+
+  useEffect(() => { void loadInbox(); }, [loadInbox]);
 
   const loadPreferences = useCallback(async () => {
     setLoading(true);
@@ -90,6 +140,24 @@ function NotificationsCard() {
       </label>
       <div className="mobile-settings-actions">
         <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
+        <Button variant="secondary" onClick={() => void loadInbox()} disabled={inboxLoading}>Refresh notifications</Button>
+      </div>
+      <div className="settings-notification-inbox" aria-label="Notification inbox">
+        <h3 className="mobile-settings-label">Recent notifications · {unreadCount} unread</h3>
+        {inboxLoading && <p className="mobile-settings-hint" role="status">Loading notifications…</p>}
+        {inboxError && <p className="mobile-settings-hint" role="alert">{inboxError}</p>}
+        {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No notifications have been recorded for this care record.</p>}
+        {notifications.map((item) => (
+          <article key={item.id} className="mobile-settings-row" aria-label={item.title}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span className="mobile-settings-label">{item.title}</span>
+              <span className="mobile-settings-hint">{item.body}</span>
+              <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {item.category}</span>
+              {item.is_read && <span className="mobile-settings-hint">Read</span>}
+            </span>
+            {!item.is_read && <Button variant="secondary" disabled={busyNotificationId === item.id} loading={busyNotificationId === item.id} onClick={() => void markNotificationRead(item)}><Check size={14} aria-hidden /> Mark read</Button>}
+          </article>
+        ))}
       </div>
       {render()}
     </section>
