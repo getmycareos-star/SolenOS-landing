@@ -43,12 +43,11 @@ assert(!assist.includes("Check Qwen"), "Internal model status controls must not 
 assert(!assist.includes("reply.model"), "Provider/model names must not be shown to caregivers.");
 
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
-  'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
-  "Help with your care information",
-  "evidenceIds={documents.map",
   "isLcrOrientationOnly(text)",
   "/api/lcr/orientation",
 ]);
+assert(!read("src/components/mvp-workspace/CognitiveWorkspace.tsx").includes("QwenAssistPanel"),
+  "The LCR capture screen must not include a separate AI assistance panel; contextual interpretation remains available after a saved record receipt.");
 const capture = read("src/components/workflows/StructuredDailyCapture.tsx");
 requireText("src/components/workflows/StructuredDailyCapture.tsx", [
   "postJSON('/daily/log'",
