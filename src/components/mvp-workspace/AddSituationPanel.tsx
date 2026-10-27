@@ -18,6 +18,7 @@ import { SnapCameraCapture } from "./capture/SnapCameraCapture";
 import { ScanDocumentCapture } from "./capture/ScanDocumentCapture";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
 import { ShareCareSummaryPanel } from "./share/ShareCareSummaryPanel";
+import { CareHandoffInboxPanel } from "./share/CareHandoffInboxPanel";
 
 type Props = {
   value: string;
@@ -76,6 +77,7 @@ export function AddSituationPanel({
   const [scanOpen, setScanOpen] = useState(false);
   const [lastEntryMethod, setLastEntryMethod] = useState<InputEntryMethod | null>(null);
   const [sharePanelOpen, setSharePanelOpen] = useState(false);
+  const [handoffInboxOpen, setHandoffInboxOpen] = useState(false);
 
   const hasReadyDocs = documents.some((d) => d.status === "ready" && d.extractedText.trim());
   const canSubmit = (value.trim().length > 0 || hasReadyDocs) && !loading && !extracting;
@@ -171,6 +173,9 @@ export function AddSituationPanel({
     (action: WorkspaceAction) => {
       if (action === "share_care_summary") {
         setSharePanelOpen(true);
+      }
+      if (action === "care_handoff_inbox") {
+        setHandoffInboxOpen(true);
       }
       onWorkspaceAction?.(action);
     },
@@ -384,6 +389,9 @@ export function AddSituationPanel({
           careRecipientName={careRecipientName}
           onClose={handleSharePanelClose}
         />
+      )}
+      {handoffInboxOpen && (
+        <CareHandoffInboxPanel onClose={() => setHandoffInboxOpen(false)} />
       )}
     </div>
   );
