@@ -189,8 +189,10 @@ const settingsPage = fs.readFileSync(path.join(root, "src", "app", "workspace", 
 assert(settingsPage.includes('putJSON("/notifications/preferences"'));
 assert(!settingsPage.includes("revokeAnonymousSession"));
 assert(!settingsPage.includes("SecurityCard"));
-assert(settingsPage.includes('href="/workspace/notifications"'));
+assert(settingsPage.includes('getJSON("/notifications?limit=100&offset=0")'));
+assert(settingsPage.includes('getJSON("/notifications/unread-count")'));
+assert(settingsPage.includes('patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {})'));
+assert(settingsPage.includes("Notification inbox"));
 const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "notifications", "page.tsx"), "utf8");
-assert(notificationPage.includes('getJSON("/notifications/unread-count")'));
-assert(notificationPage.includes('patchJSON(`/notifications/${encodeURIComponent(item.id)}/read`, {})'));
-console.log("✓ Notification actions use authenticated backend APIs; technical security controls stay out of caregiver-facing Settings");
+assert(notificationPage.includes('redirect("/workspace/settings#settings-notifications")'));
+console.log("✓ Notification inbox and preferences live inside Settings; old notification URL redirects there");
