@@ -44,7 +44,7 @@ type DocumentItem = {
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
-type ReviewPage = { file: File; text: string; note: string | null };
+type ReviewPage = { file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
@@ -158,7 +158,6 @@ export default function DocumentsPage() {
   const cameraInput = useRef<HTMLInputElement>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
-  const cameraInput = useRef<HTMLInputElement>(null);
   const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
   const [scanPreparing, setScanPreparing] = useState(false);
   const [scanSaving, setScanSaving] = useState(false);
@@ -232,7 +231,7 @@ export default function DocumentsPage() {
       const pages: ReviewPage[] = [];
       for (const file of files) {
         const extracted = await extractText(file);
-        pages.push({ file, text: extracted.text, note: extracted.note });
+        pages.push({ file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null });
       }
       setReviewPages((current) => [...current, ...pages]);
       setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
@@ -244,7 +243,10 @@ export default function DocumentsPage() {
   };
 
   const saveReviewedPages = async () => {
-    if (!reviewPages.length) return;
+    if (!reviewPages.length || reviewPages.some((page) => !page.reviewed)) {
+      setUploadMessage({ kind: "error", text: "Review every page and confirm it against the original before saving." });
+      return;
+    }
     setUploading(true);
     setUploadMessage(null);
     let saved = 0;
@@ -256,13 +258,16 @@ export default function DocumentsPage() {
         form.append("person_id", session.person.id);
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
-        form.append("extracted_text", page.text.trim());
+        form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\\n" + page.text.trim() : page.text.trim());
+        form.append("scan_review_status", "caregiver_reviewed");
+        form.append("scan_rotation_degrees", String(page.rotation));
         const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
       }
+      reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
-      setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Qwen interpretations remain separate from verified LCR facts.` });
+      setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Scanned statements remain source evidence, not verified LCR facts.` });
       await loadDocuments(true);
     } catch {
       setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });
@@ -356,11 +361,12 @@ export default function DocumentsPage() {
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
             <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.text.trim() ? "Text extracted — review required" : "No readable text extracted"}</p>
+            {page.previewUrl && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}><img src={page.previewUrl} alt={`Original scan preview: ${page.file.name}`} style={{ display: "block", maxWidth: "100%", maxHeight: 300, margin: "0 auto", objectFit: "contain", transform: `rotate(${page.rotation}deg)` }} /><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: (item.rotation + 270) % 360 } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left</button><button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: (item.rotation + 90) % 360 } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right</button></div></div>}
             {page.note && <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{page.note}</p>}
             <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 650 }}>Extracted text — review and correct before saving<textarea value={page.text} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: event.target.value } : item))} rows={4} maxLength={100000} placeholder="No readable text extracted. Type a transcription or save the original without text." style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: 8, padding: 10, background: "var(--surface)", color: "var(--text)", fontSize: 15, lineHeight: 1.6 }} /></label>
-            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}><button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: item.text + (item.text ? "\n" : "") + "[uncertain] Text not confidently readable; verify against original." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Mark text uncertain</button><button type="button" onClick={() => setReviewPages((current) => current.filter((_, i) => i !== index))} disabled={uploading} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
+            <div style={{ display: "grid", gap: 8, marginTop: 8 }}><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.uncertain} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, uncertain: event.target.checked } : item))} />Some extracted text is uncertain or could not be read reliably.</label><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.reviewed} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, reviewed: event.target.checked } : item))} />I reviewed this text against the original scan.</label><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
           </article>)}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save reviewed documents</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0 || reviewPages.some((page) => !page.reviewed)} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save reviewed documents</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
         </section>}
         {uploading && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}>Reading available text and saving the original file. Please keep this page open.</p>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
