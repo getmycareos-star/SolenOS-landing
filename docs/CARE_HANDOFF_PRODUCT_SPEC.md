@@ -5,7 +5,8 @@ Status: implementation contract and gap register; not a claim of clinical valida
 ## Product location and entry
 
 - Care Handoff is entered and prepared only inside AI Companion.
-- Entry sequence: Create care handoff → Family caregiver or Professional → Taking over today, Doctor's appointment, or Full care overview.
+- Entry sequence: Create care handoff → Family caregiver or Professional → Taking over today or Full care overview.
+- Appointment preparation and follow-through is a separate workflow in AI Companion, never a handoff purpose.
 - There is no standalone Care Handoffs page or workspace navigation item. Legacy URLs redirect to AI Companion.
 - Notifications and notification preferences belong in Settings. Deep care continuity is backend/database infrastructure, not a caregiver-facing page.
 - A handoff draft is not shared automatically and does not modify the Living Care Record (LCR).
@@ -60,11 +61,18 @@ Required sections:
 
 Professional content must distinguish clinician-assessed status from caregiver report and from “not assessed.” It is a communication aid, not the official clinical record or a replacement for professional assessment/local policy.
 
-## Three purposes
+## Two handoff purposes
 
 - **Taking over today:** short time-bounded handoff. Prefer recent information, current open items and the next shift/day; preserve older items only when relevant and label them.
-- **Doctor's appointment:** relevant changes, observed events, questions, existing instructions, medication discrepancies, and pending follow-up. Do not imply the appointment or medication list is verified unless the source supports it.
 - **Full care overview:** broader longitudinal context, baseline, preferences, decisions/outcomes, unresolved questions, information gaps, actions, and provenance. A bounded query is never represented as the entire history.
+
+## Separate appointment workflow in AI Companion
+
+Appointments have their own entry point and three connected stages: prepare before the visit, capture notes during the visit, and reconcile outcomes/follow-through after the visit. This is not a handoff purpose and must not be routed through the handoff-draft endpoint.
+
+The workspace collects visit purpose and logistics, three prioritized concerns, changes/symptoms, medication questions, relevant history/questions, practical arrangements, caregiver reports, clinician findings, decisions/instructions, unanswered questions, medication discrepancies, pending results/referrals, family summary, and follow-up actions with owner/due date/status. It must preserve the distinction between caregiver report, clinician-authored/documented information, and AI suggestions.
+
+**Current frontend limitation:** this first UI slice is an in-memory working draft only. It explicitly states that it is not persisted to the LCR. It does not yet load an appointment-scoped preparation brief from authorized LCR data or durably save visit notes, reconciliation, and follow-up actions. Do not describe it as production-ready until authenticated appointment APIs, migrations, provenance/audit semantics, cross-person authorization tests, and end-to-end persistence are implemented and verified.
 
 ## Source coverage and launch gates
 
