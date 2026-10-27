@@ -91,7 +91,12 @@ for (const label of ["Create care handoff", "Family caregiver", "Professional", 
 assert.ok(companionPage.includes('<AppointmentWorkspace />'), "appointments must have their own AI Companion workflow, separate from handoff");
 assert.ok(!companionPage.includes("handoffPurpose === 'appointment'"), "doctor appointment must not remain a care handoff purpose");
 const appointmentWorkspace = await readFile(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
-for (const label of ["Before the visit", "During the visit", "After the visit", "Clinician findings", "Medication reconciliation", "Follow-up actions", "not yet persisted to the LCR"]) {
+assert.ok(appointmentWorkspace.includes("getJSON('/appointment-workspaces')"), "appointment workspace must hydrate durable backend records");
+assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
+assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
+assert.ok(appointmentWorkspace.includes("expected_version: recordVersion"), "appointment saves must use optimistic concurrency to avoid silently overwriting edits");
+assert.ok(appointmentWorkspace.includes("lcr_reconciliation: 'not_performed'"), "saving appointment notes must not silently promote them into LCR facts");
+for (const label of ["Before the visit", "During the visit", "After the visit", "Clinician findings", "Medication reconciliation", "Follow-up actions", "not yet reconciled into LCR facts"]) {
   assert.ok(appointmentWorkspace.includes(label), "appointment workflow must include " + label);
 }
 assert.match(companionPage, /postJSON\('\/handoff-drafts\/prepare'/,
