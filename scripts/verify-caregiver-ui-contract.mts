@@ -16,10 +16,10 @@ const qwenPanel = fs.readFileSync(path.join(root, "src/components/qwen/QwenAssis
 const workspaceComposer = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 
 // Errors must be event-driven, dismissible through correction/reset, and not stale.
-assert.match(companion, /\{requestError && <p role="alert"/);
+assert.match(companion, /\{requestError && <div className="companion-error" role="alert"/);
 assert.match(companion, /setRequestError\(null\)/);
 assert.match(companion, /const startNewSession = \(\) => \{[\s\S]*?setRequestError\(null\)/);
-assert.match(companion, /onChange=\{e => \{[\s\S]*?setRequestError\(null\)/);
+assert.match(companion, /onChange=\{event => handleInput\(event\.target\.value\)\}/);
 assert.match(workspaceComposer, /setRawInput\(value\);\s*setLcrOrientationReply\(null\);\s*setCaregiverError\(null\)/);
 assert.match(workspaceComposer, /setDocuments\(nextDocuments\);\s*setLcrOrientationReply\(null\);\s*setCaregiverError\(null\)/);
 assert.match(sanitizeCaregiverErrorMessage("Situation hydration failed (404)"), /We couldn’t complete that step/);
@@ -32,7 +32,7 @@ assert.doesNotMatch(companion, /Confidence: \{Math\.round/);
 assert.doesNotMatch(companion, /Evidence: \{msg\.evidence_ids/);
 assert.doesNotMatch(companion, /Replies may be unavailable sometimes/);
 assert.doesNotMatch(companion, /The safety engine flagged this exchange/);
-assert.match(companion, /Ask a question or share what’s happening/);
+assert.match(companion, /Tell me what’s happening, or ask a question/);
 assert.match(companion, /showPanel=\{false\}/);
 assert.match(deltaPanel, /if \(!showPanel\) return null/);
 assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);

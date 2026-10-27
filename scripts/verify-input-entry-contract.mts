@@ -133,7 +133,7 @@ assert(companion.includes("postJSON('/conversation/message'"));
 assert(companion.includes("ensureAnonymousSession()"));
 assert(companion.includes("person_id: session.person.id"));
 assert(companion.includes('aria-label="Send a message to Companion"'));
-assert(companion.includes('aria-label="Send message"'));
+assert(companion.includes('className="companion-send" type="submit"'));
 assert(companion.includes("void sendMessage()"));
 assert(companion.includes("type=\"submit\""));
 const community = fs.readFileSync(
