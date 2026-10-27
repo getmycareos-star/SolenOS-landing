@@ -8,7 +8,7 @@ assert.match(layout, /function WorkspacePrivacyBoundary/);
 assert.match(layout, /consentState !== "accepted"/, "workspace content must remain hidden until backend consent is confirmed");
 assert.match(layout, /<ConsentGatePanel caregiverId="" onStatusChange={setConsentState}\s*\/>/);
 assert.match(layout, /<WorkspacePrivacyBoundary>\s*<WorkspaceProvider>/, "consent gate must wrap provider and all workspace route content");
-assert.match(layout, /return <\{>children<\}>;/, "children should mount only after accepted state");
+assert.match(layout, /return <>\{children\}<\/>;/, "children should mount only after accepted state");
 assert.doesNotMatch(layout, /<OnboardingGate>/, "do not show a second local-only consent wall inside the workspace");
 
 assert.match(consentPanel, /apiUrl\("\/api\/v1\/consent"\)/, "required acknowledgement must be sent to backend");
