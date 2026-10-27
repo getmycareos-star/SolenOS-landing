@@ -161,32 +161,33 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     const image = new Image();
     image.src = sourceUrl;
     await image.decode();
+
+    const left = Math.round(image.width * crop.left / 100);
+    const top = Math.round(image.height * crop.top / 100);
+    const width = Math.max(1, Math.round(image.width * (100 - crop.left - crop.right) / 100));
+    const height = Math.max(1, Math.round(image.height * (100 - crop.top - crop.bottom) / 100));
+    const cropped = document.createElement("canvas");
+    cropped.width = width;
+    cropped.height = height;
+    const cropContext = cropped.getContext("2d");
+    if (!cropContext) throw new Error("Canvas crop is unavailable.");
+    cropContext.drawImage(image, left, top, width, height, 0, 0, width, height);
+
     const radians = rotationDegrees * Math.PI / 180;
     const sin = Math.abs(Math.sin(radians));
     const cos = Math.abs(Math.cos(radians));
-    const rotatedWidth = Math.max(1, Math.ceil(image.width * cos + image.height * sin));
-    const rotatedHeight = Math.max(1, Math.ceil(image.width * sin + image.height * cos));
-    const rotated = document.createElement("canvas");
-    rotated.width = rotatedWidth;
-    rotated.height = rotatedHeight;
-    const rotatedContext = rotated.getContext("2d");
-    if (!rotatedContext) throw new Error("Canvas processing is unavailable.");
-    rotatedContext.fillStyle = "#fff";
-    rotatedContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
-    rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
-    rotatedContext.rotate(radians);
-    rotatedContext.drawImage(image, -image.width / 2, -image.height / 2);
-
-    const left = Math.round(rotatedWidth * crop.left / 100);
-    const top = Math.round(rotatedHeight * crop.top / 100);
-    const width = Math.max(1, Math.round(rotatedWidth * (100 - crop.left - crop.right) / 100));
-    const height = Math.max(1, Math.round(rotatedHeight * (100 - crop.top - crop.bottom) / 100));
+    const rotatedWidth = Math.max(1, Math.ceil(width * cos + height * sin));
+    const rotatedHeight = Math.max(1, Math.ceil(width * sin + height * cos));
     const output = document.createElement("canvas");
-    output.width = width;
-    output.height = height;
+    output.width = rotatedWidth;
+    output.height = rotatedHeight;
     const outputContext = output.getContext("2d");
-    if (!outputContext) throw new Error("Canvas crop is unavailable.");
-    outputContext.drawImage(rotated, left, top, width, height, 0, 0, width, height);
+    if (!outputContext) throw new Error("Image rotation is unavailable.");
+    outputContext.fillStyle = "#fff";
+    outputContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
+    outputContext.translate(rotatedWidth / 2, rotatedHeight / 2);
+    outputContext.rotate(radians);
+    outputContext.drawImage(cropped, -width / 2, -height / 2);
     const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.92));
     const baseName = file.name.replace(/\.[^.]+$/, "");
     return new File([blob], `${baseName || "scan"}-processed.jpg`, { type: "image/jpeg", lastModified: Date.now() });
@@ -194,7 +195,6 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     URL.revokeObjectURL(sourceUrl);
   }
 }
-
 
 function joinBytes(parts: Uint8Array[]): Uint8Array {
   const total = parts.reduce((sum, part) => sum + part.length, 0);
@@ -258,6 +258,7 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
 export default function DocumentsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
+  const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
   const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
@@ -407,7 +408,7 @@ export default function DocumentsPage() {
   };
 
   const saveReviewedPages = async () => {
-    if (!reviewPages.length || reviewPages.some((page) => !page.reviewed)) {
+    if (!reviewPages.length || reviewPages.some((page) => !page.reviewed || !page.prepared)) {
       setUploadMessage({ kind: "error", text: "Review every page and confirm it against the original before saving." });
       return;
     }
@@ -531,7 +532,49 @@ export default function DocumentsPage() {
             <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.text.trim() ? "Text extracted — review required" : "No readable text extracted"}</p>
             {page.file.type === "application/pdf" && page.previewUrl && <iframe title={page.file.name + " preview"} src={page.previewUrl} style={{ width: "100%", height: 320, border: "1px solid var(--border)", borderRadius: 8 }} />}
             {page.previewUrl && page.file.type.startsWith("image/") && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}>
-              <img src={page.previewUrl} alt={`Original scan preview: ${page.file.name}`} style={{ display: "block", maxWidth: "100%", maxHeight: 300, margin: "0 auto", objectFit: "contain", transform: `rotate(${page.rotation}deg)` }} />
+              <div data-scan-crop-stage style={{ position: "relative", width: "fit-content", maxWidth: "100%", margin: "0 auto", touchAction: "none", transform: `rotate(${page.rotation}deg)`, transformOrigin: "center center" }}>
+                <img src={page.previewUrl} alt={`Original scan preview: ${page.file.name}`} style={{ display: "block", maxWidth: "100%", maxHeight: 300, objectFit: "contain", pointerEvents: "none" }} />
+                <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: `${page.crop.top}%`, background: "rgba(12,18,14,.48)" }} />
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${page.crop.bottom}%`, background: "rgba(12,18,14,.48)" }} />
+                  <div style={{ position: "absolute", top: `${page.crop.top}%`, bottom: `${page.crop.bottom}%`, left: 0, width: `${page.crop.left}%`, background: "rgba(12,18,14,.48)" }} />
+                  <div style={{ position: "absolute", top: `${page.crop.top}%`, bottom: `${page.crop.bottom}%`, right: 0, width: `${page.crop.right}%`, background: "rgba(12,18,14,.48)" }} />
+                </div>
+                <div role="slider" aria-label={`Move crop area for ${page.file.name}`} aria-valuetext={`Left ${page.crop.left}%, top ${page.crop.top}%, right ${page.crop.right}%, bottom ${page.crop.bottom}%`} tabIndex={0}
+                  onPointerDown={(event) => {
+                    const stageElement = event.currentTarget.closest("[data-scan-crop-stage]");
+                    if (!stageElement) return;
+                    const bounds = stageElement.getBoundingClientRect();
+                    cropDrag.current = { index, startX: event.clientX, startY: event.clientY, width: bounds.width, height: bounds.height, crop: page.crop };
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                  }}
+                  onPointerMove={(event) => {
+                    const drag = cropDrag.current;
+                    if (!drag || drag.index !== index || drag.width <= 0 || drag.height <= 0) return;
+                    const dx = (event.clientX - drag.startX) / drag.width * 100;
+                    const dy = (event.clientY - drag.startY) / drag.height * 100;
+                    const left = Math.max(0, Math.min(80 - drag.crop.right, drag.crop.left + dx));
+                    const top = Math.max(0, Math.min(80 - drag.crop.bottom, drag.crop.top + dy));
+                    setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply adjustments and re-extract text." } : item));
+                  }}
+                  onPointerUp={() => { cropDrag.current = null; }}
+                  onPointerCancel={() => { cropDrag.current = null; }}
+                  onKeyDown={(event) => {
+                    const step = event.shiftKey ? 5 : 1;
+                    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+                    event.preventDefault();
+                    setReviewPages((current) => current.map((item, i) => {
+                      if (i !== index) return item;
+                      const crop = { ...item.crop };
+                      if (event.key === "ArrowLeft") crop.left = Math.max(0, crop.left - step);
+                      if (event.key === "ArrowRight") crop.left = Math.min(80 - crop.right, crop.left + step);
+                      if (event.key === "ArrowUp") crop.top = Math.max(0, crop.top - step);
+                      if (event.key === "ArrowDown") crop.top = Math.min(80 - crop.bottom, crop.top + step);
+                      return { ...item, crop, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply adjustments and re-extract text." };
+                    }));
+                  }}
+                  style={{ position: "absolute", left: `${page.crop.left}%`, top: `${page.crop.top}%`, width: `${100 - page.crop.left - page.crop.right}%`, height: `${100 - page.crop.top - page.crop.bottom}%`, border: "2px solid #fff", boxShadow: "0 0 0 1px #17251c", cursor: "move", touchAction: "none", boxSizing: "border-box", background: "transparent" }} />
+              </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
                 <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
