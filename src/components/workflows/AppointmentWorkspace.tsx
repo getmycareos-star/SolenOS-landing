@@ -5,6 +5,15 @@ import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/clie
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
 
 type Stage = 'prepare' | 'during' | 'after'
+type PreparationBrief = {
+  snapshot_at: string
+  read_only: boolean
+  facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null; recorded_at?: string | null; updated_at?: string | null }>
+  events: Array<{ source_id: string; title: string; description?: string | null; event_type: string; occurred_at?: string | null; status: string }>
+  appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
+  source_coverage: Record<string, string>
+  limitations: string[]
+}
 type FollowUp = { action: string; owner: string; due: string; status: 'Open' | 'In progress' | 'Done' | 'Needs clarification' }
 
 const emptyFollowUp = (): FollowUp => ({ action: '', owner: '', due: '', status: 'Open' })
@@ -17,6 +26,8 @@ export default function AppointmentWorkspace() {
   const [savingRecord, setSavingRecord] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [lcrBrief, setLcrBrief] = useState<PreparationBrief | null>(null)
+  const [briefError, setBriefError] = useState('')
   const [stage, setStage] = useState<Stage>('prepare')
   const [visitPurpose, setVisitPurpose] = useState('')
   const [clinician, setClinician] = useState('')
@@ -56,6 +67,16 @@ export default function AppointmentWorkspace() {
     void (async () => {
       try {
         await ensureAnonymousSession()
+        try {
+          const brief = await getJSON('/appointment-workspaces/preparation-brief?window_days=90') as PreparationBrief
+          if (!cancelled) setLcrBrief(brief)
+          if (!cancelled) setBriefError('')
+        } catch (error) {
+          if (!cancelled) {
+            setLcrBrief(null)
+            setBriefError(error instanceof Error ? error.message : 'LCR preparation sources are unavailable.')
+          }
+        }
         const response = await getJSON('/appointment-workspaces') as { items?: Array<{ id: string }> }
         const first = response.items?.[0]
         if (!first || cancelled) return
@@ -168,6 +189,30 @@ export default function AppointmentWorkspace() {
         {stage === 'prepare' && <div className="appointment-stage-panel">
           <h4>Appointment preparation brief</h4>
           <p className="appointment-stage-intro">Put the most important concern first. Use only information you can support; unknown details can remain blank.</p>
+          <section className="appointment-lcr-brief" aria-labelledby="appointment-lcr-brief-title">
+            <div className="appointment-lcr-brief-heading">
+              <div>
+                <h5 id="appointment-lcr-brief-title">Relevant information from the Living Care Record</h5>
+                <p>{lcrBrief ? 'Read-only source snapshot · ' + new Date(lcrBrief.snapshot_at).toLocaleString() : 'This section requires the authenticated appointment preparation API.'}</p>
+              </div>
+              <span className="appointment-source-pill">{lcrBrief ? 'Source-linked' : 'Not loaded'}</span>
+            </div>
+            {briefError && <p className="appointment-brief-warning" role="status">LCR sources could not be loaded: {briefError}. This is not evidence that no care history exists.</p>}
+            {lcrBrief && <>
+              <div className="appointment-brief-grid">
+                <div><strong>Recorded facts ({lcrBrief.facts.length})</strong>
+                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>{item.fact_type} · {item.epistemic_status} · Source {item.source_id}</small></li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
+                </div>
+                <div><strong>Recent care events ({lcrBrief.events.length})</strong>
+                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {item.status} · Source {item.source_id}</small>{item.description && <p>{item.description}</p>}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
+                </div>
+                <div><strong>Appointment history ({lcrBrief.appointments.length})</strong>
+                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {item.status} · Source {item.source_id}</small></li>)}</ul> : <p>No appointment records were returned.</p>}
+                </div>
+              </div>
+              <p className="appointment-brief-limitations">{lcrBrief.limitations.join(' ')}</p>
+            </>}
+          </section>
           <div className="appointment-fields appointment-fields-two">
             <label>Visit purpose<textarea value={visitPurpose} onChange={event => setVisitPurpose(event.target.value)} rows={2} placeholder="What does the family want help understanding?" /></label>
             <label>Clinician name<input value={clinician} onChange={event => setClinician(event.target.value)} placeholder="Name, if known" /></label>
@@ -248,6 +293,22 @@ export default function AppointmentWorkspace() {
         .appointment-secondary { background:#fff; }
         .appointment-boundary,.appointment-save-boundary { display:flex; align-items:flex-start; gap:8px; margin:18px 0 0; padding:12px; border:1px solid #e4e9de; border-radius:11px; background:#f7f9f4; color:#536653; font-size:12px; line-height:1.6; }
         .appointment-boundary svg,.appointment-save-boundary svg { flex:0 0 auto; margin-top:2px; }
+        .appointment-lcr-brief { margin:16px 0 18px; padding:14px; border:1px solid #dfe8df; border-radius:13px; background:#f8faf7; }
+        .appointment-lcr-brief-heading { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+        .appointment-lcr-brief-heading h5 { margin:0; }
+        .appointment-lcr-brief-heading p { margin:5px 0 0; color:#738075; font-size:11px; }
+        .appointment-source-pill { padding:5px 8px; border:1px solid #d7e2d4; border-radius:999px; color:#426648; font-size:10px; white-space:nowrap; }
+        .appointment-brief-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px; }
+        .appointment-brief-grid > div { min-width:0; padding:10px; border:1px solid #e3eae0; border-radius:10px; background:#fff; }
+        .appointment-brief-grid strong { color:#405343; font-size:11px; }
+        .appointment-brief-grid ul { margin:8px 0 0; padding-left:16px; }
+        .appointment-brief-grid li { margin:0 0 9px; color:#445647; font-size:11px; line-height:1.45; overflow-wrap:anywhere; }
+        .appointment-brief-grid li span { display:block; }
+        .appointment-brief-grid li small { display:block; margin-top:3px; color:#778278; font-size:9px; overflow-wrap:anywhere; }
+        .appointment-brief-grid li p { margin:4px 0 0; font-size:10px; }
+        .appointment-brief-grid > div > p,.appointment-brief-limitations { color:#758075; font-size:10px; line-height:1.55; }
+        .appointment-brief-warning { padding:9px; border-radius:8px; background:#fff4e8; color:#815a28; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+        .appointment-brief-limitations { margin:12px 0 0; }
         .appointment-stages { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 0; padding-bottom:14px; border-bottom:1px solid #e8eee7; }
         .appointment-stage { min-height:40px; padding:9px 12px; border:1px solid #dfe8df; border-radius:10px; background:#fff; color:#506354; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
         .appointment-stage.is-active { border-color:#9fbd9d; background:#edf5eb; color:#294b31; }
@@ -268,6 +329,7 @@ export default function AppointmentWorkspace() {
         .appointment-followups-heading h5 { margin:0; }
         .appointment-followup { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; margin-top:10px; padding:12px; border:1px solid #e1e9de; border-radius:12px; }
         .appointment-review-status { max-width:440px; margin-top:16px; }
+        @media(max-width:820px) { .appointment-brief-grid { grid-template-columns:minmax(0,1fr); } }
         @media(max-width:680px) { .appointment-workspace { padding:15px; border-radius:16px; } .appointment-fields-two { grid-template-columns:minmax(0,1fr); } .appointment-followup { grid-template-columns:minmax(0,1fr); } .appointment-primary { width:100%; } }
       `}</style>
     </section>
