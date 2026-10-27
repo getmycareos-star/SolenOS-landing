@@ -235,7 +235,7 @@
     "verify:document-intelligence-care": "tsx scripts/verify-document-intelligence-care.mts",
     "verify:document-intelligence-quality": "tsx scripts/verify-document-intelligence-quality.mts",
     "typecheck": "tsc --noEmit",
-    "test": "npm run verify:care-timeline-ui && npm run verify:care-identity && npm run verify:return-continuity && npm run verify:illustration-vs-implementation && npm run verify:qwen-routing && npm run verify:anonymous-session-race && npm run verify:persisted-care-orientation && npm run verify:input-entry-contract && npm run verify:greeting-orientation && npm run verify:caregiver-ui-contract && npm run verify:api-client-reliability && npm run verify:document-scan-processing && npm run verify:handoff-source-provenance",
+    "test": "npm run verify:care-timeline-ui && npm run verify:care-identity && npm run verify:return-continuity && npm run verify:illustration-vs-implementation && npm run verify:qwen-routing && npm run verify:anonymous-session-race && npm run verify:persisted-care-orientation && npm run verify:input-entry-contract && npm run verify:greeting-orientation && npm run verify:caregiver-ui-contract && npm run verify:api-client-reliability && npm run verify:document-scan-processing && npm run verify:handoff-source-provenance && npm run verify:workspace-privacy-boundary",
     "verify:anonymous-session-race": "tsx scripts/verify-anonymous-session-race.mts",
     "verify:persisted-care-orientation": "tsx scripts/verify-persisted-care-orientation.mts",
     "verify:caregiver-ui-contract": "tsx scripts/verify-caregiver-ui-contract.mts",
