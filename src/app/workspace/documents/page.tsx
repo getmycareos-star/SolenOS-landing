@@ -118,11 +118,19 @@ async function extractText(file: File): Promise<{ text: string; note: string | n
     const form = new FormData();
     form.append("file", file);
     const session = await ensureAnonymousSession();
-    const response = await fetch(apiUrl("/api/extract"), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${session.access_token}` },
-      body: form,
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 40_000);
+    let response: Response;
+    try {
+      response = await fetch(apiUrl("/api/extract"), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: form,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     const data = await safeJson(response) as {
       ok?: boolean;
       document?: { extracted_text?: string };
@@ -283,7 +291,15 @@ export default function DocumentsPage() {
     link.remove();
   };
 
-  const aiContext = useMemo(() => documents.slice(0, 10).map((doc) =>
+  const aiDocuments = useMemo(() => {
+    const selected = documents.find((doc) => doc.id === selectedId);
+    return [
+      ...(selected ? [selected] : []),
+      ...documents.filter((doc) => doc.id !== selectedId),
+    ].slice(0, 10);
+  }, [documents, selectedId]);
+
+  const aiContext = useMemo(() => aiDocuments.map((doc) =>
     [
       "Document ID: " + doc.id,
       "Filename: " + doc.title,
@@ -292,9 +308,9 @@ export default function DocumentsPage() {
       "Storage status: " + doc.status,
       "Available extracted text: " + (doc.extractedText.trim() || "No extracted text is stored for this document."),
     ].join("\n"),
-  ).join("\n\n").slice(0, 3000), [documents]);
+  ).join("\n\n").slice(0, 3000), [aiDocuments]);
 
-  const aiEvidenceIds = useMemo(() => documents.slice(0, 10).map((doc) => doc.id), [documents]);
+  const aiEvidenceIds = useMemo(() => aiDocuments.map((doc) => doc.id), [aiDocuments]);
 
   return (
     <div className="mobile-screen" style={{ gap: 18, paddingBottom: 28 }}>
@@ -358,7 +374,7 @@ export default function DocumentsPage() {
           <span style={{ width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 9, background: "var(--bg)", flexShrink: 0 }}><ShieldCheck size={20} /></span>
           <div>
             <h2 style={{ margin: 0, fontSize: 18 }}>Document intelligence</h2>
-            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>Ask about what saved documents state, what has changed between them, important dates, instructions and unanswered questions. AI suggestions remain reviewable and do not silently rewrite the Living Care Record.</p>
+            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>Review saved documents, compare available wording, dates and instructions, and surface changes or contradictions for caregiver review. Relevant saved document evidence can also support the AI Companion. Suggestions remain reviewable and do not silently rewrite the Living Care Record.</p>
           </div>
         </div>
         {documents.length === 0 ? <p style={{ margin: "12px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Save a document first so the document specialist can use its saved evidence rather than guessing.</p> : (
