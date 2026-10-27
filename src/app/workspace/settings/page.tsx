@@ -142,7 +142,7 @@ function NotificationsCard() {
         <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
         <Button variant="secondary" onClick={() => void loadInbox()} disabled={inboxLoading}>Refresh notifications</Button>
       </div>
-      <div className="settings-notification-inbox" aria-label="Notification inbox">
+      <div id="settings-notifications" className="settings-notification-inbox" aria-label="Notification inbox">
         <h3 className="mobile-settings-label">Recent notifications · {unreadCount} unread</h3>
         {inboxLoading && <p className="mobile-settings-hint" role="status">Loading notifications…</p>}
         {inboxError && <p className="mobile-settings-hint" role="alert">{inboxError}</p>}
