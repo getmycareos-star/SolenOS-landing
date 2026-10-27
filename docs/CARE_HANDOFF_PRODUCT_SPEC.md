@@ -68,7 +68,7 @@ Professional content must distinguish clinician-assessed status from caregiver r
 
 ## Source coverage and launch gates
 
-Backend PR #203 is merged and adds audience-specific template coverage. The deployed endpoint version must still be verified on Railway before relying on that response shape. Backend PR #204 is merged and adds person-scoped care events, care transitions, appointments, and actions. Backend PR #205 proposes separate event/record/due timestamps and preservation of active baseline facts; its tests must pass before that behavior is considered merged. Action records are included only when their linked evidence belongs to the requesting caregiver; another caregiver's private evidence is excluded.
+Backend PR #203 is merged and adds audience-specific template coverage. The deployed endpoint version must still be verified on Railway before relying on that response shape. Backend PR #204 is merged and adds person-scoped care events, care transitions, appointments, and actions. Backend PR #205 is merged and adds separate event/record/due timestamps, preserves active baseline facts outside the event window, and labels superseded facts rather than presenting them as current. Action records are included only when their linked evidence belongs to the requesting caregiver; another caregiver's private evidence is excluded.
 
 Daily Care, document contents, medication/allergy adapters, routine/preferences, contacts, measurements, and verified professional identity are not to be shown as available until their person-scoped persistence/access paths are tested. An appointment is not a verified medication list. Community is not an authorised source.
 
