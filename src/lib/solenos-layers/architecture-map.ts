@@ -189,7 +189,7 @@ export const PUBLIC_TRUST_LAYER = {
     "/help",
     "/capabilities",
   ] as const,
-  firstVisitLanding: "/start",
+  firstVisitLanding: "/",
   enterCareRecord: "/workspace?enter=1",
   beginRestoresDurableReality:
     "Begin starts a new interaction session only — same durable care key restores ACS/CRS/CareContext (G11). Never mint a new care reality on Begin.",
