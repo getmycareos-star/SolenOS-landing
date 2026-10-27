@@ -100,6 +100,13 @@ requireText("src/app/workspace/documents/page.tsx", [
   "I reviewed this text against the original scan.",
   "UNCERTAIN EXTRACTION",
   "Scanned statements remain source evidence, not verified LCR facts.",
+  "Original document saved:",
+  "The combined PDF exceeds the 10 MiB upload limit.",
+  'form.append("scan_review_status"',
+  'form.append("scan_rotation_degrees"',
+  'form.append("scan_crop_json"',
+  'form.append("scan_text_prepared"',
+
 ]);
 const documentPage = read("src/app/workspace/documents/page.tsx");
 assert(!documentPage.includes("setTimeout(() => setPreviewLoading"), "Document preview must not simulate loading with a timer.");
