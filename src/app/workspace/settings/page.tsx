@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import Link from "next/link";
 import {
   Bell,
+  Check,
   FileText,
   Info,
   Share2,
@@ -18,7 +19,7 @@ import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getJSON, patchJSON, postJSON, putJSON } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
@@ -88,9 +89,8 @@ function NotificationsCard() {
         <span className="mobile-toggle"><input type="checkbox" checked={reminders} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("reminders_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
       <div className="mobile-settings-actions">
-        <Button variant="secondary" asChild><Link href="/workspace/notifications">View notifications</Link></Button>
+        <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
       </div>
-      <Link href="/workspace/reminders" className="care-reminders-settings-link">Manage care reminders</Link>
       {render()}
     </section>
   );
