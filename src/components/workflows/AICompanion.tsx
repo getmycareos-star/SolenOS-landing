@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 
@@ -29,7 +29,6 @@ const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'Talk through a difficult moment', description: 'Sort out what happened and what might help next.', prompt: 'Help me think through a difficult moment in care.' },
   { icon: Clock3, title: 'Make sense of a change', description: 'Separate what we know from what is still unclear.', prompt: 'Help me make sense of a recent change without jumping to conclusions.' },
   { icon: FileText, title: 'Prepare for an appointment', description: 'Organise observations and questions to take along.', prompt: 'Help me prepare clear questions for an upcoming care appointment.' },
-  { icon: Lightbulb, title: 'Plan a care handoff', description: 'Explain what the next caregiver needs to know.', prompt: 'Help me organise a care handoff for another family caregiver.' },
 ]
 
 export default function Companion() {
@@ -39,6 +38,9 @@ export default function Companion() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
+  const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
+  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
   const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number } | null>(null)
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -161,6 +163,70 @@ export default function Companion() {
         <div className="companion-boundary"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Your care record stays in your hands</strong><span>Suggestions here do not become Living Care Record facts automatically.</span></div></div>
       </section>
 
+      <section className="companion-handoff" aria-labelledby="companion-handoff-title">
+        <div className="companion-handoff-heading">
+          <div className="companion-handoff-icon" aria-hidden="true"><ClipboardList size={21} /></div>
+          <div className="companion-handoff-copy">
+            <span className="companion-kicker">CARE HANDOFF</span>
+            <h3 id="companion-handoff-title">Help someone understand the care situation</h3>
+            <p>Prepare a clear handoff for the person who will be supporting care next.</p>
+          </div>
+          {handoffStep === 'closed' ? (
+            <button className="companion-handoff-primary" type="button" onClick={() => { setHandoffStep('audience'); setHandoffAudience(null); setHandoffPurpose(null) }}>
+              <Plus size={17} aria-hidden="true" /> Create care handoff
+            </button>
+          ) : (
+            <button className="companion-handoff-close" type="button" aria-label="Close care handoff setup" onClick={() => { setHandoffStep('closed'); setHandoffAudience(null); setHandoffPurpose(null) }}>Close</button>
+          )}
+        </div>
+
+        {handoffStep === 'audience' && (
+          <div className="companion-handoff-step">
+            <h4>Who is this handoff for?</h4>
+            <p>Choose the person who needs to understand the care situation.</p>
+            <div className="companion-handoff-options">
+              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('family'); setHandoffPurpose(null); setHandoffStep('purpose') }}>
+                <span className="companion-handoff-option-icon"><Users size={20} aria-hidden="true" /></span>
+                <span><strong>Family caregiver</strong><small>Help a family member or another trusted caregiver take over care.</small></span>
+                <span className="companion-handoff-arrow" aria-hidden="true">→</span>
+              </button>
+              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('professional'); setHandoffPurpose(null); setHandoffStep('purpose') }}>
+                <span className="companion-handoff-option-icon"><Stethoscope size={20} aria-hidden="true" /></span>
+                <span><strong>Professional</strong><small>Prepare information for a doctor, nurse, or care professional.</small></span>
+                <span className="companion-handoff-arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {handoffStep === 'purpose' && (
+          <div className="companion-handoff-step">
+            <div className="companion-handoff-step-top">
+              <div><h4>What do you need?</h4><p>Describe the handoff you want to prepare.</p></div>
+              <button className="companion-handoff-back" type="button" onClick={() => { setHandoffStep('audience'); setHandoffPurpose(null) }}>Change recipient</button>
+            </div>
+            <div className="companion-handoff-purpose-options">
+              <button className={'companion-handoff-purpose' + (handoffPurpose === 'today' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'today'} onClick={() => setHandoffPurpose('today')}>
+                <span className="companion-handoff-purpose-icon"><Clock3 size={19} aria-hidden="true" /></span>
+                <strong>Taking over today</strong>
+                <small>What the next caregiver needs to know for the day or shift.</small>
+              </button>
+              <button className={'companion-handoff-purpose' + (handoffPurpose === 'appointment' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'appointment'} onClick={() => setHandoffPurpose('appointment')}>
+                <span className="companion-handoff-purpose-icon"><Stethoscope size={19} aria-hidden="true" /></span>
+                <strong>Doctor's appointment</strong>
+                <small>Organise relevant information for a healthcare appointment.</small>
+              </button>
+              <button className={'companion-handoff-purpose' + (handoffPurpose === 'overview' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'overview'} onClick={() => setHandoffPurpose('overview')}>
+                <span className="companion-handoff-purpose-icon"><FileText size={19} aria-hidden="true" /></span>
+                <strong>Full care overview</strong>
+                <small>Give someone a broader understanding of the care situation.</small>
+              </button>
+            </div>
+            {handoffPurpose && <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : handoffPurpose === 'appointment' ? "Doctor's appointment" : 'Full care overview'}. The next step will be added after the handoff details are defined.</p>}
+          </div>
+        )}
+      </section>
+
       {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
@@ -221,6 +287,34 @@ export default function Companion() {
       <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
 
       <style jsx>{`
+        .companion-handoff { border:1px solid #dfe8e1; border-radius:20px; padding:clamp(18px,2.8vw,26px); background:#fff; }
+        .companion-handoff-heading { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+        .companion-handoff-icon { display:grid; place-items:center; flex:0 0 44px; width:44px; height:44px; border:1px solid #d8e5d6; border-radius:14px; background:#edf5ec; color:#456b49; }
+        .companion-handoff-copy { flex:1; min-width:190px; }
+        .companion-handoff-copy .companion-kicker { margin-bottom:5px; }
+        .companion-handoff-copy h3 { margin:0; color:#25372b; font-size:clamp(17px,2vw,21px); line-height:1.3; letter-spacing:-.025em; }
+        .companion-handoff-copy p { margin:5px 0 0; color:#6a786e; font-size:13px; line-height:1.55; }
+        .companion-handoff-primary,.companion-handoff-close,.companion-handoff-back { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:42px; padding:10px 14px; border:1px solid #cbdcc9; border-radius:12px; background:#e7f0e5; color:#203b27; font:inherit; font-size:13px; font-weight:750; cursor:pointer; }
+        .companion-handoff-primary:hover { background:#dcebd9; border-color:#a9c7a8; }
+        .companion-handoff-close,.companion-handoff-back { background:#fff; color:#526457; }
+        .companion-handoff-close:hover,.companion-handoff-back:hover { background:#f5f8f4; }
+        .companion-handoff-step { margin-top:22px; padding-top:20px; border-top:1px solid #e8eee7; }
+        .companion-handoff-step h4 { margin:0; color:#25372b; font-size:17px; letter-spacing:-.02em; }
+        .companion-handoff-step>p,.companion-handoff-step-top p { margin:5px 0 0; color:#6a786e; font-size:13px; line-height:1.55; }
+        .companion-handoff-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+        .companion-handoff-option { display:flex; align-items:center; gap:12px; min-width:0; padding:16px; text-align:left; border:1px solid #e0e9df; border-radius:15px; background:#fff; color:#25372b; font:inherit; cursor:pointer; transition:background .15s ease,border-color .15s ease; }
+        .companion-handoff-option:hover { background:#f6faf5; border-color:#b9d1b8; }
+        .companion-handoff-option-icon,.companion-handoff-purpose-icon { display:grid; place-items:center; flex:0 0 38px; width:38px; height:38px; border-radius:11px; background:#edf5ec; color:#527657; }
+        .companion-handoff-option>span:nth-child(2) { flex:1; min-width:0; }
+        .companion-handoff-option strong,.companion-handoff-purpose strong { display:block; color:#25372b; font-size:13px; line-height:1.45; }
+        .companion-handoff-option small,.companion-handoff-purpose small { display:block; margin-top:4px; color:#718075; font-size:11px; line-height:1.55; font-weight:450; }
+        .companion-handoff-arrow { color:#789079; font-size:19px; }
+        .companion-handoff-step-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .companion-handoff-purpose-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px; }
+        .companion-handoff-purpose { display:flex; flex-direction:column; align-items:flex-start; gap:7px; min-width:0; min-height:158px; padding:15px; text-align:left; border:1px solid #e0e9df; border-radius:15px; background:#fff; color:#25372b; font:inherit; cursor:pointer; transition:background .15s ease,border-color .15s ease,box-shadow .15s ease; }
+        .companion-handoff-purpose:hover { background:#f7faf6; border-color:#b9d1b8; }
+        .companion-handoff-purpose.is-selected { border-color:#7ea47d; background:#f0f7ee; box-shadow:0 0 0 2px rgba(111,151,109,.12); }
+        .companion-handoff-selection { margin-top:14px !important; padding:11px 13px; border-radius:11px; background:#f3f7f1; color:#4c674e !important; font-size:12px !important; }
         .companion-shell { --cc-ink:#1d3028; --cc-muted:#68776e; --cc-line:#dfe8e1; width:100%; max-width:1180px; min-width:0; margin:0 auto; display:flex; flex-direction:column; gap:20px; color:var(--cc-ink); font-family:inherit; }
         .companion-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:4px 0 16px; border-bottom:1px solid var(--cc-line); }
         .companion-brand { display:flex; align-items:center; gap:12px; min-width:0; }
@@ -277,6 +371,7 @@ export default function Companion() {
         .companion-error { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border:1px solid #e7c9a7; border-radius:12px; background:#fff8ef; color:#704b2c; font-size:12px; line-height:1.55; }
         .companion-error button { flex:0 0 auto; padding:7px 10px; border:1px solid #e4c5a1; border-radius:8px; background:#fff; color:#704b2c; font:inherit; font-weight:800; cursor:pointer; }
         .companion-emergency { padding:14px 16px; border:1px solid #e8b5ae; border-radius:13px; background:#fff3f1; color:#762f28; } .companion-emergency strong { display:block; font-size:13px; } .companion-emergency p { margin:5px 0 0; font-size:12px; line-height:1.6; }
+        @media (max-width:760px) { .companion-handoff-options { grid-template-columns:1fr; } .companion-handoff-purpose-options { grid-template-columns:1fr; } .companion-handoff-purpose { min-height:0; } .companion-handoff-primary { width:100%; } }
         @media (max-width:860px) { .companion-purpose { grid-template-columns:minmax(0,1fr); gap:17px; } .companion-workspace { grid-template-columns:minmax(0,1fr); } .companion-side-note { order:2; } .companion-conversation { min-height:280px; } }
         @media (max-width:560px) {
           .companion-shell { gap:14px; } .companion-topbar { align-items:flex-start; gap:10px; padding-bottom:13px; } .companion-mark { flex-basis:40px; width:40px; height:40px; border-radius:13px; }
