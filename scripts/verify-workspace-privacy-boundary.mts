@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const layout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const cognitiveWorkspace = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const consentPanel = fs.readFileSync("src/components/mvp-workspace/ConsentGatePanel.tsx", "utf8");
 const previewGate = fs.readFileSync("src/components/mvp-workspace/ResearchPreviewAckGate.tsx", "utf8");
 
@@ -16,10 +17,14 @@ assert.doesNotMatch(workspacePage, /ResearchPreviewAckGate/,
   "the LCR page must not mount an early-version acknowledgement gate");
 assert.match(workspacePage, /Living Care Record/,
   "the destination is the Living Care Record workspace");
+assert.doesNotMatch(cognitiveWorkspace, /ConsentGatePanel|consentState|setConsentState/,
+  "the LCR composer must not require a privacy checkbox before opening or saving a care entry");
+assert.match(cognitiveWorkspace, /<QwenAssistPanel/,
+  "the workspace AI helper is not hidden behind a general consent checkbox");
 assert.match(previewGate, /RESEARCH_PREVIEW_SECTION\.ackLabel|early version/i,
   "legacy component remains identifiable for regression detection, but must not be mounted in the workspace");
 assert.match(consentPanel, /api\/v1\/consent/,
   "legacy consent API integration may remain for action-specific backend policy; it must not gate workspace entry");
 
-console.log("✓ workspace routes mount without a privacy or early-version checkbox gate");
+console.log("✓ workspace routes and the LCR composer mount without a privacy or early-version checkbox gate");
 console.log("✓ direct workspace entry does not disable server-side authentication or authorisation");
