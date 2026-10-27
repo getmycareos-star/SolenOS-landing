@@ -33,6 +33,7 @@ type Props = {
   evidenceIds?: string[];
   appointmentId?: string | null;
   title?: string;
+  description?: string;
   compact?: boolean;
 };
 
@@ -46,6 +47,7 @@ export default function QwenAssistPanel({
   evidenceIds = [],
   appointmentId = null,
   title = "Help with your care information",
+  description = "Get help understanding or organizing the information here. Suggestions are not saved to the Living Care Record automatically.",
   compact = false,
 }: Props) {
   const [question, setQuestion] = useState("");
@@ -125,7 +127,7 @@ export default function QwenAssistPanel({
         <div>
           <h2 style={{ fontSize: "15px", fontWeight: 650, margin: 0 }}>{title}</h2>
           <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginTop: "4px", lineHeight: 1.5 }}>
-            Get help understanding or organizing the information here. Suggestions are not saved to the Living Care Record automatically.
+            {description}
           </p>
         </div>
       </div>
