@@ -18,7 +18,6 @@ import {
   type WorkspaceSituationResponse,
 } from "@/lib/situation-entry/backend-response";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
-import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 import {
   CARE_RECIPIENT_ID_STORAGE,
   DURABLE_CARE_KEY_STORAGE,
@@ -37,12 +36,7 @@ import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
-import {
-  IN_APP_IMPROVING_NOTICE,
-  EMERGENCY_BOUNDARY,
-} from "@/lib/early-access-trust";
-import { HelpImproveSolenos } from "./HelpImproveSolenos";
-import { ConsentGatePanel } from "./ConsentGatePanel";
+import { EMERGENCY_BOUNDARY } from "@/lib/early-access-trust";
 
 function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string {
   const observations = response.active_care_situation?.observations ?? [];
@@ -159,7 +153,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   /** Soft privacy line after first capture — never a consent wall. */
   const [showSoftPrivacyNote, setShowSoftPrivacyNote] = useState(false);
   const [caregiverId, setCaregiverId] = useState("");
-  const [consentState, setConsentState] = useState<"loading" | "required" | "accepted" | "unavailable">("loading");
   /** Care Reality id — shared Living Care Record (Locked B). Distinct from contributor session. */
   const [careRecipientId, setCareRecipientId] = useState<string | null>(null);
   /** Null = still loading; "" = needs ask-once; string = set. */
@@ -370,10 +363,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   }
 
   async function handleAddSituation(provenance: InputProvenance) {
-    if (consentState !== "accepted") {
-      setCaregiverError("Your note is still a draft. Retry the privacy check before saving or sending care information.");
-      return;
-    }
     const readyDocs = documents.filter((d) => d.status === "ready" && (d.extractedText.trim() || d.evidenceId));
     const text = rawInput.trim();
     const sharedDisplay = buildSharedDisplayText(text, readyDocs);
@@ -1032,26 +1021,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     .filter(Boolean)
     .join(" ");
 
-  // Keep the caregiver workspace behind the required privacy acknowledgement.
-  // If the consent service is unavailable, show only the retryable consent screen;
-  // never expose the workspace while the acknowledgement state is unknown.
-  if (consentState !== "accepted") {
-    return (
-      <div className={shellClass}>
-        <p className="panel-muted research-preview-notice" role="note">
-          {IN_APP_IMPROVING_NOTICE}
-        </p>
-        <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
-      </div>
-    );
-  }
-
   if (isArchived) {
     return (
       <div className={shellClass}>
-        <p className="panel-muted research-preview-notice" role="note">
-          {IN_APP_IMPROVING_NOTICE}
-        </p>
         <section className="panel" aria-labelledby="archived-workspace-heading">
           <h2 id="archived-workspace-heading" className="workspace-headline">Workspace archived</h2>
           <p className="panel-muted">
@@ -1072,25 +1044,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
 
   return (
     <div className={shellClass}>
-      <p className="panel-muted research-preview-notice" role="note">
-        {IN_APP_IMPROVING_NOTICE}
-      </p>
-      <ConsentGatePanel caregiverId={caregiverId} onStatusChange={setConsentState} />
-      {(consentState === "accepted" || consentState === "unavailable") && (
-        <>
-      <HelpImproveSolenos compact />
-      {consentState === "accepted" && <QwenAssistPanel
-        title="Help with your care information"
-        defaultWorkflow="living_care_record"
-        contextText={[
-          rawInput.trim() ? "Current caregiver input (not necessarily saved): " + rawInput.trim() : "",
-          ...documents.filter((document) => document.extractedText.trim()).map((document) =>
-            "Attached document " + document.name + " (extracted text; not a confirmed care fact): " + document.extractedText.trim()
-          ),
-          lastSharedDisplay?.trim() ? "Current displayed care context: " + lastSharedDisplay.trim() : "",
-        ].filter(Boolean).join("\n\n")}
-        evidenceIds={documents.map((document) => document.evidenceId).filter((id): id is string => Boolean(id))}
-      />}
+      <div className="lcr-capture-context" role="note">
+        <p className="workspace-muted">Add information to the shared care record. Suggestions are not treated as confirmed facts, and nothing is submitted until you choose to save it.</p>
+      </div>
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
           What you share stays in the Living Care Record for this care journey. It is not sold or used
@@ -1303,8 +1259,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <p className="panel-muted workspace-emergency-note" role="note">
         {EMERGENCY_BOUNDARY}
       </p>
-        </>
-      )}
     </div>
   );
 }
