@@ -187,12 +187,72 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     const outputContext = output.getContext("2d");
     if (!outputContext) throw new Error("Canvas crop is unavailable.");
     outputContext.drawImage(rotated, left, top, width, height, 0, 0, width, height);
-    const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/png"));
+    const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.92));
     const baseName = file.name.replace(/\.[^.]+$/, "");
-    return new File([blob], `${baseName || "scan"}-ocr.png`, { type: "image/png", lastModified: Date.now() });
+    return new File([blob], `${baseName || "scan"}-processed.jpg`, { type: "image/jpeg", lastModified: Date.now() });
   } finally {
     URL.revokeObjectURL(sourceUrl);
   }
+}
+
+
+function joinBytes(parts: Uint8Array[]): Uint8Array {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.length;
+  }
+  return output;
+}
+
+async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
+  if (pages.length < 2) throw new Error("Select at least two image pages to create a multi-page PDF.");
+  const encoder = new TextEncoder();
+  const imagePages: { bytes: Uint8Array; width: number; height: number }[] = [];
+  for (const page of pages) {
+    const processed = await createProcessedImage(page.file, page.rotation, page.crop);
+    const bitmap = await createImageBitmap(processed);
+    imagePages.push({ bytes: new Uint8Array(await processed.arrayBuffer()), width: bitmap.width, height: bitmap.height });
+    bitmap.close();
+  }
+
+  const objects: Uint8Array[] = [];
+  const offsets: number[] = [0];
+  let byteOffset = 0;
+  const pushObject = (id: number, chunks: Uint8Array[]) => {
+    const objectBytes = joinBytes([encoder.encode(`${id} 0 obj\\n`), ...chunks, encoder.encode("\\nendobj\\n")]);
+    offsets[id] = byteOffset;
+    objects.push(objectBytes);
+    byteOffset += objectBytes.length;
+  };
+  const maxObjectId = 2 + imagePages.length * 3;
+  pushObject(1, [encoder.encode("<< /Type /Catalog /Pages 2 0 R >>")]);
+  const pageIds = imagePages.map((_, index) => 3 + index * 3);
+  pushObject(2, [encoder.encode(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${imagePages.length} >>`)]);
+
+  imagePages.forEach((page, index) => {
+    const pageId = 3 + index * 3;
+    const contentId = pageId + 1;
+    const imageId = pageId + 2;
+    const content = encoder.encode(`q\\n${page.width} 0 0 ${page.height} 0 0 cm\\n/Im0 Do\\nQ\\n`);
+    pushObject(pageId, [encoder.encode(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Resources << /XObject << /Im0 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`)]);
+    pushObject(contentId, [encoder.encode(`<< /Length ${content.length} >>\\nstream\\n`), content, encoder.encode("endstream")]);
+    pushObject(imageId, [
+      encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${page.width} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.bytes.length} >>\\nstream\\n`),
+      page.bytes,
+      encoder.encode("\\nendstream"),
+    ]);
+  });
+
+  const xrefOffset = byteOffset + encoder.encode("%PDF-1.4\\n").length;
+  const header = encoder.encode("%PDF-1.4\\n%âãÏÓ\\n");
+  const allObjects = joinBytes(objects);
+  const finalOffset = header.length + allObjects.length;
+  const xrefRows = ["0000000000 65535 f ", ...Array.from({ length: maxObjectId }, (_, index) => `${String(offsets[index + 1] + header.length).padStart(10, "0")} 00000 n `)];
+  const xref = encoder.encode(`xref\\n0 ${maxObjectId + 1}\\n${xrefRows.join("\\n")}\\ntrailer\\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\\nstartxref\\n${finalOffset}\\n%%EOF`);
+  return new File([joinBytes([header, allObjects, xref])], `SolenOS-scan-${new Date().toISOString().slice(0, 10)}.pdf`, { type: "application/pdf", lastModified: Date.now() });
 }
 
 export default function DocumentsPage() {
@@ -302,6 +362,45 @@ export default function DocumentsPage() {
       setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: extracted.text, note: extracted.note, prepared: true, reviewed: false } : item));
     } catch {
       setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: "", note: "Image processing failed. The original scan is still available; retry or transcribe the text manually.", prepared: false, reviewed: false } : item));
+    } finally {
+      setPreparingScan(false);
+    }
+  };
+
+  const combineImagePagesIntoPdf = async () => {
+    const imagePages = reviewPages.filter((page) => page.file.type.startsWith("image/"));
+    if (imagePages.length < 2) {
+      setUploadMessage({ kind: "error", text: "Add at least two image pages before creating a combined PDF." });
+      return;
+    }
+    if (imagePages.some((page) => !page.prepared || !page.reviewed)) {
+      setUploadMessage({ kind: "error", text: "Apply crop/straighten, extract text and review each image page before combining them." });
+      return;
+    }
+    setPreparingScan(true);
+    setUploadMessage(null);
+    try {
+      const pdfFile = await createMultiPagePdf(imagePages);
+      const combinedText = imagePages.map((page, index) => `[Page ${index + 1}]\\n${page.uncertain ? "[UNCERTAIN EXTRACTION] " : ""}${page.text.trim() || "[No readable text extracted; consult original page.]"}`).join("\\n\\n");
+      const existingPdf = reviewPages.some((page) => page.file.type === "application/pdf" && page.file.name === pdfFile.name);
+      if (existingPdf) {
+        setUploadMessage({ kind: "error", text: "A combined PDF with this name is already in the review list. Save or discard this batch before creating another." });
+        return;
+      }
+      setReviewPages((current) => [...current, {
+        file: pdfFile,
+        text: combinedText,
+        note: "Combined multi-page PDF generated from the reviewed scan pages below. Original uploaded page files remain separate and unchanged.",
+        reviewed: true,
+        uncertain: imagePages.some((page) => page.uncertain),
+        rotation: 0,
+        crop: { top: 0, right: 0, bottom: 0, left: 0 },
+        prepared: true,
+        previewUrl: URL.createObjectURL(pdfFile),
+      }]);
+      setUploadMessage({ kind: "success", text: `Created a ${imagePages.length}-page PDF. The individual original scans will also be preserved when you save this batch.` });
+    } catch (error) {
+      setUploadMessage({ kind: "error", text: error instanceof Error ? error.message : "Could not create the combined PDF. The individual original scans are still in the review list." });
     } finally {
       setPreparingScan(false);
     }
@@ -425,10 +524,13 @@ export default function DocumentsPage() {
         {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Extracting readable text…</p>}
         {reviewPages.length > 0 && <section aria-label="Review extracted text before saving" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Review scan and extracted text</h3>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You can combine two or more reviewed image pages into one PDF. SolenOS also saves each original page unchanged for source traceability.</p>
+          <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine reviewed image pages into one PDF</button>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
             <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.text.trim() ? "Text extracted — review required" : "No readable text extracted"}</p>
-            {page.previewUrl && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}>
+            {page.file.type === "application/pdf" && page.previewUrl && <iframe title={page.file.name + " preview"} src={page.previewUrl} style={{ width: "100%", height: 320, border: "1px solid var(--border)", borderRadius: 8 }} />}
+            {page.previewUrl && page.file.type.startsWith("image/") && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}>
               <img src={page.previewUrl} alt={`Original scan preview: ${page.file.name}`} style={{ display: "block", maxWidth: "100%", maxHeight: 300, margin: "0 auto", objectFit: "contain", transform: `rotate(${page.rotation}deg)` }} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
