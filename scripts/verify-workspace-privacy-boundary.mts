@@ -5,6 +5,7 @@ const layout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const consentPanel = fs.readFileSync("src/components/mvp-workspace/ConsentGatePanel.tsx", "utf8");
 const previewGate = fs.readFileSync("src/components/mvp-workspace/ResearchPreviewAckGate.tsx", "utf8");
+const cognitiveWorkspace = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 
 assert.doesNotMatch(layout, /WorkspacePrivacyBoundary|ConsentGatePanel|consentState !== "accepted"/,
   "workspace layout must not block entry behind a privacy checkbox");
@@ -14,6 +15,10 @@ assert.doesNotMatch(layout, /type="checkbox"|ResearchPreviewAckGate|EarlyAccessC
   "no acknowledgement checkbox may gate workspace routes");
 assert.doesNotMatch(workspacePage, /ResearchPreviewAckGate/,
   "the LCR page must not mount an early-version acknowledgement gate");
+assert.doesNotMatch(cognitiveWorkspace, /ConsentGatePanel|consentState !== "accepted"|Retry the privacy check|type="checkbox"/,
+  "the actual LCR experience must render directly without consent or early-version checkbox gates");
+assert.match(cognitiveWorkspace, /<AddSituationPanel/,
+  "the caregiver capture workspace remains available on direct entry");
 assert.match(workspacePage, /Living Care Record/,
   "the destination is the Living Care Record workspace");
 assert.match(previewGate, /RESEARCH_PREVIEW_SECTION\.ackLabel|early version/i,
