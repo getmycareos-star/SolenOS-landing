@@ -17,6 +17,7 @@ type HandoffInboxItem = {
   created_at: string | null;
   expires_at: string | null;
   has_summary: boolean;
+  acknowledged: boolean;
 };
 
 type HandoffSummarySnapshot = {
@@ -73,7 +74,6 @@ export function CareHandoffInboxPanel({ onClose }: { onClose: () => void }) {
   const [summary, setSummary] = useState<HandoffSummarySnapshot | null>(null);
   const [busyAction, setBusyAction] = useState<ActionName>(null);
   const [error, setError] = useState<string | null>(null);
-  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
 
   const selectedHandoff = useMemo(
     () => items.find((item) => item.id === selectedHandoffId) ?? null,
@@ -141,7 +141,6 @@ export function CareHandoffInboxPanel({ onClose }: { onClose: () => void }) {
         "POST",
         { acknowledgement: "I have reviewed and received this care handoff." },
       );
-      setAcknowledgedIds((previous) => new Set([...previous, selectedHandoffId]));
       await loadInbox();
     } catch (e) {
       setError(sanitizeCaregiverErrorMessage(e instanceof Error ? e.message : "Could not acknowledge this handoff."));
@@ -250,12 +249,12 @@ export function CareHandoffInboxPanel({ onClose }: { onClose: () => void }) {
                     Accept handoff
                   </Button>
                 )}
-                {selectedHandoff.status === "accepted" && !acknowledgedIds.has(selectedHandoff.id) && (
+                {selectedHandoff.status === "accepted" && !selectedHandoff.acknowledged && (
                   <Button variant="primary" onClick={() => void acknowledgeHandoff()} loading={busyAction === "acknowledge"} disabled={busyAction !== null}>
                     Acknowledge receipt
                   </Button>
                 )}
-                {acknowledgedIds.has(selectedHandoff.id) && (
+                {selectedHandoff.acknowledged && (
                   <p className="share-success-message"><CheckCircle2 size={16} aria-hidden /> Receipt acknowledged.</p>
                 )}
               </div>
