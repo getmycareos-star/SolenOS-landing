@@ -121,7 +121,7 @@ export default function AppointmentWorkspace() {
       if (recordId) {
         const updated = await patchJSON('/appointment-workspaces/' + encodeURIComponent(recordId), {
           expected_version: recordVersion,
-          status: reviewStatus === 'Awaiting documentation' ? 'preparation' : reviewStatus.toLowerCase().replaceAll(' ', '_'),
+          status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
           payload, change_reason: 'Caregiver saved appointment workspace',
         }) as { version_number: number }
         setRecordVersion(updated.version_number)
