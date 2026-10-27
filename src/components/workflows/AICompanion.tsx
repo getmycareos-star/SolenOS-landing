@@ -322,6 +322,7 @@ export default function Companion() {
                   <button className="companion-handoff-back" type="button" onClick={resetHandoffDraft}>Discard draft</button>
                 </div>
                 <p className="companion-handoff-draft-warning">{handoffDraft.warning}</p>
+                <p className="companion-handoff-draft-warning"><strong>Review preview only.</strong> This is not yet a complete, recipient-ready handoff. Several template areas have no verified source adapter. Do not treat missing sections as negative findings or share this preview as a complete care transfer.</p>
                 <div className="companion-handoff-draft-boundary">
                   <ShieldCheck size={16} aria-hidden="true" />
                   <span>Read-only draft · {handoffDraft.source_references.length} source references · not shared · Living Care Record unchanged</span>
