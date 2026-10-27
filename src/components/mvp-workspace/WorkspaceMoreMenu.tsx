@@ -9,11 +9,13 @@ import {
   Trash2,
   Share2,
   Home,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export type WorkspaceAction =
   | "share_care_summary"
+  | "care_handoff_inbox"
   | "pin"
   | "unpin"
   | "archive"
@@ -44,6 +46,11 @@ const MENU_ITEMS: {
     id: "share_care_summary",
     label: "Share care summary",
     icon: Share2,
+  },
+  {
+    id: "care_handoff_inbox",
+    label: "Care handoff inbox",
+    icon: Inbox,
   },
   {
     id: "pin",
