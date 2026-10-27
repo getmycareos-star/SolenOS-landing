@@ -68,7 +68,7 @@ Professional content must distinguish clinician-assessed status from caregiver r
 
 ## Source coverage and launch gates
 
-Backend PR #203 is merged and adds audience-specific template coverage. The deployed endpoint version must still be verified on Railway before relying on that response shape. Backend PR #204 is merged and adds person-scoped care events, care transitions, appointments, and actions. Action records are included only when their linked evidence belongs to the requesting caregiver; another caregiver's private evidence is excluded.
+Backend PR #203 is merged and adds audience-specific template coverage. The deployed endpoint version must still be verified on Railway before relying on that response shape. Backend PR #204 is merged and adds person-scoped care events, care transitions, appointments, and actions. Backend PR #205 proposes separate event/record/due timestamps and preservation of active baseline facts; its tests must pass before that behavior is considered merged. Action records are included only when their linked evidence belongs to the requesting caregiver; another caregiver's private evidence is excluded.
 
 Daily Care, document contents, medication/allergy adapters, routine/preferences, contacts, measurements, and verified professional identity are not to be shown as available until their person-scoped persistence/access paths are tested. An appointment is not a verified medication list. Community is not an authorised source.
 
@@ -85,4 +85,4 @@ Before production use, prove:
 - audit event persistence and failure-closed behavior;
 - end-to-end tests against the deployed backend and database.
 
-Current implementation status: inline AI Companion preparation and source-traceable review UI are implemented on a draft PR branch. The draft endpoint is read-only; it does not itself create or send a handoff. Source adapters and live end-to-end verification remain explicit gaps.
+Current implementation status: the draft PR embeds source-grounded preparation, explicit sender review, family sharing through the existing authorized handoff API, expiry/revocation, incoming receipt and acceptance inside AI Companion. Professional sharing is deliberately disabled until SolenOS can verify professional identity and role authorization. Draft preparation remains read-only; the separate handoff API performs sharing. Remaining source adapters and live end-to-end verification are explicit gaps.
