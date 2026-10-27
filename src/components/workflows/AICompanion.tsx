@@ -10,7 +10,10 @@ interface HandoffDraftItem {
   source_type: string
   source_table: string
   source_id: string
+  event_at?: string | null
   recorded_at: string | null
+  due_at?: string | null
+  details?: Record<string, string>
   epistemic_status: string
   record_status?: string
   text: string
@@ -29,7 +32,7 @@ interface HandoffDraft {
   updates_lcr: boolean
   source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>
   sections: Array<{ title: string; items: HandoffDraftItem[] }>
-  source_references: Array<{ source_type: string; source_table: string; source_id: string; recorded_at: string | null; epistemic_status: string; record_status?: string; stale_warning: boolean }>
+  source_references: Array<{ source_type: string; source_table: string; source_id: string; event_at?: string | null; recorded_at: string | null; due_at?: string | null; details?: Record<string, string>; epistemic_status: string; record_status?: string; stale_warning: boolean }>
   limitations: Array<{ source: string; status: string; reason?: string }>
   warning: string
 }
@@ -336,9 +339,12 @@ export default function Companion() {
                       <article className="companion-handoff-source-item" key={item.source_table + ':' + item.source_id}>
                         <p>{item.text}</p>
                         <div className="companion-handoff-source-meta">
-                          <span>{item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Date not recorded'}</span>
+                          <span>Event/effective time: {item.event_at ? new Date(item.event_at).toLocaleString() : 'Not recorded'}</span>
+                          <span>Record entered/updated: {item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Not recorded'}</span>
+                          {item.due_at && <span>Due: {new Date(item.due_at).toLocaleString()}</span>}
                           <span>Evidence status: {item.epistemic_status.replaceAll('_', ' ')}</span>
                           {item.record_status && item.record_status !== 'not_recorded' && <span>Record status: {item.record_status.replaceAll('_', ' ')}</span>}
+                          {item.details && Object.entries(item.details).map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')}: {value.replaceAll('_', ' ')}</span>)}
                           <span>Source: {item.source_table} · {item.source_id}</span>
                           {item.stale_warning && <strong>Older information — re-check before relying on it</strong>}
                         </div>
