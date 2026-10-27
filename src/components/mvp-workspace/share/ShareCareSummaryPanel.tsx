@@ -770,6 +770,17 @@ export function ShareCareSummaryPanel({
               Copy text
             </Button>
           )}
+          {format === "handoff" && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setError(null);
+                setState("format_selection");
+              }}
+            >
+              Back to caregiver selection
+            </Button>
+          )}
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
