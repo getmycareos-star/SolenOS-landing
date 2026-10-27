@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, CalendarDays, FileText, MessageCircle, Plus, Users } from "lucide-react";
+import { CalendarDays, FileText, MessageCircle, Plus, Users } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
 import { CognitiveWorkspace } from "@/components/mvp-workspace";
