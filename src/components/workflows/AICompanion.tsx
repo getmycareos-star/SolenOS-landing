@@ -77,7 +77,7 @@ const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening
 const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'Talk through a difficult moment', description: 'Sort out what happened and what might help next.', prompt: 'Help me think through a difficult moment in care.' },
   { icon: Clock3, title: 'Make sense of a change', description: 'Separate what we know from what is still unclear.', prompt: 'Help me make sense of a recent change without jumping to conclusions.' },
-  { icon: Users, title: 'Keep everyone on the same page', description: 'Bring together care updates, outstanding questions, and what each family caregiver needs to know.', prompt: 'Help me prepare a family care coordination update using only the relevant information available in the Living Care Record. Separate documented facts from caregiver reports and unresolved questions. Identify open follow-up actions and what still needs confirmation. Do not invent missing details, treat community discussion as verified care information, or change the Living Care Record.' },
+  { icon: Users, title: 'Keep everyone on the same page', description: 'Bring together care updates, outstanding questions, and what each family caregiver needs to know.', prompt: 'Help me prepare a family care coordination update using only the relevant information available in the Living Care Record. Separate documented facts from caregiver reports and unresolved questions. Identify open follow-up actions and what still needs confirmation. Do not invent missing details or change the Living Care Record.' },
 ]
 
 export default function Companion() {
