@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload, MessageCircle, Share2 } from "lucide-react";
+import { Activity, ArrowLeft, CalendarDays, FileText, Plus, MessageCircle } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
 import { CognitiveWorkspace } from "@/components/mvp-workspace";
@@ -11,7 +11,6 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations } from "@/lib/ui-runtime";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
-import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -186,19 +185,11 @@ function WorkspacePageInner() {
         </section>
 
         <section className="workspace-secondary-tools" aria-label="More care tools">
-          <button type="button" onClick={() => router.push("/workspace/continuity")}>
-            <FileText size={18} aria-hidden />
-            <span><strong>Deep care continuity</strong><small>Review saved facts, decisions, uncertainty and record integrity</small></span>
-          </button>
           {FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity && (
             <button type="button" onClick={() => router.push("/workspace/community")}>
               <span><strong>Caregiver community</strong><small>Shared dementia-care experiences</small></span>
             </button>
           )}
-          <button type="button" onClick={() => router.push("/workspace/handoffs")}>
-            <Share2 size={18} aria-hidden />
-            <span><strong>Care handoffs</strong><small>Review incoming shares, share a reviewed summary, or revoke access</small></span>
-          </button>
           <button type="button" onClick={() => router.push("/workspace/companion")}>
             <MessageCircle size={18} aria-hidden />
             <span><strong>AI Companion</strong><small>Organise thoughts and questions</small></span>
