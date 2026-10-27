@@ -78,7 +78,7 @@ assert(!companion.includes("connected backend"), "Technical service details must
 requireText("src/app/workspace/documents/page.tsx", [
   'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
   'defaultWorkflow="document"',
-  "Help with your documents",
+  "Ask about your documents",
   'getJSON("/evidence/"',
   'postFormData("/upload"',
   'getBlob("/upload/"',
