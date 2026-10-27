@@ -1060,8 +1060,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <p className="panel-muted research-preview-notice" role="note">
         {IN_APP_IMPROVING_NOTICE}
       </p>
-      {(consentState === "accepted" || consentState === "unavailable") && (
-        <>
       <HelpImproveSolenos compact />
       {consentState === "accepted" && <QwenAssistPanel
         title="Help with your care information"
@@ -1287,8 +1285,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       <p className="panel-muted workspace-emergency-note" role="note">
         {EMERGENCY_BOUNDARY}
       </p>
-        </>
-      )}
     </div>
   );
 }
