@@ -44,7 +44,8 @@ type DocumentItem = {
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
-type ReviewPage = { file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
+type CropInsets = { top: number; right: number; bottom: number; left: number };
+type ReviewPage = { file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
@@ -153,6 +154,47 @@ async function extractText(file: File): Promise<{ text: string; note: string | n
   }
 }
 
+
+async function createProcessedImage(file: File, rotationDegrees: number, crop: CropInsets): Promise<File> {
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = sourceUrl;
+    await image.decode();
+    const radians = rotationDegrees * Math.PI / 180;
+    const sin = Math.abs(Math.sin(radians));
+    const cos = Math.abs(Math.cos(radians));
+    const rotatedWidth = Math.max(1, Math.ceil(image.width * cos + image.height * sin));
+    const rotatedHeight = Math.max(1, Math.ceil(image.width * sin + image.height * cos));
+    const rotated = document.createElement("canvas");
+    rotated.width = rotatedWidth;
+    rotated.height = rotatedHeight;
+    const rotatedContext = rotated.getContext("2d");
+    if (!rotatedContext) throw new Error("Canvas processing is unavailable.");
+    rotatedContext.fillStyle = "#fff";
+    rotatedContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
+    rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
+    rotatedContext.rotate(radians);
+    rotatedContext.drawImage(image, -image.width / 2, -image.height / 2);
+
+    const left = Math.round(rotatedWidth * crop.left / 100);
+    const top = Math.round(rotatedHeight * crop.top / 100);
+    const width = Math.max(1, Math.round(rotatedWidth * (100 - crop.left - crop.right) / 100));
+    const height = Math.max(1, Math.round(rotatedHeight * (100 - crop.top - crop.bottom) / 100));
+    const output = document.createElement("canvas");
+    output.width = width;
+    output.height = height;
+    const outputContext = output.getContext("2d");
+    if (!outputContext) throw new Error("Canvas crop is unavailable.");
+    outputContext.drawImage(rotated, left, top, width, height, 0, 0, width, height);
+    const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/png"));
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    return new File([blob], `${baseName || "scan"}-ocr.png`, { type: "image/png", lastModified: Date.now() });
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
 export default function DocumentsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -230,8 +272,11 @@ export default function DocumentsPage() {
     try {
       const pages: ReviewPage[] = [];
       for (const file of files) {
-        const extracted = await extractText(file);
-        pages.push({ file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null });
+        const isScannedImage = file.type.startsWith("image/");
+        const extracted = isScannedImage
+          ? { text: "", note: "Set page rotation/crop if needed, then apply the image adjustments before extracting text." }
+          : await extractText(file);
+        pages.push({ file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
       }
       setReviewPages((current) => [...current, ...pages]);
       setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
@@ -239,6 +284,26 @@ export default function DocumentsPage() {
       setPreparingScan(false);
       if (fileInput.current) fileInput.current.value = "";
       if (cameraInput.current) cameraInput.current.value = "";
+    }
+  };
+
+  const prepareImagePage = async (index: number) => {
+    const page = reviewPages[index];
+    if (!page || !page.file.type.startsWith("image/")) return;
+    if (page.crop.left + page.crop.right >= 80 || page.crop.top + page.crop.bottom >= 80) {
+      setUploadMessage({ kind: "error", text: "The crop area is too small. Leave at least 20% of the page in each direction." });
+      return;
+    }
+    setPreparingScan(true);
+    setUploadMessage(null);
+    try {
+      const processed = await createProcessedImage(page.file, page.rotation, page.crop);
+      const extracted = await extractText(processed);
+      setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: extracted.text, note: extracted.note, prepared: true, reviewed: false } : item));
+    } catch {
+      setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: "", note: "Image processing failed. The original scan is still available; retry or transcribe the text manually.", prepared: false, reviewed: false } : item));
+    } finally {
+      setPreparingScan(false);
     }
   };
 
@@ -259,8 +324,10 @@ export default function DocumentsPage() {
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
         form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\\n" + page.text.trim() : page.text.trim());
-        form.append("scan_review_status", "caregiver_reviewed");
+        form.append("scan_review_status", page.reviewed ? "caregiver_reviewed" : "not_reviewed");
         form.append("scan_rotation_degrees", String(page.rotation));
+        form.append("scan_crop_json", JSON.stringify(page.crop));
+        form.append("scan_text_prepared", String(page.prepared));
         const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
@@ -361,12 +428,25 @@ export default function DocumentsPage() {
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
             <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.text.trim() ? "Text extracted — review required" : "No readable text extracted"}</p>
-            {page.previewUrl && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}><img src={page.previewUrl} alt={`Original scan preview: ${page.file.name}`} style={{ display: "block", maxWidth: "100%", maxHeight: 300, margin: "0 auto", objectFit: "contain", transform: `rotate(${page.rotation}deg)` }} /><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: (item.rotation + 270) % 360 } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left</button><button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: (item.rotation + 90) % 360 } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right</button></div></div>}
+            {page.previewUrl && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}>
+              <img src={page.previewUrl} alt={`Original scan preview: ${page.file.name}`} style={{ display: "block", maxWidth: "100%", maxHeight: 300, margin: "0 auto", objectFit: "contain", transform: `rotate(${page.rotation}deg)` }} />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
+              </div>
+              <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>Straightening: {page.rotation.toFixed(1)}°. Crop margins are percentages of the rotated page.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>
+                {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, reviewed: false, text: "", note: "Crop changed. Apply adjustments and re-extract text." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
+              </div>
+              <button type="button" onClick={() => void prepareImagePage(index)} disabled={preparingScan || uploading} style={{ justifySelf: "start", minHeight: 42, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Apply crop / straighten and extract text</button>
+            </div>}
             {page.note && <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{page.note}</p>}
             <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 650 }}>Extracted text — review and correct before saving<textarea value={page.text} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: event.target.value } : item))} rows={4} maxLength={100000} placeholder="No readable text extracted. Type a transcription or save the original without text." style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: 8, padding: 10, background: "var(--surface)", color: "var(--text)", fontSize: 15, lineHeight: 1.6 }} /></label>
             <div style={{ display: "grid", gap: 8, marginTop: 8 }}><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.uncertain} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, uncertain: event.target.checked } : item))} />Some extracted text is uncertain or could not be read reliably.</label><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.reviewed} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, reviewed: event.target.checked } : item))} />I reviewed this text against the original scan.</label><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
           </article>)}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0 || reviewPages.some((page) => !page.reviewed)} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save reviewed documents</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0 || reviewPages.some((page) => !page.reviewed || !page.prepared)} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save reviewed documents</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
         </section>}
         {uploading && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}>Reading available text and saving the original file. Please keep this page open.</p>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
