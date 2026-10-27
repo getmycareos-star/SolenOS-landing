@@ -170,7 +170,7 @@ export const PRODUCT_CONSTITUTION = {
  */
 export const PUBLIC_TRUST_LAYER = {
   purpose:
-    "First-time caregivers land on /start so they understand what SolenOS solves before the Living Care Record; landing / uses Enter SolenOS → /start; returning caregivers continue at /workspace without interruption.",
+    "Every explicit use/open Living Care Record action routes directly to /workspace?enter=1. Public explanation pages remain optional and discoverable; no privacy checkbox or early-version acknowledgement blocks workspace entry.",
   publicRoutes: [
     "/",
     "/start",
@@ -212,9 +212,9 @@ export const PUBLIC_TRUST_LAYER = {
     "Contact",
   ] as const,
   earlyAccessConsent:
-    "EarlyAccessConsentForm — one required checkbox covers Terms + Privacy; server-persisted acknowledgement; links open docs without a legal wall (verify:trust-consent)",
+    "No required checkbox gate on the LCR entry path. Privacy and Terms remain discoverable; backend consent requirements stay action-scoped where required. verify:direct-lcr-entry",
   researchPreview:
-    "WelcomeTrustStack on /welcome + ResearchPreviewAckGate one-time ack; Free Early Access (not forever); Early Access badge; upload privacy notice; understanding feedback (src/lib/early-access-trust); MVP FAQ home excerpt + /support full + /capabilities (src/lib/mvp-faq; verify:mvp-faq)",
+    "Research Preview and early-access status are informational only; no acknowledgement checkbox or overlay before LCR access. Preserve upload privacy notice, understanding feedback, FAQ, and capabilities information (verify:direct-lcr-entry).",
   inProduct: "sidebar → About SolenOS (Help, Privacy, Terms, About, Contact)",
   discovery: ["empty_state_link", "first_insight_footer"] as const,
   never: [
