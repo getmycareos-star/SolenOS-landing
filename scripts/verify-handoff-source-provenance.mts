@@ -88,5 +88,9 @@ assert.match(handoffPage, /setDraft\(event\.target\.value\); setDraftReviewConfi
   "editing the summary must invalidate the previous review confirmation");
 assert.match(handoffPage, /!draftReviewConfirmed/,
   "the share button must remain disabled until the review confirmation is checked");
+assert.match(handoffPage, /setSelectedRecipients\(current => event\.target\.checked[\s\S]*?setDraftReviewConfirmed\(false\)/,
+  "changing recipients must invalidate the previous sender approval");
+assert.match(handoffPage, /setExpiryDays\(event\.target\.value\); setDraftReviewConfirmed\(false\)/,
+  "changing the expiry duration must invalidate the previous sender approval");
 
 console.log("PASS: handoff draft provenance tracks only rendered source records, handles missing IDs, rejects empty source data, and respects the 18,000-character cap.");
