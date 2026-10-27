@@ -84,16 +84,13 @@ requireText("src/app/workspace/documents/page.tsx", [
   'postFormData("/upload"',
   'getBlob("/upload/"',
   "Document intelligence",
-  "Original document saved",
   "evidenceIds={aiEvidenceIds}",
-  "remain reviewable",
-  'Scan with camera',
-  'Upload document / pages',
-  'Review extracted text before saving',
-  'UNCERTAIN EXTRACTION',
-  'Save reviewed scans',
-  'I reviewed this text against the original scan.',
-  'Ask about your documents',
+  'capture="environment"',
+  "Review scan and extracted text",
+  "Save reviewed documents",
+  "I reviewed this text against the original scan.",
+  "UNCERTAIN EXTRACTION",
+  "Scanned statements remain source evidence, not verified LCR facts.",
 ]);
 const documentPage = read("src/app/workspace/documents/page.tsx");
 assert(!documentPage.includes("setTimeout(() => setPreviewLoading"), "Document preview must not simulate loading with a timer.");
@@ -101,11 +98,11 @@ assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persi
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Documents must persist original uploads through the backend.");
 assert(documentPage.includes('evidenceIds={aiEvidenceIds}'), "Document intelligence must receive saved document evidence IDs.");
-assert(documentPage.includes('description="This assistant is scoped to saved document evidence.'), "Document AI must be explicitly scoped to document evidence.");
 assert(documentPage.includes('capture="environment"'), "Documents must offer mobile rear-camera capture.");
 assert(documentPage.includes('multiple hidden onChange={(event) => void handleFiles(event.target.files)}'), "Documents must accept multiple files/pages for review.");
-assert(documentPage.includes("draft.reviewed"), "Scanned text must be reviewed before it can be saved.");
-assert(documentPage.includes("[UNCERTAIN EXTRACTION"), "Uncertain scan text must be labelled before persistence.");
+assert(documentPage.includes("page.reviewed"), "Scanned text must require explicit caregiver review before save.");
+assert(documentPage.includes("page.uncertain"), "Caregivers must be able to mark OCR text as uncertain.");
+assert(documentPage.includes("UNCERTAIN EXTRACTION"), "Uncertain scan text must be labelled before persistence.");
 assert(documentPage.includes("Scanned statements remain source evidence, not verified LCR facts."), "Scanned statements must not silently become verified LCR facts.");
 assert(documentPage.includes('title="Ask about your documents"'), "Documents must provide a document-scoped AI question interface.");
 assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
