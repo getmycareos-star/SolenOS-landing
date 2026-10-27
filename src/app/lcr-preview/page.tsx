@@ -46,7 +46,7 @@ export default function LcrPreviewPage() {
 
         <div className="lcr-preview-note" role="note">
           <ShieldCheck size={19} aria-hidden />
-          <span><strong>Design preview</strong> — this screen uses no sample care records and does not change saved care information.</span>
+          <span><strong>Design preview</strong> — this screen contains no care records and does not change saved care information.</span>
         </div>
 
         <section className="lcr-preview-current" aria-labelledby="current-heading">
