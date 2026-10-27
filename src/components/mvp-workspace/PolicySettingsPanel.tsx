@@ -11,6 +11,8 @@ type Props = {
 export function PolicySettingsPanel(_props: Props = {}) {
   const [dataImprovement, setDataImprovement] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [requiredAck, setRequiredAck] = useState(false);
+  const [acceptedAt, setAcceptedAt] = useState<string | null>(null);
   const [limitedMode, setLimitedMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,10 +32,12 @@ export function PolicySettingsPanel(_props: Props = {}) {
       const data = (await safeJson(res)) as {
         verified?: boolean;
         profile?: { data_improvement_consent?: boolean; limited_mode?: boolean };
+        consent?: { accepted_at?: string | null };
       };
       setVerified(Boolean(data.verified));
       setDataImprovement(Boolean(data.profile?.data_improvement_consent));
       setLimitedMode(Boolean(data.profile?.limited_mode));
+      setAcceptedAt(data.consent?.accepted_at ?? null);
     } catch {
       setLoadError("We couldn't load your privacy choice. Try again.");
     } finally {
@@ -44,6 +48,52 @@ export function PolicySettingsPanel(_props: Props = {}) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function acknowledgeRequiredTerms() {
+    if (!requiredAck || saving || loadError || verified) return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      const session = await ensureAnonymousSession();
+      const res = await fetch(apiUrl("/api/v1/consent"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
+          medical_disclaimer_acknowledged: true,
+          privacy_model_acknowledged: true,
+          multi_caregiver_acknowledged: true,
+          no_advertising_acknowledged: true,
+          data_improvement_consent: dataImprovement,
+          accepted_terms_version: "2026-10",
+        }),
+      });
+      const saved = (await safeJson(res)) as {
+        verified?: boolean;
+        required?: boolean;
+        profile?: { data_improvement_consent?: boolean; limited_mode?: boolean };
+        consent?: { accepted_at?: string | null };
+        detail?: string;
+        error?: string;
+      };
+      if (!res.ok || saved.verified !== true || saved.required !== false) {
+        throw new Error(saved.detail ?? saved.error ?? "SolenOS did not confirm the acknowledgement.");
+      }
+      setVerified(true);
+      setDataImprovement(Boolean(saved.profile?.data_improvement_consent));
+      setLimitedMode(Boolean(saved.profile?.limited_mode));
+      setAcceptedAt(saved.consent?.accepted_at ?? new Date().toISOString());
+      setMessage("Required privacy acknowledgement saved. You can now change your optional improvement choice.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "We couldn't save the acknowledgement. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function toggleImprovement(enabled: boolean) {
     if (saving || loadError || !verified || limitedMode) return;
@@ -117,10 +167,24 @@ export function PolicySettingsPanel(_props: Props = {}) {
           </button>
         </p>
       )}
-      {!verified && !loadError && (
+      {verified && acceptedAt && (
         <p className="panel-muted">
-          Complete the required privacy acknowledgement before changing this optional choice.
+          Required privacy acknowledgement accepted on {new Date(acceptedAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.
         </p>
+      )}
+      {!verified && !loadError && !limitedMode && (
+        <div className="policy-required-ack">
+          <p className="panel-muted">
+            The server has no confirmed required privacy acknowledgement for this care-record session. Confirm the Terms of Service and Privacy Policy below before changing the optional setting.
+          </p>
+          <label className="consent-checkbox">
+            <input type="checkbox" checked={requiredAck} disabled={saving} onChange={(event) => setRequiredAck(event.target.checked)} />
+            <span>I have read and accept the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. I understand SolenOS is not medical or emergency guidance, care information is not sold or used for advertising, and trusted contributors may add notes to the care record.</span>
+          </label>
+          <button type="button" className="workspace-primary" onClick={() => void acknowledgeRequiredTerms()} disabled={!requiredAck || saving}>
+            {saving ? "Saving acknowledgement…" : "Accept required terms"}
+          </button>
+        </div>
       )}
       {limitedMode && (
         <p className="panel-muted">
