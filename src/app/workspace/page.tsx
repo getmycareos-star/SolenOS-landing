@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Activity, ArrowLeft, CalendarDays, FileText, Plus, Upload, MessageCircle } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
-import { ResearchPreviewAckGate } from "@/components/mvp-workspace/ResearchPreviewAckGate";
 import { CognitiveWorkspace } from "@/components/mvp-workspace";
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -134,16 +133,14 @@ function WorkspacePageInner() {
             <p>Notes, messages, documents, or photos — fragments are fine.</p>
           </div>
         </div>
-        <ResearchPreviewAckGate>
-          <ErrorBoundary name="CognitiveWorkspace" fallback={
-            <div style={{ padding: "24px", textAlign: "center" }}>
-              <p style={{ color: "#78716c" }}>The workspace encountered an error. Please try again.</p>
-              <Button variant="primary" onClick={() => window.location.reload()}>Refresh</Button>
-            </div>
-          }>
-            <CognitiveWorkspace />
-          </ErrorBoundary>
-        </ResearchPreviewAckGate>
+        <ErrorBoundary name="CognitiveWorkspace" fallback={
+          <div style={{ padding: "24px", textAlign: "center" }}>
+            <p style={{ color: "#78716c" }}>The workspace encountered an error. Please try again.</p>
+            <Button variant="primary" onClick={() => window.location.reload()}>Refresh</Button>
+          </div>
+        }>
+          <CognitiveWorkspace />
+        </ErrorBoundary>
       </div>
     );
   }
