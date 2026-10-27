@@ -5366,3 +5366,76 @@ input[type="file"] { width: 100%; white-space: normal; }
   background: #ffffff;
   color: #172b35;
 }
+
+
+/* Settings page: calm, navigable, responsive care-center layout. */
+.settings-page-heading { max-width: 58rem; margin-inline: auto; }
+.settings-eyebrow { display: inline-block; margin-bottom: .45rem; color: #54715f; font-size: .75rem; font-weight: 750; letter-spacing: .14em; }
+.settings-page-heading h1 { margin-bottom: .45rem; }
+.settings-page-heading p { max-width: 42rem; }
+.settings-section-nav { display: flex; gap: .45rem; flex-wrap: wrap; max-width: 58rem; margin: 0 auto 1.5rem; padding: .4rem; border: 1px solid #dfe7df; border-radius: 14px; background: #f7faf7; }
+.settings-section-nav a { display: inline-flex; align-items: center; min-height: 42px; padding: .55rem .85rem; border-radius: 10px; color: #24362b; font-size: .92rem; font-weight: 650; text-decoration: none; }
+.settings-section-nav a:hover, .settings-section-nav a:focus-visible { background: #e4eee5; outline: 2px solid #7e9c84; outline-offset: 1px; }
+.settings-page-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; max-width: 58rem; margin-inline: auto; }
+.settings-section-wrap { min-width: 0; scroll-margin-top: 1rem; }
+.settings-section-intro { display: flex; align-items: flex-start; gap: .85rem; margin: 0 0 .65rem; }
+.settings-section-intro > span { display: inline-flex; flex: 0 0 2.25rem; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; border-radius: 10px; background: #e5eee5; color: #385642; font-size: .85rem; font-weight: 750; }
+.settings-section-intro h2 { margin: 0 0 .2rem; color: var(--foreground, #1d2b22); font-size: 1.15rem; line-height: 1.4; }
+.settings-section-intro p { margin: 0; color: var(--muted-foreground, #59665c); font-size: .96rem; line-height: 1.55; }
+.settings-section-wrap .mobile-settings-card, .settings-section-wrap .mobile-settings-account-controls { border: 1px solid #e0e7e0; border-radius: 18px; background: var(--card, #fff); box-shadow: 0 5px 20px rgba(31, 55, 37, .045); }
+.settings-section-wrap .mobile-settings-card-title { font-size: 1.05rem !important; }
+.settings-section-wrap .mobile-settings-actions, .settings-section-wrap .mobile-settings-buttons { gap: .7rem; }
+.settings-section-wrap button, .settings-section-wrap a, .settings-section-nav a { -webkit-tap-highlight-color: transparent; }
+.settings-section-wrap :is(input:not([type="checkbox"]), select, textarea) { min-height: 46px; border-radius: 10px; }
+.settings-section-wrap :is(button, a):focus-visible { outline: 3px solid #7e9c84; outline-offset: 2px; }
+@media (min-width: 900px) { .settings-section-nav { position: sticky; top: .5rem; z-index: 5; } .settings-page-grid { gap: 1.8rem; } }
+@media (max-width: 560px) { .settings-section-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .settings-section-nav a { justify-content: center; padding-inline: .4rem; text-align: center; font-size: .88rem; } .settings-section-intro { gap: .65rem; } .settings-section-intro > span { flex-basis: 2rem; width: 2rem; height: 2rem; } }
+
+
+/* Privacy & Data consent flow: make the next required action and saved state unmistakable. */
+.policy-required-ack {
+  display: grid;
+  gap: .85rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid #879b8b;
+  border-radius: 14px;
+  background: #f4f7f2;
+  color: #1d3028;
+}
+.policy-required-ack a {
+  color: #244f40;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.policy-acknowledge-button {
+  width: 100%;
+  min-height: 48px;
+  white-space: normal;
+}
+.policy-acknowledge-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+.policy-consent-status,
+.policy-consent-message {
+  margin: .85rem 0 0;
+  padding: .85rem 1rem;
+  border-left: 4px solid #879b8b;
+  border-radius: 0 10px 10px 0;
+  background: #f4f7f2;
+  color: #24362c;
+  line-height: 1.6;
+}
+.policy-settings-panel .consent-checkbox:has(input:disabled) {
+  opacity: .78;
+}
+.policy-settings-panel .consent-checkbox input[type="checkbox"]:not(:disabled) {
+  cursor: pointer;
+}
+@media (max-width: 480px) {
+  .policy-required-ack { padding: .8rem; }
+  .policy-settings-panel .consent-checkbox { padding: .8rem; }
+  .policy-acknowledge-button { min-height: 52px; }
+}

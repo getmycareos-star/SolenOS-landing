@@ -17,7 +17,6 @@ import {
 import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
-import { getOnboardingCompletedAt } from "@/lib/onboarding";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { deleteJSON, ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
@@ -242,7 +241,7 @@ function AccountCard() {
         show("Account deleted. Care history was retained.", "success");
       }
     } catch (e) {
-      setError("We couldn’t complete that account action. Please check your details and try again.");
+      setError(e instanceof Error ? e.message : "We couldn’t complete that account action. Please check your details and try again.");
     } finally {
       setBusy(false);
     }
@@ -259,11 +258,16 @@ function AccountCard() {
           </Button>
         </div>
       )}
-      {loaded && (!account || loadFailed) && mode === "idle" && (
+      {loaded && !account && !loadFailed && mode === "idle" && (
         <div className="mobile-settings-buttons">
           <Button variant="primary" onClick={() => { setMode("create"); setError(""); setMessage(""); }}>
             <UserPlus size={16} aria-hidden /> Create account
           </Button>
+        </div>
+      )}
+      {loaded && loadFailed && mode === "idle" && (
+        <div className="mobile-settings-buttons">
+          <Button variant="secondary" onClick={() => void refreshAccount()} disabled={busy}>Retry account status</Button>
         </div>
       )}
       {mode !== "idle" && (
@@ -282,6 +286,7 @@ function AccountCard() {
             <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
           {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
+
           {mode === "delete" && <p className="mobile-settings-hint">This deletes the email/password account, not the Living Care Record or its care history. Those remain under the current anonymous session.</p>}
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <div className="mobile-settings-actions">
@@ -326,25 +331,6 @@ function LegalCard() {
 function PrivacyCard() {
   const { show, render } = useToast();
   const [confirmClear, setConfirmClear] = useState(false);
-  const [consentDate, setConsentDate] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Read consent date only after mount — prevents server/client mismatch.
-    try {
-      const consentAt = getOnboardingCompletedAt();
-      setConsentDate(
-        consentAt
-          ? new Date(consentAt).toLocaleDateString(undefined, {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })
-          : null,
-      );
-    } catch {
-      setConsentDate(null);
-    }
-  }, []);
 
   const clearLocalData = () => {
     const keys = [
@@ -352,6 +338,13 @@ function PrivacyCard() {
       "solenos_durable_care_key",
       "solenos_care_session_id",
       "solenos_telemetry_user_id",
+      // Current server-issued session credentials. Clearing them removes this browser's access.
+      "solenos_anonymous_access_token",
+      "solenos_backend_person_id",
+      "solenos_backend_caregiver_id",
+      "solenos_anonymous_session_expires_at",
+      "solenos_person_id",
+      "solenos_device_installation_key_v1",
       // record
       "solenos_situations",
       "solenos_timeline",
@@ -388,15 +381,9 @@ function PrivacyCard() {
         <Shield size={16} aria-hidden /> Privacy &amp; Data
       </h2>
 
-      {consentDate && (
-        <div className="mobile-settings-row">
-          <span className="mobile-settings-label">Consent</span>
-          <span className="mobile-settings-value">Accepted on {consentDate}</span>
-        </div>
-      )}
-
       <PolicySettingsPanel />
 
+      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes saved information and sign-in credentials from this browser. If you have no other recovery method, you may not be able to reopen this care record on this device. It does not delete the server-held care history.</p>}
       <div className="mobile-settings-buttons">
         {confirmClear ? (
           <div className="mobile-settings-actions">
@@ -440,7 +427,6 @@ function ProductCard() {
   const items: { label: string; value: string }[] = [
     { label: "App version", value: "0.1.0" },
     { label: "Release channel", value: "Early access" },
-    { label: "Environment", value: "Web (Netlify + Railway)" },
   ];
 
   const contentLinks: { label: string; href: string }[] = [
@@ -554,18 +540,26 @@ export default function WorkspaceSettingsPage() {
 
   return (
     <div className="mobile-screen">
-      <div className="mobile-page-head">
+      <div className="mobile-page-head settings-page-heading">
+        <span className="settings-eyebrow">YOUR CARE SPACE</span>
         <h1>Settings</h1>
-        <p>Manage your care record and preferences.</p>
+        <p>Keep your care space personal, protected, and working the way you need.</p>
       </div>
-      <div className="mobile-settings">
-        <ProfileCard />
-        <NotificationsCard />
-        <AccountCard />
-        <IdentityDeviceRecoveryPanel />
-        <LegalCard />
-        <PrivacyCard />
-        <ProductCard />
+      <nav className="settings-section-nav" aria-label="Settings sections">
+        <a href="#settings-profile">Profile</a>
+        <a href="#settings-notifications">Notifications</a>
+        <a href="#settings-account">Account</a>
+        <a href="#settings-security">Security</a>
+        <a href="#settings-privacy">Privacy &amp; data</a>
+        <a href="#settings-help">Help</a>
+      </nav>
+      <div className="mobile-settings settings-page-grid">
+        <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>01</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
+        <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
+        <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>An account is optional. Anonymous care access remains available.</p></div></div><AccountCard /></div>
+        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>04</span><div><h2>Identity &amp; device security</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
+        <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>05</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
+        <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>06</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
       </div>
     </div>
   );
