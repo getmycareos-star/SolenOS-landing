@@ -36,19 +36,38 @@ const longDecisions = Array.from({ length: 8 }, (_, index) => ({
   id: `decision-${index}`,
   decision_text: `DECISION_MARKER_${index}_` + "y".repeat(700),
 }));
+const longQuestions = Array.from({ length: 8 }, (_, index) => ({
+  id: `question-${index}`,
+  question: `QUESTION_MARKER_${index}_` + "q".repeat(700),
+}));
+const longGaps = Array.from({ length: 8 }, (_, index) => ({
+  id: `gap-${index}`,
+  description: `GAP_MARKER_${index}_` + "g".repeat(700),
+}));
+const longTimeline = Array.from({ length: 8 }, (_, index) => ({
+  id: `timeline-${index}`,
+  summary: `TIMELINE_MARKER_${index}_` + "t".repeat(700),
+}));
+const longRows = [...longFacts, ...longDecisions, ...longQuestions, ...longGaps, ...longTimeline];
 const bounded = buildReviewedHandoffDraft({
   facts: longFacts,
   decisions: longDecisions,
-  questions: [], gaps: [], timeline: [],
+  questions: longQuestions,
+  gaps: longGaps,
+  timeline: longTimeline,
   preparedAt: "fixed",
 });
 assert.ok(bounded.text.length <= 18000, `summary exceeded limit: ${bounded.text.length}`);
 assert.match(bounded.text, /LIMITATIONS/,
   "long summaries must preserve the caregiver-review and provenance limitation text");
-assert.ok(bounded.sourceRecordIds.length < longFacts.length + longDecisions.length,
+assert.ok(bounded.sourceRecordIds.length < longRows.length,
   "truncated rows must not be listed as included source IDs");
-for (const row of [...longFacts, ...longDecisions]) {
-  const marker = "fact_value" in row ? row.fact_value : row.decision_text;
+for (const row of longRows) {
+  const marker = "fact_value" in row ? row.fact_value
+    : "decision_text" in row ? row.decision_text
+    : "question" in row ? row.question
+    : "description" in row ? row.description
+    : row.summary;
   assert.equal(
     bounded.sourceRecordIds.includes(row.id),
     bounded.text.includes(marker.slice(0, 40)),
