@@ -162,36 +162,48 @@ async function createProcessedImage(file: File, rotationDegrees: number, crop: C
     image.src = sourceUrl;
     await image.decode();
 
-    const left = Math.round(image.width * crop.left / 100);
-    const top = Math.round(image.height * crop.top / 100);
-    const width = Math.max(1, Math.round(image.width * (100 - crop.left - crop.right) / 100));
-    const height = Math.max(1, Math.round(image.height * (100 - crop.top - crop.bottom) / 100));
+    // The crop controls are defined against the rotated page preview. Rotate first
+    // so the crop coordinates match what the caregiver sees in the review UI.
+    const radians = rotationDegrees * Math.PI / 180;
+    const sin = Math.abs(Math.sin(radians));
+    const cos = Math.abs(Math.cos(radians));
+    const rotatedWidth = Math.max(1, Math.ceil(image.width * cos + image.height * sin));
+    const rotatedHeight = Math.max(1, Math.ceil(image.width * sin + image.height * cos));
+    const rotated = document.createElement("canvas");
+    rotated.width = rotatedWidth;
+    rotated.height = rotatedHeight;
+    const rotatedContext = rotated.getContext("2d");
+    if (!rotatedContext) throw new Error("Image rotation is unavailable.");
+    rotatedContext.fillStyle = "#fff";
+    rotatedContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
+    rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
+    rotatedContext.rotate(radians);
+    rotatedContext.drawImage(image, -image.width / 2, -image.height / 2);
+
+    // Apply insets to the rotated page, matching the editor's crop coordinate space.
+    const left = Math.round(rotatedWidth * crop.left / 100);
+    const top = Math.round(rotatedHeight * crop.top / 100);
+    const width = Math.max(1, Math.round(rotatedWidth * (100 - crop.left - crop.right) / 100));
+    const height = Math.max(1, Math.round(rotatedHeight * (100 - crop.top - crop.bottom) / 100));
     const cropped = document.createElement("canvas");
     cropped.width = width;
     cropped.height = height;
     const cropContext = cropped.getContext("2d");
     if (!cropContext) throw new Error("Canvas crop is unavailable.");
-    cropContext.drawImage(image, left, top, width, height, 0, 0, width, height);
+    cropContext.drawImage(rotated, left, top, width, height, 0, 0, width, height);
 
-    const radians = rotationDegrees * Math.PI / 180;
-    const sin = Math.abs(Math.sin(radians));
-    const cos = Math.abs(Math.cos(radians));
-    const rotatedWidth = Math.max(1, Math.ceil(width * cos + height * sin));
-    const rotatedHeight = Math.max(1, Math.ceil(width * sin + height * cos));
-    const scale = Math.min(1, 2200 / Math.max(rotatedWidth, rotatedHeight));
+    const scale = Math.min(1, 2200 / Math.max(width, height));
     const output = document.createElement("canvas");
-    output.width = Math.max(1, Math.round(rotatedWidth * scale));
-    output.height = Math.max(1, Math.round(rotatedHeight * scale));
+    output.width = Math.max(1, Math.round(width * scale));
+    output.height = Math.max(1, Math.round(height * scale));
     const outputContext = output.getContext("2d");
-    if (!outputContext) throw new Error("Image rotation is unavailable.");
+    if (!outputContext) throw new Error("Processed image output is unavailable.");
     outputContext.fillStyle = "#fff";
-    outputContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
-    outputContext.translate(output.width / 2, output.height / 2);
-    outputContext.rotate(radians);
-    outputContext.scale(scale, scale);
-    outputContext.drawImage(cropped, -width / 2, -height / 2);
+    outputContext.fillRect(0, 0, output.width, output.height);
+    outputContext.drawImage(cropped, 0, 0, output.width, output.height);
+
     const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.86));
-    const baseName = file.name.replace(/\.[^.]+$/, "");
+    const baseName = file.name.replace(/\\.[^.]+$/, "");
     return new File([blob], `${baseName || "scan"}-processed.jpg`, { type: "image/jpeg", lastModified: Date.now() });
   } finally {
     URL.revokeObjectURL(sourceUrl);
