@@ -68,7 +68,9 @@ Professional content must distinguish clinician-assessed status from caregiver r
 
 ## Source coverage and launch gates
 
-The current prepare endpoint reads a fixed allowlist of care facts, care decisions, open questions, information gaps, and care timeline entries. Daily Care, appointments, document contents, medication/allergy adapters, routine/preferences, contacts, measurements, and verified professional identity are not to be shown as available until their person-scoped persistence/access paths are tested. Community is not an authorised source.
+Backend PR #203 is merged and adds audience-specific template coverage. The deployed endpoint version must still be verified on Railway before relying on that response shape. Backend PR #204 proposes adding person-scoped care events, care transitions, appointments, and actions. Action records are included only when their linked evidence belongs to the requesting caregiver; another caregiver's private evidence is excluded.
+
+Daily Care, document contents, medication/allergy adapters, routine/preferences, contacts, measurements, and verified professional identity are not to be shown as available until their person-scoped persistence/access paths are tested. An appointment is not a verified medication list. Community is not an authorised source.
 
 The UI must show template sections even when they are unavailable, but label coverage explicitly. “Partial”, “no records returned”, “unavailable”, and “not assessed” are not interchangeable.
 
