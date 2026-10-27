@@ -99,7 +99,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
   }
 
   async function toggleImprovement(enabled: boolean) {
-    if (saving || loadError || !verified || limitedMode) return;
+    if (saving || loadError || limitedMode) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -126,7 +126,6 @@ export function PolicySettingsPanel(_props: Props = {}) {
       };
       if (
         !res.ok ||
-        saved.verified !== true ||
         saved.profile?.data_improvement_consent !== enabled
       ) {
         throw new Error(saved.detail ?? saved.error ?? "The server did not confirm the saved choice.");
@@ -199,7 +198,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
         <input
           type="checkbox"
           checked={dataImprovement}
-          disabled={!verified || limitedMode || saving || Boolean(loadError)}
+          disabled={limitedMode || saving || Boolean(loadError)}
           onChange={(e) => void toggleImprovement(e.target.checked)}
         />
         <span>{saving ? "Saving your choice…" : "Allow submitted feedback to contribute to SolenOS improvements"}</span>
@@ -209,10 +208,6 @@ export function PolicySettingsPanel(_props: Props = {}) {
         <p className="panel-muted">
           We couldn't confirm whether this is on or off, so the control is disabled until your
           saved choice can be checked.
-        </p>
-      ) : !verified ? (
-        <p className="policy-consent-status" role="status">
-          <strong>Not yet available.</strong> Complete and save the required acknowledgement above. Your optional improvement preference has not been changed by this screen.
         </p>
       ) : dataImprovement ? (
         <div className="policy-improvement-details">
