@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clock3, Inbox, RefreshCw, ShieldCheck, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import { buildReviewedHandoffDraft, type CareRecordRow } from "@/lib/handoffs/reviewed-draft";
 
-type Row = Record<string, unknown>;
 type Recipient = {
   caregiver_id: string;
   name: string;
@@ -78,60 +78,16 @@ function formatDate(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? "Not recorded" : date.toLocaleString();
 }
 
-function valueText(row: Row, keys: string[]): string {
-  for (const key of keys) {
-    const value = row[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (value && typeof value === "object") return JSON.stringify(value);
-    if (typeof value === "number" || typeof value === "boolean") return String(value);
-  }
-  return "";
-}
-
-function renderRow(row: Row, keys: string[]): string {
-  const text = valueText(row, keys);
-  if (!text) return "";
-  const status = typeof row.epistemic_status === "string" ? ` · status: ${row.epistemic_status}` : "";
-  const when = valueText(row, ["effective_at", "occurred_at", "recorded_at", "created_at", "observed_at"]);
-  return `${text.slice(0, 700)}${status}${when ? ` · recorded: ${when}` : ""}`;
-}
-
-async function buildReviewedDraft(): Promise<string> {
+async function buildReviewedDraft(): Promise<{ text: string; sourceRecordIds: string[] }> {
   const [facts, decisions, questions, gaps, timeline] = await Promise.all([
-    getJSON("/care-continuity/facts?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/decisions?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/open-questions?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/information-gaps?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/timeline?limit=25") as Promise<Row[]>,
+    getJSON("/care-continuity/facts?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/decisions?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/open-questions?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/information-gaps?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/timeline?limit=25") as Promise<CareRecordRow[]>,
   ]);
 
-  const sections: Array<{ title: string; items: string[] }> = [
-    { title: "Care facts", items: facts.map(r => renderRow(r, ["fact_value", "description", "title"])).filter(Boolean).slice(0, 12) },
-    { title: "Care decisions", items: decisions.map(r => renderRow(r, ["decision_text", "title", "description"])).filter(Boolean).slice(0, 8) },
-    { title: "Open questions", items: questions.map(r => renderRow(r, ["question", "description", "title"])).filter(Boolean).slice(0, 8) },
-    { title: "Information gaps", items: gaps.map(r => renderRow(r, ["description", "topic", "title"])).filter(Boolean).slice(0, 8) },
-    { title: "Recent timeline", items: timeline.map(r => renderRow(r, ["summary", "title", "description", "entry_type"])).filter(Boolean).slice(0, 8) },
-  ].filter(section => section.items.length > 0);
-
-  if (sections.length === 0) {
-    throw new Error("There are no saved care facts, decisions, questions, gaps, or timeline entries to include yet. Add real care information first.");
-  }
-
-  const preparedAt = new Date().toLocaleString();
-  const body = [
-    "SOLENOS CARE HANDOFF SUMMARY",
-    `Prepared for caregiver review: ${preparedAt}`,
-    "This summary reflects saved records only. Status labels are preserved where available; missing information is not treated as false.",
-    ...sections.flatMap(section => [
-      "",
-      section.title.toUpperCase(),
-      ...section.items.map(item => `• ${item}`),
-    ]),
-    "",
-    "LIMITATIONS",
-    "This is a caregiver-reviewed summary, not a clinical judgment. SolenOS stores the reviewed text and an integrity hash; it does not independently verify every statement in this text against source records.",
-  ].join("\n");
-  return body.slice(0, 18000);
+  return buildReviewedHandoffDraft({ facts, decisions, questions, gaps, timeline });
 }
 
 export default function CareHandoffsPage() {
@@ -149,6 +105,9 @@ export default function CareHandoffsPage() {
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [expiryDays, setExpiryDays] = useState("7");
   const [draft, setDraft] = useState("");
+  const [preparedDraft, setPreparedDraft] = useState("");
+  const [draftSourceRecordIds, setDraftSourceRecordIds] = useState<string[]>([]);
+  const [draftReviewConfirmed, setDraftReviewConfirmed] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftBusy, setDraftBusy] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
@@ -185,8 +144,11 @@ export default function CareHandoffsPage() {
     setError("");
     setNotice("");
     try {
-      const text = await buildReviewedDraft();
-      setDraft(text);
+      const prepared = await buildReviewedDraft();
+      setDraft(prepared.text);
+      setPreparedDraft(prepared.text);
+      setDraftSourceRecordIds(prepared.sourceRecordIds);
+      setDraftReviewConfirmed(false);
       setDraftReady(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "The care summary could not be prepared from saved records.");
@@ -198,6 +160,10 @@ export default function CareHandoffsPage() {
   async function createHandoff() {
     if (!draft.trim()) {
       setError("Prepare and review the summary before sharing.");
+      return;
+    }
+    if (!draftReviewConfirmed) {
+      setError("Confirm that you have reviewed the summary before sharing it.");
       return;
     }
     if (selectedRecipients.length === 0) {
@@ -221,7 +187,10 @@ export default function CareHandoffsPage() {
       try {
         await putJSON(`/handoffs/${handoffId}/summary`, {
           sections: { lcr_summary: draft.trim() },
-          source_record_ids: [],
+          // If the caregiver edits the generated text, do not imply the original
+          // source list still proves the edited content. The backend also labels
+          // source IDs as unverified and does not treat them as established facts.
+          source_record_ids: draft.trim() === preparedDraft.trim() ? draftSourceRecordIds : [],
           caregiver_reviewed: true,
           prepared_at: new Date().toISOString(),
         });
@@ -236,6 +205,9 @@ export default function CareHandoffsPage() {
       await load();
       setNotice(`Secure handoff created. It expires ${formatDate(expiresAt)}. You can revoke it from the outgoing handoffs list.`);
       setDraft("");
+      setPreparedDraft("");
+      setDraftSourceRecordIds([]);
+      setDraftReviewConfirmed(false);
       setDraftReady(false);
       setSelectedRecipients([]);
     } catch (err) {
@@ -378,7 +350,10 @@ export default function CareHandoffsPage() {
                 <input
                   type="checkbox"
                   checked={selectedRecipients.includes(recipient.caregiver_id)}
-                  onChange={event => setSelectedRecipients(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id))}
+                  onChange={event => {
+                    setSelectedRecipients(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id));
+                    setDraftReviewConfirmed(false);
+                  }}
                 />
                 <span><strong>{recipient.name}</strong><br /><small>{recipient.relationship || "Caregiver"} · consent verified for handoff</small></span>
               </label>
@@ -389,7 +364,7 @@ export default function CareHandoffsPage() {
           </fieldset>
         )}
         <label style={{ display: "block", fontWeight: 650, marginBottom: 6 }} htmlFor="handoff-expiry">Access expiry</label>
-        <select id="handoff-expiry" style={{ ...fieldStyle, maxWidth: 260, marginBottom: 14 }} value={expiryDays} onChange={event => setExpiryDays(event.target.value)}>
+        <select id="handoff-expiry" style={{ ...fieldStyle, maxWidth: 260, marginBottom: 14 }} value={expiryDays} onChange={event => { setExpiryDays(event.target.value); setDraftReviewConfirmed(false); }}>
           <option value="1">24 hours</option>
           <option value="7">7 days</option>
           <option value="14">14 days</option>
@@ -401,9 +376,13 @@ export default function CareHandoffsPage() {
         {draftReady && (
           <>
             <label htmlFor="handoff-summary-draft" style={{ display: "block", fontWeight: 650, margin: "14px 0 6px" }}>Review and edit the summary</label>
-            <textarea id="handoff-summary-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={14} maxLength={18000} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.5 }} />
-            <p style={{ fontSize: 12, lineHeight: 1.5 }}>Only saved records are included; the draft is limited to the most recent records returned by each section. Source IDs are not supplied to the handoff API. Sharing creates an immutable reviewed snapshot; to change it later, create a new handoff.</p>
-            <button type="button" style={buttonStyle} disabled={busy || !draft.trim() || selectedRecipients.length === 0 || eligibleRecipients.length === 0} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
+            <textarea id="handoff-summary-draft" value={draft} onChange={event => { setDraft(event.target.value); setDraftReviewConfirmed(false); }} rows={14} maxLength={18000} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.5 }} />
+            <p style={{ fontSize: 12, lineHeight: 1.5 }}>Only saved records are included; the draft is limited to the most recent records returned by each section. {draft.trim() === preparedDraft.trim() ? `${draftSourceRecordIds.length} source record ID(s) will be attached as unverified provenance metadata.` : "You edited the generated draft, so source IDs are omitted rather than implying your edits are verified against the original records."} SolenOS does not independently verify that every statement is supported by its source IDs. Sharing creates an immutable reviewed snapshot; to change it later, create a new handoff.</p>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, lineHeight: 1.5, margin: "12px 0" }}>
+              <input type="checkbox" checked={draftReviewConfirmed} onChange={event => setDraftReviewConfirmed(event.target.checked)} />
+              <span>I have reviewed this entire summary, checked it against the care information available to me, and approve sharing this snapshot with the selected caregiver(s). I understand that SolenOS does not independently verify every statement.</span>
+            </label>
+            <button type="button" style={buttonStyle} disabled={busy || !draft.trim() || !draftReviewConfirmed || selectedRecipients.length === 0 || eligibleRecipients.length === 0} onClick={() => void createHandoff()}><Share2 size={16} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Saving secure handoff…" : "Share reviewed summary"}</button>
           </>
         )}
       </section>
