@@ -1343,3 +1343,14 @@
   .lcr-entry-heading { display: block; }
   .lcr-entry-heading > span { display: block; margin-top: .2rem; }
 }
+
+
+.lcr-capture-context {
+  width: min(100%, 760px);
+  margin: 0 auto .8rem;
+  padding: .75rem .9rem;
+  border-left: 3px solid #b8d0c1;
+  border-radius: 0 10px 10px 0;
+  background: #f1f6f1;
+}
+.lcr-capture-context p { margin: 0; font-size: .9rem; line-height: 1.55; }
