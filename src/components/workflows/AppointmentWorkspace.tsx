@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
 
 type Stage = 'prepare' | 'during' | 'after'
@@ -10,6 +11,12 @@ const emptyFollowUp = (): FollowUp => ({ action: '', owner: '', due: '', status:
 
 export default function AppointmentWorkspace() {
   const [open, setOpen] = useState(false)
+  const [recordId, setRecordId] = useState<string | null>(null)
+  const [recordVersion, setRecordVersion] = useState(0)
+  const [loadingRecord, setLoadingRecord] = useState(false)
+  const [savingRecord, setSavingRecord] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
+  const [saveError, setSaveError] = useState('')
   const [stage, setStage] = useState<Stage>('prepare')
   const [visitPurpose, setVisitPurpose] = useState('')
   const [clinician, setClinician] = useState('')
@@ -40,6 +47,100 @@ export default function AppointmentWorkspace() {
     setFollowUps(current => current.map((item, i) => i === index ? { ...item, [key]: value } as FollowUp : item))
   const addFollowUp = () => setFollowUps(current => [...current, emptyFollowUp()])
 
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setLoadingRecord(true)
+    setSaveError('')
+    void (async () => {
+      try {
+        await ensureAnonymousSession()
+        const response = await getJSON('/appointment-workspaces') as { items?: Array<{ id: string }> }
+        const first = response.items?.[0]
+        if (!first || cancelled) return
+        const record = await getJSON('/appointment-workspaces/' + encodeURIComponent(first.id)) as {
+          id: string; version_number: number; status: string; payload: Record<string, unknown>
+        }
+        if (cancelled) return
+        const p = record.payload || {}
+        setRecordId(record.id)
+        setRecordVersion(record.version_number)
+        setVisitPurpose(String(p.visitPurpose || ''))
+        setClinician(String(p.clinician || ''))
+        setSpecialty(String(p.specialty || ''))
+        setVisitDate(String(p.visitDate || ''))
+        setLocation(String(p.location || ''))
+        setAttendees(String(p.attendees || ''))
+        setTopConcerns(Array.isArray(p.topConcerns) ? p.topConcerns.map(String).concat(['', '', '']).slice(0, 3) : ['', '', ''])
+        setChanges(String(p.changes || ''))
+        setSymptoms(String(p.symptoms || ''))
+        setMedicationQuestions(String(p.medicationQuestions || ''))
+        setHistoryQuestions(String(p.historyQuestions || ''))
+        setPracticalNotes(String(p.practicalNotes || ''))
+        setConcernsDiscussed(String(p.concernsDiscussed || ''))
+        setCaregiverReport(String(p.caregiverReport || ''))
+        setClinicianFindings(String(p.clinicianFindings || ''))
+        setDecisions(String(p.decisions || ''))
+        setInstructions(String(p.instructions || ''))
+        setUnanswered(String(p.unanswered || ''))
+        setMedicationReconciliation(String(p.medicationReconciliation || ''))
+        setPendingResults(String(p.pendingResults || ''))
+        setFamilySummary(String(p.familySummary || ''))
+        setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => ({ ...emptyFollowUp(), ...(item as Partial<FollowUp>) })) : [emptyFollowUp()])
+        const validStatuses = ['Awaiting documentation', 'Follow-up pending', 'Ready for review', 'Closed with documented outstanding items'] as const
+        setReviewStatus(validStatuses.includes(p.reviewStatus as typeof validStatuses[number]) ? p.reviewStatus as typeof validStatuses[number] : 'Awaiting documentation')
+        setSaveMessage('Loaded saved appointment workspace · version ' + record.version_number)
+      } catch (error) {
+        if (!cancelled) setSaveError(error instanceof Error ? error.message : 'Could not load saved appointment workspace.')
+      } finally {
+        if (!cancelled) setLoadingRecord(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [open])
+
+  const saveWorkspace = async () => {
+    setSavingRecord(true)
+    setSaveError('')
+    setSaveMessage('')
+    const payload = {
+      visitPurpose, clinician, specialty, visitDate, location, attendees, topConcerns,
+      changes, symptoms, medicationQuestions, historyQuestions, practicalNotes,
+      concernsDiscussed, caregiverReport, clinicianFindings, decisions, instructions,
+      unanswered, medicationReconciliation, pendingResults, familySummary, followUps, reviewStatus,
+      epistemic_boundary: {
+        caregiver_report: 'caregiver_reported',
+        clinician_findings: 'caregiver_recorded_clinician_statement_not_independently_verified',
+        ai_suggestions_written_as_clinical_facts: false,
+        lcr_reconciliation: 'not_performed',
+      },
+    }
+    try {
+      await ensureAnonymousSession()
+      if (recordId) {
+        const updated = await patchJSON('/appointment-workspaces/' + encodeURIComponent(recordId), {
+          expected_version: recordVersion,
+          status: reviewStatus === 'Awaiting documentation' ? 'preparation' : reviewStatus.toLowerCase().replaceAll(' ', '_'),
+          payload, change_reason: 'Caregiver saved appointment workspace',
+        }) as { version_number: number }
+        setRecordVersion(updated.version_number)
+        setSaveMessage('Saved securely · version ' + updated.version_number + '. Not yet reconciled into LCR facts.')
+      } else {
+        const created = await postJSON('/appointment-workspaces', {
+          status: 'preparation', payload, change_reason: 'Initial caregiver appointment workspace save',
+        }) as { id: string; version_number: number }
+        setRecordId(created.id)
+        setRecordVersion(created.version_number)
+        setSaveMessage('Saved securely · version ' + created.version_number + '. Not yet reconciled into LCR facts.')
+      }
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Save failed. Your unsaved edits remain on this screen.')
+    } finally {
+      setSavingRecord(false)
+    }
+  }
+
   return (
     <section className="appointment-workspace" aria-labelledby="appointment-workspace-title">
       <div className="appointment-heading">
@@ -55,7 +156,7 @@ export default function AppointmentWorkspace() {
       </div>
 
       {open && <>
-        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This is a working draft in AI Companion. It is not saved to the Living Care Record yet. Caregiver reports, clinician statements, and AI suggestions must remain distinct.</span></div>
+        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from LCR facts. Caregiver reports, caregiver-recorded clinician statements, and AI suggestions remain distinct; saving does not verify clinical statements or silently change the LCR.</span></div>
         <nav className="appointment-stages" aria-label="Appointment stages">
           {([
             ['prepare', '1. Before the visit'],
@@ -124,6 +225,16 @@ export default function AppointmentWorkspace() {
           <label className="appointment-review-status">Closure status<select value={reviewStatus} onChange={event => setReviewStatus(event.target.value as typeof reviewStatus)}><option>Awaiting documentation</option><option>Follow-up pending</option><option>Ready for review</option><option>Closed with documented outstanding items</option></select></label>
           <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Working draft only — appointment notes, decisions, and follow-up actions are not yet persisted to the LCR. Do not rely on this screen as the durable follow-up record.</p>
         </div>}
+
+        <div className="appointment-save-controls">
+          <div className="appointment-save-status" role="status" aria-live="polite">
+            {loadingRecord ? 'Loading saved appointment workspace…' : saveMessage}
+            {saveError && <span className="appointment-error">{saveError}</span>}
+          </div>
+          <button type="button" className="appointment-primary" onClick={() => void saveWorkspace()} disabled={savingRecord || loadingRecord}>
+            {savingRecord ? 'Saving…' : recordId ? 'Save appointment changes' : 'Save appointment workspace'}
+          </button>
+        </div>
       </>}
       <style jsx>{`
         .appointment-workspace { padding:22px; border:1px solid #dfe8df; border-radius:20px; background:#fff; color:#26392c; }
