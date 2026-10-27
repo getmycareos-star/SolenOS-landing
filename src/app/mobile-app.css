@@ -1025,3 +1025,40 @@
     animation: none;
   }
 }
+
+
+/* First-run welcome and confirmation: match the deployed SolenOS landing palette.
+   Color-only override; typography, font sizes, and layout remain unchanged. */
+.onboarding-shell {
+  background: #f5f7f8;
+}
+.onboarding-title {
+  color: #172b35;
+}
+.onboarding-lede {
+  color: #5f7179;
+}
+.onboarding-trust-signal {
+  color: #173f4b;
+  background: #e9f2f1;
+  border-color: #dce5e8;
+}
+.onboarding-shell .solenos-btn--primary {
+  background: #267c78;
+  border-color: #267c78;
+  color: #fff;
+  box-shadow: none;
+}
+.onboarding-shell .solenos-btn--primary:hover:not(:disabled) {
+  background: #167d78;
+  border-color: #167d78;
+  color: #fff;
+}
+.onboarding-shell .solenos-btn--primary:active:not(:disabled) {
+  background: #115f5b;
+  border-color: #115f5b;
+  color: #fff;
+}
+.onboarding-legal-note a {
+  color: #167d78;
+}
