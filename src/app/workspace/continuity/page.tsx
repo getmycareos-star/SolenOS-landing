@@ -34,8 +34,18 @@ const labels: Record<string, string> = {
  "record-versions": "Immutable record versions", "record-snapshots": "Record snapshots"
 };
 function rowText(r: Row) {
- const value = r.fact_value ?? r.decision_text ?? r.perspective_text ?? r.context_payload ?? r.snapshot_payload ?? r.correction_reason ?? r.question ?? r.description ?? r.decision_notes ?? r.after_state ?? r.reconciliation_status ?? r.reason ?? r.status ?? "Care record";
- return typeof value === "string" ? value : JSON.stringify(value);
+ if (r.version_number !== undefined) {
+  const digest = typeof r.record_digest === "string" ? r.record_digest.slice(0, 12) : "digest unavailable";
+  return `Version ${String(r.version_number)} · ${String(r.reason ?? "record snapshot")} · SHA-256 ${digest}…`;
+ }
+ if (r.as_of !== undefined) {
+  const digest = typeof r.record_digest === "string" ? r.record_digest.slice(0, 12) : "digest unavailable";
+  return `Snapshot as of ${String(r.as_of)} · SHA-256 ${digest}…`;
+ }
+ const value = r.fact_value ?? r.decision_text ?? r.perspective_text ?? r.context_payload ?? r.correction_reason ?? r.question ?? r.description ?? r.decision_notes ?? r.after_state ?? r.reconciliation_status ?? r.reason ?? r.status ?? "Care record";
+ if (typeof value === "string") return value;
+ if (value && typeof value === "object") return JSON.stringify(value);
+ return String(value);
 }
 
 export default function CareContinuityPage() {
