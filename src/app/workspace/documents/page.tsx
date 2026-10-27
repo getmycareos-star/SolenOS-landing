@@ -44,6 +44,8 @@ type DocumentItem = {
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
 
+type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
+
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif";
 
@@ -151,6 +153,12 @@ async function extractText(file: File): Promise<{ text: string; note: string | n
 
 export default function DocumentsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
+  const [scanPreparing, setScanPreparing] = useState(false);
+  const [scanSaving, setScanSaving] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -206,55 +214,59 @@ export default function DocumentsPage() {
   }, [documents, query]);
 
   const handleFiles = async (fileList: FileList | null) => {
-    const file = fileList?.[0];
-    if (!file) return;
-    setUploadMessage(null);
-    if (file.size <= 0) {
-      setUploadMessage({ kind: "error", text: "This file is empty. Choose a document with content." });
-      return;
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    setUploadMessage(null); setScanError(null); setScanSuccess(null);
+    const invalid = files.find((file) => file.size <= 0 || file.size > MAX_FILE_BYTES);
+    if (invalid) { setScanError(invalid.size <= 0 ? `${invalid.name} is empty.` : `${invalid.name} exceeds the 10 MiB limit.`); return; }
+    setScanPreparing(true);
+    try {
+      const drafts: ScanDraft[] = [];
+      for (const file of files) {
+        const extracted = await extractText(file);
+        drafts.push({ key: `${file.name}-${file.size}-${file.lastModified}-${Date.now()}-${drafts.length}`, file, extractedText: extracted.text, extractionNote: extracted.note, reviewed: false, uncertain: false, rotation: 0, previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null });
+      }
+      setScanDrafts((current) => [...current, ...drafts]);
+    } finally {
+      setScanPreparing(false);
+      if (fileInput.current) fileInput.current.value = "";
+      if (cameraInput.current) cameraInput.current.value = "";
     }
-    if (file.size > MAX_FILE_BYTES) {
-      setUploadMessage({ kind: "error", text: "This file is larger than 10 MiB. Choose a smaller file." });
-      return;
-    }
+  };
 
-    setUploading(true);
+  const updateScanDraft = (key: string, patch: Partial<ScanDraft>) => setScanDrafts((current) => current.map((draft) => draft.key === key ? { ...draft, ...patch } : draft));
+
+  const removeScanDraft = (key: string) => setScanDrafts((current) => {
+    const removed = current.find((draft) => draft.key === key);
+    if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+    return current.filter((draft) => draft.key !== key);
+  });
+
+  const saveReviewedScans = async () => {
+    if (!scanDrafts.length || scanDrafts.some((draft) => !draft.reviewed)) { setScanError("Review every page and mark it reviewed before saving."); return; }
+    setScanSaving(true); setScanError(null); setScanSuccess(null);
+    const savedIds: string[] = [];
     try {
       const session = await ensureAnonymousSession();
-      const extracted = await extractText(file);
-      const form = new FormData();
-      form.append("file", file);
-      form.append("person_id", session.person.id);
-      form.append("caregiver_id", session.caregiver.id);
-      form.append("evidence_type", "document");
-      form.append("extracted_text", extracted.text);
-      const stored = await postFormData("/upload", form) as {
-        evidence_id?: string;
-        persisted?: boolean;
-        size_bytes?: number;
-      };
-      if (!stored.persisted || !stored.evidence_id) {
-        throw new Error("The server did not confirm that the original document was saved.");
+      for (let index = 0; index < scanDrafts.length; index += 1) {
+        const draft = scanDrafts[index];
+        const textToSave = draft.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\\n" + draft.extractedText : draft.extractedText;
+        const form = new FormData();
+        form.append("file", draft.file); form.append("person_id", session.person.id); form.append("caregiver_id", session.caregiver.id);
+        form.append("evidence_type", "document"); form.append("extracted_text", textToSave);
+        form.append("scan_review_status", "caregiver_reviewed"); form.append("scan_rotation_degrees", String(draft.rotation));
+        form.append("scan_page_number", String(index + 1)); form.append("scan_page_count", String(scanDrafts.length));
+        const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
+        if (!stored.persisted || !stored.evidence_id) throw new Error("A page save was not confirmed by the server.");
+        savedIds.push(stored.evidence_id);
       }
-      setUploadMessage({
-        kind: "success",
-        text: extracted.note
-          ? `Original document saved securely. Document text is not yet available: ${extracted.note}`
-          : "Original document saved. Its available text can now be reviewed by document intelligence.",
-      });
+      setScanSuccess(`${savedIds.length} reviewed page(s) saved with original scans and reviewed text. Scanned statements remain source evidence, not verified LCR facts.`);
+      scanDrafts.forEach((draft) => { if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl); });
+      setScanDrafts([]); await loadDocuments(true); if (savedIds[0]) setSelectedId(savedIds[0]);
+    } catch {
+      setScanError(`The server confirmed ${savedIds.length} of ${scanDrafts.length} page saves. Refresh the library before retrying to avoid duplicates.`);
       await loadDocuments(true);
-      setSelectedId(stored.evidence_id);
-    } catch (error) {
-      setUploadMessage({
-        kind: "error",
-        text: error instanceof Error && /10 MiB|file type|contents do not match|empty/i.test(error.message)
-          ? error.message
-          : "The document could not be confirmed as saved. It has not been marked as saved. Check the file and connection, then retry.",
-      });
-    } finally {
-      setUploading(false);
-      if (fileInput.current) fileInput.current.value = "";
-    }
+    } finally { setScanSaving(false); }
   };
 
   const openOriginal = async (doc: DocumentItem) => {
@@ -330,12 +342,28 @@ export default function DocumentsPage() {
           </button>
         </div>
 
-        <input ref={fileInput} type="file" accept={ACCEPTED_FILES} hidden onChange={(event) => void handleFiles(event.target.files)} />
-        <button type="button" onClick={() => fileInput.current?.click()} disabled={uploading} style={{ marginTop: 16, width: "100%", minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 750, fontSize: 15, padding: "12px 16px", cursor: uploading ? "wait" : "pointer" }}>
-          {uploading ? <LoaderCircle size={19} className="animate-spin" /> : <Upload size={19} />}
-          {uploading ? "Saving original document…" : "Upload a document"}
-        </button>
-        <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary)" }}>PDF, Word, text, email and common image files · maximum 10 MiB per file.</p>
+        <input ref={fileInput} type="file" accept={ACCEPTED_FILES} multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
+        <input ref={cameraInput} type="file" accept="image/*" capture="environment" multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 10, marginTop: 16 }}>
+          <button type="button" onClick={() => cameraInput.current?.click()} disabled={uploading || scanPreparing || scanSaving} style={{ minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><FileImage size={19} /> Scan with camera</button>
+          <button type="button" onClick={() => fileInput.current?.click()} disabled={uploading || scanPreparing || scanSaving} style={{ minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><Upload size={19} /> Upload document / pages</button>
+        </div>
+        <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary)" }}>Capture with your phone camera or select multiple files/pages. Original files are preserved. Maximum 10 MiB per file.</p>
+        {scanPreparing && <p role="status" style={{ marginTop: 12, fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />Extracting readable text for review…</p>}
+        {scanError && <p role="alert" style={{ marginTop: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 9, fontSize: 14 }}>{scanError}</p>}
+        {scanSuccess && <p role="status" style={{ marginTop: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 9, fontSize: 14 }}>{scanSuccess}</p>}
+        {scanDrafts.length > 0 && <section aria-label="Review scanned pages" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, display: "grid", gap: 14 }}>
+          <div><h3 style={{ margin: 0, fontSize: 17 }}>Review extracted text before saving</h3><p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, medication names and numbers against the original. Rotate the preview to help read it. The original scan is preserved.</p></div>
+          {scanDrafts.map((draft, index) => <article key={draft.key} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 12, display: "grid", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><strong style={{ overflowWrap: "anywhere", fontSize: 14 }}>{index + 1}. {draft.file.name}</strong><button type="button" onClick={() => removeScanDraft(draft.key)} style={{ minHeight: 38, padding: "6px 9px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
+            {draft.previewUrl && <div style={{ display: "grid", gap: 8 }}><img src={draft.previewUrl} alt={`Original scan preview: ${draft.file.name}`} style={{ display: "block", maxWidth: "100%", maxHeight: 320, margin: "0 auto", objectFit: "contain", transform: `rotate(${draft.rotation}deg)` }} /><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button type="button" onClick={() => updateScanDraft(draft.key, { rotation: (draft.rotation + 270) % 360 })} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Rotate left</button><button type="button" onClick={() => updateScanDraft(draft.key, { rotation: (draft.rotation + 90) % 360 })} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Rotate right</button></div></div>}
+            {draft.extractionNote && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}><AlertCircle size={15} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 5 }} />{draft.extractionNote}</p>}
+            <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 650 }}>Extracted text — edit anything incorrect<textarea value={draft.extractedText} onChange={(event) => updateScanDraft(draft.key, { extractedText: event.target.value, reviewed: false })} rows={7} placeholder="If no text was extracted, type the text you can verify from the scan." style={{ width: "100%", minHeight: 140, resize: "vertical", padding: 10, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)", font: "inherit", lineHeight: 1.5 }} /></label>
+            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={draft.uncertain} onChange={(event) => updateScanDraft(draft.key, { uncertain: event.target.checked })} />Some extracted text is uncertain or could not be read reliably.</label>
+            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={draft.reviewed} onChange={(event) => updateScanDraft(draft.key, { reviewed: event.target.checked })} />I reviewed this text against the original scan.</label>
+          </article>)}
+          <button type="button" onClick={() => void saveReviewedScans()} disabled={scanSaving || scanPreparing || scanDrafts.length === 0 || scanDrafts.some((draft) => !draft.reviewed)} style={{ minHeight: 50, padding: "12px 16px", border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 750, fontSize: 15 }}>{scanSaving ? <><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Saving reviewed pages…</> : "Save reviewed scans"}</button>
+        </section>}
 
         {uploading && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}>Reading available text and saving the original file. Please keep this page open.</p>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
