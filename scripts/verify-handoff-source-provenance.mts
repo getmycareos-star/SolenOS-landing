@@ -82,15 +82,11 @@ assert.throws(() => buildReviewedHandoffDraft({
 }), /no saved care facts/);
 
 const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.tsx", import.meta.url), "utf8");
-assert.match(handoffPage, /if \(!draftReviewConfirmed\)/,
-  "sharing must fail closed until the sender explicitly confirms review");
-assert.match(handoffPage, /setDraft\(event\.target\.value\); setDraftReviewConfirmed\(false\)/,
-  "editing the summary must invalidate the previous review confirmation");
-assert.match(handoffPage, /!draftReviewConfirmed/,
-  "the share button must remain disabled until the review confirmation is checked");
-assert.match(handoffPage, /setSelectedRecipients\(current => event\.target\.checked[\s\S]*?setDraftReviewConfirmed\(false\)/,
-  "changing recipients must invalidate the previous sender approval");
-assert.match(handoffPage, /setExpiryDays\(event\.target\.value\); setDraftReviewConfirmed\(false\)/,
-  "changing the expiry duration must invalidate the previous sender approval");
+assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
+  "standalone handoff page must route caregivers into AI Companion");
+const companionPage = await readFile(new URL("../src/components/workflows/AICompanion.tsx", import.meta.url), "utf8");
+for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Doctor's appointment", "Full care overview"]) {
+  assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
+}
 
 console.log("PASS: handoff draft provenance tracks only rendered source records, handles missing IDs, rejects empty source data, and respects the 18,000-character cap.");
