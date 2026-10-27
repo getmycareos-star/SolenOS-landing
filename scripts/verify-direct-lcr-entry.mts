@@ -6,6 +6,7 @@ const shell = fs.readFileSync("src/components/public/PublicShell.tsx", "utf8");
 const start = fs.readFileSync("src/app/start/page.tsx", "utf8");
 const earlyAccess = fs.readFileSync("src/app/early-access/page.tsx", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
+const cognitiveWorkspace = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 
 assert.match(landing, /const start = "\/workspace\?enter=1"/,
   "primary landing CTA targets the LCR directly");
@@ -23,6 +24,8 @@ assert.doesNotMatch(workspaceLayout, /ConsentGatePanel|WorkspacePrivacyBoundary|
   "workspace layout contains no pre-workspace checkbox gate");
 assert.match(workspaceLayout, /<WorkspaceProvider>/,
   "workspace provider mounts without waiting for a checkbox");
+assert.doesNotMatch(cognitiveWorkspace, /ConsentGatePanel|consentState !== "accepted"|Retry the privacy check|type="checkbox"/,
+  "the rendered LCR experience must not reintroduce a hidden acknowledgement gate");
 
 console.log("✓ every use-the-LCR CTA routes directly to the workspace");
 console.log("✓ privacy/terms remain informational links, not an entry checkbox gate");
