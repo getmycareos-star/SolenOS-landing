@@ -327,7 +327,7 @@ export default function DocumentsPage() {
         form.append("scan_review_status", page.reviewed ? "caregiver_reviewed" : "not_reviewed");
         form.append("scan_rotation_degrees", String(page.rotation));
         form.append("scan_crop_json", JSON.stringify(page.crop));
-        form.append("scan_text_prepared", String(page.prepared));
+        form.append("scan_text_prepared", String(page.file.type.startsWith("image/") && page.prepared));
         const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
