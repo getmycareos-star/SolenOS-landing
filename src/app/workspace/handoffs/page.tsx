@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clock3, Inbox, RefreshCw, ShieldCheck, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import { buildReviewedHandoffDraft, type CareRecordRow } from "@/lib/handoffs/reviewed-draft";
 
-type Row = Record<string, unknown>;
 type Recipient = {
   caregiver_id: string;
   name: string;
@@ -78,86 +78,16 @@ function formatDate(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? "Not recorded" : date.toLocaleString();
 }
 
-function valueText(row: Row, keys: string[]): string {
-  for (const key of keys) {
-    const value = row[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (value && typeof value === "object") return JSON.stringify(value);
-    if (typeof value === "number" || typeof value === "boolean") return String(value);
-  }
-  return "";
-}
-
-function renderRow(row: Row, keys: string[]): string {
-  const text = valueText(row, keys);
-  if (!text) return "";
-  const status = typeof row.epistemic_status === "string" ? ` · status: ${row.epistemic_status}` : "";
-  const when = valueText(row, ["effective_at", "occurred_at", "recorded_at", "created_at", "observed_at"]);
-  return `${text.slice(0, 700)}${status}${when ? ` · recorded: ${when}` : ""}`;
-}
-
 async function buildReviewedDraft(): Promise<{ text: string; sourceRecordIds: string[] }> {
   const [facts, decisions, questions, gaps, timeline] = await Promise.all([
-    getJSON("/care-continuity/facts?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/decisions?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/open-questions?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/information-gaps?limit=25") as Promise<Row[]>,
-    getJSON("/care-continuity/timeline?limit=25") as Promise<Row[]>,
+    getJSON("/care-continuity/facts?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/decisions?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/open-questions?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/information-gaps?limit=25") as Promise<CareRecordRow[]>,
+    getJSON("/care-continuity/timeline?limit=25") as Promise<CareRecordRow[]>,
   ]);
 
-  const makeSection = (title: string, rows: Row[], keys: string[], maxItems: number) => {
-    const selected = rows
-      .map(row => ({ row, text: renderRow(row, keys) }))
-      .filter(item => item.text)
-      .slice(0, maxItems);
-    return {
-      title,
-      items: selected.map(item => ({ text: item.text, id: typeof item.row.id === "string" ? item.row.id.trim() : "" })),
-    };
-  };
-
-  const sections = [
-    makeSection("Care facts", facts, ["fact_value", "description", "title"], 12),
-    makeSection("Care decisions", decisions, ["decision_text", "title", "description"], 8),
-    makeSection("Open questions", questions, ["question", "description", "title"], 8),
-    makeSection("Information gaps", gaps, ["description", "topic", "title"], 8),
-    makeSection("Recent timeline", timeline, ["summary", "title", "description", "entry_type"], 8),
-  ].filter(section => section.items.length > 0);
-
-  if (sections.length === 0) {
-    throw new Error("There are no saved care facts, decisions, questions, gaps, or timeline entries to include yet. Add real care information first.");
-  }
-
-  const preparedAt = new Date().toLocaleString();
-  const parts = [
-    "SOLENOS CARE HANDOFF SUMMARY",
-    `Prepared for caregiver review: ${preparedAt}`,
-    "This summary reflects saved records only. Status labels are preserved where available; missing information is not treated as false.",
-  ];
-  const includedSourceIds: string[] = [];
-  const appendIfWithinLimit = (part: string) => {
-    const candidate = [...parts, part].join("\n");
-    if (candidate.length > 18000) return false;
-    parts.push(part);
-    return true;
-  };
-
-  for (const section of sections) {
-    if (!appendIfWithinLimit(`\n${section.title.toUpperCase()}`)) break;
-    for (const item of section.items) {
-      if (!appendIfWithinLimit(`• ${item.text}`)) break;
-      if (item.id) includedSourceIds.push(item.id);
-    }
-  }
-
-  appendIfWithinLimit(
-    "\nLIMITATIONS\nThis is a caregiver-reviewed summary, not a clinical judgment. Source IDs identify saved records used to prepare this draft; SolenOS does not independently verify that every edited statement is supported by those records."
-  );
-
-  return {
-    text: parts.join("\n"),
-    sourceRecordIds: [...new Set(includedSourceIds)].slice(0, 100),
-  };
+  return buildReviewedHandoffDraft({ facts, decisions, questions, gaps, timeline });
 }
 
 export default function CareHandoffsPage() {
