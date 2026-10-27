@@ -369,10 +369,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   }
 
   async function handleAddSituation(provenance: InputProvenance) {
-    if (consentState !== "accepted") {
-      setCaregiverError("Your note is still a draft. Retry the privacy check before saving or sending care information.");
-      return;
-    }
     const readyDocs = documents.filter((d) => d.status === "ready" && (d.extractedText.trim() || d.evidenceId));
     const text = rawInput.trim();
     const sharedDisplay = buildSharedDisplayText(text, readyDocs);
