@@ -16,7 +16,7 @@ assert.match(source, /aria-expanded/);
 assert.match(source, /Search the care history/);
 assert.match(source, /Timeline could not be loaded/);
 assert.match(source, /No saved care events were returned/);
-assert.match(source, /does not insert example care history/);
+assert.match(source, /never inserts example care history/);
 assert.match(source, /latest saved event, not a substitute for the reconciled current-care view/);
 assert.doesNotMatch(source, /runtime\.timeline\.entries/);
 assert.doesNotMatch(source, /localStorage\.getItem\(.*timeline/i);
