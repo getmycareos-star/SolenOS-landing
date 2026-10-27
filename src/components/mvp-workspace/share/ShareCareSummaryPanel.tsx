@@ -9,6 +9,7 @@ import {
   Loader2,
   Printer,
   Share2,
+  Users,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -60,7 +61,14 @@ interface ShareCareSummaryPanelProps {
   onShared?: () => void;
 }
 
-type ShareFormat = "copy" | "print" | "native";
+type ShareFormat = "copy" | "print" | "native" | "handoff";
+
+type HandoffRecipient = {
+  caregiver_id: string;
+  name: string;
+  relationship: string;
+  can_receive_handoff: boolean;
+};
 
 async function copyTextToClipboard(text: string): Promise<void> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -101,6 +109,10 @@ export function ShareCareSummaryPanel({
   const [situationResponse, setSituationResponse] = useState<any>(null);
   const [format, setFormat] = useState<ShareFormat | null>(null);
   const [sharingResult, setSharingResult] = useState<string | null>(null);
+  const [handoffRecipients, setHandoffRecipients] = useState<HandoffRecipient[]>([]);
+  const [selectedHandoffRecipientId, setSelectedHandoffRecipientId] = useState("");
+  const [handoffDirectoryLoading, setHandoffDirectoryLoading] = useState(false);
+  const [handoffDirectoryError, setHandoffDirectoryError] = useState<string | null>(null);
 
   const isOffline = useMemo(() => typeof navigator !== "undefined" && !navigator.onLine, []);
 
@@ -189,7 +201,38 @@ export function ShareCareSummaryPanel({
   }, []);
 
   const handleBackToReview = useCallback(() => {
+    setFormat(null);
+    setSelectedHandoffRecipientId("");
+    setHandoffDirectoryError(null);
     setState("review");
+  }, []);
+
+  const handleChooseHandoff = useCallback(async () => {
+    setFormat("handoff");
+    setSelectedHandoffRecipientId("");
+    setHandoffDirectoryLoading(true);
+    setHandoffDirectoryError(null);
+    try {
+      if (!getAnonymousAccessToken()) {
+        throw new Error("Open the saved care record before creating a handoff.");
+      }
+      const session = await ensureAnonymousSession();
+      const response = await fetch(apiUrl("/api/v1/handoffs/directory/recipients"), {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const result = await safeJson(response) as { items?: HandoffRecipient[]; detail?: string };
+      if (!response.ok) {
+        throw new Error(result?.detail ?? "Could not load linked caregivers.");
+      }
+      setHandoffRecipients(Array.isArray(result.items) ? result.items : []);
+    } catch (e) {
+      setHandoffDirectoryError(
+        sanitizeCaregiverErrorMessage(e instanceof Error ? e.message : "Could not load linked caregivers."),
+      );
+      setHandoffRecipients([]);
+    } finally {
+      setHandoffDirectoryLoading(false);
+    }
   }, []);
 
   const handleShare = useCallback(async () => {
@@ -244,6 +287,76 @@ export function ShareCareSummaryPanel({
         }
         throw new Error("Native sharing is not supported on this device.");
       }
+
+      if (format === "handoff") {
+        const recipient = handoffRecipients.find((item) => item.caregiver_id === selectedHandoffRecipientId);
+        if (!recipient) throw new Error("Choose a linked caregiver before sending the handoff.");
+        if (!recipient.can_receive_handoff) {
+          throw new Error("This caregiver must accept the required privacy and multi-caregiver consent before receiving a handoff.");
+        }
+        const session = await ensureAnonymousSession();
+        const headers = {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        };
+        let handoffId: string | null = null;
+        try {
+          const createdResponse = await fetch(apiUrl("/api/v1/handoffs"), {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              person_id: session.person.id,
+              recipient_caregiver_ids: [recipient.caregiver_id],
+              scope: ["lcr_summary"],
+              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            }),
+          });
+          const created = await safeJson(createdResponse) as { id?: string; detail?: string };
+          if (!createdResponse.ok || !created.id) {
+            throw new Error(created?.detail ?? "Could not create the handoff.");
+          }
+          handoffId = created.id;
+
+          const summaryText = buildPlainTextSummary(summary, selectedContent);
+          const attachedResponse = await fetch(
+            apiUrl(`/api/v1/handoffs/${encodeURIComponent(handoffId)}/summary`),
+            {
+              method: "PUT",
+              headers,
+              body: JSON.stringify({
+                sections: { lcr_summary: summaryText },
+                source_record_ids: [],
+                caregiver_reviewed: true,
+                prepared_at: new Date().toISOString(),
+              }),
+            },
+          );
+          const attached = await safeJson(attachedResponse) as { detail?: string };
+          if (!attachedResponse.ok) {
+            throw new Error(attached?.detail ?? "Could not attach the reviewed summary.");
+          }
+
+          setSharingResult(
+            `Secure in-app handoff created for ${recipient.name}. They can review the summary in SolenOS before accepting. No email or external link was sent.`,
+          );
+          recordShareHistory(summary.preparedFor, "secure handoff", "shared");
+          setState("shared");
+          onShared?.();
+          return;
+        } catch (handoffError) {
+          if (handoffId) {
+            try {
+              await fetch(apiUrl(`/api/v1/handoffs/${encodeURIComponent(handoffId)}/revoke`), {
+                method: "POST",
+                headers,
+              });
+            } catch {
+              // The original failure is more useful; the pending handoff has no summary to expose.
+            }
+          }
+          throw handoffError;
+        }
+      }
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") {
         setState("format_selection");
@@ -253,7 +366,10 @@ export function ShareCareSummaryPanel({
       setError(sanitizeCaregiverErrorMessage(e instanceof Error ? e.message : "Sharing failed."));
       setState("failed");
     }
-  }, [summary, format, selectedContent, careRecipientName, onShared]);
+  }, [
+    summary, format, selectedContent, careRecipientName, onShared,
+    handoffRecipients, selectedHandoffRecipientId,
+  ]);
 
   const handleRetry = useCallback(() => {
     setError(null);
@@ -534,19 +650,70 @@ export function ShareCareSummaryPanel({
               : "Not available on this device."}
           </span>
         </button>
+        <button
+          type="button"
+          className={`share-format-option${format === "handoff" ? " is-selected" : ""}`}
+          onClick={() => void handleChooseHandoff()}
+          disabled={handoffDirectoryLoading}
+        >
+          <Users size={20} aria-hidden />
+          <span className="share-format-label">Secure caregiver handoff</span>
+          <span className="share-format-desc">Share inside SolenOS with a linked caregiver. No email or external link.</span>
+        </button>
       </div>
+      {format === "handoff" && (
+        <div className="share-other-field">
+          <label className="share-other-label" htmlFor="handoff-recipient-select">Send to linked caregiver</label>
+          <select
+            id="handoff-recipient-select"
+            className="share-other-input"
+            value={selectedHandoffRecipientId}
+            onChange={(event) => setSelectedHandoffRecipientId(event.target.value)}
+            disabled={handoffDirectoryLoading}
+          >
+            <option value="">
+              {handoffDirectoryLoading ? "Loading linked caregivers…" : "Choose a caregiver"}
+            </option>
+            {handoffRecipients.map((recipient) => (
+              <option key={recipient.caregiver_id} value={recipient.caregiver_id} disabled={!recipient.can_receive_handoff}>
+                {recipient.name}{recipient.relationship ? ` — ${recipient.relationship}` : ""}{!recipient.can_receive_handoff ? " (required consent needed)" : ""}
+              </option>
+            ))}
+          </select>
+          <p className="share-format-desc">
+            The caregiver must have accepted the required privacy consent. They can review the summary before accepting the handoff.
+          </p>
+          {handoffDirectoryError && <p className="share-panel-error" role="alert">{handoffDirectoryError}</p>}
+          {!handoffDirectoryLoading && !handoffDirectoryError && handoffRecipients.length === 0 && (
+            <p className="share-panel-muted">No other caregivers are linked to this care record yet.</p>
+          )}
+        </div>
+      )}
       {format && (
         <div className="share-confirm-bar">
           {summary && (
             <p className="share-confirm-detail">
               Ready to share — prepared for <strong>{summary.preparedFor}</strong> as{" "}
-              <strong>{format === "copy" ? "text" : format === "print" ? "PDF" : "shared file"}</strong>.
+              <strong>{format === "copy" ? "text" : format === "print" ? "PDF" : format === "handoff" ? "secure in-app handoff" : "shared file"}</strong>
+              {format === "handoff" && selectedHandoffRecipientId && (
+                <> for <strong>{handoffRecipients.find((item) => item.caregiver_id === selectedHandoffRecipientId)?.name ?? "selected caregiver"}</strong></>
+              )}.
               Includes: {summary.includedCategories.slice(0, 4).join(", ")}.
             </p>
           )}
           <div className="share-confirm-actions">
-            <Button variant="primary" onClick={handleShare} loading={state === "sharing"}>
-              {state === "sharing" ? "Sharing…" : "Share"}
+            <Button
+              variant="primary"
+              onClick={handleShare}
+              loading={state === "sharing"}
+              disabled={
+                format === "handoff" &&
+                (handoffDirectoryLoading ||
+                  !selectedHandoffRecipientId ||
+                  !handoffRecipients.find((item) => item.caregiver_id === selectedHandoffRecipientId)?.can_receive_handoff)
+              }
+            >
+              {state === "sharing" ? "Sharing…" : format === "handoff" ? "Create secure handoff" : "Share"}
             </Button>
             <Button variant="secondary" onClick={handleBackToReview}>
               Back
