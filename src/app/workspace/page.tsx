@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, FileText, History, MessageCircle, RefreshCw } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
+import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
 import { Button } from "@/components/ui/Button";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 
@@ -150,6 +151,8 @@ function WorkspacePageInner() {
             <span>{loading ? "Please wait" : `Latest event: ${latestDate}`}</span>
           </div>
         </header>
+
+        <PersistedCareOrientation />
 
         <section className="lcr-primary-actions" aria-label="Care record navigation">
           <button type="button" className="lcr-daily-action" onClick={() => router.push("/workspace/daily-care")}>
