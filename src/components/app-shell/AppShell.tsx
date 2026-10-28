@@ -26,6 +26,7 @@ type AppShellProps = {
   careContext?: ReactNode;
   brandHref?: string;
   onMenuToggle?: () => void;
+  showFab?: boolean;
 };
 
 /** Tab icons per position — Care Record, Timeline, Documents, Settings. */
@@ -62,6 +63,7 @@ export function AppShell({
   careContext,
   brandHref = "/",
   onMenuToggle,
+  showFab = true,
 }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -94,8 +96,7 @@ export function AppShell({
 
       <main className="mobile-app-main">{children}</main>
 
-      {/* Floating Action Button + Add bottom sheet */}
-      <div className="mobile-fab">
+      {showFab && <div className="mobile-fab">
         {fabOpen && (
           <div className="mobile-fab-sheet" role="dialog" aria-label="Add to record">
             <p className="mobile-fab-sheet-title">Add to record</p>
@@ -124,7 +125,7 @@ export function AppShell({
         >
           <PlusCircle size={24} aria-hidden />
         </Button>
-      </div>
+      </div>}
 
       {/* Bottom tab bar — ICON + label, active accent underline */}
       <nav className="mobile-tabbar" aria-label="Primary">

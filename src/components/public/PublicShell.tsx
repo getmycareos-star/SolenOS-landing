@@ -4,6 +4,8 @@ import { TRUST_NAV, TRUST_FOOTER_LINKS } from "@/lib/trust-content";
 import { BRAND_TAGLINE } from "@/lib/brand";
 import { EMERGENCY_BOUNDARY } from "@/lib/early-access-trust";
 
+const FOUNDER_LINKEDIN_URL = "https://www.linkedin.com/in/david-abuchi-43a624407";
+
 export function PublicNav({
   activeHref,
   hideNavLinks,
@@ -56,6 +58,9 @@ export function PublicFooter() {
             </Link>
           ))}
           <Link href="/workspace?enter=1">Living Care Record</Link>
+          <a href={FOUNDER_LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
+            Founder on LinkedIn
+          </a>
         </nav>
         <p className="public-footer-emergency" role="note">
           {EMERGENCY_BOUNDARY}

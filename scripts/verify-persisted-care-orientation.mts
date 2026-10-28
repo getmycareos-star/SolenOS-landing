@@ -14,6 +14,6 @@ assert.match(component, /Your care record is ready to build/);
 assert.match(component, /what_i_understood/);
 assert.match(component, /ui_situations/);
 assert.doesNotMatch(component, /sample care event|demo caregiver|fabricated/i);
-assert.match(workspace, /<PersistedCareOrientation\s*\/>/);
+assert.doesNotMatch(workspace, /<PersistedCareOrientation\s*\/>/, "the LCR home must not render a second summary from the legacy situation endpoint");
 
 console.log("Persisted-care orientation contract checks passed.");

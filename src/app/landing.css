@@ -430,3 +430,9 @@
 }
 
 
+
+
+/* Founder profile link: recognizable LinkedIn mark with keyboard-accessible target. */
+.editorial-landing .el-founder .el-linkedin { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; margin-top: .45rem; color: inherit; text-decoration: underline; text-underline-offset: .18em; }
+.editorial-landing .el-founder .el-linkedin svg { width: 22px; height: 22px; flex: 0 0 22px; }
+.editorial-landing .el-founder .el-linkedin:focus-visible { outline: 3px solid #626e58; outline-offset: 3px; }
