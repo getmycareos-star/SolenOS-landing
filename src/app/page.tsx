@@ -90,7 +90,7 @@ export default function LandingPage() {
         <section className="el-final-cta">
           <div className="el-leaves el-leaves-left" aria-hidden="true">❧</div>
           <div><h2>You already carry enough.</h2><p className="el-italic">You shouldn’t have to carry the whole care story in your head, too.</p><p>Give the story somewhere to live. Somewhere to return to. Somewhere the next person can understand.<br />Somewhere the past can help make sense of what is happening now.</p><Link href={start} className="el-button">Start care record <span aria-hidden="true">↗</span></Link><p className="el-tagline">The care journey, remembered.</p></div>
-          <aside><strong>David Abuchi</strong><br />Founder &amp; CEO<br /><Link href="/our-story">Read our story →</Link></aside>
+          <aside className="el-founder"><strong>David Abuchi</strong><br />Founder &amp; CEO<br /><a className="el-linkedin" href="https://www.linkedin.com/in/david-abuchi-43a624407" target="_blank" rel="noopener noreferrer" aria-label="Open David Abuchi’s LinkedIn profile" title="David Abuchi on LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96c0 .84.69 1.52 1.55 1.52h16.9c.86 0 1.55-.68 1.55-1.52V3.52c0-.84-.69-1.52-1.55-1.52ZM8.01 18.34H5.03V9.02h2.98v9.32ZM6.52 7.75a1.73 1.73 0 1 1 .02-3.46 1.73 1.73 0 0 1-.02 3.46Zm11.82 10.59h-2.97v-4.54c0-1.08-.02-2.47-1.51-2.47-1.52 0-1.75 1.18-1.75 2.39v4.62H9.14V9.02h2.85v1.27h.04c.4-.73 1.37-1.5 2.82-1.5 3.02 0 3.58 1.99 3.58 4.58v4.97Z"/></svg><span>LinkedIn</span></a><br /><Link href="/our-story">Read our story →</Link></aside>
           <div className="el-leaves el-leaves-right" aria-hidden="true">❧</div>
         </section>
 
