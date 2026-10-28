@@ -320,17 +320,41 @@ export default function TimelinePage() {
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this record.");
       }
-      const result = await getJSON("/care-continuity/context?limit_per_source=50");
+      const [result, revisionsResult, versionsResult] = await Promise.all([
+        getJSON("/care-continuity/context?limit_per_source=50"),
+        getJSON("/care-continuity/record-revisions?limit=100").catch(() => null),
+        getJSON("/care-continuity/record-versions?limit=100").catch(() => null),
+      ]);
       if (!result || typeof result !== "object" || !("sources" in result)) {
         throw new Error("The longitudinal care history response was incomplete. No history has been assumed.");
       }
       const context = result as LcrContext;
-      setEvents(mapLcrHistory(context, session.person.id));
+      const historyItems = mapLcrHistory(context, session.person.id);
+      const revisionItems = Array.isArray(revisionsResult)
+        ? revisionsResult.map((row) => row && typeof row === "object" ? mapRevisionHistory(row as Record<string, unknown>, session.person.id) : null).filter((row): row is CareEvent => row !== null)
+        : [];
+      const versionItems = Array.isArray(versionsResult)
+        ? versionsResult.map((row) => row && typeof row === "object" ? mapVersionHistory(row as Record<string, unknown>, session.person.id) : null).filter((row): row is CareEvent => row !== null)
+        : [];
+      const unique = new Map<string, CareEvent>();
+      for (const item of [...historyItems, ...revisionItems, ...versionItems]) unique.set(item.id, item);
+      const allHistory = [...unique.values()].sort((a, b) => {
+        const aTime = safeDate(a.occurred_at)?.getTime() ?? safeDate(a.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+        const bTime = safeDate(b.occurred_at)?.getTime() ?? safeDate(b.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+        return bTime - aTime;
+      });
+      setEvents(allHistory);
       const missingRequired = context.missing_required_sources ?? [];
       const missingOptional = context.missing_optional_sources ?? [];
+      const coverageIssues: string[] = [];
+      if (context.schema_status !== "complete" || missingRequired.length > 0 || missingOptional.length > 0) {
+        coverageIssues.push(`care sources unavailable (required: ${missingRequired.length}; additional: ${missingOptional.length})`);
+      }
+      if (!Array.isArray(revisionsResult)) coverageIssues.push("record revision history unavailable");
+      if (!Array.isArray(versionsResult)) coverageIssues.push("record version history unavailable");
       setCoverageNotice(
-        context.schema_status !== "complete" || missingRequired.length > 0 || missingOptional.length > 0
-          ? `This history may be incomplete. Required sources unavailable: ${missingRequired.length}; additional sources unavailable: ${missingOptional.length}. The missing information has not been filled in.`
+        coverageIssues.length
+          ? `This history may be incomplete: ${coverageIssues.join("; ")}. Missing information has not been filled in.`
           : null
       );
       setLoadedAt(new Date().toISOString());
