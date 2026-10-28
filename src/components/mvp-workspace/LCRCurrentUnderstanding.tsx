@@ -107,6 +107,8 @@ type PersistedChange = {
   attention_candidate: boolean;
   follow_up_candidate: boolean;
   confirmation_status?: string;
+  is_active?: boolean;
+  superseded_by_change_id?: string | null;
   created_at: string;
 };
 
@@ -364,7 +366,7 @@ export function LCRCurrentUnderstanding() {
                   Previous: {change.previous_state ?? "Not recorded"} · Current: {change.current_state ?? "Not recorded"}
                 </p>
                 <p className="lcr-entry-status">
-                  Confirmation: {(change.confirmation_status || "detected").replaceAll("_", " ")}
+                  Confirmation: {(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected").replaceAll("_", " ")}
                 </p>
                 <label className="lcr-evidence-reason">
                   Review note
@@ -377,20 +379,24 @@ export function LCRCurrentUnderstanding() {
                   <small>Record context or explain why this assessment is incorrect or uncertain.</small>
                 </label>
                 {confirmationError[change.id] && <p role="alert">{confirmationError[change.id]}</p>}
-                <div className="lcr-entry-actions">
-                  {(["detected", "awaiting_confirmation"].includes(change.confirmation_status || "detected")) ? (
-                    <>
-                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "confirmed")}>Confirm</button>
-                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "inconclusive")}>Mark inconclusive</button>
-                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "rejected")}>Reject assessment</button>
-                      {change.confirmation_status !== "awaiting_confirmation" && (
-                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Request confirmation</button>
-                      )}
-                    </>
-                  ) : (
-                    <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Reopen review</button>
-                  )}
-                </div>
+                {change.is_active !== false && !change.superseded_by_change_id ? (
+                  <div className="lcr-entry-actions">
+                    {(["detected", "awaiting_confirmation"].includes(change.confirmation_status || "detected")) ? (
+                      <>
+                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "confirmed")}>Confirm</button>
+                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "inconclusive")}>Mark inconclusive</button>
+                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "rejected")}>Reject assessment</button>
+                        {change.confirmation_status !== "awaiting_confirmation" && (
+                          <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Request confirmation</button>
+                        )}
+                      </>
+                    ) : (
+                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Reopen review</button>
+                    )}
+                  </div>
+                ) : (
+                  <small>This assessment has been superseded. It remains in the record for audit history.</small>
+                )}
                 <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
                 <small>Evidence references: {change.evidence_ids.length > 0 ? change.evidence_ids.join(", ") : "None linked"}</small>
                 <button
