@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { getJSON, postJSON, patchJSON, getCaregiverId } from '../api/client'
+import EvidenceReviewPanel from './EvidenceReviewPanel'
 
 type Assertion = {
   id: string
@@ -274,6 +275,8 @@ export default function CareContinuityIntegrityPanel({
 
       {error && <p role="status" aria-live="polite" style={{ color: 'var(--error)', fontSize: 13, marginTop: 10 }}>{error}</p>}
       {notice && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>{notice}</p>}
+
+      <EvidenceReviewPanel personId={personId} evidenceItems={evidenceItems} />
 
       <form onSubmit={submitAssertion} style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record a source-attributed report</h3>
