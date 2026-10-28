@@ -25,7 +25,10 @@ assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|Resea
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(documentPage, /postFormData\("\/upload"/, "document upload stays in Document AI and uses the backend upload contract");
 assert.match(documentPage, /getBlob\("\/upload\//, "Document AI can retrieve the original stored file");
-assert.match(timelinePage, /\/events\//, "Longitudinal Care History reads saved events from the backend");
+assert.match(timelinePage, /care-continuity\\/context/, "Longitudinal Care History reads the shared scoped LCR context");
+assert.doesNotMatch(timelinePage, /workspace\\?compose=1|Add a care record/, "history does not reopen the duplicate LCR capture composer");
+assert.match(timelinePage, /source_label/, "history preserves source attribution when available");
+assert.match(timelinePage, /epistemic_status/, "history preserves uncertainty/status metadata");
 assert.match(styles, /\.lcr-home/, "LCR layout styles are present");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout is explicitly handled");
 
