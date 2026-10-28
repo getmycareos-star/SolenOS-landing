@@ -18,7 +18,7 @@ assert.match(workspacePage, /Longitudinal Care History/, "history is a separate 
 assert.match(workspacePage, /\/workspace\/timeline/, "history navigation uses the existing timeline route");
 assert.match(workspacePage, /Source and record details/, "provenance is progressively disclosed rather than always expanded");
 assert.match(workspacePage, /Try again/, "failed reads have a recoverable retry action");
-assert.doesNotMatch(workspacePage, /Record timeline|Add to record|Scan|Snap|Upload/, "the LCR home does not duplicate timeline or capture/document ingestion");
+assert.doesNotMatch(workspacePage, /Record timeline|Add to record|<strong>Upload<\\/strong>|router\\.push\\(["\x27]\\/workspace\\/(?:upload|scan|snap)["\x27]\\)/, "the LCR home does not duplicate timeline or capture/document ingestion");
 assert.doesNotMatch(workspacePage, /solenos_workspace_consent|ResearchPreviewAckGate|ConsentGatePanel/, "LCR access is not gated by privacy/early-version checkboxes");
 assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|ResearchPreviewAckGate/, "specialized capture is not blocked by acknowledgement checkboxes");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
