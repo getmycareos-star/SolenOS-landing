@@ -104,6 +104,7 @@ const med = detectConflictsFromText({
 });
 assert(med.some((c) => c.type === "medical_conflict"), "medical type");
 assert(med.every((c) => c.type !== "medical_conflict" || c.severity === "CRITICAL"), "medical CRITICAL");
+assert(med.every((c) => !Object.prototype.hasOwnProperty.call(c, "confidence")), "phrase heuristics must not invent conflict confidence");
 assert(hasCriticalMedicalRestriction(med), "CRITICAL medical restricts decisions");
 console.log("✓ medical CRITICAL restriction");
 
