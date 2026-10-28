@@ -55,6 +55,10 @@ type Contradiction = {
   evidence_ids: string[]
   source_assertion_ids?: string[] | null
   matching_candidate_ids?: string[] | null
+  event_id?: string | null
+  context_key?: string | null
+  effective_from?: string | null
+  effective_to?: string | null
 }
 type Outcome = {
   id: string
@@ -377,6 +381,9 @@ export default function CareContinuityIntegrityPanel({
               <strong>{item.field}</strong><span style={{ fontSize: 12 }}>{item.resolution_status.replace(/_/g, ' ')}</span>
             </div>
             <p style={{ fontSize: 13 }}>{item.description}</p>
+            {(item.event_id || item.context_key || item.effective_from || item.effective_to) && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+              Match scope: event {item.event_id || 'not specified'} · context {item.context_key || 'not specified'} · effective {item.effective_from || 'start unknown'} to {item.effective_to || 'end unknown'}
+            </p>
             <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
               Source assertion IDs: {(item.source_assertion_ids || []).join(', ') || 'Not linked'} · Evidence IDs: {(item.evidence_ids || []).join(', ') || 'None attached'}
             </p>
