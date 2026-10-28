@@ -48,6 +48,31 @@ type SituationAssessmentResponse = {
   assessment: SituationAssessment | null;
 };
 
+type PersistedChange = {
+  id: string;
+  person_id: string;
+  subject_type: string;
+  subject_id: string;
+  change_type: string;
+  change_direction: string;
+  previous_state?: string | null;
+  current_state?: string | null;
+  magnitude?: number | null;
+  previous_count?: number | null;
+  current_count?: number | null;
+  comparison_window_start?: string | null;
+  comparison_window_end?: string | null;
+  persistence_days?: number | null;
+  is_persistent?: boolean | null;
+  confidence?: number | null;
+  evidence_ids: string[];
+  explanation?: string | null;
+  significance_verdict?: string | null;
+  attention_candidate: boolean;
+  follow_up_candidate: boolean;
+  created_at: string;
+};
+
 type CurrentCareProjection = {
   person_id: string;
   as_of?: string | null;
@@ -99,11 +124,15 @@ export function LCRCurrentUnderstanding() {
   const [assessment, setAssessment] = useState<SituationAssessment | null>(null);
   const [assessmentLoading, setAssessmentLoading] = useState(false);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
+  const [changes, setChanges] = useState<PersistedChange[]>([]);
+  const [changesError, setChangesError] = useState<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
+    setChanges([]);
+    setChangesError(null);
     try {
       const session = await ensureAnonymousSession();
       if (!session.access_token || !session.person?.id) {
@@ -116,6 +145,17 @@ export function LCRCurrentUnderstanding() {
         throw new Error("The current-care response did not match this session's record contract. No care state has been assumed.");
       }
       setProjection(result as CurrentCareProjection);
+      try {
+        const savedChanges = await getJSON(`/change/changes/${encodeURIComponent(session.person.id)}`);
+        if (!Array.isArray(savedChanges) || savedChanges.some((item) => item?.person_id !== session.person.id)) {
+          throw new Error("The persisted change history did not match the active care-record session.");
+        }
+        setChanges(savedChanges as PersistedChange[]);
+        setChangesError(null);
+      } catch (changeCause) {
+        setChanges([]);
+        setChangesError(changeCause instanceof Error ? changeCause.message : "Persisted change history is unavailable.");
+      }
       try {
         const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
         if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
@@ -169,6 +209,40 @@ export function LCRCurrentUnderstanding() {
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh current care understanding">
           <RefreshCw size={16} aria-hidden="true" /> Refresh
         </button>
+      </div>
+
+      <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
+        <div className="lcr-entry-heading">
+          <h3 id="lcr-change-history-heading">Recorded changes</h3>
+          <span>{changes.length} persisted assessments</span>
+        </div>
+        {changesError && <p role="status">Saved change history could not be loaded: {changesError}</p>}
+        {!changesError && changes.length === 0 && (
+          <p>No persisted change assessments are available for this record. No change has been inferred from missing assessments.</p>
+        )}
+        {changes.length > 0 && (
+          <ul className="lcr-current-facts">
+            {changes.map((change) => (
+              <li key={change.id} className="lcr-current-fact">
+                <div className="lcr-entry-heading">
+                  <strong>{change.subject_type.replaceAll("_", " ")} · {change.change_type.replaceAll("_", " ")}</strong>
+                  <span>{change.significance_verdict?.replaceAll("_", " ") ?? "Significance not assessed"}</span>
+                </div>
+                <p>{change.explanation || "No explanation was stored with this assessment."}</p>
+                <p className="lcr-entry-status">
+                  Previous: {change.previous_state ?? "Not recorded"} · Current: {change.current_state ?? "Not recorded"}
+                </p>
+                <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
+                <small>Evidence references: {change.evidence_ids.length > 0 ? change.evidence_ids.join(", ") : "None linked"}</small>
+                {change.is_persistent === true && <small>Persistence: recorded as persistent{change.persistence_days != null ? ` for ${change.persistence_days} days` : ""}</small>}
+                {change.is_persistent === false && <small>Persistence: not established</small>}
+                {(change.attention_candidate || change.follow_up_candidate) && (
+                  <small>{[change.attention_candidate ? "Attention candidate" : null, change.follow_up_candidate ? "Follow-up candidate" : null].filter(Boolean).join(" · ")}</small>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-situation-assessment-heading">
