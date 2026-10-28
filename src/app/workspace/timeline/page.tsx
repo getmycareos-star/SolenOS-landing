@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Clock3,
   History,
-  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -317,8 +316,8 @@ export default function TimelinePage() {
       <header className="mobile-page-head" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
           <p style={{ margin: "0 0 6px", color: "var(--solenos-muted)", fontSize: 13, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>Living Care Record</p>
-          <h1 style={{ marginBottom: 8 }}>Care Timeline</h1>
-          <p style={{ marginTop: 0, maxWidth: 620 }}>A chronological, source-linked history of recorded care events. Historical reports remain distinct from the current care understanding.</p>
+          <h1 style={{ marginBottom: 8 }}>Longitudinal Care History</h1>
+          <p style={{ marginTop: 0, maxWidth: 620 }}>A chronological view of saved observations, documents, claims, decisions, corrections, and follow-ups. Earlier reports remain part of the record even when understanding changes.</p>
         </div>
         <Button variant="icon" aria-label="Refresh timeline" disabled={loading || refreshing} onClick={() => void loadEvents(true)}>
           <RefreshCw size={18} aria-hidden />
@@ -328,20 +327,20 @@ export default function TimelinePage() {
       <section aria-label="Latest recorded event" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "white", padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
           <History size={19} aria-hidden />
-          <h2 style={{ fontSize: 18, margin: 0 }}>Latest recorded event</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Latest history entry</h2>
         </div>
         {loading ? (
-          <p aria-live="polite" style={{ margin: 0, color: "var(--solenos-muted)" }}>Loading saved care events…</p>
+          <p aria-live="polite" style={{ margin: 0, color: "var(--solenos-muted)" }}>Loading saved care history…</p>
         ) : error ? (
-          <p style={{ margin: 0, color: "var(--solenos-muted)" }}>The latest event is unavailable until the timeline loads successfully.</p>
+          <p style={{ margin: 0, color: "var(--solenos-muted)" }}>The latest entry is unavailable until the history loads successfully.</p>
         ) : latestEvent ? (
           <>
             <h3 style={{ margin: "0 0 6px", fontSize: 18 }}>{latestEvent.title}</h3>
-            <p style={{ margin: "0 0 8px", color: "var(--solenos-muted)" }}>{formatDateTime(latestEvent.occurred_at)} · {eventCategory(latestEvent)}</p>
+            <p style={{ margin: "0 0 8px", color: "var(--solenos-muted)" }}>{displayEventDate(latestEvent)} · {eventCategory(latestEvent)}</p>
             <p style={{ margin: 0, lineHeight: 1.55 }}>{parseDescription(latestEvent.description) || "No event description was saved."}</p>
           </>
         ) : (
-          <p style={{ margin: 0, lineHeight: 1.55 }}>No saved care events were returned for this record. Add a real care note or observation to begin the history.</p>
+          <p style={{ margin: 0, lineHeight: 1.55 }}>No saved history entries were returned for this record. This does not mean there are no care needs.</p>
         )}
         <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This is the latest saved event, not a substitute for the reconciled current-care view in the LCR.</p>
       </section>
@@ -350,7 +349,7 @@ export default function TimelinePage() {
         <label htmlFor="timeline-search" style={{ display: "block", fontWeight: 650, marginBottom: 8 }}>Search the care history</label>
         <div style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--solenos-hairline)", background: "white", borderRadius: 12, padding: "0 12px", minHeight: 48 }}>
           <Search size={18} aria-hidden />
-          <input id="timeline-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search events, notes, tags, evidence IDs…" style={{ border: 0, outline: 0, flex: 1, minWidth: 0, padding: "12px 0", background: "transparent", color: "inherit", font: "inherit" }} />
+          <input id="timeline-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search care information, notes, sources, and evidence references…" style={{ border: 0, outline: 0, flex: 1, minWidth: 0, padding: "12px 0", background: "transparent", color: "inherit", font: "inherit" }} />
         </div>
         <div role="group" aria-label="Filter timeline events" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
           {FILTERS.map((item) => {
@@ -385,7 +384,7 @@ export default function TimelinePage() {
           <h2 className="mobile-empty-title">{events.length ? "No matching events" : "Your timeline starts with real records"}</h2>
           <p className="mobile-empty-body">{events.length ? "Try another filter or search term. No records were removed." : "SolenOS will show care events here after they have been saved to the backend. This screen never inserts example care history."}</p>
           <div className="mobile-empty-actions" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            <Button variant="primary" onClick={() => router.push("/workspace?compose=1")}><Plus size={18} aria-hidden /> Add a care record</Button>
+            <Button variant="primary" onClick={() => router.push("/workspace/daily-care")}>Open Daily Care</Button>
             {(query || filter !== "all") && <Button variant="secondary" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</Button>}
           </div>
         </section>
@@ -409,7 +408,7 @@ export default function TimelinePage() {
                       <button type="button" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)} style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", padding: 16, display: "block", color: "inherit", cursor: "pointer", font: "inherit" }}>
                         <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 8 }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, background: "#e4ede5", borderRadius: 999, padding: "5px 9px" }}><Clock3 size={13} aria-hidden />{category}</span>
-                          <span style={{ color: "var(--solenos-muted)", fontSize: 12 }}>{formatDateTime(event.occurred_at)}</span>
+                          <span style={{ color: "var(--solenos-muted)", fontSize: 12 }}>{displayEventDate(event)}</span>
                           {event.follow_up_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>Follow-up flagged</span>}
                           {event.attention_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>Attention flagged</span>}
                           <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--solenos-muted)" }}>{expanded ? "Hide details" : "Details"} <ChevronDown size={16} aria-hidden style={{ transform: expanded ? "rotate(180deg)" : undefined }} /></span>
@@ -424,10 +423,15 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>Event time</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Recorded in SolenOS</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Record status</dt><dd style={{ margin: 0 }}>{event.status || "Not specified"}</dd>
+                            {event.epistemic_status && <><dt style={{ color: "var(--solenos-muted)" }}>Information status</dt><dd style={{ margin: 0 }}>{event.epistemic_status}</dd></>}
+                            {(event.kind === "Conflict" || event.kind === "Reconciliation review") && typeof event.claim_count === "number" && <><dt style={{ color: "var(--solenos-muted)" }}>Claims retained</dt><dd style={{ margin: 0 }}>{event.claim_count}</dd></>}
+                            {event.correction_original && <><dt style={{ color: "var(--solenos-muted)" }}>Earlier information</dt><dd style={{ margin: 0, whiteSpace: "pre-wrap" }}>{event.correction_original}</dd></>}
+                            {event.correction_corrected && <><dt style={{ color: "var(--solenos-muted)" }}>Correction</dt><dd style={{ margin: 0, whiteSpace: "pre-wrap" }}>{event.correction_corrected}</dd></>}
                             <dt style={{ color: "var(--solenos-muted)" }}>Time provenance</dt><dd style={{ margin: 0 }}>{event.time_provenance || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Source caregiver ID</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.created_by_caregiver_id || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Situation link</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id || "No linked situation ID"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Evidence references</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? event.evidence_ids.join(", ") : "No evidence references attached to this event"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Source attribution</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_label || "Source label not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Source type</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type || event.source_collection || "Not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Situation link</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id ? "Linked care situation" : "No linked situation recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Evidence references</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? `${event.evidence_ids.length} linked evidence item(s)` : "No evidence references attached to this entry"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Tags</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.join(", ") : "No tags recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
                           </dl>
@@ -446,7 +450,7 @@ export default function TimelinePage() {
 
       <footer style={{ marginTop: 28, paddingTop: 14, borderTop: "1px solid var(--solenos-hairline)", color: "var(--solenos-muted)", fontSize: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
         <ShieldCheck size={16} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
-        <span>History is ordered by event time, with recording time retained separately. This view does not turn AI interpretation into a care fact or claim that an event caused another event.{loadedAt ? ` Last loaded ${formatDateTime(loadedAt)}.` : ""}</span>
+        <span>History is ordered by event time where available; entries without an event time are ordered by recording time. Source attribution and uncertainty remain distinct. This view does not turn AI interpretation into a care fact or claim that one event caused another.{loadedAt ? ` Last loaded ${formatDateTime(loadedAt)}.` : ""}</span>
       </footer>
     </main>
   );
