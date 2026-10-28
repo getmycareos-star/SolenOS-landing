@@ -10,6 +10,8 @@ export const metadata: Metadata = {
     "How SolenOS began — a founder story about family caregiving and becoming someone else's memory system.",
 };
 
+const FOUNDER_LINKEDIN_URL = "https://www.linkedin.com/in/david-abuchi-43a624407";
+
 export default function OurStoryPage() {
   const s = OUR_STORY;
 
@@ -23,6 +25,10 @@ export default function OurStoryPage() {
           {s.founderName}
           <span aria-hidden="true"> · </span>
           {s.founderRole}
+          <span aria-hidden="true"> · </span>
+          <a href={FOUNDER_LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
+            LinkedIn profile
+          </a>
         </p>
       </section>
 
