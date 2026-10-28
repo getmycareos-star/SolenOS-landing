@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, postJSON, getJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -55,6 +55,19 @@ interface Message {
   timestamp: Date
 }
 
+const companionSessionKey = (personId: string) => `solenos_companion_session:${personId}`
+const companionPendingTurnKey = (personId: string) => `solenos_companion_pending_turn:${personId}`
+
+function createClientTurnId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+    const random = Math.floor(Math.random() * 16)
+    return (character === 'x' ? random : (random & 0x3) | 0x8).toString(16)
+  })
+}
+
 const CARE_REVIEW_SIGNAL = /\b(sleep|slept|awake|wandering|wandered|sundowning|medication|medicine|dose|pill|missed|refused|pain|fall|fell|confused|agitated|agitation|behavio[u]?r|eating|drinking|hydration|appetite|appointment|doctor|nurse|hospital|toilet|continence|breathing|fever|symptom|memory|dementia|caregiver|mood|blood pressure|blood sugar|mobility|injury|rash|swelling|constipation|diarrh?ea|bowel|urine|infection|safety|unsafe|hurt|hit|shout|distress|anxiety|anxious|depressed|depression|weight|temperature)\b/i
 const HANDOFF_TEMPLATE_FALLBACK = {
   family: [
@@ -81,6 +94,9 @@ const STARTER_PROMPTS = [
 ]
 
 export default function Companion() {
+  const pendingTurnRef = useRef<{ id: string; text: string } | null>(null)
+  const historyReadyRef = useRef(false)
+  const historyPromiseRef = useRef<Promise<void> | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -134,6 +150,88 @@ export default function Companion() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
+  useEffect(() => {
+    let cancelled = false
+    const hydrateHistory = async () => {
+      try {
+        const existingPersonId = getPersonId()
+        if (!existingPersonId) return
+        const sessionKey = companionSessionKey(existingPersonId)
+        const pendingKey = companionPendingTurnKey(existingPersonId)
+        let storedSessionId: string | null = null
+        let pending: { id: string; text: string } | null = null
+        try {
+          storedSessionId = window.sessionStorage.getItem(sessionKey)
+          const rawPending = window.sessionStorage.getItem(pendingKey)
+          if (rawPending) {
+            const parsed = JSON.parse(rawPending)
+            if (typeof parsed?.id === 'string' && typeof parsed?.text === 'string') pending = parsed
+            else window.sessionStorage.removeItem(pendingKey)
+          }
+        } catch {
+          // Storage may be unavailable in a privacy-restricted browser; the API remains usable.
+        }
+
+        if (storedSessionId) {
+          try {
+            const history = await getJSON(`/conversation/${encodeURIComponent(storedSessionId)}`) as any
+            if (cancelled) return
+            if (
+              history?.person_id !== existingPersonId ||
+              history?.session_id !== storedSessionId ||
+              !Array.isArray(history?.messages)
+            ) {
+              throw new Error('The saved conversation did not match this care record.')
+            }
+            setSessionId(storedSessionId)
+            setMessages(history.messages
+              .filter((item: any) => (item?.role === 'user' || item?.role === 'assistant') && typeof item?.text === 'string')
+              .map((item: any) => ({
+                id: typeof item.id === 'string' ? item.id : undefined,
+                role: item.role,
+                text: item.text,
+                guard_verdict: item.guard_verdict ?? null,
+                safety_note: item.safety_note ?? null,
+                timestamp: item.created_at ? new Date(item.created_at) : new Date(),
+              })))
+            if (pending) {
+              const pendingIndex = history.messages.findIndex((item: any) => item?.id === pending?.id && item?.role === 'user')
+              const pendingHasAssistant = pendingIndex >= 0 && history.messages[pendingIndex + 1]?.role === 'assistant'
+              if (pendingHasAssistant) {
+                window.sessionStorage.removeItem(pendingKey)
+                pendingTurnRef.current = null
+                setInput('')
+              } else {
+                pendingTurnRef.current = pending
+                setInput(pending.text)
+              }
+            }
+            return
+          } catch (error) {
+            if (cancelled) return
+            const message = error instanceof Error ? error.message : ''
+            if (/API 404|API 403|Conversation not found/i.test(message)) {
+              try { window.sessionStorage.removeItem(sessionKey) } catch {}
+              setSessionId(null)
+            } else {
+              // Keep the session ID; a later successful message can restore the server transcript.
+              setSessionId(storedSessionId)
+            }
+          }
+        }
+        if (pending) {
+          pendingTurnRef.current = pending
+          setInput(pending.text)
+        }
+      } finally {
+        historyReadyRef.current = true
+      }
+    }
+    historyPromiseRef.current = hydrateHistory()
+    void historyPromiseRef.current
+    return () => { cancelled = true }
+  }, [])
+
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText || loading) return
@@ -141,20 +239,34 @@ export default function Companion() {
     setLoading(true)
     setEmergency(false)
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
-    setMessages(prev => [...prev, userMsg])
 
     try {
+      if (historyPromiseRef.current && !historyReadyRef.current) await historyPromiseRef.current
+      if (!pendingTurnRef.current || pendingTurnRef.current.text !== submittedText) {
+        pendingTurnRef.current = { id: createClientTurnId(), text: submittedText }
+      }
+      const turn = pendingTurnRef.current
       const session = await ensureAnonymousSession()
+      const pendingKey = companionPendingTurnKey(session.person.id)
+      try { window.sessionStorage.setItem(pendingKey, JSON.stringify(turn)) } catch {}
+      setMessages(prev => [...prev, userMsg])
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: turn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
-      if (!sessionId && response.session_id) setSessionId(response.session_id)
+      const resolvedSessionId = typeof response.session_id === 'string' ? response.session_id : sessionId
+      if (resolvedSessionId) {
+        setSessionId(resolvedSessionId)
+        try { window.sessionStorage.setItem(companionSessionKey(session.person.id), resolvedSessionId) } catch {}
+      }
+      try { window.sessionStorage.removeItem(pendingKey) } catch {}
+      pendingTurnRef.current = null
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -174,9 +286,36 @@ export default function Companion() {
         persistence: response.persistence,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, assistantMsg])
+      if (Array.isArray(response.messages)) {
+        setMessages(prev => {
+          const transcript = response.messages
+            .filter((item: any) => (item?.role === 'user' || item?.role === 'assistant') && typeof item?.text === 'string')
+            .map((item: any, index: number) => {
+              const existing = prev[index]
+              const serverMessage: Message = {
+                id: typeof item.id === 'string' ? item.id : undefined,
+                role: item.role,
+                text: item.text,
+                guard_verdict: item.guard_verdict ?? null,
+                safety_note: item.safety_note ?? null,
+                timestamp: item.created_at ? new Date(item.created_at) : new Date(),
+              }
+              if (existing && existing.role === serverMessage.role && existing.text === serverMessage.text) {
+                return { ...serverMessage, ...existing, timestamp: serverMessage.timestamp }
+              }
+              return serverMessage
+            })
+          const last = transcript[transcript.length - 1]
+          if (last?.role === 'assistant' && last.text === assistantMsg.text) {
+            transcript[transcript.length - 1] = { ...last, ...assistantMsg }
+          }
+          return transcript
+        })
+      } else {
+        setMessages(prev => [...prev, assistantMsg])
+      }
 
-      if (!isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
+      if (!response.idempotent_replay && !isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
         const nextToken = deltaToken + 1
         setDeltaToken(nextToken)
         setDeltaAutoInput({
@@ -189,7 +328,7 @@ export default function Companion() {
       }
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
-      setRequestError('Your message could not be sent. It remains in the box below. Check your connection and try again.')
+      setRequestError('Your message could not be sent. It remains in the box below. Retrying will reuse its message ID to avoid duplicate turns.')
     } finally {
       setLoading(false)
     }
@@ -207,6 +346,13 @@ export default function Companion() {
   }, [])
 
   const handleInput = (value: string) => {
+    if (pendingTurnRef.current && value.trim() !== pendingTurnRef.current.text) {
+      const existingPersonId = getPersonId()
+      if (existingPersonId) {
+        try { window.sessionStorage.removeItem(companionPendingTurnKey(existingPersonId)) } catch {}
+      }
+      pendingTurnRef.current = null
+    }
     setInput(value)
     setRequestError(null)
     if (textareaRef.current) {
@@ -217,6 +363,14 @@ export default function Companion() {
 
   const startNewSession = () => {
     if (loading) return
+    const existingPersonId = getPersonId()
+    if (existingPersonId) {
+      try {
+        window.sessionStorage.removeItem(companionSessionKey(existingPersonId))
+        window.sessionStorage.removeItem(companionPendingTurnKey(existingPersonId))
+      } catch {}
+    }
+    pendingTurnRef.current = null
     setMessages([])
     setInput('')
     setSessionId(null)
