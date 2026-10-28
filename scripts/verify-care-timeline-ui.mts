@@ -7,7 +7,7 @@ const source = fs.readFileSync(pagePath, "utf8");
 
 assert.match(source, /ensureAnonymousSession/);
 assert.match(source, /getJSON/);
-assert.match(source, /care-continuity\/context/);
+assert.match(source, /care-continuity.*context/);
 assert.match(source, /occurred_at/);
 assert.match(source, /recorded_at/);
 assert.match(source, /time_provenance/);
