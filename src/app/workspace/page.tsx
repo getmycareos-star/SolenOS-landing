@@ -275,11 +275,6 @@ function WorkspacePageInner() {
             <span><strong>AI Companion</strong><small>Explore care questions using available context</small></span>
             <span aria-hidden="true">→</span>
           </button>
-          <button type="button" className="lcr-tool-link" onClick={() => router.push("/workspace/documents")}>
-            <span className="lcr-tool-icon" aria-hidden="true"><FileText size={20} /></span>
-            <span><strong>Document AI</strong><small>Upload, review, and understand care documents</small></span>
-            <span aria-hidden="true">→</span>
-          </button>
         </section>
       </div>
     </main>
