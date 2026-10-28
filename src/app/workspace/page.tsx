@@ -140,7 +140,7 @@ function WorkspacePageInner() {
             <span className="lcr-status-dot" aria-hidden="true" />
             <span>{loading ? "Loading care context" : loadError ? "Care context unavailable" : context?.schema_status === "complete" ? "Care context loaded" : "Some care sources unavailable"}</span>
             <span className="lcr-meta-divider" aria-hidden="true">·</span>
-            <span>{loading ? "Please wait" : `Latest event: ${latestDate}`}</span>
+            <span>{loading ? "Please wait" : `Record view as of ${latestDate}`}</span>
           </div>
         </header>
 
