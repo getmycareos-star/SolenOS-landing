@@ -238,6 +238,67 @@ function mapLcrHistory(context: LcrContext, personId: string): CareEvent[] {
   });
 }
 
+function mapRevisionHistory(row: Record<string, unknown>, personId: string): CareEvent | null {
+  const targetId = firstText(row, ["target_id"]);
+  const revisionType = firstText(row, ["revision_type"]) ?? "record_revision";
+  const revisionNumber = firstText(row, ["revision_number", "version_number"]);
+  const changedAt = firstText(row, ["changed_at", "created_at"]);
+  if (!targetId && !changedAt) return null;
+  const original = firstText(row, ["previous_value", "old_value", "before_state", "original_value"]);
+  const corrected = firstText(row, ["new_value", "current_value", "after_state", "corrected_value"]);
+  const reason = firstText(row, ["reason", "change_reason", "revision_notes", "change_summary"]);
+  const description = [
+    original ? `Earlier value: ${original}` : "",
+    corrected ? `Revised value: ${corrected}` : "",
+    reason ?? "A record revision was retained in the longitudinal history.",
+  ].filter(Boolean).join("\\n");
+  return {
+    id: `record_revisions:${revisionType}:${targetId ?? changedAt}:${revisionNumber ?? "saved"}`,
+    person_id: personId,
+    event_type: "correction",
+    status: firstText(row, ["status"]) ?? "revision_recorded",
+    occurred_at: null,
+    recorded_at: changedAt,
+    title: `Record revision · ${revisionType.replaceAll("_", " ")}${revisionNumber ? ` #${revisionNumber}` : ""}`,
+    description,
+    evidence_ids: Array.isArray(row.evidence_ids) ? row.evidence_ids.filter((value): value is string => typeof value === "string") : [],
+    time_provenance: "record_revision",
+    tags: ["record_revisions"],
+    source_collection: "record_revisions",
+    source_label: "SolenOS record revision",
+    source_type: revisionType,
+    epistemic_status: firstText(row, ["epistemic_status"]),
+    claim_count: 0,
+    correction_original: original,
+    correction_corrected: corrected,
+  };
+}
+
+function mapVersionHistory(row: Record<string, unknown>, personId: string): CareEvent | null {
+  const versionId = firstText(row, ["id", "version_id", "version_number"]);
+  const createdAt = firstText(row, ["created_at"]);
+  if (!versionId && !createdAt) return null;
+  const versionNumber = firstText(row, ["version_number", "version"]);
+  return {
+    id: `record_versions:${versionId ?? createdAt}`,
+    person_id: personId,
+    event_type: "record_version",
+    status: firstText(row, ["status", "version_status"]) ?? "version_saved",
+    occurred_at: null,
+    recorded_at: createdAt,
+    title: versionNumber ? `Care record version ${versionNumber}` : "Care record version saved",
+    description: firstText(row, ["change_summary", "summary", "reason"]) ?? "A version of the care record was saved. The version metadata is retained in the record history.",
+    evidence_ids: Array.isArray(row.evidence_ids) ? row.evidence_ids.filter((value): value is string => typeof value === "string") : [],
+    time_provenance: "record_version",
+    tags: ["record_versions"],
+    source_collection: "record_versions",
+    source_label: "SolenOS record version",
+    source_type: firstText(row, ["version_type"]) ?? "record_version",
+    epistemic_status: null,
+    claim_count: 0,
+  };
+}
+
 export default function TimelinePage() {
   const router = useRouter();
   const [events, setEvents] = useState<CareEvent[]>([]);
