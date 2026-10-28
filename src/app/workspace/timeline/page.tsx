@@ -245,6 +245,7 @@ export default function TimelinePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
+  const [coverageNotice, setCoverageNotice] = useState<string | null>(null);
 
   const loadEvents = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -255,20 +256,19 @@ export default function TimelinePage() {
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this record.");
       }
-      const result = await getJSON(`/events/${encodeURIComponent(session.person.id)}`);
-      if (!Array.isArray(result)) {
-        throw new Error("The care timeline response was not in the expected format. No events have been assumed.");
+      const result = await getJSON("/care-continuity/context?limit_per_source=50");
+      if (!result || typeof result !== "object" || !("sources" in result)) {
+        throw new Error("The longitudinal care history response was incomplete. No history has been assumed.");
       }
-      const validEvents = result.filter((item): item is CareEvent =>
-        Boolean(item && typeof item.id === "string" && typeof item.title === "string" &&
-          typeof item.event_type === "string" && typeof item.person_id === "string")
+      const context = result as LcrContext;
+      setEvents(mapLcrHistory(context, session.person.id));
+      const missingRequired = context.missing_required_sources ?? [];
+      const missingOptional = context.missing_optional_sources ?? [];
+      setCoverageNotice(
+        context.schema_status !== "complete" || missingRequired.length > 0 || missingOptional.length > 0
+          ? `This history may be incomplete. Required sources unavailable: ${missingRequired.length}; additional sources unavailable: ${missingOptional.length}. The missing information has not been filled in.`
+          : null
       );
-      setEvents(validEvents.sort((a, b) => {
-        const aTime = safeDate(a.occurred_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
-        const bTime = safeDate(b.occurred_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
-        if (aTime !== bTime) return bTime - aTime;
-        return (safeDate(b.recorded_at)?.getTime() ?? 0) - (safeDate(a.recorded_at)?.getTime() ?? 0);
-      }));
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The care timeline could not be loaded.");
