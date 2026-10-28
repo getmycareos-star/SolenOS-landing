@@ -55,6 +55,24 @@ type SituationAssessmentResponse = {
   assessment: SituationAssessment | null;
 };
 
+type ChangeEvidence = {
+  id: string;
+  event_type: string;
+  status: string;
+  occurred_at: string;
+  occurred_at_timezone?: string | null;
+  recorded_at?: string | null;
+  title: string;
+  description?: string | null;
+  time_provenance?: string | null;
+  location_provenance?: string | null;
+};
+
+type ChangeDetail = {
+  change: PersistedChange;
+  evidence: ChangeEvidence[];
+};
+
 type PersistedChange = {
   id: string;
   person_id: string;
@@ -133,6 +151,9 @@ export function LCRCurrentUnderstanding() {
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [changes, setChanges] = useState<PersistedChange[]>([]);
   const [changesError, setChangesError] = useState<string | null>(null);
+  const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
+  const [changeEvidence, setChangeEvidence] = useState<Record<string, { evidence: ChangeEvidence[]; error?: string }>>({});
+  const [evidenceLoadingId, setEvidenceLoadingId] = useState<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -199,6 +220,42 @@ export function LCRCurrentUnderstanding() {
     }
   }, []);
 
+  const loadChangeEvidence = useCallback(async (change: PersistedChange) => {
+    if (expandedChangeId === change.id) {
+      setExpandedChangeId(null);
+      return;
+    }
+    setExpandedChangeId(change.id);
+    const cached = changeEvidence[change.id];
+    if (cached) return;
+    setEvidenceLoadingId(change.id);
+    try {
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || session.person.id !== change.person_id) {
+        throw new Error("The selected change does not belong to the active care-record session.");
+      }
+      const result = await getJSON(
+        `/change/changes/${encodeURIComponent(session.person.id)}/${encodeURIComponent(change.id)}`
+      ) as ChangeDetail;
+      if (!result?.change || result.change.id !== change.id ||
+          result.change.person_id !== session.person.id || !Array.isArray(result.evidence) ||
+          result.evidence.some((item) => !change.evidence_ids.includes(item.id))) {
+        throw new Error("The returned evidence did not match the saved change assessment.");
+      }
+      setChangeEvidence((previous) => ({ ...previous, [change.id]: { evidence: result.evidence } }));
+    } catch (cause) {
+      setChangeEvidence((previous) => ({
+        ...previous,
+        [change.id]: {
+          evidence: [],
+          error: cause instanceof Error ? cause.message : "Supporting evidence could not be loaded.",
+        },
+      }));
+    } finally {
+      setEvidenceLoadingId(null);
+    }
+  }, [changeEvidence, expandedChangeId]);
+
   const reassess = useCallback(async () => {
     setAssessmentLoading(true);
     setAssessmentError(null);
@@ -256,6 +313,39 @@ export function LCRCurrentUnderstanding() {
                 </p>
                 <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
                 <small>Evidence references: {change.evidence_ids.length > 0 ? change.evidence_ids.join(", ") : "None linked"}</small>
+                <button
+                  type="button"
+                  className="lcr-text-action"
+                  onClick={() => void loadChangeEvidence(change)}
+                  disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0}
+                  aria-expanded={expandedChangeId === change.id}
+                >
+                  {evidenceLoadingId === change.id
+                    ? "Loading saved evidence…"
+                    : expandedChangeId === change.id
+                      ? "Hide supporting evidence"
+                      : "View supporting evidence"}
+                </button>
+                {expandedChangeId === change.id && (
+                  <div className="lcr-current-facts" aria-label="Supporting source evidence">
+                    {changeEvidence[change.id]?.error && (
+                      <p role="status">Supporting evidence unavailable: {changeEvidence[change.id]?.error}</p>
+                    )}
+                    {changeEvidence[change.id]?.evidence.map((item) => (
+                      <article key={item.id} className="lcr-current-fact">
+                        <strong>{item.title}</strong>
+                        <p>{item.description || "No source description was recorded."}</p>
+                        <small>{item.event_type.replaceAll("_", " ")} · {item.status}</small>
+                        <small>Observed: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
+                        <small>Recorded: {formatWhen(item.recorded_at)}</small>
+                        <small>Time provenance: {item.time_provenance || "Not recorded"}</small>
+                      </article>
+                    ))}
+                    {changeEvidence[change.id] && !changeEvidence[change.id].error && changeEvidence[change.id].evidence.length === 0 && (
+                      <p>No source observations were returned for the linked evidence references.</p>
+                    )}
+                  </div>
+                )}
                 {change.is_persistent === true && <small>Persistence: recorded as persistent{change.persistence_days != null ? ` for ${change.persistence_days} days` : ""}</small>}
                 {change.is_persistent === false && <small>Persistence: not established</small>}
                 {(change.attention_candidate || change.follow_up_candidate) && (
