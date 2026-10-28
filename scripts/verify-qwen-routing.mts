@@ -53,7 +53,12 @@ requireText("src/components/workflows/StructuredDailyCapture.tsx", [
   "postJSON('/daily/log'",
   "qwen_extraction_status",
   "Review suggested details",
+  "const [savedEntrySummary, setSavedEntrySummary] = useState('');",
+  "setSavedEntrySummary(variables.notes.trim() || 'Entry recorded.');",
+  "{savedEntrySummary || 'Entry recorded.'}",
 ]);
+assert(!read("src/components/workflows/StructuredDailyCapture.tsx").includes("{form.notes || 'Entry recorded.'}"),
+  "The saved receipt must not read from the draft after the draft has been reset.");
 assert(!capture.includes("QwenAssistPanel"), "Daily Capture must not expose a separate assistant workflow panel.");
 assert(!capture.includes("Qwen care analysis"), "Daily Capture must not expose the model name.");
 
