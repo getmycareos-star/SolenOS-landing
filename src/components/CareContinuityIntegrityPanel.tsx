@@ -117,6 +117,9 @@ export default function CareContinuityIntegrityPanel({
   const [reviewDays, setReviewDays] = useState('')
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([])
   const [corrections, setCorrections] = useState<Record<string, string>>({})
+  const [resolutionHistoryById, setResolutionHistoryById] = useState<Record<string, Array<{ id: string; previous_status: string; new_status: string; rationale: string; evidence_ids: string[]; actor_caregiver_id?: string | null; created_at: string }>>>({})
+  const [resolutionHistoryLoadingId, setResolutionHistoryLoadingId] = useState<string | null>(null)
+  const [resolutionHistoryErrors, setResolutionHistoryErrors] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     if (!personId) {
@@ -190,6 +193,20 @@ export default function CareContinuityIntegrityPanel({
     }
   }
 
+
+  async function loadResolutionHistory(item: Contradiction) {
+    setResolutionHistoryLoadingId(item.id)
+    setResolutionHistoryErrors(current => ({ ...current, [item.id]: '' }))
+    try {
+      const result = await getJSON(`/uncertainty/contradictions/${encodeURIComponent(item.id)}/history`)
+      if (!Array.isArray(result)) throw new Error('Invalid conflict history response')
+      setResolutionHistoryById(current => ({ ...current, [item.id]: result }))
+    } catch {
+      setResolutionHistoryErrors(current => ({ ...current, [item.id]: 'Resolution history could not be loaded. Retry when the connection is available.' }))
+    } finally {
+      setResolutionHistoryLoadingId(current => current === item.id ? null : current)
+    }
+  }
 
   async function resolveContradiction(item: Contradiction, status: 'resolved' | 'qualified' | 'superseded' | 'reopened') {
     const notes = (resolutionNotes[item.id] || '').trim()
@@ -388,7 +405,20 @@ export default function CareContinuityIntegrityPanel({
               Source assertion IDs: {(item.source_assertion_ids || []).join(', ') || 'Not linked'} · Evidence IDs: {(item.evidence_ids || []).join(', ') || 'None attached'}
             </p>
             {(item.matching_candidate_ids || []).length > 0 && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Potential related conflicts: {(item.matching_candidate_ids || []).join(', ')}. These are match candidates only; records remain separate until reviewed.</p>}
-            {item.resolution_notes && <p style={{ fontSize: 12 }}>Review note: {item.resolution_notes}</p>}
+            {item.resolution_notes && <p style={{ fontSize: 12 }}>Latest review note: {item.resolution_notes}</p>}
+            <button type="button" style={buttonStyle} onClick={() => void loadResolutionHistory(item)} disabled={resolutionHistoryLoadingId === item.id}>
+              {resolutionHistoryLoadingId === item.id ? 'Loading resolution history…' : 'View resolution history'}
+            </button>
+            {resolutionHistoryErrors[item.id] && <p role="alert" style={{ fontSize: 12 }}>{resolutionHistoryErrors[item.id]}</p>}
+            {resolutionHistoryById[item.id] && (
+              <ol style={{ paddingLeft: 20 }}>
+                {resolutionHistoryById[item.id].map(event => <li key={event.id} style={{ fontSize: 12, marginTop: 6 }}>
+                  {event.previous_status.replace(/_/g, ' ')} → {event.new_status.replace(/_/g, ' ')} · {event.created_at ? new Date(event.created_at).toLocaleString() : 'Time not recorded'}
+                  <p>{event.rationale}</p>
+                  <small>Evidence IDs: {event.evidence_ids.length ? event.evidence_ids.join(', ') : 'None attached'} · Reviewer: {event.actor_caregiver_id || 'Not recorded'}</small>
+                </li>)}
+              </ol>
+            )}
             <label style={{ display: 'block', fontSize: 12 }}>Review rationale
               <textarea style={{ ...fieldStyle, minHeight: 54 }} value={resolutionNotes[item.id] || ''} onChange={(e) => setResolutionNotes((current) => ({ ...current, [item.id]: e.target.value }))} />
             </label>
