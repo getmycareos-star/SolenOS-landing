@@ -373,8 +373,8 @@ export function LCRCurrentUnderstanding() {
                     onChange={(event) => setConfirmationReason((previous) => ({ ...previous, [change.id]: event.target.value }))}
                     rows={2}
                     maxLength={2000}
-                    placeholder="Add context or explain why this assessment is incorrect or uncertain."
                   />
+                  <small>Record context or explain why this assessment is incorrect or uncertain.</small>
                 </label>
                 {confirmationError[change.id] && <p role="alert">{confirmationError[change.id]}</p>}
                 <div className="lcr-entry-actions">
