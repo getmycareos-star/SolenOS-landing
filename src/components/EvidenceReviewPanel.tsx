@@ -42,6 +42,8 @@ export default function EvidenceReviewPanel({ personId, evidenceItems }: { perso
   const [sourceResult, setSourceResult] = useState('not_assessed')
   const [corroborationResult, setCorroborationResult] = useState('not_assessed')
   const [temporalResult, setTemporalResult] = useState('not_assessed')
+  const [freshnessResult, setFreshnessResult] = useState('not_assessed')
+  const [completenessResult, setCompletenessResult] = useState('not_assessed')
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -95,6 +97,8 @@ export default function EvidenceReviewPanel({ personId, evidenceItems }: { perso
           { criterion: 'source attribution', result: sourceResult, rationale: 'Review of the persisted source identity and attribution fields.' },
           { criterion: 'independent corroboration', result: corroborationResult, rationale: 'Review of whether linked material represents an independent source.' },
           { criterion: 'temporal context', result: temporalResult, rationale: 'Review of whether the source timing and event timing are sufficiently specified.' },
+          { criterion: 'evidence freshness', result: freshnessResult, rationale: 'Review of whether the evidence remains current for the relevant care question.' },
+          { criterion: 'record completeness', result: completenessResult, rationale: 'Review of whether the source record contains the information needed for this assessment.' },
         ],
       })
       setRationale('')
@@ -144,6 +148,16 @@ export default function EvidenceReviewPanel({ personId, evidenceItems }: { perso
         <label style={{ fontSize: 12 }}>Temporal context
           <select style={field} value={temporalResult} onChange={event => setTemporalResult(event.target.value)}>
             <option value="not_assessed">Not assessed</option><option value="specified">Specified</option><option value="partial">Partial</option><option value="missing">Missing</option><option value="conflicting">Conflicting</option>
+          </select>
+        </label>
+        <label style={{ fontSize: 12 }}>Evidence freshness
+          <select style={field} value={freshnessResult} onChange={event => setFreshnessResult(event.target.value)}>
+            <option value="not_assessed">Not assessed</option><option value="current">Current</option><option value="stale">Stale</option><option value="historical">Historical</option><option value="undetermined">Undetermined</option>
+          </select>
+        </label>
+        <label style={{ fontSize: 12 }}>Record completeness
+          <select style={field} value={completenessResult} onChange={event => setCompletenessResult(event.target.value)}>
+            <option value="not_assessed">Not assessed</option><option value="complete">Complete</option><option value="partial">Partial</option><option value="missing">Missing</option><option value="undetermined">Undetermined</option>
           </select>
         </label>
       </div>
