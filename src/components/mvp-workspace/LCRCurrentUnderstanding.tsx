@@ -153,6 +153,15 @@ type CurrentCareProjection = {
   notice: string;
 };
 
+type EvidenceIntegrity = {
+  fact_id: string;
+  linked_evidence_count: number;
+  distinct_nonempty_content_count: number;
+  duplicate_content_candidates: Array<{ fingerprint: string; evidence_ids: string[]; interpretation: string }>;
+  independent_corroboration_status: string;
+  interpretation_limit: string;
+};
+
 function displayDescription(value?: string | null): string {
   if (!value?.trim()) return "No description was recorded.";
   try {
@@ -197,6 +206,26 @@ export function LCRCurrentUnderstanding() {
   const [confirmationReason, setConfirmationReason] = useState<Record<string, string>>({});
   const [confirmationError, setConfirmationError] = useState<Record<string, string>>({});
   const [confirmationLoadingId, setConfirmationLoadingId] = useState<string | null>(null);
+  const [evidenceIntegrityByFact, setEvidenceIntegrityByFact] = useState<Record<string, EvidenceIntegrity>>({});
+  const [evidenceIntegrityLoadingId, setEvidenceIntegrityLoadingId] = useState<string | null>(null);
+  const [evidenceIntegrityErrors, setEvidenceIntegrityErrors] = useState<Record<string, string>>({});
+
+  const loadEvidenceIntegrity = useCallback(async (factId: string) => {
+    setEvidenceIntegrityLoadingId(factId);
+    setEvidenceIntegrityErrors(current => ({ ...current, [factId]: "" }));
+    try {
+      const result = await getJSON(`/care-continuity/facts/${encodeURIComponent(factId)}/evidence-integrity`);
+      if (!result || result.fact_id !== factId || !Array.isArray(result.duplicate_content_candidates) ||
+          typeof result.independent_corroboration_status !== "string") {
+        throw new Error("Invalid evidence-integrity response");
+      }
+      setEvidenceIntegrityByFact(current => ({ ...current, [factId]: result as EvidenceIntegrity }));
+    } catch {
+      setEvidenceIntegrityErrors(current => ({ ...current, [factId]: "Linked evidence integrity could not be loaded. No corroboration status is assumed; retry when the connection is available." }));
+    } finally {
+      setEvidenceIntegrityLoadingId(current => current === factId ? null : current);
+    }
+  }, []);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -618,6 +647,23 @@ export function LCRCurrentUnderstanding() {
                       </div>
                     ))}
                     {item.claim_count > 0 && <small>Competing claims linked: {item.claim_count}</small>}
+                    {item.source_collection === "facts" && (
+                      <div className="lcr-evidence-integrity">
+                        <button type="button" onClick={() => void loadEvidenceIntegrity(item.id)} disabled={evidenceIntegrityLoadingId === item.id}>
+                          {evidenceIntegrityLoadingId === item.id ? "Checking linked evidence…" : "Inspect linked evidence"}
+                        </button>
+                        {evidenceIntegrityErrors[item.id] && <p role="alert">{evidenceIntegrityErrors[item.id]}</p>}
+                        {evidenceIntegrityByFact[item.id] && (
+                          <div>
+                            <small>Linked evidence records: {evidenceIntegrityByFact[item.id].linked_evidence_count} · Corroboration: {evidenceIntegrityByFact[item.id].independent_corroboration_status.replaceAll("_", " ")}</small>
+                            {evidenceIntegrityByFact[item.id].duplicate_content_candidates.map(group => (
+                              <p key={group.fingerprint}><small>Duplicate-content candidate: {group.evidence_ids.join(", ")}. {group.interpretation}</small></p>
+                            ))}
+                            <small>{evidenceIntegrityByFact[item.id].interpretation_limit}</small>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
