@@ -19,7 +19,8 @@ export type Conflict = {
   type: ConflictType;
   statementA: string;
   statementB: string;
-  confidence: number;
+  /** Unset unless a calibrated, evidence-backed estimator supplies it. */
+  confidence?: number;
   severity: ConflictSeverity;
   status: ConflictStatus;
   createdAt: string;
