@@ -117,6 +117,14 @@ export default function CareContinuityIntegrityPanel({
   const [reviewDays, setReviewDays] = useState('')
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([])
   const [corrections, setCorrections] = useState<Record<string, string>>({})
+  const [observationCategory, setObservationCategory] = useState('')
+  const [observationDescription, setObservationDescription] = useState('')
+  const [observationValue, setObservationValue] = useState('')
+  const [observationType, setObservationType] = useState<'direct' | 'indirect' | 'second_hand' | 'document_review'>('second_hand')
+  const [observationEpistemicStatus, setObservationEpistemicStatus] = useState<'reported' | 'inferred' | 'unverified' | 'unknown'>('reported')
+  const [observationAt, setObservationAt] = useState('')
+  const [observationSourceType, setObservationSourceType] = useState('caregiver_report')
+  const [observationEvidenceIds, setObservationEvidenceIds] = useState<string[]>([])
   const [resolutionHistoryById, setResolutionHistoryById] = useState<Record<string, Array<{ id: string; previous_status: string; new_status: string; rationale: string; evidence_ids: string[]; actor_caregiver_id?: string | null; created_at: string }>>>({})
   const [resolutionHistoryLoadingId, setResolutionHistoryLoadingId] = useState<string | null>(null)
   const [resolutionHistoryErrors, setResolutionHistoryErrors] = useState<Record<string, string>>({})
@@ -230,6 +238,40 @@ export default function CareContinuityIntegrityPanel({
     }
   }
 
+  async function recordStructuredObservation(event: FormEvent) {
+    event.preventDefault()
+    if (!observationCategory.trim() || !observationDescription.trim()) {
+      setError('Enter an observation category and the original report text before saving.')
+      return
+    }
+    setError('')
+    setNotice('')
+    setSaving(true)
+    try {
+      await postJSON('/care-continuity/caregiver-observations', {
+        observation_category: observationCategory.trim(),
+        description: observationDescription.trim(),
+        observed_value: observationValue.trim() || undefined,
+        observation_type: observationType,
+        epistemic_status: observationEpistemicStatus,
+        observed_at: observationAt ? new Date(observationAt).toISOString() : undefined,
+        source_type: observationSourceType,
+        evidence_ids: observationEvidenceIds,
+      })
+      setObservationCategory('')
+      setObservationDescription('')
+      setObservationValue('')
+      setObservationAt('')
+      setObservationEvidenceIds([])
+      setNotice('Structured observation saved to the care record. The original report and its attribution remain separate from verified fact or inference.')
+      await load()
+    } catch {
+      setError('The observation was not confirmed as saved. Check the connection and retry; no successful write is assumed.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function markReviewed(assertion: Assertion) {
     const reviewWindow = (reviewWindows[assertion.id] ?? String(assertion.review_after_days ?? '')).trim()
     if (assertion.assertion_kind === 'current_state' && (!reviewWindow || !Number.isInteger(Number(reviewWindow)) || Number(reviewWindow) < 1 || Number(reviewWindow) > 3650)) {
@@ -299,6 +341,48 @@ export default function CareContinuityIntegrityPanel({
       {notice && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>{notice}</p>}
 
       <EvidenceReviewPanel personId={personId} evidenceItems={evidenceItems} />
+
+      <form onSubmit={recordStructuredObservation} style={cardStyle}>
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>Record a structured observation</h3>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Record the source text and structured fields separately. A reported observation is not automatically promoted to a verified fact, diagnosis, or inference.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9 }}>
+          <label style={{ fontSize: 12 }}>Observation category
+            <input style={fieldStyle} value={observationCategory} onChange={event => setObservationCategory(event.target.value)} required maxLength={120} />
+          </label>
+          <label style={{ fontSize: 12 }}>Observation basis
+            <select style={fieldStyle} value={observationType} onChange={event => setObservationType(event.target.value as typeof observationType)}>
+              <option value="direct">Direct observation</option><option value="indirect">Indirect observation</option><option value="second_hand">Reported by another person</option><option value="document_review">Document review</option>
+            </select>
+          </label>
+          <label style={{ fontSize: 12 }}>Epistemic status
+            <select style={fieldStyle} value={observationEpistemicStatus} onChange={event => setObservationEpistemicStatus(event.target.value as typeof observationEpistemicStatus)}>
+              <option value="reported">Reported</option><option value="inferred">Inference</option><option value="unverified">Unverified</option><option value="unknown">Unknown</option>
+            </select>
+          </label>
+          <label style={{ fontSize: 12 }}>Source type
+            <select style={fieldStyle} value={observationSourceType} onChange={event => setObservationSourceType(event.target.value)}>
+              <option value="caregiver_report">Caregiver report</option><option value="professional_report">Professional report</option><option value="document">Document</option><option value="sensor">Sensor / device</option><option value="other">Other / unspecified</option>
+            </select>
+          </label>
+          <label style={{ fontSize: 12 }}>Observed/event time (optional)
+            <input style={fieldStyle} type="datetime-local" value={observationAt} onChange={event => setObservationAt(event.target.value)} />
+          </label>
+        </div>
+        <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Original report or source text
+          <textarea style={{ ...fieldStyle, minHeight: 70 }} value={observationDescription} onChange={event => setObservationDescription(event.target.value)} required maxLength={10000} />
+        </label>
+        <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Structured value (optional)
+          <input style={fieldStyle} value={observationValue} onChange={event => setObservationValue(event.target.value)} maxLength={2000} />
+        </label>
+        {evidenceItems.length > 0 && <fieldset style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginTop: 9 }}>
+          <legend style={{ fontSize: 12 }}>Link existing evidence records</legend>
+          {evidenceItems.map(item => <label key={item.id} style={{ display: 'flex', gap: 7, alignItems: 'center', fontSize: 12, padding: '3px 0' }}>
+            <input type="checkbox" checked={observationEvidenceIds.includes(item.id)} onChange={event => setObservationEvidenceIds(current => event.target.checked ? [...new Set([...current, item.id])] : current.filter(id => id !== item.id))} />
+            {item.type} · {item.id}
+          </label>)}
+        </fieldset>}
+        <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving observation…' : 'Save structured observation'}</button>
+      </form>
 
       <form onSubmit={submitAssertion} style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record a source-attributed report</h3>
