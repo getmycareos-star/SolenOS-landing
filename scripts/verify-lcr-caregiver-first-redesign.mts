@@ -11,7 +11,7 @@ const timelinePage = fs.readFileSync("src/app/workspace/timeline/page.tsx", "utf
 assert.match(workspacePage, /SOLENOS · LIVING CARE RECORD/, "workspace is visibly branded as the LCR");
 assert.match(workspacePage, /CURRENT CARE REALITY/, "the default LCR view is explicitly current-care-first");
 assert.match(workspacePage, /What matters now/, "the primary question is plain-language and present-focused");
-assert.match(workspacePage, /getJSON\("\/care-continuity\/context\?limit_per_source=10"\)/, "the LCR reads its bounded context from the authenticated backend API");
+assert.match(workspacePage, /getJSON\("\/care-continuity\/context\?limit_per_source=10"\)/, "the LCR reads its derived current-care projection from the authenticated backend API");
 assert.match(workspacePage, /missing_required_sources/, "the UI can identify missing required sources");
 assert.match(workspacePage, /history_coverage/, "the UI communicates bounded history coverage");
 assert.match(workspacePage, /Longitudinal Care History/, "history is a separate view of the same care record");
@@ -29,7 +29,7 @@ assert.match(timelinePage, /\/events\//, "Longitudinal Care History reads saved 
 assert.match(styles, /\.lcr-home/, "LCR layout styles are present");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout is explicitly handled");
 
-console.log("✓ LCR home reads bounded, session-scoped backend context and surfaces incomplete coverage");
+console.log("✓ LCR home reads the session-scoped current-care projection and surfaces incomplete coverage");
 console.log("✓ Current Care Reality and Longitudinal Care History are distinct views");
 console.log("✓ LCR home has no duplicate capture/document-ingestion controls or checkbox gate");
 console.log("✓ Source details are progressive; failed reads have retry recovery");
