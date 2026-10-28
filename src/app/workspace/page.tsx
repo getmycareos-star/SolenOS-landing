@@ -11,16 +11,32 @@ import { ensureAnonymousSession, getJSON } from "@/api/client";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
-type LcrItem = Record<string, unknown>;
-type LcrSource = { status?: string; items?: LcrItem[]; returned_count?: number; has_more?: boolean };
+type CurrentCareItem = Record<string, unknown> & {
+  id: string;
+  kind: string;
+  title: string;
+  description: string;
+  status: string;
+  source_type: string;
+  source_label: string;
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  evidence_ids?: string[];
+  priority: number;
+};
 type LcrContext = {
   as_of?: string;
   read_only?: boolean;
+  projection_type?: string;
   history_coverage?: string;
   schema_status?: string;
   missing_required_sources?: string[];
   missing_optional_sources?: string[];
-  sources?: Record<string, LcrSource>;
+  items?: CurrentCareItem[];
+  item_count?: number;
+  has_more?: boolean;
+  notice?: string;
+  source_coverage?: Record<string, { status?: string; returned_count?: number; has_more?: boolean }>;
 };
 
 function displayValue(item: LcrItem, ...keys: string[]): string {
@@ -60,7 +76,7 @@ function WorkspacePageInner() {
       if (!session?.access_token || !session?.person?.id) {
         throw new Error("A valid care session is required to load the care record.");
       }
-      const result = await getJSON("/care-continuity/context?limit_per_source=10");
+      const result = await getJSON("/care-continuity/current-care?limit_per_source=10");
       if (!result || typeof result !== "object" || !("sources" in result)) {
         throw new Error("The care record response was incomplete. No care details have been assumed.");
       }
@@ -115,29 +131,9 @@ function WorkspacePageInner() {
     );
   }
 
-  const sources = context?.sources ?? {};
-  const eventItems = sources.events?.items ?? [];
-  const factItems = sources.facts?.items ?? [];
-  const assertionItems = sources.assertions?.items ?? [];
-  const decisionItems = sources.decisions?.items ?? [];
-  const conflictItems = sources.conflicts?.items ?? [];
-  const uncertaintyItems = sources.uncertainties?.items ?? [];
-  const missingItems = sources.missing_information?.items ?? [];
-  const openQuestionItems = sources.open_questions?.items ?? [];
-  const followUpItems = sources["follow-up-links"]?.items ?? sources.follow_up_links?.items ?? [];
-  const currentItems = [
-    ...conflictItems.map((item) => ({ item, kind: "Conflict" })),
-    ...uncertaintyItems.filter((item) => item.status !== "resolved").map((item) => ({ item, kind: "Needs clarification" })),
-    ...missingItems.filter((item) => item.status !== "resolved" && item.status !== "completed").map((item) => ({ item, kind: "Information missing" })),
-    ...openQuestionItems.filter((item) => item.status !== "resolved" && item.status !== "completed").map((item) => ({ item, kind: "Open question" })),
-    ...followUpItems.filter((item) => item.status !== "resolved" && item.status !== "completed").map((item) => ({ item, kind: "Follow-up" })),
-    ...eventItems.filter((item) => item.status !== "resolved" && item.status !== "completed").slice(0, 4).map((item) => ({ item, kind: "Care event" })),
-    ...factItems.filter((item) => !item.superseded_by_fact_id).slice(0, 3).map((item) => ({ item, kind: "Recorded fact" })),
-    ...assertionItems.filter((item) => item.assertion_status !== "retracted" && item.assertion_status !== "superseded").slice(0, 3).map((item) => ({ item, kind: "Reported information" })),
-    ...decisionItems.filter((item) => item.decision_status !== "resolved" && item.decision_status !== "completed").slice(0, 2).map((item) => ({ item, kind: "Decision" })),
-  ].slice(0, 8);
+  const currentItems = context?.items ?? [];
   const unavailableRequired = context?.missing_required_sources ?? [];
-  const latestDate = eventItems.map((item) => displayDate(item))[0] ?? "Date not recorded";
+  const latestDate = context?.as_of ? displayDate({ occurred_at: context.as_of }) : "Date not recorded";
 
   return (
     <main className="mobile-screen lcr-screen">
@@ -204,20 +200,20 @@ function WorkspacePageInner() {
                 </div>
               ) : (
                 <div className="lcr-timeline">
-                  {currentItems.map(({ item, kind }, index) => (
-                    <article key={String(item.id ?? `${kind}-${index}`)} className="lcr-timeline-item">
+                  {currentItems.map((item) => (
+                    <article key={`${item.source_type}:${item.id}`} className="lcr-timeline-item">
                       <span className="lcr-timeline-marker" aria-hidden="true"><FileText size={17} /></span>
                       <div className="lcr-timeline-content">
                         <div className="lcr-entry-heading">
-                          <h3>{displayValue(item, "title", "fact_type", "field", "topic", "question", "description", "conflict_type")}</h3>
+                          <h3>{item.title || "Care detail"}</h3>
                           <span>{displayDate(item)}</span>
                         </div>
-                        <p>{displayValue(item, "description", "fact_value", "asserted_value", "decision_text", "question", "resolution")}</p>
-                        <span className="lcr-entry-status">{kind} · {displayValue(item, "epistemic_status", "assertion_status", "status", "decision_status")}</span>
+                        {item.description && <p>{item.description}</p>}
+                        <span className="lcr-entry-status">{item.kind} · {item.status || "status unknown"}</span>
                         <details className="lcr-expandable">
                           <summary className="panel-muted">Source and record details</summary>
-                          <p className="panel-muted">Source: {displayValue(item, "source_label", "source_type", "author_label", "created_by_caregiver_id")}</p>
-                          <p className="panel-muted">Recorded: {displayValue(item, "recorded_at", "created_at")}</p>
+                          <p className="panel-muted">Source: {item.source_label || "Source not recorded"}</p>
+                          <p className="panel-muted">Recorded: {item.recorded_at || "Time not recorded"}</p>
                           {Array.isArray(item.evidence_ids) && item.evidence_ids.length > 0 && <p className="panel-muted">Linked evidence: {item.evidence_ids.length} item(s)</p>}
                         </details>
                       </div>
