@@ -35,6 +35,26 @@ type CurrentCareProjection = {
   notice: string;
 };
 
+function displayDescription(value?: string | null): string {
+  if (!value?.trim()) return "No description was recorded.";
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const entries = Object.entries(parsed as Record<string, unknown>)
+        .filter(([, item]) => item !== null && item !== undefined && item !== "");
+      if (entries.length > 0) {
+        return entries.map(([key, item]) =>
+          `${key.replaceAll("_", " ")}: ${typeof item === "string" ? item : JSON.stringify(item)}`
+        ).join("\\n");
+      }
+    }
+    if (typeof parsed === "string") return parsed;
+  } catch {
+    // Plain text is preserved exactly as saved.
+  }
+  return value;
+}
+
 function formatWhen(value?: string | null): string {
   if (!value) return "Time not recorded";
   const date = new Date(value);
@@ -131,7 +151,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{item.title || item.kind || "Care record item"}</strong>
                       <span>{item.epistemic_status || "Status not recorded"}</span>
                     </div>
-                    <p>{item.description || "No description was recorded."}</p>
+                    <p>{displayDescription(item.description)}</p>
                     <p className="lcr-entry-status">{item.kind} · {item.status || "Status not recorded"}</p>
                     <small>Source: {item.source_label || "Not recorded"} · Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {item.evidence_ids?.length > 0 && <small>Linked evidence: {item.evidence_ids.join(", ")}</small>}
