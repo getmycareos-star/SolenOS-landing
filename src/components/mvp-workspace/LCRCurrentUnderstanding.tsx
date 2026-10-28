@@ -153,12 +153,27 @@ export function LCRCurrentUnderstanding() {
       }
       setProjection(result as CurrentCareProjection);
       try {
-        const savedChanges = await getJSON(`/change/changes/${encodeURIComponent(session.person.id)}`);
-        if (!Array.isArray(savedChanges) || savedChanges.some((item) => item?.person_id !== session.person.id)) {
-          throw new Error("The persisted change history did not match the active care-record session.");
+        const changePath = `/change/changes/${encodeURIComponent(session.person.id)}`;
+        const validateChanges = (value: unknown): PersistedChange[] => {
+          if (!Array.isArray(value) || value.some((item) => item?.person_id !== session.person.id)) {
+            throw new Error("The persisted change history did not match the active care-record session.");
+          }
+          return value as PersistedChange[];
+        };
+
+        // Load the durable history first so a failed reassessment never hides saved results.
+        setChanges(validateChanges(await getJSON(changePath)));
+        try {
+          await postJSON(`/change/changes/reassess?person_id=${encodeURIComponent(session.person.id)}`, {});
+          setChanges(validateChanges(await getJSON(changePath)));
+          setChangesError(null);
+        } catch (reassessmentCause) {
+          setChangesError(
+            reassessmentCause instanceof Error
+              ? `Reassessment failed; previously saved change assessments remain visible. ${reassessmentCause.message}`
+              : "Reassessment failed; previously saved change assessments remain visible."
+          );
         }
-        setChanges(savedChanges as PersistedChange[]);
-        setChangesError(null);
       } catch (changeCause) {
         setChanges([]);
         setChangesError(changeCause instanceof Error ? changeCause.message : "Persisted change history is unavailable.");
