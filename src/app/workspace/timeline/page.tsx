@@ -22,9 +22,9 @@ type CareEvent = {
   person_id: string;
   event_type: string;
   status: string;
-  occurred_at: string;
+  occurred_at: string | null;
   occurred_at_timezone?: string | null;
-  recorded_at: string;
+  recorded_at: string | null;
   updated_at?: string | null;
   title: string;
   description?: string | null;
@@ -37,6 +37,24 @@ type CareEvent = {
   follow_up_candidate?: boolean | null;
   confidence?: number | null;
   situation_id?: string | null;
+  source_collection?: string;
+  source_label?: string | null;
+  source_type?: string | null;
+  epistemic_status?: string | null;
+  claim_count?: number;
+  due_at?: string | null;
+  correction_original?: string | null;
+  correction_corrected?: string | null;
+};
+
+type LcrSource = { status?: string; items?: Record<string, unknown>[] };
+type LcrContext = {
+  as_of?: string;
+  schema_status?: string;
+  history_coverage?: string;
+  missing_required_sources?: string[];
+  missing_optional_sources?: string[];
+  sources?: Record<string, LcrSource>;
 };
 
 type FilterKey = "all" | "observations" | "decisions" | "documents" | "open";
@@ -122,8 +140,99 @@ function parseDescription(description?: string | null): string {
   return description;
 }
 
+function displayEventDate(event: CareEvent): string {
+  if (event.due_at) {
+    const due = safeDate(event.due_at);
+    return due ? `Due ${formatDateTime(event.due_at)}` : "Due date unavailable";
+  }
+  if (event.occurred_at) return formatDateTime(event.occurred_at);
+  return event.recorded_at ? `Recorded ${formatDateTime(event.recorded_at)}` : "Date not recorded";
+}
+
 function groupLabel(event: CareEvent): string {
-  return formatDay(event.occurred_at);
+  return formatDay(event.occurred_at ?? event.recorded_at);
+}
+
+function firstText(row: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+  }
+  return null;
+}
+
+function mapHistorySource(sourceName: string, row: Record<string, unknown>, personId: string): CareEvent | null {
+  const rawId = firstText(row, ["id"]);
+  if (!rawId) return null;
+  const occurredAt = firstText(row, ["occurred_at", "observed_at", "effective_at", "decided_at", "scheduled_at"]);
+  const recordedAt = firstText(row, ["recorded_at", "created_at", "uploaded_at", "asked_at", "assessed_at", "reviewed_at"]);
+  const evidenceIds = Array.isArray(row.evidence_ids)
+    ? row.evidence_ids.filter((value): value is string => typeof value === "string")
+    : Array.isArray(row.source_ids)
+      ? row.source_ids.filter((value): value is string => typeof value === "string")
+      : [];
+  const status = firstText(row, ["status", "lifecycle_status", "reconciliation_status", "assertion_status", "decision_status", "evidence_status", "epistemic_status", "epistemic_state"]) ?? "not_specified";
+  const title = firstText(row, ["title", "topic", "question", "conflict_type", "fact_type", "field", "observation_category", "follow_up_kind", "entry_type", "source_label"]) ?? sourceName.replaceAll("_", " ");
+  let description = firstText(row, ["description", "fact_value", "asserted_value", "decision_text", "perspective_text", "source_text", "notes", "answer", "resolution", "summary", "decision_notes", "resolution_notes", "context_payload"]);
+  const original = firstText(row, ["original_text", "original_value"]);
+  const corrected = firstText(row, ["corrected_text", "corrected_value"]);
+  if (sourceName === "corrections" && (original || corrected)) {
+    description = [original ? `Earlier information: ${original}` : "", corrected ? `Correction: ${corrected}` : "", firstText(row, ["reason"]) ? `Reason: ${firstText(row, ["reason"])}` : ""].filter(Boolean).join("\\n");
+  }
+  const claimRefs = Array.isArray(row.claim_refs) ? row.claim_refs : Array.isArray(row.competing_claim_ids) ? row.competing_claim_ids : [];
+  const isOpenWork = ["conflicts", "reconciliations", "uncertainties", "missing_information", "information_gaps", "open_questions", "follow_up_links"].includes(sourceName);
+  return {
+    id: `${sourceName}:${rawId}`,
+    person_id: personId,
+    event_type: firstText(row, ["event_type", "entry_type", "type", "follow_up_kind"]) ?? sourceName,
+    status,
+    occurred_at: occurredAt,
+    recorded_at: recordedAt,
+    updated_at: firstText(row, ["updated_at"]),
+    title,
+    description,
+    evidence_ids: evidenceIds,
+    time_provenance: firstText(row, ["time_provenance", "source_type", "epistemic_status", "epistemic_state"]),
+    tags: [sourceName],
+    created_by_caregiver_id: null,
+    significance_verdict: firstText(row, ["significance_verdict", "resolution", "decision_notes"]),
+    attention_candidate: isOpenWork && !["resolved", "completed", "closed", "reconciled", "withdrawn", "retracted", "superseded", "cancelled"].includes(status.toLowerCase()),
+    follow_up_candidate: ["follow_up_links", "open_questions", "information_gaps", "missing_information"].includes(sourceName),
+    situation_id: null,
+    source_collection: sourceName,
+    source_label: firstText(row, ["source_label", "author_label", "source_type"]) ?? "Source label not recorded",
+    source_type: firstText(row, ["source_type"]) ?? "not_recorded",
+    epistemic_status: firstText(row, ["epistemic_status", "epistemic_state", "assertion_status", "decision_status"]),
+    claim_count: claimRefs.length,
+    due_at: firstText(row, ["due_at"]),
+    correction_original: original,
+    correction_corrected: corrected,
+  };
+}
+
+function mapLcrHistory(context: LcrContext, personId: string): CareEvent[] {
+  const sources = context.sources ?? {};
+  const historySources = [
+    "events", "evidence", "facts", "assertions", "decisions", "decision_outcomes", "timeline",
+    "uncertainties", "missing_information", "information_gaps", "conflicts", "reconciliations",
+    "open_questions", "follow_up_links", "provenance", "caregiver_observations", "caregiver_contexts",
+    "caregiver_perspectives", "corrections", "appointments",
+  ];
+  const result: CareEvent[] = [];
+  for (const sourceName of historySources) {
+    for (const row of sources[sourceName]?.items ?? []) {
+      const mapped = mapHistorySource(sourceName, row, personId);
+      if (mapped) result.push(mapped);
+    }
+  }
+  const unique = new Map<string, CareEvent>();
+  for (const item of result) unique.set(item.id, item);
+  return [...unique.values()].sort((a, b) => {
+    const aTime = safeDate(a.occurred_at)?.getTime() ?? safeDate(a.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+    const bTime = safeDate(b.occurred_at)?.getTime() ?? safeDate(b.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+    return bTime - aTime;
+  });
 }
 
 export default function TimelinePage() {
