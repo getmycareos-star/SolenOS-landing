@@ -19,6 +19,7 @@ type CurrentCareItem = Record<string, unknown> & {
   source_collection: string;
   source_type: string;
   source_label: string;
+  epistemic_status?: string | null;
   occurred_at?: string | null;
   due_at?: string | null;
   recorded_at?: string | null;
@@ -56,6 +57,37 @@ function displayDate(item: Record<string, unknown>): string {
   return Number.isNaN(parsed.getTime())
     ? "Date not recorded"
     : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function caregiverStatus(value?: string | null): string {
+  const normalized = value?.trim().toLowerCase().replace(/[ -]+/g, "_");
+  if (!normalized || ["unknown", "status_unknown", "not_specified", "not_recorded"].includes(normalized)) {
+    return "Status not recorded";
+  }
+  const labels: Record<string, string> = {
+    active: "Current",
+    open: "Open",
+    unresolved: "Unresolved",
+    blocked: "Needs attention",
+    needs_attention: "Needs attention",
+    waiting: "Waiting",
+    pending: "Pending",
+    paused: "Paused",
+    resolved: "Resolved",
+    completed: "Completed",
+    closed: "Closed",
+    reconciled: "Reconciled",
+    withdrawn: "Withdrawn",
+    retracted: "Withdrawn",
+    superseded: "Superseded",
+    needs_clarification: "Needs clarification",
+    uncertain: "Uncertain",
+    missing: "Missing",
+    known: "Known",
+    inferred: "AI interpretation",
+    extracted: "Extracted from document",
+  };
+  return labels[normalized] ?? normalized.replace(/_/g, " ").replace(/^\\w/, (letter) => letter.toUpperCase());
 }
 
 function WorkspacePageInner() {
@@ -209,10 +241,11 @@ function WorkspacePageInner() {
                           <span>{displayDate(item)}</span>
                         </div>
                         {item.description && <p>{item.description}</p>}
-                        <span className="lcr-entry-status">{item.kind} · {item.status || "status unknown"}</span>
+                        <span className="lcr-entry-status">{item.kind} · {caregiverStatus(item.status)}</span>
                         <details className="lcr-expandable">
                           <summary className="panel-muted">Source and record details</summary>
                           <p className="panel-muted">Source: {item.source_label || "Source not recorded"}</p>
+                          {item.epistemic_status && <p className="panel-muted">Evidence status: {caregiverStatus(item.epistemic_status)}</p>}
                           <p className="panel-muted">Recorded: {item.recorded_at || "Time not recorded"}</p>
                           {Array.isArray(item.evidence_ids) && item.evidence_ids.length > 0 && <p className="panel-muted">Linked evidence: {item.evidence_ids.length} item(s)</p>}
                           {(item.kind === "Conflict" || item.kind === "Reconciliation review") && typeof item.claim_count === "number" && item.claim_count > 0 && <p className="panel-muted">Claims retained for reconciliation: {item.claim_count}</p>}
