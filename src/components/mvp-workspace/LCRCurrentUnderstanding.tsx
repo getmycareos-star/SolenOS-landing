@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 type CurrentCareItem = {
   id: string;
@@ -18,6 +18,33 @@ type CurrentCareItem = {
   recorded_at?: string | null;
   evidence_ids: string[];
   claim_count: number;
+};
+
+type SituationAssessment = {
+  schema_version: string;
+  person_id: string;
+  as_of?: string | null;
+  schema_status: string;
+  history_coverage: string;
+  coverage: {
+    sources_examined: number;
+    sources_with_records: number;
+    records_examined: number;
+    distinct_linked_evidence_ids: number;
+    is_complete: boolean;
+  };
+  domains: Record<string, { source_names: string[]; record_count: number; evidence_state: string }>;
+  priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  confidence_assessment: { overall: string; limitations: string[] };
+  notice: string;
+};
+
+type SituationAssessmentResponse = {
+  status: "available" | "not_assessed" | "created" | "unchanged";
+  assessment_id?: string;
+  assessment: SituationAssessment | null;
 };
 
 type CurrentCareProjection = {
@@ -68,6 +95,9 @@ export function LCRCurrentUnderstanding() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [assessment, setAssessment] = useState<SituationAssessment | null>(null);
+  const [assessmentLoading, setAssessmentLoading] = useState(false);
+  const [assessmentError, setAssessmentError] = useState<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -85,12 +115,41 @@ export function LCRCurrentUnderstanding() {
         throw new Error("The current-care response did not match this session's record contract. No care state has been assumed.");
       }
       setProjection(result as CurrentCareProjection);
+      try {
+        const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
+        if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
+          setAssessment(saved.assessment);
+        } else {
+          setAssessment(null);
+        }
+        setAssessmentError(null);
+      } catch (assessmentCause) {
+        setAssessment(null);
+        setAssessmentError(assessmentCause instanceof Error ? assessmentCause.message : "Situation assessment is unavailable.");
+      }
     } catch (cause) {
       setProjection(null);
       setError(cause instanceof Error ? cause.message : "The longitudinal care record could not be loaded.");
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }, []);
+
+  const reassess = useCallback(async () => {
+    setAssessmentLoading(true);
+    setAssessmentError(null);
+    try {
+      const session = await ensureAnonymousSession();
+      const result = await postJSON("/care-continuity/situation-understanding/reassess", {}) as SituationAssessmentResponse;
+      if (!result.assessment || result.assessment.person_id !== session.person.id) {
+        throw new Error("The assessment did not match the active care-record session.");
+      }
+      setAssessment(result.assessment);
+    } catch (cause) {
+      setAssessmentError(cause instanceof Error ? cause.message : "Situation reassessment failed.");
+    } finally {
+      setAssessmentLoading(false);
     }
   }, []);
 
@@ -109,6 +168,45 @@ export function LCRCurrentUnderstanding() {
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh current care understanding">
           <RefreshCw size={16} aria-hidden="true" /> Refresh
         </button>
+      </div>
+
+      <div className="lcr-situation-assessment" aria-labelledby="lcr-situation-assessment-heading">
+        <div className="lcr-entry-heading">
+          <h3 id="lcr-situation-assessment-heading">Situation understanding</h3>
+          <button type="button" className="lcr-text-action" onClick={() => void reassess()} disabled={assessmentLoading || loading}>
+            {assessmentLoading ? "Assessing persisted record…" : "Reassess from record"}
+          </button>
+        </div>
+        {assessmentError && <p role="status">Assessment status: {assessmentError}</p>}
+        {!assessment && !assessmentLoading && (
+          <p>No persisted situation assessment is available yet. Reassess to compose one from the current authorized record. No care conclusion is assumed.</p>
+        )}
+        {assessment && (
+          <>
+            <p>{assessment.coverage.records_examined} persisted records examined across {assessment.coverage.sources_examined} sources; {assessment.coverage.distinct_linked_evidence_ids} distinct linked evidence references.</p>
+            <p>Coverage: {assessment.coverage.is_complete ? "complete for the examined schema and bounds" : "partial or bounded"} · Confidence: {assessment.confidence_assessment.overall.replaceAll("_", " ")}.</p>
+            {assessment.priorities.length > 0 && (
+              <div>
+                <strong>Recorded items needing attention or follow-through</strong>
+                <ul>{assessment.priorities.slice(0, 5).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status}; {item.epistemic_status}</li>)}</ul>
+              </div>
+            )}
+            {assessment.uncertainties_and_conflicts.length > 0 && (
+              <div>
+                <strong>Unresolved uncertainties or conflicts</strong>
+                <ul>{assessment.uncertainties_and_conflicts.slice(0, 5).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status}</li>)}</ul>
+              </div>
+            )}
+            {assessment.missing_information.length > 0 && (
+              <div>
+                <strong>Recorded information gaps</strong>
+                <ul>{assessment.missing_information.slice(0, 5).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status}</li>)}</ul>
+              </div>
+            )}
+            {assessment.confidence_assessment.limitations.map((limitation) => <small key={limitation}>{limitation}</small>)}
+            <p className="lcr-footer-note">{assessment.notice}</p>
+          </>
+        )}
       </div>
 
       {loading ? (
