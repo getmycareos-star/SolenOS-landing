@@ -18,6 +18,15 @@ type CurrentCareItem = {
   recorded_at?: string | null;
   evidence_ids: string[];
   claim_count: number;
+  evidence_assessment_coverage?: string;
+  evidence_assessments?: Array<{
+    evidence_id: string;
+    review_type: string;
+    outcome: string;
+    rationale: string;
+    policy_version: string;
+    reviewed_at?: string | null;
+  }>;
 };
 
 type SituationAssessment = {
@@ -601,6 +610,13 @@ export function LCRCurrentUnderstanding() {
                     <p className="lcr-entry-status">{item.kind} · {item.status || "Status not recorded"}</p>
                     <small>Source: {item.source_label || "Not recorded"} · Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {item.evidence_ids?.length > 0 && <small>Linked evidence: {item.evidence_ids.join(", ")}</small>}
+                    {item.evidence_ids?.length > 0 && <small>Evidence review coverage: {(item.evidence_assessment_coverage || "not returned").replaceAll("_", " ")}</small>}
+                    {item.evidence_assessments?.map((review) => (
+                      <div key={review.evidence_id + ":" + review.review_type} className="lcr-entry-status">
+                        <small>{review.review_type.replaceAll("_", " ")}: {review.outcome.replaceAll("_", " ")} · policy {review.policy_version} · reviewed {formatWhen(review.reviewed_at)}</small>
+                        <small>{review.rationale}</small>
+                      </div>
+                    ))}
                     {item.claim_count > 0 && <small>Competing claims linked: {item.claim_count}</small>}
                   </li>
                 ))}
