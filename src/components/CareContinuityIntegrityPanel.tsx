@@ -364,7 +364,7 @@ export default function CareContinuityIntegrityPanel({
               <option value="caregiver_report">Caregiver report</option><option value="professional_report">Professional report</option><option value="document">Document</option><option value="sensor">Sensor / device</option><option value="other">Other / unspecified</option>
             </select>
           </label>
-          <label style={{ fontSize: 12 }}>Observed/event time (optional)
+          <label style={{ fontSize: 12 }}>Observed/event time in your local timezone (optional)
             <input style={fieldStyle} type="datetime-local" value={observationAt} onChange={event => setObservationAt(event.target.value)} />
           </label>
         </div>
