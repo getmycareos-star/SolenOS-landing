@@ -186,7 +186,7 @@ export default function CareContinuityIntegrityPanel({
   }
 
 
-  async function resolveContradiction(item: Contradiction, status: 'resolved' | 'qualified' | 'superseded') {
+  async function resolveContradiction(item: Contradiction, status: 'resolved' | 'qualified' | 'superseded' | 'reopened') {
     const notes = (resolutionNotes[item.id] || '').trim()
     if (notes.length < 3) {
       setError('Add a short note explaining how this conflict was reviewed before resolving it.')
@@ -195,7 +195,7 @@ export default function CareContinuityIntegrityPanel({
     setError('')
     setNotice('')
     try {
-      await patchJSON(`/care-continuity/contradictions/${encodeURIComponent(item.id)}/resolution`, {
+      await patchJSON(`/uncertainty/contradictions/${encodeURIComponent(item.id)}`, {
         person_id: personId,
         resolution_status: status,
         resolution_notes: notes,
@@ -380,16 +380,16 @@ export default function CareContinuityIntegrityPanel({
               Source assertion IDs: {(item.source_assertion_ids || []).join(', ') || 'Not linked'} · Evidence IDs: {(item.evidence_ids || []).join(', ') || 'None attached'}
             </p>
             {item.resolution_notes && <p style={{ fontSize: 12 }}>Review note: {item.resolution_notes}</p>}
-            {item.resolution_status === 'unresolved' && <>
-              <label style={{ display: 'block', fontSize: 12 }}>How was this conflict reviewed?
-                <textarea style={{ ...fieldStyle, minHeight: 54 }} value={resolutionNotes[item.id] || ''} onChange={(e) => setResolutionNotes((current) => ({ ...current, [item.id]: e.target.value }))} />
-              </label>
-              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
-                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'resolved')}>Resolve with note</button>
-                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'qualified')}>Qualify / retain uncertainty</button>
+            <label style={{ display: 'block', fontSize: 12 }}>Review rationale
+              <textarea style={{ ...fieldStyle, minHeight: 54 }} value={resolutionNotes[item.id] || ''} onChange={(e) => setResolutionNotes((current) => ({ ...current, [item.id]: e.target.value }))} />
+            </label>
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
+              {item.resolution_status === 'unresolved' || item.resolution_status === 'reopened' ? <>
+                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'resolved')}>Resolve with rationale</button>
+                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'qualified')}>Partially resolve / retain uncertainty</button>
                 <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'superseded')}>Superseded by new evidence</button>
-              </div>
-            </>}
+              </> : <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'reopened')}>Reopen conflict</button>}
+            </div>
           </article>
         )}
       </div>
