@@ -1231,6 +1231,55 @@
   font-weight: 700;
   cursor: pointer;
 }
+.lcr-current-facts,
+.lcr-current-uncertainties {
+  min-width: 0;
+  margin-top: 1rem;
+}
+.lcr-current-facts > h3,
+.lcr-current-uncertainties > h3 {
+  margin: 0 0 .6rem;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.lcr-current-facts > ul,
+.lcr-current-uncertainties > ul {
+  display: grid;
+  gap: .65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lcr-current-fact,
+.lcr-current-uncertainties > ul > li {
+  min-width: 0;
+  padding: .9rem;
+  border: 1px solid #dce6df;
+  border-radius: 12px;
+  background: #fff;
+}
+.lcr-current-fact p,
+.lcr-current-uncertainties > ul > li p {
+  margin: .45rem 0;
+  color: #50665b;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.lcr-current-fact small,
+.lcr-current-uncertainties > ul > li span {
+  display: block;
+  margin-top: .35rem;
+  color: #65786e;
+  font-size: .78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.lcr-current-facts > p,
+.lcr-current-uncertainties > p {
+  color: #586d62;
+  line-height: 1.6;
+}
 .lcr-timeline {
   border-top: 1px solid #dce6df;
 }
