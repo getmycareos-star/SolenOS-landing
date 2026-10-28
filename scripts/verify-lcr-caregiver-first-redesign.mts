@@ -13,6 +13,8 @@ assert.match(workspacePage, /CURRENT CARE REALITY/, "the default LCR view is exp
 assert.match(workspacePage, /What matters now/, "the primary question is plain-language and present-focused");
 assert.match(workspacePage, /getJSON\("\/care-continuity\/current-care\?limit_per_source=10"\)/, "the LCR reads its derived current-care projection from the authenticated backend API");
 assert.match(workspacePage, /missing_required_sources/, "the UI can identify missing required sources");
+assert.match(workspacePage, /source_coverage/, "the frontend validates the actual current-care projection response contract");
+assert.match(workspacePage, /"items" in result/, "the frontend requires persisted projection items before rendering");
 assert.match(workspacePage, /history_coverage/, "the UI communicates bounded history coverage");
 assert.match(workspacePage, /Longitudinal Care History/, "history is a separate view of the same care record");
 assert.match(workspacePage, /\/workspace\/timeline/, "history navigation uses the existing timeline route");
