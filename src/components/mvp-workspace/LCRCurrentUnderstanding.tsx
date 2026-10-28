@@ -34,6 +34,7 @@ type SituationAssessment = {
     is_complete: boolean;
   };
   domains: Record<string, { source_names: string[]; record_count: number; evidence_state: string }>;
+  capabilities: Record<string, { source_names: string[]; record_count: number; evidence_state: string; unavailable_sources: string[] }>;
   priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
@@ -185,6 +186,15 @@ export function LCRCurrentUnderstanding() {
           <>
             <p>{assessment.coverage.records_examined} persisted records examined across {assessment.coverage.sources_examined} sources; {assessment.coverage.distinct_linked_evidence_ids} distinct linked evidence references.</p>
             <p>Coverage: {assessment.coverage.is_complete ? "complete for the examined schema and bounds" : "partial or bounded"} · Confidence: {assessment.confidence_assessment.overall.replaceAll("_", " ")}.</p>
+            <details>
+              <summary>Capability evidence coverage ({Object.keys(assessment.capabilities || {}).length})</summary>
+              <ul>{Object.entries(assessment.capabilities || {}).map(([name, capability]) => (
+                <li key={name}>
+                  <strong>{name.replaceAll("_", " ")}</strong>: {capability.evidence_state.replaceAll("_", " ")} ({capability.record_count} source records)
+                  {capability.unavailable_sources.length > 0 && <span> · Unavailable sources: {capability.unavailable_sources.join(", ")}</span>}
+                </li>
+              ))}</ul>
+            </details>
             {assessment.priorities.length > 0 && (
               <div>
                 <strong>Recorded items needing attention or follow-through</strong>
