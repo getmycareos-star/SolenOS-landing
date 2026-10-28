@@ -25,6 +25,7 @@ assert.equal(workspacePage.includes("Record timeline"), false, "the LCR home doe
 assert.equal(workspacePage.includes("Add to record"), false, "the LCR home does not own a duplicate capture composer");
 assert.doesNotMatch(workspacePage, /solenos_workspace_consent|ResearchPreviewAckGate|ConsentGatePanel/, "LCR access is not gated by privacy/early-version checkboxes");
 assert.match(workspaceLayout, /showFab={false}/, "workspace disables the global duplicate capture menu");
+assert.doesNotMatch(workspaceLayout, /CareContextBar|careContext=/, "the workspace shell does not render a competing situation summary above the authoritative projection");
 assert.match(appShell, /showFab && <div className="mobile-fab">/, "the shared shell can suppress the capture menu on record-first routes");
 assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|ResearchPreviewAckGate/, "specialized capture is not blocked by acknowledgement checkboxes");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
