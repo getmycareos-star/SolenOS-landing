@@ -68,9 +68,20 @@ type ChangeEvidence = {
   location_provenance?: string | null;
 };
 
+type ChangeConfirmationHistoryItem = {
+  id: string;
+  previous_status: string;
+  new_status: string;
+  actor_caregiver_id: string;
+  reason?: string | null;
+  evidence_ids: string[];
+  created_at: string;
+};
+
 type ChangeDetail = {
   change: PersistedChange;
   evidence: ChangeEvidence[];
+  confirmation_history: ChangeConfirmationHistoryItem[];
 };
 
 type PersistedChange = {
@@ -153,7 +164,7 @@ export function LCRCurrentUnderstanding() {
   const [changes, setChanges] = useState<PersistedChange[]>([]);
   const [changesError, setChangesError] = useState<string | null>(null);
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
-  const [changeEvidence, setChangeEvidence] = useState<Record<string, { evidence: ChangeEvidence[]; error?: string }>>({});
+  const [changeEvidence, setChangeEvidence] = useState<Record<string, { evidence: ChangeEvidence[]; confirmation_history: ChangeConfirmationHistoryItem[]; error?: string }>>({});
   const [evidenceLoadingId, setEvidenceLoadingId] = useState<string | null>(null);
   const [confirmationReason, setConfirmationReason] = useState<Record<string, string>>({});
   const [confirmationError, setConfirmationError] = useState<Record<string, string>>({});
@@ -278,16 +289,17 @@ export function LCRCurrentUnderstanding() {
         `/change/changes/${encodeURIComponent(session.person.id)}/${encodeURIComponent(change.id)}`
       ) as ChangeDetail;
       if (!result?.change || result.change.id !== change.id ||
-          result.change.person_id !== session.person.id || !Array.isArray(result.evidence) ||
+          result.change.person_id !== session.person.id || !Array.isArray(result.evidence) || !Array.isArray(result.confirmation_history) ||
           result.evidence.some((item) => !change.evidence_ids.includes(item.id))) {
         throw new Error("The returned evidence did not match the saved change assessment.");
       }
-      setChangeEvidence((previous) => ({ ...previous, [change.id]: { evidence: result.evidence } }));
+      setChangeEvidence((previous) => ({ ...previous, [change.id]: { evidence: result.evidence, confirmation_history: result.confirmation_history } }));
     } catch (cause) {
       setChangeEvidence((previous) => ({
         ...previous,
         [change.id]: {
           evidence: [],
+          confirmation_history: [],
           error: cause instanceof Error ? cause.message : "Supporting evidence could not be loaded.",
         },
       }));
@@ -411,6 +423,21 @@ export function LCRCurrentUnderstanding() {
                     ))}
                     {changeEvidence[change.id] && !changeEvidence[change.id].error && changeEvidence[change.id].evidence.length === 0 && (
                       <p>No source observations were returned for the linked evidence references.</p>
+                    )}
+                    {changeEvidence[change.id]?.confirmation_history.length > 0 && (
+                      <div aria-label="Confirmation history">
+                        <strong>Review history</strong>
+                        <ul>
+                          {changeEvidence[change.id].confirmation_history.map((transition) => (
+                            <li key={transition.id}>
+                              <p>{transition.previous_status.replaceAll("_", " ")} → {transition.new_status.replaceAll("_", " ")}</p>
+                              {transition.reason && <p>{transition.reason}</p>}
+                              <small>Recorded {formatWhen(transition.created_at)} · caregiver {transition.actor_caregiver_id}</small>
+                              {transition.evidence_ids.length > 0 && <small>Review evidence: {transition.evidence_ids.join(", ")}</small>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 )}
