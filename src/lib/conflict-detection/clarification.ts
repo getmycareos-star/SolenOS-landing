@@ -73,8 +73,7 @@ export function selectPrimaryClarification(
 ): ConflictClarification | null {
   const open = [...listOpenConflicts(registry)].sort((a, b) => {
     const sev = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
-    if (sev !== 0) return sev;
-    return b.confidence - a.confidence;
+    return sev;
   });
   const top = open[0];
   if (!top) return null;
