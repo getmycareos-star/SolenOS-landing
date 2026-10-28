@@ -39,15 +39,7 @@ type LcrContext = {
   source_coverage?: Record<string, { status?: string; returned_count?: number; has_more?: boolean }>;
 };
 
-function displayValue(item: LcrItem, ...keys: string[]): string {
-  for (const key of keys) {
-    const value = item[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-  }
-  return "Care detail";
-}
-
-function displayDate(item: LcrItem): string {
+function displayDate(item: Record<string, unknown>): string {
   const raw = item.occurred_at ?? item.recorded_at ?? item.effective_at ?? item.created_at;
   if (typeof raw !== "string" || !raw) return "Date not recorded";
   const parsed = new Date(raw);
@@ -225,7 +217,7 @@ function WorkspacePageInner() {
           )}
           {context && (
             <p className="lcr-footer-note">
-              This view is based on a bounded read of saved care sources, not a clinical conclusion. History coverage: {context.history_coverage ?? "not specified"}.
+              {context.notice ?? "This is a bounded view of saved care information, not a clinical conclusion."} History coverage: {context.history_coverage ?? "not specified"}.
               {context.schema_status !== "complete" ? " Some sources may be unavailable." : ""}
             </p>
           )}
