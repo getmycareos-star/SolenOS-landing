@@ -54,6 +54,7 @@ type Contradiction = {
   resolution_notes?: string | null
   evidence_ids: string[]
   source_assertion_ids?: string[] | null
+  matching_candidate_ids?: string[] | null
 }
 type Outcome = {
   id: string
@@ -379,6 +380,7 @@ export default function CareContinuityIntegrityPanel({
             <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
               Source assertion IDs: {(item.source_assertion_ids || []).join(', ') || 'Not linked'} · Evidence IDs: {(item.evidence_ids || []).join(', ') || 'None attached'}
             </p>
+            {(item.matching_candidate_ids || []).length > 0 && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Potential related conflicts: {(item.matching_candidate_ids || []).join(', ')}. These are match candidates only; records remain separate until reviewed.</p>}
             {item.resolution_notes && <p style={{ fontSize: 12 }}>Review note: {item.resolution_notes}</p>}
             <label style={{ display: 'block', fontSize: 12 }}>Review rationale
               <textarea style={{ ...fieldStyle, minHeight: 54 }} value={resolutionNotes[item.id] || ''} onChange={(e) => setResolutionNotes((current) => ({ ...current, [item.id]: e.target.value }))} />
