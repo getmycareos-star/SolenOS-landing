@@ -11,6 +11,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations } from "@/lib/ui-runtime";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
+import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
@@ -155,6 +156,8 @@ function WorkspacePageInner() {
             <span><strong>Daily care</strong><small>Capture how today is going</small></span>
           </button>
         </section>
+
+        <LCRCurrentUnderstanding />
 
         <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
           <div className="lcr-section-heading">
