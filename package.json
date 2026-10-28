@@ -242,6 +242,7 @@
     "verify:persisted-care-orientation": "tsx scripts/verify-persisted-care-orientation.mts",
     "verify:caregiver-ui-contract": "tsx scripts/verify-caregiver-ui-contract.mts",
     "verify:api-client-reliability": "tsx scripts/verify-api-client-reliability.mts",
+    "verify:companion-idempotent-retry": "tsx scripts/verify-companion-idempotent-retry.mts",
     "verify:greeting-orientation": "tsx scripts/verify-greeting-orientation.mts",
     "verify:care-timeline-ui": "tsx scripts/verify-care-timeline-ui.mts",
     "verify:handoff-source-provenance": "tsx scripts/verify-handoff-source-provenance.mts",
