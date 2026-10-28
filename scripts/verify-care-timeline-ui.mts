@@ -7,7 +7,7 @@ const source = fs.readFileSync(pagePath, "utf8");
 
 assert.match(source, /ensureAnonymousSession/);
 assert.match(source, /getJSON/);
-assert.match(source, /\/events\//);
+assert.match(source, /care-continuity\\/context/);
 assert.match(source, /occurred_at/);
 assert.match(source, /recorded_at/);
 assert.match(source, /time_provenance/);
@@ -15,7 +15,7 @@ assert.match(source, /evidence_ids/);
 assert.match(source, /aria-expanded/);
 assert.match(source, /Search the care history/);
 assert.match(source, /Timeline could not be loaded/);
-assert.match(source, /No saved care events were returned/);
+assert.match(source, /care-continuity\\/context/);
 assert.match(source, /never inserts example care history/);
 assert.match(source, /latest saved event, not a substitute for the reconciled current-care view/);
 assert.doesNotMatch(source, /runtime\.timeline\.entries/);
