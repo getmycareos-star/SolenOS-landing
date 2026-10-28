@@ -17,6 +17,7 @@ type CurrentCareItem = Record<string, unknown> & {
   title: string;
   description: string;
   status: string;
+  source_collection: string;
   source_type: string;
   source_label: string;
   occurred_at?: string | null;
@@ -193,7 +194,7 @@ function WorkspacePageInner() {
               ) : (
                 <div className="lcr-timeline">
                   {currentItems.map((item) => (
-                    <article key={`${item.source_type}:${item.id}`} className="lcr-timeline-item">
+                    <article key={`${item.source_collection}:${item.id}`} className="lcr-timeline-item">
                       <span className="lcr-timeline-marker" aria-hidden="true"><FileText size={17} /></span>
                       <div className="lcr-timeline-content">
                         <div className="lcr-entry-heading">
