@@ -104,6 +104,7 @@
     "verify:final-output-contract": "tsx scripts/verify-final-output-contract.mts",
     "verify:mvp-surface-area": "tsx scripts/verify-mvp-surface-area.mts",
     "verify:living-care-record-ux": "tsx scripts/verify-living-care-record-ux.mts",
+    "verify:lcr-current-care-projection": "tsx scripts/verify-lcr-current-care-projection.mts",
     "verify:living-care-record-regression": "tsx scripts/verify-living-care-record-regression.mts",
     "verify:welcome-first-visit": "tsx scripts/verify-welcome-first-visit.mts",
     "verify:return-continuity": "tsx scripts/verify-return-continuity.mts",
