@@ -84,6 +84,7 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
         <AppShell
           navItems={WORKSPACE_NAV}
           brandHref="/workspace"
+          showFab={false}
           careContext={<CareContextBar />}
         >
           {children}
