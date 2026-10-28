@@ -98,6 +98,9 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  // Reuse the same key when a response is lost after the backend committed a turn.
+  // Keep the text paired with the key so a changed draft never replays an old turn.
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const personId = getPersonId()
 
   const prepareHandoffDraft = async () => {
@@ -140,6 +143,11 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    const pending = pendingTurnRef.current
+    const clientTurnId = pending?.text === submittedText
+      ? pending.id
+      : crypto.randomUUID()
+    pendingTurnRef.current = { text: submittedText, id: clientTurnId }
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -149,9 +157,11 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: clientTurnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurnRef.current?.id === clientTurnId) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
