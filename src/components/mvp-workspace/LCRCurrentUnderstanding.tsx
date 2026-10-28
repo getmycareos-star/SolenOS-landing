@@ -60,8 +60,9 @@ export function LCRCurrentUnderstanding() {
       }
       const result = await getJSON("/care-continuity/current-care?limit_per_source=12");
       if (!result || result.read_only !== true || !Array.isArray(result.items) ||
-          typeof result.schema_status !== "string" || typeof result.projection_type !== "string") {
-        throw new Error("The current-care response did not match the expected record contract. No care state has been assumed.");
+          typeof result.schema_status !== "string" || typeof result.projection_type !== "string" ||
+          result.person_id !== session.person.id) {
+        throw new Error("The current-care response did not match this session's record contract. No care state has been assumed.");
       }
       setProjection(result as CurrentCareProjection);
     } catch (cause) {
