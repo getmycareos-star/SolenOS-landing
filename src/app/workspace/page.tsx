@@ -59,6 +59,21 @@ function displayDate(item: Record<string, unknown>): string {
     : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+function caregiverLoadError(error: unknown): string {
+  const detail = error instanceof Error ? error.message.toLowerCase() : "";
+
+  if (/unknown care-continuity resource|care-continuity resource.*not found|api 404/.test(detail)) {
+    return "The care-record service is not ready to show this view yet. Your saved care information has not been changed. Please try again shortly.";
+  }
+  if (/timed out|failed to fetch|networkerror|network request failed/.test(detail)) {
+    return "We could not reach your care record. Check your connection and try again.";
+  }
+  if (/session.*expired|session credential|valid solenos care session|anonymous session is invalid/.test(detail)) {
+    return "Your care session could not be verified. Your saved care information has not been changed. Please try again.";
+  }
+  return "Your care record could not be loaded. Your saved care information has not been changed. Please try again.";
+}
+
 function caregiverStatus(value?: string | null): string {
   const normalized = value?.trim().toLowerCase().replace(/[ -]+/g, "_");
   if (!normalized || ["unknown", "status_unknown", "not_specified", "not_recorded"].includes(normalized)) {
@@ -117,7 +132,8 @@ function WorkspacePageInner() {
       setContext(result as LcrContext);
     } catch (error) {
       setContext(null);
-      setLoadError(error instanceof Error ? error.message : "The care record could not be loaded. Please try again.");
+      console.error("LCR current-care read failed", error);
+      setLoadError(caregiverLoadError(error));
     } finally {
       setLoading(false);
       setRefreshing(false);
