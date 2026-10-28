@@ -87,7 +87,7 @@ function caregiverStatus(value?: string | null): string {
     inferred: "AI interpretation",
     extracted: "Extracted from document",
   };
-  return labels[normalized] ?? normalized.replace(/_/g, " ").replace(/^\\w/, (letter) => letter.toUpperCase());
+  return labels[normalized] ?? normalized.replace(/_/g, " ").replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
 function WorkspacePageInner() {
