@@ -35,6 +35,7 @@ const SCALE_LABELS: Record<string, string> = {
 export default function StructuredDailyCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedEntrySummary, setSavedEntrySummary] = useState('');
   const [saveError, setSaveError] = useState<unknown | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId: string | null; recordedAt: string | null } | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
@@ -581,6 +582,7 @@ export default function StructuredDailyCapture() {
       setMedicationImagePreview(null);
       
       setSaveError(null);
+      setSavedEntrySummary(variables.notes.trim() || 'Entry recorded.');
       setSaved(true);
       // Once Daily Capture is persisted, reconcile the saved observations against the longitudinal LCR.
       // Reconciliation failure is shown by the Delta panel and never rolls back a successfully saved capture.
@@ -879,7 +881,7 @@ export default function StructuredDailyCapture() {
           marginBottom: '24px' 
         }}>
           <span style={{ fontSize: '13px', color: 'var(--trust)', fontWeight: '500' }}>
-            Saved. {form.notes || 'Entry recorded.'}
+            Saved. {savedEntrySummary || 'Entry recorded.'}
           </span>
         </div>
       )}
