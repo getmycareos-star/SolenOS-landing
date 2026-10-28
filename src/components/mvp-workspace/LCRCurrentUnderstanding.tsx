@@ -107,9 +107,12 @@ export function LCRCurrentUnderstanding() {
             <div role="status" className="lcr-empty-state">
               <AlertCircle size={20} aria-hidden="true" />
               <h3>Record coverage is incomplete</h3>
-              <p>Some required data sources are unavailable. This view is not a complete account of the care record.</p>
+              <p>Some data sources are unavailable or incomplete. This view may not cover the full care record.</p>
               {projection.missing_required_sources.length > 0 && (
                 <p>Unavailable required sources: {projection.missing_required_sources.join(", ")}</p>
+              )}
+              {projection.missing_optional_sources.length > 0 && (
+                <p>Unavailable optional sources: {projection.missing_optional_sources.join(", ")}</p>
               )}
             </div>
           )}
@@ -139,6 +142,7 @@ export function LCRCurrentUnderstanding() {
               {projection.has_more && <p>Showing the first {projection.item_count} prioritized items. More items exist in the record.</p>}
             </div>
           )}
+          <p className="lcr-footer-note">View as of {formatWhen(projection.as_of)} · Coverage: {projection.history_coverage.replaceAll("_", " ")}.</p>
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
