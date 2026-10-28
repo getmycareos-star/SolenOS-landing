@@ -20,6 +20,9 @@ assert.match(workspacePage, /history_coverage/, "the UI communicates bounded his
 assert.match(workspacePage, /Longitudinal Care History/, "history is a separate view of the same care record");
 assert.match(workspacePage, /\/workspace\/timeline/, "history navigation uses the existing timeline route");
 assert.match(workspacePage, /Source and record details/, "provenance is progressively disclosed rather than always expanded");
+assert.match(workspacePage, /function caregiverStatus/, "internal status codes are translated for caregivers");
+assert.match(workspacePage, /Status not recorded/, "unknown status values are not shown as raw implementation labels");
+assert.match(workspacePage, /Evidence status:/, "epistemic status is available in the progressively disclosed source details");
 assert.match(workspacePage, /Try again/, "failed reads have a recoverable retry action");
 assert.equal(workspacePage.includes("Record timeline"), false, "the LCR home does not render a duplicate timeline");
 assert.equal(workspacePage.includes("Add to record"), false, "the LCR home does not own a duplicate capture composer");
