@@ -7,7 +7,6 @@ import { CalendarDays, FileText, History, MessageCircle, RefreshCw } from "lucid
 import { BrandLoading } from "@/components/brand";
 import { Button } from "@/components/ui/Button";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -244,9 +243,6 @@ function WorkspacePageInner() {
             <span><strong>Document AI</strong><small>Upload, review, and understand care documents</small></span>
             <span aria-hidden="true">→</span>
           </button>
-          {FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity && (
-            <p className="panel-muted">Community is separate from the authoritative Living Care Record.</p>
-          )}
         </section>
       </div>
     </main>
