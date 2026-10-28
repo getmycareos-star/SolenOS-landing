@@ -32,18 +32,6 @@ assert.ok(timelinePage.includes("epistemic_status"), "history preserves uncertai
 assert.ok(timelinePage.includes("record-revisions?limit=100"), "history retrieves persisted corrections and revisions");
 assert.ok(timelinePage.includes("record-versions?limit=100"), "history retrieves persisted record versions");
 assert.ok(timelinePage.includes("Open Daily Care"), "history directs capture to the specialized Daily Care module");
-assert.ok(timelinePage.includes("care-continuity/context"), "Longitudinal Care History reads the shared scoped LCR context");
-assert.ok(!timelinePage.includes("compose"), "history does not reopen the duplicate LCR capture composer");
-assert.ok(timelinePage.includes("source_label"), "history preserves source attribution when available");
-assert.ok(timelinePage.includes("epistemic_status"), "history preserves uncertainty/status metadata");
-assert.ok(timelinePage.includes("care-continuity/context"), "Longitudinal Care History reads the shared scoped LCR context");
-assert.ok(!timelinePage.includes("compose"), "history does not reopen the duplicate LCR capture composer");
-assert.ok(timelinePage.includes("source_label"), "history preserves source attribution when available");
-assert.ok(timelinePage.includes("epistemic_status"), "history preserves uncertainty/status metadata");
-assert.ok(timelinePage.includes("care-continuity/context"), "Longitudinal Care History reads the shared scoped LCR context");
-assert.ok(!timelinePage.includes("compose"), "history does not reopen the duplicate LCR capture composer");
-assert.ok(timelinePage.includes("source_label"), "history preserves source attribution when available");
-assert.ok(timelinePage.includes("epistemic_status"), "history preserves uncertainty/status metadata");
 assert.match(styles, /\.lcr-home/, "LCR layout styles are present");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout is explicitly handled");
 
@@ -51,5 +39,5 @@ console.log("✓ LCR home reads the session-scoped current-care projection and s
 console.log("✓ Current Care Reality and Longitudinal Care History are distinct views");
 console.log("✓ LCR home has no duplicate capture/document-ingestion controls or checkbox gate");
 console.log("✓ Source details are progressive; failed reads have retry recovery");
-console.log("✓ Document AI owns upload/download and history reads persisted events");
+console.log("✓ Document AI owns upload/download; history reads scoped LCR sources and version/revision records");
 console.log("✓ Responsive LCR layout rules are present");
