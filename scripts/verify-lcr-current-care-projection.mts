@@ -9,6 +9,7 @@ assert.match(workspace, /<LCRCurrentUnderstanding\s*\/>/, "LCR home must render 
 assert.match(workspace, /Record timeline/, "chronological timeline remains a separate LCR section");
 assert.match(component, /\/care-continuity\/current-care\?limit_per_source=12/, "LCR reads the canonical current-care projection");
 assert.match(component, /read_only !== true/, "projection contract must identify itself as read-only");
+assert.match(component, /result\.person_id !== session\.person\.id/, "projection identity must match the active session");
 assert.match(component, /schema_status !== "complete"/, "incomplete source coverage must be visible");
 assert.match(component, /missing_required_sources/, "required source gaps must not be hidden");
 assert.match(component, /epistemic_status/, "epistemic status must remain visible");
