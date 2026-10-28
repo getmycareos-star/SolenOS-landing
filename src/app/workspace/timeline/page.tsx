@@ -36,6 +36,7 @@ type CareEvent = {
   follow_up_candidate?: boolean | null;
   confidence?: number | null;
   situation_id?: string | null;
+  kind?: string;
   source_collection?: string;
   source_label?: string | null;
   source_type?: string | null;
@@ -59,7 +60,7 @@ type LcrContext = {
 type FilterKey = "all" | "observations" | "decisions" | "documents" | "open";
 
 const FILTERS: { id: FilterKey; label: string }[] = [
-  { id: "all", label: "All events" },
+  { id: "all", label: "All history" },
   { id: "observations", label: "Observations" },
   { id: "decisions", label: "Decisions" },
   { id: "documents", label: "Documents" },
@@ -103,6 +104,7 @@ function formatDay(value?: string | null): string {
 
 function eventCategory(event: CareEvent): string {
   const value = `${event.event_type} ${event.title} ${(event.tags ?? []).join(" ")}`.toLowerCase();
+  if (/conflict|reconciliation|contradiction/.test(value)) return "Conflict";
   if (/decision|decided|choice/.test(value)) return "Decision";
   if (/document|upload|file|discharge|letter|report/.test(value)) return "Document";
   if (/follow.?up|open.?loop|pending|unresolved|question|appointment/.test(value) || event.follow_up_candidate) return "Follow-up";
@@ -157,6 +159,7 @@ function firstText(row: Record<string, unknown>, keys: string[]): string | null 
     const value = row[key];
     if (typeof value === "string" && value.trim()) return value.trim();
     if (typeof value === "number" || typeof value === "boolean") return String(value);
+    if (value && typeof value === "object") return JSON.stringify(value);
   }
   return null;
 }
@@ -172,7 +175,7 @@ function mapHistorySource(sourceName: string, row: Record<string, unknown>, pers
       ? row.source_ids.filter((value): value is string => typeof value === "string")
       : [];
   const status = firstText(row, ["status", "lifecycle_status", "reconciliation_status", "assertion_status", "decision_status", "evidence_status", "epistemic_status", "epistemic_state"]) ?? "not_specified";
-  const title = firstText(row, ["title", "topic", "question", "conflict_type", "fact_type", "field", "observation_category", "follow_up_kind", "entry_type", "source_label"]) ?? sourceName.replaceAll("_", " ");
+  const title = firstText(row, ["title", "topic", "question", "conflict_type", "fact_type", "field", "observation_category", "follow_up_kind", "entry_type", "event_type", "type", "context_type", "target_type", "subject_type", "source_label"]) ?? sourceName.replaceAll("_", " ");
   let description = firstText(row, ["description", "fact_value", "asserted_value", "decision_text", "perspective_text", "source_text", "notes", "answer", "resolution", "summary", "decision_notes", "resolution_notes", "context_payload"]);
   const original = firstText(row, ["original_text", "original_value"]);
   const corrected = firstText(row, ["corrected_text", "corrected_value"]);
@@ -199,6 +202,7 @@ function mapHistorySource(sourceName: string, row: Record<string, unknown>, pers
     attention_candidate: isOpenWork && !["resolved", "completed", "closed", "reconciled", "withdrawn", "retracted", "superseded", "cancelled"].includes(status.toLowerCase()),
     follow_up_candidate: ["follow_up_links", "open_questions", "information_gaps", "missing_information"].includes(sourceName),
     situation_id: null,
+    kind: sourceName === "conflicts" ? "Conflict" : sourceName === "reconciliations" ? "Reconciliation review" : sourceName.replaceAll("_", " "),
     source_collection: sourceName,
     source_label: firstText(row, ["source_label", "author_label", "source_type"]) ?? "Source label not recorded",
     source_type: firstText(row, ["source_type"]) ?? "not_recorded",
@@ -324,6 +328,8 @@ export default function TimelinePage() {
         </Button>
       </header>
 
+      {coverageNotice && <section role="status" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 12, padding: 14, marginBottom: 16, background: "var(--paper)" }}><p style={{ margin: 0, lineHeight: 1.5 }}>{coverageNotice}</p></section>}
+
       <section aria-label="Latest recorded event" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "white", padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
           <History size={19} aria-hidden />
@@ -389,10 +395,10 @@ export default function TimelinePage() {
           </div>
         </section>
       ) : (
-        <section aria-label="Chronological care events">
+        <section aria-label="Chronological care history">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
             <h2 style={{ fontSize: 19, margin: 0 }}>History</h2>
-            <span style={{ color: "var(--solenos-muted)", fontSize: 13 }}>{visibleEvents.length} {visibleEvents.length === 1 ? "event" : "events"}</span>
+            <span style={{ color: "var(--solenos-muted)", fontSize: 13 }}>{visibleEvents.length} {visibleEvents.length === 1 ? "entry" : "entries"}</span>
           </div>
           {groupedEvents.map((group) => (
             <div key={group.label} style={{ marginBottom: 22 }}>
