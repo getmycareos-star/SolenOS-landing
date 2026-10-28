@@ -21,6 +21,7 @@ type CurrentCareItem = Record<string, unknown> & {
   source_type: string;
   source_label: string;
   occurred_at?: string | null;
+  due_at?: string | null;
   recorded_at?: string | null;
   evidence_ids?: string[];
   priority: number;
@@ -41,6 +42,13 @@ type LcrContext = {
 };
 
 function displayDate(item: Record<string, unknown>): string {
+  const dueAt = item.due_at;
+  if (typeof dueAt === "string" && dueAt) {
+    const dueDate = new Date(dueAt);
+    return Number.isNaN(dueDate.getTime())
+      ? "Due date unavailable"
+      : `Due ${dueDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+  }
   const raw = item.occurred_at ?? item.recorded_at ?? item.effective_at ?? item.created_at;
   if (typeof raw !== "string" || !raw) return "Date not recorded";
   const parsed = new Date(raw);
