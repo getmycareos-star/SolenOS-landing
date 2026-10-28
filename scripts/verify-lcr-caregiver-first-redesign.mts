@@ -5,6 +5,7 @@ const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const capture = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
+const appShell = fs.readFileSync("src/components/app-shell/AppShell.tsx", "utf8");
 const documentPage = fs.readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 const timelinePage = fs.readFileSync("src/app/workspace/timeline/page.tsx", "utf8");
 
@@ -23,6 +24,8 @@ assert.match(workspacePage, /Try again/, "failed reads have a recoverable retry 
 assert.equal(workspacePage.includes("Record timeline"), false, "the LCR home does not render a duplicate timeline");
 assert.equal(workspacePage.includes("Add to record"), false, "the LCR home does not own a duplicate capture composer");
 assert.doesNotMatch(workspacePage, /solenos_workspace_consent|ResearchPreviewAckGate|ConsentGatePanel/, "LCR access is not gated by privacy/early-version checkboxes");
+assert.match(workspaceLayout, /showFab={false}/, "workspace disables the global duplicate capture menu");
+assert.match(appShell, /showFab && <div className="mobile-fab">/, "the shared shell can suppress the capture menu on record-first routes");
 assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|ResearchPreviewAckGate/, "specialized capture is not blocked by acknowledgement checkboxes");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(documentPage, /postFormData\("\/upload"/, "document upload stays in Document AI and uses the backend upload contract");
