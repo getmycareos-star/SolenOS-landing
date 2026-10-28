@@ -218,7 +218,7 @@ function WorkspacePageInner() {
                           <p className="panel-muted">Source: {item.source_label || "Source not recorded"}</p>
                           <p className="panel-muted">Recorded: {item.recorded_at || "Time not recorded"}</p>
                           {Array.isArray(item.evidence_ids) && item.evidence_ids.length > 0 && <p className="panel-muted">Linked evidence: {item.evidence_ids.length} item(s)</p>}
-                          {item.kind === "Conflict" && typeof item.claim_count === "number" && item.claim_count > 0 && <p className="panel-muted">Claims retained for reconciliation: {item.claim_count}</p>}
+                          {(item.kind === "Conflict" || item.kind === "Reconciliation review") && typeof item.claim_count === "number" && item.claim_count > 0 && <p className="panel-muted">Claims retained for reconciliation: {item.claim_count}</p>}
                         </details>
                       </div>
                     </article>
