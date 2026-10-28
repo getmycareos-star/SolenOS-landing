@@ -80,7 +80,7 @@ function WorkspacePageInner() {
         throw new Error("A valid care session is required to load the care record.");
       }
       const result = await getJSON("/care-continuity/current-care?limit_per_source=10");
-      if (!result || typeof result !== "object" || !("sources" in result)) {
+      if (!result || typeof result !== "object" || !("items" in result) || !("source_coverage" in result)) {
         throw new Error("The care record response was incomplete. No care details have been assumed.");
       }
       setContext(result as LcrContext);
