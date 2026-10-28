@@ -11,7 +11,6 @@ type DetectedPair = {
   type: ConflictType;
   statementA: string;
   statementB: string;
-  confidence: number;
   severity: ConflictSeverity;
 };
 
@@ -54,7 +53,6 @@ function detectFactHousing(a: string, b: string): DetectedPair | null {
       type: "fact_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.85,
       severity: "HIGH",
     };
   }
@@ -82,7 +80,6 @@ function detectFactCaregiver(a: string, b: string): DetectedPair | null {
       type: med ? "responsibility_conflict" : "fact_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.8,
       severity: med ? "HIGH" : "MEDIUM",
     };
   }
@@ -95,7 +92,6 @@ function detectFactCaregiver(a: string, b: string): DetectedPair | null {
       type: "responsibility_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.75,
       severity: "HIGH",
     };
   }
@@ -107,7 +103,6 @@ function detectFactCaregiver(a: string, b: string): DetectedPair | null {
       type: "responsibility_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.75,
       severity: "HIGH",
     };
   }
@@ -132,7 +127,6 @@ function detectResponsibility(a: string, b: string): DetectedPair | null {
       type: "responsibility_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.82,
       severity: "HIGH",
     };
   }
@@ -162,7 +156,6 @@ function detectPreference(a: string, b: string): DetectedPair | null {
       type: "preference_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.78,
       severity: "MEDIUM",
     };
   }
@@ -188,7 +181,6 @@ function detectTimeline(a: string, b: string): DetectedPair | null {
       type: "timeline_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.88,
       severity: "HIGH",
     };
   }
@@ -218,7 +210,6 @@ function detectTimeline(a: string, b: string): DetectedPair | null {
       type: "timeline_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.84,
       severity: "HIGH",
     };
   }
@@ -260,7 +251,6 @@ function detectMedical(a: string, b: string): DetectedPair | null {
       type: "medical_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.9,
       severity: "CRITICAL",
     };
   }
@@ -275,7 +265,6 @@ function detectMedical(a: string, b: string): DetectedPair | null {
       type: "medical_conflict",
       statementA: a,
       statementB: b,
-      confidence: 0.92,
       severity: "CRITICAL",
     };
   }
@@ -319,7 +308,6 @@ function toConflict(pair: DetectedPair, nowIso: string, situationId?: string): C
     type: pair.type,
     statementA: pair.statementA,
     statementB: pair.statementB,
-    confidence: pair.confidence,
     severity: pair.severity,
     status: "open",
     createdAt: nowIso,
@@ -334,8 +322,12 @@ function toConflict(pair: DetectedPair, nowIso: string, situationId?: string): C
 }
 
 /**
- * Detect pairwise conflicts among fact candidates.
- * MVP: heuristic coexistence checks only — no clustering / source reliability.
+ * Detect candidate inconsistencies among fact candidates. This is not full
+ * contradiction resolution: entity/time/context alignment and source independence
+ * require persisted evidence and authorized review.
+ * Deterministic phrase rules can only raise review candidates. They do not verify
+ * that two claims concern the same entity/event/time, and they do not estimate
+ * probability. Every candidate remains a request for clarification, not a finding.
  */
 export function detectConflicts(params: {
   candidates: readonly FactCandidate[];
