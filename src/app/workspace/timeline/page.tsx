@@ -159,7 +159,7 @@ function firstText(row: Record<string, unknown>, keys: string[]): string | null 
     const value = row[key];
     if (typeof value === "string" && value.trim()) return value.trim();
     if (typeof value === "number" || typeof value === "boolean") return String(value);
-    if (value && typeof value === "object") return JSON.stringify(value);
+    if (value && typeof value === "object") return JSON.stringify(value) ?? null;
   }
   return null;
 }
