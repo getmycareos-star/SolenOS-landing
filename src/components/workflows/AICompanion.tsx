@@ -251,6 +251,7 @@ export default function Companion() {
         pendingTurnRef.current = { id: createClientTurnId(), text: submittedText }
       }
       const turn = pendingTurnRef.current
+      userMsg.id = turn.id
       const session = await ensureAnonymousSession()
       const pendingKey = companionPendingTurnKey(session.person.id)
       try { window.sessionStorage.setItem(pendingKey, JSON.stringify(turn)) } catch {}
@@ -277,7 +278,11 @@ export default function Companion() {
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
 
+      const persistedAssistantMessage = Array.isArray(response.messages)
+        ? response.messages.find((item: any) => item?.id === `${turn.id}:assistant`)
+        : null
       const assistantMsg: Message = {
+        id: typeof persistedAssistantMessage?.id === 'string' ? persistedAssistantMessage.id : undefined,
         role: 'assistant',
         text: response.reply,
         guard_verdict: response.guard_verdict,
@@ -297,7 +302,9 @@ export default function Companion() {
           const transcript = response.messages
             .filter((item: any) => (item?.role === 'user' || item?.role === 'assistant') && typeof item?.text === 'string')
             .map((item: any, index: number) => {
-              const existing = prev[index]
+              const existing = typeof item.id === 'string'
+                ? prev.find(candidate => candidate.id === item.id)
+                : prev[index]
               const serverMessage: Message = {
                 id: typeof item.id === 'string' ? item.id : undefined,
                 role: item.role,
