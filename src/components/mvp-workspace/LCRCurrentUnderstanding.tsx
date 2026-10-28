@@ -45,7 +45,7 @@ function displayDescription(value?: string | null): string {
       if (entries.length > 0) {
         return entries.map(([key, item]) =>
           `${key.replaceAll("_", " ")}: ${typeof item === "string" ? item : JSON.stringify(item)}`
-        ).join("\\n");
+        ).join("\n");
       }
     }
     if (typeof parsed === "string") return parsed;
