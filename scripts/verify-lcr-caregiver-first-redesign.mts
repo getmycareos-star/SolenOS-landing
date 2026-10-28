@@ -11,7 +11,7 @@ const timelinePage = fs.readFileSync("src/app/workspace/timeline/page.tsx", "utf
 assert.match(workspacePage, /SOLENOS · LIVING CARE RECORD/, "workspace is visibly branded as the LCR");
 assert.match(workspacePage, /CURRENT CARE REALITY/, "the default LCR view is explicitly current-care-first");
 assert.match(workspacePage, /What matters now/, "the primary question is plain-language and present-focused");
-assert.match(workspacePage, /getJSON\("\/care-continuity\/context\?limit_per_source=10"\)/, "the LCR reads its derived current-care projection from the authenticated backend API");
+assert.match(workspacePage, /getJSON\("\/care-continuity\/current-care\?limit_per_source=10"\)/, "the LCR reads its derived current-care projection from the authenticated backend API");
 assert.match(workspacePage, /missing_required_sources/, "the UI can identify missing required sources");
 assert.match(workspacePage, /history_coverage/, "the UI communicates bounded history coverage");
 assert.match(workspacePage, /Longitudinal Care History/, "history is a separate view of the same care record");
