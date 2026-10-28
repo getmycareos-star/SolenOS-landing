@@ -39,6 +39,13 @@ type SituationAssessment = {
   uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   confidence_assessment: { overall: string; limitations: string[] };
+  evolution_since_previous_assessment?: {
+    comparison_available: boolean;
+    previous_assessment_id: string | null;
+    change_count: number;
+    changes: Array<{ change_type: string; source: string; record_id: string; current: Record<string, unknown> | null; previous: Record<string, unknown> | null }>;
+    interpretation_limit: string;
+  };
   notice: string;
 };
 
@@ -269,6 +276,24 @@ export function LCRCurrentUnderstanding() {
                 </li>
               ))}</ul>
             </details>
+            {assessment.evolution_since_previous_assessment && (
+              <div>
+                <strong>Changes since previous assessment</strong>
+                {assessment.evolution_since_previous_assessment.comparison_available ? (
+                  <>
+                    <p>{assessment.evolution_since_previous_assessment.change_count} persisted-record projection change(s) identified.</p>
+                    {assessment.evolution_since_previous_assessment.changes.length > 0 && (
+                      <ul>{assessment.evolution_since_previous_assessment.changes.slice(0, 10).map((change) => (
+                        <li key={change.source + ":" + change.record_id}>
+                          {change.change_type.replaceAll("_", " ")} · {change.source} · {change.record_id}
+                        </li>
+                      ))}</ul>
+                    )}
+                    <small>{assessment.evolution_since_previous_assessment.interpretation_limit}</small>
+                  </>
+                ) : <p>No prior persisted assessment exists to establish a comparison baseline.</p>}
+              </div>
+            )}
             {assessment.priorities.length > 0 && (
               <div>
                 <strong>Recorded items needing attention or follow-through</strong>
