@@ -123,10 +123,14 @@ function WorkspacePageInner() {
   const conflictItems = sources.conflicts?.items ?? [];
   const uncertaintyItems = sources.uncertainties?.items ?? [];
   const missingItems = sources.missing_information?.items ?? [];
+  const openQuestionItems = sources.open_questions?.items ?? [];
+  const followUpItems = sources["follow-up-links"]?.items ?? sources.follow_up_links?.items ?? [];
   const currentItems = [
     ...conflictItems.map((item) => ({ item, kind: "Conflict" })),
     ...uncertaintyItems.filter((item) => item.status !== "resolved").map((item) => ({ item, kind: "Needs clarification" })),
     ...missingItems.filter((item) => item.status !== "resolved" && item.status !== "completed").map((item) => ({ item, kind: "Information missing" })),
+    ...openQuestionItems.filter((item) => item.status !== "resolved" && item.status !== "completed").map((item) => ({ item, kind: "Open question" })),
+    ...followUpItems.filter((item) => item.status !== "resolved" && item.status !== "completed").map((item) => ({ item, kind: "Follow-up" })),
     ...eventItems.filter((item) => item.status !== "resolved" && item.status !== "completed").slice(0, 4).map((item) => ({ item, kind: "Care event" })),
     ...factItems.filter((item) => !item.superseded_by_fact_id).slice(0, 3).map((item) => ({ item, kind: "Recorded fact" })),
     ...assertionItems.filter((item) => item.assertion_status !== "retracted" && item.assertion_status !== "superseded").slice(0, 3).map((item) => ({ item, kind: "Reported information" })),
