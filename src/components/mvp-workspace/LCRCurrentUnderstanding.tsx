@@ -95,6 +95,7 @@ type PersistedChange = {
   significance_verdict?: string | null;
   attention_candidate: boolean;
   follow_up_candidate: boolean;
+  confirmation_status?: string;
   created_at: string;
 };
 
@@ -154,6 +155,9 @@ export function LCRCurrentUnderstanding() {
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
   const [changeEvidence, setChangeEvidence] = useState<Record<string, { evidence: ChangeEvidence[]; error?: string }>>({});
   const [evidenceLoadingId, setEvidenceLoadingId] = useState<string | null>(null);
+  const [confirmationReason, setConfirmationReason] = useState<Record<string, string>>({});
+  const [confirmationError, setConfirmationError] = useState<Record<string, string>>({});
+  const [confirmationLoadingId, setConfirmationLoadingId] = useState<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -219,6 +223,42 @@ export function LCRCurrentUnderstanding() {
       setRefreshing(false);
     }
   }, []);
+
+  const transitionConfirmation = useCallback(async (
+    change: PersistedChange,
+    status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive",
+  ) => {
+    setConfirmationLoadingId(change.id);
+    setConfirmationError((previous) => ({ ...previous, [change.id]: "" }));
+    try {
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || session.person.id !== change.person_id) {
+        throw new Error("The selected change does not belong to the active care-record session.");
+      }
+      const reason = (confirmationReason[change.id] || "").trim();
+      if ((status === "rejected" || status === "inconclusive") && !reason) {
+        throw new Error("Enter a reason before rejecting this change or marking it inconclusive.");
+      }
+      await postJSON(
+        `/change/changes/${encodeURIComponent(session.person.id)}/${encodeURIComponent(change.id)}/confirmation`,
+        { status, reason: reason || null, evidence_ids: change.evidence_ids },
+      );
+      const refreshed = await getJSON(
+        `/change/changes/${encodeURIComponent(session.person.id)}`
+      ) as PersistedChange[];
+      if (!Array.isArray(refreshed) || refreshed.some((item) => item.person_id !== session.person.id)) {
+        throw new Error("The refreshed change history did not match the active care-record session.");
+      }
+      setChanges(refreshed);
+    } catch (cause) {
+      setConfirmationError((previous) => ({
+        ...previous,
+        [change.id]: cause instanceof Error ? cause.message : "Confirmation could not be saved.",
+      }));
+    } finally {
+      setConfirmationLoadingId(null);
+    }
+  }, [confirmationReason]);
 
   const loadChangeEvidence = useCallback(async (change: PersistedChange) => {
     if (expandedChangeId === change.id) {
@@ -311,6 +351,34 @@ export function LCRCurrentUnderstanding() {
                 <p className="lcr-entry-status">
                   Previous: {change.previous_state ?? "Not recorded"} · Current: {change.current_state ?? "Not recorded"}
                 </p>
+                <p className="lcr-entry-status">
+                  Confirmation: {(change.confirmation_status || "detected").replaceAll("_", " ")}
+                </p>
+                <label className="lcr-evidence-reason">
+                  Review note
+                  <textarea
+                    value={confirmationReason[change.id] || ""}
+                    onChange={(event) => setConfirmationReason((previous) => ({ ...previous, [change.id]: event.target.value }))}
+                    rows={2}
+                    maxLength={2000}
+                    placeholder="Add context or explain why this assessment is incorrect or uncertain."
+                  />
+                </label>
+                {confirmationError[change.id] && <p role="alert">{confirmationError[change.id]}</p>}
+                <div className="lcr-entry-actions">
+                  {(["detected", "awaiting_confirmation"].includes(change.confirmation_status || "detected")) ? (
+                    <>
+                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "confirmed")}>Confirm</button>
+                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "inconclusive")}>Mark inconclusive</button>
+                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "rejected")}>Reject assessment</button>
+                      {change.confirmation_status !== "awaiting_confirmation" && (
+                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Request confirmation</button>
+                      )}
+                    </>
+                  ) : (
+                    <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Reopen review</button>
+                  )}
+                </div>
                 <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
                 <small>Evidence references: {change.evidence_ids.length > 0 ? change.evidence_ids.join(", ") : "None linked"}</small>
                 <button
