@@ -40,6 +40,7 @@ interface HandoffDraft {
 }
 
 interface Message {
+  id?: string
   role: 'user' | 'assistant'
   text: string
   guard_verdict?: string | null
@@ -95,6 +96,7 @@ const STARTER_PROMPTS = [
 
 export default function Companion() {
   const pendingTurnRef = useRef<{ id: string; text: string } | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const historyReadyRef = useRef(false)
   const historyPromiseRef = useRef<Promise<void> | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -184,6 +186,7 @@ export default function Companion() {
               throw new Error('The saved conversation did not match this care record.')
             }
             setSessionId(storedSessionId)
+            sessionIdRef.current = storedSessionId
             setMessages(history.messages
               .filter((item: any) => (item?.role === 'user' || item?.role === 'assistant') && typeof item?.text === 'string')
               .map((item: any) => ({
@@ -213,9 +216,11 @@ export default function Companion() {
             if (/API 404|API 403|Conversation not found/i.test(message)) {
               try { window.sessionStorage.removeItem(sessionKey) } catch {}
               setSessionId(null)
+              sessionIdRef.current = null
             } else {
               // Keep the session ID; a later successful message can restore the server transcript.
               setSessionId(storedSessionId)
+              sessionIdRef.current = storedSessionId
             }
           }
         }
@@ -253,16 +258,17 @@ export default function Companion() {
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
-        session_id: sessionId,
+        session_id: sessionIdRef.current ?? sessionId,
         client_turn_id: turn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
-      const resolvedSessionId = typeof response.session_id === 'string' ? response.session_id : sessionId
+      const resolvedSessionId = typeof response.session_id === 'string' ? response.session_id : (sessionIdRef.current ?? sessionId)
       if (resolvedSessionId) {
         setSessionId(resolvedSessionId)
+        sessionIdRef.current = resolvedSessionId
         try { window.sessionStorage.setItem(companionSessionKey(session.person.id), resolvedSessionId) } catch {}
       }
       try { window.sessionStorage.removeItem(pendingKey) } catch {}
@@ -374,6 +380,7 @@ export default function Companion() {
     setMessages([])
     setInput('')
     setSessionId(null)
+    sessionIdRef.current = null
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
