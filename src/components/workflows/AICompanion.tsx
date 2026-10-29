@@ -63,12 +63,20 @@ interface HandoffDraft {
 }
 
 function readCompanionStorage(key: string): string | null {
-  try { return window.localStorage.getItem(key) } catch { return null }
+  try {
+    const localValue = window.localStorage.getItem(key)
+    if (localValue !== null) return localValue
+  } catch { /* fall back to tab-scoped storage */ }
+  try { return window.sessionStorage.getItem(key) } catch { return null }
 }
 
 function writeCompanionStorage(key: string, value: string): boolean {
   try {
     window.localStorage.setItem(key, value)
+    return true
+  } catch { /* fall back to tab-scoped storage */ }
+  try {
+    window.sessionStorage.setItem(key, value)
     return true
   } catch {
     return false
@@ -77,6 +85,7 @@ function writeCompanionStorage(key: string, value: string): boolean {
 
 function clearCompanionStorage(key: string): void {
   try { window.localStorage.removeItem(key) } catch { /* storage may be disabled */ }
+  try { window.sessionStorage.removeItem(key) } catch { /* storage may be disabled */ }
 }
 
 interface Message {
@@ -252,10 +261,15 @@ export default function Companion() {
     const pending = pendingTurnRef.current
     const clientTurnId = pending?.text === submittedText ? pending.id : crypto.randomUUID()
     pendingTurnRef.current = { text: submittedText, id: clientTurnId }
-    writeCompanionStorage(
+    const pendingSaved = writeCompanionStorage(
       'solenos_companion_pending_turn',
       JSON.stringify({ text: submittedText, id: clientTurnId }),
     )
+    if (!pendingSaved) {
+      setLoading(false)
+      setRequestError('This browser cannot retain a safe retry key. Enable site storage before sending a message.')
+      return
+    }
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
