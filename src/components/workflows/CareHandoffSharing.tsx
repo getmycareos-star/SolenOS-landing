@@ -27,6 +27,12 @@ type DraftPayload = {
   template_sections?: Array<{ title: string; coverage_status: string; required_fields: string[]; coverage_note: string }>;
   source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>;
   source_references: Array<{ source_id: string; source_table: string }>;
+  evidence_lineage?: {
+    status: string;
+    evidence_ids_considered: string[];
+    groups: Array<{ lineage_id: string; evidence_ids: string[]; origin_group_keys: string[]; source_independence_status: string; interpretation_limit: string }>;
+    interpretation_limit: string;
+  };
   limitations: Array<{ source: string; status: string; reason?: string }>;
   warning: string;
 };
@@ -310,6 +316,16 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
         <section style={panel} aria-labelledby="family-share-heading">
           <h4 id="family-share-heading" style={{ margin: "0 0 8px", fontSize: 15 }}>Review and share family handoff</h4>
           <p style={{ marginTop: 0, fontSize: 12, lineHeight: 1.55 }}>Only linked, eligible caregiver sessions are listed. Sharing requires explicit review, expires automatically, can be revoked, and does not update the LCR.</p>
+          {draft.evidence_lineage && <section style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="Handoff evidence lineage">
+            <strong style={{ fontSize: 12 }}>Evidence source lineage · {draft.evidence_lineage.status.replaceAll("_", " ")}</strong>
+            {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map(group => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: 11 }}>
+              <b>{group.source_independence_status.replaceAll("_", " ")}</b>
+              <p style={{ margin: "3px 0" }}>Evidence IDs: {group.evidence_ids.join(", ")}</p>
+              {group.origin_group_keys.length > 0 && <p style={{ margin: "3px 0" }}>Origin groups: {group.origin_group_keys.join(", ")}</p>}
+              <p style={{ margin: "3px 0", color: "#667267" }}>{group.interpretation_limit}</p>
+            </div>) : <p style={{ fontSize: 11, marginBottom: 0 }}>No explicit shared-source group was returned for the retrieved evidence. This does not establish that sources are independent.</p>}
+            <p style={{ fontSize: 11, marginBottom: 0, color: "#667267" }}>{draft.evidence_lineage.interpretation_limit}</p>
+          </section>}
           {directoryError && <p role="alert">The recipient list could not be verified. Refresh before sharing.</p>}
           {!directoryError && !loading && eligibleRecipients.length === 0 && <p>No linked caregiver is currently eligible to receive this handoff. SolenOS will not send it to an unlinked recipient.</p>}
           {eligibleRecipients.map(recipient => (
