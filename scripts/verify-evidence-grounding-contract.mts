@@ -76,5 +76,5 @@ assert(panel.includes("unknown/missing"), "observation UI must not fabricate val
 console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
 
 assert(panel.includes("supersedes_observation_id"), "observation corrections must link to the prior version");
-assert(panel.includes("correction rationale"), "observation correction UI must require a rationale");
+assert(panel.includes("Correction rationale"), "observation correction UI must require a rationale");
 console.log("PASS: observation correction history must be versioned and justified.");
