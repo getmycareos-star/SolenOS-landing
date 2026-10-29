@@ -191,7 +191,7 @@ export default function Companion() {
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    if (!submittedText || loading) return
+    if (!submittedText || loading || restoringHistory) return
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
@@ -279,7 +279,7 @@ export default function Companion() {
   }
 
   const startNewSession = () => {
-    if (loading) return
+    if (loading || restoringHistory) return
     // A retry key belongs to one logical turn/session. An explicit new
     // conversation must never reuse a key whose earlier response was lost.
     pendingTurnRef.current = null
@@ -300,7 +300,7 @@ export default function Companion() {
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
           <div><div className="companion-eyebrow">SOLENOS · CARE SUPPORT</div><h2>AI Companion</h2></div>
         </div>
-        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
+        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || restoringHistory}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
       </header>
 
       <section className="companion-purpose">
