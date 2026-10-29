@@ -72,6 +72,7 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
   const [freshnessResult, setFreshnessResult] = useState('not_assessed')
   const [completenessResult, setCompletenessResult] = useState('not_assessed')
   const [reviews, setReviews] = useState<Review[]>([])
+  const [historyUnavailable, setHistoryUnavailable] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -87,12 +88,14 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
     if (!selectedId || !personId) { setReviews([]); return }
     setLoading(true)
     setError('')
+    setHistoryUnavailable(false)
     try {
       const result = await getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/reviews`)
       if (!Array.isArray(result)) throw new Error('Invalid review response')
       setReviews(result as Review[])
     } catch {
       setReviews([])
+      setHistoryUnavailable(true)
       setError('Saved evidence reviews could not be loaded. Check the connection and retry; no review history is assumed.')
     } finally {
       setLoading(false)
@@ -198,7 +201,7 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
       {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{error}</p>}
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <h4 style={{ fontSize: 13, marginBottom: 5 }}>Persisted review history</h4>
-      {reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No saved review records were returned.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
+      {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Review history is unavailable. An empty list cannot be inferred from a failed request.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No saved review records were returned.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
         <strong>{labels[review.review_type] || review.review_type}: {review.outcome.replace(/_/g, ' ')}</strong>
         <div>{new Date(review.created_at).toLocaleString()} · policy {review.policy_version}</div>
         <p>{review.rationale}</p>
