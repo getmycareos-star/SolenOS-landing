@@ -105,7 +105,7 @@ try {
       await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
     } else if (message.startsWith("Select an existing source record")) {
       await dialog.accept(sourceEvidenceId);
-    } else if (message.startsWith("Record the actual action taken")) {
+    } else if (message.startsWith("Record the action actually taken")) {
       await dialog.accept("CI-only action: asked the care team to confirm the conflicting reports.");
     } else if (message.startsWith("Record the outcome that was reported")) {
       await dialog.accept("CI-only reported outcome: the care team confirmed the reports refer to different dates.");
