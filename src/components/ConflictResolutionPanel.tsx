@@ -149,8 +149,8 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       await patchJSON(`/uncertainty/contradictions/${encodeURIComponent(selected.id)}`, {
         resolution_status: status,
         resolution_notes: rationale.trim(),
-        resolution_scope: scope.trim() || null,
-        unresolved_remainder: unresolvedRemainder.trim() || null,
+        resolution_scope: status === "partially_resolved" ? scope.trim() || null : null,
+        unresolved_remainder: status === "partially_resolved" ? unresolvedRemainder.trim() || null : null,
         evidence_ids: evidenceIds,
       });
       setNotice("Resolution transition saved with its rationale and evidence references. Only the stated scope is resolved; related details are not silently resolved.");
