@@ -155,3 +155,18 @@ const evidenceReviewPanel = fs.readFileSync(path.join(process.cwd(), "src/compon
 assert(evidenceReviewPanel.includes("/care-continuity/state-reconstruction/as-of"), "evidence UI must call the authenticated historical care-state reconstruction endpoint");
 assert(evidenceReviewPanel.includes("partial_revision_history"), "historical care-state UI must preserve partial-coverage semantics");
 assert(evidenceReviewPanel.includes("No complete historical record is assumed"), "historical reconstruction failures must not imply absence of care records");
+
+
+const freshnessPanel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+for (const route of [
+  "/care-continuity/evidence-freshness/policies",
+  "/care-continuity/evidence-freshness/assessments",
+  "/care-continuity/evidence-freshness/assessments/",
+]) {
+  assert(freshnessPanel.includes(route), `LCR freshness UI must connect to persisted route ${route}`);
+}
+assert(freshnessPanel.includes("Save new policy version"), "freshness policy UI must create immutable policy versions");
+assert(freshnessPanel.includes("No universal freshness threshold is applied"), "freshness UI must reject an invented universal threshold");
+assert(freshnessPanel.includes("A failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
+assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
+console.log("PASS: domain-specific freshness policy creation, assessment, and history are connected to the LCR with explicit limits.");
