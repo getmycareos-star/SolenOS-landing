@@ -1,19 +1,23 @@
 /**
- * Evidence Preservation — every conclusion must reconstruct from CareEvents.
- * Never "because AI said so."
+ * Evidence Preservation — evidence linkage is not the same as verified truth.
+ * Numeric confidence and recency values are withheld until validated methods exist.
  */
 
-export type ObservationType = "direct" | "inferred" | "mixed";
+export type ObservationType = "direct" | "inferred" | "mixed" | "reported" | "unclassified";
 
 export type EvidenceObject = {
   event_ids: string[];
   timeline_reference: string[];
   observation_type: ObservationType;
-  confidence_score: number;
-  source_reliability_score: number;
-  recency_weight: number;
+  /** Null unless a validated, task-specific calibration is configured. */
+  confidence_score: number | null;
+  /** Null unless a validated, claim-specific source assessment exists. */
+  source_reliability_score: number | null;
+  /** Null until a domain-specific freshness policy is configured. */
+  recency_weight: number | null;
+  linkage_status: "event_references_present" | "no_linked_event_references";
   contradiction_links: string[];
-  /** Human-readable chain — not a black box. */
+  /** Human-readable references; labels are not substitutes for source passages. */
   evidence_chain: string[];
   reasoning_summary: string;
   what_would_increase_confidence: string[];
@@ -28,6 +32,7 @@ export type EvidencedConclusion = {
     evidence: string[];
     reasoning: string;
     confidence: string;
+    grounding_status: "event_references_present" | "no_linked_event_references";
   };
 };
 
@@ -35,32 +40,39 @@ export function buildEvidenceObject(input: {
   event_ids: string[];
   timeline_labels: string[];
   observation_type?: ObservationType;
-  confidence_score: number;
-  source_reliability_score: number;
-  age_days?: number;
+  /** Deprecated compatibility input. It is deliberately not emitted as calibrated confidence. */
+  confidence_score?: number | null;
+  /** Deprecated compatibility input. It is deliberately not emitted as source reliability. */
+  source_reliability_score?: number | null;
+  /** Deprecated compatibility input. No universal recency decay is applied. */
+  age_days?: number | null;
   contradiction_links?: string[];
   reasoning_summary: string;
   what_would_increase_confidence?: string[];
 }): EvidenceObject {
-  const age = Math.max(0, input.age_days ?? 0);
-  const recency_weight = Math.max(0.2, Math.pow(0.5, age / 14));
+  const eventIds = [...new Set(input.event_ids.filter(
+    (id) => typeof id === "string" && id.trim().length > 0,
+  ))];
+  const timelineLabels = input.timeline_labels.filter(
+    (label) => typeof label === "string" && label.trim().length > 0,
+  );
 
   return {
-    event_ids: input.event_ids,
-    timeline_reference: input.timeline_labels,
-    observation_type: input.observation_type ?? "mixed",
-    confidence_score: Math.min(1, Math.max(0, input.confidence_score)),
-    source_reliability_score: Math.min(1, Math.max(0, input.source_reliability_score)),
-    recency_weight,
-    contradiction_links: input.contradiction_links ?? [],
-    evidence_chain: input.timeline_labels.map(
-      (label, i) => `Step ${i + 1}: ${label}`,
-    ),
+    event_ids: eventIds,
+    timeline_reference: timelineLabels,
+    observation_type: input.observation_type ?? "unclassified",
+    // Caller-supplied numbers are not evidence that a scoring method is calibrated.
+    confidence_score: null,
+    source_reliability_score: null,
+    recency_weight: null,
+    linkage_status: eventIds.length > 0 ? "event_references_present" : "no_linked_event_references",
+    contradiction_links: [...new Set(input.contradiction_links ?? [])],
+    evidence_chain: timelineLabels.map((label, i) => `Reference ${i + 1}: ${label}`),
     reasoning_summary: input.reasoning_summary,
     what_would_increase_confidence:
       input.what_would_increase_confidence ?? [
-        "Resolve critical Explicit Unknowns",
-        "Confirm with higher-reliability source",
+        "Link the original source record and identify who reported or observed it.",
+        "Assess the claim against a documented, task-specific evidence policy.",
       ],
   };
 }
@@ -70,10 +82,6 @@ export function buildEvidencedConclusion(input: {
   implied_action?: string | null;
   evidence: EvidenceObject;
 }): EvidencedConclusion {
-  const conf = input.evidence.confidence_score;
-  const confLabel =
-    conf >= 0.8 ? "high" : conf >= 0.55 ? "moderate" : conf >= 0.35 ? "limited" : "low";
-
   return {
     recommendation: input.recommendation,
     implied_action: input.implied_action ?? null,
@@ -82,13 +90,14 @@ export function buildEvidencedConclusion(input: {
       recommendation: input.recommendation,
       evidence: input.evidence.evidence_chain,
       reasoning: input.evidence.reasoning_summary,
-      confidence: `${conf.toFixed(2)} (${confLabel}) — based on these events, not AI decree`,
+      confidence: "Not calibrated: no validated task-specific confidence method is configured.",
+      grounding_status: input.evidence.linkage_status,
     },
   };
 }
 
 // Export builder functions
-export { 
+export {
   buildEvidenceForPriority,
   buildEvidenceForUncertainty,
   collectEvidenceFromInterpretation,
