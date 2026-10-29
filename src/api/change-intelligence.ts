@@ -143,10 +143,29 @@ export type ChangeAssertionEvidence = {
   evidence_ids: string[];
 };
 
+export type ChangeObservationEvidence = {
+  id: string;
+  evidence_id: string;
+  observation_kind: string;
+  epistemic_status: string;
+  subject_label: string;
+  attribute: string;
+  value_text: string | null;
+  normalized_value: string | null;
+  units: string | null;
+  observed_at: string | null;
+  occurred_at: string | null;
+  source_passage: string;
+  negated: boolean | null;
+  hedge_marker: string | null;
+  ambiguity_note: string | null;
+};
+
 export type ChangeDetail = {
   change: PersistedChange;
   evidence: ChangeEvidence[];
   assertions: ChangeAssertionEvidence[];
+  observations: ChangeObservationEvidence[];
   confirmation_history: Array<{
     id: string;
     previous_status: string;
