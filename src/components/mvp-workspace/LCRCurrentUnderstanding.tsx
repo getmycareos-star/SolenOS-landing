@@ -56,6 +56,14 @@ type SituationAssessment = {
   };
   domains: Record<string, { source_names: string[]; record_count: number; evidence_state: string }>;
   capabilities: Record<string, { source_names: string[]; record_count: number; evidence_state: string; unavailable_sources: string[] }>;
+  assessment_quality?: {
+    status: string;
+    dimensions: Array<{ dimension: string; status: string; basis: Record<string, unknown> }>;
+    blocking_limitations: string[];
+    high_impact_conclusion_gate: string;
+    numeric_confidence: string;
+    interpretation_policy: string;
+  };
   priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   situation_trajectory?: {
     entries: Array<{
@@ -692,6 +700,29 @@ export function LCRCurrentUnderstanding() {
           <>
             <p>{assessment.coverage.records_examined} persisted records examined across {assessment.coverage.sources_examined} sources; {assessment.coverage.distinct_linked_evidence_ids} distinct linked evidence references.</p>
             <p>Coverage: {assessment.coverage.is_complete ? "complete for the examined schema and bounds" : "partial or bounded"} · Confidence: {assessment.confidence_assessment.overall.replaceAll("_", " ")}.</p>
+            {assessment.assessment_quality && (
+              <section aria-label="Assessment quality and limitations">
+                <h4>Assessment quality: {assessment.assessment_quality.status.replaceAll("_", " ")}</h4>
+                <p>{assessment.assessment_quality.interpretation_policy}</p>
+                <p>{assessment.assessment_quality.numeric_confidence}</p>
+                <ul>
+                  {assessment.assessment_quality.dimensions.map((dimension) => (
+                    <li key={dimension.dimension}>
+                      <strong>{dimension.dimension.replaceAll("_", " ")}</strong>: {dimension.status.replaceAll("_", " ")}
+                    </li>
+                  ))}
+                </ul>
+                {assessment.assessment_quality.blocking_limitations.length > 0 && (
+                  <div>
+                    <strong>Limitations that prevent a complete assessment</strong>
+                    <ul>{assessment.assessment_quality.blocking_limitations.map((limitation) => (
+                      <li key={limitation}>{limitation.replaceAll("_", " ")}</li>
+                    ))}</ul>
+                  </div>
+                )}
+                <p>{assessment.assessment_quality.high_impact_conclusion_gate.replaceAll("_", " ")}</p>
+              </section>
+            )}
             <details>
               <summary>Capability evidence coverage ({Object.keys(assessment.capabilities || {}).length})</summary>
               <ul>{Object.entries(assessment.capabilities || {}).map(([name, capability]) => (
