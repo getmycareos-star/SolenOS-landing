@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { getJSON, postJSON } from '../api/client'
+import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
 
 type EvidenceItem = { id: string; type: string; source_text: string; uploaded_at: string }
 type ReviewType = 'quality' | 'reliability' | 'source_confidence' | 'freshness' | 'completeness'
@@ -34,7 +34,34 @@ const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
 
-export default function EvidenceReviewPanel({ personId, evidenceItems }: { personId: string; evidenceItems: EvidenceItem[] }) {
+export default function EvidenceReviewPanel() {
+  const [personId, setPersonId] = useState('')
+  const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([])
+  const [evidenceLoading, setEvidenceLoading] = useState(true)
+  const [evidenceError, setEvidenceError] = useState('')
+
+  const loadEvidence = useCallback(async () => {
+    setEvidenceLoading(true)
+    setEvidenceError('')
+    try {
+      const session = await ensureAnonymousSession()
+      if (!session.person?.id) throw new Error('Missing scoped person identity')
+      const result = await getJSON('/care-continuity/evidence?limit=100')
+      if (!Array.isArray(result) || result.some((item) => item?.person_id !== session.person.id || typeof item?.id !== 'string' || typeof item?.source_text !== 'string')) {
+        throw new Error('Evidence response is not valid for this care record')
+      }
+      setPersonId(session.person.id)
+      setEvidenceItems(result as EvidenceItem[])
+    } catch {
+      setPersonId('')
+      setEvidenceItems([])
+      setEvidenceError('Evidence records could not be loaded from the care record. No evidence list is assumed; retry when the connection is available.')
+    } finally {
+      setEvidenceLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { void loadEvidence() }, [loadEvidence])
   const [selectedId, setSelectedId] = useState('')
   const [reviewType, setReviewType] = useState<ReviewType>('reliability')
   const [outcome, setOutcome] = useState('unverified')
@@ -111,11 +138,13 @@ export default function EvidenceReviewPanel({ personId, evidenceItems }: { perso
     }
   }
 
-  if (!personId) return null
+  if (!personId && !evidenceLoading && !evidenceError) return null
   return <section style={panel} aria-label="Persisted evidence assessments">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence quality and source review</h3>
+    {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
+    {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading persisted evidence…</p>}
     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Assessments are versioned records with a rationale. They do not assign numeric confidence or turn a caregiver report into independently verified evidence.</p>
-    {evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No evidence records are available to review.</p> : <>
+    {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No evidence records were returned for this care record.</p> : evidenceItems.length > 0 ? <>
       <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Evidence record
         <select style={field} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
           {evidenceItems.map(item => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}
