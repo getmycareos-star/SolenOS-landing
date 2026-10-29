@@ -161,7 +161,7 @@ console.log("✓ persisted evidence review is reachable from current-care unders
 
 const evidenceReviewPanel = path.join(root, "src/components/EvidenceReviewPanel.tsx");
 const evidenceReviewSource = fs.readFileSync(evidenceReviewPanel, "utf8");
-for (const fieldLabel of ["Original author", "Reported by", "Collected by", "Event time", "Uploaded at", "Ingested at", "Stored source-text integrity hash"]) {
+for (const fieldLabel of ["Source category", "Evidence kind", "Epistemic status", "Original author", "Reported by", "Collected by", "Event time", "Uploaded at", "Ingested at", "Stored source-text integrity hash"]) {
   assert(evidenceReviewSource.includes(fieldLabel), `evidence review exposes ${fieldLabel}`);
 }
 assert(evidenceReviewSource.includes("does not authenticate the original author"), "hash limitations are explicit");
