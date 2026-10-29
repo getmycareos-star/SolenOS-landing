@@ -50,7 +50,7 @@ type SituationAssessment = {
     situation_trajectory?: { entries?: SituationTrajectoryEntry[]; count?: number; has_more?: boolean; causal_inference?: string };
     observation_coverage?: { items?: Array<{ id: string; subject_type: string; window_start: string; window_end: string; coverage_status: string; rationale: string }>; count?: number; has_more?: boolean; status?: string; absence_rule?: string };
     baseline_assessment?: { status?: string; count?: number; limitation?: string };
-    open_loops?: { items?: Array<{ id: string; title: string; loop_type: string; recorded_status: string }>; count?: number; has_more?: boolean };
+    open_loops?: { items?: Array<{ id: string; title: string; loop_type: string; recorded_status: string; description?: string; owner?: string | null; due_at?: string | null }>; count?: number; has_more?: boolean };
     confidence_assessment?: { overall?: string; limitations?: string[] };
     coverage?: { is_complete?: boolean; records_examined?: number };
   } | null;
@@ -209,6 +209,16 @@ export function PersistedCareOrientation() {
             {" "}Confidence: {situationAssessment.assessment.confidence_assessment?.overall || "not assessed"}.
           </p>
           <p>What remains unresolved: {situationAssessment.assessment.open_loops?.count ?? 0} open loop(s).</p>
+          {(situationAssessment.assessment.open_loops?.items ?? []).slice(0, 5).map((loop) => (
+            <div key={loop.id} className="persisted-care-orientation-latest">
+              <strong>{loop.title || loop.loop_type.replace(/_/g, " ")}</strong>
+              <p>{loop.description || "No further description was recorded."}</p>
+              <small>Status: {loop.recorded_status.replace(/_/g, " ")}</small>
+              {loop.owner && <small>Owner: {loop.owner}</small>}
+              {loop.due_at && <small>Due: {formatDate(loop.due_at)}</small>}
+            </div>
+          ))}
+          {situationAssessment.assessment.open_loops?.has_more && <p>Additional unresolved items are available in the full LCR view.</p>}
           <p>Observation coverage: {situationAssessment.assessment.observation_coverage?.count ?? 0} recorded interval(s); status: {situationAssessment.assessment.observation_coverage?.status || "unknown"}.</p>
           <small>{situationAssessment.assessment.observation_coverage?.absence_rule || "No coverage record means unknown, not no events."}</small>
           <p>Personal baseline: {situationAssessment.assessment.baseline_assessment?.status?.replace(/_/g, " ") || "not established"}.</p>
