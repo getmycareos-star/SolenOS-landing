@@ -58,6 +58,7 @@ for (const status of [
 }
 assert(claimPanel.includes("/assessments"), "claim assessment UI must persist and retrieve assessment history");
 assert(claimPanel.includes("Exact source passage"), "claim assessment UI must require a source passage workflow");
+assert(claimPanel.includes("superseded_by_claim_id"), "superseded claims must record a specific replacement claim");
 assert(claimPanel.includes("failed request is not an empty history"), "failed history reads must not be presented as empty history");
 console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
 
