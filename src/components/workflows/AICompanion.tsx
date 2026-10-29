@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -107,6 +107,7 @@ export default function Companion() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [restoringHistory, setRestoringHistory] = useState(true)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
@@ -120,8 +121,70 @@ export default function Companion() {
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Keep the same turn key when retrying an ambiguous network failure.
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
+
+  useEffect(() => {
+    let cancelled = false
+    const restoreConversation = async () => {
+      try {
+        const session = await ensureAnonymousSession()
+        const storageKey = `solenos-companion-session:${session.person.id}`
+        const pendingStorageKey = `solenos-companion-pending-turn:${session.person.id}`
+        const savedPending = window.sessionStorage.getItem(pendingStorageKey)
+        if (savedPending) {
+          try {
+            const pending = JSON.parse(savedPending)
+            if (typeof pending?.text === 'string' && typeof pending?.id === 'string' && pending.text.trim()) {
+              pendingTurnRef.current = { text: pending.text, id: pending.id }
+              setInput(pending.text)
+              setRequestError('A previous message may have been interrupted. Retry it to safely continue.')
+            } else {
+              window.sessionStorage.removeItem(pendingStorageKey)
+            }
+          } catch {
+            window.sessionStorage.removeItem(pendingStorageKey)
+          }
+        }
+        const savedSessionId = window.sessionStorage.getItem(storageKey)
+        if (!savedSessionId) return
+        const response = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as any
+        if (cancelled || response?.person_id !== session.person.id || !Array.isArray(response?.messages)) {
+          window.sessionStorage.removeItem(storageKey)
+          return
+        }
+        setSessionId(String(response.session_id))
+        setMessages(response.messages.map((row: any): Message => ({
+          role: row.role === 'assistant' ? 'assistant' : 'user',
+          text: String(row.text ?? ''),
+          guard_verdict: row.guard_verdict,
+          safety_note: row.safety_note,
+          evidence_ids: row.evidence_ids,
+          source_event_ids: row.source_event_ids,
+          source_evidence_ids: row.source_evidence_ids,
+          source_appointment_ids: row.source_appointment_ids,
+          ai_generated: row.ai_generated,
+          written_to_lcr: row.written_to_lcr,
+          persistence: row.persistence,
+          timestamp: row.created_at ? new Date(row.created_at) : new Date(),
+        })).filter((row: Message) => row.text.trim().length > 0))
+      } catch {
+        // Missing or expired history must not block a new conversation.
+      } finally {
+        if (!cancelled) setRestoringHistory(false)
+      }
+    }
+    void restoreConversation()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!sessionId || typeof window === 'undefined') return
+    const activePersonId = getPersonId()
+    if (activePersonId) window.sessionStorage.setItem(`solenos-companion-session:${activePersonId}`, sessionId)
+  }, [sessionId])
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -159,22 +222,33 @@ export default function Companion() {
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    if (!submittedText || loading) return
+    if (!submittedText || loading || restoringHistory) return
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    const pendingTurn = pendingTurnRef.current?.text === submittedText
+      ? pendingTurnRef.current
+      : { text: submittedText, id: crypto.randomUUID() }
+    pendingTurnRef.current = pendingTurn
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
     try {
       const session = await ensureAnonymousSession()
+      window.sessionStorage.setItem(
+        `solenos-companion-pending-turn:${session.person.id}`,
+        JSON.stringify(pendingTurn),
+      )
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: pendingTurn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurnRef.current?.id === pendingTurn.id) pendingTurnRef.current = null
+      window.sessionStorage.removeItem(`solenos-companion-pending-turn:${session.person.id}`)
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
@@ -239,9 +313,15 @@ export default function Companion() {
   }
 
   const startNewSession = () => {
-    if (loading) return
+    if (loading || restoringHistory) return
+    const activePersonId = getPersonId()
+    if (activePersonId) {
+      window.sessionStorage.removeItem(`solenos-companion-session:${activePersonId}`)
+      window.sessionStorage.removeItem(`solenos-companion-pending-turn:${activePersonId}`)
+    }
     setMessages([])
     setInput('')
+    pendingTurnRef.current = null
     setSessionId(null)
     setEmergency(false)
     setRequestError(null)
@@ -256,7 +336,7 @@ export default function Companion() {
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
           <div><div className="companion-eyebrow">SOLENOS · CARE SUPPORT</div><h2>AI Companion</h2></div>
         </div>
-        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
+        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || restoringHistory}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
       </header>
 
       <section className="companion-purpose">
@@ -423,7 +503,7 @@ export default function Companion() {
         <CareHandoffSharing draft={handoffDraft} audience={handoffAudience} purpose={handoffPurpose} />
       </section>
 
-      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || restoringHistory}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
