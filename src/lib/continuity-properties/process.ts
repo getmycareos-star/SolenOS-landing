@@ -154,14 +154,6 @@ export function processContinuityProperties(input: {
     recorded_inferences.push(inf);
   }
 
-  const avgReliability =
-    source_reliability_on_events.length > 0
-      ? source_reliability_on_events.reduce(
-          (s, x) => s + x.source_reliability.reliability_score,
-          0,
-        ) / source_reliability_on_events.length
-      : 0.5;
-
   const evidence_conclusion: EvidencedConclusion | null =
     input.what_changed?.[0] || input.what_is_happening
       ? buildEvidencedConclusion({
@@ -175,12 +167,7 @@ export function processContinuityProperties(input: {
             timeline_labels: input.all_events.slice(-6).map(
               (e) => `${e.extracted_type}: ${e.raw_input.slice(0, 80)}`,
             ),
-            observation_type: input.has_meaningful_diff ? "mixed" : "direct",
-            confidence_score: Math.max(
-              0.2,
-              1 - measurement.snapshot.caregiverCognitiveLoadScore.score / 100,
-            ),
-            source_reliability_score: avgReliability,
+            observation_type: "unclassified",
             reasoning_summary: input.has_meaningful_diff
               ? "Derived from CareEvent timeline + Diff against prior CareContext"
               : "Derived from accumulated CareEvents in the Living Care Record",
