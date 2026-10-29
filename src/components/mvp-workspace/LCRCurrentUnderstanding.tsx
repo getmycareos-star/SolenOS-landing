@@ -22,6 +22,7 @@ type CurrentCareItem = {
   evidence_ids: string[];
   source_span_start?: number | null;
   source_span_end?: number | null;
+  source_passage?: string | null;
   negated?: boolean | null;
   hedge_marker?: string | null;
   ambiguity_note?: string | null;
@@ -844,6 +845,12 @@ export function LCRCurrentUnderstanding() {
                           {" "}Extraction: {item.extraction_method || "not recorded"} ·
                           {" "}Negated: {item.negated == null ? "not specified" : item.negated ? "yes" : "no"}
                         </small>
+                        {item.source_passage && (
+                          <details>
+                            <summary>Inspect original source passage</summary>
+                            <blockquote>{item.source_passage}</blockquote>
+                          </details>
+                        )}
                         {item.hedge_marker && <small>Hedge / uncertainty marker: {item.hedge_marker}</small>}
                         {item.ambiguity_note && <small>Ambiguity: {item.ambiguity_note}</small>}
                       </div>
