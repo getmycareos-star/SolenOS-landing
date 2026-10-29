@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, RefreshCw, Plus, Clock3, AlertCircle, CheckCircle2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -75,6 +75,7 @@ export default function OpenLoopsPage() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const pendingActionKeys = useRef<Record<string, { signature: string; key: string }>>({});
 
   const refresh = useCallback(async () => {
     await ensureAnonymousSession();
@@ -182,13 +183,24 @@ export default function OpenLoopsPage() {
           ? window.prompt("What explicit criterion was used to verify the outcome?")
           : null;
         if (action === "verify" && !verificationRule?.trim()) return;
+        const signature = JSON.stringify({
+          action,
+          text: text.trim(),
+          verification_rule: verificationRule?.trim() || null,
+        });
+        const pendingKey = loop.id + ":" + action;
+        const pending = pendingActionKeys.current[pendingKey];
+        const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
+        pendingActionKeys.current[pendingKey] = { signature, key: idempotencyKey };
         const payload = {
           text: text.trim(),
           evidence: [{ kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() }],
           ...(verificationRule?.trim() ? { verification_rule: verificationRule.trim() } : {}),
+          idempotency_key: idempotencyKey,
         };
         const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
         await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/${endpoint}`, payload);
+        delete pendingActionKeys.current[pendingKey];
       }
       await refresh();
       setNotice(action === "reassess" ? "Reassessment completed by the backend." : "The backend accepted the update. Review the current status below.");
