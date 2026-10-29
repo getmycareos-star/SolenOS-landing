@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { ArrowLeft, RefreshCw, Plus, Clock3, AlertCircle, CheckCircle2 } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 
 type OpenLoop = {
@@ -129,23 +129,42 @@ export default function OpenLoopsPage() {
     }
   }
 
-  async function runAction(loop: OpenLoop, action: "reassess" | "response" | "outcome" | "verify" | "reconcile" | "close" | "cancel") {
+  async function runAction(loop: OpenLoop, action: "reassess" | "response" | "action" | "outcome" | "verify" | "reconcile" | "close" | "cancel" | "dependency" | "defer" | "review" | "reopen") {
     setBusyId(loop.id);
     setError("");
     setNotice("");
     try {
       if (action === "reassess") {
         await postJSON("/open-loops/reassess", {});
+      } else if (action === "dependency") {
+        const prerequisiteId = window.prompt("Enter the ID of the prerequisite open loop. The backend will verify that it belongs to this same care record and reject dependency cycles.");
+        if (!prerequisiteId?.trim()) return;
+        await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/dependencies`, {
+          prerequisite_id: prerequisiteId.trim(),
+          mandatory: true,
+        });
+      } else if (action === "defer" || action === "review") {
+        const reason = window.prompt(action === "defer"
+          ? "Why is this decision being deferred? Record the actual reason."
+          : "Why does this inactive item need human review? It will not be marked resolved.");
+        if (!reason?.trim()) return;
+        await patchJSON(`/open-loops/${encodeURIComponent(loop.id)}`, {
+          status: action === "defer" ? "deferred" : "review_abandoned",
+          reason: reason.trim(),
+          ...(action === "defer" ? { deferred_reason: reason.trim() } : {}),
+        });
       } else {
         const text = action === "response" ? window.prompt("Record the actual response received. Do not invent a response.") :
+          action === "action" ? window.prompt("Record the action actually taken. Do not imply an outcome unless it was observed.") :
           action === "outcome" ? window.prompt("Record the outcome that was reported.") :
           action === "verify" ? window.prompt("Describe the verification performed. Evidence must be supplied in the text record.") :
           action === "reconcile" ? window.prompt("Record the explicit reconciliation decision. Preserve disagreement if it remains unresolved.") :
           action === "close" ? window.prompt("Describe the evidence supporting closure. This will not bypass backend verification.") :
+          action === "reopen" ? window.prompt("Why is this closed or cancelled loop being reopened?") :
           window.prompt("Why are you cancelling further pursuit? Cancellation is not resolution.");
         if (!text?.trim()) return;
         const payload = { text: text.trim(), evidence: [{ kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() }] };
-        const endpoint = action === "response" ? "responses" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : "cancel";
+        const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
         await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/${endpoint}`, payload);
       }
       await refresh();
@@ -235,11 +254,17 @@ export default function OpenLoopsPage() {
               <p style={{ fontSize: 12, opacity: 0.75 }}>Outcome: {loop.outcome_status.replaceAll("_", " ")} · Updated {dateLabel(loop.updated_at)}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
                 <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reassess")}>Reassess</Button>
-                {(loop.loop_type === "awaiting_response" || loop.loop_type === "professional_input" || loop.loop_type === "follow_up") && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "response")}>Record response</Button>}
-                <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "outcome")}>Record outcome</Button>
-                <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "verify")}>Verify outcome</Button>
-                <>{loop.loop_type === "contradiction" && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reconcile")}>Record reconciliation</Button>}<Button variant="primary" disabled={busyId === loop.id || ["closed", "cancelled"].includes(loop.status)} onClick={() => void runAction(loop, "close")}>Attempt closure</Button></>
-                <Button variant="secondary" disabled={busyId === loop.id || ["closed", "cancelled"].includes(loop.status)} onClick={() => void runAction(loop, "cancel")}>Cancel pursuit</Button>
+                {(loop.loop_type === "awaiting_response" || loop.loop_type === "professional_input" || loop.loop_type === "follow_up") && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "response")}>Record response</Button>}
+                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "action")}>Record action</Button>}
+                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "outcome")}>Record outcome</Button>}
+                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "verify")}>Verify outcome</Button>}
+                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "dependency")}>Add prerequisite</Button>}
+                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "defer")}>Defer decision</Button>}
+                {["open", "waiting"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "review")}>Flag for review</Button>}
+                {loop.loop_type === "contradiction" && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reconcile")}>Record reconciliation</Button>}
+                {!["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "close")}>Attempt closure</Button>}
+                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "cancel")}>Cancel pursuit</Button>}
+                {["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reopen")}>Reopen with reason</Button>}
               </div>
             </article>)}
           </div>}
