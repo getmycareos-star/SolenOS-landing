@@ -40,6 +40,10 @@ export type PersistedChange = {
   comparison_window_start: string | null;
   comparison_window_end: string | null;
   confidence: number | null;
+  baseline_coverage_status?: CoverageStatus | null;
+  current_coverage_status?: CoverageStatus | null;
+  baseline_coverage_fraction?: number | null;
+  current_coverage_fraction?: number | null;
   evidence_ids: string[];
   explanation: string | null;
   confirmation_status: string;
