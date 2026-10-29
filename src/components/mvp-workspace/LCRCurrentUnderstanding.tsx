@@ -443,7 +443,7 @@ export function LCRCurrentUnderstanding() {
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-pattern-history-heading">Longitudinal patterns</h3>
-          <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} active patterns</span>
+          <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} active patterns in loaded history</span>
         </div>
         {patternsError && <p role="status">Persisted pattern history could not be loaded: {patternsError}</p>}
         {!patternsError && patterns.length === 0 && (
