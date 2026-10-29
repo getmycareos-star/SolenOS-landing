@@ -19,6 +19,7 @@ type Question = {
   question: string;
   subject_type: string;
   subject_id: string;
+  claim_id?: string | null;
   status: string;
   priority: string;
   evidence_ids?: string[] | null;
@@ -152,6 +153,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         question: questionText.trim(),
         subject_type: selectedClaim.subject_type,
         subject_id: selectedClaim.subject_id,
+        claim_id: selectedClaim.id,
         status: "open",
         priority,
         evidence_ids: evidenceIds,
@@ -256,6 +258,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
           </label>
           {selectedQuestion && <div style={{ fontSize: 12, border: "1px solid var(--border)", borderRadius: 7, padding: 10 }}>
             <p><strong>Subject:</strong> {selectedQuestion.subject_type} / {selectedQuestion.subject_id} · <strong>Priority:</strong> {selectedQuestion.priority}</p>
+            <p><strong>Linked claim:</strong> {selectedQuestion.claim_id || "Legacy question without a normalized claim link"}</p>
             <p>{selectedQuestion.question}</p>
             <p><strong>Evidence IDs:</strong> {selectedQuestion.evidence_ids?.length ? selectedQuestion.evidence_ids.join(", ") : "None linked"}</p>
             {selectedQuestion.answer && <p><strong>Current answer:</strong> {selectedQuestion.answer}<br />Source: {selectedQuestion.answer_provenance || "Not recorded"}<br />Answered by: {selectedQuestion.answered_by_caregiver_id || "Legacy answer without recorded actor"}</p>}
