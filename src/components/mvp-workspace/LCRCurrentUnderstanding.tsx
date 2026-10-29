@@ -270,6 +270,14 @@ type EvidenceIntegrity = {
   linked_evidence_count: number;
   distinct_nonempty_content_count: number;
   duplicate_content_candidates: Array<{ fingerprint: string; evidence_ids: string[]; interpretation: string }>;
+  near_duplicate_analysis?: {
+    status: string;
+    algorithm_version: string;
+    candidate_groups: Array<{ evidence_ids: string[]; candidate_basis: string; interpretation: string }>;
+    records_considered: number;
+    records_available: number;
+    interpretation_limit: string;
+  };
   independent_corroboration_status: string;
   interpretation_limit: string;
 };
@@ -943,8 +951,17 @@ export function LCRCurrentUnderstanding() {
                           <div>
                             <small>Linked evidence records: {evidenceIntegrityByFact[item.id].linked_evidence_count} · Corroboration: {evidenceIntegrityByFact[item.id].independent_corroboration_status.replaceAll("_", " ")}</small>
                             {evidenceIntegrityByFact[item.id].duplicate_content_candidates.map(group => (
-                              <p key={group.fingerprint}><small>Duplicate-content candidate: {group.evidence_ids.join(", ")}. {group.interpretation}</small></p>
+                              <p key={group.fingerprint}><small>Exact normalized-text duplicate candidate: {group.evidence_ids.join(", ")}. {group.interpretation}</small></p>
                             ))}
+                            {evidenceIntegrityByFact[item.id].near_duplicate_analysis && (
+                              <div>
+                                <small>Near-duplicate review ({evidenceIntegrityByFact[item.id].near_duplicate_analysis.status.replaceAll("_", " ")}; {evidenceIntegrityByFact[item.id].near_duplicate_analysis.records_considered}/{evidenceIntegrityByFact[item.id].near_duplicate_analysis.records_available} records considered; {evidenceIntegrityByFact[item.id].near_duplicate_analysis.algorithm_version}).</small>
+                                {evidenceIntegrityByFact[item.id].near_duplicate_analysis.candidate_groups.map(group => (
+                                  <p key={group.evidence_ids.join(":")}><small>Possible near-duplicate: {group.evidence_ids.join(", ")}. {group.interpretation}</small></p>
+                                ))}
+                                <small>{evidenceIntegrityByFact[item.id].near_duplicate_analysis.interpretation_limit}</small>
+                              </div>
+                            )}
                             <small>{evidenceIntegrityByFact[item.id].interpretation_limit}</small>
                           </div>
                         )}
