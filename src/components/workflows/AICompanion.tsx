@@ -132,10 +132,29 @@ export default function Companion() {
       try {
         const session = await ensureAnonymousSession()
         const storageKey = `solenos-companion-session:${session.person.id}`
+        const pendingStorageKey = `solenos-companion-pending-turn:${session.person.id}`
+        const savedPending = window.sessionStorage.getItem(pendingStorageKey)
+        if (savedPending) {
+          try {
+            const pending = JSON.parse(savedPending)
+            if (typeof pending?.text === 'string' && typeof pending?.id === 'string' && pending.text.trim()) {
+              pendingTurnRef.current = { text: pending.text, id: pending.id }
+              setInput(pending.text)
+              setRequestError('A previous message may have been interrupted. Retry it to safely continue.')
+            } else {
+              window.sessionStorage.removeItem(pendingStorageKey)
+            }
+          } catch {
+            window.sessionStorage.removeItem(pendingStorageKey)
+          }
+        }
         const savedSessionId = window.sessionStorage.getItem(storageKey)
         if (!savedSessionId) return
         const response = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as any
-        if (cancelled || response?.person_id !== session.person.id || !Array.isArray(response?.messages)) return
+        if (cancelled || response?.person_id !== session.person.id || !Array.isArray(response?.messages)) {
+          window.sessionStorage.removeItem(storageKey)
+          return
+        }
         setSessionId(String(response.session_id))
         setMessages(response.messages.map((row: any): Message => ({
           role: row.role === 'assistant' ? 'assistant' : 'user',
@@ -216,6 +235,10 @@ export default function Companion() {
 
     try {
       const session = await ensureAnonymousSession()
+      window.sessionStorage.setItem(
+        `solenos-companion-pending-turn:${session.person.id}`,
+        JSON.stringify(pendingTurn),
+      )
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
@@ -225,6 +248,7 @@ export default function Companion() {
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       if (pendingTurnRef.current?.id === pendingTurn.id) pendingTurnRef.current = null
+      window.sessionStorage.removeItem(`solenos-companion-pending-turn:${session.person.id}`)
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
@@ -291,7 +315,10 @@ export default function Companion() {
   const startNewSession = () => {
     if (loading || restoringHistory) return
     const activePersonId = getPersonId()
-    if (activePersonId) window.sessionStorage.removeItem(`solenos-companion-session:${activePersonId}`)
+    if (activePersonId) {
+      window.sessionStorage.removeItem(`solenos-companion-session:${activePersonId}`)
+      window.sessionStorage.removeItem(`solenos-companion-pending-turn:${activePersonId}`)
+    }
     setMessages([])
     setInput('')
     pendingTurnRef.current = null
