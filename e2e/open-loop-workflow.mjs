@@ -58,7 +58,7 @@ try {
   await conflict.getByRole("button", { name: "Record reconciliation" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "View audit history" }).click();
-  await conflict.getByText("reconciliation recorded", { exact: false }).waitFor({ timeout: 10_000 });
+  await conflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
   // Reload proves the UI rehydrates saved state from the API rather than only
   // displaying optimistic component state.
