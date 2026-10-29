@@ -82,6 +82,10 @@ try {
       await dialog.accept(sourceEvidenceId);
     } else if (message.startsWith("Record the explicit reconciliation decision")) {
       await dialog.accept("CI-only reconciliation: the reports concern different dates; neither report is discarded.");
+    } else if (message.startsWith("Describe the evidence supporting closure")) {
+      await dialog.accept("CI-only closure review after source-backed professional response.");
+    } else if (message.startsWith("Why is this closed or cancelled loop being reopened")) {
+      await dialog.accept("CI-only reopening check after the lifecycle round trip.");
     } else {
       await dialog.dismiss();
     }
@@ -115,6 +119,13 @@ try {
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await handoff.getByRole("button", { name: "View audit history" }).click();
   await handoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
+
+  await handoff.getByRole("button", { name: "Attempt closure" }).click();
+  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await handoff.getByText(/professional input · closed/i).waitFor({ timeout: 10_000 });
+  await handoff.getByRole("button", { name: "Reopen with reason" }).click();
+  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await handoff.getByText(/professional input · open/i).waitFor({ timeout: 10_000 });
 
   const conflictTitle = "CI E2E conflicting reports";
   await page.getByLabel("Type").selectOption("contradiction");
