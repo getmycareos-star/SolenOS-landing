@@ -252,6 +252,8 @@ export default function Companion() {
 
   const startNewSession = () => {
     if (loading) return
+    // A new conversation must never replay a failed turn from the old session.
+    pendingTurnRef.current = null
     setMessages([])
     setInput('')
     setSessionId(null)
