@@ -460,8 +460,8 @@ export default function Companion() {
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
-                    {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount > 0
-                      ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, and ' + freshnessCount + ' freshness assessments.'
+                    {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount + (msg.source_record_refs?.length ?? 0) > 0
+                      ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
                       : 'No matching care context was returned for this response.'} Conversation only; not added to the Living Care Record.</span></div>}
                     {!isUser && (msg.source_record_refs?.length ?? 0) > 0 && <details className="companion-provenance-details">
                       <summary>Inspect source record references ({msg.source_record_refs?.length ?? 0})</summary>
