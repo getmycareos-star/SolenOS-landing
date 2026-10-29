@@ -157,3 +157,9 @@ export async function getPersistedChangeDetail(changeId: string): Promise<Change
   const personId = encodeURIComponent(requirePersonId());
   return await getJSON(`/change/changes/${personId}/${encodeURIComponent(changeId)}`) as ChangeDetail;
 }
+
+/** Recompute persisted change/pattern assessments from the care record's actual stored events. */
+export async function reassessPersistedChangeIntelligence(): Promise<PersistedChange[]> {
+  const personId = encodeURIComponent(requirePersonId());
+  return await postJSON(`/change/changes/reassess?person_id=${personId}`, {}) as PersistedChange[];
+}
