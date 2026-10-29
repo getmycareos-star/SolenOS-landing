@@ -178,3 +178,7 @@ assert(companionPanel.includes("source_freshness_assessment_ids"), "Companion mu
 assert(companionPanel.includes("source_record_refs"), "Companion must carry typed source record references");
 assert(companionPanel.includes("Inspect source record references"), "Companion must let caregivers inspect source record references");
 assert(companionPanel.includes("freshness assessments"), "Companion must distinguish freshness assessments from evidence truth");
+const appointmentWorkspace = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
+assert(appointmentWorkspace.includes("Evidence freshness assessments"), "Appointment preparation must show freshness assessments");
+assert(appointmentWorkspace.includes("This is not proof that evidence is current"), "Appointment preparation must not treat absent freshness assessment as currentness");
+
