@@ -46,6 +46,23 @@ type SituationAssessment = {
   domains: Record<string, { source_names: string[]; record_count: number; evidence_state: string }>;
   capabilities: Record<string, { source_names: string[]; record_count: number; evidence_state: string; unavailable_sources: string[] }>;
   priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  open_loops?: {
+    items: Array<{
+      id: string;
+      source: string;
+      title: string;
+      status: string;
+      loop_type: string;
+      description?: string;
+      owner?: string | null;
+      due_at?: string | null;
+      recorded_status: string;
+      status_confidence: string;
+    }>;
+    count: number;
+    has_more: boolean;
+    notice: string;
+  };
   uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   confidence_assessment: { overall: string; limitations: string[] };
@@ -649,6 +666,24 @@ export function LCRCurrentUnderstanding() {
                 ) : <p>No prior persisted assessment exists to establish a comparison baseline.</p>}
               </div>
             )}
+            <div>
+              <strong>Open loops ({assessment.open_loops?.count ?? 0})</strong>
+              {!assessment.open_loops || assessment.open_loops.items.length === 0 ? (
+                <p>No unresolved items were returned from the available persisted sources. This does not prove that no follow-up is needed when sources are missing or bounded.</p>
+              ) : (
+                <ul>{assessment.open_loops.items.slice(0, 10).map((item) => (
+                  <li key={item.source + ":" + item.id}>
+                    <strong>{item.title}</strong> — {item.loop_type.replaceAll("_", " ")} · {item.recorded_status.replaceAll("_", " ")}
+                    {item.owner ? <span> · Owner: {item.owner}</span> : <span> · Owner not recorded</span>}
+                    {item.due_at ? <span> · Due: {formatWhen(item.due_at)}</span> : <span> · Due date not recorded</span>}
+                    {item.description ? <p>{item.description}</p> : null}
+                    <small>{item.status_confidence.replaceAll("_", " ")}</small>
+                  </li>
+                ))}</ul>
+              )}
+              {assessment.open_loops?.has_more && <p>Additional unresolved records exist beyond this bounded view.</p>}
+              {assessment.open_loops?.notice && <small>{assessment.open_loops.notice}</small>}
+            </div>
             {assessment.priorities.length > 0 && (
               <div>
                 <strong>Recorded items needing attention or follow-through</strong>
