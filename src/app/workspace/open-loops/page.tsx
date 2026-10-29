@@ -207,7 +207,12 @@ export default function OpenLoopsPage() {
             (item) => typeof item.id === "string" && typeof item.type === "string",
           );
           if (sources.length === 0) {
-            throw new Error("No source evidence is saved in this care record yet. Add the professional document or source record first, then record the response.");
+            const requiredAction = action === "verify"
+              ? "verify an outcome"
+              : action === "reconcile"
+                ? "reconcile conflicting accounts"
+                : "record professional input";
+            throw new Error("No source evidence is saved in this care record yet. Add the relevant source record before you " + requiredAction + ".");
           }
           const choices = sources.slice(0, 20).map((item, index) =>
             `${index + 1}. ${String(item.type)} — ${String(item.source_text ?? "Source text unavailable").slice(0, 110)} [ID: ${String(item.id)}]`,
