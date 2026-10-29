@@ -1,7 +1,25 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
 
-type EvidenceItem = { id: string; type: string; source_text: string; uploaded_at: string }
+type EvidenceItem = {
+  id: string
+  type: string
+  source_text: string
+  uploaded_at: string
+  uploaded_by_caregiver_id?: string | null
+  original_author?: string | null
+  reported_by_label?: string | null
+  reported_by_caregiver_id?: string | null
+  collected_by_caregiver_id?: string | null
+  collected_at?: string | null
+  occurred_at?: string | null
+  occurred_at_timezone?: string | null
+  origin_channel?: string | null
+  original_source_reference?: string | null
+  parent_evidence_id?: string | null
+  source_text_sha256?: string | null
+  ingested_at?: string | null
+}
 type ReviewType = 'quality' | 'reliability' | 'source_confidence' | 'freshness' | 'completeness'
 type Review = {
   id: string
@@ -153,7 +171,27 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
           {evidenceItems.map(item => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}
         </select>
       </label>
-      {selected && <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>}
+      {selected && <>
+        <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
+        <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Collected by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.collected_by_caregiver_id || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Event time</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Collected at</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded at</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Ingested at</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Origin channel</dt><dd style={{ margin: 0 }}>{selected.origin_channel || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Original source reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Parent evidence</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id || 'None recorded'}</dd></div>
+        </dl>
+        <details style={{ fontSize: 12, marginBottom: 12 }}>
+          <summary>Stored source-text integrity hash</summary>
+          <p style={{ overflowWrap: 'anywhere' }}>{selected.source_text_sha256 || 'Hash unavailable for this record'}</p>
+          <small>The hash covers the stored UTF-8 source text. It does not authenticate the original author or prove the authenticity of an uploaded binary.</small>
+        </details>
+      </>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9 }}>
         <label style={{ fontSize: 12 }}>Review dimension
           <select style={field} value={reviewType} onChange={event => changeReviewType(event.target.value as ReviewType)}>
