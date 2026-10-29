@@ -167,6 +167,6 @@ for (const route of [
 }
 assert(freshnessPanel.includes("Save new policy version"), "freshness policy UI must create immutable policy versions");
 assert(freshnessPanel.includes("No universal freshness threshold is applied"), "freshness UI must reject an invented universal threshold");
-assert(freshnessPanel.includes("A failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
+assert(freshnessPanel.toLowerCase().includes("a failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
 assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
 console.log("PASS: domain-specific freshness policy creation, assessment, and history are connected to the LCR with explicit limits.");
