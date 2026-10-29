@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, postJSON } from "@/api/client";
 
 type PersistedEvent = {
   id: string;
