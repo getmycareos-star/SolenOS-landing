@@ -182,3 +182,36 @@ export async function transitionChangeConfirmation(
     { status, reason: reason?.trim() || null, evidence_ids },
   ) as { change: PersistedChange; transition_id: string; previous_status: string; new_status: string };
 }
+
+
+export type PatternDetail = {
+  pattern: PersistedPattern;
+  events: Array<{
+    id: string;
+    event_type: string;
+    status: string;
+    occurred_at: string;
+    recorded_at: string | null;
+    title: string;
+    description: string | null;
+    evidence_ids: string[];
+    time_provenance: string | null;
+  }>;
+  changes: Array<{
+    id: string;
+    change_type: string;
+    change_direction: string;
+    previous_state: string | null;
+    current_state: string | null;
+    explanation: string | null;
+    evidence_ids: string[];
+    confirmation_status: string;
+  }>;
+};
+
+export async function getPersistedPatternDetail(patternId: string): Promise<PatternDetail> {
+  const personId = encodeURIComponent(requirePersonId());
+  return await getJSON(
+    `/change/patterns/${personId}/${encodeURIComponent(patternId)}`,
+  ) as PatternDetail;
+}
