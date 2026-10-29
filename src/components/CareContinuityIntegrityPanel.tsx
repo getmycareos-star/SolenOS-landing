@@ -114,6 +114,7 @@ export default function CareContinuityIntegrityPanel({
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({})
   const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({})
   const [kind, setKind] = useState<'current_state' | 'time_bound_observation'>('current_state')
+  const [assertionObservedAt, setAssertionObservedAt] = useState('')
   const [reviewDays, setReviewDays] = useState('')
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([])
   const [corrections, setCorrections] = useState<Record<string, string>>({})
@@ -166,8 +167,8 @@ export default function CareContinuityIntegrityPanel({
 
   async function submitAssertion(event: FormEvent) {
     event.preventDefault()
-    if (!field.trim() || !value.trim() || !source.trim() || !subjectType.trim() || !(subjectId.trim() || personId) || !reviewDays) {
-      setError('Field, reported value, source, and review window are required.')
+    if (!field.trim() || !value.trim() || !source.trim() || !subjectType.trim() || !(subjectId.trim() || personId) || !reviewDays || (kind === 'time_bound_observation' && !assertionObservedAt)) {
+      setError(kind === 'time_bound_observation' && !assertionObservedAt ? 'Record when the observation actually occurred; save time is not a substitute for event time.' : 'Field, reported value, source, and review window are required.')
       return
     }
     setSaving(true)
@@ -184,13 +185,14 @@ export default function CareContinuityIntegrityPanel({
         source_label: source.trim(),
         source_text: sourceText.trim() || undefined,
         evidence_ids: selectedEvidenceIds,
-        observed_at: kind === 'time_bound_observation' ? new Date().toISOString() : undefined,
+        observed_at: kind === 'time_bound_observation' ? new Date(assertionObservedAt).toISOString() : undefined,
         review_after_days: Number(reviewDays),
         created_by_caregiver_id: getCaregiverId() || undefined,
       })
       setField('')
       setValue('')
       setSourceText('')
+      setAssertionObservedAt('')
       setSelectedEvidenceIds([])
       setNotice('Report saved. It remains unreviewed until explicitly confirmed.')
       await load()
@@ -414,6 +416,10 @@ export default function CareContinuityIntegrityPanel({
           <label style={{ fontSize: 12 }}>Review after (days)
             <input style={fieldStyle} type="number" min={1} max={3650} value={reviewDays} onChange={(e) => setReviewDays(e.target.value)} placeholder="Required" required />
           </label>
+          {kind === 'time_bound_observation' && <label style={{ fontSize: 12 }}>When did it occur?
+            <input style={fieldStyle} type="datetime-local" value={assertionObservedAt} onChange={(e) => setAssertionObservedAt(e.target.value)} required />
+            <small style={{ display: 'block', color: 'var(--text-secondary)' }}>This records event time, not the time you saved the report.</small>
+          </label>}
         </div>
         <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Source excerpt or context (optional)
           <textarea style={{ ...fieldStyle, minHeight: 64, resize: 'vertical' }} value={sourceText} onChange={(e) => setSourceText(e.target.value)} placeholder="Keep the source wording faithful; do not enter an AI-generated conclusion as source evidence." />
