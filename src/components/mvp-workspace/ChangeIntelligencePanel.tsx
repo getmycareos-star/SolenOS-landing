@@ -69,6 +69,7 @@ export function ChangeIntelligencePanel() {
       return;
     }
     setCoverageSaving(true);
+    let coverageWasSaved = false;
     try {
       await recordObservationCoverage({
         subject_type: coverageDomain.trim(),
@@ -77,6 +78,7 @@ export function ChangeIntelligencePanel() {
         coverage_status: coverageStatus,
         rationale: coverageRationale.trim(),
       });
+      coverageWasSaved = true;
       const assessment = await assessObservationCoverage(coverageDomain.trim(), start.toISOString(), end.toISOString());
       setCoverageAssessment(assessment);
       await reassessPersistedChangeIntelligence();
@@ -86,7 +88,11 @@ export function ChangeIntelligencePanel() {
       setCoverageMessage("Observation coverage saved and persisted change assessments reassessed.");
       setCoverageRationale("");
     } catch (reason: unknown) {
-      setCoverageError(reason instanceof Error ? reason.message : "Observation coverage could not be saved.");
+      setCoverageError(
+        coverageWasSaved
+          ? "Coverage was saved, but its follow-up verification or reassessment failed. The saved record was not rolled back."
+          : reason instanceof Error ? reason.message : "Observation coverage could not be saved.",
+      );
     } finally {
       setCoverageSaving(false);
     }
