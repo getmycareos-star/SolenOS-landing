@@ -217,6 +217,9 @@ try {
   await evidencePanel.getByLabel("Evidence record").selectOption(sourceEvidenceId);
   await evidencePanel.getByText(/Source lineage and corroboration relationships/).click();
   await evidencePanel.getByLabel("Related evidence").selectOption(relatedEvidenceId);
+  await evidencePanel.getByLabel("Relationship type").selectOption("forwarded_from");
+  await evidencePanel.getByLabel("Source independence").selectOption("shared_origin");
+  await evidencePanel.getByLabel("Origin group key (optional)").fill("ci-e2e-original-message-0001");
   await evidencePanel.getByLabel("Why these items are related").fill(
     "CI-only provenance review: this report was forwarded from the same original appointment message."
   );
