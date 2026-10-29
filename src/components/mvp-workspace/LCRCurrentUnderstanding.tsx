@@ -6,6 +6,7 @@ import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
+import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
 
 type CurrentCareItem = {
   id: string;
@@ -960,6 +961,7 @@ export function LCRCurrentUnderstanding() {
       ) : null}
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
+      <ConflictResolutionPanel personId={personId} />
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
