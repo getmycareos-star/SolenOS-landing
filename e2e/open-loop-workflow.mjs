@@ -225,9 +225,9 @@ try {
   await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
   const evidencePanel = page.locator('section[aria-label="Persisted evidence assessments"]');
   await evidencePanel.waitFor({ timeout: 20_000 });
-  await evidencePanel.getByLabel("Evidence record").selectOption(sourceEvidenceId);
+  await evidencePanel.getByLabel("Evidence record", { exact: true }).selectOption(sourceEvidenceId);
   await evidencePanel.getByText(/Source lineage and corroboration relationships/).click();
-  await evidencePanel.getByLabel("Related evidence").selectOption(relatedEvidenceId);
+  await evidencePanel.getByLabel("Related evidence", { exact: true }).selectOption(relatedEvidenceId);
   await evidencePanel.getByLabel("Relationship type").selectOption("forwarded_from");
   await evidencePanel.getByLabel("Source independence").selectOption("shared_origin");
   await evidencePanel.getByLabel("Origin group key (optional)").fill("ci-e2e-original-message-0001");
@@ -248,7 +248,7 @@ try {
   await page.reload({ waitUntil: "domcontentloaded" });
   const persistedEvidencePanel = page.locator('section[aria-label="Persisted evidence assessments"]');
   await persistedEvidencePanel.waitFor({ timeout: 20_000 });
-  await persistedEvidencePanel.getByLabel("Evidence record").selectOption(sourceEvidenceId);
+  await persistedEvidencePanel.getByLabel("Evidence record", { exact: true }).selectOption(sourceEvidenceId);
   await persistedEvidencePanel.getByText(reviewRationale, { exact: true }).waitFor({ timeout: 10_000 });
   await persistedEvidencePanel.getByText(/Source lineage and corroboration relationships/).click();
   await persistedEvidencePanel.getByText(/forwarded from/i).waitFor({ timeout: 10_000 });
