@@ -138,6 +138,27 @@ type PersistedChange = {
   created_at: string;
 };
 
+type PersistedPattern = {
+  id: string;
+  person_id: string;
+  subject_type: string;
+  subject_id: string;
+  pattern_type: string;
+  pattern_strength: string;
+  event_ids: string[];
+  change_ids?: string[] | null;
+  temporal_start: string;
+  temporal_end: string;
+  frequency?: number | null;
+  rate_per_period?: number | null;
+  direction?: string | null;
+  confidence?: number | null;
+  evidence_count: number;
+  alternative_interpretations?: unknown[] | null;
+  is_active: boolean;
+  superseded_by_pattern_id?: string | null;
+};
+
 type CurrentCareProjection = {
   person_id: string;
   as_of?: string | null;
@@ -200,6 +221,8 @@ export function LCRCurrentUnderstanding() {
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [changes, setChanges] = useState<PersistedChange[]>([]);
   const [changesError, setChangesError] = useState<string | null>(null);
+  const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
+  const [patternsError, setPatternsError] = useState<string | null>(null);
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
   const [changeEvidence, setChangeEvidence] = useState<Record<string, { evidence: ChangeEvidence[]; assertions: ChangeAssertionEvidence[]; confirmation_history: ChangeConfirmationHistoryItem[]; error?: string }>>({});
   const [evidenceLoadingId, setEvidenceLoadingId] = useState<string | null>(null);
@@ -233,6 +256,8 @@ export function LCRCurrentUnderstanding() {
     setError(null);
     setChanges([]);
     setChangesError(null);
+    setPatterns([]);
+    setPatternsError(null);
     try {
       const session = await ensureAnonymousSession();
       if (!session.access_token || !session.person?.id) {
@@ -270,6 +295,21 @@ export function LCRCurrentUnderstanding() {
       } catch (changeCause) {
         setChanges([]);
         setChangesError(changeCause instanceof Error ? changeCause.message : "Persisted change history is unavailable.");
+      }
+      try {
+        const patternPath = `/change/patterns/${encodeURIComponent(session.person.id)}`;
+        const persistedPatterns = await getJSON(patternPath);
+        if (!Array.isArray(persistedPatterns) || persistedPatterns.some(
+          (item) => item?.person_id !== session.person.id
+        )) {
+          throw new Error("The persisted pattern history did not match the active care-record session.");
+        }
+        setPatterns(persistedPatterns as PersistedPattern[]);
+      } catch (patternCause) {
+        setPatterns([]);
+        setPatternsError(patternCause instanceof Error
+          ? patternCause.message
+          : "Persisted pattern history is unavailable.");
       }
       try {
         const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
@@ -398,6 +438,43 @@ export function LCRCurrentUnderstanding() {
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh current care understanding">
           <RefreshCw size={16} aria-hidden="true" /> Refresh
         </button>
+      </div>
+
+      <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
+        <div className="lcr-entry-heading">
+          <h3 id="lcr-pattern-history-heading">Longitudinal patterns</h3>
+          <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} active patterns</span>
+        </div>
+        {patternsError && <p role="status">Persisted pattern history could not be loaded: {patternsError}</p>}
+        {!patternsError && patterns.length === 0 && (
+          <p>No persisted longitudinal patterns are available. A pattern is not inferred from missing history.</p>
+        )}
+        {patterns.length > 0 && (
+          <ul className="lcr-current-facts">
+            {patterns.map((pattern) => (
+              <li key={pattern.id} className="lcr-current-fact">
+                <div className="lcr-entry-heading">
+                  <strong>{pattern.subject_type.replaceAll("_", " ")} · {pattern.pattern_type.replaceAll("_", " ")}</strong>
+                  <span>{pattern.is_active && !pattern.superseded_by_pattern_id ? "active" : "superseded"} · {pattern.pattern_strength.replaceAll("_", " ")}</span>
+                </div>
+                <p>
+                  Recorded across {pattern.evidence_count} linked event(s), from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)}.
+                </p>
+                {pattern.rate_per_period != null && (
+                  <p className="lcr-entry-status">Recorded rate: {pattern.rate_per_period.toFixed(2)} per 30-day period. This is a record rate, not an estimate of unobserved events.</p>
+                )}
+                {pattern.direction && <p className="lcr-entry-status">Direction: {pattern.direction.replaceAll("_", " ")}</p>}
+                {pattern.confidence == null && <p className="lcr-entry-status">Confidence is not calibrated; no numeric confidence is asserted.</p>}
+                {pattern.alternative_interpretations?.map((item, index) => (
+                  <p className="lcr-entry-status" key={index}>
+                    {typeof item === "string" ? item : JSON.stringify(item)}
+                  </p>
+                ))}
+                <small>Source event references: {pattern.event_ids.length ? pattern.event_ids.join(", ") : "None linked"}</small>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
