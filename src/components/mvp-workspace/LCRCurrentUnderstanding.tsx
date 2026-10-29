@@ -23,6 +23,8 @@ type CurrentCareItem = {
   source_span_start?: number | null;
   source_span_end?: number | null;
   source_passage?: string | null;
+  supersedes_observation_id?: string | null;
+  correction_rationale?: string | null;
   negated?: boolean | null;
   hedge_marker?: string | null;
   ambiguity_note?: string | null;
@@ -68,6 +70,8 @@ type SituationAssessment = {
       interpretation_limit: string;
       window_end?: string | null;
       coverage_status?: string;
+      supersedes_observation_id?: string | null;
+      correction_rationale?: string | null;
     }>;
     count: number;
     has_more: boolean;
@@ -742,6 +746,8 @@ export function LCRCurrentUnderstanding() {
                     <p>Event time: {entry.event_time ? formatWhen(entry.event_time) : "Not recorded"} · Record time: {entry.recorded_at ? formatWhen(entry.recorded_at) : "Not recorded"}</p>
                     {entry.coverage_status && <p>Observation coverage: {entry.coverage_status.replaceAll("_", " ")}{entry.window_end ? " through " + formatWhen(entry.window_end) : ""}</p>}
                     <small>{entry.temporal_basis.replaceAll("_", " ")} · {entry.evidence_ids.length} linked evidence reference(s)</small>
+                    {entry.supersedes_observation_id && <small>Supersedes prior observation: {entry.supersedes_observation_id}</small>}
+                    {entry.correction_rationale && <small>Correction rationale: {entry.correction_rationale}</small>}
                   </li>
                 ))}</ol>
               ) : (
@@ -851,6 +857,8 @@ export function LCRCurrentUnderstanding() {
                             <blockquote>{item.source_passage}</blockquote>
                           </details>
                         )}
+                        {item.supersedes_observation_id && <small>Corrects prior observation: {item.supersedes_observation_id}</small>}
+                        {item.correction_rationale && <small>Correction rationale: {item.correction_rationale}</small>}
                         {item.hedge_marker && <small>Hedge / uncertainty marker: {item.hedge_marker}</small>}
                         {item.ambiguity_note && <small>Ambiguity: {item.ambiguity_note}</small>}
                       </div>
