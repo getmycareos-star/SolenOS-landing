@@ -218,7 +218,7 @@ export default function CareContinuityIntegrityPanel({
     }
   }
 
-  async function resolveContradiction(item: Contradiction, status: 'resolved' | 'qualified' | 'superseded' | 'reopened') {
+  async function resolveContradiction(item: Contradiction, status: 'resolved' | 'partially_resolved' | 'superseded' | 'reopened') {
     const notes = (resolutionNotes[item.id] || '').trim()
     if (notes.length < 3) {
       setError('Add a short note explaining how this conflict was reviewed before resolving it.')
@@ -228,10 +228,8 @@ export default function CareContinuityIntegrityPanel({
     setNotice('')
     try {
       await patchJSON(`/uncertainty/contradictions/${encodeURIComponent(item.id)}`, {
-        person_id: personId,
         resolution_status: status,
         resolution_notes: notes,
-        resolved_by_caregiver_id: getCaregiverId() || undefined,
       })
       setNotice('Contradiction review saved. The original reports remain preserved.')
       await load()
@@ -515,7 +513,7 @@ export default function CareContinuityIntegrityPanel({
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
               {item.resolution_status === 'unresolved' || item.resolution_status === 'reopened' ? <>
                 <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'resolved')}>Resolve with rationale</button>
-                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'qualified')}>Partially resolve / retain uncertainty</button>
+                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'partially_resolved')}>Partially resolve / retain uncertainty</button>
                 <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'superseded')}>Superseded by new evidence</button>
               </> : <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'reopened')}>Reopen conflict</button>}
             </div>
