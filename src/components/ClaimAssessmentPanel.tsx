@@ -31,6 +31,20 @@ type Assessment = {
   superseded_by_claim_id?: string | null;
   created_at: string;
 };
+type AssessmentImpact = {
+  claim_id: string;
+  status: string;
+  assessment_id?: string | null;
+  assessment_version?: number | null;
+  assessment_status?: string | null;
+  review_required: boolean;
+  reasons: string[];
+  missing_evidence_ids: string[];
+  unassessed_claim_evidence_ids: string[];
+  changed_prerequisite_claim_ids: string[];
+  unresolved_conflicts?: Array<{ conflict_id: string; field: string; description: string; resolution_status: string; created_at?: string | null }>;
+  interpretation_limit: string;
+};
 type DraftLink = {
   evidence_id: string;
   relationship: "supports" | "partial_support" | "scope_limited" | "contradicts" | "neutral";
@@ -81,7 +95,7 @@ export default function ClaimAssessmentPanel() {
   const [supersededByClaimId, setSupersededByClaimId] = useState("");
   const [rationale, setRationale] = useState("");
   const [links, setLinks] = useState<DraftLink[]>([emptyLink()]);
-  const [history, setHistory] = useState<Assessment[]>([]);
+  const [history, setHistory] = useState<Assessment[]>([]);\n  const [assessmentImpact, setAssessmentImpact] = useState<AssessmentImpact | null>(null);\n  const [impactLoading, setImpactLoading] = useState(false);\n  const [impactError, setImpactError] = useState("");
   const [dependencies, setDependencies] = useState<DependencyEdge[]>([]);
   const [dependencyTargetId, setDependencyTargetId] = useState("");
   const [dependencyType, setDependencyType] = useState("derived_from");
@@ -170,6 +184,37 @@ export default function ClaimAssessmentPanel() {
   }, [personId, selectedClaimId]);
 
   useEffect(() => { void loadHistory(); }, [loadHistory]);
+
+  const loadAssessmentImpact = useCallback(async () => {
+    if (!selectedClaimId || !personId) {
+      setAssessmentImpact(null);
+      setImpactError("");
+      return;
+    }
+    setImpactLoading(true);
+    setImpactError("");
+    try {
+      const result = await getJSON(
+        `/care-continuity/claims/${encodeURIComponent(selectedClaimId)}/assessment-impact`,
+      );
+      if (!result || result.claim_id !== selectedClaimId ||
+        typeof result.review_required !== "boolean" || !Array.isArray(result.reasons) ||
+        !Array.isArray(result.missing_evidence_ids) ||
+        !Array.isArray(result.unassessed_claim_evidence_ids) ||
+        !Array.isArray(result.changed_prerequisite_claim_ids) ||
+        typeof result.interpretation_limit !== "string") {
+        throw new Error("Invalid claim assessment impact response");
+      }
+      setAssessmentImpact(result as AssessmentImpact);
+    } catch {
+      setAssessmentImpact(null);
+      setImpactError("Assessment impact could not be checked. This is not evidence that the assessment is current.");
+    } finally {
+      setImpactLoading(false);
+    }
+  }, [personId, selectedClaimId]);
+
+  useEffect(() => { void loadAssessmentImpact(); }, [loadAssessmentImpact]);
   useEffect(() => {
     let cancelled = false;
     async function loadDependencies() {
@@ -392,6 +437,24 @@ export default function ClaimAssessmentPanel() {
       </label>
       <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || historyLoading}>{saving ? "Saving…" : "Save claim assessment"}</button>
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
+      <section aria-label="Assessment impact review" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
+        <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Evidence change and reassessment check</h4>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This deterministic check looks for changed evidence links, unavailable previously assessed evidence, changed declared prerequisites, and unresolved matching conflicts. It does not prove truth or completeness.</p>
+        {impactLoading && <p role="status">Checking persisted assessment dependencies…</p>}
+        {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
+        {!impactLoading && !impactError && assessmentImpact && <>
+          <strong>{assessmentImpact.review_required ? "Review required or not yet established as current" : "No deterministic review trigger found"}</strong>
+          <div style={{ fontSize: 12, marginTop: 5 }}>Status: {assessmentImpact.status.replaceAll("_", " ")}{assessmentImpact.assessment_version != null ? ` · assessment version ${assessmentImpact.assessment_version}` : ""}</div>
+          {assessmentImpact.reasons.length > 0
+            ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{reason.replaceAll("_", " ")}</li>)}</ul>
+            : <p style={{ fontSize: 12 }}>No review trigger was returned by this bounded check.</p>}
+          {assessmentImpact.missing_evidence_ids.length > 0 && <p>Unavailable evidence IDs: {assessmentImpact.missing_evidence_ids.join(", ")}</p>}
+          {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Claim evidence not included in the latest assessment: {assessmentImpact.unassessed_claim_evidence_ids.join(", ")}</p>}
+          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Changed prerequisite claims: {assessmentImpact.changed_prerequisite_claim_ids.join(", ")}</p>}
+          {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Unresolved conflict · {item.field}</strong><div>{item.description}</div><small>{item.resolution_status} · {item.conflict_id}</small></div>)}
+          <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>{assessmentImpact.interpretation_limit}</p>
+        </>}
+      </section>
       <h4 style={{ fontSize: 13, marginBottom: 5 }}>Assessment history</h4>
       {historyLoading && <p role="status">Loading saved assessment versions…</p>}
       {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError} <button type="button" style={button} onClick={() => void loadHistory()} disabled={historyLoading}>Retry history</button></p>}
