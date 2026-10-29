@@ -113,6 +113,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [reconstructedHistory, setReconstructedHistory] = useState<Record<string, unknown> | null>(null)
   const [historyReconstructionLoading, setHistoryReconstructionLoading] = useState(false)
   const [historyReconstructionError, setHistoryReconstructionError] = useState('')
+  const [recordHistoryAsOf, setRecordHistoryAsOf] = useState('')
+  const [recordHistory, setRecordHistory] = useState<Record<string, unknown> | null>(null)
+  const [recordHistoryLoading, setRecordHistoryLoading] = useState(false)
+  const [recordHistoryError, setRecordHistoryError] = useState('')
   const [relationships, setRelationships] = useState<SourceRelationship[]>([])
   const [relationshipsLoading, setRelationshipsLoading] = useState(false)
   const [relationshipsError, setRelationshipsError] = useState('')
@@ -193,6 +197,35 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     if (!selectedId && evidenceItems.length) setSelectedId(evidenceItems[0].id)
     if (selectedId && !evidenceItems.some(item => item.id === selectedId)) setSelectedId(evidenceItems[0]?.id || '')
   }, [evidenceItems, selectedId])
+
+
+
+  const reconstructRecordHistory = useCallback(async () => {
+    if (!personId || !recordHistoryAsOf) {
+      setRecordHistoryError('Choose a date and time before requesting the recorded care-record snapshot.')
+      return
+    }
+    setRecordHistoryLoading(true)
+    setRecordHistoryError('')
+    setRecordHistory(null)
+    try {
+      const asOf = new Date(recordHistoryAsOf)
+      if (!Number.isFinite(asOf.getTime())) throw new Error('Invalid historical instant')
+      const result = await getJSON(
+        `/care-continuity/state-reconstruction/as-of?as_of=${encodeURIComponent(asOf.toISOString())}&limit=200`
+      )
+      if (!result || typeof result !== 'object' || (result as Record<string, unknown>).person_id !== personId ||
+          !Array.isArray((result as Record<string, unknown>).items) ||
+          (result as Record<string, unknown>).coverage_status !== 'partial_revision_history') {
+        throw new Error('Historical response is not valid for this care record')
+      }
+      setRecordHistory(result as Record<string, unknown>)
+    } catch {
+      setRecordHistoryError('The recorded care-state snapshot could not be loaded. No complete historical record is assumed; retry when the connection is available.')
+    } finally {
+      setRecordHistoryLoading(false)
+    }
+  }, [personId, recordHistoryAsOf])
 
   const loadReviews = useCallback(async () => {
     if (!selectedId || !personId) { setReviews([]); return }
