@@ -16,6 +16,7 @@ const required: Array<[string, RegExp]> = [
   ["professional source references carry the actual evidence ID", /kind: "care_record_source",[\s\S]*?evidence_id: selectedSourceId/],
   ["missing source evidence blocks the action", /No source evidence is saved in this care record yet/],
   ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
+  ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
   ["action errors are shown rather than reported as success", /The requested change was not confirmed/],
   ["no sample Open Loop records are fabricated", /No sample records are shown/],
 ];
