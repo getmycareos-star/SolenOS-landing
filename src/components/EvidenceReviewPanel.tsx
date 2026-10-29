@@ -70,7 +70,7 @@ type SourceRelationship = {
   created_at: string
 }
 type FreshnessPolicy = { id: string; person_id: string; domain_key: string; policy_version: string; max_age_days: number | null; historical_after_days: number | null; rationale: string; created_at: string | null }
-type FreshnessAssessment = { id: string; evidence_id: string; policy_id: string; policy_version: string; freshness_status: string; source_time: string | null; assessed_at: string; age_days: number | null; rationale: string }
+type FreshnessAssessment = { id: string; evidence_id: string; policy_id: string; policy_version: string; freshness_status: string; source_time: string | null; source_time_kind?: string | null; assessed_at: string; age_days: number | null; rationale: string }
 type Review = {
   id: string
   evidence_id: string
@@ -635,7 +635,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No saved freshness assessments were returned for the selected evidence.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: 12 }}>
         <strong>{item.freshness_status.replaceAll('_', ' ')}</strong> · policy {item.policy_version}
-        <div>Assessed {new Date(item.assessed_at).toLocaleString()} · source time {item.source_time ? new Date(item.source_time).toLocaleString() : 'unknown'} · age {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
+        <div>Assessed {new Date(item.assessed_at).toLocaleString()} · source time {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · age {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
         <p>{item.rationale}</p>
       </article>)}
     </details>
