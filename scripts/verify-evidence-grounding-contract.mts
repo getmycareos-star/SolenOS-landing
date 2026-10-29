@@ -91,6 +91,12 @@ assert(appointment.includes("scope_truncated"), "Appointment preparation must di
 assert(appointment.includes("not establish that the sources are independent"), "Appointment preparation must not infer independence from missing lineage");
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
 
+const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+assert(evidenceReview.includes("/care-continuity/state-revisions/evidence/"), "Evidence review must call the persisted as-of reconstruction API");
+assert(evidenceReview.includes("historical_care_state_revision"), "Evidence review must validate the historical response source");
+assert(evidenceReview.includes("This does not establish that the evidence did not exist"), "Historical lookup failure must not be displayed as evidence absence");
+console.log("PASS: evidence review exposes persisted historical reconstruction with an explicit absence limitation.");
+
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
 assert(panel.includes("exact passage copied from the original evidence"), "observation UI must require source-grounded text");
 assert(panel.includes("A reported account remains reported"), "observation UI must preserve report versus observation distinctions");
