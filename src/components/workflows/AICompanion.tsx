@@ -482,7 +482,7 @@ export default function Companion() {
         <CareHandoffSharing draft={handoffDraft} audience={handoffAudience} purpose={handoffPurpose} />
       </section>
 
-      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || restoringHistory}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
@@ -533,8 +533,8 @@ export default function Companion() {
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading} rows={2} />
-          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading || restoringHistory} rows={2} />
+          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || restoringHistory || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
