@@ -170,7 +170,22 @@ export default function Companion() {
       try {
         const session = await ensureAnonymousSession()
         const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
+        const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
         activeSessionStorageKeyRef.current = storageKey
+        const pendingRaw = window.localStorage.getItem(pendingStorageKey)
+        if (pendingRaw) {
+          try {
+            const pending = JSON.parse(pendingRaw)
+            if (typeof pending?.text === 'string' && pending.text.trim() && typeof pending?.id === 'string' && pending.id) {
+              pendingTurnRef.current = { text: pending.text, id: pending.id }
+              setInput(pending.text)
+              setRequestError('A previous message may have been interrupted. Select Try again to safely resume it.')
+            }
+          } catch {
+            // Invalid local retry metadata is not trusted as a request identity.
+            window.localStorage.removeItem(pendingStorageKey)
+          }
+        }
         const savedSessionId = window.localStorage.getItem(storageKey)
         if (!savedSessionId) return
         const restored = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as any
@@ -227,6 +242,8 @@ export default function Companion() {
 
     try {
       const session = await ensureAnonymousSession()
+      const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
+      window.localStorage.setItem(pendingStorageKey, JSON.stringify({ text: submittedText, id: clientTurnId }))
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
@@ -237,6 +254,7 @@ export default function Companion() {
 
       setInput('')
       pendingTurnRef.current = null
+      window.localStorage.removeItem(pendingStorageKey)
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
       const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
@@ -264,7 +282,29 @@ export default function Companion() {
         persistence: response.persistence,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, assistantMsg])
+      if (response.idempotent_replay === true && Array.isArray(response.messages)) {
+        // The server may have committed the turn before the previous response
+        // was lost. Replace, rather than append, the durable transcript.
+        setMessages(response.messages.map((row: any): Message => ({
+          role: row.role === 'user' ? 'user' : 'assistant',
+          text: String(row.text ?? ''),
+          guard_verdict: row.guard_verdict,
+          safety_note: row.safety_note,
+          evidence_ids: Array.isArray(row.evidence_ids) ? row.evidence_ids : [],
+          source_event_ids: Array.isArray(row.source_event_ids) ? row.source_event_ids : [],
+          source_evidence_ids: Array.isArray(row.source_evidence_ids) ? row.source_evidence_ids : [],
+          source_appointment_ids: Array.isArray(row.source_appointment_ids) ? row.source_appointment_ids : [],
+          source_freshness_assessment_ids: Array.isArray(row.source_freshness_assessment_ids) ? row.source_freshness_assessment_ids : [],
+          freshness_source_status: row.freshness_source_status,
+          source_record_refs: Array.isArray(row.source_record_refs) ? row.source_record_refs : [],
+          ai_generated: row.ai_generated,
+          written_to_lcr: false,
+          persistence: 'conversation_only',
+          timestamp: row.created_at ? new Date(row.created_at) : new Date(),
+        })))
+      } else {
+        setMessages(prev => [...prev, assistantMsg])
+      }
 
       if (!isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
         const nextToken = deltaToken + 1
