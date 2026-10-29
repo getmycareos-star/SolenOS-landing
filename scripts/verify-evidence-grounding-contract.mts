@@ -78,3 +78,10 @@ console.log("PASS: source-grounded observation UI preserves exact source spans a
 assert(panel.includes("supersedes_observation_id"), "observation corrections must link to the prior version");
 assert(panel.includes("Correction rationale"), "observation correction UI must require a rationale");
 console.log("PASS: observation correction history must be versioned and justified.");
+
+const lcr = fs.readFileSync(path.join(process.cwd(), "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
+assert(lcr.includes("import EvidenceReviewPanel from \"@/components/EvidenceReviewPanel\""), "the real LCR route must import the evidence workflow");
+assert(lcr.includes("<EvidenceReviewPanel personId={personId} />"), "the evidence workflow must be mounted in the LCR, not left as an unused component");
+assert(lcr.includes("<ClaimAssessmentPanel />"), "claim assessments must be reachable from the LCR workflow");
+assert(lcr.includes("<CareContinuityIntegrityPanel personId={personId} />"), "care continuity integrity must be reachable from the LCR workflow");
+console.log("PASS: evidence, claim assessment, and care-integrity panels are mounted in the actual LCR workflow.");
