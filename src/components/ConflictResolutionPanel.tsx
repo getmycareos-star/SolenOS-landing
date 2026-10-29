@@ -15,6 +15,8 @@ type Conflict = {
   effective_to?: string | null;
   resolution_status: string;
   resolution_notes?: string | null;
+  resolution_scope?: string | null;
+  unresolved_remainder?: string | null;
   evidence_ids?: string[] | null;
   matching_candidate_ids?: string[];
 };
@@ -28,6 +30,7 @@ type ResolutionEvent = {
   new_status: string;
   rationale: string;
   resolution_scope?: string | null;
+  unresolved_remainder?: string | null;
   evidence_ids: string[];
   created_at: string;
 };
@@ -54,6 +57,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
   const [status, setStatus] = useState<(typeof statuses)[number]>("unresolved");
   const [rationale, setRationale] = useState("");
   const [scope, setScope] = useState("");
+  const [unresolvedRemainder, setUnresolvedRemainder] = useState("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [history, setHistory] = useState<ResolutionEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,8 +134,8 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       setError("Select a conflict and provide a clear resolution rationale.");
       return;
     }
-    if (status === "partially_resolved" && (!scope.trim() || evidenceIds.length === 0)) {
-      setError("Partial resolution requires an exact scope and linked evidence for the resolved detail.");
+    if (status === "partially_resolved" && (!scope.trim() || !unresolvedRemainder.trim() || evidenceIds.length === 0)) {
+      setError("Partial resolution requires the exact resolved scope, the unresolved remainder, and linked evidence for the resolved detail.");
       return;
     }
     if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopedPersonId))) {
@@ -146,6 +150,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         resolution_status: status,
         resolution_notes: rationale.trim(),
         resolution_scope: scope.trim() || null,
+        unresolved_remainder: unresolvedRemainder.trim() || null,
         evidence_ids: evidenceIds,
       });
       setNotice("Resolution transition saved with its rationale and evidence references. Only the stated scope is resolved; related details are not silently resolved.");
@@ -178,6 +183,8 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         <p>{selected.description}</p>
         <p><strong>Context:</strong> {selected.context_key || "Not recorded"}</p>
         <p><strong>Effective interval:</strong> {selected.effective_from || "Start unknown"} — {selected.effective_to || "End unknown"}</p>
+        <p><strong>Current partial-resolution scope:</strong> {selected.resolution_scope || "None recorded"}</p>
+        <p><strong>Unresolved remainder:</strong> {selected.unresolved_remainder || "Not separately recorded"}</p>
         <p><strong>Linked evidence:</strong> {selected.evidence_ids?.length ? selected.evidence_ids.join(", ") : "None recorded"}</p>
         {selected.matching_candidate_ids?.length ? <p><strong>Related conflict candidates:</strong> {selected.matching_candidate_ids.join(", ")}</p> : null}
       </div>}
@@ -191,6 +198,9 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       </label>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Exact scope resolved (required for partial resolution)
         <textarea style={{ ...field, minHeight: 60 }} value={scope} onChange={(event) => setScope(event.target.value)} />
+      </label>
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>What remains unresolved (required for partial resolution)
+        <textarea style={{ ...field, minHeight: 60 }} value={unresolvedRemainder} onChange={(event) => setUnresolvedRemainder(event.target.value)} />
       </label>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Evidence supporting the resolution (multi-select)
         <select multiple style={{ ...field, minHeight: 100 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
@@ -209,7 +219,8 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
           {history.map((item) => <li key={item.id}>
             <strong>{item.previous_status.replaceAll("_", " ")} → {item.new_status.replaceAll("_", " ")}</strong>
             <p>{item.rationale}</p>
-            {item.resolution_scope && <p>Scope: {item.resolution_scope}</p>}
+            {item.resolution_scope && <p>Resolved scope: {item.resolution_scope}</p>}
+            {item.unresolved_remainder && <p>Still unresolved: {item.unresolved_remainder}</p>}
             <p>Evidence: {item.evidence_ids?.length ? item.evidence_ids.join(", ") : "None recorded"} · {item.created_at}</p>
           </li>)}
         </ol>
