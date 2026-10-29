@@ -182,7 +182,14 @@ export default function Companion() {
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
       const safetyText = String(response.safety_note ?? '').toLowerCase()
-      const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
+      const replyText = String(response.reply ?? '').trim().toLowerCase()
+      // "blocked" also represents non-emergency evidence limits (for example,
+      // an unsupported trend or a missing measurement). Show the emergency
+      // banner only for the backend's explicit emergency classification.
+      const isEmergency =
+        safetyText.includes('possible emergency language detected') ||
+        safetyText.includes('urgent human assessment is needed') ||
+        replyText.startsWith('this may be an emergency.')
       if (isEmergency) setEmergency(true)
 
       const assistantMsg: Message = {
