@@ -68,3 +68,9 @@ assert(panel.includes("shared_origin"), "source-lineage UI must preserve shared-
 assert(panel.includes("not automatic proof"), "source-lineage UI must not equate a relationship with verified truth");
 assert(panel.includes("The source relationship was not confirmed as saved"), "failed relationship writes must not be shown as successful");
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
+
+assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
+assert(panel.includes("exact passage copied from the original evidence"), "observation UI must require source-grounded text");
+assert(panel.includes("A reported account remains reported"), "observation UI must preserve report versus observation distinctions");
+assert(panel.includes("unknown/missing"), "observation UI must not fabricate values for unknown or missing data");
+console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
