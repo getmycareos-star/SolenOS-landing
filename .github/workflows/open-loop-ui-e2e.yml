@@ -24,7 +24,21 @@ permissions:
 jobs:
   open-loop-ui:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: solenos_open_loop_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d solenos_open_loop_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - name: Check out frontend
         uses: actions/checkout@v4
@@ -57,21 +71,23 @@ jobs:
         working-directory: backend-service/backend
         run: python -m pip install --upgrade pip && python -m pip install -e .
 
-      - name: Start real backend with isolated SQLite test database
+      - name: Migrate isolated PostgreSQL database
         working-directory: backend-service/backend
         env:
           APP_ENV: test
           SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
-          DATABASE_URL: sqlite:////tmp/solenos-open-loop-ui-e2e.db
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/solenos_open_loop_e2e
+        run: python -m alembic upgrade head
+
+      - name: Start real backend with isolated PostgreSQL test database
+        working-directory: backend-service/backend
+        env:
+          APP_ENV: test
+          SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/solenos_open_loop_e2e
           CORS_ORIGINS: http://127.0.0.1:3000
         run: |
-          python - <<'PY'
-          from app.main import app
-          from app.core.database import Base, engine
-          Base.metadata.create_all(bind=engine)
-          print("Prepared isolated UI E2E database schema.")
-          PY
-          nohup env APP_ENV=test SECRET_KEY=ci-only-secret-key-long-enough-for-test-runtime DATABASE_URL=sqlite:////tmp/solenos-open-loop-ui-e2e.db CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-open-loop-backend.log 2>&1 &
+          nohup env APP_ENV=test SECRET_KEY=ci-only-secret-key-long-enough-for-test-runtime DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/solenos_open_loop_e2e CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-open-loop-backend.log 2>&1 &
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
             sleep 1
