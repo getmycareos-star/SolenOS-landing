@@ -21,7 +21,8 @@ export type ProvenanceRecord = {
   source_type: ProvenanceSourceType;
   extracted_from: string | null;
   captured_at: string;
-  confidence: "low" | "medium" | "high";
+  /** Null unless a task-specific calibration method has been validated. */
+  confidence: "low" | "medium" | "high" | null;
   verification_status: VerificationStatus;
   truth_sources: TruthSource[];
   raw_input_id: string | null;
