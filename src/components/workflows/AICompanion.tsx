@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -124,6 +124,8 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
+  const historyLoadedRef = useRef(false)
+  const activeSessionStorageKeyRef = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
 
@@ -158,6 +160,53 @@ export default function Companion() {
   }
 
   useEffect(() => {
+    let cancelled = false
+    const restoreConversation = async () => {
+      if (historyLoadedRef.current) return
+      historyLoadedRef.current = true
+      // Workflow handoffs that provide a draft intentionally start from that
+      // draft instead of silently restoring an unrelated chat.
+      if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
+      try {
+        const session = await ensureAnonymousSession()
+        const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
+        activeSessionStorageKeyRef.current = storageKey
+        const savedSessionId = window.localStorage.getItem(storageKey)
+        if (!savedSessionId) return
+        const restored = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as any
+        if (cancelled) return
+        if (restored?.person_id !== session.person.id || restored?.session_id !== savedSessionId || !Array.isArray(restored?.messages)) {
+          throw new Error('Saved conversation identity or history was invalid.')
+        }
+        setSessionId(savedSessionId)
+        setMessages(restored.messages.map((row: any): Message => ({
+          role: row.role === 'user' ? 'user' : 'assistant',
+          text: String(row.text ?? ''),
+          guard_verdict: row.guard_verdict,
+          safety_note: row.safety_note,
+          evidence_ids: Array.isArray(row.evidence_ids) ? row.evidence_ids : [],
+          source_event_ids: Array.isArray(row.source_event_ids) ? row.source_event_ids : [],
+          source_evidence_ids: Array.isArray(row.source_evidence_ids) ? row.source_evidence_ids : [],
+          source_appointment_ids: Array.isArray(row.source_appointment_ids) ? row.source_appointment_ids : [],
+          source_freshness_assessment_ids: Array.isArray(row.source_freshness_assessment_ids) ? row.source_freshness_assessment_ids : [],
+          freshness_source_status: row.freshness_source_status,
+          source_record_refs: Array.isArray(row.source_record_refs) ? row.source_record_refs : [],
+          ai_generated: row.ai_generated,
+          written_to_lcr: false,
+          persistence: 'conversation_only',
+          timestamp: row.created_at ? new Date(row.created_at) : new Date(),
+        })))
+      } catch {
+        // Keep the stored key for transient failures. Never silently create a
+        // replacement care identity or delete a recoverable conversation.
+        if (!cancelled) setRequestError('The previous conversation could not be restored. Check your connection and try again; your saved care record was not changed.')
+      }
+    }
+    void restoreConversation()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
@@ -190,6 +239,9 @@ export default function Companion() {
       pendingTurnRef.current = null
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
+      const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
+      activeSessionStorageKeyRef.current = storageKey
+      if (response.session_id) window.localStorage.setItem(storageKey, response.session_id)
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -259,6 +311,10 @@ export default function Companion() {
     setInput('')
     pendingTurnRef.current = null
     setSessionId(null)
+    if (activeSessionStorageKeyRef.current) {
+      window.localStorage.removeItem(activeSessionStorageKeyRef.current)
+      activeSessionStorageKeyRef.current = null
+    }
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
