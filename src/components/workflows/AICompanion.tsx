@@ -129,6 +129,8 @@ export default function Companion() {
   const activePendingStorageKeyRef = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
   const [activePersonId, setActivePersonId] = useState<string>(() => getPersonId())
+  const activePersonIdRef = useRef(activePersonId)
+  activePersonIdRef.current = activePersonId
   const personId = activePersonId
 
   useEffect(() => subscribeToPersonId(setActivePersonId), [])
@@ -275,6 +277,10 @@ export default function Companion() {
         session_id: sessionId,
         client_turn_id: clientTurnId,
       }) as any
+      // An in-flight request may finish after the caregiver switches records.
+      // The backend write remains scoped to its original bearer identity, but
+      // its result must never be appended to the newly selected transcript.
+      if (activePersonIdRef.current !== session.person.id) return
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
