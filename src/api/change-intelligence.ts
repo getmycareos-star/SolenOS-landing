@@ -63,6 +63,7 @@ export type PersistedPattern = {
   temporal_end: string;
   confidence: number | null;
   alternative_interpretations: Array<string | Record<string, unknown>> | null;
+  pattern_metrics?: Record<string, unknown> | null;
   is_active: boolean;
 };
 
