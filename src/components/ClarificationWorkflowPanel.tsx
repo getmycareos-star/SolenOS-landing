@@ -42,6 +42,16 @@ const panel: CSSProperties = { border: "1px solid var(--border)", borderRadius: 
 const field: CSSProperties = { boxSizing: "border-box", width: "100%", padding: "9px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
 const button: CSSProperties = { border: "1px solid var(--border)", borderRadius: 7, padding: "8px 11px", background: "var(--surface)", color: "var(--text)", cursor: "pointer" };
 
+function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
+  if (!Array.isArray(rows) || rows.some((value: unknown) => {
+    if (!value || typeof value !== "object") return true;
+    const row = value as Record<string, unknown>;
+    return row.person_id !== personId || typeof row.id !== "string";
+  })) {
+    throw new Error(`Invalid or cross-record ${label} response`);
+  }
+}
+
 export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
   const [scopePersonId, setScopePersonId] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -78,11 +88,9 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
         getJSON("/care-continuity/evidence?limit=100"),
       ]);
-      for (const [name, rows] of [["claims", claimRows], ["questions", questionRows], ["evidence", evidenceRows]] as const) {
-        if (!Array.isArray(rows) || rows.some((row) => row?.person_id !== sessionPersonId || typeof row?.id !== "string")) {
-          throw new Error(`Invalid or cross-record ${name} response`);
-        }
-      }
+      assertScopedRows(claimRows, sessionPersonId, "claims");
+      assertScopedRows(questionRows, sessionPersonId, "questions");
+      assertScopedRows(evidenceRows, sessionPersonId, "evidence");
       setScopePersonId(sessionPersonId);
       setClaims(claimRows as Claim[]);
       setQuestions(questionRows as Question[]);
