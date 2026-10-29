@@ -279,6 +279,7 @@ export default function ClaimAssessmentPanel() {
           {link.scope_note ? <div>Scope: {link.scope_note}</div> : null}
         </li>)}</ul>
         {item.supersedes_assessment_id && <small>Supersedes assessment {item.supersedes_assessment_id}</small>}
+        {item.superseded_by_claim_id && <small>Superseded by claim {item.superseded_by_claim_id}</small>}
       </article>)}
     </>}
   </section>;
