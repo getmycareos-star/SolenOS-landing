@@ -159,7 +159,7 @@ try {
   });
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
-  console.log("PASS: real frontend Open Loop create, evidence-grounded professional response, conflict reconciliation, durable audit history, and reload hydration.");
+  console.log("PASS: real frontend Open Loop create retry after lost response, source-backed professional response, closure/reopening, conflict reconciliation, durable audit history, and reload hydration.");
 } finally {
   await browser.close();
 }
