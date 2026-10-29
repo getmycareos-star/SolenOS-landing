@@ -8,6 +8,9 @@ const page = await browser.newPage();
 try {
   // Exercise the real Next.js UI while forwarding its same-origin API calls to
   // the real FastAPI process. No mocked API responses or sample care records.
+  // Simulate a lost response only after the first create request really commits,
+  // then require the caregiver's retry to converge on the original record.
+  let simulatedLostCreateResponse = false;
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const requestUrl = new URL(request.url());
@@ -15,6 +18,19 @@ try {
     const headers = { ...request.headers() };
     delete headers.origin;
     const response = await route.fetch({ url: target.toString(), headers });
+    if (
+      !simulatedLostCreateResponse &&
+      request.method() === "POST" &&
+      requestUrl.pathname === "/api/v1/open-loops"
+    ) {
+      simulatedLostCreateResponse = true;
+      await route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "CI-only simulated lost response after backend commit" }),
+      });
+      return;
+    }
     await route.fulfill({ response });
   });
 
@@ -79,10 +95,21 @@ try {
     "Synthetic test only. The care team has not yet confirmed the appointment date."
   );
   await page.getByRole("button", { name: "Save open loop" }).click();
+  await page.getByRole("alert").filter({ hasText: "The loop was not saved" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("button", { name: "Save open loop" }).click();
   const handoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
   });
   await handoff.waitFor({ timeout: 15_000 });
+  const savedLoopsResponse = await fetch(new URL("/api/v1/open-loops", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!savedLoopsResponse.ok) throw new Error(`Could not verify persisted Open Loops: HTTP ${savedLoopsResponse.status}`);
+  const savedLoops = await savedLoopsResponse.json();
+  const handoffMatches = (savedLoops.items ?? []).filter((item) => item.title === handoffTitle);
+  if (handoffMatches.length !== 1) {
+    throw new Error(`Create retry produced ${handoffMatches.length} matching persisted loops; expected exactly one.`);
+  }
 
   await handoff.getByRole("button", { name: "Record response" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
