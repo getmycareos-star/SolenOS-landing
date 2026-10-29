@@ -4,6 +4,7 @@ const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
+let isolateConflictUiRequests = false;
 
 try {
   // Exercise the real Next.js UI while forwarding its same-origin API calls to
@@ -15,6 +16,19 @@ try {
     try {
       const request = route.request();
       const requestUrl = new URL(request.url());
+      if (isolateConflictUiRequests) {
+        const requestPath = requestUrl.pathname;
+        const isConflictFlowRequest =
+          requestPath.includes("/uncertainty/contradictions") ||
+          requestPath.includes("/care-continuity/evidence") ||
+          requestPath.includes("/sessions/");
+        // Abort unrelated workspace background calls rather than mock them. The
+        // conflict panel's session, evidence, conflict, and history requests remain real API calls.
+        if (!isConflictFlowRequest) {
+          await route.abort("blockedbyclient");
+          return;
+        }
+      }
       const target = new URL(requestUrl.pathname + requestUrl.search, backend);
       const headers = { ...request.headers() };
       delete headers.origin;
@@ -243,6 +257,7 @@ try {
   const persistedConflict = await conflictResponse.json();
   if (!persistedConflict.id) throw new Error("Backend did not return the persisted conflict ID.");
 
+  isolateConflictUiRequests = true;
   await page.evaluate(() => {
     localStorage.setItem("solenos_care_recipient_display_name", "CI synthetic care recipient");
   });
