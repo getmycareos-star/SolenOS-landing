@@ -126,6 +126,7 @@ export default function Companion() {
   const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const historyLoadedRef = useRef(false)
   const activeSessionStorageKeyRef = useRef<string | null>(null)
+  const activePendingStorageKeyRef = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
 
@@ -172,6 +173,7 @@ export default function Companion() {
         const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
         const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
         activeSessionStorageKeyRef.current = storageKey
+        activePendingStorageKeyRef.current = pendingStorageKey
         const pendingRaw = window.localStorage.getItem(pendingStorageKey)
         if (pendingRaw) {
           try {
@@ -243,6 +245,7 @@ export default function Companion() {
     try {
       const session = await ensureAnonymousSession()
       const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
+      activePendingStorageKeyRef.current = pendingStorageKey
       window.localStorage.setItem(pendingStorageKey, JSON.stringify({ text: submittedText, id: clientTurnId }))
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
@@ -255,6 +258,7 @@ export default function Companion() {
       setInput('')
       pendingTurnRef.current = null
       window.localStorage.removeItem(pendingStorageKey)
+      activePendingStorageKeyRef.current = null
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
       const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
@@ -354,6 +358,10 @@ export default function Companion() {
     if (activeSessionStorageKeyRef.current) {
       window.localStorage.removeItem(activeSessionStorageKeyRef.current)
       activeSessionStorageKeyRef.current = null
+    }
+    if (activePendingStorageKeyRef.current) {
+      window.localStorage.removeItem(activePendingStorageKeyRef.current)
+      activePendingStorageKeyRef.current = null
     }
     setEmergency(false)
     setRequestError(null)
