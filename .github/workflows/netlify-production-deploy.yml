@@ -24,8 +24,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: solenos-netlify-production
-  cancel-in-progress: false
+  # Pull-request verification must not queue behind the production deploy lock.
+  # Keep main/dispatch production publishes serialized, but isolate PR checks.
+  group: ${{ github.event_name == 'pull_request' && format('solenos-netlify-pr-{0}', github.event.pull_request.number) || 'solenos-netlify-production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
