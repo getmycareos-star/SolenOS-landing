@@ -95,7 +95,8 @@ const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
 
-export default function EvidenceReviewPanel(_props?: { personId?: string; evidenceItems?: EvidenceItem[] }) {
+export default function EvidenceReviewPanel(props?: { personId?: string; evidenceItems?: EvidenceItem[] }) {
+  const expectedPersonId = props?.personId?.trim() || ''
   const [personId, setPersonId] = useState('')
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([])
   const [evidenceLoading, setEvidenceLoading] = useState(true)
@@ -137,6 +138,9 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
     try {
       const session = await ensureAnonymousSession()
       if (!session.person?.id) throw new Error('Missing scoped person identity')
+      if (expectedPersonId && expectedPersonId !== session.person.id) {
+        throw new Error('The requested LCR person does not match the authenticated session')
+      }
       const result = await getJSON('/care-continuity/evidence?limit=100')
       if (!Array.isArray(result) || result.some((item) => item?.person_id !== session.person.id || typeof item?.id !== 'string' || typeof item?.source_text !== 'string')) {
         throw new Error('Evidence response is not valid for this care record')
@@ -150,7 +154,7 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
     } finally {
       setEvidenceLoading(false)
     }
-  }, [])
+  }, [expectedPersonId])
 
   useEffect(() => { void loadEvidence() }, [loadEvidence])
   const [selectedId, setSelectedId] = useState('')
