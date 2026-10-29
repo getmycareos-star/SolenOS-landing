@@ -529,7 +529,7 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
           <label style={{ display: 'block', marginTop: 8 }}>Correct an earlier observation (optional)
             <select style={field} value={observationSupersedesId} onChange={event => setObservationSupersedesId(event.target.value)}>
               <option value="">Create a new observation, not a correction</option>
-              {observations.map(item => <option key={item.id} value={item.id}>{item.attribute} · {item.epistemic_status} · {item.id}</option>)}
+              {observations.filter(item => item.attribute === observationAttribute.trim()).map(item => <option key={item.id} value={item.id}>{item.attribute} · {item.epistemic_status} · {item.id}</option>)}
             </select>
           </label>
           {observationSupersedesId && <label style={{ display: 'block', marginTop: 8 }}>Correction rationale (required)
