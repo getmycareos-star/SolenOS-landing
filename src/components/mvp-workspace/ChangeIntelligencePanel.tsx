@@ -1,0 +1,115 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  listPersistedChanges,
+  listPersistedPatterns,
+  type PersistedChange,
+  type PersistedPattern,
+} from "@/api/change-intelligence";
+
+function readable(value: string): string {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatWindow(start: string | null, end: string | null): string {
+  if (!start || !end) return "Comparison window not recorded";
+  const left = new Date(start);
+  const right = new Date(end);
+  if (Number.isNaN(left.getTime()) || Number.isNaN(right.getTime())) return "Comparison window unavailable";
+  return `${left.toLocaleDateString()} – ${right.toLocaleDateString()}`;
+}
+
+/** Shows persisted backend assessments only; it never infers a care pattern from UI text. */
+export function ChangeIntelligencePanel() {
+  const [changes, setChanges] = useState<PersistedChange[]>([]);
+  const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([listPersistedChanges(), listPersistedPatterns()])
+      .then(([changeRows, patternRows]) => {
+        if (!active) return;
+        setChanges(changeRows.filter((row) => row.is_active));
+        setPatterns(patternRows.filter((row) => row.is_active));
+      })
+      .catch((reason: unknown) => {
+        if (!active) return;
+        setError(reason instanceof Error ? reason.message : "Persisted change assessments could not be loaded.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <section className="lcr-record-section" aria-labelledby="change-intelligence-heading">
+      <div className="lcr-section-heading">
+        <div>
+          <p className="lcr-eyebrow">LONGITUDINAL UNDERSTANDING</p>
+          <h2 id="change-intelligence-heading">Changes and patterns</h2>
+        </div>
+      </div>
+      {loading ? <p role="status" className="panel-muted">Loading persisted change assessments…</p> : null}
+      {error ? (
+        <p role="alert" className="panel-muted">
+          Change assessments are unavailable right now. The record is preserved; no conclusion is inferred from this loading failure.
+        </p>
+      ) : null}
+      {!loading && !error && changes.length === 0 && patterns.length === 0 ? (
+        <p className="panel-muted">
+          No persisted change or pattern assessments are available yet. This does not mean that no changes occurred.
+        </p>
+      ) : null}
+      {changes.length > 0 ? (
+        <div className="lcr-timeline">
+          {changes.slice(0, 8).map((change) => (
+            <article key={change.id} className="lcr-timeline-item">
+              <span className="lcr-timeline-marker" aria-hidden="true">↔</span>
+              <div className="lcr-timeline-content">
+                <div className="lcr-entry-heading">
+                  <h3>{readable(change.change_type)} · {readable(change.subject_type)}</h3>
+                  <span>{readable(change.confirmation_status)}</span>
+                </div>
+                {change.explanation ? <p>{change.explanation}</p> : <p>{change.current_state ?? "Change assessment recorded; explanation unavailable."}</p>}
+                <p className="panel-muted">{formatWindow(change.comparison_window_start, change.comparison_window_end)}</p>
+                <p className="panel-muted">
+                  Evidence references: {change.evidence_ids.length}. Confidence: {change.confidence == null ? "not calibrated" : `${Math.round(change.confidence * 100)}%`}.
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+      {patterns.length > 0 ? (
+        <div className="lcr-timeline">
+          {patterns.slice(0, 8).map((pattern) => (
+            <article key={pattern.id} className="lcr-timeline-item">
+              <span className="lcr-timeline-marker" aria-hidden="true">↻</span>
+              <div className="lcr-timeline-content">
+                <div className="lcr-entry-heading">
+                  <h3>{readable(pattern.pattern_type)} · {readable(pattern.subject_type)}</h3>
+                  <span>{readable(pattern.pattern_strength)}</span>
+                </div>
+                <p>Observed interval: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
+                <p className="panel-muted">
+                  Source events: {pattern.event_ids.length}. Confidence: {pattern.confidence == null ? "not calibrated" : `${Math.round(pattern.confidence * 100)}%`}.
+                </p>
+                {pattern.alternative_interpretations?.length ? (
+                  <ul>
+                    {pattern.alternative_interpretations.slice(0, 3).map((item, index) => (
+                      <li key={`${pattern.id}-limit-${index}`}>{typeof item === "string" ? item : JSON.stringify(item)}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
