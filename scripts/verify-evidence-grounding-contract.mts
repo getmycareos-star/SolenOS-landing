@@ -100,3 +100,12 @@ assert(conflictPanel.includes("not automatically resolve a conflict"), "conflict
 assert(lcr.includes("import ConflictResolutionPanel from \"@/components/ConflictResolutionPanel\""), "LCR must import the conflict resolution workflow");
 assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
+const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
+assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
+assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
+assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
+assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
+assert(clarificationPanel.includes("A failed request is not an empty history"), "failed answer-history reads must not be shown as empty history");
+assert(lcr.includes("import ClarificationWorkflowPanel from \"@/components/ClarificationWorkflowPanel\""), "LCR must import the clarification workflow");
+assert(lcr.includes("<ClarificationWorkflowPanel personId={personId} />"), "clarification workflow must be mounted in the actual LCR");
+console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
