@@ -338,6 +338,24 @@ export function ChangeIntelligencePanel() {
                 <p className="panel-muted">
                   Source events: {pattern.event_ids.length}. Confidence: {pattern.confidence == null ? "not calibrated" : `${Math.round(pattern.confidence * 100)}%`}.
                 </p>
+                {pattern.pattern_metrics && typeof pattern.pattern_metrics === "object" ? (
+                  <div className="panel-muted" aria-label="Measured recurrence intervals">
+                    {typeof pattern.pattern_metrics.observation_coverage_status === "string" ? (
+                      <p>Observation coverage: {readable(pattern.pattern_metrics.observation_coverage_status)}.</p>
+                    ) : null}
+                    {Array.isArray(pattern.pattern_metrics.inter_event_intervals_days) ? (
+                      <p>
+                        Inter-event intervals (days): {(pattern.pattern_metrics.inter_event_intervals_days as number[]).join(", ")}.
+                        {pattern.pattern_metrics.normalized_rate_available === true
+                          ? " A normalized rate was calculated with complete coverage."
+                          : " A normalized rate is withheld because complete observation coverage is not established."}
+                      </p>
+                    ) : null}
+                    {typeof pattern.pattern_metrics.regularity_interpretation === "string" ? (
+                      <p>{pattern.pattern_metrics.regularity_interpretation}</p>
+                    ) : null}
+                  </div>
+                ) : null}
                 {pattern.alternative_interpretations?.length ? (
                   <ul>
                     {pattern.alternative_interpretations.slice(0, 3).map((item, index) => (
