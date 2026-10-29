@@ -227,6 +227,9 @@ export default function Companion() {
 
   const startNewSession = () => {
     if (loading) return
+    // A retry key belongs to one logical turn/session. An explicit new
+    // conversation must never reuse a key whose earlier response was lost.
+    pendingTurnRef.current = null
     setMessages([])
     setInput('')
     setSessionId(null)
