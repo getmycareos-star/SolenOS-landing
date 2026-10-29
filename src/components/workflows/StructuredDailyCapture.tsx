@@ -38,6 +38,7 @@ export default function StructuredDailyCapture() {
   const [savedEntrySummary, setSavedEntrySummary] = useState('');
   const [saveError, setSaveError] = useState<unknown | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId: string | null; recordedAt: string | null } | null>(null);
+  const [changeIntelligenceStatus, setChangeIntelligenceStatus] = useState<string | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
   const [reviewingCandidate, setReviewingCandidate] = useState<number | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
@@ -534,6 +535,11 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
+      setChangeIntelligenceStatus(
+        data?.change_intelligence_status === 'available' || data?.change_intelligence_status === 'unavailable'
+          ? data.change_intelligence_status
+          : 'not_reported',
+      );
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
@@ -886,6 +892,22 @@ export default function StructuredDailyCapture() {
         </div>
       )}
       
+      {saved && changeIntelligenceStatus === 'available' && (
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+          Change and pattern assessments were recalculated from the saved care record.
+        </p>
+      )}
+      {saved && changeIntelligenceStatus === 'unavailable' && (
+        <p role="alert" style={{ color: 'var(--danger, #8a2c2c)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+          Your care entry was saved, but change and pattern assessments could not be refreshed. Do not submit the entry again; reopen change intelligence and retry reassessment.
+        </p>
+      )}
+      {saved && changeIntelligenceStatus === 'not_reported' && (
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+          The server did not report whether change and pattern assessments were refreshed.
+        </p>
+      )}
+
       {saved && qwenAnalysis && (
         <section aria-label="Review suggested care details" style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
