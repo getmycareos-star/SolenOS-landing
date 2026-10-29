@@ -155,6 +155,9 @@ try {
 
   await handoff.getByRole("button", { name: "Attempt closure" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  // Closed records leave the default Open filter. Switch to All statuses to
+  // verify the persisted terminal state and exercise the explicit reopen path.
+  await page.getByLabel("Filter open loops").selectOption("all");
   await handoff.getByText(/professional input · closed/i).waitFor({ timeout: 10_000 });
   await handoff.getByRole("button", { name: "Reopen with reason" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
