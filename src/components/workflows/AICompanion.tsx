@@ -121,6 +121,9 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  // Keep the same client turn ID after an ambiguous network failure. The backend
+  // uses it to replay a committed response instead of creating a duplicate turn.
+  const pendingTurnRef = useRef<{ text: string; turnId: string } | null>(null)
   const personId = getPersonId()
 
   const prepareHandoffDraft = async () => {
@@ -163,6 +166,11 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    const pendingTurn = pendingTurnRef.current
+    const clientTurnId = pendingTurn?.text === submittedText
+      ? pendingTurn.turnId
+      : crypto.randomUUID()
+    pendingTurnRef.current = { text: submittedText, turnId: clientTurnId }
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -172,9 +180,13 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: clientTurnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      // Clear only after a valid response is received. On failure the same
+      // turn ID remains available for a safe retry of the unchanged text.
+      if (pendingTurnRef.current?.turnId === clientTurnId) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
