@@ -197,7 +197,7 @@ export default function OpenLoopsPage() {
           { kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() },
         ];
         let selectedSourceId: string | null = null;
-        if (action === "response" && loop.loop_type === "professional_input") {
+        if ((action === "response" && loop.loop_type === "professional_input") || action === "verify" || action === "reconcile") {
           const activeSession = await ensureAnonymousSession();
           const sourceRows = await getJSON(`/evidence/${encodeURIComponent(activeSession.person.id)}`);
           if (!Array.isArray(sourceRows)) {
@@ -212,19 +212,28 @@ export default function OpenLoopsPage() {
           const choices = sources.slice(0, 20).map((item, index) =>
             `${index + 1}. ${String(item.type)} — ${String(item.source_text ?? "Source text unavailable").slice(0, 110)} [ID: ${String(item.id)}]`,
           ).join("\\n");
+          const sourceRequirement = action === "verify"
+            ? "Outcome verification requires an existing persisted source record; descriptive wording alone is not verification."
+            : action === "reconcile"
+              ? "Contradiction reconciliation requires persisted source evidence. Preserve unresolved disagreement when the sources do not settle it."
+              : "A caregiver note alone cannot verify professional input.";
           const sourceId = window.prompt(
-            "Select an existing source record by entering its exact ID. A caregiver note alone cannot verify professional input.\\n\\n" + choices,
+            "Select an existing source record by entering its exact ID. " + sourceRequirement + "\\n\\n" + choices,
           );
           if (!sourceId?.trim()) return;
           const selected = sources.find((item) => item.id === sourceId.trim());
           if (!selected) {
-            throw new Error("Choose an exact source ID from the list. No professional response was saved.");
+            throw new Error("Choose an exact source ID from the list. No evidence-backed action was saved.");
           }
           selectedSourceId = String(selected.id);
           evidence = [{
-            kind: "care_record_source",
+            kind: action === "verify" ? "outcome_verification_source" : action === "reconcile" ? "contradiction_reconciliation_source" : "care_record_source",
             evidence_id: selectedSourceId,
-            text: "Existing source record selected by caregiver for professional-response verification.",
+            text: action === "verify"
+              ? "Existing source record selected by caregiver for outcome verification."
+              : action === "reconcile"
+                ? "Existing source record selected by caregiver for contradiction reconciliation."
+                : "Existing source record selected by caregiver for professional-response verification.",
           }];
         }
         const signature = JSON.stringify({
