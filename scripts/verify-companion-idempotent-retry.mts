@@ -4,6 +4,11 @@ import { readFile } from "node:fs/promises";
 async function main() {
   const source = await readFile("src/components/workflows/AICompanion.tsx", "utf8");
   assert.match(source, /pendingTurn\s*=\s*useRef/);
+  assert.match(source, /restoreSavedConversation/);
+  assert.match(source, /companionSessionStorageKey/);
+  assert.match(source, /getJSON\(\`\/conversation\//);
+  assert.match(source, /historyRestored/);
+  assert.match(source, /Your saved conversation could not be restored/);
   assert.match(source, /pendingTurn\.current\?\.text\s*===\s*submittedText/);
   assert.match(source, /client_turn_id:\s*turnId/);
   assert.match(source, /if\s*\(pendingTurn\.current\?\.id\s*===\s*turnId\)\s*pendingTurn\.current\s*=\s*null/);
