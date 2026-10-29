@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   assessObservationCoverage,
   getPersistedChangeDetail,
+  getPersistedPatternDetail,
   listPersistedChanges,
   listPersistedPatterns,
   reassessPersistedChangeIntelligence,
@@ -12,6 +13,7 @@ import {
   type CoverageStatus,
   type PersistedChange,
   type PersistedPattern,
+  type PatternDetail,
   transitionChangeConfirmation,
   recordObservationCoverage,
 } from "@/api/change-intelligence";
@@ -32,6 +34,9 @@ function formatWindow(start: string | null, end: string | null): string {
 export function ChangeIntelligencePanel() {
   const [changes, setChanges] = useState<PersistedChange[]>([]);
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
+  const [expandedPatternId, setExpandedPatternId] = useState<string | null>(null);
+  const [patternDetails, setPatternDetails] = useState<Record<string, PatternDetail>>({});
+  const [patternDetailErrors, setPatternDetailErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -123,6 +128,24 @@ export function ChangeIntelligencePanel() {
       setDetailErrors((current) => ({ ...current, [changeId]: reason instanceof Error ? reason.message : "The confirmation decision could not be saved." }));
     } finally {
       setTransitioningIds((current) => current.filter((id) => id !== changeId));
+    }
+  }
+
+  async function togglePatternEvidence(patternId: string) {
+    if (expandedPatternId === patternId) {
+      setExpandedPatternId(null);
+      return;
+    }
+    setExpandedPatternId(patternId);
+    if (patternDetails[patternId] || patternDetailErrors[patternId]) return;
+    try {
+      const detail = await getPersistedPatternDetail(patternId);
+      setPatternDetails((current) => ({ ...current, [patternId]: detail }));
+    } catch (reason: unknown) {
+      setPatternDetailErrors((current) => ({
+        ...current,
+        [patternId]: reason instanceof Error ? reason.message : "Pattern source records could not be loaded.",
+      }));
     }
   }
 
@@ -321,6 +344,35 @@ export function ChangeIntelligencePanel() {
                       <li key={`${pattern.id}-limit-${index}`}>{typeof item === "string" ? item : JSON.stringify(item)}</li>
                     ))}
                   </ul>
+                ) : null}
+                <button type="button" className="lcr-text-action" onClick={() => void togglePatternEvidence(pattern.id)} aria-expanded={expandedPatternId === pattern.id}>
+                  {expandedPatternId === pattern.id ? "Hide pattern sources" : "Review pattern sources"} <span aria-hidden="true">→</span>
+                </button>
+                {expandedPatternId === pattern.id && patternDetailErrors[pattern.id] ? <p role="alert" className="panel-muted">{patternDetailErrors[pattern.id]}</p> : null}
+                {expandedPatternId === pattern.id && patternDetails[pattern.id] ? (
+                  <div>
+                    <strong>Supporting source events</strong>
+                    {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No same-record source events could be resolved for this pattern.</p> : null}
+                    {patternDetails[pattern.id].events.map((source) => (
+                      <article key={source.id}>
+                        <strong>{source.title}</strong>
+                        <p>{source.description ?? "No source description recorded."}</p>
+                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {source.event_type} · {source.status} · {source.evidence_ids.length} evidence link(s)</p>
+                      </article>
+                    ))}
+                    {patternDetails[pattern.id].changes.length > 0 ? (
+                      <>
+                        <strong>Linked change assessments</strong>
+                        {patternDetails[pattern.id].changes.map((change) => (
+                          <article key={change.id}>
+                            <strong>{readable(change.change_type)} · {readable(change.change_direction)}</strong>
+                            <p>{change.explanation ?? `${change.previous_state ?? "Previous state unknown"} → ${change.current_state ?? "Current state unknown"}`}</p>
+                            <p className="panel-muted">{readable(change.confirmation_status)} · {change.evidence_ids.length} evidence link(s)</p>
+                          </article>
+                        ))}
+                      </>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </article>
