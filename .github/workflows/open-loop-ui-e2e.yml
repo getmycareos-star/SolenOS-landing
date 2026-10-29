@@ -1,0 +1,98 @@
+name: Open Loop UI end-to-end
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/app/workspace/open-loops/**"
+      - "src/api/client.ts"
+      - "e2e/open-loop-workflow.mjs"
+      - ".github/workflows/open-loop-ui-e2e.yml"
+  pull_request:
+    paths:
+      - "src/app/workspace/open-loops/**"
+      - "src/api/client.ts"
+      - "e2e/open-loop-workflow.mjs"
+      - ".github/workflows/open-loop-ui-e2e.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  open-loop-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out frontend
+        uses: actions/checkout@v4
+
+      - name: Check out backend main for real API integration
+        uses: actions/checkout@v4
+        with:
+          repository: getmycareos-star/SolenOS_backend
+          ref: main
+          path: backend-service
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install frontend and browser test dependency
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+
+      - name: Install backend
+        working-directory: backend-service/backend
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+
+      - name: Start real backend with isolated SQLite test database
+        working-directory: backend-service/backend
+        env:
+          APP_ENV: test
+          SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
+          DATABASE_URL: sqlite:////tmp/solenos-open-loop-ui-e2e.db
+          CORS_ORIGINS: http://127.0.0.1:3000
+        run: |
+          python - <<'PY'
+          from app.main import app
+          from app.core.database import Base, engine
+          Base.metadata.create_all(bind=engine)
+          print("Prepared isolated UI E2E database schema.")
+          PY
+          nohup env APP_ENV=test SECRET_KEY=ci-only-secret-key-long-enough-for-test-runtime DATABASE_URL=sqlite:////tmp/solenos-open-loop-ui-e2e.db CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-open-loop-backend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/solenos-open-loop-backend.log
+          exit 1
+
+      - name: Build and start Next.js
+        run: |
+          npm run build
+          nohup npm run start -- --hostname 127.0.0.1 >/tmp/solenos-open-loop-frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/workspace/open-loops >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/solenos-open-loop-frontend.log
+          exit 1
+
+      - name: Run real-browser Open Loop handoff and reconciliation workflow
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+        run: node e2e/open-loop-workflow.mjs
+
+      - name: Print backend logs on failure
+        if: failure()
+        run: cat /tmp/solenos-open-loop-backend.log || true
