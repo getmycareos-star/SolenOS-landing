@@ -100,6 +100,16 @@ const HANDOFF_TEMPLATE_FALLBACK = {
 
 const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\s]*$/i
 
+function createClientTurnId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+    const random = Math.floor(Math.random() * 16)
+    return (character === 'x' ? random : (random & 0x3) | 0x8).toString(16)
+  })
+}
+
 const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'Talk through a difficult moment', description: 'Sort out what happened and what might help next.', prompt: 'Help me think through a difficult moment in care.' },
   { icon: Clock3, title: 'Make sense of a change', description: 'Separate what we know from what is still unclear.', prompt: 'Help me make sense of a recent change without jumping to conclusions.' },
@@ -123,6 +133,7 @@ export default function Companion() {
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
 
@@ -166,6 +177,11 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    // Keep one idempotency key for this exact message until a successful response
+    // is received. A retry after a network timeout must replay, not duplicate, a turn.
+    const pending = pendingTurnRef.current
+    const clientTurnId = pending?.text === submittedText ? pending.id : createClientTurnId()
+    pendingTurnRef.current = { text: submittedText, id: clientTurnId }
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -175,9 +191,11 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: clientTurnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurnRef.current?.id === clientTurnId) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
@@ -249,6 +267,7 @@ export default function Companion() {
     setMessages([])
     setInput('')
     setSessionId(null)
+    pendingTurnRef.current = null
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
