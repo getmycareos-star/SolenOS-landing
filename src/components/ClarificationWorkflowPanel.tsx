@@ -215,7 +215,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   return <section style={panel} aria-label="Evidence-grounded clarification workflow">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence gaps and clarification questions</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      Each question is tied to a source-attributed claim and can include evidence references. Answers are attributed to the authenticated caregiver and retained as immutable versions.
+      Each question is tied to a source-attributed claim and can include evidence references. Answers are attributed to the authenticated caregiver and retained as immutable versions. An answer does not automatically verify or resolve the underlying claim.
     </p>
     {loading && <p role="status">Loading persisted claims, questions, and evidence…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Retry load</button></p>}
