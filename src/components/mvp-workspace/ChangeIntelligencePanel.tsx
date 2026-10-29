@@ -9,6 +9,7 @@ import {
   type ChangeDetail,
   type PersistedChange,
   type PersistedPattern,
+  transitionChangeConfirmation,
 } from "@/api/change-intelligence";
 
 function readable(value: string): string {
@@ -33,6 +34,31 @@ export function ChangeIntelligencePanel() {
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, ChangeDetail>>({});
   const [detailErrors, setDetailErrors] = useState<Record<string, string>>({});
+  const [confirmationReasons, setConfirmationReasons] = useState<Record<string, string>>({});
+  const [transitioningIds, setTransitioningIds] = useState<string[]>([]);
+
+  async function changeStatus(changeId: string, status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive") {
+    const reason = confirmationReasons[changeId]?.trim() ?? "";
+    if ((status === "rejected" || status === "inconclusive") && !reason) {
+      setDetailErrors((current) => ({ ...current, [changeId]: "A reason is required to dispute or mark this assessment inconclusive." }));
+      return;
+    }
+    setTransitioningIds((current) => [...current, changeId]);
+    setDetailErrors((current) => { const next = { ...current }; delete next[changeId]; return next; });
+    try {
+      await transitionChangeConfirmation(changeId, status, reason, details[changeId]?.evidence.map((item) => item.id) ?? []);
+      const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
+      setChanges(changeRows.filter((row) => row.is_active));
+      setPatterns(patternRows.filter((row) => row.is_active));
+      const detail = await getPersistedChangeDetail(changeId);
+      setDetails((current) => ({ ...current, [changeId]: detail }));
+      setConfirmationReasons((current) => ({ ...current, [changeId]: "" }));
+    } catch (reason: unknown) {
+      setDetailErrors((current) => ({ ...current, [changeId]: reason instanceof Error ? reason.message : "The confirmation decision could not be saved." }));
+    } finally {
+      setTransitioningIds((current) => current.filter((id) => id !== changeId));
+    }
+  }
 
   async function toggleEvidence(changeId: string) {
     if (expandedChangeId === changeId) {
@@ -117,6 +143,20 @@ export function ChangeIntelligencePanel() {
                 {expandedChangeId === change.id && detailErrors[change.id] ? <p role="alert" className="panel-muted">{detailErrors[change.id]}</p> : null}
                 {expandedChangeId === change.id && details[change.id] ? (
                   <div>
+                    <label>
+                      <span>Decision rationale (required to dispute or mark inconclusive)</span>
+                      <textarea
+                        value={confirmationReasons[change.id] ?? ""}
+                        onChange={(event) => setConfirmationReasons((current) => ({ ...current, [change.id]: event.target.value }))}
+                        rows={2}
+                        maxLength={2000}
+                      />
+                    </label>
+                    <div className="lcr-inline-actions">
+                      <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
+                      <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
+                      <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
+                    </div>
                     {details[change.id].evidence.length === 0 && details[change.id].assertions.length === 0 ? (
                       <p className="panel-muted">No source records could be resolved for this assessment. Its evidence references should be reviewed.</p>
                     ) : null}
