@@ -5,6 +5,7 @@ import {
   getPersistedChangeDetail,
   listPersistedChanges,
   listPersistedPatterns,
+  reassessPersistedChangeIntelligence,
   type ChangeDetail,
   type PersistedChange,
   type PersistedPattern,
@@ -28,6 +29,7 @@ export function ChangeIntelligencePanel() {
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, ChangeDetail>>({});
   const [detailErrors, setDetailErrors] = useState<Record<string, string>>({});
@@ -52,19 +54,25 @@ export function ChangeIntelligencePanel() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([listPersistedChanges(), listPersistedPatterns()])
-      .then(([changeRows, patternRows]) => {
+    async function load() {
+      try {
+        await reassessPersistedChangeIntelligence();
+      } catch {
+        if (active) setWarning("A fresh reassessment could not be completed. Previously persisted results will still be loaded; no result is inferred from this failure.");
+      }
+      try {
+        const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
         if (!active) return;
         setChanges(changeRows.filter((row) => row.is_active));
         setPatterns(patternRows.filter((row) => row.is_active));
-      })
-      .catch((reason: unknown) => {
+      } catch (reason: unknown) {
         if (!active) return;
         setError(reason instanceof Error ? reason.message : "Persisted change assessments could not be loaded.");
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    }
+    void load();
     return () => { active = false; };
   }, []);
 
@@ -77,6 +85,7 @@ export function ChangeIntelligencePanel() {
         </div>
       </div>
       {loading ? <p role="status" className="panel-muted">Loading persisted change assessments…</p> : null}
+      {warning ? <p role="status" className="panel-muted">{warning}</p> : null}
       {error ? (
         <p role="alert" className="panel-muted">
           Change assessments are unavailable right now. The record is preserved; no conclusion is inferred from this loading failure.
