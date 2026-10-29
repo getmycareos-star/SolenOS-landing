@@ -188,7 +188,7 @@ try {
   await conflict.getByText(/contradiction · closed/i).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "View audit history" }).click();
   for (const eventName of ["action recorded", "contradiction reconciled", "outcome reported", "outcome verified", "closure verified"]) {
-    await conflict.getByText(eventName, { exact: true }).waitFor({ timeout: 10_000 });
+    await conflict.getByText(eventName, { exact: true }).first().waitFor({ timeout: 10_000 });
   }
 
   // Reload proves the UI rehydrates saved state from the API rather than only
