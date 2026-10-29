@@ -48,6 +48,26 @@ type SituationAssessment = {
   domains: Record<string, { source_names: string[]; record_count: number; evidence_state: string }>;
   capabilities: Record<string, { source_names: string[]; record_count: number; evidence_state: string; unavailable_sources: string[] }>;
   priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  situation_trajectory?: {
+    entries: Array<{
+      source: string;
+      record_id: string;
+      title: string;
+      epistemic_status: string;
+      event_time?: string | null;
+      recorded_at?: string | null;
+      temporal_basis: string;
+      evidence_ids: string[];
+      interpretation_limit: string;
+      window_end?: string | null;
+      coverage_status?: string;
+    }>;
+    count: number;
+    has_more: boolean;
+    ordering: string;
+    causal_inference: string;
+    source_of_truth: string;
+  };
   observation_coverage?: {
     items: Array<{
       id: string;
@@ -705,6 +725,23 @@ export function LCRCurrentUnderstanding() {
               )}
               {assessment.open_loops?.has_more && <p>Additional unresolved records exist beyond this bounded view.</p>}
               {assessment.open_loops?.notice && <small>{assessment.open_loops.notice}</small>}
+            </div>
+            <div>
+              <strong>Situation trajectory ({assessment.situation_trajectory?.count ?? 0} source-linked entries)</strong>
+              {(assessment.situation_trajectory?.entries ?? []).length > 0 ? (
+                <ol>{assessment.situation_trajectory!.entries.slice(-8).reverse().map((entry) => (
+                  <li key={entry.source + ":" + entry.record_id}>
+                    <strong>{entry.title}</strong> — {entry.source.replaceAll("_", " ")} · {entry.epistemic_status.replaceAll("_", " ")}
+                    <p>Event time: {entry.event_time ? formatWhen(entry.event_time) : "Not recorded"} · Record time: {entry.recorded_at ? formatWhen(entry.recorded_at) : "Not recorded"}</p>
+                    {entry.coverage_status && <p>Observation coverage: {entry.coverage_status.replaceAll("_", " ")}{entry.window_end ? " through " + formatWhen(entry.window_end) : ""}</p>}
+                    <small>{entry.temporal_basis.replaceAll("_", " ")} · {entry.evidence_ids.length} linked evidence reference(s)</small>
+                  </li>
+                ))}</ol>
+              ) : (
+                <p>No timestamped or otherwise attributable trajectory entries were returned from the available persisted sources.</p>
+              )}
+              {assessment.situation_trajectory?.has_more && <p>Trajectory is bounded; additional entries are retained in the record.</p>}
+              <small>Chronology only. {assessment.situation_trajectory?.causal_inference === "not_performed" ? "The system does not infer causation from event order." : "Temporal sequence is not proof of causation."}</small>
             </div>
             <div>
               <strong>Observation coverage ({assessment.observation_coverage?.count ?? 0} recorded intervals)</strong>
