@@ -696,7 +696,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               }}>
                 <option value="same_origin">Same origin</option><option value="copied_from">Copied from</option>
                 <option value="forwarded_from">Forwarded from</option><option value="derived_from">Derived from</option>
-                <option value="corroborates">Corroborates</option><option value="contradicts">Contradicts</option>
+                <option value="corroborates">Corroborates this claim/detail</option><option value="corroboration_attempt_failed">Attempted, did not corroborate</option><option value="contradicts">Contradicts</option>
                 <option value="duplicates">Duplicate candidate</option><option value="related_to">Related to</option>
               </select>
             </label>
