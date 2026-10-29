@@ -169,4 +169,5 @@ assert(freshnessPanel.includes("Save new policy version"), "freshness policy UI 
 assert(freshnessPanel.includes("No universal freshness threshold is applied"), "freshness UI must reject an invented universal threshold");
 assert(freshnessPanel.toLowerCase().includes("a failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
 assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
+assert(freshnessPanel.includes("source_time_kind"), "freshness UI must show which timestamp dimension drove the assessment");
 console.log("PASS: domain-specific freshness policy creation, assessment, and history are connected to the LCR with explicit limits.");
