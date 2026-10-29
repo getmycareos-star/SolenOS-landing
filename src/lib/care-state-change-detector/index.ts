@@ -242,15 +242,11 @@ function classifyChangeForDomain(
   }
 
   if (trendDirection === "worsening" && classification !== "WORSENED") {
-    evidence.push("Pattern suggests worsening trajectory over time");
-    if (classification === "STABLE") classification = "WORSENED";
-    if (confidence === "low") confidence = "medium";
-    trajectory = "worsening";
+    evidence.push("Textual trend signals are present; they are not independently sufficient to confirm a care-state trajectory");
+    if (hasPriorInDomain && confidence !== "low") trajectory = "worsening";
   } else if (trendDirection === "improving" && classification !== "IMPROVED") {
-    evidence.push("Pattern suggests improving trajectory over time");
-    if (classification === "STABLE") classification = "IMPROVED";
-    if (confidence === "low") confidence = "medium";
-    trajectory = "improving";
+    evidence.push("Textual trend signals are present; they are not independently sufficient to confirm a care-state trajectory");
+    if (hasPriorInDomain && confidence !== "low") trajectory = "improving";
   }
 
   if (domain === "medication_adherence" && hasPriorInDomain) {
