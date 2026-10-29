@@ -4,6 +4,8 @@ import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
 type EvidenceItem = {
   id: string
   type: string
+  evidence_kind?: string | null
+  epistemic_status?: string | null
   source_text: string
   uploaded_at: string
   uploaded_by_caregiver_id?: string | null
@@ -174,6 +176,9 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
       {selected && <>
         <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Source category</dt><dd style={{ margin: 0 }}>{selected.type || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Evidence kind</dt><dd style={{ margin: 0 }}>{selected.evidence_kind?.replaceAll('_', ' ') || 'Not classified'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Epistemic status</dt><dd style={{ margin: 0 }}>{selected.epistemic_status?.replaceAll('_', ' ') || 'Not assessed'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
