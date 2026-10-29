@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 
 type CurrentCareItem = {
   id: string;
@@ -751,6 +752,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
+      <EvidenceReviewPanel />
     </section>
   );
 }
