@@ -290,6 +290,8 @@ export default function Companion() {
 
   const startNewSession = () => {
     if (loading || restoringHistory) return
+    const activePersonId = getPersonId()
+    if (activePersonId) window.sessionStorage.removeItem(`solenos-companion-session:${activePersonId}`)
     setMessages([])
     setInput('')
     pendingTurnRef.current = null
