@@ -6,6 +6,16 @@ import { ArrowLeft, RefreshCw, Plus, Clock3, AlertCircle, CheckCircle2 } from "l
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 
+type LoopHistoryEvent = {
+  id: string;
+  event_type: string;
+  before_state: Record<string, unknown> | null;
+  after_state: Record<string, unknown>;
+  evidence: Array<Record<string, unknown>>;
+  actor: string;
+  created_at: string;
+};
+
 type OpenLoop = {
   id: string;
   loop_type: string;
@@ -52,6 +62,7 @@ function safeMessage(error: unknown): string {
 
 export default function OpenLoopsPage() {
   const [loops, setLoops] = useState<OpenLoop[]>([]);
+  const [historyById, setHistoryById] = useState<Record<string, LoopHistoryEvent[]>>({});
   const [loopType, setLoopType] = useState<string>("unresolved_concern");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -129,13 +140,17 @@ export default function OpenLoopsPage() {
     }
   }
 
-  async function runAction(loop: OpenLoop, action: "reassess" | "response" | "action" | "outcome" | "verify" | "reconcile" | "close" | "cancel" | "dependency" | "defer" | "review" | "reopen") {
+  async function runAction(loop: OpenLoop, action: "reassess" | "response" | "action" | "outcome" | "verify" | "reconcile" | "close" | "cancel" | "dependency" | "defer" | "review" | "reopen" | "history") {
     setBusyId(loop.id);
     setError("");
     setNotice("");
     try {
       if (action === "reassess") {
         await postJSON("/open-loops/reassess", {});
+      } else if (action === "history") {
+        const result = await getJSON(`/open-loops/${encodeURIComponent(loop.id)}/history?limit=100`);
+        if (!Array.isArray(result)) throw new Error("The audit history response was invalid.");
+        setHistoryById((current) => ({ ...current, [loop.id]: result as LoopHistoryEvent[] }));
       } else if (action === "dependency") {
         const prerequisiteId = window.prompt("Enter the ID of the prerequisite open loop. The backend will verify that it belongs to this same care record and reject dependency cycles.");
         if (!prerequisiteId?.trim()) return;
@@ -157,13 +172,21 @@ export default function OpenLoopsPage() {
         const text = action === "response" ? window.prompt("Record the actual response received. Do not invent a response.") :
           action === "action" ? window.prompt("Record the action actually taken. Do not imply an outcome unless it was observed.") :
           action === "outcome" ? window.prompt("Record the outcome that was reported.") :
-          action === "verify" ? window.prompt("Describe the verification performed. Evidence must be supplied in the text record.") :
+          action === "verify" ? window.prompt("Describe the verification actually performed.") :
           action === "reconcile" ? window.prompt("Record the explicit reconciliation decision. Preserve disagreement if it remains unresolved.") :
           action === "close" ? window.prompt("Describe the evidence supporting closure. This will not bypass backend verification.") :
           action === "reopen" ? window.prompt("Why is this closed or cancelled loop being reopened?") :
           window.prompt("Why are you cancelling further pursuit? Cancellation is not resolution.");
         if (!text?.trim()) return;
-        const payload = { text: text.trim(), evidence: [{ kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() }] };
+        const verificationRule = action === "verify"
+          ? window.prompt("What explicit criterion was used to verify the outcome?")
+          : null;
+        if (action === "verify" && !verificationRule?.trim()) return;
+        const payload = {
+          text: text.trim(),
+          evidence: [{ kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() }],
+          ...(verificationRule?.trim() ? { verification_rule: verificationRule.trim() } : {}),
+        };
         const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
         await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/${endpoint}`, payload);
       }
@@ -252,8 +275,19 @@ export default function OpenLoopsPage() {
               {loop.blocking_prerequisites.length > 0 && <p style={{ fontSize: 13 }}>Blocked by: {loop.blocking_prerequisites.map((item) => item.title).join(", ")}</p>}
               {loop.missing_information.length > 0 && <p style={{ fontSize: 13 }}>Still missing: {loop.missing_information.join(", ")}</p>}
               <p style={{ fontSize: 12, opacity: 0.75 }}>Outcome: {loop.outcome_status.replaceAll("_", " ")} · Updated {dateLabel(loop.updated_at)}</p>
+              {historyById[loop.id] && <section aria-label={`Audit history for ${loop.title}`} style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "var(--surface-muted, #f6f7f4)" }}>
+                <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Recorded history</h4>
+                {historyById[loop.id].length === 0 ? <p style={{ margin: 0, fontSize: 13 }}>No audit events were returned.</p> :
+                  <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 8 }}>
+                    {historyById[loop.id].map((event) => <li key={event.id} style={{ fontSize: 13 }}>
+                      <strong>{event.event_type.replaceAll("_", " ")}</strong> · {dateLabel(event.created_at)}
+                      {event.evidence.length > 0 && <p style={{ margin: "4px 0 0" }}>Evidence recorded: {event.evidence.map((item) => String(item.kind ?? item.text ?? "source")).join(", ")}</p>}
+                    </li>)}
+                  </ol>}
+              </section>}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
                 <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reassess")}>Reassess</Button>
+                <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "history")}>View audit history</Button>
                 {(loop.loop_type === "awaiting_response" || loop.loop_type === "professional_input" || loop.loop_type === "follow_up") && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "response")}>Record response</Button>}
                 {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "action")}>Record action</Button>}
                 {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "outcome")}>Record outcome</Button>}
