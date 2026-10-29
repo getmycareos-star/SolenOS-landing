@@ -149,3 +149,9 @@ for (const field of ["reported_at", "collection_method", "origin_device_ref", "t
 assert(panel.includes("Origin device label"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
 console.log("PASS: LCR evidence review exposes report time, collection method, optional device label, and transfer provenance.");
 
+
+
+const evidenceReviewPanel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+assert(evidenceReviewPanel.includes("/care-continuity/state-reconstruction/as-of"), "evidence UI must call the authenticated historical care-state reconstruction endpoint");
+assert(evidenceReviewPanel.includes("partial_revision_history"), "historical care-state UI must preserve partial-coverage semantics");
+assert(evidenceReviewPanel.includes("No complete historical record is assumed"), "historical reconstruction failures must not imply absence of care records");
