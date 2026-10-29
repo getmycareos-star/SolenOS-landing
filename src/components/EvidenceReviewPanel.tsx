@@ -69,7 +69,9 @@ type SourceRelationship = {
   reviewed_by_caregiver_id?: string | null
   created_at: string
 }
-type FreshnessPolicy = { id: string; person_id: string; domain_key: string; policy_version: string; max_age_days: number | null; historical_after_days: number | null; rationale: string; created_at: string | null }\ntype FreshnessAssessment = { id: string; evidence_id: string; policy_id: string; policy_version: string; freshness_status: string; source_time: string | null; assessed_at: string; age_days: number | null; rationale: string }\ntype Review = {
+type FreshnessPolicy = { id: string; person_id: string; domain_key: string; policy_version: string; max_age_days: number | null; historical_after_days: number | null; rationale: string; created_at: string | null }
+type FreshnessAssessment = { id: string; evidence_id: string; policy_id: string; policy_version: string; freshness_status: string; source_time: string | null; assessed_at: string; age_days: number | null; rationale: string }
+type Review = {
   id: string
   evidence_id: string
   review_type: ReviewType
