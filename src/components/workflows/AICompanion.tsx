@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId, subscribeToPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -124,11 +124,14 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
-  const historyLoadedRef = useRef(false)
+  const historyLoadedRef = useRef<string | null>(null)
   const activeSessionStorageKeyRef = useRef<string | null>(null)
   const activePendingStorageKeyRef = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
-  const personId = getPersonId()
+  const [activePersonId, setActivePersonId] = useState<string>(() => getPersonId())
+  const personId = activePersonId
+
+  useEffect(() => subscribeToPersonId(setActivePersonId), [])
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -163,13 +166,29 @@ export default function Companion() {
   useEffect(() => {
     let cancelled = false
     const restoreConversation = async () => {
-      if (historyLoadedRef.current) return
-      historyLoadedRef.current = true
+      if (!activePersonId) {
+        try { await ensureAnonymousSession() } catch {
+          if (!cancelled) setRequestError('Your care session could not be restored. Check your connection and try again.')
+        }
+        return
+      }
+      if (historyLoadedRef.current === activePersonId) return
+      historyLoadedRef.current = activePersonId
+      setMessages([])
+      setSessionId(null)
+      pendingTurnRef.current = null
+      activeSessionStorageKeyRef.current = null
+      activePendingStorageKeyRef.current = null
       // Workflow handoffs that provide a draft intentionally start from that
       // draft instead of silently restoring an unrelated chat.
       if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
       try {
         const session = await ensureAnonymousSession()
+        if (cancelled) return
+        if (session.person.id !== activePersonId) {
+          setActivePersonId(session.person.id)
+          return
+        }
         const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
         const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
         activeSessionStorageKeyRef.current = storageKey
@@ -221,7 +240,7 @@ export default function Companion() {
     }
     void restoreConversation()
     return () => { cancelled = true }
-  }, [])
+  }, [activePersonId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
