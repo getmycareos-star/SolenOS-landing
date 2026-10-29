@@ -111,7 +111,15 @@ type SituationAssessment = {
       epistemic_status: string;
       event_time?: string | null;
       recorded_at?: string | null;
+      reported_at?: string | null;
       temporal_basis: string;
+      context?: string | null;
+      location?: string | null;
+      observer_label?: string | null;
+      observation_method?: string | null;
+      negated?: boolean | null;
+      hedge_marker?: string | null;
+      ambiguity_note?: string | null;
       evidence_ids: string[];
       interpretation_limit: string;
       window_end?: string | null;
@@ -861,6 +869,14 @@ export function LCRCurrentUnderstanding() {
                   <li key={entry.source + ":" + entry.record_id}>
                     <strong>{entry.title}</strong> — {entry.domain ? entry.domain.replaceAll("_", " ") + " · " : ""}{entry.source.replaceAll("_", " ")} · {entry.epistemic_status.replaceAll("_", " ")}
                     <p>Event time: {entry.event_time ? formatWhen(entry.event_time) : "Not recorded"} · Record time: {entry.recorded_at ? formatWhen(entry.recorded_at) : "Not recorded"}</p>
+                    {entry.reported_at && <p>Reported at: {formatWhen(entry.reported_at)}</p>}
+                    {entry.context && <p>Recorded context: {entry.context}</p>}
+                    {entry.location && <p>Recorded location: {entry.location}</p>}
+                    {entry.observer_label && <p>Observer/source label: {entry.observer_label}</p>}
+                    {entry.observation_method && <p>Observation method: {entry.observation_method}</p>}
+                    {entry.negated !== null && entry.negated !== undefined && <p>Negated in source annotation: {entry.negated ? "Yes" : "No"}</p>}
+                    {entry.hedge_marker && <p>Uncertainty wording: {entry.hedge_marker}</p>}
+                    {entry.ambiguity_note && <p>Ambiguity: {entry.ambiguity_note}</p>}
                     {entry.coverage_status && <p>Observation coverage: {entry.coverage_status.replaceAll("_", " ")}{entry.window_end ? " through " + formatWhen(entry.window_end) : ""}</p>}
                     <small>{entry.temporal_basis.replaceAll("_", " ")} · {entry.evidence_ids.length} linked evidence reference(s)</small>
                     {entry.supersedes_observation_id && <small>Supersedes prior observation: {entry.supersedes_observation_id}</small>}
