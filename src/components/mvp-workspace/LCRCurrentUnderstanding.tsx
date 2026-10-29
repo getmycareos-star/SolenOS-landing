@@ -7,6 +7,7 @@ import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPa
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
+import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
 
 type CurrentCareItem = {
   id: string;
@@ -962,6 +963,7 @@ export function LCRCurrentUnderstanding() {
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
       <ConflictResolutionPanel personId={personId} />
+      <ClarificationWorkflowPanel personId={personId} />
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
