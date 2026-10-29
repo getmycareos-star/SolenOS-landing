@@ -163,3 +163,18 @@ export async function reassessPersistedChangeIntelligence(): Promise<PersistedCh
   const personId = encodeURIComponent(requirePersonId());
   return await postJSON(`/change/changes/reassess?person_id=${personId}`, {}) as PersistedChange[];
 }
+
+export type ChangeConfirmationStatus = "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive";
+
+export async function transitionChangeConfirmation(
+  changeId: string,
+  status: ChangeConfirmationStatus,
+  reason?: string,
+  evidence_ids: string[] = [],
+): Promise<{ change: PersistedChange; transition_id: string; previous_status: string; new_status: string }> {
+  const personId = encodeURIComponent(requirePersonId());
+  return await postJSON(
+    `/change/changes/${personId}/${encodeURIComponent(changeId)}/confirmation`,
+    { status, reason: reason?.trim() || null, evidence_ids },
+  ) as { change: PersistedChange; transition_id: string; previous_status: string; new_status: string };
+}
