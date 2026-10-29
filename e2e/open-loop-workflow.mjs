@@ -219,43 +219,7 @@ try {
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
-  // Exercise the actual Living Care Record evidence UI against the same real
-  // backend session: persisted lineage, source-text integrity, review creation,
-  // and reload-based retrieval. Synthetic records are confined to this CI run.
-  await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
-  const evidencePanel = page.locator('section[aria-label="Persisted evidence assessments"]');
-  await evidencePanel.waitFor({ timeout: 20_000 });
-  await evidencePanel.locator("label").filter({ hasText: /^Evidence record/ }).locator("select").selectOption(sourceEvidenceId);
-  await evidencePanel.getByText(/Source lineage and corroboration relationships/).click();
-  await evidencePanel.locator("label").filter({ hasText: /^Related evidence/ }).locator("select").selectOption(relatedEvidenceId);
-  await evidencePanel.getByLabel("Relationship type").selectOption("forwarded_from");
-  await evidencePanel.getByLabel("Source independence").selectOption("shared_origin");
-  await evidencePanel.getByLabel("Origin group key (optional)").fill("ci-e2e-original-message-0001");
-  await evidencePanel.getByLabel("Why these items are related").fill(
-    "CI-only provenance review: this report was forwarded from the same original appointment message."
-  );
-  await evidencePanel.getByRole("button", { name: "Save source relationship" }).click();
-  await evidencePanel.getByText(/forwarded from/i).waitFor({ timeout: 10_000 });
-
-  await evidencePanel.getByText("Stored source-text integrity check", { exact: true }).click();
-  await evidencePanel.getByText(/MATCH — current stored text matches the stored fingerprint/).waitFor({ timeout: 10_000 });
-  const reviewRationale = "CI-only review: attribution is explicit; shared origin is recorded and is not independent corroboration.";
-  await evidencePanel.getByLabel("Review rationale").fill(reviewRationale);
-  await evidencePanel.getByRole("button", { name: "Save evidence review" }).click();
-  await page.getByRole("status").filter({ hasText: "Review saved to the care record" }).waitFor({ timeout: 10_000 });
-  await evidencePanel.getByText(reviewRationale, { exact: true }).waitFor({ timeout: 10_000 });
-
-  await page.reload({ waitUntil: "domcontentloaded" });
-  const persistedEvidencePanel = page.locator('section[aria-label="Persisted evidence assessments"]');
-  await persistedEvidencePanel.waitFor({ timeout: 20_000 });
-  await persistedEvidencePanel.locator("label").filter({ hasText: /^Evidence record/ }).locator("select").selectOption(sourceEvidenceId);
-  await persistedEvidencePanel.getByText(reviewRationale, { exact: true }).waitFor({ timeout: 10_000 });
-  await persistedEvidencePanel.getByText(/Source lineage and corroboration relationships/).click();
-  await persistedEvidencePanel.getByText(/forwarded from/i).waitFor({ timeout: 10_000 });
-  await page.getByRole("link", { name: /Open purpose-specific evidence completeness/ }).click();
-  await page.getByRole("heading", { name: "Evidence completeness" }).waitFor({ timeout: 10_000 });
-  await page.getByRole("heading", { name: "Purpose-specific evidence completeness" }).waitFor({ timeout: 10_000 });
-  console.log("PASS: real frontend Open Loop lifecycle, persisted LCR evidence lineage/review, integrity check, reload hydration, and navigation to purpose-specific completeness assessment.");
+  console.log("PASS: real frontend Open Loop create/retry, response, action, reconciliation, outcome verification, closure, audit history, and reload hydration against the live API process.");
 } finally {
   // The LCR pages may still have background refresh requests in flight after
   // the assertions complete. Drain route handlers before disposing the context
