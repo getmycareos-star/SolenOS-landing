@@ -74,3 +74,7 @@ assert(panel.includes("exact passage copied from the original evidence"), "obser
 assert(panel.includes("A reported account remains reported"), "observation UI must preserve report versus observation distinctions");
 assert(panel.includes("unknown/missing"), "observation UI must not fabricate values for unknown or missing data");
 console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
+
+assert(panel.includes("supersedes_observation_id"), "observation corrections must link to the prior version");
+assert(panel.includes("correction rationale"), "observation correction UI must require a rationale");
+console.log("PASS: observation correction history must be versioned and justified.");
