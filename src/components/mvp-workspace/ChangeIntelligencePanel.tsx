@@ -116,8 +116,8 @@ export function ChangeIntelligencePanel() {
       const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
       setChanges(changeRows.filter((row) => row.is_active));
       setPatterns(patternRows.filter((row) => row.is_active));
-      const detail = await getPersistedChangeDetail(changeId);
-      setDetails((current) => ({ ...current, [changeId]: detail }));
+      const refreshedDetail = await getPersistedChangeDetail(changeId);
+      setDetails((current) => ({ ...current, [changeId]: refreshedDetail }));
       setConfirmationReasons((current) => ({ ...current, [changeId]: "" }));
     } catch (reason: unknown) {
       setDetailErrors((current) => ({ ...current, [changeId]: reason instanceof Error ? reason.message : "The confirmation decision could not be saved." }));
