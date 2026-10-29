@@ -64,6 +64,19 @@ type SituationAssessment = {
     numeric_confidence: string;
     interpretation_policy: string;
   };
+  freshness_assessment?: {
+    sources: Record<string, {
+      status: string;
+      record_count: number;
+      records_with_record_time: number;
+      records_with_event_time: number;
+      latest_recorded_at?: string | null;
+      latest_event_at?: string | null;
+      staleness_assessment: string;
+      interpretation_limit: string;
+    }>;
+    policy: string;
+  };
   priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   situation_trajectory?: {
     entries: Array<{
@@ -722,6 +735,22 @@ export function LCRCurrentUnderstanding() {
                 )}
                 <p>{assessment.assessment_quality.high_impact_conclusion_gate.replaceAll("_", " ")}</p>
               </section>
+            )}
+            {assessment.freshness_assessment && (
+              <details>
+                <summary>Source freshness and timestamp coverage</summary>
+                <p>{assessment.freshness_assessment.policy}</p>
+                <ul>
+                  {Object.entries(assessment.freshness_assessment.sources).map(([sourceName, freshness]) => (
+                    <li key={sourceName}>
+                      <strong>{sourceName.replaceAll("_", " ")}</strong>: {freshness.status.replaceAll("_", " ")}.
+                      {" "}{freshness.records_with_record_time} of {freshness.record_count} record(s) have record timestamps.
+                      {freshness.latest_recorded_at && <span> Latest record: {formatWhen(freshness.latest_recorded_at)}.</span>}
+                      {" "}{freshness.staleness_assessment.replaceAll("_", " ")}.
+                    </li>
+                  ))}
+                </ul>
+              </details>
             )}
             <details>
               <summary>Capability evidence coverage ({Object.keys(assessment.capabilities || {}).length})</summary>
