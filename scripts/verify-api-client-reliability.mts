@@ -1,5 +1,15 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { getJSON, postJSON } from "../src/api/client";
+
+const companionSource = readFileSync(
+  new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
+  "utf8",
+);
+assert.match(companionSource, /pendingTurnRef/);
+assert.match(companionSource, /client_turn_id:\s*clientTurnId/);
+assert.match(companionSource, /pendingTurnRef\.current\?\.turnId === clientTurnId/);
+
 
 const values = new Map<string, string>([
   ["solenos_anonymous_access_token", "server-issued-token"],
