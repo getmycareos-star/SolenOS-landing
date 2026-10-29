@@ -232,6 +232,7 @@ try {
   await persistedEvidencePanel.waitFor({ timeout: 20_000 });
   await persistedEvidencePanel.getByLabel("Evidence record").selectOption(sourceEvidenceId);
   await persistedEvidencePanel.getByText(reviewRationale, { exact: true }).waitFor({ timeout: 10_000 });
+  await persistedEvidencePanel.getByText(/Source lineage and corroboration relationships/).click();
   await persistedEvidencePanel.getByText(/forwarded from/i).waitFor({ timeout: 10_000 });
   console.log("PASS: real frontend Open Loop lifecycle and real LCR evidence workflow: source lineage persisted, stored-text integrity verified without claiming original-file authenticity, review saved, and lineage/review history reloaded from the backend.");
 } finally {
