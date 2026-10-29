@@ -20,6 +20,10 @@ type Question = {
   subject_type: string;
   subject_id: string;
   claim_id?: string | null;
+  intended_answerer_role?: string | null;
+  intended_answerer_label?: string | null;
+  necessity: string;
+  necessity_rationale?: string | null;
   status: string;
   priority: string;
   evidence_ids?: string[] | null;
@@ -62,6 +66,10 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
   const [questionText, setQuestionText] = useState("");
   const [priority, setPriority] = useState("informational");
+  const [intendedAnswererRole, setIntendedAnswererRole] = useState("");
+  const [intendedAnswererLabel, setIntendedAnswererLabel] = useState("");
+  const [necessity, setNecessity] = useState("not_assessed");
+  const [necessityRationale, setNecessityRationale] = useState("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [answer, setAnswer] = useState("");
   const [answerProvenance, setAnswerProvenance] = useState("");
@@ -140,6 +148,14 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       setError("Select a source-attributed claim and enter a specific clarification question.");
       return;
     }
+    if (necessity !== "not_assessed" && necessityRationale.trim().length < 3) {
+      setError("A necessary/optional assessment requires a rationale; leave necessity unassessed if you cannot justify it.");
+      return;
+    }
+    if (intendedAnswererLabel.trim() && (!intendedAnswererRole || intendedAnswererRole === "not_known")) {
+      setError("A named answerer label requires a compatible, explicitly selected answerer role.");
+      return;
+    }
     if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
       setError("Every linked evidence item must belong to this authenticated care record.");
       return;
@@ -154,6 +170,10 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         subject_type: selectedClaim.subject_type,
         subject_id: selectedClaim.subject_id,
         claim_id: selectedClaim.id,
+        intended_answerer_role: intendedAnswererRole || null,
+        intended_answerer_label: intendedAnswererLabel.trim() || null,
+        necessity,
+        necessity_rationale: necessityRationale.trim() || null,
         status: "open",
         priority,
         evidence_ids: evidenceIds,
@@ -238,6 +258,26 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
             {["informational", "low", "medium", "high", "critical"].map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
         </label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Intended answerer
+          <select style={field} value={intendedAnswererRole} onChange={(event) => setIntendedAnswererRole(event.target.value)}>
+            <option value="">Not assessed</option>
+            {["person_receiving_care", "reporting_caregiver", "other_caregiver", "professional", "not_known"].map((value) =>
+              <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+          </select>
+        </label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Answerer label (optional, only when known)
+          <input style={field} value={intendedAnswererLabel} onChange={(event) => setIntendedAnswererLabel(event.target.value)} disabled={!intendedAnswererRole || intendedAnswererRole === "not_known"} placeholder="Name/role stated by the caregiver" />
+        </label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Is this clarification necessary?
+          <select style={field} value={necessity} onChange={(event) => setNecessity(event.target.value)}>
+            <option value="not_assessed">Not assessed</option>
+            <option value="necessary">Necessary</option>
+            <option value="optional">Optional</option>
+          </select>
+        </label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Necessity rationale
+          <textarea style={{ ...field, minHeight: 55 }} value={necessityRationale} onChange={(event) => setNecessityRationale(event.target.value)} placeholder="Required when necessary/optional is selected" />
+        </label>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related evidence (multi-select)
           <select multiple style={{ ...field, minHeight: 86 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
             {evidence.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id} · {item.source_text.slice(0, 65)}</option>)}
@@ -259,6 +299,8 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
           {selectedQuestion && <div style={{ fontSize: 12, border: "1px solid var(--border)", borderRadius: 7, padding: 10 }}>
             <p><strong>Subject:</strong> {selectedQuestion.subject_type} / {selectedQuestion.subject_id} · <strong>Priority:</strong> {selectedQuestion.priority}</p>
             <p><strong>Linked claim:</strong> {selectedQuestion.claim_id || "Legacy question without a normalized claim link"}</p>
+            <p><strong>Intended answerer:</strong> {selectedQuestion.intended_answerer_role || "Not recorded"}{selectedQuestion.intended_answerer_label ? ` · ${selectedQuestion.intended_answerer_label}` : ""}</p>
+            <p><strong>Necessity:</strong> {selectedQuestion.necessity.replaceAll("_", " ")}{selectedQuestion.necessity_rationale ? ` · ${selectedQuestion.necessity_rationale}` : ""}</p>
             <p>{selectedQuestion.question}</p>
             <p><strong>Evidence IDs:</strong> {selectedQuestion.evidence_ids?.length ? selectedQuestion.evidence_ids.join(", ") : "None linked"}</p>
             {selectedQuestion.answer && <p><strong>Current answer:</strong> {selectedQuestion.answer}<br />Source: {selectedQuestion.answer_provenance || "Not recorded"}<br />Answered by: {selectedQuestion.answered_by_caregiver_id || "Legacy answer without recorded actor"}</p>}
