@@ -62,4 +62,9 @@ assert(claimPanel.includes("superseded_by_claim_id"), "superseded claims must re
 assert(claimPanel.includes("failed request is not an empty history"), "failed history reads must not be presented as empty history");
 console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
 
-
+assert(panel.includes("/relationships"), "source-lineage UI must use the persisted relationship API");
+assert(panel.includes("source_independence_status"), "source-lineage UI must display explicit source-independence state");
+assert(panel.includes("shared_origin"), "source-lineage UI must preserve shared-origin/dependent-source state");
+assert(panel.includes("not automatic proof"), "source-lineage UI must not equate a relationship with verified truth");
+assert(panel.includes("The source relationship was not confirmed as saved"), "failed relationship writes must not be shown as successful");
+console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
