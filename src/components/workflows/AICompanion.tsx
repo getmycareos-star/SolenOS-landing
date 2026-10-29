@@ -274,7 +274,27 @@ export default function Companion() {
         persistence: response.persistence,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, assistantMsg])
+      if (response.idempotent_replay && Array.isArray(response.messages)) {
+        const replayMessages = response.messages.map((message: any, index: number, all: any[]) => {
+          if (
+            index === all.length - 1 &&
+            message?.role === 'assistant' &&
+            message?.text === response.reply
+          ) return assistantMsg
+          return {
+            role: message.role,
+            text: message.text,
+            timestamp: message.created_at ? new Date(message.created_at) : new Date(),
+            guard_verdict: message.guard_verdict,
+            safety_note: message.safety_note,
+            written_to_lcr: false,
+            persistence: 'conversation_only',
+          } as Message
+        })
+        setMessages(replayMessages)
+      } else {
+        setMessages(prev => [...prev, assistantMsg])
+      }
 
       if (!isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
         const nextToken = deltaToken + 1
