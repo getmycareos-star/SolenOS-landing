@@ -12,26 +12,37 @@ try {
   // then require the caregiver's retry to converge on the original record.
   let simulatedLostCreateResponse = false;
   await page.route("**/api/v1/**", async (route) => {
-    const request = route.request();
-    const requestUrl = new URL(request.url());
-    const target = new URL(requestUrl.pathname + requestUrl.search, backend);
-    const headers = { ...request.headers() };
-    delete headers.origin;
-    const response = await route.fetch({ url: target.toString(), headers });
-    if (
-      !simulatedLostCreateResponse &&
-      request.method() === "POST" &&
-      requestUrl.pathname === "/api/v1/open-loops"
-    ) {
-      simulatedLostCreateResponse = true;
-      await route.fulfill({
-        status: 502,
-        contentType: "application/json",
-        body: JSON.stringify({ detail: "CI-only simulated lost response after backend commit" }),
-      });
-      return;
+    try {
+      const request = route.request();
+      const requestUrl = new URL(request.url());
+      const target = new URL(requestUrl.pathname + requestUrl.search, backend);
+      const headers = { ...request.headers() };
+      delete headers.origin;
+      const response = await route.fetch({ url: target.toString(), headers });
+      if (
+        !simulatedLostCreateResponse &&
+        request.method() === "POST" &&
+        requestUrl.pathname === "/api/v1/open-loops"
+      ) {
+        simulatedLostCreateResponse = true;
+        await route.fulfill({
+          status: 502,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "CI-only simulated lost response after backend commit" }),
+        });
+        return;
+      }
+      await route.fulfill({ response });
+    } catch (error) {
+      // Background refreshes can still be in flight when a page navigates or
+      // the test context is torn down. Ignore only those teardown races; real
+      // API failures remain test failures.
+      const message = String(error);
+      if (/Request context disposed|Target closed|Target page, context or browser has been closed/i.test(message)) {
+        return;
+      }
+      throw error;
     }
-    await route.fulfill({ response });
   });
 
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
