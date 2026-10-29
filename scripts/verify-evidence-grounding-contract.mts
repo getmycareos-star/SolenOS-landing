@@ -79,6 +79,12 @@ assert(panel.includes("not automatic proof"), "source-lineage UI must not equate
 assert(panel.includes("The source relationship was not confirmed as saved"), "failed relationship writes must not be shown as successful");
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
 
+const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
+assert(companion.includes("Evidence source lineage"), "Companion handoff preview must render source lineage, not only type it");
+assert(companion.includes("scope_truncated"), "Companion must disclose bounded or truncated lineage retrieval");
+assert(companion.includes("not proof") || companion.includes("not proof that sources are independent"), "Companion must not present missing lineage groups as proof of independence");
+console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
+
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
 assert(panel.includes("exact passage copied from the original evidence"), "observation UI must require source-grounded text");
 assert(panel.includes("A reported account remains reported"), "observation UI must preserve report versus observation distinctions");
