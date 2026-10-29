@@ -80,6 +80,14 @@ try {
       await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
     } else if (message.startsWith("Select an existing source record")) {
       await dialog.accept(sourceEvidenceId);
+    } else if (message.startsWith("Record the actual action taken")) {
+      await dialog.accept("CI-only action: asked the care team to confirm the conflicting reports.");
+    } else if (message.startsWith("Record the outcome that was reported")) {
+      await dialog.accept("CI-only reported outcome: the care team confirmed the reports refer to different dates.");
+    } else if (message.startsWith("Describe the verification actually performed")) {
+      await dialog.accept("CI-only verification: compared the recorded source references and explicit reconciliation.");
+    } else if (message.startsWith("What explicit criterion was used to verify the outcome")) {
+      await dialog.accept("Both source references were reviewed and the date discrepancy was explicitly reconciled.");
     } else if (message.startsWith("Record the explicit reconciliation decision")) {
       await dialog.accept("CI-only reconciliation: the reports concern different dates; neither report is discarded.");
     } else if (message.startsWith("Describe the evidence supporting closure")) {
@@ -139,10 +147,21 @@ try {
   });
   await conflict.waitFor({ timeout: 15_000 });
 
+  await conflict.getByRole("button", { name: "Record action" }).click();
+  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "Record reconciliation" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await conflict.getByRole("button", { name: "Record outcome" }).click();
+  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await conflict.getByRole("button", { name: "Verify outcome" }).click();
+  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await conflict.getByRole("button", { name: "Attempt closure" }).click();
+  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await conflict.getByText(/contradiction · closed/i).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "View audit history" }).click();
-  await conflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
+  for (const eventName of ["action recorded", "contradiction reconciled", "outcome reported", "outcome verified", "closure verified"]) {
+    await conflict.getByText(eventName, { exact: false }).waitFor({ timeout: 10_000 });
+  }
 
   // Reload proves the UI rehydrates saved state from the API rather than only
   // displaying optimistic component state.
@@ -159,7 +178,7 @@ try {
   });
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
-  console.log("PASS: real frontend Open Loop create retry after lost response, source-backed professional response, closure/reopening, conflict reconciliation, durable audit history, and reload hydration.");
+  console.log("PASS: real frontend Open Loop create retry after lost response, source-backed professional response, action, reconciliation, outcome reporting and verification, verified closure, durable audit history, and reload hydration.");
 } finally {
   await browser.close();
 }
