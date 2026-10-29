@@ -192,8 +192,13 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       setNotice("Clarification question saved with its claim context and selected evidence references.");
       await loadAll();
       setSelectedQuestionId(created.id);
-    } catch {
-      setError("Question persistence was not confirmed. No successful creation is assumed.");
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "";
+      if (message.toLowerCase().includes("equivalent open clarification question already exists")) {
+        setError("An equivalent open question already exists for this claim and subject. Select the existing question and review its answer history before asking again.");
+      } else {
+        setError("Question persistence was not confirmed. No successful creation is assumed.");
+      }
     } finally {
       setSaving(false);
     }
