@@ -22,6 +22,15 @@ function readable(value: string): string {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function caregiverChangeLabel(change: PersistedChange): string {
+  // A database "emergence" with unknown/partial historical observation is only
+  // first appearance in available records, not proof that the event began now.
+  if (change.change_type === "emergence" && change.baseline_coverage_status !== "covered") {
+    return "First observed";
+  }
+  return readable(change.change_type);
+}
+
 function formatLocalTimeDistribution(value: unknown): string | null {
   if (!value || typeof value !== "object") return null;
   const distribution = value as Record<string, unknown>;
@@ -275,7 +284,7 @@ export function ChangeIntelligencePanel() {
               <span className="lcr-timeline-marker" aria-hidden="true">↔</span>
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
-                  <h3>{readable(change.change_type)} · {readable(change.subject_type)}</h3>
+                  <h3>{caregiverChangeLabel(change)} · {readable(change.subject_type)}</h3>
                   <span>{readable(change.confirmation_status)}</span>
                 </div>
                 {change.explanation ? <p>{change.explanation}</p> : <p>{change.current_state ?? "Change assessment recorded; explanation unavailable."}</p>}
