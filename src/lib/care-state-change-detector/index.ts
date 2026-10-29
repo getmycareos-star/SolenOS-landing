@@ -400,8 +400,8 @@ export function detectCareStateChanges(input: {
         all_changes: [],
         compound_signals: [],
         attention_required: false,
-        can_wait: true,
-        unresolved_questions: [],
+        can_wait: false,
+        unresolved_questions: ["Care-state history could not be validated; whether waiting is appropriate is unknown."],
         trajectory_summary: "Unable to analyze care state — invalid input",
       };
     }
@@ -485,7 +485,13 @@ export function detectCareStateChanges(input: {
     const attentionRequired =
       meaningfulChanges.some((c) => c.classification === "WORSENED" || c.classification === "NEW" || c.classification === "CONFLICTING") ||
       compoundSignals.length > 0;
-    const canWait = !attentionRequired && meaningfulChanges.length === 0;
+    // Absence of a detected change is not a basis for saying it can wait.
+    // Only explicitly stable, non-low-confidence assessments may set this flag.
+    const canWait =
+      !attentionRequired &&
+      meaningfulChanges.length === 0 &&
+      changes.length > 0 &&
+      changes.every((change) => change.classification === "STABLE" && change.confidence !== "low");
 
     const trajectorySummary = buildTrajectorySummary(changes);
 
@@ -508,8 +514,8 @@ export function detectCareStateChanges(input: {
       all_changes: [],
       compound_signals: [],
       attention_required: false,
-      can_wait: true,
-      unresolved_questions: [],
+      can_wait: false,
+      unresolved_questions: ["Care-state analysis failed; whether waiting is appropriate is unknown."],
       trajectory_summary: "Error analyzing care state",
     };
   }
