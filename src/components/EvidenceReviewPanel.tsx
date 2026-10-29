@@ -184,6 +184,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const selected = useMemo(() => evidenceItems.find(item => item.id === selectedId), [evidenceItems, selectedId])
 
   useEffect(() => {
+    setReconstructedHistory(null)
+    setHistoryReconstructionError('')
+  }, [selectedId])
+
+  useEffect(() => {
     if (!selectedId && evidenceItems.length) setSelectedId(evidenceItems[0].id)
     if (selectedId && !evidenceItems.some(item => item.id === selectedId)) setSelectedId(evidenceItems[0]?.id || '')
   }, [evidenceItems, selectedId])
