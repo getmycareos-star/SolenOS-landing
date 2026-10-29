@@ -119,3 +119,10 @@ assert(clarificationPanel.includes("A failed request is not an empty history"), 
 assert(lcr.includes("import ClarificationWorkflowPanel from \"@/components/ClarificationWorkflowPanel\""), "LCR must import the clarification workflow");
 assert(lcr.includes("<ClarificationWorkflowPanel personId={personId} />"), "clarification workflow must be mounted in the actual LCR");
 console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
+
+for (const field of ["reported_at", "collection_method", "origin_device_ref", "transfer_source", "transfer_reference"]) {
+  assert(panel.includes(field), `evidence review UI must expose acquisition provenance field ${field}`);
+}
+assert(panel.includes("Origin device label"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
+console.log("PASS: LCR evidence review exposes report time, collection method, optional device label, and transfer provenance.");
+
