@@ -205,6 +205,6 @@ export default function EvidenceReviewPanel() {
         <ul>{review.criteria.map((criterion, index) => <li key={index}>{criterion.criterion}: {criterion.result.replace(/_/g, ' ')} — {criterion.rationale}</li>)}</ul>
         <details><summary>Source attribution snapshot</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(review.source_attribution, null, 2)}</pre></details>
       </article>)}
-    </>}
+    </> : null}
   </section>
 }
