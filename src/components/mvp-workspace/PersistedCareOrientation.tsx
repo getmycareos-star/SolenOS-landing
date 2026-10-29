@@ -95,14 +95,9 @@ export function PersistedCareOrientation() {
         throw new Error("Your saved care information isn't available right now.");
       }
       setSnapshot(data);
-      // Use the shared API client so base URL, auth, timeout and retry behaviour match the rest of the app.
+      // Use the shared API client for base URL, authorization, timeout and retry behaviour.
       // Reassess on entry; the backend deduplicates semantically unchanged snapshots.
       try {
-        try {
-          await getJSON("care-continuity/situation-understanding");
-        } catch {
-          // A first-time caregiver may not have an assessment yet; reassessment creates one from persisted records.
-        }
         const assessmentData = await postJSON("care-continuity/situation-understanding/reassess", {});
         setSituationAssessment(assessmentData as SituationAssessment);
       } catch {
