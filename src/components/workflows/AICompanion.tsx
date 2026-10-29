@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId, subscribeToPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -123,8 +123,17 @@ export default function Companion() {
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
+  const historyLoadedRef = useRef<string | null>(null)
+  const activeSessionStorageKeyRef = useRef<string | null>(null)
+  const activePendingStorageKeyRef = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
-  const personId = getPersonId()
+  const [activePersonId, setActivePersonId] = useState<string>(() => getPersonId())
+  const activePersonIdRef = useRef(activePersonId)
+  activePersonIdRef.current = activePersonId
+  const personId = activePersonId
+
+  useEffect(() => subscribeToPersonId(setActivePersonId), [])
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -157,6 +166,88 @@ export default function Companion() {
   }
 
   useEffect(() => {
+    let cancelled = false
+    const restoreConversation = async () => {
+      if (!activePersonId) {
+        try { await ensureAnonymousSession() } catch {
+          if (!cancelled) setRequestError('Your care session could not be restored. Check your connection and try again.')
+        }
+        return
+      }
+      if (historyLoadedRef.current === activePersonId) return
+      historyLoadedRef.current = activePersonId
+      setMessages([])
+      setInput('')
+      setRequestError(null)
+      setEmergency(false)
+      setSessionId(null)
+      pendingTurnRef.current = null
+      activeSessionStorageKeyRef.current = null
+      activePendingStorageKeyRef.current = null
+      // Workflow handoffs that provide a draft intentionally start from that
+      // draft instead of silently restoring an unrelated chat.
+      if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
+      try {
+        const session = await ensureAnonymousSession()
+        if (cancelled) return
+        if (session.person.id !== activePersonId) {
+          setActivePersonId(session.person.id)
+          return
+        }
+        const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
+        const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
+        activeSessionStorageKeyRef.current = storageKey
+        activePendingStorageKeyRef.current = pendingStorageKey
+        const pendingRaw = window.sessionStorage.getItem(pendingStorageKey)
+        if (pendingRaw) {
+          try {
+            const pending = JSON.parse(pendingRaw)
+            if (typeof pending?.text === 'string' && pending.text.trim() && typeof pending?.id === 'string' && pending.id) {
+              pendingTurnRef.current = { text: pending.text, id: pending.id }
+              setInput(pending.text)
+              setRequestError('A previous message may have been interrupted. Select Try again to safely resume it.')
+            }
+          } catch {
+            // Invalid local retry metadata is not trusted as a request identity.
+            window.sessionStorage.removeItem(pendingStorageKey)
+          }
+        }
+        const savedSessionId = window.localStorage.getItem(storageKey)
+        if (!savedSessionId) return
+        const restored = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as any
+        if (cancelled) return
+        if (restored?.person_id !== session.person.id || restored?.session_id !== savedSessionId || !Array.isArray(restored?.messages)) {
+          throw new Error('Saved conversation identity or history was invalid.')
+        }
+        setSessionId(savedSessionId)
+        setMessages(restored.messages.map((row: any): Message => ({
+          role: row.role === 'user' ? 'user' : 'assistant',
+          text: String(row.text ?? ''),
+          guard_verdict: row.guard_verdict,
+          safety_note: row.safety_note,
+          evidence_ids: Array.isArray(row.evidence_ids) ? row.evidence_ids : [],
+          source_event_ids: Array.isArray(row.source_event_ids) ? row.source_event_ids : [],
+          source_evidence_ids: Array.isArray(row.source_evidence_ids) ? row.source_evidence_ids : [],
+          source_appointment_ids: Array.isArray(row.source_appointment_ids) ? row.source_appointment_ids : [],
+          source_freshness_assessment_ids: Array.isArray(row.source_freshness_assessment_ids) ? row.source_freshness_assessment_ids : [],
+          freshness_source_status: row.freshness_source_status,
+          source_record_refs: Array.isArray(row.source_record_refs) ? row.source_record_refs : [],
+          ai_generated: row.ai_generated,
+          written_to_lcr: false,
+          persistence: 'conversation_only',
+          timestamp: row.created_at ? new Date(row.created_at) : new Date(),
+        })))
+      } catch {
+        // Keep the stored key for transient failures. Never silently create a
+        // replacement care identity or delete a recoverable conversation.
+        if (!cancelled) setRequestError('The previous conversation could not be restored. Check your connection and try again; your saved care record was not changed.')
+      }
+    }
+    void restoreConversation()
+    return () => { cancelled = true }
+  }, [activePersonId])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
@@ -166,21 +257,41 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    // Keep the same id across ambiguous network failures. If the caregiver edits
+    // the text, the new content receives a new id and cannot replay the old turn.
+    if (!pendingTurnRef.current || pendingTurnRef.current.text !== submittedText) {
+      pendingTurnRef.current = { text: submittedText, id: crypto.randomUUID() }
+    }
+    const clientTurnId = pendingTurnRef.current.id
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
     try {
       const session = await ensureAnonymousSession()
+      const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
+      activePendingStorageKeyRef.current = pendingStorageKey
+      window.sessionStorage.setItem(pendingStorageKey, JSON.stringify({ text: submittedText, id: clientTurnId }))
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: clientTurnId,
       }) as any
+      // An in-flight request may finish after the caregiver switches records.
+      // The backend write remains scoped to its original bearer identity, but
+      // its result must never be appended to the newly selected transcript.
+      if (activePersonIdRef.current !== session.person.id) return
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
+      pendingTurnRef.current = null
+      window.localStorage.removeItem(pendingStorageKey)
+      activePendingStorageKeyRef.current = null
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
+      const storageKey = `solenos_companion_session_v1:${session.person.id}:${session.caregiver.id}`
+      activeSessionStorageKeyRef.current = storageKey
+      if (response.session_id) window.localStorage.setItem(storageKey, response.session_id)
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -203,7 +314,29 @@ export default function Companion() {
         persistence: response.persistence,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, assistantMsg])
+      if (response.idempotent_replay === true && Array.isArray(response.messages)) {
+        // The server may have committed the turn before the previous response
+        // was lost. Replace, rather than append, the durable transcript.
+        setMessages(response.messages.map((row: any): Message => ({
+          role: row.role === 'user' ? 'user' : 'assistant',
+          text: String(row.text ?? ''),
+          guard_verdict: row.guard_verdict,
+          safety_note: row.safety_note,
+          evidence_ids: Array.isArray(row.evidence_ids) ? row.evidence_ids : [],
+          source_event_ids: Array.isArray(row.source_event_ids) ? row.source_event_ids : [],
+          source_evidence_ids: Array.isArray(row.source_evidence_ids) ? row.source_evidence_ids : [],
+          source_appointment_ids: Array.isArray(row.source_appointment_ids) ? row.source_appointment_ids : [],
+          source_freshness_assessment_ids: Array.isArray(row.source_freshness_assessment_ids) ? row.source_freshness_assessment_ids : [],
+          freshness_source_status: row.freshness_source_status,
+          source_record_refs: Array.isArray(row.source_record_refs) ? row.source_record_refs : [],
+          ai_generated: row.ai_generated,
+          written_to_lcr: false,
+          persistence: 'conversation_only',
+          timestamp: row.created_at ? new Date(row.created_at) : new Date(),
+        })))
+      } else {
+        setMessages(prev => [...prev, assistantMsg])
+      }
 
       if (!isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
         const nextToken = deltaToken + 1
@@ -248,7 +381,16 @@ export default function Companion() {
     if (loading) return
     setMessages([])
     setInput('')
+    pendingTurnRef.current = null
     setSessionId(null)
+    if (activeSessionStorageKeyRef.current) {
+      window.localStorage.removeItem(activeSessionStorageKeyRef.current)
+      activeSessionStorageKeyRef.current = null
+    }
+    if (activePendingStorageKeyRef.current) {
+      window.sessionStorage.removeItem(activePendingStorageKeyRef.current)
+      activePendingStorageKeyRef.current = null
+    }
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
