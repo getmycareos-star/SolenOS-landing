@@ -120,6 +120,7 @@ export default function Companion() {
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const pendingTurn = useRef<{ text: string; id: string } | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
 
@@ -163,6 +164,12 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    // Reuse the exact key for the same text after an ambiguous failure. If the
+    // caregiver edits the text, this is a new turn and must get a new key.
+    const turnId = pendingTurn.current?.text === submittedText
+      ? pendingTurn.current.id
+      : crypto.randomUUID()
+    pendingTurn.current = { text: submittedText, id: turnId }
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -172,9 +179,11 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: turnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurn.current?.id === turnId) pendingTurn.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
@@ -243,6 +252,7 @@ export default function Companion() {
     setMessages([])
     setInput('')
     setSessionId(null)
+    pendingTurn.current = null
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
