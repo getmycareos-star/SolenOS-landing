@@ -110,3 +110,50 @@ export async function recordObservationCoverage(input: {
     ...input,
   }) as ObservationCoverageRecord;
 }
+
+export type ChangeEvidence = {
+  id: string;
+  event_type: string;
+  status: string;
+  occurred_at: string;
+  recorded_at: string | null;
+  title: string;
+  description: string | null;
+  time_provenance: string | null;
+  location_provenance: string | null;
+};
+
+export type ChangeAssertionEvidence = {
+  id: string;
+  subject_type: string;
+  subject_id: string;
+  field: string;
+  assertion_kind: string;
+  asserted_value: string;
+  source_label: string;
+  source_text: string | null;
+  assertion_status: string;
+  observed_at: string | null;
+  recorded_at: string;
+  evidence_ids: string[];
+};
+
+export type ChangeDetail = {
+  change: PersistedChange;
+  evidence: ChangeEvidence[];
+  assertions: ChangeAssertionEvidence[];
+  confirmation_history: Array<{
+    id: string;
+    previous_status: string;
+    new_status: string;
+    actor_caregiver_id: string;
+    reason: string | null;
+    evidence_ids: string[];
+    created_at: string;
+  }>;
+};
+
+export async function getPersistedChangeDetail(changeId: string): Promise<ChangeDetail> {
+  const personId = encodeURIComponent(requirePersonId());
+  return await getJSON(`/change/changes/${personId}/${encodeURIComponent(changeId)}`) as ChangeDetail;
+}
