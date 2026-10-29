@@ -124,6 +124,8 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  // Keep the same idempotency key when the caregiver retries the same failed turn.
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const personId = getPersonId()
 
   const prepareHandoffDraft = async () => {
@@ -166,6 +168,10 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    const pendingTurn = pendingTurnRef.current?.text === submittedText
+      ? pendingTurnRef.current
+      : { text: submittedText, id: crypto.randomUUID() }
+    pendingTurnRef.current = pendingTurn
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -175,9 +181,11 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: pendingTurn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurnRef.current?.id === pendingTurn.id) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
@@ -249,6 +257,7 @@ export default function Companion() {
     setMessages([])
     setInput('')
     setSessionId(null)
+    pendingTurnRef.current = null
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
