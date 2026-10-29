@@ -19,9 +19,10 @@ function sourceLabelFromEvent(
   return "Caregiver input";
 }
 
-function confidenceFromEvent(event: CanonicalCareEvent): "low" | "medium" | "high" {
-  const fc = event.integrity.field_confidence.extracted_fact;
-  return fc.extraction;
+function confidenceFromEvent(_event: CanonicalCareEvent): null {
+  // Extraction confidence is not a validated, task-specific calibration.
+  // Preserve the evidence and provenance; do not translate model labels into trust.
+  return null;
 }
 
 function verificationFromEvent(event: CanonicalCareEvent): ProvenanceRecord["verification_status"] {
@@ -85,7 +86,8 @@ export function buildDareCandidateProvenance(
         : "text") as ProvenanceSourceType,
     extracted_from: c.source_span || null,
     captured_at: c.created_at,
-    confidence: c.confidence >= 0.85 ? "high" : c.confidence >= 0.65 ? "medium" : "low",
+    // Candidate extraction scores have no validated calibration for evidence trust.
+    confidence: null,
     verification_status: "unverified" as const,
     truth_sources: ["ai_inference" as const],
     raw_input_id: c.raw_input_id,
