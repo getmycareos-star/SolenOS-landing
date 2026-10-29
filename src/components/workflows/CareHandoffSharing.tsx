@@ -16,6 +16,13 @@ type DraftItem = {
   record_status?: string;
   text: string;
   stale_warning?: boolean;
+  evidence_ids?: string[];
+  evidence_sources?: Array<{
+    evidence_id: string; type: string; evidence_kind?: string | null; epistemic_status: string;
+    source_type?: string | null; original_author?: string | null; reported_by_label?: string | null;
+    occurred_at?: string | null; original_source_reference?: string | null; parent_evidence_id?: string | null;
+  }>;
+  evidence_reference_status?: string;
 };
 type DraftPayload = {
   draft_id: string;
@@ -96,6 +103,9 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
         "  Evidence status: " + (item.epistemic_status || "not_recorded"),
         "  Record status: " + (item.record_status || "not_recorded"),
         "  Source: " + item.source_table + "#" + item.source_id,
+        item.evidence_ids?.length ? "  Linked evidence IDs: " + item.evidence_ids.join(", ") : "  Linked evidence: none recorded",
+        "  Evidence-source lookup: " + (item.evidence_reference_status || "not_assessed"),
+        ...(item.evidence_sources ?? []).map(source => "  Evidence provenance: " + source.evidence_id + " · " + source.epistemic_status + " · author " + (source.original_author || "not recorded") + " · reporter " + (source.reported_by_label || "not recorded") + " · " + (source.original_source_reference || "original source reference not recorded")),
         item.stale_warning ? "  Freshness: older information; re-check before relying on it" : "",
       ].filter(Boolean).join("\n");
       if (lines.join("\n").length + itemText.length > 16500) { truncated = true; break; }
@@ -113,6 +123,18 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     const line = "- " + section.title + ": " + section.coverage_status.replaceAll("_", " ") + (section.required_fields.length ? ". Required fields: " + section.required_fields.join(", ") : "") + ". " + section.coverage_note;
     if (lines.join("\n").length + line.length > 16500) { truncated = true; break; }
     lines.push(line);
+  }
+  lines.push("\n## Evidence source lineage");
+  if (draft.evidence_lineage) {
+    lines.push("- Assessment: " + draft.evidence_lineage.status);
+    for (const group of draft.evidence_lineage.groups) {
+      lines.push("- " + group.source_independence_status + ": evidence " + group.evidence_ids.join(", ")
+        + (group.origin_group_keys.length ? " · origin groups " + group.origin_group_keys.join(", ") : "")
+        + ". " + group.interpretation_limit);
+    }
+    lines.push("- Interpretation limit: " + draft.evidence_lineage.interpretation_limit);
+  } else {
+    lines.push("- Source lineage was not returned by the backend. Independence is not established.");
   }
   lines.push("\n## Coverage and limitations");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
