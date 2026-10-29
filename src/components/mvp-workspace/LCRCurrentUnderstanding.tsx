@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
+import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
 
 type CurrentCareItem = {
   id: string;
@@ -230,6 +230,7 @@ function formatWhen(value?: string | null): string {
 }
 
 export function LCRCurrentUnderstanding() {
+  const [personId, setPersonId] = useState("");
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -281,6 +282,7 @@ export function LCRCurrentUnderstanding() {
       if (!session.access_token || !session.person?.id) {
         throw new Error("A valid care-record session is required to read the longitudinal record.");
       }
+      setPersonId(session.person.id);
       const result = await getJSON("/care-continuity/current-care?limit_per_source=12");
       if (!result || result.read_only !== true || !Array.isArray(result.items) ||
           typeof result.schema_status !== "string" || typeof result.projection_type !== "string" ||
@@ -342,6 +344,7 @@ export function LCRCurrentUnderstanding() {
         setAssessmentError(assessmentCause instanceof Error ? assessmentCause.message : "Situation assessment is unavailable.");
       }
     } catch (cause) {
+      setPersonId("");
       setProjection(null);
       setError(cause instanceof Error ? cause.message : "The longitudinal care record could not be loaded.");
     } finally {
@@ -787,7 +790,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <EvidenceReviewPanel />
+      <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
 }
