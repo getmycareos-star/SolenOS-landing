@@ -121,6 +121,7 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const personId = getPersonId()
 
   const prepareHandoffDraft = async () => {
@@ -160,6 +161,18 @@ export default function Companion() {
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText || loading) return
+    const pendingTurn = pendingTurnRef.current?.text === submittedText
+      ? pendingTurnRef.current
+      : {
+          text: submittedText,
+          id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+                const random = Math.random() * 16 | 0
+                return (character === 'x' ? random : (random & 0x3 | 0x8)).toString(16)
+              }),
+        }
+    pendingTurnRef.current = pendingTurn
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
@@ -172,9 +185,11 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: pendingTurn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurnRef.current?.id === pendingTurn.id) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
@@ -241,6 +256,7 @@ export default function Companion() {
   const startNewSession = () => {
     if (loading) return
     setMessages([])
+    pendingTurnRef.current = null
     setInput('')
     setSessionId(null)
     setEmergency(false)
