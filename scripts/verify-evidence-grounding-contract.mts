@@ -171,3 +171,10 @@ assert(freshnessPanel.toLowerCase().includes("a failed read is not an empty hist
 assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
 assert(freshnessPanel.includes("source_time_kind"), "freshness UI must show which timestamp dimension drove the assessment");
 console.log("PASS: domain-specific freshness policy creation, assessment, and history are connected to the LCR with explicit limits.");
+
+
+const companionPanel = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
+assert(companionPanel.includes("source_freshness_assessment_ids"), "Companion must expose freshness assessment provenance");
+assert(companionPanel.includes("source_record_refs"), "Companion must carry typed source record references");
+assert(companionPanel.includes("Inspect source record references"), "Companion must let caregivers inspect source record references");
+assert(companionPanel.includes("freshness assessments"), "Companion must distinguish freshness assessments from evidence truth");
