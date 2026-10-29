@@ -374,6 +374,14 @@ export function ChangeIntelligencePanel() {
                     {typeof pattern.pattern_metrics.observation_coverage_status === "string" ? (
                       <p>Observation coverage: {readable(pattern.pattern_metrics.observation_coverage_status)}.</p>
                     ) : null}
+                    {pattern.pattern_metrics.domain_counts && typeof pattern.pattern_metrics.domain_counts === "object" ? (
+                      <p>
+                        Recorded domains in this co-occurrence window: {Object.entries(pattern.pattern_metrics.domain_counts as Record<string, unknown>)
+                          .map(([domain, count]) => `${readable(domain)} (${String(count)} recorded)`)
+                          .join(", ")}.
+                        {" "}These records occurred within the same time window; this does not establish a shared cause.
+                      </p>
+                    ) : null}
                     {Array.isArray(pattern.pattern_metrics.inter_event_intervals_days) ? (
                       <p>
                         Inter-event intervals (days): {(pattern.pattern_metrics.inter_event_intervals_days as number[]).join(", ")}.
