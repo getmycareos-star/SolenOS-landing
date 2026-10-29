@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -108,6 +108,7 @@ export default function Companion() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [restoringHistory, setRestoringHistory] = useState(false)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
@@ -121,6 +122,8 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  // Reuse the same key after an ambiguous timeout so a committed turn is replayed.
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const personId = getPersonId()
 
   const prepareHandoffDraft = async () => {
@@ -154,15 +157,66 @@ export default function Companion() {
   }
 
   useEffect(() => {
+    let cancelled = false
+    const restore = async () => {
+      if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
+      const savedSessionId = window.localStorage.getItem('solenos_companion_session_id')
+      if (!savedSessionId) return
+      setRestoringHistory(true)
+      try {
+        await ensureAnonymousSession()
+        const restored = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as {
+          session_id?: string
+          messages?: Array<{
+            role: 'user' | 'assistant'
+            text: string
+            created_at?: string | null
+            guard_verdict?: string
+            safety_note?: string
+            evidence_ids?: string[]
+            source_event_ids?: string[]
+            source_evidence_ids?: string[]
+            source_appointment_ids?: string[]
+            ai_generated?: boolean
+            written_to_lcr?: boolean
+            persistence?: string
+          }>
+        }
+        if (cancelled) return
+        if (restored.session_id !== savedSessionId || !Array.isArray(restored.messages)) {
+          throw new Error('The saved conversation history was incomplete.')
+        }
+        setSessionId(savedSessionId)
+        setMessages(restored.messages.map(message => ({
+          ...message,
+          timestamp: message.created_at ? new Date(message.created_at) : new Date(),
+        } as Message)))
+      } catch {
+        if (cancelled) return
+        window.localStorage.removeItem('solenos_companion_session_id')
+        setSessionId(null)
+        setRequestError('The previous conversation could not be restored for this care session. Start a new conversation or send a new message.')
+      } finally {
+        if (!cancelled) setRestoringHistory(false)
+      }
+    }
+    void restore()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    if (!submittedText || loading) return
+    if (!submittedText || loading || restoringHistory) return
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    const pending = pendingTurnRef.current
+    const clientTurnId = pending?.text === submittedText ? pending.id : crypto.randomUUID()
+    pendingTurnRef.current = { text: submittedText, id: clientTurnId }
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -172,12 +226,15 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: clientTurnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
+      if (pendingTurnRef.current?.id === clientTurnId) pendingTurnRef.current = null
 
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
+      if (response.session_id) window.localStorage.setItem('solenos_companion_session_id', response.session_id)
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -239,10 +296,12 @@ export default function Companion() {
   }
 
   const startNewSession = () => {
-    if (loading) return
+    if (loading || restoringHistory) return
+    pendingTurnRef.current = null
     setMessages([])
     setInput('')
     setSessionId(null)
+    window.localStorage.removeItem('solenos_companion_session_id')
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -256,7 +315,7 @@ export default function Companion() {
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
           <div><div className="companion-eyebrow">SOLENOS · CARE SUPPORT</div><h2>AI Companion</h2></div>
         </div>
-        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
+        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || restoringHistory}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
       </header>
 
       <section className="companion-purpose">
