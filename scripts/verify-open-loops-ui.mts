@@ -13,7 +13,7 @@ const required: Array<[string, RegExp]> = [
   ["professional response requires an existing selected source", /action === "response" && loop\.loop_type === "professional_input"[\s\S]*?const selected = sources\.find/],
   ["professional source references carry the actual evidence ID", /kind: "care_record_source",[\s\S]*?evidence_id: selectedSourceId/],
   ["missing source evidence blocks the action", /No source evidence is saved in this care record yet/],
-  ["mutation retries retain the key for the same pending action", /pendingActionKeys\.current\[pendingKey\][\s\S]*?pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)/],
+  ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
   ["action errors are shown rather than reported as success", /The requested change was not confirmed/],
   ["no sample Open Loop records are fabricated", /No sample records are shown/],
 ];
