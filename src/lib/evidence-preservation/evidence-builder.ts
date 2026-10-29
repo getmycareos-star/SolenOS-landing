@@ -10,7 +10,7 @@ import type {
   InterpretedState,
   PriorityState,
 } from "../engine/domain/types";
-import type { EvidenceObject, EvidencedConclusion, ObservationType } from "./index";
+import type { EvidencedConclusion, ObservationType } from "./index";
 import { buildEvidenceObject, buildEvidencedConclusion } from "./index";
 
 export interface EvidenceContext {
@@ -85,7 +85,7 @@ export function buildEvidenceForUncertainty(
  * emits no synthetic event ID, source reliability, confidence, or timeline.
  */
 export function collectEvidenceFromInterpretation(
-  interpreted: InterpretedState,
+  _interpreted: InterpretedState,
 ): EvidenceContext {
   return {
     event_ids: [],
