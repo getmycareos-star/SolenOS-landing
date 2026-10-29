@@ -85,6 +85,12 @@ assert(companion.includes("scope_truncated"), "Companion must disclose bounded o
 assert(companion.includes("not proof") || companion.includes("not proof that sources are independent"), "Companion must not present missing lineage groups as proof of independence");
 console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
 
+const appointment = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
+assert(appointment.includes("Evidence source lineage"), "Appointment preparation must render source lineage");
+assert(appointment.includes("scope_truncated"), "Appointment preparation must disclose bounded lineage retrieval");
+assert(appointment.includes("not establish that the sources are independent"), "Appointment preparation must not infer independence from missing lineage");
+console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
+
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
 assert(panel.includes("exact passage copied from the original evidence"), "observation UI must require source-grounded text");
 assert(panel.includes("A reported account remains reported"), "observation UI must preserve report versus observation distinctions");
