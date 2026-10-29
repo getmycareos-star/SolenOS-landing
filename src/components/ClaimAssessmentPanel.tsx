@@ -67,6 +67,7 @@ export default function ClaimAssessmentPanel() {
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [status, setStatus] = useState<(typeof statuses)[number]>("unverified");
+  const [supersededByClaimId, setSupersededByClaimId] = useState("");
   const [rationale, setRationale] = useState("");
   const [links, setLinks] = useState<DraftLink[]>([emptyLink()]);
   const [history, setHistory] = useState<Assessment[]>([]);
@@ -160,6 +161,10 @@ export default function ClaimAssessmentPanel() {
       setError("Select a claim and provide an assessment rationale.");
       return;
     }
+    if (status === "superseded" && (!supersededByClaimId || supersededByClaimId === selectedClaim.id)) {
+      setError("Select a different claim in this same care record as the supersession target.");
+      return;
+    }
     const completeLinks = links.filter((link) => link.evidence_id.trim());
     if (completeLinks.length !== links.length) {
       setError("Each evidence-link row must select an evidence record or be removed.");
@@ -177,6 +182,7 @@ export default function ClaimAssessmentPanel() {
         `/care-continuity/claims/${encodeURIComponent(selectedClaim.id)}/assessments`,
         {
           status,
+          superseded_by_claim_id: status === "superseded" ? supersededByClaimId : null,
           rationale: rationale.trim(),
           policy_version: "claim-assessment-v1",
           evidence_links: completeLinks.map((link) => ({
@@ -222,6 +228,14 @@ export default function ClaimAssessmentPanel() {
           {statuses.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
         </select>
       </label>
+      {status === "superseded" && <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Superseded by claim
+        <select style={field} value={supersededByClaimId} onChange={(event) => setSupersededByClaimId(event.target.value)}>
+          <option value="">Select the replacement claim</option>
+          {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
+            <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 120)}</option>
+          )}
+        </select>
+      </label>}
       <div style={{ display: "grid", gap: 10 }}>
         {links.map((link, index) => <fieldset key={index} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
           <legend style={{ fontSize: 12 }}>Evidence link {index + 1}</legend>
