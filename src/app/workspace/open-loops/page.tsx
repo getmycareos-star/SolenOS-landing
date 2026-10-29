@@ -76,6 +76,7 @@ export default function OpenLoopsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const pendingActionKeys = useRef<Record<string, { signature: string; key: string }>>({});
+  const pendingCreateKey = useRef<{ signature: string; key: string } | null>(null);
 
   const refresh = useCallback(async () => {
     await ensureAnonymousSession();
@@ -115,7 +116,7 @@ export default function OpenLoopsPage() {
     setError("");
     setNotice("");
     try {
-      const saved = await postJSON("/open-loops", {
+      const createPayload = {
         loop_type: loopType,
         title: title.trim(),
         description: description.trim(),
@@ -123,10 +124,18 @@ export default function OpenLoopsPage() {
         source_id: sourceId.trim() || null,
         evidence: [],
         uncertainty: "unknown",
-        idempotency_key: "open-loop-" + crypto.randomUUID(),
         ...(deadline ? { deadline_at: new Date(deadline).toISOString(), deadline_source: deadlineSource, deadline_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } : {}),
+      };
+      const signature = JSON.stringify(createPayload);
+      const pending = pendingCreateKey.current;
+      const idempotencyKey = pending?.signature === signature ? pending.key : "open-loop-" + crypto.randomUUID();
+      pendingCreateKey.current = { signature, key: idempotencyKey };
+      const saved = await postJSON("/open-loops", {
+        ...createPayload,
+        idempotency_key: idempotencyKey,
       });
       await refresh();
+      pendingCreateKey.current = null;
       setTitle("");
       setDescription("");
       setSourceId("");
