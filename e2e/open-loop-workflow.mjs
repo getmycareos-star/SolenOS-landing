@@ -219,8 +219,21 @@ try {
   // Reload proves the UI rehydrates saved state from the API rather than only
   // displaying optimistic component state.
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByLabel("Filter open loops").selectOption("all");
+  // Wait for the first persisted row before switching filters; otherwise the
+  // initial asynchronous list load can race and restore the default Open filter.
   await page.getByRole("heading", { name: handoffTitle }).waitFor({ timeout: 15_000 });
+  await page.getByLabel("Filter open loops").selectOption("all");
+  const reloadedRowsResponse = await fetch(new URL("/api/v1/open-loops?limit=100", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!reloadedRowsResponse.ok) {
+    throw new Error(`Could not verify Open Loop history after reload: HTTP ${reloadedRowsResponse.status}`);
+  }
+  const reloadedRows = await reloadedRowsResponse.json();
+  const reloadedTitles = new Set((reloadedRows.items ?? []).map((item) => item.title));
+  if (!reloadedTitles.has(handoffTitle) || !reloadedTitles.has(conflictTitle)) {
+    throw new Error(`The API did not retain both lifecycle fixtures after reload: ${JSON.stringify([...reloadedTitles])}`);
+  }
   await page.getByRole("heading", { name: conflictTitle }).waitFor({ timeout: 15_000 });
   const reloadedHandoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
