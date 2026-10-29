@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import {
   buildEvidenceObject,
   buildEvidencedConclusion,
@@ -40,3 +42,10 @@ assert(countOnly.confidence === null, "item count must not become a numeric conf
 assert(/independence.*quality.*conflict/i.test(countOnly.conclusion), "item count must not imply independent corroboration or sufficiency");
 
 console.log("PASS: evidence builder emits no synthetic event IDs, confidence, source-reliability or recency scores.");
+
+const panel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+assert(panel.includes("/integrity"), "evidence review UI must call the persisted source-integrity endpoint");
+assert(panel.includes("source_text_integrity_status"), "evidence review UI must display the server-computed integrity status");
+assert(panel.includes("Original file authenticity"), "the UI must disclose that a text hash does not authenticate the uploaded original");
+console.log("PASS: evidence review UI displays server-computed integrity without claiming original-file authenticity.");
+
