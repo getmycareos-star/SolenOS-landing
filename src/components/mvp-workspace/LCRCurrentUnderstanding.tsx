@@ -20,6 +20,12 @@ type CurrentCareItem = {
   occurred_at?: string | null;
   recorded_at?: string | null;
   evidence_ids: string[];
+  source_span_start?: number | null;
+  source_span_end?: number | null;
+  negated?: boolean | null;
+  hedge_marker?: string | null;
+  ambiguity_note?: string | null;
+  extraction_method?: string | null;
   claim_count: number;
   evidence_assessment_coverage?: string;
   evidence_assessments?: Array<{
@@ -831,6 +837,17 @@ export function LCRCurrentUnderstanding() {
                     <p className="lcr-entry-status">{item.kind} · {item.status || "Status not recorded"}</p>
                     <small>Source: {item.source_label || "Not recorded"} · Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {item.evidence_ids?.length > 0 && <small>Linked evidence: {item.evidence_ids.join(", ")}</small>}
+                    {item.source_collection === "evidence_observations" && (
+                      <div className="lcr-entry-status">
+                        <small>
+                          Source span: {item.source_span_start ?? "unknown"}–{item.source_span_end ?? "unknown"} ·
+                          {" "}Extraction: {item.extraction_method || "not recorded"} ·
+                          {" "}Negated: {item.negated == null ? "not specified" : item.negated ? "yes" : "no"}
+                        </small>
+                        {item.hedge_marker && <small>Hedge / uncertainty marker: {item.hedge_marker}</small>}
+                        {item.ambiguity_note && <small>Ambiguity: {item.ambiguity_note}</small>}
+                      </div>
+                    )}
                     {item.evidence_ids?.length > 0 && <small>Evidence review coverage: {(item.evidence_assessment_coverage || "not returned").replaceAll("_", " ")}</small>}
                     {item.evidence_assessments?.map((review) => (
                       <div key={review.evidence_id + ":" + review.review_type} className="lcr-entry-status">
