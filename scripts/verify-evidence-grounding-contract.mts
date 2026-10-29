@@ -49,3 +49,16 @@ assert(panel.includes("source_text_integrity_status"), "evidence review UI must 
 assert(panel.includes("Original file authenticity"), "the UI must disclose that a text hash does not authenticate the uploaded original");
 console.log("PASS: evidence review UI displays server-computed integrity without claiming original-file authenticity.");
 
+const claimPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClaimAssessmentPanel.tsx"), "utf8");
+for (const status of [
+  "supported", "partially_supported", "contradicted", "unverified", "uncertain",
+  "conflicting", "missing_evidence", "stale", "superseded", "withdrawn",
+]) {
+  assert(claimPanel.includes(`"${status}"`), `claim assessment UI must expose ${status}`);
+}
+assert(claimPanel.includes("/assessments"), "claim assessment UI must persist and retrieve assessment history");
+assert(claimPanel.includes("Exact source passage"), "claim assessment UI must require a source passage workflow");
+assert(claimPanel.includes("failed request is not an empty history"), "failed history reads must not be presented as empty history");
+console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
+
+
