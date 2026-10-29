@@ -281,9 +281,8 @@ function classifyChangeForDomain(
     }
   }
 
-  if (observations.length >= 3 && trajectory === "unknown") {
-    trajectory = "stable";
-  }
+  // Repeated observations with no directional signal do not prove stability
+  // when observation coverage and missing periods are unknown.
 
   if (temporalProximity >= 3 && (classification === "WORSENED" || classification === "NEW")) {
     evidence.push("Reports are temporally close; proximity alone does not establish a shared cause or increase certainty");
