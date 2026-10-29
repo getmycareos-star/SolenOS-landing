@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   assessObservationCoverage,
   getPersistedChangeDetail,
@@ -50,7 +50,7 @@ export function ChangeIntelligencePanel() {
   const [coverageSaving, setCoverageSaving] = useState(false);
   const [coverageAssessment, setCoverageAssessment] = useState<CoverageAssessment | null>(null);
 
-  async function submitCoverage(event: React.FormEvent<HTMLFormElement>) {
+  async function submitCoverage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setCoverageMessage(null);
     setCoverageError(null);
@@ -79,7 +79,11 @@ export function ChangeIntelligencePanel() {
       });
       const assessment = await assessObservationCoverage(coverageDomain.trim(), start.toISOString(), end.toISOString());
       setCoverageAssessment(assessment);
-      setCoverageMessage("Observation coverage saved. Change reassessment will use this explicit coverage information.");
+      await reassessPersistedChangeIntelligence();
+      const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
+      setChanges(changeRows.filter((row) => row.is_active));
+      setPatterns(patternRows.filter((row) => row.is_active));
+      setCoverageMessage("Observation coverage saved and persisted change assessments reassessed.");
       setCoverageRationale("");
     } catch (reason: unknown) {
       setCoverageError(reason instanceof Error ? reason.message : "Observation coverage could not be saved.");
