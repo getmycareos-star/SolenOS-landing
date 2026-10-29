@@ -35,6 +35,8 @@ type SourceIntegrity = {
 type Observation = {
   id: string
   evidence_id: string
+  supersedes_observation_id?: string | null
+  correction_rationale?: string | null
   observation_kind: string
   epistemic_status: string
   subject_label: string
@@ -126,6 +128,8 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
   const [observationObserver, setObservationObserver] = useState('')
   const [observationMethod, setObservationMethod] = useState('')
   const [observationSaving, setObservationSaving] = useState(false)
+  const [observationSupersedesId, setObservationSupersedesId] = useState('')
+  const [observationCorrectionRationale, setObservationCorrectionRationale] = useState('')
 
   const loadEvidence = useCallback(async () => {
     setEvidenceLoading(true)
@@ -273,6 +277,10 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
       setObservationsError('Provide a subject, attribute, and exact passage copied from the original evidence.')
       return
     }
+    if (observationSupersedesId && observationCorrectionRationale.trim().length < 3) {
+      setObservationsError('A correction must state why the earlier observation is being superseded.')
+      return
+    }
     if (!['unknown', 'missing'].includes(observationStatus) && !observationValue.trim()) {
       setObservationsError('Provide a recorded value, or explicitly choose unknown/missing.')
       return
@@ -295,10 +303,14 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
         observation_method: observationMethod.trim() || null,
         extraction_method: 'human_entered',
         extraction_version: 'manual-v1',
+        supersedes_observation_id: observationSupersedesId || null,
+        correction_rationale: observationCorrectionRationale.trim() || null,
       })
       setObservationValue('')
       setObservationPassage('')
       setObservationAmbiguity('')
+      setObservationSupersedesId('')
+      setObservationCorrectionRationale('')
       await loadObservations()
     } catch {
       setObservationsError('The observation was not confirmed as saved. The API requires an exact source passage and valid epistemic classification.')
@@ -457,6 +469,7 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
             <div>{item.observation_kind.replaceAll('_', ' ')} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
             <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''} · exact source offsets {item.source_span_start}–{item.source_span_end}</div>
+            {item.supersedes_observation_id && <div>Corrects observation {item.supersedes_observation_id}: {item.correction_rationale || 'No correction rationale recorded'}</div>}
             {item.negated !== null && item.negated !== undefined && <div>Negation recorded: {item.negated ? 'yes' : 'no'}</div>}
             {item.hedge_marker && <div>Hedging: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>Ambiguity: {item.ambiguity_note}</div>}
@@ -513,6 +526,15 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
               <input style={field} value={observationMethod} onChange={event => setObservationMethod(event.target.value)} maxLength={120} placeholder="How it was observed/measured" />
             </label>
           </div>
+          <label style={{ display: 'block', marginTop: 8 }}>Correct an earlier observation (optional)
+            <select style={field} value={observationSupersedesId} onChange={event => setObservationSupersedesId(event.target.value)}>
+              <option value="">Create a new observation, not a correction</option>
+              {observations.map(item => <option key={item.id} value={item.id}>{item.attribute} · {item.epistemic_status} · {item.id}</option>)}
+            </select>
+          </label>
+          {observationSupersedesId && <label style={{ display: 'block', marginTop: 8 }}>Correction rationale (required)
+            <textarea style={{ ...field, minHeight: 52 }} value={observationCorrectionRationale} onChange={event => setObservationCorrectionRationale(event.target.value)} maxLength={4000} />
+          </label>}
           <label style={{ display: 'block', marginTop: 8 }}>Ambiguity / extraction limitation
             <textarea style={{ ...field, minHeight: 52 }} value={observationAmbiguity} onChange={event => setObservationAmbiguity(event.target.value)} maxLength={4000} />
           </label>
