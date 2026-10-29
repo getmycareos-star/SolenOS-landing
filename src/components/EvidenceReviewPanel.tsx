@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
 
@@ -598,6 +599,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
     {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading persisted evidence…</p>}
     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Assessments are versioned records with a rationale. They do not assign numeric confidence or turn a caregiver report into independently verified evidence.</p>
+    <p style={{ fontSize: 12, margin: "8px 0 12px" }}><Link href="/workspace/evidence-completeness" style={{ color: "var(--text)", textDecoration: "underline" }}>Open purpose-specific evidence completeness policies and assessments</Link></p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Domain-specific freshness policies and assessment history</summary>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Policies are explicit, caregiver-defined and immutable by version. No universal freshness threshold is applied. A freshness result does not establish truth or current clinical status.</p>
