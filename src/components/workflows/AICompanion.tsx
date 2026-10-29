@@ -20,6 +20,20 @@ interface HandoffDraftItem {
   record_status?: string
   text: string
   stale_warning?: boolean
+  evidence_ids?: string[]
+  evidence_sources?: Array<{
+    evidence_id: string
+    type: string
+    evidence_kind?: string | null
+    epistemic_status: string
+    source_type?: string | null
+    original_author?: string | null
+    reported_by_label?: string | null
+    occurred_at?: string | null
+    original_source_reference?: string | null
+    parent_evidence_id?: string | null
+  }>
+  evidence_reference_status?: string
 }
 interface HandoffDraft {
   draft_id: string
