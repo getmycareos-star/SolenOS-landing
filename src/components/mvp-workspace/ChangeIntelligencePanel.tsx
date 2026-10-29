@@ -22,6 +22,28 @@ function readable(value: string): string {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function formatLocalTimeDistribution(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const distribution = value as Record<string, unknown>;
+  const hours = distribution.hour_of_day_counts;
+  const weekdays = distribution.day_of_week_counts;
+  if (!hours || typeof hours !== "object" || !weekdays || typeof weekdays !== "object") return null;
+  const hourText = Object.entries(hours as Record<string, unknown>)
+    .map(([hour, count]) => `${hour}:00 (${String(count)} recorded)`)
+    .join(", ");
+  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const dayText = Object.entries(weekdays as Record<string, unknown>)
+    .map(([day, count]) => `${dayNames[Number(day)] ?? `Day ${day}`} (${String(count)} recorded)`)
+    .join(", ");
+  const zones = Array.isArray(distribution.timezone_ids)
+    ? distribution.timezone_ids.filter((zone): zone is string => typeof zone === "string").join(", ")
+    : "";
+  if (!hourText && !dayText) return null;
+  return [hourText ? `Local hours: ${hourText}` : "", dayText ? `Local weekdays: ${dayText}` : "", zones ? `Time zone(s): ${zones}` : ""]
+    .filter(Boolean)
+    .join("; ");
+}
+
 function formatWindow(start: string | null, end: string | null): string {
   if (!start || !end) return "Comparison window not recorded";
   const left = new Date(start);
@@ -353,6 +375,12 @@ export function ChangeIntelligencePanel() {
                     ) : null}
                     {typeof pattern.pattern_metrics.regularity_interpretation === "string" ? (
                       <p>{pattern.pattern_metrics.regularity_interpretation}</p>
+                    ) : null}
+                    {pattern.pattern_metrics.local_time_distribution_status === "descriptive_only_no_causal_association" ? (
+                      <p>
+                        {formatLocalTimeDistribution(pattern.pattern_metrics.local_time_distribution) ?? "Local-time distribution is not available."}
+                        {" "}This describes recorded timing only; it does not establish a cause or a routine-related effect.
+                      </p>
                     ) : null}
                   </div>
                 ) : null}
