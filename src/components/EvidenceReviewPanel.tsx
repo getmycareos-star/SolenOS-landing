@@ -32,6 +32,17 @@ type SourceIntegrity = {
   hash_scope: string
   original_file_authenticity_verified: false
 }
+type SourceRelationship = {
+  id: string
+  source_evidence_id: string
+  related_evidence_id: string
+  relationship_type: string
+  source_independence_status: string
+  origin_group_key?: string | null
+  rationale: string
+  reviewed_by_caregiver_id?: string | null
+  created_at: string
+}
 type Review = {
   id: string
   evidence_id: string
@@ -71,6 +82,15 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
   const [sourceIntegrity, setSourceIntegrity] = useState<SourceIntegrity | null>(null)
   const [sourceIntegrityError, setSourceIntegrityError] = useState('')
   const [sourceIntegrityLoading, setSourceIntegrityLoading] = useState(false)
+  const [relationships, setRelationships] = useState<SourceRelationship[]>([])
+  const [relationshipsLoading, setRelationshipsLoading] = useState(false)
+  const [relationshipsError, setRelationshipsError] = useState('')
+  const [relatedEvidenceId, setRelatedEvidenceId] = useState('')
+  const [relationshipType, setRelationshipType] = useState('forwarded_from')
+  const [independenceStatus, setIndependenceStatus] = useState('shared_origin')
+  const [originGroupKey, setOriginGroupKey] = useState('')
+  const [relationshipRationale, setRelationshipRationale] = useState('')
+  const [relationshipSaving, setRelationshipSaving] = useState(false)
 
   const loadEvidence = useCallback(async () => {
     setEvidenceLoading(true)
@@ -162,6 +182,57 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
 
   useEffect(() => { void loadSourceIntegrity() }, [loadSourceIntegrity])
 
+  const loadRelationships = useCallback(async () => {
+    if (!selectedId || !personId) {
+      setRelationships([])
+      setRelationshipsError('')
+      return
+    }
+    setRelationshipsLoading(true)
+    setRelationshipsError('')
+    try {
+      const result = await getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/relationships`)
+      if (!Array.isArray(result) || result.some((item) =>
+        item?.person_id !== personId || typeof item?.id !== 'string' ||
+        ![selectedId].includes(item?.source_evidence_id) && ![selectedId].includes(item?.related_evidence_id))) {
+        throw new Error('Invalid evidence relationship response')
+      }
+      setRelationships(result as SourceRelationship[])
+    } catch {
+      setRelationships([])
+      setRelationshipsError('Source lineage could not be loaded. No relationship list is assumed; retry when connected.')
+    } finally {
+      setRelationshipsLoading(false)
+    }
+  }, [personId, selectedId])
+
+  useEffect(() => { void loadRelationships() }, [loadRelationships])
+
+  async function submitRelationship() {
+    if (!selected || !relatedEvidenceId || relatedEvidenceId === selected.id || relationshipRationale.trim().length < 3) {
+      setRelationshipsError('Choose a different evidence item and provide a relationship rationale.')
+      return
+    }
+    setRelationshipSaving(true)
+    setRelationshipsError('')
+    try {
+      await postJSON(`/care-continuity/evidence/${encodeURIComponent(selected.id)}/relationships`, {
+        related_evidence_id: relatedEvidenceId,
+        relationship_type: relationshipType,
+        source_independence_status: independenceStatus,
+        origin_group_key: originGroupKey.trim() || null,
+        rationale: relationshipRationale.trim(),
+      })
+      setRelationshipRationale('')
+      setRelationshipsError('')
+      await loadRelationships()
+    } catch {
+      setRelationshipsError('The source relationship was not confirmed as saved. Check the connection and retry.')
+    } finally {
+      setRelationshipSaving(false)
+    }
+  }
+
   function changeReviewType(next: ReviewType) {
     setReviewType(next)
     setOutcome(outcomes[next][0])
@@ -229,6 +300,53 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original source reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Parent evidence</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id || 'None recorded'}</dd></div>
         </dl>
+        <details style={{ fontSize: 12, marginBottom: 12 }}>
+          <summary>Source lineage and corroboration relationships ({relationships.length})</summary>
+          <p>Relationships are explicit, attributed assessments—not automatic proof that sources are independent or that a claim is true.</p>
+          {relationshipsLoading && <p role="status">Loading source relationships…</p>}
+          {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
+          {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No source relationships were returned for this evidence item.</p>}
+          {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
+            <strong>{item.relationship_type.replaceAll('_', ' ')}</strong>
+            <div>Evidence {item.source_evidence_id} → related evidence {item.related_evidence_id}</div>
+            <div>Independence: {item.source_independence_status.replaceAll('_', ' ')}{item.origin_group_key ? ` · origin group ${item.origin_group_key}` : ''}</div>
+            <p>{item.rationale}</p>
+            <small>Reviewed by {item.reviewed_by_caregiver_id || 'identity unavailable'} · {new Date(item.created_at).toLocaleString()}</small>
+          </article>)}
+          <label style={{ display: 'block', marginTop: 9 }}>Related evidence
+            <select style={field} value={relatedEvidenceId} onChange={event => setRelatedEvidenceId(event.target.value)}>
+              <option value="">Choose a separate evidence record</option>
+              {evidenceItems.filter(item => item.id !== selected.id).map(item => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}
+            </select>
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 8 }}>
+            <label>Relationship type
+              <select style={field} value={relationshipType} onChange={event => {
+                const next = event.target.value
+                setRelationshipType(next)
+                if (['copied_from', 'forwarded_from', 'derived_from', 'same_origin'].includes(next)) setIndependenceStatus('shared_origin')
+              }}>
+                <option value="same_origin">Same origin</option><option value="copied_from">Copied from</option>
+                <option value="forwarded_from">Forwarded from</option><option value="derived_from">Derived from</option>
+                <option value="corroborates">Corroborates</option><option value="contradicts">Contradicts</option>
+                <option value="duplicates">Duplicate candidate</option><option value="related_to">Related to</option>
+              </select>
+            </label>
+            <label>Source independence
+              <select style={field} value={independenceStatus} onChange={event => setIndependenceStatus(event.target.value)}>
+                <option value="shared_origin">Shared origin / dependent</option><option value="independent">Independent (reviewed)</option>
+                <option value="unknown">Unknown</option><option value="not_assessed">Not assessed</option>
+              </select>
+            </label>
+          </div>
+          <label style={{ display: 'block', marginTop: 8 }}>Origin group key (optional)
+            <input style={field} value={originGroupKey} onChange={event => setOriginGroupKey(event.target.value)} maxLength={128} placeholder="Identifier shared by copied or forwarded material" />
+          </label>
+          <label style={{ display: 'block', marginTop: 8 }}>Why these items are related
+            <textarea style={{ ...field, minHeight: 58 }} value={relationshipRationale} onChange={event => setRelationshipRationale(event.target.value)} />
+          </label>
+          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitRelationship()} disabled={relationshipSaving || relationshipsLoading || !selected || !relatedEvidenceId}>{relationshipSaving ? 'Saving…' : 'Save source relationship'}</button>
+        </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>Stored source-text integrity check</summary>
           {sourceIntegrityLoading && <p role="status">Checking stored source text…</p>}
