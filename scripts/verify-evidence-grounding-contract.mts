@@ -103,6 +103,8 @@ console.log("PASS: scoped conflict comparison and partial-resolution history are
 const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
 assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
+assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
+assert(clarificationPanel.includes("Legacy question without a normalized claim link"), "legacy questions without normalized links must be labelled honestly");
 assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
 assert(clarificationPanel.includes("does not automatically verify or resolve the underlying claim"), "answer capture must not automatically resolve its linked claim");
 assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
