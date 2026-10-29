@@ -83,6 +83,33 @@ function writeCompanionStorage(key: string, value: string): boolean {
   }
 }
 
+function readPendingTurnStorage(): string | null {
+  try {
+    const tabValue = window.sessionStorage.getItem('solenos_companion_pending_turn')
+    if (tabValue !== null) return tabValue
+  } catch { /* tab storage may be disabled */ }
+  // Migrate a pending key left by an older build away from persistent local storage.
+  try {
+    const legacyValue = window.localStorage.getItem('solenos_companion_pending_turn')
+    if (legacyValue !== null) {
+      try { window.sessionStorage.setItem('solenos_companion_pending_turn', legacyValue) } catch { /* preserve legacy retry for this page only */ }
+      window.localStorage.removeItem('solenos_companion_pending_turn')
+      return legacyValue
+    }
+  } catch { /* local storage may be disabled */ }
+  return null
+}
+
+function writePendingTurnStorage(value: string): boolean {
+  try {
+    window.sessionStorage.setItem('solenos_companion_pending_turn', value)
+    try { window.localStorage.removeItem('solenos_companion_pending_turn') } catch { /* clean-up is best effort */ }
+    return true
+  } catch {
+    return false
+  }
+}
+
 function clearCompanionStorage(key: string): void {
   try { window.localStorage.removeItem(key) } catch { /* storage may be disabled */ }
   try { window.sessionStorage.removeItem(key) } catch { /* storage may be disabled */ }
@@ -189,7 +216,7 @@ export default function Companion() {
     let cancelled = false
     const restore = async () => {
       if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
-      const pendingRaw = readCompanionStorage('solenos_companion_pending_turn')
+      const pendingRaw = readPendingTurnStorage()
       if (pendingRaw) {
         try {
           const pending = JSON.parse(pendingRaw) as { text?: string; id?: string }
@@ -261,8 +288,7 @@ export default function Companion() {
     const pending = pendingTurnRef.current
     const clientTurnId = pending?.text === submittedText ? pending.id : crypto.randomUUID()
     pendingTurnRef.current = { text: submittedText, id: clientTurnId }
-    const pendingSaved = writeCompanionStorage(
-      'solenos_companion_pending_turn',
+    const pendingSaved = writePendingTurnStorage(
       JSON.stringify({ text: submittedText, id: clientTurnId }),
     )
     if (!pendingSaved) {
