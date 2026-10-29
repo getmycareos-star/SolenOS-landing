@@ -91,3 +91,12 @@ assert(panel.includes("expectedPersonId !== session.person.id"), "evidence revie
 assert(lcr.includes("<ClaimAssessmentPanel />"), "claim assessments must be reachable from the LCR workflow");
 assert(lcr.includes("<CareContinuityIntegrityPanel personId={personId} />"), "care continuity integrity must be reachable from the LCR workflow");
 console.log("PASS: evidence, claim assessment, and care-integrity panels are mounted in the actual LCR workflow.");
+const conflictPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ConflictResolutionPanel.tsx"), "utf8");
+assert(conflictPanel.includes("/uncertainty/contradictions/"), "conflict resolution UI must read persisted conflicts and transition history");
+assert(conflictPanel.includes("resolution_scope"), "partial conflict resolution must capture and display exact scope");
+assert(conflictPanel.includes("linked evidence"), "conflict resolution must expose linked evidence");
+assert(conflictPanel.includes("A failed request is not an empty history"), "failed conflict-history reads must not look like an empty history");
+assert(conflictPanel.includes("not automatically resolve a conflict"), "conflict UI must reject timestamp/majority-only resolution");
+assert(lcr.includes("import ConflictResolutionPanel from \"@/components/ConflictResolutionPanel\""), "LCR must import the conflict resolution workflow");
+assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
+console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
