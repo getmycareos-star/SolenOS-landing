@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { ensureAnonymousSession } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 type PersistedEvent = {
   id: string;
@@ -95,15 +95,16 @@ export function PersistedCareOrientation() {
         throw new Error("Your saved care information isn't available right now.");
       }
       setSnapshot(data);
-      // Reassess on entry so new persisted evidence is reflected. The backend deduplicates semantically unchanged snapshots.
-      // Failure here must not hide the saved care record.
+      // Use the shared API client so base URL, auth, timeout and retry behaviour match the rest of the app.
+      // Reassess on entry; the backend deduplicates semantically unchanged snapshots.
       try {
-        const reassessResponse = await fetch("/api/v1/care-continuity/situation-understanding/reassess", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          cache: "no-store",
-        });
-        setSituationAssessment(reassessResponse.ok ? ((await reassessResponse.json()) as SituationAssessment) : null);
+        try {
+          await getJSON("care-continuity/situation-understanding");
+        } catch {
+          // A first-time caregiver may not have an assessment yet; reassessment creates one from persisted records.
+        }
+        const assessmentData = await postJSON("care-continuity/situation-understanding/reassess", {});
+        setSituationAssessment(assessmentData as SituationAssessment);
       } catch {
         setSituationAssessment(null);
       }
