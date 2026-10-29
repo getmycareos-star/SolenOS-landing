@@ -154,6 +154,7 @@ export default function OpenLoopsPage() {
     setBusyId(loop.id);
     setError("");
     setNotice("");
+    let pendingActionKeyToClear: string | null = null;
     try {
       if (action === "reassess") {
         await postJSON("/open-loops/reassess", {});
@@ -244,9 +245,12 @@ export default function OpenLoopsPage() {
         };
         const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
         await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/${endpoint}`, payload);
-        delete pendingActionKeys.current[pendingKey];
+        pendingActionKeyToClear = pendingKey;
       }
       await refresh();
+      // Keep the key if the mutation committed but refresh failed. A retry must
+      // replay the same backend event instead of appending duplicate evidence.
+      if (pendingActionKeyToClear) delete pendingActionKeys.current[pendingActionKeyToClear];
       setNotice(action === "reassess" ? "Reassessment completed by the backend." : "The backend accepted the update. Review the current status below.");
     } catch (reason) {
       setError("The requested change was not confirmed. " + safeMessage(reason));
