@@ -5,12 +5,25 @@ import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/clie
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
 
 type Stage = 'prepare' | 'during' | 'after'
+type EvidenceSource = {
+  evidence_id: string
+  type: string
+  evidence_kind?: string | null
+  epistemic_status: string
+  source_type?: string | null
+  original_author?: string | null
+  reported_by_label?: string | null
+  occurred_at?: string | null
+  original_source_reference?: string | null
+  parent_evidence_id?: string | null
+}
+type LinkedSource = { evidence_ids?: string[]; evidence_sources?: EvidenceSource[]; evidence_reference_status?: string }
 type PreparationBrief = {
   snapshot_at: string
   read_only: boolean
-  facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null; recorded_at?: string | null; updated_at?: string | null }>
-  events: Array<{ source_id: string; title: string; description?: string | null; event_type: string; occurred_at?: string | null; status: string }>
-  appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
+  facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null; recorded_at?: string | null; updated_at?: string | null } & LinkedSource>
+  events: Array<{ source_id: string; title: string; description?: string | null; event_type: string; occurred_at?: string | null; status: string } & LinkedSource>
+  appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string } & LinkedSource>
   source_coverage: Record<string, string>
   evidence_lineage?: {
     status: string
@@ -207,13 +220,13 @@ export default function AppointmentWorkspace() {
             {lcrBrief && <>
               <div className="appointment-brief-grid">
                 <div><strong>Recorded facts ({lcrBrief.facts.length})</strong>
-                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>{item.fact_type} · {item.epistemic_status} · Source {item.source_id}</small></li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
+                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>{item.fact_type} · {item.epistemic_status} · Source {item.source_id}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
                 </div>
                 <div><strong>Recent care events ({lcrBrief.events.length})</strong>
-                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {item.status} · Source {item.source_id}</small>{item.description && <p>{item.description}</p>}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
+                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {item.status} · Source {item.source_id}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
                 </div>
                 <div><strong>Appointment history ({lcrBrief.appointments.length})</strong>
-                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {item.status} · Source {item.source_id}</small></li>)}</ul> : <p>No appointment records were returned.</p>}
+                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {item.status} · Source {item.source_id}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No appointment records were returned.</p>}
                 </div>
               </div>
               <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{source.replaceAll('_', ' ')}</b><small>{status.replaceAll('_', ' ')}</small></span>)}</div></div>
