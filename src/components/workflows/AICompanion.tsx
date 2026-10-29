@@ -120,6 +120,8 @@ export default function Companion() {
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Keep the same turn key when retrying an ambiguous network failure.
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
 
@@ -163,6 +165,10 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    const pendingTurn = pendingTurnRef.current?.text === submittedText
+      ? pendingTurnRef.current
+      : { text: submittedText, id: crypto.randomUUID() }
+    pendingTurnRef.current = pendingTurn
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -172,9 +178,11 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: pendingTurn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurnRef.current?.id === pendingTurn.id) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
@@ -242,6 +250,7 @@ export default function Companion() {
     if (loading) return
     setMessages([])
     setInput('')
+    pendingTurnRef.current = null
     setSessionId(null)
     setEmergency(false)
     setRequestError(null)
