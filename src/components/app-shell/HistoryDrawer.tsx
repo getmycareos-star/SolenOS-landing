@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { ensureAnonymousSession, getBlob, getJSON } from "@/api/client";
 
-type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out";
+type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
   | "daily-care"
   | "document"
@@ -33,6 +33,7 @@ type HistoryCategory =
   | "decision"
   | "outcome"
   | "follow-up"
+  | "lcr-update"
   | "other";
 type FilterKey = "all" | HistoryCategory;
 
@@ -120,6 +121,43 @@ type HandoffOutboxItem = {
   recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
 };
 
+type CareStateRevision = {
+  id: string;
+  target_type?: string;
+  target_id?: string;
+  revision_number?: number;
+  change_kind?: string;
+  before_state?: string | Record<string, unknown> | null;
+  after_state?: string | Record<string, unknown> | null;
+  evidence_ids?: string[] | null;
+  changed_by_caregiver_id?: string | null;
+  changed_at?: string | null;
+};
+
+type CareDecision = {
+  id: string;
+  title?: string | null;
+  decision_text?: string | null;
+  decision_status?: string | null;
+  decided_at?: string | null;
+  created_at?: string | null;
+  created_by_caregiver_id?: string | null;
+  evidence_ids?: string[] | null;
+  context?: string | Record<string, unknown> | null;
+};
+
+type CareOutcome = {
+  id: string;
+  action_id?: string | null;
+  action_type?: string | null;
+  outcome_status?: string | null;
+  notes?: string | null;
+  correction_text?: string | null;
+  evidence_ids?: string[] | null;
+  created_by_caregiver_id?: string | null;
+  created_at?: string | null;
+};
+
 const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "all", label: "All" },
   { id: "daily-care", label: "Daily Care" },
@@ -129,6 +167,7 @@ const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "decision", label: "Decisions" },
   { id: "outcome", label: "Outcomes" },
   { id: "follow-up", label: "Follow-ups" },
+  { id: "lcr-update", label: "Living Care Record" },
 ];
 
 function safeDate(value?: string | null): Date | null {
@@ -187,6 +226,9 @@ function formatDay(value?: string | null): string {
 }
 
 function categoryFor(record: HistoryRecord): HistoryCategory {
+  if (record.source_kind === "lcr-revision") return "lcr-update";
+  if (record.source_kind === "decision") return "decision";
+  if (record.source_kind === "outcome") return "outcome";
   if (record.source_kind === "document") return "document";
   if (record.source_kind === "appointment") return "appointment";
   if (record.source_kind === "handoff-in" || record.source_kind === "handoff-out") return "handoff";
@@ -219,6 +261,7 @@ function categoryLabel(category: HistoryCategory, eventType?: string): string {
   if (category === "decision") return "Decision";
   if (category === "outcome") return "Outcome";
   if (category === "follow-up") return "Follow-up";
+  if (category === "lcr-update") return "Living Care Record";
   return (eventType || "Care record").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
@@ -378,6 +421,131 @@ function mapAppointment(
   };
 }
 
+function parseSnapshot(value: CareStateRevision["before_state"]): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function snapshotText(value: CareStateRevision["before_state"]): string {
+  const snapshot = parseSnapshot(value);
+  const text = JSON.stringify(snapshot, null, 2);
+  return text === "{}" ? "No snapshot was recorded." : text.slice(0, 6000);
+}
+
+function mapLcrRevision(item: CareStateRevision): HistoryRecord {
+  const before = parseSnapshot(item.before_state);
+  const after = parseSnapshot(item.after_state);
+  const changedFields = [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
+  const changeKind = asText(item.change_kind) || "updated";
+  const targetType = asText(item.target_type).replaceAll("_", " ") || "care record";
+  const changedAt = item.changed_at || null;
+  const description = changeKind === "deleted"
+    ? "A deletion is recorded for this Living Care Record item. The prior state remains represented in this revision entry."
+    : changedFields.length
+      ? "Recorded " + changeKind + " revision. Changed fields: " + changedFields.join(", ") + "."
+      : "Recorded " + changeKind + " revision for " + targetType + ".";
+  return {
+    id: "lcr-revision:" + item.id,
+    event_type: "lcr_revision",
+    status: changeKind,
+    occurred_at: null,
+    recorded_at: changedAt,
+    display_date: changedAt,
+    display_date_label: "LCR revision recorded",
+    title: "Living Care Record · " + targetType,
+    description,
+    evidence_ids: item.evidence_ids ?? [],
+    time_provenance: "Revision timestamp records when this state change was saved; it does not establish when the underlying care event occurred.",
+    tags: ["living care record", "revision", changeKind],
+    source_kind: "lcr-revision",
+    source_details: detailFields([
+      { label: "Target type", value: item.target_type || "Not recorded" },
+      { label: "Target ID", value: item.target_id || "Not recorded" },
+      { label: "Change kind", value: changeKind },
+      { label: "Revision number", value: typeof item.revision_number === "number" ? String(item.revision_number) : "Not returned" },
+      { label: "Changed by caregiver ID", value: item.changed_by_caregiver_id || "" },
+      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
+      { label: "Previous recorded state", value: snapshotText(item.before_state) },
+      { label: "Updated recorded state", value: snapshotText(item.after_state) },
+    ]),
+  };
+}
+
+function mapDecision(item: CareDecision): HistoryRecord {
+  const createdAt = item.created_at || null;
+  const decidedAt = item.decided_at || createdAt;
+  const title = asText(item.title) || asText(item.decision_text).slice(0, 120) || "Care decision";
+  const context = typeof item.context === "string"
+    ? item.context
+    : item.context && typeof item.context === "object"
+      ? JSON.stringify(item.context, null, 2)
+      : "";
+  return {
+    id: "decision:" + item.id,
+    event_type: "decision",
+    status: item.decision_status || "not specified",
+    occurred_at: item.decided_at || null,
+    recorded_at: createdAt,
+    display_date: decidedAt,
+    display_date_label: item.decided_at ? "Decision date" : "Recorded",
+    title,
+    description: [asText(item.decision_text), context].filter(Boolean).join("\n\n"),
+    evidence_ids: item.evidence_ids ?? [],
+    created_by_caregiver_id: item.created_by_caregiver_id || null,
+    tags: ["decision"],
+    source_kind: "decision",
+    source_details: detailFields([
+      { label: "Decision status", value: item.decision_status || "Not specified" },
+      { label: "Decided at", value: item.decided_at ? formatDateTime(item.decided_at) : "Not recorded" },
+      { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
+      { label: "Recorded by caregiver ID", value: item.created_by_caregiver_id || "" },
+      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
+    ]),
+  };
+}
+
+function mapOutcome(item: CareOutcome): HistoryRecord {
+  const createdAt = item.created_at || null;
+  const actionType = asText(item.action_type).replaceAll("_", " ") || "care action";
+  const status = item.outcome_status || "not specified";
+  const description = [asText(item.notes), asText(item.correction_text) ? "Correction recorded: " + asText(item.correction_text) : ""]
+    .filter(Boolean).join("\n\n");
+  return {
+    id: "outcome:" + item.id,
+    event_type: "outcome",
+    status,
+    occurred_at: createdAt,
+    recorded_at: createdAt,
+    display_date: createdAt,
+    display_date_label: "Outcome recorded",
+    title: "Outcome · " + actionType,
+    description: description || "Outcome status recorded: " + status + ".",
+    evidence_ids: item.evidence_ids ?? [],
+    created_by_caregiver_id: item.created_by_caregiver_id || null,
+    tags: ["outcome", actionType],
+    source_kind: "outcome",
+    source_details: detailFields([
+      { label: "Action type", value: item.action_type || "Not recorded" },
+      { label: "Action ID", value: item.action_id || "Not recorded" },
+      { label: "Outcome status", value: status },
+      { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
+      { label: "Recorded by caregiver ID", value: item.created_by_caregiver_id || "" },
+      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
+    ]),
+  };
+}
+
 function mapIncomingHandoff(item: HandoffInboxItem): HistoryRecord {
   const sender = asText(item.from_caregiver_name) || "Linked caregiver";
   const createdAt = item.created_at || null;
@@ -450,7 +618,10 @@ function recordText(record: HistoryRecord, compact = false): string {
     "",
     record.source_kind === "care-event" ? "Original care event:" :
       record.source_kind === "document" ? "Document record and extracted text:" :
-      record.source_kind === "appointment" ? "Saved appointment workspace:" : "Handoff record:",
+      record.source_kind === "appointment" ? "Saved appointment workspace:" :
+      record.source_kind === "lcr-revision" ? "Living Care Record revision:" :
+      record.source_kind === "decision" ? "Recorded care decision:" :
+      record.source_kind === "outcome" ? "Recorded outcome:" : "Handoff record:",
     safeContent || "No additional text was saved with this record.",
     "",
     "Event time: " + formatDateTime(record.occurred_at),
@@ -516,6 +687,9 @@ export function HistoryDrawer() {
         getJSON("/appointment-workspaces"),
         getJSON("/handoffs/inbox"),
         getJSON("/handoffs/outbox"),
+        getJSON("/care-continuity/revisions/" + personPath),
+        getJSON("/care-continuity/decisions?limit=100"),
+        getJSON("/care-continuity/outcomes/" + personPath),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
@@ -597,6 +771,33 @@ export function HistoryDrawer() {
         nextRecords.push(...outbox.map(mapOutgoingHandoff));
       } else {
         warnings.push("Outgoing handoff history could not be loaded.");
+      }
+
+      const revisionResult = results[5];
+      if (revisionResult.status === "fulfilled" && Array.isArray(revisionResult.value)) {
+        availableSources += 1;
+        const revisions = (revisionResult.value as CareStateRevision[]).filter((item) => item && typeof item.id === "string");
+        nextRecords.push(...revisions.map(mapLcrRevision));
+      } else {
+        warnings.push("Living Care Record revision history could not be loaded.");
+      }
+
+      const decisionResult = results[6];
+      if (decisionResult.status === "fulfilled" && Array.isArray(decisionResult.value)) {
+        availableSources += 1;
+        const decisions = (decisionResult.value as CareDecision[]).filter((item) => item && typeof item.id === "string");
+        nextRecords.push(...decisions.map(mapDecision));
+      } else {
+        warnings.push("Recorded care decisions could not be loaded.");
+      }
+
+      const outcomeResult = results[7];
+      if (outcomeResult.status === "fulfilled" && Array.isArray(outcomeResult.value)) {
+        availableSources += 1;
+        const outcomes = (outcomeResult.value as CareOutcome[]).filter((item) => item && typeof item.id === "string");
+        nextRecords.push(...outcomes.map(mapOutcome));
+      } else {
+        warnings.push("Recorded decision and action outcomes could not be loaded.");
       }
 
       if (availableSources === 0) {
@@ -753,9 +954,15 @@ export function HistoryDrawer() {
     ? "Extracted text"
     : selectedRecord?.source_kind === "appointment"
       ? "Saved appointment information"
-      : selectedRecord?.source_kind === "handoff-in" || selectedRecord?.source_kind === "handoff-out"
-        ? "Handoff information"
-        : "Original record";
+      : selectedRecord?.source_kind === "lcr-revision"
+        ? "Recorded LCR change"
+        : selectedRecord?.source_kind === "decision"
+          ? "Decision recorded"
+          : selectedRecord?.source_kind === "outcome"
+            ? "Outcome recorded"
+            : selectedRecord?.source_kind === "handoff-in" || selectedRecord?.source_kind === "handoff-out"
+              ? "Handoff information"
+              : "Original record";
 
   return (
     <>
@@ -868,7 +1075,7 @@ export function HistoryDrawer() {
                       </>
                     ) : (
                       <>
-                        <dt>Record source</dt><dd>{selectedRecord.source_kind === "document" ? "Saved document evidence" : selectedRecord.source_kind === "appointment" ? "Appointment workspace" : selectedRecord.source_kind === "handoff-in" ? "Incoming handoff" : "Outgoing handoff"}</dd>
+                        <dt>Record source</dt><dd>{selectedRecord.source_kind === "document" ? "Saved document evidence" : selectedRecord.source_kind === "appointment" ? "Appointment workspace" : selectedRecord.source_kind === "handoff-in" ? "Incoming handoff" : selectedRecord.source_kind === "handoff-out" ? "Outgoing handoff" : selectedRecord.source_kind === "lcr-revision" ? "Immutable Living Care Record revision" : selectedRecord.source_kind === "decision" ? "Persisted care decision" : "Persisted action outcome"}</dd>
                         <dt>Recorded in SolenOS</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
                         <dt>Record status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
                         {selectedRecord.evidence_ids?.length ? <><dt>Evidence references</dt><dd>{selectedRecord.evidence_ids.join(", ")}</dd></> : null}
@@ -1033,7 +1240,7 @@ export function HistoryDrawer() {
 
                 <footer className="history-drawer-footer">
                   <ShieldCheck size={15} aria-hidden />
-                  <span>History combines saved care events, documents, appointment workspaces and handoff records where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
+                  <span>History combines saved care events, documents, appointment workspaces, handoffs, Living Care Record revisions, decisions and outcomes where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
                 </footer>
               </>
             )}
