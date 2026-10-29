@@ -111,7 +111,17 @@ try {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: handoffTitle }).waitFor({ timeout: 15_000 });
   await page.getByRole("heading", { name: conflictTitle }).waitFor({ timeout: 15_000 });
-  console.log("PASS: real frontend Open Loop create, professional response, conflict reconciliation, audit history, and reload hydration.");
+  const reloadedHandoff = page.locator("article").filter({
+    has: page.getByRole("heading", { name: handoffTitle }),
+  });
+  await reloadedHandoff.getByRole("button", { name: "View audit history" }).click();
+  await reloadedHandoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
+  const reloadedConflict = page.locator("article").filter({
+    has: page.getByRole("heading", { name: conflictTitle }),
+  });
+  await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
+  await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
+  console.log("PASS: real frontend Open Loop create, evidence-grounded professional response, conflict reconciliation, durable audit history, and reload hydration.");
 } finally {
   await browser.close();
 }
