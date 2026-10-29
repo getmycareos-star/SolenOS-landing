@@ -61,6 +61,11 @@ assert(claimPanel.includes("Exact source passage"), "claim assessment UI must re
 assert(claimPanel.includes("superseded_by_claim_id"), "superseded claims must record a specific replacement claim");
 assert(claimPanel.includes("failed request is not an empty history"), "failed history reads must not be presented as empty history");
 console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
+assert(claimPanel.includes("/assessment-impact"), "claim assessment panel must retrieve persisted evidence-change/reassessment impact");
+assert(claimPanel.includes("Assessment impact could not be checked"), "failed assessment-impact reads must not imply that the assessment is current");
+assert(claimPanel.includes("No deterministic review trigger found"), "assessment-impact UI must state the bounded nature of a no-trigger result");
+assert(claimPanel.includes("does not prove truth or completeness"), "assessment-impact UI must disclose that deterministic triggers do not establish truth or completeness");
+console.log("PASS: claim assessment impact is connected to the LCR with fail-safe error messaging and explicit interpretation limits.");
 assert(claimPanel.includes("/uncertainty/claims/dependencies"), "claim dependency UI must persist relationships through the authenticated backend API");
 assert(claimPanel.includes("/uncertainty/claims/"), "claim dependency UI must retrieve the persisted dependency graph");
 assert(claimPanel.includes("not proof of truth"), "dependency links must not be presented as proof of claim truth");
