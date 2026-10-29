@@ -225,7 +225,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         </label>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Priority
           <select style={field} value={priority} onChange={(event) => setPriority(event.target.value)}>
-            {["informational", "low", "medium", "high", "urgent"].map((value) => <option key={value} value={value}>{value}</option>)}
+            {["informational", "low", "medium", "high", "critical"].map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
         </label>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related evidence (multi-select)
