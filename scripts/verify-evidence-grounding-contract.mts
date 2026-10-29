@@ -181,4 +181,6 @@ assert(companionPanel.includes("freshness assessments"), "Companion must disting
 const appointmentWorkspace = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert(appointmentWorkspace.includes("Evidence freshness assessments"), "Appointment preparation must show freshness assessments");
 assert(appointmentWorkspace.includes("This is not proof that evidence is current"), "Appointment preparation must not treat absent freshness assessment as currentness");
+assert(appointmentWorkspace.includes("Freshness assessment storage is unavailable in this database schema"), "Appointment preparation must distinguish unavailable freshness schema from an empty result");
+assert(companionPanel.includes("Freshness assessment storage is unavailable in this schema"), "Companion must expose freshness schema unavailability explicitly");
 
