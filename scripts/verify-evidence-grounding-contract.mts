@@ -90,6 +90,11 @@ assert(lcr.includes("<EvidenceReviewPanel personId={personId} />"), "the evidenc
 assert(panel.includes("expectedPersonId !== session.person.id"), "evidence review must reject a UI person scope that differs from the authenticated session");
 assert(lcr.includes("<ClaimAssessmentPanel />"), "claim assessments must be reachable from the LCR workflow");
 assert(lcr.includes("<CareContinuityIntegrityPanel personId={personId} />"), "care continuity integrity must be reachable from the LCR workflow");
+assert(lcr.includes("near_duplicate_analysis"), "LCR evidence integrity must consume the backend near-duplicate analysis contract");
+assert(lcr.includes("Possible near-duplicate"), "LCR must display near-duplicate candidates for review");
+assert(lcr.includes("algorithm_version"), "LCR must show which deterministic candidate-generation version ran");
+assert(lcr.includes("interpretation_limit"), "LCR must disclose the limitations of near-duplicate candidate analysis");
+
 console.log("PASS: evidence, claim assessment, and care-integrity panels are mounted in the actual LCR workflow.");
 const conflictPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ConflictResolutionPanel.tsx"), "utf8");
 assert(conflictPanel.includes("/uncertainty/contradictions/"), "conflict resolution UI must read persisted conflicts and transition history");
