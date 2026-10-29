@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from "react";
 import {
+  assessObservationCoverage,
   getPersistedChangeDetail,
   listPersistedChanges,
   listPersistedPatterns,
   reassessPersistedChangeIntelligence,
   type ChangeDetail,
+  type CoverageAssessment,
+  type CoverageStatus,
   type PersistedChange,
   type PersistedPattern,
   transitionChangeConfirmation,
+  recordObservationCoverage,
 } from "@/api/change-intelligence";
 
 function readable(value: string): string {
@@ -36,6 +40,53 @@ export function ChangeIntelligencePanel() {
   const [detailErrors, setDetailErrors] = useState<Record<string, string>>({});
   const [confirmationReasons, setConfirmationReasons] = useState<Record<string, string>>({});
   const [transitioningIds, setTransitioningIds] = useState<string[]>([]);
+  const [coverageDomain, setCoverageDomain] = useState("");
+  const [coverageStart, setCoverageStart] = useState("");
+  const [coverageEnd, setCoverageEnd] = useState("");
+  const [coverageStatus, setCoverageStatus] = useState<CoverageStatus>("unknown");
+  const [coverageRationale, setCoverageRationale] = useState("");
+  const [coverageMessage, setCoverageMessage] = useState<string | null>(null);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
+  const [coverageSaving, setCoverageSaving] = useState(false);
+  const [coverageAssessment, setCoverageAssessment] = useState<CoverageAssessment | null>(null);
+
+  async function submitCoverage(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCoverageMessage(null);
+    setCoverageError(null);
+    if (!coverageDomain.trim() || !coverageStart || !coverageEnd || !coverageRationale.trim()) {
+      setCoverageError("Enter a care domain, start and end time, and a reason for this coverage record.");
+      return;
+    }
+    const start = new Date(coverageStart);
+    const end = new Date(coverageEnd);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
+      setCoverageError("The end time must be later than the start time.");
+      return;
+    }
+    if (end > new Date()) {
+      setCoverageError("Coverage cannot be recorded for a future interval.");
+      return;
+    }
+    setCoverageSaving(true);
+    try {
+      await recordObservationCoverage({
+        subject_type: coverageDomain.trim(),
+        window_start: start.toISOString(),
+        window_end: end.toISOString(),
+        coverage_status: coverageStatus,
+        rationale: coverageRationale.trim(),
+      });
+      const assessment = await assessObservationCoverage(coverageDomain.trim(), start.toISOString(), end.toISOString());
+      setCoverageAssessment(assessment);
+      setCoverageMessage("Observation coverage saved. Change reassessment will use this explicit coverage information.");
+      setCoverageRationale("");
+    } catch (reason: unknown) {
+      setCoverageError(reason instanceof Error ? reason.message : "Observation coverage could not be saved.");
+    } finally {
+      setCoverageSaving(false);
+    }
+  }
 
   async function changeStatus(changeId: string, status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive") {
     const reason = confirmationReasons[changeId]?.trim() ?? "";
@@ -110,6 +161,41 @@ export function ChangeIntelligencePanel() {
           <h2 id="change-intelligence-heading">Changes and patterns</h2>
         </div>
       </div>
+      <details className="lcr-coverage-editor">
+        <summary>Record observation coverage</summary>
+        <p className="panel-muted">Coverage describes what was actually observed, not whether an event happened. Choose “covered” only when the domain was actively observed throughout the whole interval.</p>
+        <form onSubmit={(event) => void submitCoverage(event)}>
+          <label>
+            <span>Care domain (use the same domain name as the event type)</span>
+            <input value={coverageDomain} onChange={(event) => setCoverageDomain(event.target.value)} maxLength={120} required />
+          </label>
+          <label>
+            <span>Observation interval start</span>
+            <input type="datetime-local" value={coverageStart} onChange={(event) => setCoverageStart(event.target.value)} required />
+          </label>
+          <label>
+            <span>Observation interval end</span>
+            <input type="datetime-local" value={coverageEnd} onChange={(event) => setCoverageEnd(event.target.value)} required />
+          </label>
+          <label>
+            <span>Coverage status</span>
+            <select value={coverageStatus} onChange={(event) => setCoverageStatus(event.target.value as CoverageStatus)}>
+              <option value="covered">Covered — observed throughout</option>
+              <option value="partial">Partial — observed for part of the interval</option>
+              <option value="uncovered">Uncovered — explicitly not observed</option>
+              <option value="unknown">Unknown — cannot establish coverage</option>
+            </select>
+          </label>
+          <label>
+            <span>Why is this coverage status supported?</span>
+            <textarea value={coverageRationale} onChange={(event) => setCoverageRationale(event.target.value)} minLength={3} maxLength={2000} rows={2} required />
+          </label>
+          <button type="submit" disabled={coverageSaving}>{coverageSaving ? "Saving coverage…" : "Save observation coverage"}</button>
+        </form>
+        {coverageMessage ? <p role="status">{coverageMessage}</p> : null}
+        {coverageError ? <p role="alert">{coverageError}</p> : null}
+        {coverageAssessment ? <p className="panel-muted">Assessment: {readable(coverageAssessment.coverage_status)} · {coverageAssessment.coverage_fraction == null ? "coverage fraction unavailable" : `${Math.round(coverageAssessment.coverage_fraction * 100)}% covered`}. {coverageAssessment.limitations.join(" ")}</p> : null}
+      </details>
       {loading ? <p role="status" className="panel-muted">Loading persisted change assessments…</p> : null}
       {warning ? <p role="status" className="panel-muted">{warning}</p> : null}
       {error ? (
