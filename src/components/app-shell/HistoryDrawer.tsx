@@ -442,6 +442,20 @@ function snapshotText(value: CareStateRevision["before_state"]): string {
   return text === "{}" ? "No snapshot was recorded." : text.slice(0, 6000);
 }
 
+const REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE = new Set([
+  "persons",
+  "caregivers",
+  "evidence",
+  "care_events",
+  "appointments",
+  "care_decisions",
+]);
+
+function shouldShowLcrRevision(item: CareStateRevision): boolean {
+  const targetType = asText(item.target_type).toLowerCase();
+  return Boolean(targetType) && !REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE.has(targetType);
+}
+
 function mapLcrRevision(item: CareStateRevision): HistoryRecord {
   const before = parseSnapshot(item.before_state);
   const after = parseSnapshot(item.after_state);
@@ -776,7 +790,7 @@ export function HistoryDrawer() {
       const revisionResult = results[5];
       if (revisionResult.status === "fulfilled" && Array.isArray(revisionResult.value)) {
         availableSources += 1;
-        const revisions = (revisionResult.value as CareStateRevision[]).filter((item) => item && typeof item.id === "string");
+        const revisions = (revisionResult.value as CareStateRevision[]).filter((item) => item && typeof item.id === "string" && shouldShowLcrRevision(item));
         nextRecords.push(...revisions.map(mapLcrRevision));
       } else {
         warnings.push("Living Care Record revision history could not be loaded.");
