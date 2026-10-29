@@ -281,6 +281,16 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setObservationsError('Provide a subject, attribute, and exact passage copied from the original evidence.')
       return
     }
+    const sourceSpanStart = selected.source_text.indexOf(observationPassage)
+    if (sourceSpanStart < 0) {
+      setObservationsError('The passage is not an exact match in the selected source. Copy the original wording without paraphrasing.')
+      return
+    }
+    if (selected.source_text.indexOf(observationPassage, sourceSpanStart + 1) >= 0) {
+      setObservationsError('This passage occurs more than once. Include enough surrounding words to identify one exact source span.')
+      return
+    }
+    const sourceSpanEnd = sourceSpanStart + observationPassage.length
     if (observationSupersedesId && observationCorrectionRationale.trim().length < 3) {
       setObservationsError('A correction must state why the earlier observation is being superseded.')
       return
@@ -299,6 +309,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         attribute: observationAttribute.trim(),
         value_text: ['unknown', 'missing'].includes(observationStatus) ? null : observationValue.trim(),
         source_passage: observationPassage,
+        source_span_start: sourceSpanStart,
+        source_span_end: sourceSpanEnd,
         units: observationUnits.trim() || null,
         negated: observationNegated === 'unknown' ? null : observationNegated === 'yes',
         hedge_marker: observationHedge.trim() || null,
