@@ -186,6 +186,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   useEffect(() => {
     setReconstructedHistory(null)
     setHistoryReconstructionError('')
+    setHistoryAsOf('')
   }, [selectedId])
 
   useEffect(() => {
