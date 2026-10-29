@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, postJSON, getJSON, getPersonId, getCaregiverId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -97,6 +97,9 @@ const HANDOFF_TEMPLATE_FALLBACK = {
 
 const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\s]*$/i
 
+const companionSessionStorageKey = (personId: string, caregiverId: string) =>
+  `solenos_companion_session_id:${personId}:${caregiverId}`
+
 const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'Talk through a difficult moment', description: 'Sort out what happened and what might help next.', prompt: 'Help me think through a difficult moment in care.' },
   { icon: Clock3, title: 'Make sense of a change', description: 'Separate what we know from what is still unclear.', prompt: 'Help me make sense of a recent change without jumping to conclusions.' },
@@ -108,6 +111,7 @@ export default function Companion() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [historyRestored, setHistoryRestored] = useState(false)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
@@ -155,6 +159,86 @@ export default function Companion() {
   }
 
   useEffect(() => {
+    let cancelled = false
+    const restoreSavedConversation = async () => {
+      const currentPersonId = getPersonId()
+      const currentCaregiverId = getCaregiverId()
+      if (!currentPersonId || !currentCaregiverId) {
+        if (!cancelled) setHistoryRestored(true)
+        return
+      }
+      // A handoff draft starts a fresh conversation rather than appending
+      // unrelated workflow text to the previous conversation.
+      const incomingDraft = new URLSearchParams(window.location.search).get('draft')?.trim()
+      if (incomingDraft) {
+        if (!cancelled) setHistoryRestored(true)
+        return
+      }
+      const storageKey = companionSessionStorageKey(currentPersonId, currentCaregiverId)
+      const savedSessionId = window.localStorage.getItem(storageKey)
+      if (!savedSessionId) {
+        if (!cancelled) setHistoryRestored(true)
+        return
+      }
+      try {
+        const session = await ensureAnonymousSession()
+        if (session.person.id !== currentPersonId || getCaregiverId() !== currentCaregiverId) {
+          throw new Error('The active care-record identity changed.')
+        }
+        const history = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as {
+          session_id: string
+          person_id: string
+          messages: Array<{
+            role: 'user' | 'assistant'
+            text: string
+            created_at?: string | null
+            guard_verdict?: string | null
+            safety_note?: string | null
+            evidence_ids?: string[]
+            source_event_ids?: string[]
+            source_evidence_ids?: string[]
+            source_appointment_ids?: string[]
+            ai_generated?: boolean
+            written_to_lcr?: boolean
+            persistence?: string
+          }>
+        }
+        if (
+          history.session_id !== savedSessionId ||
+          history.person_id !== session.person.id ||
+          !Array.isArray(history.messages)
+        ) {
+          throw new Error('The saved conversation response did not match this care-record session.')
+        }
+        if (cancelled) return
+        setSessionId(savedSessionId)
+        setMessages(history.messages.map(message => ({
+          role: message.role,
+          text: message.text,
+          timestamp: message.created_at ? new Date(message.created_at) : new Date(),
+          guard_verdict: message.guard_verdict ?? null,
+          safety_note: message.safety_note ?? null,
+          evidence_ids: message.evidence_ids ?? [],
+          source_event_ids: message.source_event_ids ?? [],
+          source_evidence_ids: message.source_evidence_ids ?? [],
+          source_appointment_ids: message.source_appointment_ids ?? [],
+          ai_generated: message.ai_generated,
+          written_to_lcr: message.written_to_lcr ?? false,
+          persistence: message.persistence ?? 'conversation_only',
+        })))
+      } catch {
+        if (!cancelled) {
+          setRequestError('Your saved conversation could not be restored. It has not been deleted; check your connection or start a new conversation.')
+        }
+      } finally {
+        if (!cancelled) setHistoryRestored(true)
+      }
+    }
+    void restoreSavedConversation()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
@@ -187,6 +271,13 @@ export default function Companion() {
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
+      const caregiverId = getCaregiverId()
+      if (response.session_id && session.person.id && caregiverId) {
+        window.localStorage.setItem(
+          companionSessionStorageKey(session.person.id, caregiverId),
+          response.session_id,
+        )
+      }
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -228,15 +319,16 @@ export default function Companion() {
   }
 
   useEffect(() => {
-    if (autoDraftSent.current) return
+    if (!historyRestored || autoDraftSent.current) return
     const draft = new URLSearchParams(window.location.search).get('draft')?.trim()
     if (!draft) return
     autoDraftSent.current = true
     setInput(draft)
     void sendMessage(draft)
-    // One-time handoff from another workflow; not a reactive chat effect.
+    // One-time handoff from another workflow; wait for saved-history
+    // restoration before sending.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [historyRestored])
 
   const handleInput = (value: string) => {
     setInput(value)
@@ -253,6 +345,11 @@ export default function Companion() {
     setInput('')
     setSessionId(null)
     pendingTurn.current = null
+    const currentPersonId = getPersonId()
+    const currentCaregiverId = getCaregiverId()
+    if (currentPersonId && currentCaregiverId) {
+      window.localStorage.removeItem(companionSessionStorageKey(currentPersonId, currentCaregiverId))
+    }
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
