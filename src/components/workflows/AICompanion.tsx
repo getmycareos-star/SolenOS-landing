@@ -52,8 +52,11 @@ interface HandoffDraft {
   evidence_lineage?: {
     status: string
     evidence_ids_considered: string[]
-    groups: Array<{ lineage_id: string; evidence_ids: string[]; origin_group_keys: string[]; source_independence_status: string; interpretation_limit: string }>
+    groups: Array<{ lineage_id: string; evidence_ids: string[]; origin_group_keys: string[]; source_independence_status: string; interpretation_limit: string; basis?: string }>
     interpretation_limit: string
+    scope_truncated?: boolean
+    lineage_nodes_examined?: number
+    relationship_records_examined?: number
   }
   limitations: Array<{ source: string; status: string; reason?: string }>
   warning: string
@@ -346,6 +349,28 @@ export default function Companion() {
                   <ShieldCheck size={16} aria-hidden="true" />
                   <span>Read-only draft · {handoffDraft.source_references.length} source references · not shared · Living Care Record unchanged</span>
                 </div>
+                {handoffDraft.evidence_lineage && (
+                  <section className="companion-handoff-source-section" aria-label="Evidence source lineage">
+                    <h5>Evidence source lineage · {handoffDraft.evidence_lineage.status.replaceAll('_', ' ')}</h5>
+                    <p className="companion-handoff-section-note">
+                      {handoffDraft.evidence_lineage.interpretation_limit}
+                      {handoffDraft.evidence_lineage.scope_truncated ? " Source-lineage retrieval reached its safety bound; independent corroboration is not established." : ""}
+                    </p>
+                    {handoffDraft.evidence_lineage.groups.length === 0 && (
+                      <p className="companion-handoff-section-note">No explicit shared-origin or reviewed-independence group was returned. This is not proof that sources are independent.</p>
+                    )}
+                    {handoffDraft.evidence_lineage.groups.map(group => (
+                      <article className="companion-handoff-template-section" key={group.lineage_id}>
+                        <div className="companion-handoff-coverage-row">
+                          <span><strong>{group.source_independence_status.replaceAll('_', ' ')}</strong><small>{group.evidence_ids.join(', ')}</small></span>
+                          <span className="companion-handoff-status status-not_assessed">{group.basis?.replaceAll('_', ' ') ?? "persisted provenance"}</span>
+                        </div>
+                        {group.origin_group_keys.length > 0 && <small className="companion-handoff-section-note">Origin groups: {group.origin_group_keys.join(', ')}</small>}
+                        <small className="companion-handoff-section-note">{group.interpretation_limit}</small>
+                      </article>
+                    ))}
+                  </section>
+                )}
                 {handoffDraft.sections.length === 0 && <p className="companion-handoff-empty-source">No readable records were returned for this time window. This does not establish that no care information exists.</p>}
                 {handoffDraft.sections.map(section => (
                   <section className="companion-handoff-source-section" key={section.title}>
