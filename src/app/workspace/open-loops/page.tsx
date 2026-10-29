@@ -103,7 +103,7 @@ export default function OpenLoopsPage() {
     setError("");
     setNotice("");
     try {
-      await postJSON("/open-loops", {
+      const saved = await postJSON("/open-loops", {
         loop_type: loopType,
         title: title.trim(),
         description: description.trim(),
@@ -111,6 +111,7 @@ export default function OpenLoopsPage() {
         source_id: sourceId.trim() || null,
         evidence: [],
         uncertainty: "unknown",
+        idempotency_key: "open-loop-" + crypto.randomUUID(),
         ...(deadline ? { deadline_at: new Date(deadline).toISOString(), deadline_source: deadlineSource, deadline_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } : {}),
       });
       await refresh();
@@ -118,7 +119,9 @@ export default function OpenLoopsPage() {
       setDescription("");
       setSourceId("");
       setDeadline("");
-      setNotice("Open loop saved to the care record.");
+      setNotice((saved as { recurrence_detected?: boolean }).recurrence_detected
+        ? "This occurrence was linked to an existing unresolved issue. Its source occurrence is preserved."
+        : "Open loop saved to the care record.");
     } catch (reason) {
       setError("The loop was not saved. " + safeMessage(reason));
     } finally {
