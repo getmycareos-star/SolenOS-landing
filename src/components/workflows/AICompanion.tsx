@@ -63,12 +63,12 @@ interface HandoffDraft {
 }
 
 function readCompanionStorage(key: string): string | null {
-  try { return readCompanionStorage(key) } catch { return null }
+  try { return window.localStorage.getItem(key) } catch { return null }
 }
 
 function writeCompanionStorage(key: string, value: string): boolean {
   try {
-    writeCompanionStorage(key, value)
+    window.localStorage.setItem(key, value)
     return true
   } catch {
     return false
@@ -76,7 +76,7 @@ function writeCompanionStorage(key: string, value: string): boolean {
 }
 
 function clearCompanionStorage(key: string): void {
-  try { clearCompanionStorage(key) } catch { /* storage may be disabled */ }
+  try { window.localStorage.removeItem(key) } catch { /* storage may be disabled */ }
 }
 
 interface Message {
