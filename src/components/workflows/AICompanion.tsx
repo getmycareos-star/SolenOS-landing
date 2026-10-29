@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -85,6 +85,7 @@ export default function Companion() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [restoringHistory, setRestoringHistory] = useState(false)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
@@ -134,6 +135,57 @@ export default function Companion() {
   }
 
   useEffect(() => {
+    let cancelled = false
+    const restore = async () => {
+      // Handoff drafts intentionally start a new turn and must not race history restoration.
+      if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
+      const savedSessionId = window.localStorage.getItem('solenos_companion_session_id')
+      if (!savedSessionId) return
+      setRestoringHistory(true)
+      try {
+        await ensureAnonymousSession()
+        const restored = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as {
+          session_id?: string
+          messages?: Array<{
+            role: 'user' | 'assistant'
+            text: string
+            created_at?: string | null
+            guard_verdict?: string
+            safety_note?: string
+            evidence_ids?: string[]
+            source_event_ids?: string[]
+            source_evidence_ids?: string[]
+            source_appointment_ids?: string[]
+            ai_generated?: boolean
+            written_to_lcr?: boolean
+            persistence?: string
+          }>
+        }
+        if (cancelled) return
+        if (restored.session_id !== savedSessionId || !Array.isArray(restored.messages)) {
+          throw new Error('The saved conversation history was incomplete.')
+        }
+        setSessionId(savedSessionId)
+        setMessages(restored.messages.map((message) => ({
+          ...message,
+          timestamp: message.created_at ? new Date(message.created_at) : new Date(),
+        } as Message)))
+      } catch {
+        if (cancelled) return
+        // A 404 may mean the browser's prior anonymous identity has expired or
+        // changed. Never try to restore that conversation under another identity.
+        window.localStorage.removeItem('solenos_companion_session_id')
+        setSessionId(null)
+        setRequestError('The previous conversation could not be restored for this care session. Start a new conversation or send a new message.')
+      } finally {
+        if (!cancelled) setRestoringHistory(false)
+      }
+    }
+    void restore()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
@@ -165,6 +217,7 @@ export default function Companion() {
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
+      if (response.session_id) window.localStorage.setItem('solenos_companion_session_id', response.session_id)
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -233,6 +286,7 @@ export default function Companion() {
     setMessages([])
     setInput('')
     setSessionId(null)
+    window.localStorage.removeItem('solenos_companion_session_id')
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
