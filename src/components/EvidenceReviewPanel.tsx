@@ -636,6 +636,40 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitObservation()} disabled={observationSaving || observationsLoading || !selected}>{observationSaving ? 'Saving…' : 'Save structured observation'}</button>
         </details>
+
+        <details style={{ fontSize: 12, marginBottom: 12 }}>
+          <summary>Reconstruct recorded care state at a past time</summary>
+          <p>Shows the latest saved revision per target at the selected instant. This is a partial revision-history projection, not a guarantee that every care-record change was captured.</p>
+          <label style={{ display: 'block', marginTop: 8 }}>
+            Historical date and time
+            <input
+              style={field}
+              type="datetime-local"
+              value={recordHistoryAsOf}
+              onChange={event => { setRecordHistoryAsOf(event.target.value); setRecordHistory(null); setRecordHistoryError('') }}
+            />
+          </label>
+          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructRecordHistory()} disabled={recordHistoryLoading || !personId || !recordHistoryAsOf}>
+            {recordHistoryLoading ? 'Reconstructing…' : 'Reconstruct recorded care state'}
+          </button>
+          {recordHistoryError && <p role="alert" style={{ color: 'var(--error)' }}>{recordHistoryError}</p>}
+          {recordHistory && <div role="status" style={{ marginTop: 8 }}>
+            <p><strong>Coverage:</strong> {String(recordHistory.coverage_status)} · {String(recordHistory.target_count)} targets{recordHistory.truncated ? ' · result truncated' : ''}</p>
+            <p><strong>Requested instant:</strong> {String(recordHistory.requested_as_of)}</p>
+            <ul>
+              {((recordHistory.items as Array<Record<string, unknown>>) || []).map(item => (
+                <li key={String(item.target_type) + ':' + String(item.target_id)}>
+                  <strong>{String(item.target_type)} / {String(item.target_id)}</strong>
+                  {' — '}revision {String(item.revision_number)} ({String(item.change_kind)})
+                  <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.state, null, 2)}</pre>
+                  <p>Evidence links: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0} authorized source reference(s)</p>
+                </li>
+              ))}
+            </ul>
+            <p>{String(recordHistory.interpretation_limit)}</p>
+          </div>}
+        </details>
+
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>Reconstruct historical evidence state</summary>
           <p>Choose an instant to retrieve the last persisted revision at or before that time. This is a historical database snapshot, not proof that the stored claim was true.</p>
