@@ -23,6 +23,15 @@ type EvidenceItem = {
   ingested_at?: string | null
 }
 type ReviewType = 'quality' | 'reliability' | 'source_confidence' | 'freshness' | 'completeness'
+type SourceIntegrity = {
+  evidence_id: string
+  person_id: string
+  source_text_integrity_status: 'match' | 'mismatch' | 'unavailable'
+  stored_source_text_sha256: string | null
+  recomputed_source_text_sha256: string | null
+  hash_scope: string
+  original_file_authenticity_verified: false
+}
 type Review = {
   id: string
   evidence_id: string
@@ -59,6 +68,9 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([])
   const [evidenceLoading, setEvidenceLoading] = useState(true)
   const [evidenceError, setEvidenceError] = useState('')
+  const [sourceIntegrity, setSourceIntegrity] = useState<SourceIntegrity | null>(null)
+  const [sourceIntegrityError, setSourceIntegrityError] = useState('')
+  const [sourceIntegrityLoading, setSourceIntegrityLoading] = useState(false)
 
   const loadEvidence = useCallback(async () => {
     setEvidenceLoading(true)
@@ -123,6 +135,32 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
   }, [personId, selectedId])
 
   useEffect(() => { void loadReviews() }, [loadReviews])
+
+  const loadSourceIntegrity = useCallback(async () => {
+    if (!selectedId || !personId) {
+      setSourceIntegrity(null)
+      setSourceIntegrityError('')
+      return
+    }
+    setSourceIntegrityLoading(true)
+    setSourceIntegrityError('')
+    try {
+      const result = await getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/integrity`)
+      if (!result || result.evidence_id !== selectedId || result.person_id !== personId ||
+          !['match', 'mismatch', 'unavailable'].includes(result.source_text_integrity_status) ||
+          typeof result.hash_scope !== 'string' || result.original_file_authenticity_verified !== false) {
+        throw new Error('Invalid source-integrity response')
+      }
+      setSourceIntegrity(result as SourceIntegrity)
+    } catch {
+      setSourceIntegrity(null)
+      setSourceIntegrityError('Source-text integrity could not be checked. This is not evidence of a match; retry when connected.')
+    } finally {
+      setSourceIntegrityLoading(false)
+    }
+  }, [personId, selectedId])
+
+  useEffect(() => { void loadSourceIntegrity() }, [loadSourceIntegrity])
 
   function changeReviewType(next: ReviewType) {
     setReviewType(next)
@@ -192,9 +230,19 @@ export default function EvidenceReviewPanel(_props?: { personId?: string; eviden
           <div><dt style={{ color: 'var(--text-secondary)' }}>Parent evidence</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id || 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Stored source-text integrity hash</summary>
+          <summary>Stored source-text integrity check</summary>
+          {sourceIntegrityLoading && <p role="status">Checking stored source text…</p>}
+          {sourceIntegrityError && <p role="alert" style={{ color: 'var(--error)' }}>{sourceIntegrityError} <button type="button" style={button} onClick={() => void loadSourceIntegrity()} disabled={sourceIntegrityLoading}>Retry integrity check</button></p>}
+          {!sourceIntegrityLoading && !sourceIntegrityError && sourceIntegrity && <>
+            <p><strong>Stored text hash:</strong> {sourceIntegrity.source_text_integrity_status === 'match' ? 'MATCH — current stored text matches the stored fingerprint' : sourceIntegrity.source_text_integrity_status === 'mismatch' ? 'MISMATCH — stored text and fingerprint differ' : 'UNAVAILABLE — no fingerprint is stored'}</p>
+            <p><strong>Hash scope:</strong> {sourceIntegrity.hash_scope}</p>
+            <p style={{ overflowWrap: 'anywhere' }}><strong>Stored:</strong> {sourceIntegrity.stored_source_text_sha256 || 'Unavailable'}</p>
+            <p style={{ overflowWrap: 'anywhere' }}><strong>Recomputed:</strong> {sourceIntegrity.recomputed_source_text_sha256 || 'Unavailable'}</p>
+            <p><strong>Original file authenticity:</strong> Not verified by this hash check.</p>
+          </>}
+          {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>Integrity has not been verified.</p>}
           <p style={{ overflowWrap: 'anywhere' }}>{selected.source_text_sha256 || 'Hash unavailable for this record'}</p>
-          <small>The hash covers the stored UTF-8 source text. It does not authenticate the original author or prove the authenticity of an uploaded binary.</small>
+          <small>The SHA-256 check covers only the stored UTF-8 text. It does not authenticate the original author or prove the authenticity of an uploaded binary.</small>
         </details>
       </>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9 }}>
