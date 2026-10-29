@@ -12,6 +12,12 @@ type PreparationBrief = {
   events: Array<{ source_id: string; title: string; description?: string | null; event_type: string; occurred_at?: string | null; status: string }>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
   source_coverage: Record<string, string>
+  evidence_lineage?: {
+    status: string
+    evidence_ids_considered: string[]
+    groups: Array<{ lineage_id: string; evidence_ids: string[]; origin_group_keys: string[]; source_independence_status: string; interpretation_limit: string }>
+    interpretation_limit: string
+  }
   limitations: string[]
 }
 type FollowUp = { action: string; owner: string; due: string; status: 'Open' | 'In progress' | 'Done' | 'Needs clarification' }
@@ -211,6 +217,15 @@ export default function AppointmentWorkspace() {
                 </div>
               </div>
               <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{source.replaceAll('_', ' ')}</b><small>{status.replaceAll('_', ' ')}</small></span>)}</div></div>
+              {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="Evidence source lineage">
+                <strong>Evidence source lineage · {lcrBrief.evidence_lineage.status.replaceAll('_', ' ')}</strong>
+                {lcrBrief.evidence_lineage.groups.length ? lcrBrief.evidence_lineage.groups.map(group => <div key={group.lineage_id} className="appointment-coverage-item">
+                  <b>{group.source_independence_status.replaceAll('_', ' ')}</b>
+                  <small>Evidence IDs: {group.evidence_ids.join(', ')}{group.origin_group_keys.length ? ' · Origin: ' + group.origin_group_keys.join(', ') : ''}</small>
+                  <small>{group.interpretation_limit}</small>
+                </div>) : <p>No explicit shared-source group was returned for the retrieved evidence. This does not establish that the sources are independent.</p>}
+                <p className="appointment-brief-limitations">{lcrBrief.evidence_lineage.interpretation_limit}</p>
+              </section>}
               <p className="appointment-brief-limitations">{lcrBrief.limitations.join(' ')}</p>
             </>}
           </section>
