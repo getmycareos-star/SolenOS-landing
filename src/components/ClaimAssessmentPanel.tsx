@@ -95,7 +95,10 @@ export default function ClaimAssessmentPanel() {
   const [supersededByClaimId, setSupersededByClaimId] = useState("");
   const [rationale, setRationale] = useState("");
   const [links, setLinks] = useState<DraftLink[]>([emptyLink()]);
-  const [history, setHistory] = useState<Assessment[]>([]);\n  const [assessmentImpact, setAssessmentImpact] = useState<AssessmentImpact | null>(null);\n  const [impactLoading, setImpactLoading] = useState(false);\n  const [impactError, setImpactError] = useState("");
+  const [history, setHistory] = useState<Assessment[]>([]);
+  const [assessmentImpact, setAssessmentImpact] = useState<AssessmentImpact | null>(null);
+  const [impactLoading, setImpactLoading] = useState(false);
+  const [impactError, setImpactError] = useState("");
   const [dependencies, setDependencies] = useState<DependencyEdge[]>([]);
   const [dependencyTargetId, setDependencyTargetId] = useState("");
   const [dependencyType, setDependencyType] = useState("derived_from");
