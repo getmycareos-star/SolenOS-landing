@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import {
+  getPersistedChangeDetail,
   listPersistedChanges,
   listPersistedPatterns,
+  type ChangeDetail,
   type PersistedChange,
   type PersistedPattern,
 } from "@/api/change-intelligence";
@@ -26,6 +28,27 @@ export function ChangeIntelligencePanel() {
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, ChangeDetail>>({});
+  const [detailErrors, setDetailErrors] = useState<Record<string, string>>({});
+
+  async function toggleEvidence(changeId: string) {
+    if (expandedChangeId === changeId) {
+      setExpandedChangeId(null);
+      return;
+    }
+    setExpandedChangeId(changeId);
+    if (details[changeId] || detailErrors[changeId]) return;
+    try {
+      const detail = await getPersistedChangeDetail(changeId);
+      setDetails((current) => ({ ...current, [changeId]: detail }));
+    } catch (reason: unknown) {
+      setDetailErrors((current) => ({
+        ...current,
+        [changeId]: reason instanceof Error ? reason.message : "Source evidence could not be loaded.",
+      }));
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -79,6 +102,37 @@ export function ChangeIntelligencePanel() {
                 <p className="panel-muted">
                   Evidence references: {change.evidence_ids.length}. Confidence: {change.confidence == null ? "not calibrated" : `${Math.round(change.confidence * 100)}%`}.
                 </p>
+                <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
+                  {expandedChangeId === change.id ? "Hide source evidence" : "Review source evidence"} <span aria-hidden="true">→</span>
+                </button>
+                {expandedChangeId === change.id && detailErrors[change.id] ? <p role="alert" className="panel-muted">{detailErrors[change.id]}</p> : null}
+                {expandedChangeId === change.id && details[change.id] ? (
+                  <div>
+                    {details[change.id].evidence.length === 0 && details[change.id].assertions.length === 0 ? (
+                      <p className="panel-muted">No source records could be resolved for this assessment. Its evidence references should be reviewed.</p>
+                    ) : null}
+                    {details[change.id].evidence.map((source) => (
+                      <article key={source.id}>
+                        <strong>{source.title}</strong>
+                        <p>{source.description ?? "No source description recorded."}</p>
+                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {source.event_type} · {source.status}</p>
+                      </article>
+                    ))}
+                    {details[change.id].assertions.map((source) => (
+                      <article key={source.id}>
+                        <strong>{source.field}: {source.asserted_value}</strong>
+                        <p>{source.source_text ?? source.source_label}</p>
+                        <p className="panel-muted">{source.assertion_kind} · {source.assertion_status} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                      </article>
+                    ))}
+                    {details[change.id].confirmation_history.length > 0 ? (
+                      <div>
+                        <strong>Confirmation history</strong>
+                        <ul>{details[change.id].confirmation_history.map((entry) => <li key={entry.id}>{entry.previous_status} → {entry.new_status}: {entry.reason ?? "No reason recorded"} ({new Date(entry.created_at).toLocaleString()})</li>)}</ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
