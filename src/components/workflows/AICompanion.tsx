@@ -175,6 +175,9 @@ export default function Companion() {
       if (historyLoadedRef.current === activePersonId) return
       historyLoadedRef.current = activePersonId
       setMessages([])
+      setInput('')
+      setRequestError(null)
+      setEmergency(false)
       setSessionId(null)
       pendingTurnRef.current = null
       activeSessionStorageKeyRef.current = null
