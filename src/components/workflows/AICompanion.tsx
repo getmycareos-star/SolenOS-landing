@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -181,15 +182,8 @@ export default function Companion() {
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
-      const safetyText = String(response.safety_note ?? '').toLowerCase()
-      const replyText = String(response.reply ?? '').trim().toLowerCase()
-      // "blocked" also represents non-emergency evidence limits (for example,
-      // an unsupported trend or a missing measurement). Show the emergency
-      // banner only for the backend's explicit emergency classification.
-      const isEmergency =
-        safetyText.includes('possible emergency language detected') ||
-        safetyText.includes('urgent human assessment is needed') ||
-        replyText.startsWith('this may be an emergency.')
+      // Generic "blocked" verdicts also represent evidence limits, not emergencies.
+      const isEmergency = isEmergencyCompanionResponse(response)
       if (isEmergency) setEmergency(true)
 
       const assistantMsg: Message = {
