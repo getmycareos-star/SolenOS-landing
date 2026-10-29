@@ -171,116 +171,60 @@ function classifyChangeForDomain(
   const trendDirection = computeTrendDirection([...priorObservations, ...observations]);
 
   if (!hasPriorInDomain) {
-    // First presence in the currently available records is not proof of onset:
-    // earlier history may be missing or never recorded.
+    // First presence in available records is not proof of onset.
     classification = "UNCERTAIN";
     confidence = "low";
     trajectory = "unknown";
     evidence.push(`First observed in available records for the ${domain} domain; earlier absence is not established`);
-    if (temporalProximity >= 3) {
-      evidence.push("Multiple observations are temporally close; this does not establish when the state began");
-    }
-  } else if (hasResolvedSignal && hasPriorInDomain) {
-    classification = "RESOLVED";
-    confidence = "medium";
-    evidence.push("Resolution signal detected in latest observation");
-    trajectory = "improving";
-  } else if (hasImprovementSignal && hasPriorInDomain) {
-    classification = "IMPROVED";
-    confidence = hasPriorInDomain ? "medium" : "low";
-    evidence.push("Improvement signal in latest observation");
-    trajectory = "improving";
-  } else if (hasWorseningSignal && hasPriorInDomain) {
-    classification = "WORSENED";
-    confidence = hasPriorInDomain ? "medium" : "low";
-    evidence.push("Worsening signal in latest observation");
-    trajectory = "worsening";
-  } else if (hasRecurringSignal && hasPriorInDomain) {
-    classification = "RECURRING";
-    confidence = "medium";
-    evidence.push("Recurring pattern signal detected");
-    trajectory = "stable";
-  } else if (hasPersistentSignal && hasPriorInDomain) {
-    classification = "PERSISTENT";
-    confidence = "medium";
-    evidence.push("Persistent pattern signal detected");
-    trajectory = "stable";
-  } else if (hasPriorInDomain) {
-    const currentNegativeSignals = new Set(
-      (newObservations ?? observations)
-        .flatMap((o) => signalsForText(o.text))
-        .filter((s) => s !== "improvement"),
+  } else {
+    // This browser-side detector sees narrative text, not comparable structured
+    // measurements or verified observation coverage. It must not turn adjectives
+    // or keyword counts into worsening, improvement, resolution, or stability.
+    classification = "UNCERTAIN";
+    confidence = "low";
+    trajectory = "unknown";
+    evidence.push(
+      "Prior records exist, but this text-only analysis lacks comparable structured values and verified observation coverage; direction remains uncertain.",
     );
-    const priorNegativeSignals = new Set(
-      priorObservations
-        .flatMap((o) => signalsForText(o.text))
-        .filter((s) => s !== "improvement"),
-    );
-
-    if (currentNegativeSignals.size > priorNegativeSignals.size) {
-      classification = "WORSENED";
-      confidence = "medium";
-      evidence.push(
-        "Negative signals increased compared to prior observation in this domain",
-      );
-      trajectory = "worsening";
-    } else if (currentNegativeSignals.size < priorNegativeSignals.size) {
-      classification = "IMPROVED";
-      confidence = "medium";
-      evidence.push(
-        "Negative signals decreased compared to prior observation in this domain",
-      );
-      trajectory = "improving";
+    if (hasResolvedSignal) {
+      evidence.push("The latest narrative contains possible resolution wording; this does not establish resolution or absence.");
+    } else if (hasImprovementSignal) {
+      evidence.push("The latest narrative contains possible improvement wording; a comparable measured state is unavailable.");
+    } else if (hasWorseningSignal) {
+      evidence.push("The latest narrative contains possible worsening wording; a comparable measured state is unavailable.");
+    } else if (hasRecurringSignal) {
+      evidence.push("The narrative uses recurrence wording; the underlying occurrence pattern is not independently verified.");
+    } else if (hasPersistentSignal) {
+      evidence.push("The narrative uses persistence wording; observation gaps are not established.");
     } else {
-      // No detected direction is not evidence that the underlying care state
-      // remained stable; this detector has no observation-coverage measure.
-      classification = "UNCERTAIN";
-      confidence = "low";
-      evidence.push("No directional change signal detected; stability cannot be established from these records alone");
-      trajectory = "unknown";
+      evidence.push("No directional change can be established from the available text alone.");
     }
   }
 
-  if (trendDirection === "worsening" && classification !== "WORSENED") {
-    evidence.push("Textual trend signals are present; they are not independently sufficient to confirm a care-state trajectory");
-    if (hasPriorInDomain && confidence !== "low") trajectory = "worsening";
-  } else if (trendDirection === "improving" && classification !== "IMPROVED") {
-    evidence.push("Textual trend signals are present; they are not independently sufficient to confirm a care-state trajectory");
-    if (hasPriorInDomain && confidence !== "low") trajectory = "improving";
+  if (trendDirection !== "unknown") {
+    evidence.push("Textual trend language is present but is not sufficient to establish a longitudinal direction.");
   }
 
   if (domain === "medication_adherence" && hasPriorInDomain) {
-    if (MEDICATION_STARTED.test(recentText)) {
-      classification = "NEW";
-      evidence.push("Medication started");
-      trajectory = "stable";
-    } else if (MEDICATION_STOPPED.test(recentText)) {
-      classification = "WORSENED";
-      evidence.push("Medication stopped");
-      trajectory = "worsening";
-      confidence = "high";
-    } else if (MEDICATION_CHANGED.test(recentText)) {
-      classification = "WORSENED";
-      evidence.push("Medication dose or type changed");
+    if (
+      MEDICATION_STARTED.test(recentText) ||
+      MEDICATION_STOPPED.test(recentText) ||
+      MEDICATION_CHANGED.test(recentText) ||
+      MEDICATION_MISSED.test(recentText) ||
+      MEDICATION_SIDE_EFFECT.test(recentText)
+    ) {
+      classification = "UNCERTAIN";
+      confidence = "low";
       trajectory = "unknown";
-      confidence = "medium";
-    } else if (MEDICATION_MISSED.test(recentText)) {
-      classification = "WORSENED";
-      evidence.push("Medication missed");
-      trajectory = "worsening";
-      confidence = "medium";
-    } else if (MEDICATION_SIDE_EFFECT.test(recentText)) {
-      classification = "NEW";
-      evidence.push("Potential medication side effect reported");
-      trajectory = "unknown";
-      confidence = "medium";
+      evidence.push(
+        "Medication-related wording was reported; this text-only detector cannot verify a medication event or infer its clinical effect.",
+      );
     }
   }
 
-  // Repeated observations with no directional signal do not prove stability
-  // when observation coverage and missing periods are unknown.
-
-  if (temporalProximity >= 3 && (classification === "WORSENED" || classification === "NEW")) {
+  // Temporal proximity is context only. It does not increase confidence or
+  // establish a shared cause between observations.
+  if (temporalProximity >= 3) {
     evidence.push("Reports are temporally close; proximity alone does not establish a shared cause or increase certainty");
   }
 
