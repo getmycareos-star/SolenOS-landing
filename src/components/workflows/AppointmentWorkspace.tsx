@@ -260,7 +260,9 @@ export default function AppointmentWorkspace() {
                     <small>{item.rationale}</small>
                     <small>Assessment {item.assessment_id}</small>
                   </li>)}</ul>
-                  : <p>No freshness assessment was returned for evidence linked to this preparation snapshot. This is not proof that evidence is current.</p>}
+                  : lcrBrief.freshness_assessment_scope?.status === 'unavailable_schema'
+                    ? <p role="status">Freshness assessment storage is unavailable in this database schema. Currentness is unknown.</p>
+                    : <p>No freshness assessment was returned for evidence linked to this preparation snapshot. This is not proof that evidence is current.</p>}
               </section>
               {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="Evidence source lineage">
                 <strong>Evidence source lineage · {lcrBrief.evidence_lineage.status.replaceAll('_', ' ')}</strong>
