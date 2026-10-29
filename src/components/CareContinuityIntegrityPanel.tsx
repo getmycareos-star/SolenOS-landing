@@ -167,7 +167,7 @@ export default function CareContinuityIntegrityPanel({
 
   async function submitAssertion(event: FormEvent) {
     event.preventDefault()
-    if (!field.trim() || !value.trim() || !source.trim() || !subjectType.trim() || !(subjectId.trim() || personId) || !reviewDays || (kind === 'time_bound_observation' && !assertionObservedAt)) {
+    if (!field.trim() || !value.trim() || !source.trim() || !subjectType.trim() || !(subjectId.trim() || personId) || (kind === 'current_state' && !reviewDays) || (kind === 'time_bound_observation' && !assertionObservedAt)) {
       setError(kind === 'time_bound_observation' && !assertionObservedAt ? 'Record when the observation actually occurred; save time is not a substitute for event time.' : 'Field, reported value, source, and review window are required.')
       return
     }
@@ -186,7 +186,7 @@ export default function CareContinuityIntegrityPanel({
         source_text: sourceText.trim() || undefined,
         evidence_ids: selectedEvidenceIds,
         observed_at: kind === 'time_bound_observation' ? new Date(assertionObservedAt).toISOString() : undefined,
-        review_after_days: Number(reviewDays),
+        review_after_days: reviewDays ? Number(reviewDays) : undefined,
         created_by_caregiver_id: getCaregiverId() || undefined,
       })
       setField('')
@@ -412,7 +412,7 @@ export default function CareContinuityIntegrityPanel({
             </select>
           </label>
           <label style={{ fontSize: 12 }}>Review after (days)
-            <input style={fieldStyle} type="number" min={1} max={3650} value={reviewDays} onChange={(e) => setReviewDays(e.target.value)} placeholder="Required" required />
+            <input style={fieldStyle} type="number" min={1} max={3650} value={reviewDays} onChange={(e) => setReviewDays(e.target.value)} placeholder={kind === 'current_state' ? 'Required' : 'Optional for observations'} required={kind === 'current_state'} />
           </label>
           {kind === 'time_bound_observation' && <label style={{ fontSize: 12 }}>When did it occur?
             <input style={fieldStyle} type="datetime-local" value={assertionObservedAt} onChange={(e) => setAssertionObservedAt(e.target.value)} required />
