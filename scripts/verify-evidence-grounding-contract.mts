@@ -104,6 +104,7 @@ const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/compone
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
 assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
 assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
+assert(clarificationPanel.includes("does not automatically verify or resolve the underlying claim"), "answer capture must not automatically resolve its linked claim");
 assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
 assert(clarificationPanel.includes("A failed request is not an empty history"), "failed answer-history reads must not be shown as empty history");
 assert(lcr.includes("import ClarificationWorkflowPanel from \"@/components/ClarificationWorkflowPanel\""), "LCR must import the clarification workflow");
