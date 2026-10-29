@@ -171,12 +171,14 @@ function classifyChangeForDomain(
   const trendDirection = computeTrendDirection([...priorObservations, ...observations]);
 
   if (!hasPriorInDomain) {
-    classification = "NEW";
-    confidence = observations.length >= 2 ? "medium" : "low";
-    evidence.push(`First observation in ${domain} domain`);
+    // First presence in the currently available records is not proof of onset:
+    // earlier history may be missing or never recorded.
+    classification = "UNCERTAIN";
+    confidence = "low";
+    trajectory = "unknown";
+    evidence.push(`First observed in available records for the ${domain} domain; earlier absence is not established`);
     if (temporalProximity >= 3) {
-      evidence.push("Multiple observations close together");
-      confidence = "medium";
+      evidence.push("Multiple observations are temporally close; this does not establish when the state began");
     }
   } else if (hasResolvedSignal && hasPriorInDomain) {
     classification = "RESOLVED";
@@ -230,10 +232,12 @@ function classifyChangeForDomain(
       );
       trajectory = "improving";
     } else {
-      classification = "STABLE";
+      // No detected direction is not evidence that the underlying care state
+      // remained stable; this detector has no observation-coverage measure.
+      classification = "UNCERTAIN";
       confidence = "low";
-      evidence.push("No directional change signal detected");
-      trajectory = "stable";
+      evidence.push("No directional change signal detected; stability cannot be established from these records alone");
+      trajectory = "unknown";
     }
   }
 
@@ -282,8 +286,7 @@ function classifyChangeForDomain(
   }
 
   if (temporalProximity >= 3 && (classification === "WORSENED" || classification === "NEW")) {
-    evidence.push("Changes appearing in close temporal proximity");
-    if (confidence === "medium") confidence = "high";
+    evidence.push("Reports are temporally close; proximity alone does not establish a shared cause or increase certainty");
   }
 
   const currentState = currentTexts.length > 0 ? currentTexts[currentTexts.length - 1]!.slice(0, 200) : "Unknown";
