@@ -898,7 +898,7 @@ export default function StructuredDailyCapture() {
         </p>
       )}
       {saved && changeIntelligenceStatus === 'unavailable' && (
-        <p role="alert" style={{ color: 'var(--danger, #8a2c2c)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+        <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
           Your care entry was saved, but change and pattern assessments could not be refreshed. Do not submit the entry again; reopen change intelligence and retry reassessment.
         </p>
       )}
