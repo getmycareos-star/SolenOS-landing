@@ -22,6 +22,7 @@ type CurrentCareItem = {
   occurred_at?: string | null;
   recorded_at?: string | null;
   evidence_ids: string[];
+  evidence_link_validation?: string;
   source_span_start?: number | null;
   source_span_end?: number | null;
   source_passage?: string | null;
@@ -977,6 +978,7 @@ export function LCRCurrentUnderstanding() {
                     <p className="lcr-entry-status">{item.kind} · {item.status || "Status not recorded"}</p>
                     <small>Source: {item.source_label || "Not recorded"} · Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {item.evidence_ids?.length > 0 && <small>Linked evidence: {item.evidence_ids.join(", ")}</small>}
+                    {item.evidence_link_validation && <small>Evidence linkage: {item.evidence_link_validation.replaceAll("_", " ")}</small>}
                     {item.source_collection === "evidence_observations" && (
                       <div className="lcr-entry-status">
                         <small>
