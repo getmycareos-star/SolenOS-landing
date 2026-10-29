@@ -22,16 +22,30 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { ensureAnonymousSession, getBlob, getJSON } from "@/api/client";
 
-type CareEvent = {
+type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out";
+type HistoryCategory =
+  | "daily-care"
+  | "document"
+  | "appointment"
+  | "handoff"
+  | "decision"
+  | "outcome"
+  | "follow-up"
+  | "other";
+type FilterKey = "all" | HistoryCategory;
+
+type DetailField = { label: string; value: string };
+
+type HistoryRecord = {
   id: string;
-  person_id: string;
+  person_id?: string;
   event_type: string;
   status: string;
-  occurred_at: string;
+  occurred_at?: string | null;
   occurred_at_timezone?: string | null;
-  recorded_at: string;
+  recorded_at?: string | null;
   updated_at?: string | null;
   title: string;
   description?: string | null;
@@ -42,21 +56,69 @@ type CareEvent = {
   significance_verdict?: string | null;
   attention_candidate?: boolean | null;
   follow_up_candidate?: boolean | null;
-  confidence?: number | null;
-  situation_id?: string | null;
+  source_kind: HistorySourceKind;
+  source_details?: DetailField[];
+  evidence_id?: string;
+  original_filename?: string;
+  mime_type?: string;
+  display_date?: string | null;
+  display_date_label?: string;
 };
 
-type HistoryCategory =
-  | "daily-care"
-  | "document"
-  | "appointment"
-  | "handoff"
-  | "decision"
-  | "outcome"
-  | "follow-up"
-  | "other";
+type CareEvent = Omit<HistoryRecord, "source_kind"> & {
+  person_id: string;
+  event_type: string;
+  title: string;
+};
 
-type FilterKey = "all" | HistoryCategory;
+type EvidenceRecord = {
+  id: string;
+  type?: string;
+  source_text?: string | null;
+  source_type?: string | null;
+  evidence_status?: string | null;
+  uploaded_at?: string | null;
+  created_at?: string | null;
+  extra_metadata?: string | Record<string, unknown> | null;
+};
+
+type AppointmentListItem = {
+  id: string;
+  status?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type AppointmentDetail = {
+  id: string;
+  version_number?: number;
+  status?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  payload?: Record<string, unknown> | null;
+};
+
+type HandoffInboxItem = {
+  id: string;
+  from_caregiver_name?: string | null;
+  from_caregiver_relationship?: string | null;
+  scope?: string[];
+  status?: string;
+  created_at?: string | null;
+  expires_at?: string | null;
+  has_summary?: boolean;
+};
+
+type HandoffOutboxItem = {
+  id: string;
+  status?: string;
+  scope?: string[];
+  created_at?: string | null;
+  expires_at?: string | null;
+  has_summary?: boolean;
+  is_expired?: boolean;
+  recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
+};
 
 const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "all", label: "All" },
@@ -71,12 +133,13 @@ const FILTERS: { id: FilterKey; label: string }[] = [
 
 function safeDate(value?: string | null): Date | null {
   if (!value) return null;
-  const date = new Date(value);
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const date = new Date(dateOnly ? value + "T12:00:00" : value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function eventDate(event: CareEvent): Date | null {
-  return safeDate(event.occurred_at) ?? safeDate(event.recorded_at);
+function recordDate(record: HistoryRecord): Date | null {
+  return safeDate(record.display_date) ?? safeDate(record.occurred_at) ?? safeDate(record.recorded_at);
 }
 
 function formatDateTime(value?: string | null): string {
@@ -86,6 +149,21 @@ function formatDateTime(value?: string | null): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatDateOnly(value?: string | null): string {
+  const date = safeDate(value);
+  if (!date) return "Date not recorded";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+  }).format(date);
+}
+
+function formatRecordDate(record: HistoryRecord): string {
+  const value = record.display_date ?? record.occurred_at ?? record.recorded_at;
+  if (!value) return "Date not recorded";
+  if (record.display_date_label === "Appointment date") return formatDateOnly(value);
+  return formatDateTime(value);
 }
 
 function formatDay(value?: string | null): string {
@@ -108,11 +186,15 @@ function formatDay(value?: string | null): string {
   }).format(date);
 }
 
-function categoryFor(event: CareEvent): HistoryCategory {
+function categoryFor(record: HistoryRecord): HistoryCategory {
+  if (record.source_kind === "document") return "document";
+  if (record.source_kind === "appointment") return "appointment";
+  if (record.source_kind === "handoff-in" || record.source_kind === "handoff-out") return "handoff";
+
   const value = [
-    event.event_type,
-    event.title,
-    ...(event.tags ?? []),
+    record.event_type,
+    record.title,
+    ...(record.tags ?? []),
   ].join(" ").toLowerCase();
 
   if (/handoff|hand.?over|care transfer/.test(value)) return "handoff";
@@ -123,8 +205,8 @@ function categoryFor(event: CareEvent): HistoryCategory {
   if (/observation|daily.?care|daily.?capture|symptom|behavio[u]?r|sleep|meal/.test(value)) return "daily-care";
   if (
     /follow.?up|open.?loop|pending|unresolved|question/.test(value) ||
-    event.follow_up_candidate ||
-    event.attention_candidate
+    record.follow_up_candidate ||
+    record.attention_candidate
   ) return "follow-up";
   return "other";
 }
@@ -155,34 +237,237 @@ function parseDescription(description?: string | null): string {
         .join("\n");
     }
   } catch {
-    // Preserve the original plain-text description.
+    // Preserve original plain text.
   }
   return description;
 }
 
-function recordText(event: CareEvent): string {
+function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
+  if (value && typeof value === "object") return value;
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function asText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function asTextList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+}
+
+function detailFields(fields: DetailField[]): DetailField[] {
+  return fields.filter((field) => Boolean(field.value && field.value.trim()));
+}
+
+function mapDocument(item: EvidenceRecord): HistoryRecord {
+  const metadata = metadataOf(item.extra_metadata);
+  const filename = asText(metadata.filename) || "Untitled document";
+  const mimeType = asText(metadata.mime_type) || "File type not recorded";
+  const uploadedAt = item.uploaded_at || item.created_at || null;
+  const status = item.evidence_status || "recorded";
+
+  return {
+    id: "document:" + item.id,
+    evidence_id: item.id,
+    original_filename: filename,
+    mime_type: mimeType,
+    event_type: "document",
+    status,
+    occurred_at: null,
+    recorded_at: uploadedAt,
+    display_date: uploadedAt,
+    display_date_label: "Uploaded",
+    title: filename,
+    description: item.source_text || "",
+    evidence_ids: [item.id],
+    time_provenance: "Upload time is recorded; the original event time was not supplied by this document listing.",
+    tags: ["document"],
+    source_kind: "document",
+    source_details: detailFields([
+      { label: "File name", value: filename },
+      { label: "File type", value: mimeType },
+      { label: "Evidence status", value: status },
+      { label: "Source type", value: item.source_type || "" },
+      { label: "Upload time", value: uploadedAt ? formatDateTime(uploadedAt) : "Not recorded" },
+      { label: "Evidence ID", value: item.id },
+    ]),
+  };
+}
+
+function appointmentDescription(payload: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const add = (label: string, value: unknown) => {
+    const text = asText(value);
+    if (text) lines.push(label + ": " + text);
+  };
+
+  add("Visit purpose", payload.visitPurpose);
+  add("Clinician", payload.clinician);
+  add("Specialty", payload.specialty);
+  add("Location", payload.location);
+  if (Array.isArray(payload.topConcerns)) {
+    const concerns = payload.topConcerns.map(asText).filter(Boolean);
+    if (concerns.length) lines.push("Caregiver's priority concerns:\n- " + concerns.join("\n- "));
+  }
+  add("Changes recorded by caregiver", payload.changes);
+  add("Symptoms recorded by caregiver", payload.symptoms);
+  add("Caregiver report", payload.caregiverReport);
+  add("Clinician statements recorded by caregiver (not independently verified)", payload.clinicianFindings);
+  add("Decisions recorded", payload.decisions);
+  add("Instructions recorded", payload.instructions);
+  add("Unanswered questions", payload.unanswered);
+  if (Array.isArray(payload.followUps)) {
+    const followUps = payload.followUps
+      .filter((item) => item && typeof item === "object")
+      .map((item) => {
+        const followUp = item as Record<string, unknown>;
+        return [asText(followUp.action), asText(followUp.owner), asText(followUp.due), asText(followUp.status)].filter(Boolean).join(" · ");
+      })
+      .filter(Boolean);
+    if (followUps.length) lines.push("Follow-ups:\n- " + followUps.join("\n- "));
+  }
+  return lines.join("\n\n");
+}
+
+function mapAppointment(
+  record: AppointmentDetail,
+  listItem: AppointmentListItem,
+): HistoryRecord {
+  const payload = record.payload && typeof record.payload === "object" ? record.payload : {};
+  const purpose = asText(payload.visitPurpose);
+  const clinician = asText(payload.clinician);
+  const specialty = asText(payload.specialty);
+  const appointmentDate = asText(payload.visitDate);
+  const location = asText(payload.location);
+  const status = record.status || listItem.status || asText(payload.reviewStatus) || "not specified";
+  const savedAt = record.updated_at || record.created_at || listItem.updated_at || listItem.created_at || null;
+  const title = purpose || (clinician ? "Appointment with " + clinician : "Appointment workspace");
+
+  return {
+    id: "appointment:" + record.id,
+    event_type: "appointment",
+    status,
+    occurred_at: null,
+    recorded_at: savedAt,
+    updated_at: record.updated_at || null,
+    display_date: appointmentDate || savedAt,
+    display_date_label: appointmentDate ? "Appointment date" : "Saved",
+    title,
+    description: appointmentDescription(payload),
+    tags: ["appointment"],
+    source_kind: "appointment",
+    source_details: detailFields([
+      { label: "Appointment date", value: appointmentDate || "Not recorded" },
+      { label: "Clinician", value: clinician },
+      { label: "Specialty", value: specialty },
+      { label: "Location", value: location },
+      { label: "Review status", value: asText(payload.reviewStatus) || status },
+      { label: "Workspace version", value: typeof record.version_number === "number" ? String(record.version_number) : "Not returned" },
+      { label: "Saved in SolenOS", value: savedAt ? formatDateTime(savedAt) : "Not recorded" },
+    ]),
+  };
+}
+
+function mapIncomingHandoff(item: HandoffInboxItem): HistoryRecord {
+  const sender = asText(item.from_caregiver_name) || "Linked caregiver";
+  const createdAt = item.created_at || null;
+  return {
+    id: "handoff-in:" + item.id,
+    event_type: "handoff",
+    status: item.status || "not specified",
+    occurred_at: createdAt,
+    recorded_at: createdAt,
+    display_date: createdAt,
+    display_date_label: "Received",
+    title: "Handoff from " + sender,
+    description: item.has_summary
+      ? "A caregiver-provided summary is available for review. Its contents are not independently verified by the handoff record."
+      : "The incoming handoff record does not report an attached summary.",
+    tags: ["handoff", "incoming"],
+    source_kind: "handoff-in",
+    source_details: detailFields([
+      { label: "Direction", value: "Incoming" },
+      { label: "From", value: sender },
+      { label: "Relationship", value: asText(item.from_caregiver_relationship) },
+      { label: "Scope", value: item.scope?.join(", ") || "" },
+      { label: "Status", value: item.status || "Not specified" },
+      { label: "Received", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
+      { label: "Access expires", value: item.expires_at ? formatDateTime(item.expires_at) : "Not recorded" },
+      { label: "Summary attached", value: item.has_summary ? "Yes" : "No" },
+    ]),
+  };
+}
+
+function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
+  const recipients = (item.recipients ?? []).map((recipient) => asText(recipient.name)).filter(Boolean);
+  const createdAt = item.created_at || null;
+  const recipientLabel = recipients.length ? " to " + recipients.join(", ") : "";
+  return {
+    id: "handoff-out:" + item.id,
+    event_type: "handoff",
+    status: item.status || "not specified",
+    occurred_at: createdAt,
+    recorded_at: createdAt,
+    display_date: createdAt,
+    display_date_label: "Shared",
+    title: "Outgoing care handoff" + recipientLabel,
+    description: item.has_summary
+      ? "A caregiver-reviewed summary was attached to this handoff. Sharing did not change the Living Care Record."
+      : "The outgoing handoff record does not report an attached summary.",
+    tags: ["handoff", "outgoing"],
+    source_kind: "handoff-out",
+    source_details: detailFields([
+      { label: "Direction", value: "Outgoing" },
+      { label: "Recipients", value: recipients.join(", ") },
+      { label: "Scope", value: item.scope?.join(", ") || "" },
+      { label: "Status", value: item.status || "Not specified" },
+      { label: "Shared", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
+      { label: "Access expires", value: item.expires_at ? formatDateTime(item.expires_at) : "Not recorded" },
+      { label: "Summary attached", value: item.has_summary ? "Yes" : "No" },
+      { label: "Expiry state", value: item.is_expired ? "Expired" : "" },
+    ]),
+  };
+}
+
+function recordText(record: HistoryRecord, compact = false): string {
+  const content = parseDescription(record.description);
+  const safeContent = compact && content.length > 4000
+    ? content.slice(0, 4000) + "\n[Content shortened for sharing. Open the original record for the full text.]"
+    : content;
   const lines = [
-    event.title,
-    categoryLabel(categoryFor(event), event.event_type),
+    record.title,
+    categoryLabel(categoryFor(record), record.event_type),
     "",
-    "Original record:",
-    parseDescription(event.description) || "No description was saved.",
+    record.source_kind === "care-event" ? "Original care event:" :
+      record.source_kind === "document" ? "Document record and extracted text:" :
+      record.source_kind === "appointment" ? "Saved appointment workspace:" : "Handoff record:",
+    safeContent || "No additional text was saved with this record.",
     "",
-    "Event time: " + formatDateTime(event.occurred_at),
-    "Recorded in SolenOS: " + formatDateTime(event.recorded_at),
-    "Status: " + (event.status || "Not specified"),
-    "Time provenance: " + (event.time_provenance || "Not recorded"),
-    "Tags: " + (event.tags?.length ? event.tags.join(", ") : "None recorded"),
-    "Evidence references: " + (event.evidence_ids?.length ? event.evidence_ids.join(", ") : "None attached"),
+    "Event time: " + formatDateTime(record.occurred_at),
+    "Recorded in SolenOS: " + formatDateTime(record.recorded_at),
+    "Status: " + (record.status || "Not specified"),
+    "Time provenance: " + (record.time_provenance || "Not recorded"),
+    "Evidence references: " + (record.evidence_ids?.length ? record.evidence_ids.join(", ") : "None attached"),
+    ...(record.source_details ?? []).map((field) => field.label + ": " + field.value),
   ];
   return lines.join("\n");
 }
 
-function eventMatchesFilter(event: CareEvent, filter: FilterKey): boolean {
+function eventMatchesFilter(record: HistoryRecord, filter: FilterKey): boolean {
   if (filter === "all") return true;
-  const category = categoryFor(event);
+  const category = categoryFor(record);
   if (filter === "follow-up") {
-    return category === "follow-up" || Boolean(event.follow_up_candidate) || Boolean(event.attention_candidate);
+    return category === "follow-up" || Boolean(record.follow_up_candidate) || Boolean(record.attention_candidate);
   }
   return category === filter;
 }
@@ -199,7 +484,7 @@ function CategoryIcon({ category }: { category: HistoryCategory }) {
 export function HistoryDrawer() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [events, setEvents] = useState<CareEvent[]>([]);
+  const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -208,6 +493,7 @@ export function HistoryDrawer() {
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
 
@@ -215,6 +501,7 @@ export function HistoryDrawer() {
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
+    setSourceWarnings([]);
 
     try {
       const session = await ensureAnonymousSession();
@@ -222,29 +509,109 @@ export function HistoryDrawer() {
         throw new Error("A valid SolenOS care session is required to load this history.");
       }
 
-      const result = await getJSON("/events/" + encodeURIComponent(session.person.id));
-      if (!Array.isArray(result)) {
-        throw new Error("The care-history response was not in the expected format. No example records were inserted.");
+      const personPath = encodeURIComponent(session.person.id);
+      const results = await Promise.allSettled([
+        getJSON("/events/" + personPath),
+        getJSON("/evidence/" + personPath),
+        getJSON("/appointment-workspaces"),
+        getJSON("/handoffs/inbox"),
+        getJSON("/handoffs/outbox"),
+      ]);
+
+      const nextRecords: HistoryRecord[] = [];
+      const warnings: string[] = [];
+      let availableSources = 0;
+
+      const eventResult = results[0];
+      if (eventResult.status === "fulfilled" && Array.isArray(eventResult.value)) {
+        availableSources += 1;
+        const validEvents = (eventResult.value as CareEvent[]).filter((item) =>
+          Boolean(item && typeof item.id === "string" && typeof item.person_id === "string" &&
+            typeof item.event_type === "string" && typeof item.title === "string")
+        );
+        nextRecords.push(...validEvents.map((event) => ({ ...event, source_kind: "care-event" as const })));
+      } else {
+        warnings.push("Daily care and care-event history could not be loaded.");
       }
 
-      const validEvents = result.filter((item): item is CareEvent =>
-        Boolean(
-          item &&
-          typeof item.id === "string" &&
-          typeof item.person_id === "string" &&
-          typeof item.event_type === "string" &&
-          typeof item.title === "string"
-        )
-      );
+      const evidenceResult = results[1];
+      if (evidenceResult.status === "fulfilled" && Array.isArray(evidenceResult.value)) {
+        availableSources += 1;
+        const evidence = (evidenceResult.value as EvidenceRecord[]).filter(
+          (item) => item && item.type === "document" && typeof item.id === "string"
+        );
+        nextRecords.push(...evidence.map(mapDocument));
+      } else {
+        warnings.push("Saved documents could not be loaded.");
+      }
 
-      validEvents.sort((a, b) => {
-        const aTime = eventDate(a)?.getTime() ?? Number.NEGATIVE_INFINITY;
-        const bTime = eventDate(b)?.getTime() ?? Number.NEGATIVE_INFINITY;
+      const appointmentResult = results[2];
+      if (
+        appointmentResult.status === "fulfilled" &&
+        appointmentResult.value &&
+        typeof appointmentResult.value === "object" &&
+        Array.isArray((appointmentResult.value as { items?: unknown }).items)
+      ) {
+        availableSources += 1;
+        const items = (appointmentResult.value as { items: AppointmentListItem[] }).items
+          .filter((item) => item && typeof item.id === "string");
+        const appointmentDetails = await Promise.allSettled(
+          items.map((item) => getJSON("/appointment-workspaces/" + encodeURIComponent(item.id)) as Promise<AppointmentDetail>)
+        );
+        appointmentDetails.forEach((detail, index) => {
+          if (detail.status === "fulfilled" && detail.value && typeof detail.value.id === "string") {
+            nextRecords.push(mapAppointment(detail.value, items[index]));
+          } else {
+            warnings.push("One or more appointment details could not be opened.");
+          }
+        });
+      } else {
+        warnings.push("Appointment history could not be loaded.");
+      }
+
+      const inboxResult = results[3];
+      if (
+        inboxResult.status === "fulfilled" &&
+        inboxResult.value &&
+        typeof inboxResult.value === "object" &&
+        Array.isArray((inboxResult.value as { items?: unknown }).items)
+      ) {
+        availableSources += 1;
+        const inbox = (inboxResult.value as { items: HandoffInboxItem[] }).items
+          .filter((item) => item && typeof item.id === "string");
+        nextRecords.push(...inbox.map(mapIncomingHandoff));
+      } else {
+        warnings.push("Incoming handoff history could not be loaded.");
+      }
+
+      const outboxResult = results[4];
+      if (
+        outboxResult.status === "fulfilled" &&
+        outboxResult.value &&
+        typeof outboxResult.value === "object" &&
+        Array.isArray((outboxResult.value as { items?: unknown }).items)
+      ) {
+        availableSources += 1;
+        const outbox = (outboxResult.value as { items: HandoffOutboxItem[] }).items
+          .filter((item) => item && typeof item.id === "string");
+        nextRecords.push(...outbox.map(mapOutgoingHandoff));
+      } else {
+        warnings.push("Outgoing handoff history could not be loaded.");
+      }
+
+      if (availableSources === 0) {
+        throw new Error("None of the available care-history sources could be loaded. Check the connection and try again.");
+      }
+
+      nextRecords.sort((a, b) => {
+        const aTime = recordDate(a)?.getTime() ?? Number.NEGATIVE_INFINITY;
+        const bTime = recordDate(b)?.getTime() ?? Number.NEGATIVE_INFINITY;
         if (aTime !== bTime) return bTime - aTime;
         return (safeDate(b.recorded_at)?.getTime() ?? 0) - (safeDate(a.recorded_at)?.getTime() ?? 0);
       });
 
-      setEvents(validEvents);
+      setRecords(nextRecords);
+      setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Care history could not be loaded.");
@@ -278,49 +645,50 @@ export function HistoryDrawer() {
     };
   }, [open]);
 
-  const visibleEvents = useMemo(() => {
+  const visibleRecords = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return events.filter((event) => {
-      if (!eventMatchesFilter(event, filter)) return false;
+    return records.filter((record) => {
+      if (!eventMatchesFilter(record, filter)) return false;
       if (!needle) return true;
       const haystack = [
-        event.title,
-        event.event_type,
-        event.description ?? "",
-        event.status,
-        event.occurred_at,
-        event.recorded_at,
-        event.time_provenance ?? "",
-        event.created_by_caregiver_id ?? "",
-        ...(event.tags ?? []),
-        ...(event.evidence_ids ?? []),
+        record.title,
+        record.event_type,
+        record.description ?? "",
+        record.status,
+        record.occurred_at ?? "",
+        record.recorded_at ?? "",
+        record.time_provenance ?? "",
+        record.created_by_caregiver_id ?? "",
+        ...(record.tags ?? []),
+        ...(record.evidence_ids ?? []),
+        ...(record.source_details ?? []).flatMap((field) => [field.label, field.value]),
       ].join(" ").toLowerCase();
       return haystack.includes(needle);
     });
-  }, [events, filter, query]);
+  }, [records, filter, query]);
 
-  const groupedEvents = useMemo(() => {
-    const groups: { label: string; events: CareEvent[] }[] = [];
-    for (const event of visibleEvents) {
-      const label = formatDay(event.occurred_at || event.recorded_at);
+  const groupedRecords = useMemo(() => {
+    const groups: { label: string; records: HistoryRecord[] }[] = [];
+    for (const record of visibleRecords) {
+      const label = formatDay(record.display_date || record.occurred_at || record.recorded_at);
       const last = groups[groups.length - 1];
-      if (last?.label === label) last.events.push(event);
-      else groups.push({ label, events: [event] });
+      if (last?.label === label) last.records.push(record);
+      else groups.push({ label, records: [record] });
     }
     return groups;
-  }, [visibleEvents]);
+  }, [visibleRecords]);
 
-  const selectedEvent = events.find((event) => event.id === selectedId) ?? null;
+  const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
 
   const closeDrawer = () => {
     setOpen(false);
     setMenuId(null);
   };
 
-  const copyRecord = async (event: CareEvent) => {
+  const copyRecord = async (record: HistoryRecord) => {
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(recordText(event));
+      await navigator.clipboard.writeText(recordText(record));
       setActionMessage("Record details copied.");
     } catch {
       setActionMessage("Copy is unavailable in this browser. Try Download record instead.");
@@ -328,25 +696,44 @@ export function HistoryDrawer() {
     setMenuId(null);
   };
 
-  const downloadRecord = (event: CareEvent) => {
-    const blob = new Blob([recordText(event)], { type: "text/plain;charset=utf-8" });
+  const downloadRecord = async (record: HistoryRecord) => {
+    if (record.source_kind === "document" && record.evidence_id) {
+      try {
+        const blob = await getBlob("/upload/" + encodeURIComponent(record.evidence_id));
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = record.original_filename || "care-document";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setActionMessage("Original document download started.");
+      } catch {
+        setActionMessage("The original document could not be retrieved. Its saved evidence record remains in history.");
+      }
+      setMenuId(null);
+      return;
+    }
+
+    const blob = new Blob([recordText(record)], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = (event.title || "care-record").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() + ".txt";
+    anchor.download = (record.title || "care-record").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() + ".txt";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setActionMessage("Record download started.");
     setMenuId(null);
   };
 
-  const shareRecord = async (event: CareEvent) => {
-    const text = recordText(event);
+  const shareRecord = async (record: HistoryRecord) => {
+    const text = recordText(record, true);
     try {
       if (navigator.share) {
-        await navigator.share({ title: event.title, text });
+        await navigator.share({ title: record.title, text });
         setActionMessage("Share sheet opened.");
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -361,6 +748,14 @@ export function HistoryDrawer() {
     }
     setMenuId(null);
   };
+
+  const selectedDescriptionHeading = selectedRecord?.source_kind === "document"
+    ? "Extracted text"
+    : selectedRecord?.source_kind === "appointment"
+      ? "Saved appointment information"
+      : selectedRecord?.source_kind === "handoff-in" || selectedRecord?.source_kind === "handoff-out"
+        ? "Handoff information"
+        : "Original record";
 
   return (
     <>
@@ -392,7 +787,7 @@ export function HistoryDrawer() {
           >
             <header className="history-drawer-header">
               <div className="history-drawer-title-row">
-                {selectedEvent ? (
+                {selectedRecord ? (
                   <button
                     type="button"
                     className="history-icon-button"
@@ -405,14 +800,14 @@ export function HistoryDrawer() {
                   <span className="history-drawer-mark"><ShieldCheck size={19} aria-hidden /></span>
                 )}
                 <div className="history-drawer-heading">
-                  <strong>{selectedEvent ? "Care record" : "Care history"}</strong>
-                  <span>{selectedEvent ? "Original record and saved details" : "A chronological view of saved care events"}</span>
+                  <strong>{selectedRecord ? "Care record" : "Care history"}</strong>
+                  <span>{selectedRecord ? "Saved source information and record details" : "A chronological view across your saved care records"}</span>
                 </div>
                 <button type="button" className="history-icon-button" aria-label="Close care history" onClick={closeDrawer}>
                   <X size={19} aria-hidden />
                 </button>
               </div>
-              {!selectedEvent && (
+              {!selectedRecord && (
                 <button
                   type="button"
                   className="history-new-entry"
@@ -427,42 +822,64 @@ export function HistoryDrawer() {
               )}
             </header>
 
-            {selectedEvent ? (
+            {selectedRecord ? (
               <div className="history-detail-scroll">
                 <div className="history-detail-category">
-                  <span className="history-category-icon"><CategoryIcon category={categoryFor(selectedEvent)} /></span>
-                  {categoryLabel(categoryFor(selectedEvent), selectedEvent.event_type)}
+                  <span className="history-category-icon"><CategoryIcon category={categoryFor(selectedRecord)} /></span>
+                  {categoryLabel(categoryFor(selectedRecord), selectedRecord.event_type)}
                 </div>
-                <h2 className="history-detail-title">{selectedEvent.title}</h2>
-                <p className="history-detail-date">{formatDateTime(selectedEvent.occurred_at)} · {categoryLabel(categoryFor(selectedEvent), selectedEvent.event_type)}</p>
+                <h2 className="history-detail-title">{selectedRecord.title}</h2>
+                <p className="history-detail-date">
+                  {selectedRecord.display_date_label ? selectedRecord.display_date_label + " · " : ""}
+                  {formatRecordDate(selectedRecord)}
+                </p>
 
                 <section className="history-detail-section">
-                  <h3>Original record</h3>
-                  <p className="history-original-text">{parseDescription(selectedEvent.description) || "No description was saved with this record."}</p>
+                  <h3>{selectedDescriptionHeading}</h3>
+                  <p className="history-original-text">{parseDescription(selectedRecord.description) || (
+                    selectedRecord.source_kind === "document"
+                      ? "No extracted text was saved. The original file can still be retrieved."
+                      : "No additional text was saved with this record."
+                  )}</p>
+                  {selectedRecord.source_kind === "document" && (
+                    <p className="history-detail-hint">Extracted text can be incomplete or incorrect. It is not a substitute for the original document.</p>
+                  )}
+                  {selectedRecord.source_kind === "handoff-in" && (
+                    <p className="history-detail-hint">The handoff summary is caregiver-provided information. Its presence does not independently verify the statements it contains.</p>
+                  )}
+                  {selectedRecord.source_kind === "appointment" && (
+                    <p className="history-detail-hint">Caregiver reports and caregiver-recorded clinician statements remain distinct. Saving this workspace does not reconcile its contents into LCR facts.</p>
+                  )}
                 </section>
 
                 <section className="history-detail-section">
                   <h3>Record details</h3>
                   <dl className="history-detail-list">
-                    <dt>Event time</dt>
-                    <dd>{formatDateTime(selectedEvent.occurred_at)}{selectedEvent.occurred_at_timezone ? " (" + selectedEvent.occurred_at_timezone + ")" : ""}</dd>
-                    <dt>Recorded in SolenOS</dt>
-                    <dd>{formatDateTime(selectedEvent.recorded_at)}</dd>
-                    <dt>Record status</dt>
-                    <dd>{selectedEvent.status || "Not specified"}</dd>
-                    <dt>Source attribution</dt>
-                    <dd>{selectedEvent.created_by_caregiver_id ? "Caregiver attribution recorded" : "Not recorded"}</dd>
-                    <dt>Time provenance</dt>
-                    <dd>{selectedEvent.time_provenance || "Not recorded"}</dd>
-                    <dt>Evidence references</dt>
-                    <dd>{selectedEvent.evidence_ids?.length ? selectedEvent.evidence_ids.join(", ") : "No evidence references attached"}</dd>
-                    <dt>Tags</dt>
-                    <dd>{selectedEvent.tags?.length ? selectedEvent.tags.join(", ") : "No tags recorded"}</dd>
-                    <dt>Last updated</dt>
-                    <dd>{formatDateTime(selectedEvent.updated_at)}</dd>
+                    {selectedRecord.source_kind === "care-event" ? (
+                      <>
+                        <dt>Event time</dt><dd>{formatDateTime(selectedRecord.occurred_at)}{selectedRecord.occurred_at_timezone ? " (" + selectedRecord.occurred_at_timezone + ")" : ""}</dd>
+                        <dt>Recorded in SolenOS</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
+                        <dt>Record status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
+                        <dt>Source attribution</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver attribution recorded" : "Not recorded"}</dd>
+                        <dt>Time provenance</dt><dd>{selectedRecord.time_provenance || "Not recorded"}</dd>
+                        <dt>Evidence references</dt><dd>{selectedRecord.evidence_ids?.length ? selectedRecord.evidence_ids.join(", ") : "No evidence references attached"}</dd>
+                        <dt>Tags</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.join(", ") : "No tags recorded"}</dd>
+                        <dt>Last updated</dt><dd>{formatDateTime(selectedRecord.updated_at)}</dd>
+                      </>
+                    ) : (
+                      <>
+                        <dt>Record source</dt><dd>{selectedRecord.source_kind === "document" ? "Saved document evidence" : selectedRecord.source_kind === "appointment" ? "Appointment workspace" : selectedRecord.source_kind === "handoff-in" ? "Incoming handoff" : "Outgoing handoff"}</dd>
+                        <dt>Recorded in SolenOS</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
+                        <dt>Record status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
+                        {selectedRecord.evidence_ids?.length ? <><dt>Evidence references</dt><dd>{selectedRecord.evidence_ids.join(", ")}</dd></> : null}
+                        {(selectedRecord.source_details ?? []).map((field) => (
+                          <ReactDetailField key={field.label} field={field} />
+                        ))}
+                      </>
+                    )}
                   </dl>
-                  {selectedEvent.significance_verdict && (
-                    <p className="history-detail-significance"><strong>Recorded significance:</strong> {selectedEvent.significance_verdict}</p>
+                  {selectedRecord.significance_verdict && (
+                    <p className="history-detail-significance"><strong>Recorded significance:</strong> {selectedRecord.significance_verdict}</p>
                   )}
                 </section>
 
@@ -472,9 +889,9 @@ export function HistoryDrawer() {
                 </section>
 
                 <div className="history-detail-actions">
-                  <button type="button" onClick={() => void shareRecord(selectedEvent)}><Share2 size={16} aria-hidden />Share</button>
-                  <button type="button" onClick={() => void copyRecord(selectedEvent)}><Copy size={16} aria-hidden />Copy</button>
-                  <button type="button" onClick={() => downloadRecord(selectedEvent)}><Download size={16} aria-hidden />Download</button>
+                  <button type="button" onClick={() => void shareRecord(selectedRecord)}><Share2 size={16} aria-hidden />Share details</button>
+                  <button type="button" onClick={() => void copyRecord(selectedRecord)}><Copy size={16} aria-hidden />Copy</button>
+                  <button type="button" onClick={() => void downloadRecord(selectedRecord)}><Download size={16} aria-hidden />{selectedRecord.source_kind === "document" ? "Download original" : "Download"}</button>
                 </div>
               </div>
             ) : (
@@ -513,7 +930,7 @@ export function HistoryDrawer() {
                 <div className="history-list-scroll">
                   <div className="history-list-summary">
                     <strong>Recent records</strong>
-                    <span>{loading ? "Loading…" : visibleEvents.length + (visibleEvents.length === 1 ? " record" : " records")}</span>
+                    <span>{loading ? "Loading…" : visibleRecords.length + (visibleRecords.length === 1 ? " record" : " records")}</span>
                     <button
                       type="button"
                       className="history-icon-button"
@@ -524,6 +941,14 @@ export function HistoryDrawer() {
                       <RefreshCw size={16} aria-hidden className={refreshing ? "history-spinning" : undefined} />
                     </button>
                   </div>
+
+                  {sourceWarnings.length > 0 && !loading && (
+                    <div className="history-source-warning" role="status">
+                      <strong>Some history sources are unavailable</strong>
+                      <ul>{sourceWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+                      <span>Records from available sources are still shown. An unavailable source is not treated as an empty history.</span>
+                    </div>
+                  )}
 
                   {loading ? (
                     <div className="history-state" role="status">
@@ -539,41 +964,41 @@ export function HistoryDrawer() {
                         <button type="button" onClick={() => void loadHistory(true)} disabled={refreshing}>Try again</button>
                       </div>
                     </div>
-                  ) : visibleEvents.length === 0 ? (
+                  ) : visibleRecords.length === 0 ? (
                     <div className="history-empty">
                       <HistoryEmptyIcon />
-                      <strong>{events.length ? "No matching records" : "Your care history starts with saved records"}</strong>
-                      <p>{events.length ? "Try a different search or filter. No records were changed." : "No saved care events were returned for this care record. SolenOS will not create example history."}</p>
+                      <strong>{records.length ? "No matching records" : "Your care history starts with saved records"}</strong>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : "No saved care records were returned from the available sources. SolenOS will not create example history."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
                     </div>
                   ) : (
                     <div className="history-groups">
-                      {groupedEvents.map((group) => (
+                      {groupedRecords.map((group) => (
                         <section key={group.label} className="history-date-group">
                           <h3>{group.label}</h3>
                           <div className="history-event-list">
-                            {group.events.map((event) => {
-                              const category = categoryFor(event);
-                              const description = parseDescription(event.description);
-                              const menuOpen = menuId === event.id;
+                            {group.records.map((record) => {
+                              const category = categoryFor(record);
+                              const description = parseDescription(record.description);
+                              const menuOpen = menuId === record.id;
                               return (
-                                <article key={event.id} className="history-event-card">
+                                <article key={record.id} className="history-event-card">
                                   <button
                                     type="button"
                                     className="history-event-open"
-                                    onClick={() => { setSelectedId(event.id); setMenuId(null); }}
-                                    aria-label={"Open record: " + event.title}
+                                    onClick={() => { setSelectedId(record.id); setMenuId(null); }}
+                                    aria-label={"Open record: " + record.title}
                                   >
                                     <span className="history-event-topline">
                                       <span className="history-category-icon"><CategoryIcon category={category} /></span>
-                                      <span className="history-event-category">{categoryLabel(category, event.event_type)}</span>
-                                      <span className="history-event-time">{formatDateTime(event.occurred_at)}</span>
+                                      <span className="history-event-category">{categoryLabel(category, record.event_type)}</span>
+                                      <span className="history-event-time">{formatRecordDate(record)}</span>
                                     </span>
-                                    <strong>{event.title}</strong>
+                                    <strong>{record.title}</strong>
                                     {description && <span className="history-event-description">{description}</span>}
-                                    {(event.follow_up_candidate || event.attention_candidate) && (
+                                    {(record.follow_up_candidate || record.attention_candidate) && (
                                       <span className="history-event-flag">Flagged for follow-up</span>
                                     )}
                                   </button>
@@ -581,18 +1006,18 @@ export function HistoryDrawer() {
                                     <button
                                       type="button"
                                       className="history-icon-button history-event-menu-trigger"
-                                      aria-label={"Actions for " + event.title}
+                                      aria-label={"Actions for " + record.title}
                                       aria-haspopup="menu"
                                       aria-expanded={menuOpen}
-                                      onClick={() => setMenuId(menuOpen ? null : event.id)}
+                                      onClick={() => setMenuId(menuOpen ? null : record.id)}
                                     >
                                       <MoreHorizontal size={19} aria-hidden />
                                     </button>
                                     {menuOpen && (
-                                      <div className="history-action-menu" role="menu" aria-label={"Actions for " + event.title}>
-                                        <button type="button" role="menuitem" onClick={() => void shareRecord(event)}><Share2 size={16} aria-hidden />Share</button>
-                                        <button type="button" role="menuitem" onClick={() => void copyRecord(event)}><Copy size={16} aria-hidden />Copy details</button>
-                                        <button type="button" role="menuitem" onClick={() => downloadRecord(event)}><Download size={16} aria-hidden />Download record</button>
+                                      <div className="history-action-menu" role="menu" aria-label={"Actions for " + record.title}>
+                                        <button type="button" role="menuitem" onClick={() => void shareRecord(record)}><Share2 size={16} aria-hidden />Share details</button>
+                                        <button type="button" role="menuitem" onClick={() => void copyRecord(record)}><Copy size={16} aria-hidden />Copy details</button>
+                                        <button type="button" role="menuitem" onClick={() => void downloadRecord(record)}><Download size={16} aria-hidden />{record.source_kind === "document" ? "Download original" : "Download record"}</button>
                                       </div>
                                     )}
                                   </div>
@@ -608,7 +1033,7 @@ export function HistoryDrawer() {
 
                 <footer className="history-drawer-footer">
                   <ShieldCheck size={15} aria-hidden />
-                  <span>History shows saved care events. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
+                  <span>History combines saved care events, documents, appointment workspaces and handoff records where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
                 </footer>
               </>
             )}
@@ -624,6 +1049,10 @@ export function HistoryDrawer() {
       )}
     </>
   );
+}
+
+function ReactDetailField({ field }: { field: DetailField }) {
+  return <><dt>{field.label}</dt><dd>{field.value}</dd></>;
 }
 
 function HistoryEmptyIcon() {

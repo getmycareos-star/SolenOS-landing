@@ -2136,3 +2136,43 @@
     animation: none !important;
   }
 }
+
+
+.history-source-warning {
+  margin: 0.15rem 0 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #e4dcc7;
+  border-radius: 10px;
+  background: #fbfaf5;
+  color: #65583b;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.history-source-warning strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #51452e;
+  font-size: 0.76rem;
+}
+
+.history-source-warning ul {
+  margin: 0.25rem 0 0.4rem;
+  padding-left: 1.1rem;
+}
+
+.history-source-warning li {
+  margin: 0.12rem 0;
+}
+
+.history-source-warning span {
+  display: block;
+  color: #776b50;
+}
+
+.history-detail-hint {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
