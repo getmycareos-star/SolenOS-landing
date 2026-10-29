@@ -160,6 +160,21 @@ export default function Companion() {
     let cancelled = false
     const restore = async () => {
       if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
+      const pendingRaw = window.localStorage.getItem('solenos_companion_pending_turn')
+      if (pendingRaw) {
+        try {
+          const pending = JSON.parse(pendingRaw) as { text?: string; id?: string }
+          if (typeof pending.text === 'string' && pending.text.trim() && typeof pending.id === 'string') {
+            pendingTurnRef.current = { text: pending.text, id: pending.id }
+            setInput(pending.text)
+            setRequestError('A previous message may not have completed. Retry to safely check its saved result.')
+          } else {
+            window.localStorage.removeItem('solenos_companion_pending_turn')
+          }
+        } catch {
+          window.localStorage.removeItem('solenos_companion_pending_turn')
+        }
+      }
       const savedSessionId = window.localStorage.getItem('solenos_companion_session_id')
       if (!savedSessionId) return
       setRestoringHistory(true)
@@ -217,6 +232,10 @@ export default function Companion() {
     const pending = pendingTurnRef.current
     const clientTurnId = pending?.text === submittedText ? pending.id : crypto.randomUUID()
     pendingTurnRef.current = { text: submittedText, id: clientTurnId }
+    window.localStorage.setItem(
+      'solenos_companion_pending_turn',
+      JSON.stringify({ text: submittedText, id: clientTurnId }),
+    )
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -230,6 +249,7 @@ export default function Companion() {
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       if (pendingTurnRef.current?.id === clientTurnId) pendingTurnRef.current = null
+      window.localStorage.removeItem('solenos_companion_pending_turn')
 
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -298,6 +318,7 @@ export default function Companion() {
   const startNewSession = () => {
     if (loading || restoringHistory) return
     pendingTurnRef.current = null
+    window.localStorage.removeItem('solenos_companion_pending_turn')
     setMessages([])
     setInput('')
     setSessionId(null)
