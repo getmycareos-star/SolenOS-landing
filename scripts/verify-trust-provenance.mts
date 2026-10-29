@@ -140,8 +140,9 @@ assert(trustIndicatorLabel("verified_by_caregiver").includes("Verified"), "indic
 console.log("✓ trust indicator labels");
 
 const records = buildProvenanceRecords(result.events_created, null);
-assert(records.every((r) => r.captured_at && r.confidence), "provenance fields complete");
-console.log("✓ provenance model fields");
+assert(records.every((r) => r.captured_at), "provenance timestamps preserved");
+assert(records.every((r) => r.confidence === null), "uncalibrated extraction confidence remains unknown");
+console.log("✓ provenance fields and uncalibrated confidence remains unknown");
 
 const apiRoute = path.join(root, "src/app/api/situation/trust/route.ts");
 assert(fs.existsSync(apiRoute), "trust API route exists");
