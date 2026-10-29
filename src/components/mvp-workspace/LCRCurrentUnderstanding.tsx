@@ -105,6 +105,7 @@ type SituationAssessment = {
   situation_trajectory?: {
     entries: Array<{
       source: string;
+      domain?: string;
       record_id: string;
       title: string;
       epistemic_status: string;
@@ -858,7 +859,7 @@ export function LCRCurrentUnderstanding() {
               {(assessment.situation_trajectory?.entries ?? []).length > 0 ? (
                 <ol>{assessment.situation_trajectory!.entries.slice(-8).reverse().map((entry) => (
                   <li key={entry.source + ":" + entry.record_id}>
-                    <strong>{entry.title}</strong> — {entry.source.replaceAll("_", " ")} · {entry.epistemic_status.replaceAll("_", " ")}
+                    <strong>{entry.title}</strong> — {entry.domain ? entry.domain.replaceAll("_", " ") + " · " : ""}{entry.source.replaceAll("_", " ")} · {entry.epistemic_status.replaceAll("_", " ")}
                     <p>Event time: {entry.event_time ? formatWhen(entry.event_time) : "Not recorded"} · Record time: {entry.recorded_at ? formatWhen(entry.recorded_at) : "Not recorded"}</p>
                     {entry.coverage_status && <p>Observation coverage: {entry.coverage_status.replaceAll("_", " ")}{entry.window_end ? " through " + formatWhen(entry.window_end) : ""}</p>}
                     <small>{entry.temporal_basis.replaceAll("_", " ")} · {entry.evidence_ids.length} linked evidence reference(s)</small>
