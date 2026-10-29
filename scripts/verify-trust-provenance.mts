@@ -159,6 +159,14 @@ assert(lcrSource.includes('import EvidenceReviewPanel from "@/components/Evidenc
 assert(lcrSource.includes("<EvidenceReviewPanel personId={personId} />"), "evidence review panel is rendered in current-care understanding");
 console.log("✓ persisted evidence review is reachable from current-care understanding");
 
+const evidenceReviewPanel = path.join(root, "src/components/EvidenceReviewPanel.tsx");
+const evidenceReviewSource = fs.readFileSync(evidenceReviewPanel, "utf8");
+for (const fieldLabel of ["Original author", "Reported by", "Collected by", "Event time", "Uploaded at", "Ingested at", "Stored source-text integrity hash"]) {
+  assert(evidenceReviewSource.includes(fieldLabel), `evidence review exposes ${fieldLabel}`);
+}
+assert(evidenceReviewSource.includes("does not authenticate the original author"), "hash limitations are explicit");
+console.log("✓ source attribution and event/reporting/ingestion times are visible with hash limitations");
+
 const provenanceModel = path.join(root, "src/lib/trust-provenance/provenance-model.ts");
 const provenanceSource = fs.readFileSync(provenanceModel, "utf8");
 assert(!provenanceSource.includes("c.confidence >= 0.85") && !provenanceSource.includes("c.confidence >= 0.65"), "uncalibrated numeric thresholds are not used for evidence confidence");
