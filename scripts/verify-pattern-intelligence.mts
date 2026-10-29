@@ -138,6 +138,8 @@ const persistedIntelligencePanel = fs.readFileSync(
   "utf-8",
 );
 assert(persistedIntelligencePanel.includes("pattern_metrics"), "renders persisted backend pattern metrics");
+assert(persistedIntelligencePanel.includes("baseline_coverage_status !== \"covered\""), "unknown baseline coverage labels emergence as first observed rather than a new onset");
+assert(persistedIntelligencePanel.includes("return \"First observed\""), "caregiver-facing label avoids implying an event began now when baseline coverage is unverified");
 assert(persistedIntelligencePanel.includes("local_time_distribution"), "renders timezone-grounded timing only with explicit caveat");
 
 console.log("\n=== Pattern Intelligence verification complete ===");
