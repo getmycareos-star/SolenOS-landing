@@ -234,7 +234,10 @@ try {
   await persistedEvidencePanel.getByText(reviewRationale, { exact: true }).waitFor({ timeout: 10_000 });
   await persistedEvidencePanel.getByText(/Source lineage and corroboration relationships/).click();
   await persistedEvidencePanel.getByText(/forwarded from/i).waitFor({ timeout: 10_000 });
-  console.log("PASS: real frontend Open Loop lifecycle and real LCR evidence workflow: source lineage persisted, stored-text integrity verified without claiming original-file authenticity, review saved, and lineage/review history reloaded from the backend.");
+  await page.getByRole("link", { name: /Open purpose-specific evidence completeness/ }).click();
+  await page.getByRole("heading", { name: "Evidence completeness" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("heading", { name: "Purpose-specific evidence completeness" }).waitFor({ timeout: 10_000 });
+  console.log("PASS: real frontend Open Loop lifecycle, persisted LCR evidence lineage/review, integrity check, reload hydration, and navigation to purpose-specific completeness assessment.");
 } finally {
   await browser.close();
 }
