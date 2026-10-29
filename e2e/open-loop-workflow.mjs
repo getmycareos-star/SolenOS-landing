@@ -194,6 +194,7 @@ try {
   // Reload proves the UI rehydrates saved state from the API rather than only
   // displaying optimistic component state.
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByLabel("Filter open loops").selectOption("all");
   await page.getByRole("heading", { name: handoffTitle }).waitFor({ timeout: 15_000 });
   await page.getByRole("heading", { name: conflictTitle }).waitFor({ timeout: 15_000 });
   const reloadedHandoff = page.locator("article").filter({
