@@ -147,6 +147,7 @@ export function ChangeIntelligencePanel() {
       const supportingIds = [
         ...(detail?.evidence.map((item) => item.id) ?? []),
         ...(detail?.assertions.map((item) => item.id) ?? []),
+        ...(detail?.observations.map((item) => item.id) ?? []),
       ];
       await transitionChangeConfirmation(changeId, status, reason, [...new Set(supportingIds)]);
       const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
@@ -319,13 +320,13 @@ export function ChangeIntelligencePanel() {
                         <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
                       ) : (
                         <>
-                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
+                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
                           <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
                           <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
                         </>
                       )}
                     </div>
-                    {details[change.id].evidence.length === 0 && details[change.id].assertions.length === 0 ? (
+                    {details[change.id].evidence.length === 0 && details[change.id].assertions.length === 0 && details[change.id].observations.length === 0 ? (
                       <p className="panel-muted">No source records could be resolved for this assessment. Its evidence references should be reviewed.</p>
                     ) : null}
                     {details[change.id].evidence.map((source) => (
@@ -340,6 +341,16 @@ export function ChangeIntelligencePanel() {
                         <strong>{source.field}: {source.asserted_value}</strong>
                         <p>{source.source_text ?? source.source_label}</p>
                         <p className="panel-muted">{source.assertion_kind} · {source.assertion_status} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                      </article>
+                    ))}
+                    {details[change.id].observations.map((source) => (
+                      <article key={source.id}>
+                        <strong>{source.subject_label} · {source.attribute}: {source.normalized_value ?? source.value_text ?? "Numeric value unavailable"}{source.units ? ` ${source.units}` : ""}</strong>
+                        <p>{source.source_passage}</p>
+                        <p className="panel-muted">{source.observation_kind} · {source.epistemic_status} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                        {source.negated || source.hedge_marker || source.ambiguity_note ? (
+                          <p className="panel-muted">Interpretation limits: {[source.negated ? "negated" : "", source.hedge_marker ? `hedged: ${source.hedge_marker}` : "", source.ambiguity_note ?? ""].filter(Boolean).join("; ")}</p>
+                        ) : null}
                       </article>
                     ))}
                     {details[change.id].confirmation_history.length > 0 ? (
