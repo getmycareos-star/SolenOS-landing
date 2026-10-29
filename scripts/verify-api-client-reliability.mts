@@ -9,6 +9,7 @@ const companionSource = readFileSync(
 assert.match(companionSource, /pendingTurnRef/);
 assert.match(companionSource, /client_turn_id:\s*clientTurnId/);
 assert.match(companionSource, /pendingTurnRef\.current\?\.turnId === clientTurnId/);
+assert.match(companionSource, /pendingTurnRef\.current = null/);
 
 
 const values = new Map<string, string>([
