@@ -113,7 +113,7 @@ type SituationAssessment = {
       recorded_at?: string | null;
       reported_at?: string | null;
       temporal_basis: string;
-      context?: string | null;
+      context?: unknown;
       location?: string | null;
       observer_label?: string | null;
       observation_method?: string | null;
@@ -870,7 +870,7 @@ export function LCRCurrentUnderstanding() {
                     <strong>{entry.title}</strong> — {entry.domain ? entry.domain.replaceAll("_", " ") + " · " : ""}{entry.source.replaceAll("_", " ")} · {entry.epistemic_status.replaceAll("_", " ")}
                     <p>Event time: {entry.event_time ? formatWhen(entry.event_time) : "Not recorded"} · Record time: {entry.recorded_at ? formatWhen(entry.recorded_at) : "Not recorded"}</p>
                     {entry.reported_at && <p>Reported at: {formatWhen(entry.reported_at)}</p>}
-                    {entry.context && <p>Recorded context: {entry.context}</p>}
+                    {entry.context !== null && entry.context !== undefined && <p>Recorded context: {typeof entry.context === "string" ? entry.context : JSON.stringify(entry.context)}</p>}
                     {entry.location && <p>Recorded location: {entry.location}</p>}
                     {entry.observer_label && <p>Observer/source label: {entry.observer_label}</p>}
                     {entry.observation_method && <p>Observation method: {entry.observation_method}</p>}
