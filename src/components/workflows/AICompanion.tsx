@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -111,6 +111,7 @@ export default function Companion() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [historyRestoring, setHistoryRestoring] = useState(true)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
@@ -124,7 +125,89 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  // Keep the same idempotency key when the caregiver retries the same failed turn.
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const personId = getPersonId()
+
+  useEffect(() => {
+    let cancelled = false
+    const restoreConversation = async () => {
+      const savedSessionId = window.sessionStorage.getItem('solenos_companion_session_id')
+      if (!savedSessionId) {
+        if (!cancelled) setHistoryRestoring(false)
+        return
+      }
+      try {
+        const session = await ensureAnonymousSession()
+        const history = await getJSON(`/conversation/${encodeURIComponent(savedSessionId)}`) as {
+          session_id?: string
+          person_id?: string
+          messages?: Array<{
+            role: string
+            text: string
+            created_at?: string | null
+            guard_verdict?: string | null
+            safety_note?: string | null
+            evidence_ids?: string[]
+            source_record_refs?: Array<{ record_type: string; record_id: string }>
+            source_event_ids?: string[]
+            source_evidence_ids?: string[]
+            source_appointment_ids?: string[]
+            source_freshness_assessment_ids?: string[]
+            freshness_source_status?: string
+            confidence?: number | null
+            ai_generated?: boolean
+            written_to_lcr?: boolean
+            persistence?: string
+          }>
+        }
+        if (cancelled) return
+        if (history.person_id !== session.person.id || history.session_id !== savedSessionId) {
+          window.sessionStorage.removeItem('solenos_companion_session_id')
+          setSessionId(null)
+          setMessages([])
+          return
+        }
+        setSessionId(savedSessionId)
+        setMessages((history.messages ?? []).flatMap((message): Message[] => {
+          if (message.role !== 'user' && message.role !== 'assistant') return []
+          return [{
+            role: message.role,
+            text: message.text,
+            timestamp: message.created_at ? new Date(message.created_at) : new Date(),
+            guard_verdict: message.guard_verdict,
+            safety_note: message.safety_note,
+            evidence_ids: message.evidence_ids,
+            source_event_ids: message.source_event_ids,
+            source_evidence_ids: message.source_evidence_ids,
+            source_appointment_ids: message.source_appointment_ids,
+            source_freshness_assessment_ids: message.source_freshness_assessment_ids,
+            freshness_source_status: message.freshness_source_status,
+            source_record_refs: message.source_record_refs,
+            confidence: message.confidence,
+            ai_generated: message.ai_generated,
+            written_to_lcr: message.written_to_lcr ?? false,
+            persistence: message.persistence ?? 'conversation_only',
+          }]
+        }))
+      } catch (error) {
+        if (cancelled) return
+        const message = error instanceof Error ? error.message : String(error)
+        if (/\b404\b/.test(message)) {
+          window.sessionStorage.removeItem('solenos_companion_session_id')
+          setSessionId(null)
+        } else {
+          // Keep the ID for a safe retry; the API rechecks caregiver/person scope.
+          setSessionId(savedSessionId)
+          setRequestError('The previous conversation could not be restored yet. Check your connection and try again.')
+        }
+      } finally {
+        if (!cancelled) setHistoryRestoring(false)
+      }
+    }
+    void restoreConversation()
+    return () => { cancelled = true }
+  }, [])
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -162,10 +245,14 @@ export default function Companion() {
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    if (!submittedText || loading) return
+    if (!submittedText || loading || historyRestoring) return
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    const pendingTurn = pendingTurnRef.current?.text === submittedText
+      ? pendingTurnRef.current
+      : { text: submittedText, id: crypto.randomUUID() }
+    pendingTurnRef.current = pendingTurn
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -175,12 +262,17 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: pendingTurn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      if (pendingTurnRef.current?.id === pendingTurn.id) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
-      if (!sessionId && response.session_id) setSessionId(response.session_id)
+      if (response.session_id) {
+        setSessionId(response.session_id)
+        window.sessionStorage.setItem('solenos_companion_session_id', response.session_id)
+      }
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -225,7 +317,7 @@ export default function Companion() {
   }
 
   useEffect(() => {
-    if (autoDraftSent.current) return
+    if (historyRestoring || autoDraftSent.current) return
     const draft = new URLSearchParams(window.location.search).get('draft')?.trim()
     if (!draft) return
     autoDraftSent.current = true
@@ -233,7 +325,7 @@ export default function Companion() {
     void sendMessage(draft)
     // One-time handoff from another workflow; not a reactive chat effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [historyRestoring])
 
   const handleInput = (value: string) => {
     setInput(value)
@@ -249,6 +341,8 @@ export default function Companion() {
     setMessages([])
     setInput('')
     setSessionId(null)
+    window.sessionStorage.removeItem('solenos_companion_session_id')
+    pendingTurnRef.current = null
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -262,7 +356,7 @@ export default function Companion() {
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
           <div><div className="companion-eyebrow">SOLENOS · CARE SUPPORT</div><h2>AI Companion</h2></div>
         </div>
-        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
+        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || historyRestoring}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
       </header>
 
       <section className="companion-purpose">
@@ -429,7 +523,7 @@ export default function Companion() {
         <CareHandoffSharing draft={handoffDraft} audience={handoffAudience} purpose={handoffPurpose} />
       </section>
 
-      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || historyRestoring}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
@@ -487,8 +581,8 @@ export default function Companion() {
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading} rows={2} />
-          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading || historyRestoring} rows={2} />
+          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || historyRestoring || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
