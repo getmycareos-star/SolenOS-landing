@@ -21,6 +21,56 @@ try {
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Open Loops" }).waitFor();
   await page.getByText("No items in this view").waitFor({ timeout: 15_000 }).catch(() => {});
+  await page.waitForFunction(() => Boolean(
+    localStorage.getItem("solenos_anonymous_access_token") &&
+    localStorage.getItem("solenos_backend_person_id") &&
+    localStorage.getItem("solenos_backend_caregiver_id")
+  ), { timeout: 15_000 });
+  const session = await page.evaluate(() => ({
+    token: localStorage.getItem("solenos_anonymous_access_token"),
+    personId: localStorage.getItem("solenos_backend_person_id"),
+    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+  }));
+  if (!session.token || !session.personId || !session.caregiverId) {
+    throw new Error("The frontend did not establish a server-issued anonymous care session.");
+  }
+  const sourceResponse = await fetch(new URL("/api/v1/evidence", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      person_id: session.personId,
+      uploaded_by_caregiver_id: session.caregiverId,
+      type: "document",
+      evidence_kind: "documented_record",
+      epistemic_status: "unverified",
+      source_text: "Synthetic CI-only source record for professional response verification.",
+      source_type: "ci_e2e_fixture",
+      ingestion_key: "ui-e2e-source-record-0001",
+    }),
+  });
+  if (!sourceResponse.ok) {
+    throw new Error(`Could not seed synthetic source evidence: HTTP ${sourceResponse.status} ${await sourceResponse.text()}`);
+  }
+  const sourceEvidence = await sourceResponse.json();
+  const sourceEvidenceId = sourceEvidence.id;
+  if (!sourceEvidenceId) throw new Error("The backend did not return the created source evidence ID.");
+
+  page.on("dialog", async (dialog) => {
+    const message = dialog.message();
+    if (message.startsWith("Record the actual response received")) {
+      await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
+    } else if (message.startsWith("Select an existing source record")) {
+      await dialog.accept(sourceEvidenceId);
+    } else if (message.startsWith("Record the explicit reconciliation decision")) {
+      await dialog.accept("CI-only reconciliation: the reports concern different dates; neither report is discarded.");
+    } else {
+      await dialog.dismiss();
+    }
+  });
+
   await page.getByLabel("Type").selectOption("professional_input");
 
   const handoffTitle = "CI E2E professional callback";
@@ -34,7 +84,6 @@ try {
   });
   await handoff.waitFor({ timeout: 15_000 });
 
-  page.once("dialog", (dialog) => dialog.accept("CI-only response: appointment date confirmed for the synthetic test."));
   await handoff.getByRole("button", { name: "Record response" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await handoff.getByRole("button", { name: "View audit history" }).click();
@@ -52,9 +101,6 @@ try {
   });
   await conflict.waitFor({ timeout: 15_000 });
 
-  page.once("dialog", (dialog) => dialog.accept(
-    "CI-only reconciliation: the reports concern different dates; neither report is discarded."
-  ));
   await conflict.getByRole("button", { name: "Record reconciliation" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "View audit history" }).click();
