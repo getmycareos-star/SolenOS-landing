@@ -183,10 +183,45 @@ export default function OpenLoopsPage() {
           ? window.prompt("What explicit criterion was used to verify the outcome?")
           : null;
         if (action === "verify" && !verificationRule?.trim()) return;
+        let evidence: Array<Record<string, unknown>> = [
+          { kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() },
+        ];
+        let selectedSourceId: string | null = null;
+        if (action === "response" && loop.loop_type === "professional_input") {
+          const activeSession = await ensureAnonymousSession();
+          const sourceRows = await getJSON(`/evidence/${encodeURIComponent(activeSession.person.id)}`);
+          if (!Array.isArray(sourceRows)) {
+            throw new Error("The care record did not return a valid source-evidence list.");
+          }
+          const sources = (sourceRows as Array<Record<string, unknown>>).filter(
+            (item) => typeof item.id === "string" && typeof item.type === "string",
+          );
+          if (sources.length === 0) {
+            throw new Error("No source evidence is saved in this care record yet. Add the professional document or source record first, then record the response.");
+          }
+          const choices = sources.slice(0, 20).map((item, index) =>
+            `${index + 1}. ${String(item.type)} — ${String(item.source_text ?? "Source text unavailable").slice(0, 110)} [ID: ${String(item.id)}]`,
+          ).join("\\n");
+          const sourceId = window.prompt(
+            "Select an existing source record by entering its exact ID. A caregiver note alone cannot verify professional input.\\n\\n" + choices,
+          );
+          if (!sourceId?.trim()) return;
+          const selected = sources.find((item) => item.id === sourceId.trim());
+          if (!selected) {
+            throw new Error("Choose an exact source ID from the list. No professional response was saved.");
+          }
+          selectedSourceId = String(selected.id);
+          evidence = [{
+            kind: "care_record_source",
+            evidence_id: selectedSourceId,
+            text: "Existing source record selected by caregiver for professional-response verification.",
+          }];
+        }
         const signature = JSON.stringify({
           action,
           text: text.trim(),
           verification_rule: verificationRule?.trim() || null,
+          source_evidence_id: selectedSourceId,
         });
         const pendingKey = loop.id + ":" + action;
         const pending = pendingActionKeys.current[pendingKey];
@@ -194,7 +229,7 @@ export default function OpenLoopsPage() {
         pendingActionKeys.current[pendingKey] = { signature, key: idempotencyKey };
         const payload = {
           text: text.trim(),
-          evidence: [{ kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() }],
+          evidence,
           ...(verificationRule?.trim() ? { verification_rule: verificationRule.trim() } : {}),
           idempotency_key: idempotencyKey,
         };
