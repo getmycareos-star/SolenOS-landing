@@ -17,7 +17,21 @@ type EvidenceSource = {
   original_source_reference?: string | null
   parent_evidence_id?: string | null
 }
-type LinkedSource = { evidence_ids?: string[]; evidence_sources?: EvidenceSource[]; evidence_reference_status?: string }
+type FreshnessAssessment = {
+  assessment_id: string
+  evidence_id: string
+  policy_id: string
+  domain_key: string
+  policy_version: string
+  freshness_status: string
+  source_time?: string | null
+  source_time_kind?: string | null
+  assessed_at: string
+  age_days?: number | null
+  rationale: string
+  interpretation_limit: string
+}
+type LinkedSource = { evidence_ids?: string[]; evidence_sources?: EvidenceSource[]; evidence_reference_status?: string; freshness_assessments?: FreshnessAssessment[] }
 type PreparationBrief = {
   snapshot_at: string
   read_only: boolean
@@ -25,6 +39,8 @@ type PreparationBrief = {
   events: Array<{ source_id: string; title: string; description?: string | null; event_type: string; occurred_at?: string | null; status: string } & LinkedSource>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string } & LinkedSource>
   source_coverage: Record<string, string>
+  freshness_assessments?: FreshnessAssessment[]
+  freshness_assessment_scope?: { status: string; bounded: boolean; limit: number; history_complete: boolean; interpretation_limit: string }
   evidence_lineage?: {
     status: string
     evidence_ids_considered: string[]
@@ -233,6 +249,19 @@ export default function AppointmentWorkspace() {
                 </div>
               </div>
               <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{source.replaceAll('_', ' ')}</b><small>{status.replaceAll('_', ' ')}</small></span>)}</div></div>
+              <section className="appointment-source-coverage" aria-label="Evidence freshness assessments">
+                <strong>Evidence freshness assessments ({lcrBrief.freshness_assessments?.length ?? 0})</strong>
+                <p>These are results of explicit domain policies, not proof that a source is true or clinically current. This view shows only the latest result per policy and linked evidence.</p>
+                {lcrBrief.freshness_assessment_scope && <small>{lcrBrief.freshness_assessment_scope.interpretation_limit}</small>}
+                {(lcrBrief.freshness_assessments?.length ?? 0) > 0
+                  ? <ul>{lcrBrief.freshness_assessments?.map(item => <li key={item.assessment_id}>
+                    <span>{item.freshness_status.replaceAll('_', ' ')} · {item.domain_key} · policy {item.policy_version}</span>
+                    <small>Evidence {item.evidence_id} · source time {item.source_time ? new Date(item.source_time).toLocaleString() : 'unknown'} ({(item.source_time_kind || 'time kind unknown').replaceAll('_', ' ')}) · age {item.age_days == null ? 'unknown' : item.age_days + ' days'}</small>
+                    <small>{item.rationale}</small>
+                    <small>Assessment {item.assessment_id}</small>
+                  </li>)}</ul>
+                  : <p>No freshness assessment was returned for evidence linked to this preparation snapshot. This is not proof that evidence is current.</p>}
+              </section>
               {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="Evidence source lineage">
                 <strong>Evidence source lineage · {lcrBrief.evidence_lineage.status.replaceAll('_', ' ')}</strong>
                 {lcrBrief.evidence_lineage.scope_truncated && <p role="status">Lineage retrieval reached a safety bound. Unreturned source relationships are unknown, not absent; independent corroboration is not established.</p>}
