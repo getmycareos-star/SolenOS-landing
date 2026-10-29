@@ -6,6 +6,7 @@ on:
     paths:
       - "src/app/workspace/open-loops/**"
       - "src/components/EvidenceReviewPanel.tsx"
+      - "src/components/ConflictResolutionPanel.tsx"
       - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
       - "src/api/client.ts"
       - "e2e/open-loop-workflow.mjs"
