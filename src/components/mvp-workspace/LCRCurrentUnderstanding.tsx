@@ -57,6 +57,28 @@ type SituationAssessment = {
     is_complete: boolean;
   };
   domains: Record<string, { source_names: string[]; record_count: number; evidence_state: string }>;
+  cross_domain_source_links?: {
+    groups: Array<{
+      evidence_id: string;
+      domains: string[];
+      records: Array<{
+        source: string;
+        record_id: string;
+        title: string;
+        epistemic_status: string;
+        event_time?: string | null;
+        record_time?: string | null;
+      }>;
+      record_count: number;
+      has_more_records: boolean;
+      link_type: string;
+      interpretation_limit: string;
+    }>;
+    count: number;
+    has_more: boolean;
+    source_of_truth: string;
+    relationship_policy: string;
+  };
   capabilities: Record<string, { source_names: string[]; record_count: number; evidence_state: string; unavailable_sources: string[] }>;
   assessment_quality?: {
     status: string;
@@ -771,6 +793,30 @@ export function LCRCurrentUnderstanding() {
                 </li>
               ))}</ul>
             </details>
+            {assessment.cross_domain_source_links && (
+              <details>
+                <summary>Explicit shared-evidence links across domains ({assessment.cross_domain_source_links.count})</summary>
+                <p>{assessment.cross_domain_source_links.relationship_policy}</p>
+                {assessment.cross_domain_source_links.groups.length > 0 ? (
+                  <ul>{assessment.cross_domain_source_links.groups.slice(0, 10).map((group) => (
+                    <li key={group.evidence_id}>
+                      <strong>Evidence {group.evidence_id}</strong> · {group.link_type.replaceAll("_", " ")} · {group.record_count} linked records
+                      <p>Domains: {group.domains.map((domain) => domain.replaceAll("_", " ")).join(", ")}</p>
+                      <ul>{group.records.slice(0, 8).map((record) => (
+                        <li key={record.source + ":" + record.record_id}>
+                          {record.title} — {record.source.replaceAll("_", " ")} · {record.epistemic_status.replaceAll("_", " ")}
+                          <small>Event time: {record.event_time ? formatWhen(record.event_time) : "Not recorded"} · Record time: {record.record_time ? formatWhen(record.record_time) : "Not recorded"}</small>
+                        </li>
+                      ))}</ul>
+                      <small>{group.interpretation_limit}</small>
+                    </li>
+                  ))}</ul>
+                ) : (
+                  <p>No records from different assessment domains explicitly share an evidence reference in the returned records.</p>
+                )}
+                {assessment.cross_domain_source_links.has_more && <p>Additional shared-evidence groups exist beyond this bounded view.</p>}
+              </details>
+            )}
             {assessment.evolution_since_previous_assessment && (
               <div>
                 <strong>Changes since previous assessment</strong>
