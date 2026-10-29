@@ -78,9 +78,14 @@ processCareJourneyInput({
 });
 
 const patterns = runPatternEngine(caregiverId);
-assert(patterns.some((p) => p.pattern_type === "frequency"), "detects frequency patterns");
-assert(patterns.some((p) => p.pattern_type === "trend"), "detects trend patterns");
-console.log("✓ PatternEngine — frequency + trend");
+assert(patterns.some((p) => p.pattern_type === "frequency"), "reports repeated structured event records");
+assert(!patterns.some((p) => p.pattern_type === "trend"), "does not infer trend direction from narrative keywords");
+assert(!patterns.some((p) => p.pattern_type === "co_occurrence"), "does not infer cross-domain co-occurrence from prose keywords");
+assert(!patterns.some((p) => p.pattern_type === "escalation"), "does not infer escalation severity from adjectives");
+const recordedFrequency = patterns.find((p) => p.pattern_type === "frequency");
+assert(recordedFrequency?.confidence === "low", "client-only record counts do not claim calibrated confidence");
+assert(recordedFrequency?.description.includes("Observation coverage is not available"), "record-count output states the coverage limitation");
+console.log("✓ PatternEngine — bounded recorded-event counts; unsupported trend/co-occurrence/escalation claims withheld");
 
 const explanation = formatPatternExplanation(patterns);
 assert(!/\bdiagnos/i.test(explanation), "explanation is non-diagnostic");
