@@ -100,14 +100,19 @@ export function ChangeIntelligencePanel() {
 
   async function changeStatus(changeId: string, status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive") {
     const reason = confirmationReasons[changeId]?.trim() ?? "";
-    if ((status === "rejected" || status === "inconclusive") && !reason) {
-      setDetailErrors((current) => ({ ...current, [changeId]: "A reason is required to dispute or mark this assessment inconclusive." }));
+    if (status !== "awaiting_confirmation" && !reason) {
+      setDetailErrors((current) => ({ ...current, [changeId]: "A decision rationale is required to confirm, dispute, or mark this assessment inconclusive." }));
       return;
     }
     setTransitioningIds((current) => [...current, changeId]);
     setDetailErrors((current) => { const next = { ...current }; delete next[changeId]; return next; });
     try {
-      await transitionChangeConfirmation(changeId, status, reason, details[changeId]?.evidence.map((item) => item.id) ?? []);
+      const detail = details[changeId];
+      const supportingIds = [
+        ...(detail?.evidence.map((item) => item.id) ?? []),
+        ...(detail?.assertions.map((item) => item.id) ?? []),
+      ];
+      await transitionChangeConfirmation(changeId, status, reason, [...new Set(supportingIds)]);
       const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
       setChanges(changeRows.filter((row) => row.is_active));
       setPatterns(patternRows.filter((row) => row.is_active));
@@ -247,7 +252,7 @@ export function ChangeIntelligencePanel() {
                 {expandedChangeId === change.id && details[change.id] ? (
                   <div>
                     <label>
-                      <span>Decision rationale (required to dispute or mark inconclusive)</span>
+                      <span>Decision rationale (required to confirm, dispute, or mark inconclusive)</span>
                       <textarea
                         value={confirmationReasons[change.id] ?? ""}
                         onChange={(event) => setConfirmationReasons((current) => ({ ...current, [change.id]: event.target.value }))}
@@ -260,7 +265,7 @@ export function ChangeIntelligencePanel() {
                         <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
                       ) : (
                         <>
-                          <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
+                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
                           <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
                           <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
                         </>
