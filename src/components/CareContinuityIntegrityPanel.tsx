@@ -95,12 +95,14 @@ type EvidenceSource = { id: string; type: string; source_text: string; uploaded_
 
 export default function CareContinuityIntegrityPanel({
   personId,
-  evidenceItems = [],
+  evidenceItems: initialEvidenceItems = [],
 }: {
   personId: string
   evidenceItems?: EvidenceSource[]
 }) {
   const [data, setData] = useState<PanelData>(emptyData)
+  const [evidenceItems, setEvidenceItems] = useState<EvidenceSource[]>(initialEvidenceItems)
+  const [evidenceLoadError, setEvidenceLoadError] = useState("")
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -158,7 +160,28 @@ export default function CareContinuityIntegrityPanel({
     }
   }, [personId])
 
-  useEffect(() => { setSubjectId(personId); void load() }, [load, personId])
+  const loadEvidence = useCallback(async () => {
+    if (!personId) {
+      setEvidenceItems([])
+      setEvidenceLoadError("No authorized care record is selected.")
+      return
+    }
+    setEvidenceLoadError("")
+    try {
+      const result = await getJSON('/care-continuity/evidence?limit=100')
+      if (!Array.isArray(result) || result.some((item) =>
+        item?.person_id !== personId || typeof item?.id !== 'string' || typeof item?.source_text !== 'string'
+      )) {
+        throw new Error("The evidence list did not match the active care record.")
+      }
+      setEvidenceItems(result as EvidenceSource[])
+    } catch {
+      setEvidenceItems([])
+      setEvidenceLoadError("Evidence could not be loaded from the care record. Existing evidence cannot be linked until the connection is restored.")
+    }
+  }, [personId])
+
+  useEffect(() => { setSubjectId(personId); void load(); void loadEvidence() }, [load, loadEvidence, personId])
 
   const freshnessById = useMemo(
     () => new Map(data.freshness.map((item) => [item.assertion_id, item])),
@@ -376,6 +399,8 @@ export default function CareContinuityIntegrityPanel({
         </label>
         {evidenceItems.length > 0 && <fieldset style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginTop: 9 }}>
           <legend style={{ fontSize: 12 }}>Link existing evidence records</legend>
+          {evidenceLoadError && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{evidenceLoadError}</p>}
+          {evidenceItems.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{evidenceLoadError ? "Evidence list unavailable; no empty-list conclusion is assumed." : "No evidence records are available to link."}</p>}
           {evidenceItems.map(item => <label key={item.id} style={{ display: 'flex', gap: 7, alignItems: 'center', fontSize: 12, padding: '3px 0' }}>
             <input type="checkbox" checked={observationEvidenceIds.includes(item.id)} onChange={event => setObservationEvidenceIds(current => event.target.checked ? [...new Set([...current, item.id])] : current.filter(id => id !== item.id))} />
             {item.type} · {item.id}
