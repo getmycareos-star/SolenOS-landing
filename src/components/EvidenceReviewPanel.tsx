@@ -109,6 +109,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [sourceIntegrity, setSourceIntegrity] = useState<SourceIntegrity | null>(null)
   const [sourceIntegrityError, setSourceIntegrityError] = useState('')
   const [sourceIntegrityLoading, setSourceIntegrityLoading] = useState(false)
+  const [historyAsOf, setHistoryAsOf] = useState('')
+  const [reconstructedHistory, setReconstructedHistory] = useState<Record<string, unknown> | null>(null)
+  const [historyReconstructionLoading, setHistoryReconstructionLoading] = useState(false)
+  const [historyReconstructionError, setHistoryReconstructionError] = useState('')
   const [relationships, setRelationships] = useState<SourceRelationship[]>([])
   const [relationshipsLoading, setRelationshipsLoading] = useState(false)
   const [relationshipsError, setRelationshipsError] = useState('')
@@ -229,6 +233,33 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   }, [personId, selectedId])
 
   useEffect(() => { void loadSourceIntegrity() }, [loadSourceIntegrity])
+
+  const reconstructHistoricalState = useCallback(async () => {
+    if (!selectedId || !personId || !historyAsOf) {
+      setHistoryReconstructionError('Choose a date and time before requesting a historical snapshot.')
+      return
+    }
+    setHistoryReconstructionLoading(true)
+    setHistoryReconstructionError('')
+    setReconstructedHistory(null)
+    try {
+      const asOf = new Date(historyAsOf)
+      if (Number.isNaN(asOf.getTime())) throw new Error('The selected date and time is invalid.')
+      const result = await getJSON(
+        `/care-continuity/state-revisions/evidence/${encodeURIComponent(selectedId)}/as-of?as_of=${encodeURIComponent(asOf.toISOString())}`
+      )
+      if (!result || result.person_id !== personId || result.target_type !== 'evidence' ||
+          result.target_id !== selectedId || result.historical_state_source !== 'persisted_care_state_revision' ||
+          typeof result.interpretation_limit !== 'string') {
+        throw new Error('The historical response did not match the selected evidence record and care record.')
+      }
+      setReconstructedHistory(result as Record<string, unknown>)
+    } catch {
+      setHistoryReconstructionError('A persisted historical revision could not be reconstructed for that time. This does not establish that the evidence did not exist; retry or inspect the saved revision history.')
+    } finally {
+      setHistoryReconstructionLoading(false)
+    }
+  }, [historyAsOf, personId, selectedId])
 
   const loadRelationships = useCallback(async () => {
     if (!selectedId || !personId) {
@@ -565,6 +596,23 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <textarea style={{ ...field, minHeight: 52 }} value={observationAmbiguity} onChange={event => setObservationAmbiguity(event.target.value)} maxLength={4000} />
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitObservation()} disabled={observationSaving || observationsLoading || !selected}>{observationSaving ? 'Saving…' : 'Save structured observation'}</button>
+        </details>
+        <details style={{ fontSize: 12, marginBottom: 12 }}>
+          <summary>Reconstruct historical evidence state</summary>
+          <p>Choose an instant to retrieve the last persisted revision at or before that time. This is a historical database snapshot, not proof that the stored claim was true.</p>
+          <label style={{ display: 'block', marginTop: 8 }}>Historical instant
+            <input style={field} type="datetime-local" value={historyAsOf} onChange={event => { setHistoryAsOf(event.target.value); setReconstructedHistory(null); setHistoryReconstructionError('') }} />
+          </label>
+          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructHistoricalState()} disabled={historyReconstructionLoading || !selectedId || !historyAsOf}>
+            {historyReconstructionLoading ? 'Reconstructing…' : 'Reconstruct at selected time'}
+          </button>
+          {historyReconstructionError && <p role="alert" style={{ color: 'var(--error)' }}>{historyReconstructionError}</p>}
+          {reconstructedHistory && <div role="status" style={{ marginTop: 8 }}>
+            <p><strong>Recorded revision:</strong> {String(reconstructedHistory.revision_number)} · {String(reconstructedHistory.change_kind)} · {String(reconstructedHistory.recorded_change_at || 'time not recorded')}</p>
+            <p><strong>Requested instant:</strong> {String(reconstructedHistory.requested_as_of)}</p>
+            <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(reconstructedHistory.state, null, 2)}</pre>
+            <p>{String(reconstructedHistory.interpretation_limit)}</p>
+          </div>}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>Stored source-text integrity check</summary>
