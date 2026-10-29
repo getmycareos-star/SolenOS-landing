@@ -182,10 +182,20 @@ type SituationAssessment = {
   notice: string;
 };
 
+type SourceFreshness = {
+  status: string;
+  reassessment_recommended: boolean;
+  source_of_truth: string;
+  scope: string;
+  read_only: boolean;
+  limitation: string;
+};
+
 type SituationAssessmentResponse = {
   status: "available" | "not_assessed" | "created" | "unchanged";
   assessment_id?: string;
   assessment: SituationAssessment | null;
+  source_freshness?: SourceFreshness;
 };
 
 type ChangeEvidence = {
@@ -350,6 +360,7 @@ export function LCRCurrentUnderstanding() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assessment, setAssessment] = useState<SituationAssessment | null>(null);
+  const [sourceFreshness, setSourceFreshness] = useState<SourceFreshness | null>(null);
   const [assessmentLoading, setAssessmentLoading] = useState(false);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [changes, setChanges] = useState<PersistedChange[]>([]);
@@ -449,12 +460,15 @@ export function LCRCurrentUnderstanding() {
         const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
         if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
           setAssessment(saved.assessment);
+          setSourceFreshness(saved.source_freshness ?? null);
         } else {
           setAssessment(null);
+          setSourceFreshness(null);
         }
         setAssessmentError(null);
       } catch (assessmentCause) {
         setAssessment(null);
+        setSourceFreshness(null);
         setAssessmentError(assessmentCause instanceof Error ? assessmentCause.message : "Situation assessment is unavailable.");
       }
     } catch (cause) {
@@ -551,6 +565,7 @@ export function LCRCurrentUnderstanding() {
         throw new Error("The assessment did not match the active care-record session.");
       }
       setAssessment(result.assessment);
+      setSourceFreshness(result.source_freshness ?? null);
     } catch (cause) {
       setAssessmentError(cause instanceof Error ? cause.message : "Situation reassessment failed.");
     } finally {
@@ -751,6 +766,15 @@ export function LCRCurrentUnderstanding() {
         {assessmentError && <p role="status">Assessment status: {assessmentError}</p>}
         {!assessment && !assessmentLoading && (
           <p>No persisted situation assessment is available yet. Reassess to compose one from the current authorized record. No care conclusion is assumed.</p>
+        )}
+        {sourceFreshness && (
+          <p role="status">
+            Source freshness: {sourceFreshness.status.replaceAll("_", " ")}.
+            {sourceFreshness.reassessment_recommended
+              ? " The persisted assessment may be out of date; reassess from the current record."
+              : " The fingerprint matches the bounded source view, not proof that every relevant source exists."}
+            {" "}{sourceFreshness.limitation}
+          </p>
         )}
         {assessment && (
           <>
