@@ -146,7 +146,10 @@ export default function Companion() {
         }
         if (cancelled) return
         if (history.person_id !== session.person.id || history.session_id !== savedSessionId) {
-          throw new Error('The saved conversation does not belong to the active care record.')
+          window.sessionStorage.removeItem('solenos_companion_session_id')
+          setSessionId(null)
+          setMessages([])
+          return
         }
         setSessionId(savedSessionId)
         setMessages((history.messages ?? []).flatMap((message): Message[] => {
@@ -329,7 +332,7 @@ export default function Companion() {
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
           <div><div className="companion-eyebrow">SOLENOS · CARE SUPPORT</div><h2>AI Companion</h2></div>
         </div>
-        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
+        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || historyRestoring}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
       </header>
 
       <section className="companion-purpose">
@@ -496,7 +499,7 @@ export default function Companion() {
         <CareHandoffSharing draft={handoffDraft} audience={handoffAudience} purpose={handoffPurpose} />
       </section>
 
-      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || historyRestoring}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
@@ -554,8 +557,8 @@ export default function Companion() {
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading} rows={2} />
-          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading || historyRestoring} rows={2} />
+          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || historyRestoring || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
