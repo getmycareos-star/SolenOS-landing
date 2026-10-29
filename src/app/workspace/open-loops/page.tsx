@@ -344,6 +344,11 @@ export default function OpenLoopsPage() {
               {loop.blocking_prerequisites.length > 0 && <p style={{ fontSize: 13 }}>Blocked by: {loop.blocking_prerequisites.map((item) => item.title).join(", ")}</p>}
               {loop.missing_information.length > 0 && <p style={{ fontSize: 13 }}>Still missing: {loop.missing_information.join(", ")}</p>}
               <p style={{ fontSize: 12, opacity: 0.75 }}>Outcome: {loop.outcome_status.replaceAll("_", " ")} · Updated {dateLabel(loop.updated_at)}</p>
+              {loop.outcome_status === "outcome_verified" && (
+                <p role="note" style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.85 }}>
+                  Verification means a caregiver recorded a review against persisted source evidence. SolenOS does not automatically establish semantic entailment or prove that an action caused the outcome.
+                </p>
+              )}
               {historyById[loop.id] && <section aria-label={`Audit history for ${loop.title}`} style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "var(--surface-muted, #f6f7f4)" }}>
                 <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Recorded history</h4>
                 {historyById[loop.id].length === 0 ? <p style={{ margin: 0, fontSize: 13 }}>No audit events were returned.</p> :
