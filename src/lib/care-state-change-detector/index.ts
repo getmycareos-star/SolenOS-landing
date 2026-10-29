@@ -128,7 +128,7 @@ function computeTrendDirection(observations: { text: string; timestamp: string }
   if (worseningCount > improvingCount && worseningCount >= 2) return "worsening";
   if (improvingCount > worseningCount && improvingCount >= 2) return "improving";
   if (worseningCount === improvingCount && worseningCount > 0) return "unknown";
-  return "stable";
+  return "unknown";
 }
 
 function eventToDomainObservation(event: CanonicalCareEvent): { domain: CareDomain; text: string; timestamp: string; signals: ObservationSignal[] } {
@@ -496,17 +496,28 @@ function buildTrajectorySummary(changes: DomainChange[]): string {
 function deriveUnresolvedQuestions(changes: DomainChange[], baselineFacts: BaselineFact[]): string[] {
   const questions: string[] = [];
   for (const change of changes) {
-    if (change.classification === "WORSENED" || change.classification === "NEW") {
+    const domain = change.domain.replace(/_/g, " ");
+    if (
+      change.classification === "WORSENED" ||
+      change.classification === "NEW" ||
+      change.classification === "UNCERTAIN"
+    ) {
       const timeHint = extractTimeHint(change.current_state);
       if (!timeHint.absolute) {
-        questions.push(`When did the ${change.domain.replace(/_/g, " ")} change start?`);
+        questions.push(`When was the ${domain} observation made, and when was it first noticed?`);
+      }
+      if (change.classification === "UNCERTAIN") {
+        questions.push(`What was directly observed in ${domain}, and how does it compare with the earlier record?`);
       }
       if (!change.evidence.some((e) => /\b(doctor|nurse|clinic|hospital|professional)\b/i.test(e))) {
         questions.push(`Has this been discussed with the care team?`);
       }
     }
+    if (change.evidence.some((e) => /possible resolution wording/i.test(e))) {
+      questions.push(`Was the ${domain} change observed to resolve, or is resolution only reported?`);
+    }
     if (change.trajectory === "worsening" && change.observation_count >= 2) {
-      questions.push(`Is the ${change.domain.replace(/_/g, " ")} change continuing?`);
+      questions.push(`Is the ${domain} change continuing?`);
     }
   }
   return [...new Set(questions)].slice(0, 4);
