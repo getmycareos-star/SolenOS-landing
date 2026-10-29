@@ -385,6 +385,26 @@ export function ChangeIntelligencePanel() {
                     {typeof pattern.pattern_metrics.observation_coverage_status === "string" ? (
                       <p>Observation coverage: {readable(pattern.pattern_metrics.observation_coverage_status)}.</p>
                     ) : null}
+                    {typeof pattern.pattern_metrics.analysis_window_start === "string" &&
+                    typeof pattern.pattern_metrics.analysis_window_end === "string" ? (
+                      <p>
+                        Analysis denominator window: {formatWindow(
+                          pattern.pattern_metrics.analysis_window_start,
+                          pattern.pattern_metrics.analysis_window_end,
+                        )}.
+                        {typeof pattern.pattern_metrics.analysis_window_days === "number"
+                          ? ` (${pattern.pattern_metrics.analysis_window_days} days)`
+                          : ""}
+                      </p>
+                    ) : null}
+                    {typeof pattern.pattern_metrics.distinct_observation_times === "number" ? (
+                      <p>Distinct event timestamps: {pattern.pattern_metrics.distinct_observation_times}.</p>
+                    ) : null}
+                    {pattern.pattern_metrics.source_history_truncated === true ? (
+                      <p role="note">
+                        Source history exceeded the analysis limit. Older records may be omitted; normalized rates and conclusions requiring the complete event count must not be treated as complete.
+                      </p>
+                    ) : null}
                     {pattern.pattern_metrics.domain_counts && typeof pattern.pattern_metrics.domain_counts === "object" ? (
                       <p>
                         Recorded domains in this co-occurrence window: {Object.entries(pattern.pattern_metrics.domain_counts as Record<string, unknown>)
