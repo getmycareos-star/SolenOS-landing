@@ -48,6 +48,23 @@ type SituationAssessment = {
   domains: Record<string, { source_names: string[]; record_count: number; evidence_state: string }>;
   capabilities: Record<string, { source_names: string[]; record_count: number; evidence_state: string; unavailable_sources: string[] }>;
   priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  observation_coverage?: {
+    items: Array<{
+      id: string;
+      subject_type: string;
+      window_start: string;
+      window_end: string;
+      coverage_status: string;
+      rationale: string;
+      recorded_at?: string | null;
+      interpretation_limit?: string;
+    }>;
+    count: number;
+    has_more: boolean;
+    status: string;
+    absence_rule: string;
+    source_of_truth: string;
+  };
   open_loops?: {
     items: Array<{
       id: string;
@@ -688,6 +705,26 @@ export function LCRCurrentUnderstanding() {
               )}
               {assessment.open_loops?.has_more && <p>Additional unresolved records exist beyond this bounded view.</p>}
               {assessment.open_loops?.notice && <small>{assessment.open_loops.notice}</small>}
+            </div>
+            <div>
+              <strong>Observation coverage ({assessment.observation_coverage?.count ?? 0} recorded intervals)</strong>
+              <p>
+                Status: {(assessment.observation_coverage?.status || "unknown").replaceAll("_", " ")}.
+                {" "}{assessment.observation_coverage?.absence_rule || "No coverage record means unknown, not no events."}
+              </p>
+              {(assessment.observation_coverage?.items ?? []).length > 0 ? (
+                <ul>{assessment.observation_coverage!.items.slice(0, 8).map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.subject_type.replaceAll("_", " ")}</strong> — {item.coverage_status.replaceAll("_", " ")}
+                    {" "}({formatWhen(item.window_start)} to {formatWhen(item.window_end)})
+                    <p>{item.rationale}</p>
+                    {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
+                  </li>
+                ))}</ul>
+              ) : (
+                <p>No observation-coverage intervals have been recorded. This is unknown coverage, not evidence that nothing happened.</p>
+              )}
+              {assessment.observation_coverage?.has_more && <p>Additional coverage intervals exist beyond this bounded view.</p>}
             </div>
             {assessment.priorities.length > 0 && (
               <div>
