@@ -37,6 +37,16 @@ type DraftLink = {
   source_passage: string;
   scope_note: string;
 };
+type DependencyEdge = {
+  id: string;
+  person_id: string;
+  claim_id: string;
+  depends_on_claim_id: string;
+  dependency_type: string;
+  rationale: string;
+  created_by_caregiver_id: string;
+  created_at: string;
+};
 
 const statuses = [
   "supported", "partially_supported", "contradicted", "unverified", "uncertain",
@@ -72,6 +82,14 @@ export default function ClaimAssessmentPanel() {
   const [rationale, setRationale] = useState("");
   const [links, setLinks] = useState<DraftLink[]>([emptyLink()]);
   const [history, setHistory] = useState<Assessment[]>([]);
+  const [dependencies, setDependencies] = useState<DependencyEdge[]>([]);
+  const [dependencyTargetId, setDependencyTargetId] = useState("");
+  const [dependencyType, setDependencyType] = useState("derived_from");
+  const [dependencyRationale, setDependencyRationale] = useState("");
+  const [dependencyLoading, setDependencyLoading] = useState(false);
+  const [dependencySaving, setDependencySaving] = useState(false);
+  const [dependencyError, setDependencyError] = useState("");
+  const [dependencyNotice, setDependencyNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -152,6 +170,79 @@ export default function ClaimAssessmentPanel() {
   }, [personId, selectedClaimId]);
 
   useEffect(() => { void loadHistory(); }, [loadHistory]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDependencies() {
+      if (!selectedClaimId || !personId) {
+        setDependencies([]);
+        setDependencyError("");
+        return;
+      }
+      setDependencyLoading(true);
+      setDependencyError("");
+      try {
+        const result = await getJSON(
+          `/uncertainty/claims/${encodeURIComponent(selectedClaimId)}/dependencies`,
+        );
+        if (!result || result.claim_id !== selectedClaimId ||
+          !Array.isArray(result.dependencies) || !Array.isArray(result.dependents)) {
+          throw new Error("Invalid dependency graph response");
+        }
+        const rows = [...result.dependencies, ...result.dependents] as DependencyEdge[];
+        if (rows.some((item) => item.person_id !== personId)) {
+          throw new Error("Dependency graph escaped the authenticated care record");
+        }
+        if (!cancelled) setDependencies(rows);
+      } catch {
+        if (!cancelled) {
+          setDependencies([]);
+          setDependencyError("Claim dependency history is unavailable. A failed read is not an empty dependency graph.");
+        }
+      } finally {
+        if (!cancelled) setDependencyLoading(false);
+      }
+    }
+    void loadDependencies();
+    return () => { cancelled = true; };
+  }, [personId, selectedClaimId]);
+
+  async function submitDependency() {
+    if (!personId || !selectedClaim || !dependencyTargetId || dependencyTargetId === selectedClaim.id ||
+      dependencyRationale.trim().length < 3) {
+      setDependencyError("Select a different claim and provide a rationale for the relationship.");
+      return;
+    }
+    setDependencySaving(true);
+    setDependencyError("");
+    setDependencyNotice("");
+    try {
+      await postJSON("/uncertainty/claims/dependencies", {
+        person_id: personId,
+        claim_id: selectedClaim.id,
+        depends_on_claim_id: dependencyTargetId,
+        dependency_type: dependencyType,
+        rationale: dependencyRationale.trim(),
+      });
+      setDependencyRationale("");
+      setDependencyNotice("Dependency relationship saved. It records a declared link; it does not prove that either claim is true.");
+      const result = await getJSON(
+        `/uncertainty/claims/${encodeURIComponent(selectedClaim.id)}/dependencies`,
+      );
+      if (!result || result.claim_id !== selectedClaim.id ||
+        !Array.isArray(result.dependencies) || !Array.isArray(result.dependents)) {
+        throw new Error("Invalid dependency graph response");
+      }
+      const rows = [...result.dependencies, ...result.dependents] as DependencyEdge[];
+      if (rows.some((item) => item.person_id !== personId)) {
+        throw new Error("Dependency graph escaped the authenticated care record");
+      }
+      setDependencies(rows);
+    } catch {
+      setDependencyError("Dependency persistence was not confirmed. The relationship may be duplicate, cross-record, or cyclic; no successful save is assumed.");
+    } finally {
+      setDependencySaving(false);
+    }
+  }
 
   function updateLink(index: number, patch: Partial<DraftLink>) {
     setLinks((current) => current.map((link, i) => i === index ? { ...link, ...patch } : link));
@@ -224,6 +315,41 @@ export default function ClaimAssessmentPanel() {
         <div><strong>Current assertion status:</strong> {selectedClaim.assertion_status.replaceAll("_", " ")}</div>
         <div><strong>Linked evidence IDs:</strong> {selectedClaim.evidence_ids?.length ? selectedClaim.evidence_ids.join(", ") : "None recorded"}</div>
       </div>}
+      <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 12, minWidth: 0 }}>
+        <legend style={{ fontSize: 12 }}>Claim dependency graph</legend>
+        <p style={{ fontSize: 12 }}>Declare how this claim relates to another claim. The API rejects cross-record links and cycles. A link is provenance, not proof of truth.</p>
+        {dependencyLoading && <p role="status">Loading claim dependencies…</p>}
+        {dependencyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{dependencyError}</p>}
+        {dependencyNotice && <p role="status" style={{ fontSize: 12 }}>{dependencyNotice}</p>}
+        {!dependencyLoading && !dependencyError && dependencies.length === 0 &&
+          <p style={{ fontSize: 12 }}>No dependency edges were returned for this claim.</p>}
+        {dependencies.length > 0 && <ul style={{ fontSize: 12, paddingLeft: 18 }}>
+          {dependencies.map((edge) => <li key={edge.id}>
+            {edge.claim_id === selectedClaimId ? "Depends on" : "Required by"}{" "}
+            <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Claim not in current list"}</strong>
+            {" · "}{edge.dependency_type.replaceAll("_", " ")} · {edge.rationale}
+          </li>)}
+        </ul>}
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related claim
+          <select style={field} value={dependencyTargetId} onChange={(event) => setDependencyTargetId(event.target.value)}>
+            <option value="">Select a different claim</option>
+            {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
+              <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 100)}</option>)}
+          </select>
+        </label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Relationship type
+          <select style={field} value={dependencyType} onChange={(event) => setDependencyType(event.target.value)}>
+            {["derived_from", "requires", "supports", "qualifies", "supersedes"].map((value) =>
+              <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+          </select>
+        </label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Why are these claims linked?
+          <textarea style={{ ...field, minHeight: 60 }} value={dependencyRationale} onChange={(event) => setDependencyRationale(event.target.value)} />
+        </label>
+        <button type="button" style={button} onClick={() => void submitDependency()} disabled={dependencySaving || dependencyLoading}>
+          {dependencySaving ? "Saving relationship…" : "Add claim dependency"}
+        </button>
+      </fieldset>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Explicit assessment status
         <select style={field} value={status} onChange={(event) => setStatus(event.target.value as (typeof statuses)[number])}>
           {statuses.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
