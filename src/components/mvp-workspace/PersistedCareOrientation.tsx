@@ -49,6 +49,7 @@ type SituationAssessment = {
   assessment?: {
     situation_trajectory?: { entries?: SituationTrajectoryEntry[]; count?: number; has_more?: boolean; causal_inference?: string };
     observation_coverage?: { items?: Array<{ id: string; subject_type: string; window_start: string; window_end: string; coverage_status: string; rationale: string }>; count?: number; has_more?: boolean; status?: string; absence_rule?: string };
+    baseline_assessment?: { status?: string; count?: number; limitation?: string };
     open_loops?: { items?: Array<{ id: string; title: string; loop_type: string; recorded_status: string }>; count?: number; has_more?: boolean };
     confidence_assessment?: { overall?: string; limitations?: string[] };
     coverage?: { is_complete?: boolean; records_examined?: number };
@@ -210,6 +211,8 @@ export function PersistedCareOrientation() {
           <p>What remains unresolved: {situationAssessment.assessment.open_loops?.count ?? 0} open loop(s).</p>
           <p>Observation coverage: {situationAssessment.assessment.observation_coverage?.count ?? 0} recorded interval(s); status: {situationAssessment.assessment.observation_coverage?.status || "unknown"}.</p>
           <small>{situationAssessment.assessment.observation_coverage?.absence_rule || "No coverage record means unknown, not no events."}</small>
+          <p>Personal baseline: {situationAssessment.assessment.baseline_assessment?.status?.replace(/_/g, " ") || "not established"}.</p>
+          {situationAssessment.assessment.baseline_assessment?.limitation && <small>{situationAssessment.assessment.baseline_assessment.limitation}</small>}
           {(situationAssessment.assessment.situation_trajectory?.entries ?? []).slice(-5).reverse().map((entry) => (
             <div key={entry.source + ":" + entry.record_id} className="persisted-care-orientation-latest">
               <strong>{entry.title || "Recorded care event"}</strong>
