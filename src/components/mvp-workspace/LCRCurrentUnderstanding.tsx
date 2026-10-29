@@ -955,11 +955,11 @@ export function LCRCurrentUnderstanding() {
                             ))}
                             {evidenceIntegrityByFact[item.id].near_duplicate_analysis && (
                               <div>
-                                <small>Near-duplicate review ({evidenceIntegrityByFact[item.id].near_duplicate_analysis.status.replaceAll("_", " ")}; {evidenceIntegrityByFact[item.id].near_duplicate_analysis.records_considered}/{evidenceIntegrityByFact[item.id].near_duplicate_analysis.records_available} records considered; {evidenceIntegrityByFact[item.id].near_duplicate_analysis.algorithm_version}).</small>
-                                {evidenceIntegrityByFact[item.id].near_duplicate_analysis.candidate_groups.map(group => (
+                                <small>Near-duplicate review ({evidenceIntegrityByFact[item.id].near_duplicate_analysis?.status?.replaceAll("_", " ") ?? "status unavailable"}; {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.records_considered ?? 0}/{evidenceIntegrityByFact[item.id].near_duplicate_analysis?.records_available ?? 0} records considered; {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.algorithm_version ?? "algorithm version unavailable"}).</small>
+                                {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.candidate_groups?.map(group => (
                                   <p key={group.evidence_ids.join(":")}><small>Possible near-duplicate: {group.evidence_ids.join(", ")}. {group.interpretation}</small></p>
                                 ))}
-                                <small>{evidenceIntegrityByFact[item.id].near_duplicate_analysis.interpretation_limit}</small>
+                                <small>{evidenceIntegrityByFact[item.id].near_duplicate_analysis?.interpretation_limit ?? "Near-duplicate interpretation limits were not returned by the server."}</small>
                               </div>
                             )}
                             <small>{evidenceIntegrityByFact[item.id].interpretation_limit}</small>
