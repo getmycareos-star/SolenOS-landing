@@ -28,6 +28,7 @@ type Assessment = {
   }>;
   reviewed_by_caregiver_id: string;
   supersedes_assessment_id?: string | null;
+  superseded_by_claim_id?: string | null;
   created_at: string;
 };
 type DraftLink = {
