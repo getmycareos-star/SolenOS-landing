@@ -93,7 +93,7 @@ console.log("PASS: appointment preparation exposes evidence lineage and bounded-
 
 const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
 assert(evidenceReview.includes("/care-continuity/state-revisions/evidence/"), "Evidence review must call the persisted as-of reconstruction API");
-assert(evidenceReview.includes("historical_care_state_revision"), "Evidence review must validate the historical response source");
+assert(evidenceReview.includes("persisted_care_state_revision"), "Evidence review must validate the historical response source");
 assert(evidenceReview.includes("This does not establish that the evidence did not exist"), "Historical lookup failure must not be displayed as evidence absence");
 console.log("PASS: evidence review exposes persisted historical reconstruction with an explicit absence limitation.");
 
