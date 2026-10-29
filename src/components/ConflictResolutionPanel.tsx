@@ -162,7 +162,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
   return <section style={panel} aria-label="Evidence-grounded conflict resolution">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Conflict comparison and resolution history</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      A newer timestamp or majority of reports does not automatically resolve a conflict. Each transition needs a rationale; partial resolution must name the exact detail resolved and link supporting evidence.
+      A newer timestamp or majority of reports does not automatically resolve a conflict. Every resolved or partially resolved state needs linked evidence and a rationale; partial resolution must name the exact detail resolved.
     </p>
     {loading && <p role="status">Loading persisted conflicts…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
