@@ -133,4 +133,11 @@ const realMoment = fs.readFileSync(
 );
 assert(realMoment.includes("PatternIntelligencePanel"), "pattern UI in workspace");
 
+const persistedIntelligencePanel = fs.readFileSync(
+  path.join(root, "src/components/mvp-workspace/ChangeIntelligencePanel.tsx"),
+  "utf-8",
+);
+assert(persistedIntelligencePanel.includes("pattern_metrics"), "renders persisted backend pattern metrics");
+assert(persistedIntelligencePanel.includes("local_time_distribution"), "renders timezone-grounded timing only with explicit caveat");
+
 console.log("\n=== Pattern Intelligence verification complete ===");
