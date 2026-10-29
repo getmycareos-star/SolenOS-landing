@@ -246,5 +246,9 @@ try {
   await page.getByRole("heading", { name: "Purpose-specific evidence completeness" }).waitFor({ timeout: 10_000 });
   console.log("PASS: real frontend Open Loop lifecycle, persisted LCR evidence lineage/review, integrity check, reload hydration, and navigation to purpose-specific completeness assessment.");
 } finally {
+  // The LCR pages may still have background refresh requests in flight after
+  // the assertions complete. Drain route handlers before disposing the context
+  // so successful UI assertions are not converted into teardown errors.
+  await page.unrouteAll({ behavior: "ignoreErrors" });
   await browser.close();
 }
