@@ -124,6 +124,9 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  // Keep one idempotency key across retries of the same text. If the server
+  // committed a turn but the response was lost, retry must replay that turn.
+  const pendingTurnRef = useRef<{ text: string; id: string } | null>(null)
   const personId = getPersonId()
 
   const prepareHandoffDraft = async () => {
@@ -163,6 +166,10 @@ export default function Companion() {
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText || loading) return
+    const pendingTurn = pendingTurnRef.current?.text === submittedText
+      ? pendingTurnRef.current
+      : { text: submittedText, id: crypto.randomUUID() }
+    pendingTurnRef.current = pendingTurn
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
@@ -175,9 +182,13 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: pendingTurn.id,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
+      // The server confirmed a valid persisted response; a later new message
+      // receives a new key, while failed/ambiguous attempts retain this one.
+      if (pendingTurnRef.current?.id === pendingTurn.id) pendingTurnRef.current = null
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
