@@ -31,6 +31,11 @@ for (const action of ["responses", "actions", "outcomes", "verify-outcome", "rec
   assert.ok(page.includes(`"${action}"`), `Open Loop action route missing: ${action}`);
 }
 
+assert.ok(
+  page.includes("Verification means a caregiver recorded a review against persisted source evidence."),
+  "verified outcomes must disclose the limits of semantic grounding and causation",
+);
+
 console.log("OPEN_LOOPS_UI_CONTRACT=PASS");
 console.log(`Assertions=${required.length + 8}`);
 console.log("Scope=frontend source contract; not a browser or deployed-system test");
