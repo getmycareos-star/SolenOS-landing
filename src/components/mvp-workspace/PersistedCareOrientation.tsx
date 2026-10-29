@@ -33,6 +33,26 @@ type CareSnapshot = {
     current_situation?: string;
   } | null;
 };
+type SituationTrajectoryEntry = {
+  source: string;
+  record_id: string;
+  title: string;
+  epistemic_status: string;
+  event_time?: string | null;
+  recorded_at?: string | null;
+  temporal_basis: string;
+  interpretation_limit: string;
+};
+type SituationAssessment = {
+  status?: string;
+  assessment_id?: string;
+  assessment?: {
+    situation_trajectory?: { entries?: SituationTrajectoryEntry[]; count?: number; has_more?: boolean; causal_inference?: string };
+    open_loops?: { items?: Array<{ id: string; title: string; loop_type: string; recorded_status: string }>; count?: number; has_more?: boolean };
+    confidence_assessment?: { overall?: string; limitations?: string[] };
+    coverage?: { is_complete?: boolean; records_examined?: number };
+  } | null;
+};
 type LoadState = "loading" | "ready" | "unavailable";
 
 function formatDate(value?: string | null): string {
@@ -49,6 +69,7 @@ function eventTitle(event: PersistedEvent): string {
 export function PersistedCareOrientation() {
   const [state, setState] = useState<LoadState>("loading");
   const [snapshot, setSnapshot] = useState<CareSnapshot | null>(null);
+  const [situationAssessment, setSituationAssessment] = useState<SituationAssessment | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
@@ -74,9 +95,33 @@ export function PersistedCareOrientation() {
         throw new Error("Your saved care information isn't available right now.");
       }
       setSnapshot(data);
+      // This assessment is loaded independently so an unavailable assessment never hides the saved care record.
+      try {
+        const assessmentResponse = await fetch("/api/v1/care-continuity/situation-understanding", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+        });
+        if (assessmentResponse.ok) {
+          let assessmentData = (await assessmentResponse.json()) as SituationAssessment;
+          if (assessmentData.status === "not_assessed") {
+            const reassessResponse = await fetch("/api/v1/care-continuity/situation-understanding/reassess", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${session.access_token}` },
+              cache: "no-store",
+            });
+            if (reassessResponse.ok) assessmentData = (await reassessResponse.json()) as SituationAssessment;
+          }
+          setSituationAssessment(assessmentData);
+        } else {
+          setSituationAssessment(null);
+        }
+      } catch {
+        setSituationAssessment(null);
+      }
       setState("ready");
     } catch {
       setSnapshot(null);
+      setSituationAssessment(null);
       setError("Your care information isn't available right now. Check your connection and try again.");
       setState("unavailable");
     }
@@ -168,6 +213,29 @@ export function PersistedCareOrientation() {
       ) : (
         <p>Your care record is ready to build. Add a note, daily update, or document to keep important care information in one place.</p>
       )}
+
+      {situationAssessment?.assessment ? (
+        <div className="persisted-care-orientation-latest" aria-label="Evidence-grounded situation understanding">
+          <strong>Situation understanding</strong>
+          <p>
+            {situationAssessment.assessment.coverage?.records_examined ?? 0} persisted record(s) examined.
+            {" "}Confidence: {situationAssessment.assessment.confidence_assessment?.overall || "not assessed"}.
+          </p>
+          <p>What remains unresolved: {situationAssessment.assessment.open_loops?.count ?? 0} open loop(s).</p>
+          {(situationAssessment.assessment.situation_trajectory?.entries ?? []).slice(-5).reverse().map((entry) => (
+            <div key={entry.source + ":" + entry.record_id} className="persisted-care-orientation-latest">
+              <strong>{entry.title || "Recorded care event"}</strong>
+              <p>{entry.epistemic_status.replace(/_/g, " ")}</p>
+              <p>{formatDate(entry.event_time || entry.recorded_at)}</p>
+              <small>{entry.temporal_basis.replace(/_/g, " ")}. Sequence does not establish causation.</small>
+            </div>
+          ))}
+          {situationAssessment.assessment.situation_trajectory?.has_more && <p>Showing the five most recent entries in the bounded situation trajectory.</p>}
+          {situationAssessment.assessment.confidence_assessment?.limitations?.length ? (
+            <p>Assessment limitations: {situationAssessment.assessment.confidence_assessment.limitations.join(" ")}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="persisted-care-orientation-links">
         <Link href="/workspace/timeline">Review timeline</Link>
