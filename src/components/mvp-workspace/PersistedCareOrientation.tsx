@@ -95,26 +95,15 @@ export function PersistedCareOrientation() {
         throw new Error("Your saved care information isn't available right now.");
       }
       setSnapshot(data);
-      // This assessment is loaded independently so an unavailable assessment never hides the saved care record.
+      // Reassess on entry so new persisted evidence is reflected. The backend deduplicates semantically unchanged snapshots.
+      // Failure here must not hide the saved care record.
       try {
-        const assessmentResponse = await fetch("/api/v1/care-continuity/situation-understanding", {
+        const reassessResponse = await fetch("/api/v1/care-continuity/situation-understanding/reassess", {
+          method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}` },
           cache: "no-store",
         });
-        if (assessmentResponse.ok) {
-          let assessmentData = (await assessmentResponse.json()) as SituationAssessment;
-          if (assessmentData.status === "not_assessed") {
-            const reassessResponse = await fetch("/api/v1/care-continuity/situation-understanding/reassess", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${session.access_token}` },
-              cache: "no-store",
-            });
-            if (reassessResponse.ok) assessmentData = (await reassessResponse.json()) as SituationAssessment;
-          }
-          setSituationAssessment(assessmentData);
-        } else {
-          setSituationAssessment(null);
-        }
+        setSituationAssessment(reassessResponse.ok ? ((await reassessResponse.json()) as SituationAssessment) : null);
       } catch {
         setSituationAssessment(null);
       }
