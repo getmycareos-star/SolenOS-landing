@@ -153,9 +153,15 @@ export function ChangeIntelligencePanel() {
                       />
                     </label>
                     <div className="lcr-inline-actions">
-                      <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
-                      <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
-                      <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
+                      {["confirmed", "rejected", "inconclusive"].includes(change.confirmation_status) ? (
+                        <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
+                      ) : (
+                        <>
+                          <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
+                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
+                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
+                        </>
+                      )}
                     </div>
                     {details[change.id].evidence.length === 0 && details[change.id].assertions.length === 0 ? (
                       <p className="panel-muted">No source records could be resolved for this assessment. Its evidence references should be reviewed.</p>
