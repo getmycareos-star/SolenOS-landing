@@ -18,6 +18,8 @@ assert.match(drawer, /getJSON\("\/care-continuity\/revisions\/" \+ personPath\)/
 assert.match(drawer, /getJSON\("\/care-continuity\/decisions\?limit=100"\)/);
 assert.match(drawer, /getJSON\("\/care-continuity\/outcomes\/" \+ personPath\)/);
 assert.match(drawer, /mapLcrRevision/);
+assert.match(drawer, /shouldShowLcrRevision/);
+assert.match(drawer, /REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE/);
 assert.match(drawer, /mapDecision/);
 assert.match(drawer, /mapOutcome/);
 assert.match(drawer, /Previous recorded state/);
