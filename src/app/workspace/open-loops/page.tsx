@@ -129,7 +129,7 @@ export default function OpenLoopsPage() {
     }
   }
 
-  async function runAction(loop: OpenLoop, action: "reassess" | "response" | "outcome" | "verify" | "close" | "cancel") {
+  async function runAction(loop: OpenLoop, action: "reassess" | "response" | "outcome" | "verify" | "reconcile" | "close" | "cancel") {
     setBusyId(loop.id);
     setError("");
     setNotice("");
@@ -140,11 +140,12 @@ export default function OpenLoopsPage() {
         const text = action === "response" ? window.prompt("Record the actual response received. Do not invent a response.") :
           action === "outcome" ? window.prompt("Record the outcome that was reported.") :
           action === "verify" ? window.prompt("Describe the verification performed. Evidence must be supplied in the text record.") :
+          action === "reconcile" ? window.prompt("Record the explicit reconciliation decision. Preserve disagreement if it remains unresolved.") :
           action === "close" ? window.prompt("Describe the evidence supporting closure. This will not bypass backend verification.") :
           window.prompt("Why are you cancelling further pursuit? Cancellation is not resolution.");
         if (!text?.trim()) return;
         const payload = { text: text.trim(), evidence: [{ kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() }] };
-        const endpoint = action === "response" ? "responses" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "close" ? "close" : "cancel";
+        const endpoint = action === "response" ? "responses" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : "cancel";
         await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/${endpoint}`, payload);
       }
       await refresh();
@@ -237,7 +238,7 @@ export default function OpenLoopsPage() {
                 {(loop.loop_type === "awaiting_response" || loop.loop_type === "professional_input" || loop.loop_type === "follow_up") && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "response")}>Record response</Button>}
                 <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "outcome")}>Record outcome</Button>
                 <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "verify")}>Verify outcome</Button>
-                <Button variant="primary" disabled={busyId === loop.id || ["closed", "cancelled"].includes(loop.status)} onClick={() => void runAction(loop, "close")}>Attempt closure</Button>
+                <>{loop.loop_type === "contradiction" && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reconcile")}>Record reconciliation</Button>}<Button variant="primary" disabled={busyId === loop.id || ["closed", "cancelled"].includes(loop.status)} onClick={() => void runAction(loop, "close")}>Attempt closure</Button></>
                 <Button variant="secondary" disabled={busyId === loop.id || ["closed", "cancelled"].includes(loop.status)} onClick={() => void runAction(loop, "cancel")}>Cancel pursuit</Button>
               </div>
             </article>)}
