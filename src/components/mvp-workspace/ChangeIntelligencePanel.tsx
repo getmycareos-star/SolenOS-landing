@@ -233,6 +233,13 @@ export function ChangeIntelligencePanel() {
                 <p className="panel-muted">
                   Evidence references: {change.evidence_ids.length}. Confidence: {change.confidence == null ? "not calibrated" : `${Math.round(change.confidence * 100)}%`}.
                 </p>
+                <p className="panel-muted">
+                  Observation coverage: baseline {change.baseline_coverage_status ?? "not recorded"}
+                  {change.baseline_coverage_fraction == null ? "" : ` (${Math.round(change.baseline_coverage_fraction * 100)}% explicitly covered)`}
+                  {" → "}current {change.current_coverage_status ?? "not recorded"}
+                  {change.current_coverage_fraction == null ? "" : ` (${Math.round(change.current_coverage_fraction * 100)}% explicitly covered)`}.
+                  Missing coverage is unknown, not evidence that an event did not happen.
+                </p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
                   {expandedChangeId === change.id ? "Hide source evidence" : "Review source evidence"} <span aria-hidden="true">→</span>
                 </button>
