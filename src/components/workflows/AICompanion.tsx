@@ -35,6 +35,12 @@ interface HandoffDraft {
   source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>
   sections: Array<{ title: string; items: HandoffDraftItem[] }>
   source_references: Array<{ source_type: string; source_table: string; source_id: string; event_at?: string | null; recorded_at: string | null; due_at?: string | null; details?: Record<string, string>; epistemic_status: string; record_status?: string; stale_warning: boolean }>
+  evidence_lineage?: {
+    status: string
+    evidence_ids_considered: string[]
+    groups: Array<{ lineage_id: string; evidence_ids: string[]; origin_group_keys: string[]; source_independence_status: string; interpretation_limit: string }>
+    interpretation_limit: string
+  }
   limitations: Array<{ source: string; status: string; reason?: string }>
   warning: string
 }
