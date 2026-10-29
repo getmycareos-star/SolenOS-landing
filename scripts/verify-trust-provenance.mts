@@ -152,4 +152,17 @@ const uiPanel = path.join(root, "src/components/ops-devtools/TrustProvenancePane
 assert(fs.existsSync(uiPanel), "TrustProvenancePanel exists");
 console.log("✓ UI panel");
 
+const lcrCurrentUnderstanding = path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
+assert(fs.existsSync(lcrCurrentUnderstanding), "current-care understanding component exists");
+const lcrSource = fs.readFileSync(lcrCurrentUnderstanding, "utf8");
+assert(lcrSource.includes('import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";'), "evidence review panel is connected to LCR");
+assert(lcrSource.includes("<EvidenceReviewPanel personId={personId} />"), "evidence review panel is rendered in current-care understanding");
+console.log("✓ persisted evidence review is reachable from current-care understanding");
+
+const provenanceModel = path.join(root, "src/lib/trust-provenance/provenance-model.ts");
+const provenanceSource = fs.readFileSync(provenanceModel, "utf8");
+assert(!provenanceSource.includes("c.confidence >= 0.85") && !provenanceSource.includes("c.confidence >= 0.65"), "uncalibrated numeric thresholds are not used for evidence confidence");
+assert(provenanceSource.includes("confidence: null"), "uncalibrated extraction confidence remains unknown");
+console.log("✓ no unvalidated confidence thresholds in evidence provenance");
+
 console.log("\n=== All trust & provenance checks passed ===\n");
