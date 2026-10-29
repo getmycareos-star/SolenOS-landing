@@ -56,7 +56,7 @@ function makeContext(events: CanonicalCareEvent[]): CareContextRoot {
   };
 }
 
-console.log("=== TEST 1: Semantic Change Detection — WORSENED + Compound ===");
+console.log("=== TEST 1: Text-only change detection withholds unsupported direction ===");
 const priorEvents1 = [
   makeEvent("She sleeps well.", "e1", { ingestion_time: new Date(Date.now() - 86400000 * 3).toISOString() }),
   makeEvent("She eats normally.", "e2", { ingestion_time: new Date(Date.now() - 86400000 * 2).toISOString() }),
@@ -81,10 +81,13 @@ console.log(`Compound signals: ${report1.compound_signals.join("; ")}`);
 console.log(`Attention required: ${report1.attention_required}`);
 console.log(`Trajectory: ${report1.trajectory_summary}`);
 
-const expectedWorsened = report1.primary_changes.some(c => c.classification === "WORSENED");
-const expectedCompound = report1.compound_signals.length > 0;
-console.log(`Expected WORSENED changes present: ${expectedWorsened}`);
-console.log(`Expected compound signals present: ${expectedCompound}`);
+const expectedUncertain = report1.all_changes.length > 0 &&
+  report1.all_changes.every(c => c.classification === "UNCERTAIN" && c.trajectory === "unknown");
+const expectedNoUnsupportedCompound = report1.compound_signals.length === 0;
+const expectedNoWaitClaim = report1.can_wait === false;
+console.log(`All text-only changes remain uncertain: ${expectedUncertain}`);
+console.log(`Unsupported compound claims withheld: ${expectedNoUnsupportedCompound}`);
+console.log(`Waiting is not declared safe under uncertainty: ${expectedNoWaitClaim}`);
 
 console.log("\n=== TEST 2: Improvement Detection ===");
 const priorEvents2 = [
@@ -104,8 +107,9 @@ const report2 = detectCareStateChanges({
 
 console.log(`Has meaningful change: ${report2.has_meaningful_change}`);
 console.log(`Primary changes: ${report2.primary_changes.map(c => `${c.classification}:${c.domain}`).join(", ")}`);
-const expectedImproved = report2.primary_changes.some(c => c.classification === "IMPROVED");
-console.log(`Expected IMPROVED changes present: ${expectedImproved}`);
+const expectedNoFalseImprovement = report2.all_changes.length > 0 &&
+  report2.all_changes.every(c => c.classification === "UNCERTAIN" && c.trajectory === "unknown");
+console.log(`Improvement wording does not create an unverified improvement claim: ${expectedNoFalseImprovement}`);
 
 console.log("\n=== TEST 3: Baseline Trajectory Tracking ===");
 const baselineEvents = [
@@ -185,13 +189,15 @@ const expectedCrsEnriched = crs.compound_signals.length > 0 && Object.keys(crs.c
 console.log(`CRS enriched with structured state: ${expectedCrsEnriched}`);
 
 console.log("\n=== VALIDATION SUMMARY ===");
-const allPassed = expectedWorsened && expectedCompound && expectedImproved && expectedCrsEnriched && progressive.compound_signal !== null;
+const allPassed = expectedUncertain && expectedNoUnsupportedCompound && expectedNoWaitClaim &&
+  expectedNoFalseImprovement && expectedCrsEnriched && progressive.compound_signal !== null;
 console.log(`All checks passed: ${allPassed}`);
 if (!allPassed) {
   console.log("FAILED CHECKS:");
-  if (!expectedWorsened) console.log("  - WORSENED changes not detected");
-  if (!expectedCompound) console.log("  - Compound signals not detected");
-  if (!expectedImproved) console.log("  - IMPROVED changes not detected");
+  if (!expectedUncertain) console.log("  - Text-only observations were not kept uncertain");
+  if (!expectedNoUnsupportedCompound) console.log("  - Unsupported compound claims were emitted");
+  if (!expectedNoWaitClaim) console.log("  - The detector incorrectly said waiting was safe");
+  if (!expectedNoFalseImprovement) console.log("  - Improvement wording created an unverified improvement claim");
   if (!expectedCrsEnriched) console.log("  - CRS not enriched with structured state");
   if (progressive.compound_signal === null) console.log("  - Compound signal not detected in progressive understanding");
   process.exit(1);
