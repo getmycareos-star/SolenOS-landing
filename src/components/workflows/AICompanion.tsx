@@ -198,7 +198,7 @@ export default function Companion() {
         const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
         activeSessionStorageKeyRef.current = storageKey
         activePendingStorageKeyRef.current = pendingStorageKey
-        const pendingRaw = window.localStorage.getItem(pendingStorageKey)
+        const pendingRaw = window.sessionStorage.getItem(pendingStorageKey)
         if (pendingRaw) {
           try {
             const pending = JSON.parse(pendingRaw)
@@ -209,7 +209,7 @@ export default function Companion() {
             }
           } catch {
             // Invalid local retry metadata is not trusted as a request identity.
-            window.localStorage.removeItem(pendingStorageKey)
+            window.sessionStorage.removeItem(pendingStorageKey)
           }
         }
         const savedSessionId = window.localStorage.getItem(storageKey)
@@ -270,7 +270,7 @@ export default function Companion() {
       const session = await ensureAnonymousSession()
       const pendingStorageKey = `solenos_companion_pending_turn_v1:${session.person.id}:${session.caregiver.id}`
       activePendingStorageKeyRef.current = pendingStorageKey
-      window.localStorage.setItem(pendingStorageKey, JSON.stringify({ text: submittedText, id: clientTurnId }))
+      window.sessionStorage.setItem(pendingStorageKey, JSON.stringify({ text: submittedText, id: clientTurnId }))
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
@@ -388,7 +388,7 @@ export default function Companion() {
       activeSessionStorageKeyRef.current = null
     }
     if (activePendingStorageKeyRef.current) {
-      window.localStorage.removeItem(activePendingStorageKeyRef.current)
+      window.sessionStorage.removeItem(activePendingStorageKeyRef.current)
       activePendingStorageKeyRef.current = null
     }
     setEmergency(false)
