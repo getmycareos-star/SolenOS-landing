@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "src/app/workspace/open-loops/**"
+      - "src/components/EvidenceReviewPanel.tsx"
+      - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
       - "src/api/client.ts"
       - "e2e/open-loop-workflow.mjs"
       - ".github/workflows/open-loop-ui-e2e.yml"
