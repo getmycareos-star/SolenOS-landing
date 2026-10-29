@@ -86,6 +86,7 @@ type SituationAssessment = {
     dimensions: Array<{ dimension: string; status: string; basis: Record<string, unknown> }>;
     blocking_limitations: string[];
     high_impact_conclusion_gate: string;
+    assessment_use_status?: string;
     numeric_confidence: string;
     interpretation_policy: string;
   };
@@ -776,6 +777,7 @@ export function LCRCurrentUnderstanding() {
                   </div>
                 )}
                 <p>{assessment.assessment_quality.high_impact_conclusion_gate.replaceAll("_", " ")}</p>
+                {assessment.assessment_quality.assessment_use_status && <p>Assessment use: {assessment.assessment_quality.assessment_use_status.replaceAll("_", " ")}</p>}
               </section>
             )}
             {assessment.freshness_assessment && (
