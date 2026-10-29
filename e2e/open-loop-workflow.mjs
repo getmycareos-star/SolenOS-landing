@@ -74,6 +74,31 @@ try {
   const sourceEvidenceId = sourceEvidence.id;
   if (!sourceEvidenceId) throw new Error("The backend did not return the created source evidence ID.");
 
+  const relatedSourceResponse = await fetch(new URL("/api/v1/evidence", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      person_id: session.personId,
+      uploaded_by_caregiver_id: session.caregiverId,
+      type: "report",
+      evidence_kind: "caregiver_report",
+      epistemic_status: "unverified",
+      source_text: "CI-only forwarded report derived from the original appointment message.",
+      source_type: "ci_e2e_fixture",
+      original_source_reference: "ci-e2e-original-message-0001",
+      ingestion_key: "ui-e2e-related-source-0002",
+    }),
+  });
+  if (!relatedSourceResponse.ok) {
+    throw new Error(`Could not seed related source evidence: HTTP ${relatedSourceResponse.status} ${await relatedSourceResponse.text()}`);
+  }
+  const relatedSourceEvidence = await relatedSourceResponse.json();
+  const relatedEvidenceId = relatedSourceEvidence.id;
+  if (!relatedEvidenceId) throw new Error("The backend did not return the related evidence ID.");
+
   page.on("dialog", async (dialog) => {
     const message = dialog.message();
     if (message.startsWith("Record the actual response received")) {
@@ -178,7 +203,37 @@ try {
   });
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
-  console.log("PASS: real frontend Open Loop create retry after lost response, source-backed professional response, action, reconciliation, outcome reporting and verification, verified closure, durable audit history, and reload hydration.");
+
+  // Exercise the actual Living Care Record evidence UI against the same real
+  // backend session: persisted lineage, source-text integrity, review creation,
+  // and reload-based retrieval. Synthetic records are confined to this CI run.
+  await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
+  const evidencePanel = page.locator('section[aria-label="Persisted evidence assessments"]');
+  await evidencePanel.waitFor({ timeout: 20_000 });
+  await evidencePanel.getByLabel("Evidence record").selectOption(sourceEvidenceId);
+  await evidencePanel.getByText(/Source lineage and corroboration relationships/).click();
+  await evidencePanel.getByLabel("Related evidence").selectOption(relatedEvidenceId);
+  await evidencePanel.getByLabel("Why these items are related").fill(
+    "CI-only provenance review: this report was forwarded from the same original appointment message."
+  );
+  await evidencePanel.getByRole("button", { name: "Save source relationship" }).click();
+  await evidencePanel.getByText(/forwarded from/i).waitFor({ timeout: 10_000 });
+
+  await evidencePanel.getByText("Stored source-text integrity check", { exact: true }).click();
+  await evidencePanel.getByText(/MATCH — current stored text matches the stored fingerprint/).waitFor({ timeout: 10_000 });
+  const reviewRationale = "CI-only review: attribution is explicit; shared origin is recorded and is not independent corroboration.";
+  await evidencePanel.getByLabel("Review rationale").fill(reviewRationale);
+  await evidencePanel.getByRole("button", { name: "Save evidence review" }).click();
+  await page.getByRole("status").filter({ hasText: "Review saved to the care record" }).waitFor({ timeout: 10_000 });
+  await evidencePanel.getByText(reviewRationale, { exact: true }).waitFor({ timeout: 10_000 });
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const persistedEvidencePanel = page.locator('section[aria-label="Persisted evidence assessments"]');
+  await persistedEvidencePanel.waitFor({ timeout: 20_000 });
+  await persistedEvidencePanel.getByLabel("Evidence record").selectOption(sourceEvidenceId);
+  await persistedEvidencePanel.getByText(reviewRationale, { exact: true }).waitFor({ timeout: 10_000 });
+  await persistedEvidencePanel.getByText(/forwarded from/i).waitFor({ timeout: 10_000 });
+  console.log("PASS: real frontend Open Loop lifecycle and real LCR evidence workflow: source lineage persisted, stored-text integrity verified without claiming original-file authenticity, review saved, and lineage/review history reloaded from the backend.");
 } finally {
   await browser.close();
 }
