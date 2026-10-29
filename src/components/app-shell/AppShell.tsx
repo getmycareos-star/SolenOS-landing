@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
 import { Button } from "@/components/ui/Button";
+import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 
 type NavItem = {
   href: string;
@@ -85,9 +86,12 @@ export function AppShell({
     <div className="solenos-shell mobile-app-shell">
       {/* Compact brand header — wordmark only, no dropdown, no MENU */}
       <header className="mobile-app-header">
-        <Link href={brandHref} className="mobile-app-brandlink">
-          <SolenosWordmark size="sm" as="span" />
-        </Link>
+        <div className="mobile-app-header-start">
+          <HistoryDrawer />
+          <Link href={brandHref} className="mobile-app-brandlink">
+            <SolenosWordmark size="sm" as="span" />
+          </Link>
+        </div>
       </header>
 
       {careContext && <div className="care-context-bar">{careContext}</div>}
