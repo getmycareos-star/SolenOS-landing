@@ -62,6 +62,23 @@ interface HandoffDraft {
   warning: string
 }
 
+function readCompanionStorage(key: string): string | null {
+  try { return readCompanionStorage(key) } catch { return null }
+}
+
+function writeCompanionStorage(key: string, value: string): boolean {
+  try {
+    writeCompanionStorage(key, value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function clearCompanionStorage(key: string): void {
+  try { clearCompanionStorage(key) } catch { /* storage may be disabled */ }
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -163,7 +180,7 @@ export default function Companion() {
     let cancelled = false
     const restore = async () => {
       if (new URLSearchParams(window.location.search).get('draft')?.trim()) return
-      const pendingRaw = window.localStorage.getItem('solenos_companion_pending_turn')
+      const pendingRaw = readCompanionStorage('solenos_companion_pending_turn')
       if (pendingRaw) {
         try {
           const pending = JSON.parse(pendingRaw) as { text?: string; id?: string }
@@ -172,13 +189,13 @@ export default function Companion() {
             setInput(pending.text)
             setRequestError('A previous message may not have completed. Retry to safely check its saved result.')
           } else {
-            window.localStorage.removeItem('solenos_companion_pending_turn')
+            clearCompanionStorage('solenos_companion_pending_turn')
           }
         } catch {
-          window.localStorage.removeItem('solenos_companion_pending_turn')
+          clearCompanionStorage('solenos_companion_pending_turn')
         }
       }
-      const savedSessionId = window.localStorage.getItem('solenos_companion_session_id')
+      const savedSessionId = readCompanionStorage('solenos_companion_session_id')
       if (!savedSessionId) return
       setRestoringHistory(true)
       try {
@@ -211,7 +228,7 @@ export default function Companion() {
         } as Message)))
       } catch {
         if (cancelled) return
-        window.localStorage.removeItem('solenos_companion_session_id')
+        clearCompanionStorage('solenos_companion_session_id')
         setSessionId(null)
         setRequestError('The previous conversation could not be restored for this care session. Start a new conversation or send a new message.')
       } finally {
@@ -235,7 +252,7 @@ export default function Companion() {
     const pending = pendingTurnRef.current
     const clientTurnId = pending?.text === submittedText ? pending.id : crypto.randomUUID()
     pendingTurnRef.current = { text: submittedText, id: clientTurnId }
-    window.localStorage.setItem(
+    writeCompanionStorage(
       'solenos_companion_pending_turn',
       JSON.stringify({ text: submittedText, id: clientTurnId }),
     )
@@ -252,12 +269,12 @@ export default function Companion() {
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       if (pendingTurnRef.current?.id === clientTurnId) pendingTurnRef.current = null
-      window.localStorage.removeItem('solenos_companion_pending_turn')
+      clearCompanionStorage('solenos_companion_pending_turn')
 
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
-      if (response.session_id) window.localStorage.setItem('solenos_companion_session_id', response.session_id)
+      if (response.session_id) writeCompanionStorage('solenos_companion_session_id', response.session_id)
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -344,11 +361,11 @@ export default function Companion() {
   const startNewSession = () => {
     if (loading || restoringHistory) return
     pendingTurnRef.current = null
-    window.localStorage.removeItem('solenos_companion_pending_turn')
+    clearCompanionStorage('solenos_companion_pending_turn')
     setMessages([])
     setInput('')
     setSessionId(null)
-    window.localStorage.removeItem('solenos_companion_session_id')
+    clearCompanionStorage('solenos_companion_session_id')
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
