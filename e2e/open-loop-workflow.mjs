@@ -219,7 +219,82 @@ try {
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
-  console.log("PASS: real frontend Open Loop create/retry, response, action, reconciliation, outcome verification, closure, audit history, and reload hydration against the live API process.");
+  // Exercise persisted conflict handling through the actual LCR UI and API.
+  // The partial resolution must preserve its unresolved remainder; reopening must
+  // append a new audit event without erasing the earlier partial-resolution event.
+  const conflictResponse = await fetch(new URL("/api/v1/uncertainty/contradictions", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      person_id: session.personId,
+      subject_type: "medication",
+      subject_id: "ci-medication-status",
+      field: "status",
+      description: "CI-only conflicting medication status reports; neither source is assumed authoritative.",
+      evidence_ids: [sourceEvidenceId, relatedEvidenceId],
+    }),
+  });
+  if (!conflictResponse.ok) {
+    throw new Error(`Could not seed persisted conflict: HTTP ${conflictResponse.status} ${await conflictResponse.text()}`);
+  }
+  const persistedConflict = await conflictResponse.json();
+  if (!persistedConflict.id) throw new Error("Backend did not return the persisted conflict ID.");
+
+  await page.evaluate(() => {
+    localStorage.setItem("solenos_care_recipient_display_name", "CI synthetic care recipient");
+  });
+  await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
+  const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
+  await conflictPanel.getByRole("heading", { name: "Conflict comparison and resolution history" }).waitFor({ timeout: 20_000 });
+  await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);
+  await conflictPanel.getByLabel("Resolution transition").selectOption("partially_resolved");
+  await conflictPanel.getByLabel("Resolution rationale").fill(
+    "CI-only review confirms the source document date, but not whether the medication is currently prescribed."
+  );
+  const resolvedScope = "The source document date was confirmed.";
+  const unresolvedRemainder = "Current medication status remains unconfirmed.";
+  await conflictPanel.getByLabel("Exact scope resolved (required for partial resolution)").fill(resolvedScope);
+  await conflictPanel.getByLabel("What remains unresolved (required for partial resolution)").fill(unresolvedRemainder);
+  await conflictPanel.getByLabel("Evidence supporting the resolution (multi-select)").selectOption([sourceEvidenceId]);
+  await conflictPanel.getByRole("button", { name: "Save conflict transition" }).click();
+  await conflictPanel.getByRole("status").filter({ hasText: "Resolution transition saved with its rationale" }).waitFor({ timeout: 15_000 });
+  await conflictPanel.getByText(`Still unresolved: ${unresolvedRemainder}`).waitFor({ timeout: 10_000 });
+  await conflictPanel.getByText("unresolved → partially resolved", { exact: true }).waitFor({ timeout: 10_000 });
+
+  await conflictPanel.getByLabel("Resolution transition").selectOption("reopened");
+  await conflictPanel.getByLabel("Resolution rationale").fill(
+    "CI-only new report disputes the partial interpretation; reopen without deleting prior history."
+  );
+  await conflictPanel.getByRole("button", { name: "Save conflict transition" }).click();
+  await conflictPanel.getByRole("status").filter({ hasText: "Resolution transition saved with its rationale" }).waitFor({ timeout: 15_000 });
+  await conflictPanel.getByText("partially resolved → reopened", { exact: true }).waitFor({ timeout: 10_000 });
+  await conflictPanel.getByText(`Still unresolved: ${unresolvedRemainder}`).waitFor({ timeout: 10_000 });
+
+  const conflictHistoryResponse = await fetch(
+    new URL(`/api/v1/uncertainty/contradictions/${encodeURIComponent(persistedConflict.id)}/history`, backend),
+    { headers: { authorization: `Bearer ${session.token}` } },
+  );
+  if (!conflictHistoryResponse.ok) {
+    throw new Error(`Could not verify persisted conflict history: HTTP ${conflictHistoryResponse.status}`);
+  }
+  const conflictHistory = await conflictHistoryResponse.json();
+  if (conflictHistory.length !== 2) {
+    throw new Error(`Conflict history has ${conflictHistory.length} events; expected exactly 2 audited transitions.`);
+  }
+  if (
+    conflictHistory[0].previous_status !== "unresolved" ||
+    conflictHistory[0].new_status !== "partially_resolved" ||
+    conflictHistory[0].unresolved_remainder !== unresolvedRemainder ||
+    conflictHistory[1].previous_status !== "partially_resolved" ||
+    conflictHistory[1].new_status !== "reopened"
+  ) {
+    throw new Error("Persisted conflict history did not preserve the partial-resolution boundary and reopening chain.");
+  }
+
+  console.log("PASS: real frontend Open Loop lifecycle plus persisted conflict partial-resolution, unresolved remainder, reopening, and append-only history against the live API process.");
 } finally {
   // The LCR pages may still have background refresh requests in flight after
   // the assertions complete. Drain route handlers before disposing the context
