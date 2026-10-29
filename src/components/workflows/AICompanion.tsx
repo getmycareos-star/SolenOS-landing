@@ -73,6 +73,7 @@ interface Message {
   source_evidence_ids?: string[]
   source_appointment_ids?: string[]
   source_freshness_assessment_ids?: string[]
+  freshness_source_status?: string
   source_record_refs?: Array<{ record_type: string; record_id: string }>
   ai_generated?: boolean
   written_to_lcr?: boolean
@@ -195,6 +196,7 @@ export default function Companion() {
         source_evidence_ids: response.source_evidence_ids,
         source_appointment_ids: response.source_appointment_ids,
         source_freshness_assessment_ids: response.source_freshness_assessment_ids,
+        freshness_source_status: response.freshness_source_status,
         source_record_refs: response.source_record_refs,
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
@@ -463,6 +465,8 @@ export default function Companion() {
                     {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount + (msg.source_record_refs?.length ?? 0) > 0
                       ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
                       : 'No matching care context was returned for this response.'} Conversation only; not added to the Living Care Record.</span></div>}
+                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">Freshness assessment storage is unavailable in this schema. Currentness is unknown.</p>}
+                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No freshness assessment was returned for the selected evidence; this does not establish currentness.</p>}
                     {!isUser && (msg.source_record_refs?.length ?? 0) > 0 && <details className="companion-provenance-details">
                       <summary>Inspect source record references ({msg.source_record_refs?.length ?? 0})</summary>
                       <ul>{msg.source_record_refs?.map(ref => <li key={ref.record_type + ':' + ref.record_id}><span>{ref.record_type.replaceAll('_', ' ')}</span> <code>{ref.record_id}</code></li>)}</ul>
