@@ -5,6 +5,7 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
+import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 
 type CurrentCareItem = {
   id: string;
@@ -792,6 +793,7 @@ export function LCRCurrentUnderstanding() {
         </>
       ) : null}
       <EvidenceReviewPanel personId={personId} />
+      <ClaimAssessmentPanel />
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
