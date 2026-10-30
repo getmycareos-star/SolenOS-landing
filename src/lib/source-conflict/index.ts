@@ -321,12 +321,9 @@ export function evaluateSourceConflict(params: {
     const multi = multiContributorOppose(prior, incoming);
     if (!sourcesDiffer(prior, incoming) && !multi) continue;
 
-    const priority_for_orientation = preferredOrientation(incoming, prior);
-    const clinicalPreferred =
-      Math.max(
-        sourcePriorityRank(incoming.kind, incoming.raw_text),
-        sourcePriorityRank(prior.kind, prior.raw_text),
-      ) >= 80;
+    // A detected contradiction is not a vote. Source type, recency and
+    // contributor count do not select a winner; preserve both and request review.
+    const priority_for_orientation = "neither" as const;
 
     return {
       has_conflict: true,
@@ -334,10 +331,8 @@ export function evaluateSourceConflict(params: {
       prior_text: prior.raw_text,
       incoming_text: incoming.raw_text,
       note: multi
-        ? "More than one contributor reported differently — both are held. Nothing was erased."
-        : clinicalPreferred
-          ? "Sources do not fully agree — both are held. Current orientation prefers the clinical or document source; nothing was erased."
-          : "Sources do not fully agree — both are held. Nothing was erased.",
+        ? "More than one contributor reported differently — both are held for review. Neither account is selected as correct."
+        : "Sources do not fully agree — both are held for review. Neither account is selected as correct.",
       pattern_label: multi ? "disagreeing care views" : "source conflict",
       open_ask: multi
         ? "Both views stay in the record — what are you seeing now?"
