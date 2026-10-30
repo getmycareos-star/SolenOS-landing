@@ -269,6 +269,7 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
 export default function DocumentsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
+  const [requestedIntake, setRequestedIntake] = useState<"upload" | "capture" | "scan" | null>(null);
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
@@ -321,8 +322,9 @@ export default function DocumentsPage() {
     params.delete("scan");
     const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
     window.history.replaceState({}, "", next);
-    if (action === "upload") fileInput.current?.click();
-    else cameraInput.current?.click();
+    // Navigation ends the original click's browser user-activation window.
+    // Show an explicit intake prompt; its button opens the native picker from a fresh tap.
+    setRequestedIntake(action);
   }, []);
 
 
@@ -529,6 +531,29 @@ export default function DocumentsPage() {
         <h1>Documents</h1>
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
+
+      {requestedIntake && (
+        <section aria-label="Start document intake" style={{ border: "1px solid #9bb89a", borderRadius: 14, padding: 18, background: "var(--surface)", display: "grid", gap: 10 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18 }}>
+              {requestedIntake === "upload" ? "Upload a document" : requestedIntake === "capture" ? "Take a photo" : "Scan a document"}
+            </h2>
+            <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}>
+              {requestedIntake === "upload"
+                ? "Choose a file. SolenOS will prepare it for review before saving."
+                : requestedIntake === "capture"
+                  ? "Open your device camera to photograph care information."
+                  : "Capture the document. You can straighten, crop, extract text and review it before saving."}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => requestedIntake === "upload" ? fileInput.current?.click() : cameraInput.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 46, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 16px" }}>
+              {requestedIntake === "upload" ? "Choose document" : requestedIntake === "capture" ? "Open camera" : "Capture document"}
+            </button>
+            <button type="button" onClick={() => setRequestedIntake(null)} style={{ minHeight: 46, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)", color: "var(--text)", fontWeight: 600, padding: "10px 16px" }}>Close</button>
+          </div>
+        </section>
+      )}
 
       <section aria-label="Document library" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
