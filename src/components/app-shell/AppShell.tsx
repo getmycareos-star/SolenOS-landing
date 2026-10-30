@@ -10,6 +10,7 @@ import {
   MessageCircle,
   Menu,
   PanelLeftClose,
+  Search,
   Settings,
   ShieldCheck,
 } from "lucide-react";
@@ -75,6 +76,14 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           </div>
 
           <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
+            <button type="button" className="solenos-chat-nav-item" onClick={() => {
+              const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
+              input?.focus();
+              input?.scrollIntoView({ block: "nearest" });
+            }}>
+              <span className="solenos-chat-nav-icon"><Search size={19} strokeWidth={1.8} /></span>
+              <span>Search history</span>
+            </button>
             {NAVIGATION.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
