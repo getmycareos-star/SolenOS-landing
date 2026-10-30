@@ -41,6 +41,9 @@ type DocumentItem = {
   status: string;
   extractedText: string;
   evidence: EvidenceRecord;
+  duplicateDetected: boolean;
+  duplicateOfEvidenceId: string | null;
+  extractionStatus: string;
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
@@ -86,6 +89,11 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     status: item.evidence_status || "recorded",
     extractedText: item.source_text || "",
     evidence: item,
+    duplicateDetected: meta.duplicate_detected === true,
+    duplicateOfEvidenceId: asString(meta.duplicate_of_evidence_id) || null,
+    extractionStatus: asString(
+      (meta.source_integrity as Record<string, unknown> | undefined)?.text_extraction_status,
+    ) || (item.source_text?.trim() ? "text_available" : "unavailable"),
   };
 }
 
@@ -327,7 +335,7 @@ export default function DocumentsPage() {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return documents;
     return documents.filter((doc) =>
-      [doc.title, doc.mimeType, doc.status, doc.extractedText].some((value) => value.toLowerCase().includes(normalized)),
+      [doc.title, doc.mimeType, doc.status, doc.extractedText, doc.duplicateDetected ? "duplicate" : "original", doc.extractionStatus].some((value) => value.toLowerCase().includes(normalized)),
     );
   }, [documents, query]);
 
@@ -629,6 +637,7 @@ export default function DocumentsPage() {
                   <span style={{ display: "block", fontWeight: 700, overflowWrap: "anywhere", fontSize: 14 }}>{doc.title}</span>
                   <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</span>
                   <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{doc.extractedText.trim() ? "Text available for document understanding" : "Original saved · text not available"}</span>
+                  {doc.duplicateDetected && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#8a5a18" }}>Exact binary duplicate of an earlier upload{doc.duplicateOfEvidenceId ? ` · original record ${doc.duplicateOfEvidenceId}` : ""}. Both uploads remain preserved.</span>}
                 </span>
                 <span aria-hidden="true" style={{ flexShrink: 0, fontSize: 12, color: "var(--text-secondary)" }}>Open</span>
               </button>
