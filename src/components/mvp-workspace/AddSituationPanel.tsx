@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Camera, FileText, Loader2, MoreHorizontal, Plus, ScanLine } from "lucide-react";
+import { Camera, FileText, Loader2, Plus, ScanLine } from "lucide-react";
 
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputProvenance } from "@/lib/care-events";
@@ -30,8 +30,6 @@ type Props = {
   /** Pending share-target intake id from /share redirect. */
   pendingShareId?: string | null;
   onShareClaimed?: () => void;
-  /** Workspace-level metadata for the More menu. */
-  /** Fired when a workspace-level action is selected from the More menu. */
 };
 
 /**
