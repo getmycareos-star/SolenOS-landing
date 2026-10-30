@@ -2,8 +2,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
@@ -108,8 +107,6 @@ const STARTER_PROMPTS = [
 ]
 
 export default function Companion({ home = false }: { home?: boolean }) {
-  const router = useRouter()
-  const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -229,7 +226,14 @@ export default function Companion({ home = false }: { home?: boolean }) {
 
   useEffect(() => {
     if (autoDraftSent.current) return
-    const draft = new URLSearchParams(window.location.search).get('draft')?.trim()
+    const params = new URLSearchParams(window.location.search)
+    const prefill = params.get('prompt')?.trim()
+    if (prefill) {
+      autoDraftSent.current = true
+      setInput(prefill)
+      return
+    }
+    const draft = params.get('draft')?.trim()
     if (!draft) return
     autoDraftSent.current = true
     setInput(draft)
@@ -496,14 +500,6 @@ export default function Companion({ home = false }: { home?: boolean }) {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
-            <div className="companion-add-wrap">
-              <button type="button" className="companion-add-button" aria-label="Add document or image" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
-              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?upload=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file to add to the care record</small></span></button>
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?capture=1") }}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open camera intake</small></span></button>
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?scan=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Capture, extract text, and review</small></span></button>
-              </div>}
-            </div>
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
@@ -662,22 +658,25 @@ export default function Companion({ home = false }: { home?: boolean }) {
         .companion-shell.is-home .companion-message { margin-bottom:25px; }
          .companion-shell.is-home .companion-message.is-assistant .companion-bubble { border:0; border-radius:0; background:transparent; padding:2px 0; }
         .companion-shell.is-home .companion-message.is-user .companion-bubble { border:0; border-radius:18px; background:#f1f2ef; padding:12px 16px; }
-        .companion-shell.is-home .companion-composer-wrap { flex:0 0 auto; width:min(100%,800px); margin:0 auto; padding:0 12px; }
+        .companion-shell.is-home .companion-composer-wrap { flex:0 0 auto; width:min(100%,860px); margin:0 auto; padding:0 12px; }
         .companion-shell.is-home .companion-composer { border:1px solid #d7dfd6; border-radius:24px; padding:10px 12px 10px 16px; box-shadow:0 3px 18px rgba(30,50,35,.055); }
         .companion-shell.is-home .companion-composer textarea { min-height:52px; max-height:190px; font-size:16px; }
         .companion-shell.is-home .companion-composer-footer { border-top:0; padding-top:3px; }
         .companion-shell.is-home .companion-send { min-width:42px; width:42px; height:42px; min-height:42px; padding:0; border-radius:50%; }
         .companion-shell.is-home .companion-send span:last-child { display:none; }
-        .companion-shell.is-home .companion-footer-note { margin:7px 0 0; font-size:10px; }
-        .companion-add-wrap { position:relative; }
-        .companion-add-button { display:grid; place-items:center; width:38px; height:38px; border:1px solid #dce5da; border-radius:50%; background:#f7faf6; color:#314d36; cursor:pointer; }
-        .companion-add-button:hover { background:#edf5eb; }
-        .companion-add-menu { position:absolute; z-index:40; left:0; bottom:calc(100% + 10px); width:min(320px,calc(100vw - 48px)); padding:7px; border:1px solid #e0e7df; border-radius:16px; background:#fff; box-shadow:0 14px 40px rgba(25,45,30,.14); }
-        .companion-add-menu button { display:flex; align-items:center; gap:11px; width:100%; padding:11px 10px; border:0; border-radius:10px; background:transparent; text-align:left; color:#25372b; cursor:pointer; }
-        .companion-add-menu button:hover { background:#f4f8f3; }
-        .companion-add-icon { display:grid; place-items:center; flex:0 0 34px; width:34px; height:34px; border-radius:10px; background:#edf5ec; color:#547657; }
-        .companion-add-menu strong { display:block; font-size:13px; font-weight:700; }
-        .companion-add-menu small { display:block; margin-top:3px; color:#748077; font-size:11px; line-height:1.4; }
+        .companion-shell.is-home .companion-footer-note { margin:9px 0 0; font-size:11px; line-height:1.55; }
+        .companion-shell.is-home .companion-empty { min-height:100%; display:flex; flex-direction:column; justify-content:center; padding-top:clamp(22px,5vh,54px); padding-bottom:clamp(22px,5vh,54px); }
+        .companion-shell.is-home .companion-empty-heading h3 { max-width:660px; color:#24352a; }
+        .companion-shell.is-home .companion-empty-heading p { max-width:590px; color:#647267; }
+        .companion-shell.is-home .companion-starter { min-height:116px; border:1px solid #e0e8de; background:#fff; box-shadow:0 3px 14px rgba(35,55,39,.035); transition:border-color .16s ease,background .16s ease,transform .16s ease; }
+        .companion-shell.is-home .companion-starter:hover { border-color:#b9cfb5; background:#fbfdf9; transform:translateY(-1px); }
+        .companion-shell.is-home .companion-starter-copy strong { color:#2c4031; font-size:14px; }
+        .companion-shell.is-home .companion-starter-copy>span { color:#718074; }
+        .companion-shell.is-home .companion-composer { border:1px solid #d5e0d3; border-radius:22px; padding:12px 14px 11px 17px; box-shadow:0 8px 28px rgba(36,57,39,.07); }
+        .companion-shell.is-home .companion-composer:focus-within { border-color:#a5c2a1; box-shadow:0 0 0 4px rgba(166,194,161,.16),0 8px 28px rgba(36,57,39,.06); }
+        .companion-shell.is-home .companion-composer textarea { min-height:58px; font-size:16px; line-height:1.65; }
+        .companion-shell.is-home .companion-send { background:#c7dfc4; border-color:#a9c7a6; color:#203927; }
+        .companion-shell.is-home .companion-input-hint { font-size:11px; color:#7c897d; }
         @media(max-width:600px) {
           .companion-shell.is-home .companion-topbar { padding:6px 2px 12px; }
           .companion-shell.is-home .companion-empty { padding:26px 10px 18px; }
