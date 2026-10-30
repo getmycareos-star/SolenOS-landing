@@ -101,7 +101,7 @@ const MENU_ITEMS: {
     id: "add_to_home",
     label: "Add to Home",
     icon: Home,
-    condition: (props) => props.canAddToHome,
+    condition: (props) => Boolean(props.canAddToHome),
   },
 ];
 
