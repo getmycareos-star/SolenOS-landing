@@ -438,7 +438,8 @@ export default function DocumentsPage() {
     setUploading(true);
     setUploadMessage(null);
     let saved = 0;
-    const savedEvidenceIds: string[] = [];
+    let analysed = 0;
+    let analysisFailed = 0;
     try {
       const session = await ensureAnonymousSession();
       for (const page of reviewPages) {
@@ -454,33 +455,30 @@ export default function DocumentsPage() {
         form.append("scan_text_prepared", String(page.file.type.startsWith("image/") && page.prepared));
         const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
-        savedEvidenceIds.push(stored.evidence_id);
         saved += 1;
+        if (page.text.trim()) {
+          try {
+            const analysis = await postJSON(`/documents/${encodeURIComponent(stored.evidence_id)}/intelligence`, {}) as { analysis_id?: string; source_evidence_id?: string };
+            if (!analysis.analysis_id || analysis.source_evidence_id !== stored.evidence_id) throw new Error("Document intelligence was not confirmed for the saved source.");
+            analysed += 1;
+          } catch {
+            analysisFailed += 1;
+          }
+        }
       }
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
       setIntakeMode(null);
       await loadDocuments(true);
-      let analysed = 0;
-      let analysisFailed = 0;
-      for (let index = 0; index < savedEvidenceIds.length; index += 1) {
-        if (!reviewPages[index]?.text.trim()) continue;
-        try {
-          const analysis = await postJSON(`/documents/${encodeURIComponent(savedEvidenceIds[index])}/intelligence`, {}) as { analysis_id?: string; source_evidence_id?: string };
-          if (!analysis.analysis_id || analysis.source_evidence_id !== savedEvidenceIds[index]) throw new Error("Document intelligence was not confirmed for the saved source.");
-          analysed += 1;
-        } catch {
-          analysisFailed += 1;
-        }
-      }
       setIntelligenceRefreshKey(value => value + 1);
       setUploadMessage({
         kind: "success",
         text: `Saved ${saved} original file(s). Document intelligence completed for ${analysed} file(s); extracted statements require caregiver review before they enter the Living Care Record.${analysisFailed ? ` Intelligence could not run for ${analysisFailed} file(s); retry from the document intelligence section.` : ""}`,
       });
     } catch {
-      setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });
+      setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Any readable saved files were submitted for document intelligence; refresh the library before retrying to avoid duplicate originals.` });
       await loadDocuments(true);
+      setIntelligenceRefreshKey(value => value + 1);
     } finally { setUploading(false); }
   };
 
