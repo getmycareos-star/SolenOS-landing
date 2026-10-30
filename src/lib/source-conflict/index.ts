@@ -26,6 +26,10 @@ export type ObservationSourceRef = {
   captured_at: string;
   /** When set, opposing polarity across contributors is a conflict — both retained. */
   contributor_id?: string | null;
+  /** Explicit speaker within the source; distinct from the authenticated reporter. */
+  speaker_label?: string | null;
+  speaker_attribution_status?: "explicit" | "unknown";
+  source_reference_id?: string | null;
 };
 
 export type SourceConflictEvaluation = {
@@ -79,6 +83,9 @@ export function recordSourceClaim(params: {
   kind: CareEventKind;
   capturedAt?: string;
   contributorId?: string | null;
+  speakerLabel?: string | null;
+  speakerAttributionStatus?: "explicit" | "unknown";
+  sourceReferenceId?: string | null;
 }): void {
   const now = params.capturedAt ?? new Date().toISOString();
   const claim: ObservationSourceRef = {
@@ -86,6 +93,9 @@ export function recordSourceClaim(params: {
     kind: params.kind,
     captured_at: now,
     contributor_id: params.contributorId ?? null,
+    speaker_label: params.speakerLabel ?? null,
+    speaker_attribution_status: params.speakerAttributionStatus ?? "unknown",
+    source_reference_id: params.sourceReferenceId ?? null,
   };
   withDurableFileLock(`${claimPath(params.careKey)}.lock`, () => {
     // Always refresh from durable storage inside the lock. A process-local
