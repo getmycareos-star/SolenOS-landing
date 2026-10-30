@@ -309,7 +309,17 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         {questions.length === 0 && <p style={{ fontSize: 12 }}>No clarification questions were returned for this care record.</p>}
         {questions.length > 0 && <>
           <label style={{ display: "block", fontSize: 12, margin: "8px 0" }}>Question
-            <select style={field} value={selectedQuestionId} onChange={(event) => setSelectedQuestionId(event.target.value)}>
+            <select
+              style={field}
+              value={selectedQuestionId}
+              onChange={(event) => {
+                setSelectedQuestionId(event.target.value);
+                setAnswerEvidenceIds([]);
+                setAnswer("");
+                setAnswerProvenance("");
+                setError("");
+              }}
+            >
               {questions.map((item) => <option key={item.id} value={item.id}>{item.status} · {item.question.slice(0, 120)}</option>)}
             </select>
           </label>
