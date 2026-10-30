@@ -201,12 +201,14 @@ export default function CareSituationBrief() {
       if (document.visibilityState === "visible") void load(true);
     };
     window.addEventListener("focus", refreshWhenVisible);
+    window.addEventListener("solenos:lcr-updated", refreshWhenVisible);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") void load(true);
     }, 60_000);
     return () => {
       window.removeEventListener("focus", refreshWhenVisible);
+      window.removeEventListener("solenos:lcr-updated", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       window.clearInterval(interval);
     };
