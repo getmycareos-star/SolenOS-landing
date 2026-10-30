@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
@@ -112,10 +112,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const router = useRouter()
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
-  const intakeModeRef = useRef<DocumentIntakeMode>('upload')
+  const captureInputRef = useRef<HTMLInputElement>(null)
   const cameraVideoRef = useRef<HTMLVideoElement>(null)
   const cameraStreamRef = useRef<MediaStream | null>(null)
-  const [cameraMode, setCameraMode] = useState<Exclude<DocumentIntakeMode, 'upload'> | null>(null)
+  const [cameraMode, setCameraMode] = useState<'scan' | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [capturedPages, setCapturedPages] = useState<File[]>([])
   const [cameraStarting, setCameraStarting] = useState(false)
@@ -140,14 +140,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
   const openDocumentIntake = (mode: DocumentIntakeMode) => {
     setAddMenuOpen(false)
-    intakeModeRef.current = mode
     if (mode === 'upload') {
       uploadInputRef.current?.click()
       return
     }
+    if (mode === 'capture') {
+      captureInputRef.current?.click()
+      return
+    }
     setCapturedPages([])
     setCameraError(null)
-    setCameraMode(mode)
+    setCameraMode('scan')
   }
 
   useEffect(() => {
@@ -217,11 +220,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const page = new File([blob], `solenos-scan-${Date.now()}-${capturedPages.length + 1}.jpg`, { type: 'image/jpeg', lastModified: Date.now() })
       setCapturedPages(current => [...current, page])
       setCameraError(null)
-      if (cameraMode === 'capture') finishCameraIntake([page], 'capture')
+      // Scan mode keeps the camera open until the caregiver reviews all captured pages.
     }, 'image/jpeg', 0.92)
   }
 
-  const finishCameraIntake = (files: File[], mode: Exclude<DocumentIntakeMode, 'upload'>) => {
+  const finishCameraIntake = (files: File[], mode: 'scan') => {
     if (!files.length) {
       setCameraError('Capture at least one page before continuing.')
       return
@@ -233,11 +236,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     router.push('/workspace/documents?intake=1')
   }
 
-  const completeDocumentIntake = (event: ChangeEvent<HTMLInputElement>) => {
+  const completeDocumentIntake = (event: ChangeEvent<HTMLInputElement>, mode: DocumentIntakeMode) => {
     const files = Array.from(event.currentTarget.files ?? [])
     event.currentTarget.value = ''
     if (!files.length) return
-    setPendingDocumentIntake(files, intakeModeRef.current)
+    setPendingDocumentIntake(files, mode)
     router.push('/workspace/documents?intake=1')
   }
 
@@ -614,7 +617,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </div>
 
       <div className="companion-composer-wrap">
-        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple hidden onChange={completeDocumentIntake} aria-label="Choose documents to upload" />
+        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple hidden onChange={event => completeDocumentIntake(event, 'upload')} aria-label="Choose documents to upload" />
+        <input ref={captureInputRef} type="file" accept="image/*" capture="environment" hidden onChange={event => completeDocumentIntake(event, 'capture')} aria-label="Take a photo with the device camera" />
         <form className="companion-composer" aria-label="Send a message to Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
@@ -622,7 +626,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
             <div className="companion-add-wrap">
-              <button type="button" className="companion-add-button" aria-label="Add document or image" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
+              <button type="button" className="companion-add-button" aria-label={addMenuOpen ? "Close attachment actions" : "Add document or image"} aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}>{addMenuOpen ? <X size={19} /> : <Plus size={19} />}</button>
               {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
                 <button type="button" role="menuitem" onClick={() => openDocumentIntake("upload")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file from this device</small></span></button>
                 <button type="button" role="menuitem" onClick={() => openDocumentIntake("capture")}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open the camera now</small></span></button>
