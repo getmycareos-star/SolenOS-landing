@@ -405,6 +405,7 @@ const disagreement = evaluateSourceConflict({
   incomingContributorId: "cg_nurse",
 });
 assert(disagreement.has_conflict, "opposing claims from distinct contributors are surfaced");
+assert(disagreement.priority_for_orientation === "neither", "conflict must not automatically select a winner");
 assert(disagreement.both_retained === true, "conflict never discards either side");
 assert(disagreement.prior_text === "She ate well at lunch.", "prior source text retained verbatim");
 recordSourceClaim({
