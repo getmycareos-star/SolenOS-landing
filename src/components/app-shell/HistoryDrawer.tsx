@@ -694,12 +694,19 @@ export function HistoryDrawer() {
       }
     } catch {
       setActionMessage("Saved history preferences could not be read in this browser.");
+    } finally {
+      setRecordActionsLoaded(true);
     }
   }, []);
   useEffect(() => {
-    try { window.localStorage.setItem(RECORD_ACTIONS_KEY, JSON.stringify(recordActions)); }
-    catch { setActionMessage("History preferences could not be saved in this browser."); }
+    if (!recordActionsLoaded) return;
+    try {
+      window.localStorage.setItem(RECORD_ACTIONS_KEY, JSON.stringify(recordActions));
+    } catch {
+      setActionMessage("History preferences could not be saved in this browser.");
+    }
   }, [recordActions, recordActionsLoaded]);
+
   const updateRecordAction = (record: HistoryRecord, key: "pinned" | "archived" | "followUp", value: boolean) => {
     setRecordActions(current => ({
       ...current,
@@ -1248,7 +1255,7 @@ export function HistoryDrawer() {
 
                 <footer className="history-drawer-footer">
                   <ShieldCheck size={15} aria-hidden />
-                  <span>History combines saved care events, documents, appointment workspaces, handoffs, Living Care Record revisions, decisions and outcomes where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
+                  <span>History combines saved care events, documents, appointment workspaces, handoffs, Living Care Record revisions, decisions and outcomes where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}. Pin, archive and follow-up preferences are saved in this browser only.</span>
                 </footer>
               </>
             )}
