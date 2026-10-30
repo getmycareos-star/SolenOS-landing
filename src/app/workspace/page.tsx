@@ -19,6 +19,7 @@ function WorkspaceHomeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const compose = searchParams.get("compose") === "1";
+  const updateRecord = searchParams.get("mode") === "update";
 
   if (compose) {
     return (
@@ -29,8 +30,8 @@ function WorkspaceHomeInner() {
           </Button>
           <div>
             <p className="lcr-eyebrow">LIVING CARE RECORD</p>
-            <h1>Add to the record</h1>
-            <p>Notes, messages, documents, or photos. Fragments are fine.</p>
+            <h1>{updateRecord ? "Update your care record" : "Add to the record"}</h1>
+            <p>{updateRecord ? "Add a correction or new detail. Earlier entries are preserved." : "Notes, messages, documents, or photos. Fragments are fine."}</p>
           </div>
         </div>
         <ErrorBoundary name="CognitiveWorkspace" fallback={
@@ -39,7 +40,7 @@ function WorkspaceHomeInner() {
             <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
           </section>
         }>
-          <CognitiveWorkspace />
+          <CognitiveWorkspace startInUpdateMode={updateRecord} />
         </ErrorBoundary>
       </main>
     );
