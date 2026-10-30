@@ -64,8 +64,8 @@ function isConflict(item: RecordItem): boolean {
 function isQuestionOrGap(item: RecordItem): boolean {
   const source = (item.source_collection || "").toLowerCase();
   const kind = (item.kind || "").toLowerCase();
-  return ["uncertainties", "information_gaps", "missing_information", "open_questions"].includes(source) ||
-    /clarification|missing|open question|information gap/.test(kind);
+  return ["uncertainties", "information_gaps", "missing_information", "open_questions", "follow_up_links"].includes(source) ||
+    /clarification|missing|open question|information gap|follow-up/.test(kind);
 }
 
 function isAttention(item: RecordItem): boolean {
@@ -177,6 +177,7 @@ export default function CareSituationBrief() {
   const attentionItems = useMemo(() => items.filter(isAttention), [items]);
   const questionItems = useMemo(() => items.filter(isQuestionOrGap), [items]);
   const conflictItems = useMemo(() => items.filter(isConflict), [items]);
+  const decisionItems = useMemo(() => items.filter(item => ["decisions", "decision_outcomes"].includes((item.source_collection || "").toLowerCase())), [items]);
 
   const incomplete = data && (data.schema_status !== "complete" || (data.missing_required_sources?.length ?? 0) > 0 || data.has_more);
 
@@ -215,6 +216,7 @@ export default function CareSituationBrief() {
                 <CareSection title="What deserves attention" icon={<AlertTriangle size={14} />} items={attentionItems} empty="No attention candidates were returned by this record view." tone="attention" />
                 <CareSection title="Questions and missing information" icon={<CircleHelp size={14} />} items={questionItems} empty="No open questions or information gaps were returned." />
                 <CareSection title="Conflicting information" icon={<AlertTriangle size={14} />} items={conflictItems} empty="No explicit conflict entries were returned. This is not proof that all accounts agree." />
+                <CareSection title="Decisions and outcomes" icon={<ShieldCheck size={14} />} items={decisionItems} empty="No decision or outcome entries were returned by this record view." />
               </div>
               <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid #e2eae0" }}>
                 <span style={{ color: "#778579", fontSize: 10 }}>Record view refreshed {dateLabel(loadedAt)}{data.as_of ? ` · source snapshot ${dateLabel(data.as_of)}` : ""}</span>
