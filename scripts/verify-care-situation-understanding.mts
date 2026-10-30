@@ -255,7 +255,7 @@ Notes: Family reports increased evening confusion since last week.`;
     });
     assert.ok(first.continuity_hooks.length >= 1);
 
-    ingestActiveCareObservation({
+    const turn1 = ingestActiveCareObservation({
       caregiverId: contributorId,
       rawText: MULTI_SIGNAL_GOLDEN,
       kind: "general",
@@ -265,8 +265,13 @@ Notes: Family reports increased evening confusion since last week.`;
       caregiverId: contributorId,
       rawText: "She seems more tired today.",
       kind: "general",
-      nowIso: "2026-07-24T10:00:00.000Z",
+      nowIso: "2026-07-23T20:00:00.000Z",
     });
+    assert.equal(
+      turn2.situation.id,
+      turn1.situation.id,
+      "same-window continuation must retain the existing situation identity",
+    );
     assert.ok(
       turn2.situation.observations.length >= 2,
       `second capture must attach to existing ACS; relation=${turn2.relation}; situation=${turn2.situation.id}; caregiver=${turn2.situation.caregiver_id}; recipient=${turn2.situation.care_recipient_id}; lifecycle=${turn2.situation.lifecycle_status}; observations=${turn2.situation.observations.map((o) => o.raw_text).join(" || ")}`,
