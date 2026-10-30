@@ -45,6 +45,9 @@ type DocumentItem = {
   duplicateOfEvidenceId: string | null;
   extractionStatus: string;
   originalBinaryAvailable: boolean | null;
+  freshnessStatus: string;
+  completenessStatus: string;
+  missingFields: string[];
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
@@ -98,6 +101,19 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     originalBinaryAvailable: (() => {
       const value = (meta.source_integrity as Record<string, unknown> | undefined)?.original_binary_available;
       return typeof value === "boolean" ? value : null;
+    })(),
+    freshnessStatus: asString(
+      (meta.source_integrity as Record<string, unknown> | undefined)?.freshness_status,
+    ) || "not_assessed",
+    completenessStatus: asString(
+      (meta.source_integrity as Record<string, unknown> | undefined)?.completeness_status,
+    ) || "not_assessed",
+    missingFields: (() => {
+      const assessment = (meta.source_integrity as Record<string, unknown> | undefined)?.completeness_assessment;
+      const fields = assessment && typeof assessment === "object"
+        ? (assessment as Record<string, unknown>).missing_fields
+        : null;
+      return Array.isArray(fields) ? fields.filter((field): field is string => typeof field === "string") : [];
     })(),
   };
 }
@@ -644,6 +660,10 @@ export default function DocumentsPage() {
                   <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{doc.extractedText.trim() ? "Text available for document understanding" : "Original saved · text not available"}</span>
                   {doc.originalBinaryAvailable === false && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#a33" }}>Original file unavailable. The evidence record remains, but the source binary is missing.</span>}
                   {doc.originalBinaryAvailable === true && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>Original file stored · byte integrity is checked when opened.</span>}
+                  {doc.freshnessStatus !== "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: doc.freshnessStatus === "stale" || doc.freshnessStatus === "expired" ? "#a33" : "var(--text-secondary)" }}>Freshness: {doc.freshnessStatus} under an explicit source policy.</span>}
+                  {doc.freshnessStatus === "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>Freshness has not been assessed under a source-specific policy.</span>}
+                  {doc.completenessStatus !== "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: doc.missingFields.length > 0 ? "#8a5a18" : "var(--text-secondary)" }}>Completeness: {doc.completenessStatus}{doc.missingFields.length > 0 ? ` · Missing: ${doc.missingFields.join(", ")}` : ""}.</span>}
+                  {doc.completenessStatus === "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>Completeness has not been assessed for a declared purpose.</span>}
                   {doc.duplicateDetected && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#8a5a18" }}>Exact binary duplicate of an earlier upload{doc.duplicateOfEvidenceId ? ` · original record ${doc.duplicateOfEvidenceId}` : ""}. Both uploads remain preserved.</span>}
                 </span>
                 <span aria-hidden="true" style={{ flexShrink: 0, fontSize: 12, color: "var(--text-secondary)" }}>Open</span>
