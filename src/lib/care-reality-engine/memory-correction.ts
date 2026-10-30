@@ -20,6 +20,13 @@ export type MemoryCorrectionRecord = {
   corrected_value: string;
   corrected_by: string;
   corrected_at: string;
+  /** Exact observation being superseded; the original remains in the ACS timeline. */
+  target_observation_id?: string | null;
+  /** Event provenance for both the original claim and the correcting statement. */
+  original_event_ids?: string[];
+  correction_event_ids?: string[];
+  /** Stable audit chain: prior record id for corrections to an already-corrected claim. */
+  supersedes_correction_id?: string | null;
   reason: string | null;
   /** Both sides retained. */
   history_preserved: true;
@@ -66,6 +73,10 @@ export function recordMemoryCorrection(params: {
   originalValue: string;
   correctedValue: string;
   correctedBy: string;
+  targetObservationId?: string | null;
+  originalEventIds?: string[];
+  correctionEventIds?: string[];
+  supersedesCorrectionId?: string | null;
   reason?: string | null;
   nowIso?: string;
 }): MemoryCorrectionRecord {
@@ -80,6 +91,10 @@ export function recordMemoryCorrection(params: {
     corrected_value: params.correctedValue.trim(),
     corrected_by: params.correctedBy,
     corrected_at: now,
+    target_observation_id: params.targetObservationId ?? null,
+    original_event_ids: [...new Set(params.originalEventIds ?? [])],
+    correction_event_ids: [...new Set(params.correctionEventIds ?? [])],
+    supersedes_correction_id: params.supersedesCorrectionId ?? null,
     reason: params.reason ?? null,
     history_preserved: true,
   };
