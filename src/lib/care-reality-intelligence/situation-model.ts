@@ -148,7 +148,7 @@ export function buildCareRealitySituationModel(params: {
       ? baseline_comparison.known_baseline[0]
       : null) ||
     params.baselineChangeNote?.trim() ||
-    baselineFromText ||
+    (baseline_comparison.has_comparable_prior ? baselineFromText : null) ||
     (baseline_comparison.has_comparable_prior
       ? situation.familiarity_baseline?.[0]?.trim()
       : null) ||

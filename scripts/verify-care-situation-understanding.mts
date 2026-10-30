@@ -351,6 +351,17 @@ async function main() {
     );
     assert.equal(unrelated.baseline_comparison.mode, "initial_assessment");
 
+    const unrelatedSameTurnBaseline = buildCareRealitySituationModel({
+      situation: second.situation,
+      latestRawText: "Mom usually walks independently. Now she has a rash on her arm.",
+      careKey,
+    });
+    assert.equal(
+      unrelatedSameTurnBaseline.baseline,
+      null,
+      "a baseline from another topic must not be projected onto the current concern",
+    );
+
     const related = buildCareRealitySituationModel({
       situation: second.situation,
       latestRawText: "She is still having trouble walking today.",
