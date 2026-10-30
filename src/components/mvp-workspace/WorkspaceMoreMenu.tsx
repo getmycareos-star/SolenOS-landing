@@ -9,6 +9,9 @@ import {
   Trash2,
   Share2,
   Home,
+  PencilLine,
+  Eye,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -19,7 +22,10 @@ export type WorkspaceAction =
   | "archive"
   | "restore"
   | "delete"
-  | "add_to_home";
+  | "add_to_home"
+  | "edit_record"
+  | "view_record_details"
+  | "download_export";
 
 interface WorkspaceMoreMenuProps {
   onAction: (action: WorkspaceAction) => void;
@@ -40,6 +46,21 @@ const MENU_ITEMS: {
   variant?: "default" | "destructive";
   condition?: (props: WorkspaceMoreMenuProps) => boolean;
 }[] = [
+  {
+    id: "edit_record",
+    label: "Edit record",
+    icon: PencilLine,
+  },
+  {
+    id: "view_record_details",
+    label: "View record details",
+    icon: Eye,
+  },
+  {
+    id: "download_export",
+    label: "Download / Export",
+    icon: FileDown,
+  },
   {
     id: "share_care_summary",
     label: "Share care summary",
@@ -80,7 +101,7 @@ const MENU_ITEMS: {
     id: "add_to_home",
     label: "Add to Home",
     icon: Home,
-    condition: (props) => props.canAddToHome === true,
+    condition: (props) => Boolean(props.canAddToHome),
   },
 ];
 
