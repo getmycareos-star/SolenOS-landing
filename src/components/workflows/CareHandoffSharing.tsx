@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import Link from "next/link";
 
 type DraftItem = {
   source_type: string;
@@ -159,6 +160,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
   const [directoryError, setDirectoryError] = useState(false);
+  const [consentRequired, setConsentRequired] = useState(false);
   const [historyError, setHistoryError] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -181,19 +183,27 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
     setHistoryError(false);
     try {
       await ensureAnonymousSession();
+      // Handoff inbox and recipient discovery require the caregiver's persisted
+      // privacy/multi-caregiver acknowledgements. Read that state first so a
+      // normal first-use session does not generate avoidable 403 responses.
+      const consent = await getJSON("/consent") as { verified?: boolean; required?: boolean };
+      const canUseHandoffs = consent.verified === true && consent.required === false;
+      setConsentRequired(!canUseHandoffs);
       const [directoryResult, inboxResult, outboxResult] = await Promise.allSettled([
-        getJSON("/handoffs/directory/recipients") as Promise<{ items?: Recipient[] }>,
-        getJSON("/handoffs/inbox") as Promise<{ items?: InboxItem[] }>,
+        canUseHandoffs
+          ? getJSON("/handoffs/directory/recipients") as Promise<{ items?: Recipient[] }>
+          : Promise.resolve({ items: [] as Recipient[] }),
+        canUseHandoffs
+          ? getJSON("/handoffs/inbox") as Promise<{ items?: InboxItem[] }>
+          : Promise.resolve({ items: [] as InboxItem[] }),
         getJSON("/handoffs/outbox") as Promise<{ items?: OutboxItem[] }>,
       ]);
       if (directoryResult.status === "fulfilled") setDirectory(directoryResult.value.items ?? []);
       else setDirectoryError(true);
-      if (inboxResult.status === "fulfilled" && outboxResult.status === "fulfilled") {
-        setInbox(inboxResult.value.items ?? []);
-        setOutbox(outboxResult.value.items ?? []);
-      } else {
-        setHistoryError(true);
-      }
+      if (inboxResult.status === "fulfilled") setInbox(inboxResult.value.items ?? []);
+      else setHistoryError(true);
+      if (outboxResult.status === "fulfilled") setOutbox(outboxResult.value.items ?? []);
+      else setHistoryError(true);
     } catch {
       setDirectoryError(true);
       setHistoryError(true);
@@ -338,6 +348,9 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
         <section style={panel} aria-labelledby="family-share-heading">
           <h4 id="family-share-heading" style={{ margin: "0 0 8px", fontSize: 15 }}>Review and share family handoff</h4>
           <p style={{ marginTop: 0, fontSize: 12, lineHeight: 1.55 }}>Only linked, eligible caregiver sessions are listed. Sharing requires explicit review, expires automatically, can be revoked, and does not update the LCR.</p>
+          {consentRequired && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
+            Incoming handoffs and recipient sharing are unavailable until the required privacy and multi-caregiver acknowledgements are saved for this care record. Review them in <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Settings → Privacy</Link>, then refresh this panel. Your care record remains available.
+          </p>}
           {draft.evidence_lineage && <section style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="Handoff evidence lineage">
             <strong style={{ fontSize: 12 }}>Evidence source lineage · {draft.evidence_lineage.status.replaceAll("_", " ")}</strong>
             {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map(group => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: 11 }}>
@@ -349,7 +362,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
             <p style={{ fontSize: 11, marginBottom: 0, color: "#667267" }}>{draft.evidence_lineage.interpretation_limit}</p>
           </section>}
           {directoryError && <p role="alert">The recipient list could not be verified. Refresh before sharing.</p>}
-          {!directoryError && !loading && eligibleRecipients.length === 0 && <p>No linked caregiver is currently eligible to receive this handoff. SolenOS will not send it to an unlinked recipient.</p>}
+          {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No linked caregiver is currently eligible to receive this handoff. SolenOS will not send it to an unlinked recipient.</p>}
           {eligibleRecipients.map(recipient => (
             <label key={recipient.caregiver_id} style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "10px 0", lineHeight: 1.4 }}>
               <input type="checkbox" checked={selectedRecipients.includes(recipient.caregiver_id)} disabled={busy} onChange={event => {
@@ -371,7 +384,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
           </label>
-          <button type="button" style={button} disabled={busy || loading || directoryError || !reviewConfirmed || selectedRecipients.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
+          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || !reviewConfirmed || selectedRecipients.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed snapshot…" : "Share reviewed family handoff"}
           </button>
         </section>
@@ -389,7 +402,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
         {notice && <p role="status" style={{ color: "#356441", fontSize: 12, lineHeight: 1.5 }}>{notice}</p>}
         {showHistory && (
           <div style={{ marginTop: 12 }}>
-            {historyError && <p role="alert">Handoff history could not be loaded. Refresh and verify connectivity.</p>}
+            {consentRequired && <p role="status">Incoming handoffs are hidden until required privacy and multi-caregiver acknowledgements are saved. <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Review Settings → Privacy</Link>.</p>}\n            {historyError && <p role="alert">Handoff history could not be loaded. Refresh and verify connectivity.</p>}
             {!historyError && !loading && inbox.length === 0 && outbox.length === 0 && <p>No incoming or outgoing handoffs are recorded for this session.</p>}
             <h5 style={{ margin: "12px 0 6px" }}>Incoming</h5>
             {inbox.map(item => (
