@@ -276,12 +276,19 @@ function WorkspacePageInner() {
                             </p>
                             <p>{statement.source_passage}</p>
                             {statement.supersedes_observation_id && (
-                              <small>Correction of an earlier statement · {statement.correction_rationale || "Correction reason not supplied"}</small>
+                              <small>
+                                Corrects exact observation {statement.supersedes_observation_id}
+                                {" · "}{statement.correction_rationale || "Correction reason not supplied"}
+                              </small>
                             )}
                             {statement.superseded_by_observation_ids.length > 0 && (
-                              <small>Original statement preserved · superseded by {statement.superseded_by_observation_ids.length} later correction{statement.superseded_by_observation_ids.length === 1 ? "" : "s"}.</small>
+                              <small>
+                                Original statement preserved · superseded by exact observation IDs: {statement.superseded_by_observation_ids.join(", ")}
+                              </small>
                             )}
                             <small>
+                              Source record: {statement.evidence_id}
+                              {" · "}
                               {statement.occurred_at
                                 ? `Source event time: ${formatLastUpdated(statement.occurred_at)}`
                                 : statement.observed_at
