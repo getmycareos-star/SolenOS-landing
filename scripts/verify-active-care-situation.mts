@@ -141,6 +141,30 @@ assert(
   "situation registry contains no duplicate situation identities",
 );
 console.log("✓ multiple distinct care situations retained independently");
+const recoveredFall = activateCareSituation("cg_acs", t4.situation.id);
+assert(recoveredFall?.id === t4.situation.id, "explicit recovery selects the exact retained unresolved thread");
+assert(getActiveCareSituation("cg_acs")?.id === t4.situation.id, "recovered thread becomes current ingest target");
+clearActiveCareSituationMemoryCache();
+assert(
+  listActiveCareSituations("cg_acs").some((s) => s.id === t4.situation.id),
+  "recovered thread remains available after process-cache reset",
+);
+const fallFollowUp = ingestActiveCareObservation({
+  caregiverId: "cg_acs",
+  rawText: "She is still unsteady when walking after the fall.",
+  kind: classifyCareEventKind("She is still unsteady when walking after the fall."),
+  nowIso: "2026-07-18T09:00:00.000Z",
+});
+assert(
+  fallFollowUp.situation.id === t4.situation.id,
+  "follow-up updates the explicitly recovered fall thread, not the latest unrelated mood thread",
+);
+assert(
+  fallFollowUp.situation.observations.some((o) => o.id === t4.situation.observations[0]!.id),
+  "recovery preserves the original fall observation",
+);
+console.log("✓ explicit unresolved-thread recovery survives cache reset and accepts its follow-up");
+
 
 // Soft mood after medication ACS must also open new (no med Clarity bleed)
 resetActiveCareSituationStore();
