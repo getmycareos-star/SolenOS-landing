@@ -186,6 +186,30 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
   const context_only: string[] = [];
   const changes_from_baseline: string[] = [];
 
+  // The async/LLM path must receive the same longitudinal context as the
+  // synchronous composer path. Without this, returning caregivers lose prior
+  // change signals and unresolved questions precisely on the richer path.
+  const continuityDecision = params.continuityDecision;
+  const isReturningOrContinuation =
+    continuityDecision?.continuity_type === "returning" ||
+    continuityDecision?.continuity_type === "continuation";
+  if (isReturningOrContinuation && continuityDecision?.care_reality_diff) {
+    changes_from_baseline.push(
+      ...continuityDecision.care_reality_diff.changed,
+      ...continuityDecision.care_reality_diff.added,
+    );
+  }
+  const effectivePriorHooks =
+    params.priorContinuityHooks ??
+    (isReturningOrContinuation
+      ? continuityDecision?.context.continuity_hooks
+      : undefined);
+  const effectivePriorUnknowns =
+    params.priorUnknowns ??
+    (isReturningOrContinuation
+      ? continuityDecision?.context.open_uncertainties
+      : undefined);
+
   for (const e of extraction.events) {
     facts.push({ kind: "event", text: e.description, source_fragment: e.raw_fragment });
   }
@@ -512,7 +536,11 @@ export async function buildCareSituationUnderstanding(params: {
     confidence: "low",
   };
 
-  const prioritized = prioritizeFromUnderstanding(understandingDraft, params.priorContinuityHooks, params.priorUnknowns);
+  const prioritized = prioritizeFromUnderstanding(
+    understandingDraft,
+    effectivePriorHooks,
+    effectivePriorUnknowns,
+  );
 
   const evidenceCount = facts.length + prioritized.follow_up_questions.length;
   const confidence: CareSituationUnderstanding["confidence"] =
@@ -520,7 +548,10 @@ export async function buildCareSituationUnderstanding(params: {
 
   // Facts alone are not orientation. A caregiver needs a meaningful priority,
   // a supported change, or continuity from an already understood care situation.
+  const canOrientFromContinuity =
+    isReturningOrContinuation && continuityDecision?.can_orient;
   const can_orient =
+    canOrientFromContinuity ||
     prioritized.matters_now.length > 0 ||
     changes_from_baseline.length > 0 ||
     (context_only.length > 0 && raw.length < 200);
