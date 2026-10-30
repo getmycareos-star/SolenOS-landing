@@ -52,6 +52,8 @@ type SourceIntegrity = {
   freshness_assessment_id: string | null
   completeness_status: string
   completeness_assessment_id: string | null
+  external_source_reference: string | null
+  external_source_reference_access_status: 'not_checked' | 'not_provided'
   original_file_authenticity_verified: false
 }
 type Observation = {
@@ -403,6 +405,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           !Array.isArray(result.near_duplicate_candidate_groups) ||
           typeof result.near_duplicate_comparison_status !== 'string' ||
           typeof result.near_duplicate_interpretation_limit !== 'string' ||
+          !['not_checked', 'not_provided'].includes(result.external_source_reference_access_status) ||
           typeof result.freshness_status !== 'string' ||
           typeof result.completeness_status !== 'string' ||
           typeof result.hash_scope !== 'string' || result.original_file_authenticity_verified !== false) {
@@ -907,6 +910,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
             <p><strong>Freshness:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>Completeness:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
+            <p><strong>External source reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'not checked; external locations are not fetched automatically' : 'not provided'}</p>
             <p>Original file authenticity is not established by a stored hash. A matching hash proves byte consistency, not who created the source.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>Integrity has not been verified.</p>}
