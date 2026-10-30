@@ -171,6 +171,24 @@ export type Situation = {
   updatedAt: string;
   /** True only when the backend has a durable situation row that can be resumed. */
   persistedThread?: boolean;
+  /** Persisted unresolved contradictions; no side is implicitly selected. */
+  conflicts?: readonly {
+    id: string;
+    field: string;
+    description: string;
+    evidence_ids: string[];
+    resolution_status: string;
+    winner_selected: false;
+  }[];
+  /** Persisted open information gaps scoped to this situation's signal types. */
+  informationGaps?: readonly {
+    id: string;
+    field: string;
+    description?: string | null;
+    gap_reason?: string | null;
+    priority?: string | null;
+    evidence_ids: string[];
+  }[];
 };
 
 export type SituationDocument = {
