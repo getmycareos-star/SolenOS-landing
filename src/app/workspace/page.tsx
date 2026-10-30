@@ -47,7 +47,7 @@ function WorkspaceHomeInner() {
 
   return (
     <div className="mobile-screen feature-page companion-route solenos-companion-home">
-      <Companion />
+      <Companion home />
       <style jsx global>{`
         .solenos-companion-home {
           display: flex;
@@ -67,9 +67,6 @@ function WorkspaceHomeInner() {
           min-height: 0;
           margin: 0 auto;
           gap: 12px;
-        }
-        .solenos-companion-home .companion-shell > :not(.companion-topbar):not(.companion-workspace):not(.companion-composer-wrap):not(.companion-error):not(.companion-emergency) {
-          display: none !important;
         }
         .solenos-companion-home .companion-workspace {
           display: block;
