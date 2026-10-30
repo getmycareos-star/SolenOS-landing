@@ -16,6 +16,7 @@ type RecordItem = {
   source_collection?: string;
   source_type?: string;
   source_label?: string;
+  reported_by_label?: string | null;
   occurred_at?: string | null;
   recorded_at?: string | null;
   due_at?: string | null;
@@ -74,7 +75,7 @@ function isAttention(item: RecordItem): boolean {
 }
 
 function isCurrent(item: RecordItem): boolean {
-  return ["events", "facts", "evidence_observations", "assertions", "caregiver_observations"].includes((item.source_collection || "").toLowerCase()) &&
+  return ["events", "facts", "evidence_observations", "assertions", "caregiver_observations", "evidence"].includes((item.source_collection || "").toLowerCase()) &&
     !isConflict(item) && !isQuestionOrGap(item);
 }
 
@@ -117,6 +118,7 @@ function CareSection({
                 <strong style={{ display: "block", color: "#34483a", fontSize: 12, lineHeight: 1.45 }}>{titleText}</strong>
                 <p style={{ margin: "4px 0 0", color: "#596a5c", fontSize: 12, lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{description}</p>
                 <small style={{ display: "block", marginTop: 5, color: "#7a887b", fontSize: 10, lineHeight: 1.4 }}>{sourceText} · {dateLabel(when)}</small>
+                {!change && <small style={{ display: "block", marginTop: 3, color: "#68796a", fontSize: 10, lineHeight: 1.4 }}>Reported by: {item.reported_by_label || "Not recorded"} · Supporting evidence: {item.evidence_ids?.length ?? 0} linked item(s)</small>}
               </article>
             );
           })}
@@ -178,6 +180,7 @@ export default function CareSituationBrief() {
   const questionItems = useMemo(() => items.filter(isQuestionOrGap), [items]);
   const conflictItems = useMemo(() => items.filter(isConflict), [items]);
   const decisionItems = useMemo(() => items.filter(item => ["decisions", "decision_outcomes"].includes((item.source_collection || "").toLowerCase())), [items]);
+  const openActionItems = useMemo(() => items.filter(item => ["open_loop_records", "follow_up_links"].includes((item.source_collection || "").toLowerCase())), [items]);
 
   const incomplete = data && (data.schema_status !== "complete" || (data.missing_required_sources?.length ?? 0) > 0 || data.has_more);
 
@@ -217,6 +220,7 @@ export default function CareSituationBrief() {
                 <CareSection title="Questions and missing information" icon={<CircleHelp size={14} />} items={questionItems} empty="No open questions or information gaps were returned." />
                 <CareSection title="Conflicting information" icon={<AlertTriangle size={14} />} items={conflictItems} empty="No explicit conflict entries were returned. This is not proof that all accounts agree." />
                 <CareSection title="Decisions and outcomes" icon={<ShieldCheck size={14} />} items={decisionItems} empty="No decision or outcome entries were returned by this record view." />
+                <CareSection title="Open actions and follow-ups" icon={<Clock3 size={14} />} items={openActionItems} empty="No open care actions or follow-up links were returned by this record view." tone="attention" />
               </div>
               <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid #e2eae0" }}>
                 <span style={{ color: "#778579", fontSize: 10 }}>Record view refreshed {dateLabel(loadedAt)}{data.as_of ? ` · source snapshot ${dateLabel(data.as_of)}` : ""}</span>
