@@ -23,8 +23,8 @@ import { ensureAnonymousSession, getAnonymousAccessToken, revokeAnonymousSession
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
 
-const LCRCurrentUnderstanding = dynamic(
-  () => import("@/components/mvp-workspace/LCRCurrentUnderstanding").then((module) => module.LCRCurrentUnderstanding),
+const CareRecordOverview = dynamic(
+  () => import("@/components/app-shell/CareRecordOverview").then((module) => module.CareRecordOverview),
   { ssr: false, loading: () => <p className="solenos-record-details-loading">Loading saved care details…</p> },
 );
 
@@ -83,6 +83,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const [sharePanelContext, setSharePanelContext] = useState<SharePanelContext | null>(null);
   const [sharePanelIntent, setSharePanelIntent] = useState<"share" | "export">("share");
   const [recordDetailsOpen, setRecordDetailsOpen] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -135,7 +136,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "edit_record": {
-        router.push("/workspace?prompt=" + encodeURIComponent("I want to correct or update information in the care record. Help me describe what changed, when it happened, what we know, and what is still uncertain."));
+        router.push("/workspace/daily-care");
         return;
       }
       case "view_record_details": {
@@ -148,6 +149,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         try {
           window.localStorage.setItem("solenos_workspace_pinned", next ? "1" : "0");
           setIsPinned(next);
+          setActionNotice(next ? "This workspace is pinned on this device." : "This workspace is no longer pinned.");
         } catch {
           window.alert("This browser could not save the pin preference. No change was made.");
         }
@@ -158,6 +160,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         try {
           window.localStorage.setItem("solenos_workspace_archived", "1");
           setIsArchived(true);
+          setActionNotice("This workspace is archived on this device. Choose Restore from the menu to bring it back.");
         } catch {
           window.alert("This browser could not save the archive preference. No change was made.");
         }
@@ -167,6 +170,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         try {
           window.localStorage.removeItem("solenos_workspace_archived");
           setIsArchived(false);
+          setActionNotice("This workspace has been restored.");
         } catch {
           window.alert("This browser could not restore the workspace. No change was made.");
         }
@@ -309,6 +313,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             />
           )}
         </header>
+        {actionNotice && <p role="status" className="solenos-workspace-action-notice">{actionNotice}</p>}
         <main className="solenos-chat-main">
           {pathname === "/workspace" && isArchived ? (
             <section className="panel" aria-label="Archived workspace">
@@ -331,7 +336,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                   <X size={20} aria-hidden />
                 </button>
               </header>
-              <div className="solenos-record-details-content"><LCRCurrentUnderstanding /></div>
+              <div className="solenos-record-details-content"><CareRecordOverview /></div>
             </section>
           </div>
         )}
