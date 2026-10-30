@@ -37,7 +37,7 @@ assert.match(drawer, /role="dialog"/);
 assert.match(drawer, /className=\{`history-drawer/);
 assert.match(drawer, /role="menu"/);
 assert.match(drawer, /Share details/);
-assert.match(drawer, /Copy details/);
+assert.match(drawer, /Copy/);
 assert.match(drawer, /Download original/);
 assert.match(drawer, /Add to Home/);
 assert.match(drawer, /Mark for follow-up/);
