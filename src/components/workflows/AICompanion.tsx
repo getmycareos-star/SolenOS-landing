@@ -2,7 +2,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ScanLine, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
@@ -106,7 +107,9 @@ const STARTER_PROMPTS = [
   { icon: FileText, title: 'Prepare for an appointment', description: 'Organise observations and questions to take along.', prompt: 'Help me prepare clear questions for an upcoming care appointment.' },
 ]
 
-export default function Companion() {
+export default function Companion({ home = false }: { home?: boolean }) {
+  const router = useRouter()
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -256,7 +259,7 @@ export default function Companion() {
   }
 
   return (
-    <section className="companion-shell" aria-label="SolenOS AI Companion">
+    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS AI Companion">
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
@@ -265,6 +268,7 @@ export default function Companion() {
         <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
       </header>
 
+      {!home && (
       <section className="companion-purpose">
         <div className="companion-purpose-copy">
           <span className="companion-kicker">A space to think things through</span>
@@ -274,8 +278,10 @@ export default function Companion() {
         <div className="companion-boundary"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Your care record stays in your hands</strong><span>Suggestions here do not become Living Care Record facts automatically.</span></div></div>
       </section>
 
-      <AppointmentWorkspace />
+      )}
+      {!home && <AppointmentWorkspace />}
 
+      {!home && (
       <section className="companion-handoff" aria-labelledby="companion-handoff-title">
         <div className="companion-handoff-heading">
           <div className="companion-handoff-icon" aria-hidden="true"><ClipboardList size={21} /></div>
@@ -429,6 +435,7 @@ export default function Companion() {
         <CareHandoffSharing draft={handoffDraft} audience={handoffAudience} purpose={handoffPurpose} />
       </section>
 
+      )}
       {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
@@ -488,7 +495,17 @@ export default function Companion() {
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading} rows={2} />
-          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+          <div className="companion-composer-footer">
+            <div className="companion-add-wrap">
+              <button type="button" className="companion-add-button" aria-label="Add to care story" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
+              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Add to care story">
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace?compose=1") }}><span className="companion-add-icon"><ClipboardList size={17} /></span><span><strong>Add to care story</strong><small>Record an observation or care update</small></span></button>
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?upload=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Add reports, prescriptions or discharge papers</small></span></button>
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?capture=1") }}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Photograph a note or care information</small></span></button>
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?scan=1") }}><span className="companion-add-icon"><ScanLine size={17} /></span><span><strong>Scan document</strong><small>Capture a document and review extracted text</small></span></button>
+              </div>}
+            </div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
@@ -623,6 +640,49 @@ export default function Companion() {
           .companion-composer textarea { min-height:50px; font-size:16px; } .companion-input-hint { max-width:calc(100% - 98px); font-size:9px; } .companion-send { min-width:82px; min-height:42px; padding:8px 11px; } .companion-footer-note { font-size:9px; }
         }
         @media (prefers-reduced-motion:reduce) { .companion-typing i,.companion-send-spinner { animation:none; } .companion-starter,.companion-send,.companion-new { transition:none; } }
+
+        .companion-shell.is-home { width:100%; max-width:900px; height:100%; min-height:0; gap:0; padding:0 0 10px; }
+        .companion-shell.is-home .companion-topbar { flex:0 0 auto; padding:10px 4px 16px; border-bottom:1px solid #edf1ed; }
+        .companion-shell.is-home .companion-mark { width:34px; height:34px; flex-basis:34px; border-radius:11px; }
+        .companion-shell.is-home .companion-brand h2 { font-size:18px; font-weight:650; letter-spacing:-.02em; }
+        .companion-shell.is-home .companion-eyebrow { font-size:9px; letter-spacing:.09em; }
+        .companion-shell.is-home .companion-new { min-height:38px; padding:8px 11px; border-radius:999px; background:#f7faf6; }
+        .companion-shell.is-home .companion-workspace { display:block; flex:1 1 auto; min-height:0; margin:0; }
+        .companion-shell.is-home .companion-conversation { height:100%; min-height:0; border:0; border-radius:0; background:transparent; overflow-y:auto; }
+        .companion-shell.is-home .companion-empty { max-width:760px; margin:0 auto; padding:clamp(42px,9vh,100px) 20px 30px; }
+        .companion-shell.is-home .companion-empty-icon { width:42px; height:42px; border-radius:50%; }
+        .companion-shell.is-home .companion-empty-heading { margin-top:18px; }
+        .companion-shell.is-home .companion-empty-heading h3 { font-size:clamp(25px,3.5vw,34px); font-weight:600; letter-spacing:-.04em; }
+        .companion-shell.is-home .companion-empty-heading p { font-size:14px; }
+        .companion-shell.is-home .companion-starters { gap:10px; margin-top:28px; }
+        .companion-shell.is-home .companion-starter { padding:13px 15px; border-radius:13px; box-shadow:none; }
+        .companion-shell.is-home .companion-message-list { max-width:780px; margin:0 auto; padding:26px 18px 34px; }
+        .companion-shell.is-home .companion-message { margin-bottom:25px; }
+        .companion-shell.is-home .companion-bubble { border:0; border-radius:18px; background:#f3f5f2; padding:13px 17px; }
+        .companion-shell.is-home .companion-message.is-user .companion-bubble { background:#e7f0e5; }
+        .companion-shell.is-home .companion-composer-wrap { flex:0 0 auto; width:min(100%,800px); margin:0 auto; padding:0 12px; }
+        .companion-shell.is-home .companion-composer { border:1px solid #d7dfd6; border-radius:24px; padding:10px 12px 10px 16px; box-shadow:0 3px 18px rgba(30,50,35,.055); }
+        .companion-shell.is-home .companion-composer textarea { min-height:52px; max-height:190px; font-size:16px; }
+        .companion-shell.is-home .companion-composer-footer { border-top:0; padding-top:3px; }
+        .companion-shell.is-home .companion-send { min-width:42px; width:42px; height:42px; min-height:42px; padding:0; border-radius:50%; }
+        .companion-shell.is-home .companion-send span:last-child { display:none; }
+        .companion-shell.is-home .companion-footer-note { margin:7px 0 0; font-size:10px; }
+        .companion-add-wrap { position:relative; }
+        .companion-add-button { display:grid; place-items:center; width:38px; height:38px; border:1px solid #dce5da; border-radius:50%; background:#f7faf6; color:#314d36; cursor:pointer; }
+        .companion-add-button:hover { background:#edf5eb; }
+        .companion-add-menu { position:absolute; z-index:40; left:0; bottom:calc(100% + 10px); width:min(320px,calc(100vw - 48px)); padding:7px; border:1px solid #e0e7df; border-radius:16px; background:#fff; box-shadow:0 14px 40px rgba(25,45,30,.14); }
+        .companion-add-menu button { display:flex; align-items:center; gap:11px; width:100%; padding:11px 10px; border:0; border-radius:10px; background:transparent; text-align:left; color:#25372b; cursor:pointer; }
+        .companion-add-menu button:hover { background:#f4f8f3; }
+        .companion-add-icon { display:grid; place-items:center; flex:0 0 34px; width:34px; height:34px; border-radius:10px; background:#edf5ec; color:#547657; }
+        .companion-add-menu strong { display:block; font-size:13px; font-weight:700; }
+        .companion-add-menu small { display:block; margin-top:3px; color:#748077; font-size:11px; line-height:1.4; }
+        @media(max-width:600px) {
+          .companion-shell.is-home .companion-topbar { padding:6px 2px 12px; }
+          .companion-shell.is-home .companion-empty { padding:34px 10px 20px; }
+          .companion-shell.is-home .companion-starters { grid-template-columns:1fr; margin-top:20px; }
+          .companion-shell.is-home .companion-starter { padding:11px 12px; }
+          .companion-shell.is-home .companion-composer-wrap { padding:0 2px; }
+        }
       `}</style>
     </section>
   )
