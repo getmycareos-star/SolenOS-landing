@@ -1358,6 +1358,23 @@
   opacity: .45;
   cursor: not-allowed;
 }
+.lcr-related-situation-list {
+  display: grid;
+  gap: .35rem;
+  margin-top: .6rem;
+}
+.lcr-related-situation-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+  padding: .35rem 0;
+  border-top: 1px solid #e0e8e2;
+}
+.lcr-related-situation-list > div > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .lcr-source-statements {
   margin: .7rem 0;
   padding: .65rem .75rem;
