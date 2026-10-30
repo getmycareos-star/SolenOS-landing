@@ -16,6 +16,7 @@ export {
 export {
   getActiveCareSituation,
   listActiveCareSituations,
+  activateCareSituation,
   clearActiveCareSituation,
   clearActiveCareSituationMemoryCache,
   pauseActiveCareSituationSession,
