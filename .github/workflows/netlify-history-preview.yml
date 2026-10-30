@@ -1,0 +1,67 @@
+# Dedicated draft-only deploy for the History review; deliberately omits --prod.
+# Re-run after the repository Netlify token is configured to publish the review URL.
+# Token presence is checked in the deploy job; the value is never printed.
+name: Netlify History preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/components/app-shell/HistoryDrawer.tsx"
+      - "package.json"
+      - "package-lock.json"
+      - "netlify.toml"
+      - ".github/workflows/netlify-history-preview.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solenos-netlify-history-preview
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify History preview build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run product and safety regression checks
+        run: npm test
+      - name: Build Next.js application
+        run: npm run build
+
+  deploy-preview:
+    name: Publish non-production History preview
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: dfbe1cd8-6450-4ed7-b9d8-e3bb39a0acbe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Require Netlify credentials
+        shell: bash
+        run: |
+          if [[ -z "${NETLIFY_AUTH_TOKEN}" ]]; then
+            echo "::error::Missing GitHub Actions secret NETLIFY_AUTH_TOKEN."
+            exit 1
+          fi
+      - name: Build and publish a draft deploy (never production)
+        run: npx --yes netlify-cli@latest deploy --context deploy-preview --alias history-preview --build --site "$NETLIFY_SITE_ID" --json
