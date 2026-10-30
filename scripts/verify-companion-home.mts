@@ -28,6 +28,8 @@ assert.match(careSituationBrief, /\/change\/changes\//, "the brief must load per
 assert.match(careSituationBrief, /source_collection/, "brief sections must be derived from returned record provenance");
 assert.match(careSituationBrief, /isConflict/, "conflicting accounts must remain separately visible");
 assert.match(careSituationBrief, /isQuestionOrGap/, "uncertainties and missing information must remain visible");
+assert.match(careSituationBrief, /follow_up_links/, "open follow-ups must remain visible in the brief");
+assert.match(careSituationBrief, /decision_outcomes/, "recorded decisions and outcomes must remain visible in the brief");
 assert.match(careSituationBrief, /schema_status/, "the brief must disclose incomplete record-source coverage");
 assert.match(careSituationBrief, /\/workspace\/timeline/, "the brief must link to the full saved care timeline");
 const documents = read("src/app/workspace/documents/page.tsx");
