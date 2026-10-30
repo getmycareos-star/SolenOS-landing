@@ -1,5 +1,6 @@
 "use client";
 
+import "./workspace-design.css";
 import { AppShell } from "@/components/app-shell/AppShell";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { useEffect, useState, type ReactNode } from "react";
