@@ -208,7 +208,16 @@ function WorkspacePageInner() {
                             {statement.superseded_by_observation_ids.length > 0 && (
                               <small>Original statement preserved · superseded by {statement.superseded_by_observation_ids.length} later correction{statement.superseded_by_observation_ids.length === 1 ? "" : "s"}.</small>
                             )}
-                            <small>Submitted by authenticated caregiver · {statement.reported_at ? formatLastUpdated(statement.reported_at) : "report time unavailable"} · {statement.epistemic_status}</small>
+                            <small>
+                              {statement.occurred_at
+                                ? `Source event time: ${formatLastUpdated(statement.occurred_at)}`
+                                : statement.observed_at
+                                  ? `Observed: ${formatLastUpdated(statement.observed_at)}`
+                                  : statement.context || "Source event time not stated"}
+                              {" · "}Submitted by authenticated caregiver
+                              {" · "}Recorded {statement.reported_at ? formatLastUpdated(statement.reported_at) : "time unavailable"}
+                              {" · "}{statement.epistemic_status}
+                            </small>
                           </div>
                         ))}
                       </div>
