@@ -67,7 +67,7 @@ export function splitCareThreadWithAttribution(rawThread: string): CareThreadFra
   ).map((block) => block.trim()).filter(Boolean);
 
   let candidates: CareThreadFragment[] = [];
-  if (speakerBlocks.length >= 2) {
+  if (speakerBlocks.length >= 1) {
     candidates = speakerBlocks.map((block) => {
       const named = block.match(/^(?:\[[^\]]+\]\s*)?([A-Za-z][A-Za-z .'-]{0,40}):\s*([\s\S]*)$/);
       const bracketed = block.match(/^\[([^\]]+)\]:\s*([\s\S]*)$/);
