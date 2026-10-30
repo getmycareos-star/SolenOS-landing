@@ -1,13 +1,15 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { useState, useRef, useEffect, type ChangeEvent } from 'react'
+import { useRouter } from 'next/navigation'
+import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
+import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
 
 interface HandoffDraftItem {
   source_type: string
@@ -104,12 +106,22 @@ const HANDOFF_TEMPLATE_FALLBACK = {
 const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\s]*$/i
 
 const STARTER_PROMPTS = [
-  { icon: MessageCircle, title: 'Talk through a difficult moment', description: 'Sort out what happened and what might help next.', prompt: 'Help me think through a difficult moment in care.' },
-  { icon: Clock3, title: 'Make sense of a change', description: 'Separate what we know from what is still unclear.', prompt: 'Help me make sense of a recent change without jumping to conclusions.' },
-  { icon: Users, title: 'Keep everyone on the same page', description: 'Bring together care updates, outstanding questions, and what each family caregiver needs to know.', prompt: 'Help me prepare a family care coordination update using only the relevant information available in the Living Care Record. Separate documented facts from caregiver reports and unresolved questions. Identify open follow-up actions and what still needs confirmation. Do not invent missing details or change the Living Care Record.' },
+  { icon: MessageCircle, title: 'I need to talk it through', description: 'One thing at a time. No need to organise it first.', prompt: "I'm overwhelmed. Help me work through one thing at a time." },
+  { icon: Clock3, title: 'Something has changed', description: 'Sort what is known from what is still unclear.', prompt: 'Something has changed in care. Help me work out what we know and what is unclear.' },
+  { icon: FileText, title: 'Help me get ready', description: 'Prepare a few questions for a visit or handover.', prompt: 'Help me prepare for an upcoming care appointment or handover.' },
 ]
 
-export default function Companion() {
+export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
+  const router = useRouter()
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
+  const captureInputRef = useRef<HTMLInputElement>(null)
+  const cameraVideoRef = useRef<HTMLVideoElement>(null)
+  const cameraStreamRef = useRef<MediaStream | null>(null)
+  const [cameraMode, setCameraMode] = useState<'scan' | null>(null)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [capturedPages, setCapturedPages] = useState<File[]>([])
+  const [cameraStarting, setCameraStarting] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -126,10 +138,120 @@ export default function Companion() {
   const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const autoDraftSent = useRef(false)
   const pendingTurnId = useRef<string | null>(null)
   const pendingTurnText = useRef<string | null>(null)
+  const autoDraftSent = useRef(false)
   const personId = getPersonId()
+
+  const openDocumentIntake = (mode: DocumentIntakeMode) => {
+    // Invoke native pickers before scheduling React state updates. Mobile browsers
+    // require the picker call to remain directly inside the trusted user gesture.
+    if (mode === 'upload') {
+      uploadInputRef.current?.click()
+      setAddMenuOpen(false)
+      return
+    }
+    if (mode === 'capture') {
+      captureInputRef.current?.click()
+      setAddMenuOpen(false)
+      return
+    }
+    setAddMenuOpen(false)
+    setCapturedPages([])
+    setCameraError(null)
+    setCameraMode('scan')
+  }
+
+  useEffect(() => {
+    if (!cameraMode) return
+    let cancelled = false
+    setCameraStarting(true)
+    setCameraError(null)
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera access is not available in this browser. Try Upload document instead.')
+      setCameraStarting(false)
+      return
+    }
+    void navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+      .then(stream => {
+        if (cancelled) {
+          stream.getTracks().forEach(track => track.stop())
+          return
+        }
+        cameraStreamRef.current = stream
+        if (cameraVideoRef.current) {
+          cameraVideoRef.current.srcObject = stream
+          void cameraVideoRef.current.play().catch(() => setCameraError('The camera could not start. Check browser camera permission and try again.'))
+        }
+        setCameraStarting(false)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCameraStarting(false)
+          setCameraError('SolenOS could not access the camera. Allow camera permission in your browser settings, then try again.')
+        }
+      })
+    return () => {
+      cancelled = true
+      cameraStreamRef.current?.getTracks().forEach(track => track.stop())
+      cameraStreamRef.current = null
+    }
+  }, [cameraMode])
+
+  const closeCameraIntake = () => {
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop())
+    cameraStreamRef.current = null
+    setCameraMode(null)
+    setCapturedPages([])
+    setCameraError(null)
+  }
+
+  const captureCameraPage = () => {
+    const video = cameraVideoRef.current
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setCameraError('The camera is not ready yet. Wait a moment and try again.')
+      return
+    }
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const context = canvas.getContext('2d')
+    if (!context) {
+      setCameraError('This device could not capture the camera image. Try again or use Upload document.')
+      return
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob(blob => {
+      if (!blob) {
+        setCameraError('The photo could not be created. Please try again.')
+        return
+      }
+      const page = new File([blob], `solenos-scan-${Date.now()}-${capturedPages.length + 1}.jpg`, { type: 'image/jpeg', lastModified: Date.now() })
+      setCapturedPages(current => [...current, page])
+      setCameraError(null)
+      // Scan mode keeps the camera open until the caregiver reviews all captured pages.
+    }, 'image/jpeg', 0.92)
+  }
+
+  const finishCameraIntake = (files: File[], mode: 'scan') => {
+    if (!files.length) {
+      setCameraError('Capture at least one page before continuing.')
+      return
+    }
+    setPendingDocumentIntake(files, mode)
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop())
+    cameraStreamRef.current = null
+    setCameraMode(null)
+    router.push('/workspace/documents?intake=1')
+  }
+
+  const completeDocumentIntake = (event: ChangeEvent<HTMLInputElement>, mode: DocumentIntakeMode) => {
+    const files = Array.from(event.currentTarget.files ?? [])
+    event.currentTarget.value = ''
+    if (!files.length) return
+    setPendingDocumentIntake(files, mode)
+    router.push('/workspace/documents?intake=1')
+  }
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -171,12 +293,8 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
-    // Reuse the logical turn ID after an ambiguous network/response failure.
     if (!pendingTurnId.current || pendingTurnText.current !== submittedText) {
-      const randomId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `turn-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
-      pendingTurnId.current = randomId
+      pendingTurnId.current = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'turn-' + Date.now() + '-' + Math.random().toString(36).slice(2)
       pendingTurnText.current = submittedText
     }
     const clientTurnId = pendingTurnId.current
@@ -198,7 +316,6 @@ export default function Companion() {
       pendingTurnText.current = null
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
-      // Generic "blocked" verdicts also represent evidence limits, not emergencies.
       const isEmergency = isEmergencyCompanionResponse(response)
       if (isEmergency) setEmergency(true)
 
@@ -245,6 +362,18 @@ export default function Companion() {
   }
 
   useEffect(() => {
+    const prompt = initialPrompt?.trim()
+    if (!prompt) return
+    setInput(prompt)
+    setRequestError(null)
+    const params = new URLSearchParams(window.location.search)
+    params.delete('prompt')
+    const remainingQuery = params.toString()
+    const nextUrl = window.location.pathname + (remainingQuery ? '?' + remainingQuery : '') + window.location.hash
+    window.history.replaceState({}, '', nextUrl)
+  }, [initialPrompt])
+
+  useEffect(() => {
     if (autoDraftSent.current) return
     const draft = new URLSearchParams(window.location.search).get('draft')?.trim()
     if (!draft) return
@@ -257,10 +386,7 @@ export default function Companion() {
 
   const handleInput = (value: string) => {
     setInput(value)
-    if (pendingTurnText.current !== null && value.trim() !== pendingTurnText.current) {
-      pendingTurnId.current = null
-      pendingTurnText.current = null
-    }
+    if (pendingTurnText.current !== null && value.trim() !== pendingTurnText.current) { pendingTurnId.current = null; pendingTurnText.current = null }
     setRequestError(null)
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -282,15 +408,16 @@ export default function Companion() {
   }
 
   return (
-    <section className="companion-shell" aria-label="SolenOS AI Companion">
+    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS AI Companion">
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">SOLENOS · CARE SUPPORT</div><h2>AI Companion</h2></div>
+          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h2>Your care companion</h2></div>
         </div>
-        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
+        {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
 
+      {!home && (
       <section className="companion-purpose">
         <div className="companion-purpose-copy">
           <span className="companion-kicker">A space to think things through</span>
@@ -300,8 +427,10 @@ export default function Companion() {
         <div className="companion-boundary"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Your care record stays in your hands</strong><span>Suggestions here do not become Living Care Record facts automatically.</span></div></div>
       </section>
 
-      <AppointmentWorkspace />
+      )}
+      {!home && <AppointmentWorkspace />}
 
+      {!home && (
       <section className="companion-handoff" aria-labelledby="companion-handoff-title">
         <div className="companion-handoff-heading">
           <div className="companion-handoff-icon" aria-hidden="true"><ClipboardList size={21} /></div>
@@ -455,6 +584,7 @@ export default function Companion() {
         <CareHandoffSharing draft={handoffDraft} audience={handoffAudience} purpose={handoffPurpose} />
       </section>
 
+      )}
       {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
@@ -463,7 +593,7 @@ export default function Companion() {
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>START WHERE YOU ARE</span><h3>What’s on your mind today?</h3><p>Start with a question, a worry, or a few details. We can work through it step by step.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Tell me one small thing about today. A few words are enough. We can take it one step at a time.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
@@ -474,7 +604,7 @@ export default function Companion() {
                   </button>
                 })}
               </div>
-              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You can start with incomplete information. We’ll keep uncertainty visible.</p>
+              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
             </div>
           ) : (
             <div className="companion-message-list">
@@ -509,15 +639,48 @@ export default function Companion() {
       </div>
 
       <div className="companion-composer-wrap">
+        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'upload')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
+        <input ref={captureInputRef} type="file" accept="image/*" capture="environment" tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'capture')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
         <form className="companion-composer" aria-label="Send a message to Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading} rows={2} />
-          <div className="companion-composer-footer"><span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+          }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
+          <div className="companion-composer-footer">
+            <div className="companion-add-wrap">
+              <button type="button" className="companion-add-button" aria-label={addMenuOpen ? "Close attachment actions" : "Add document or image"} aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}>{addMenuOpen ? <X size={19} /> : <Plus size={19} />}</button>
+              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
+                <button type="button" role="menuitem" onClick={() => openDocumentIntake("upload")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file from this device</small></span></button>
+                <button type="button" role="menuitem" onClick={() => openDocumentIntake("capture")}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open the camera now</small></span></button>
+                <button type="button" role="menuitem" onClick={() => openDocumentIntake("scan")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Photograph pages, then review them</small></span></button>
+              </div>}
+            </div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
+
+      {cameraMode && (
+        <div role="dialog" aria-modal="true" aria-label={cameraMode === 'scan' ? 'Scan a document' : 'Take a photo'} onClick={event => { if (event.target === event.currentTarget) closeCameraIntake() }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(10,18,13,.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+          <section style={{ width: 'min(760px,100%)', maxHeight: '94dvh', overflow: 'auto', display: 'grid', gap: 12, padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--text)' }}>
+            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div><h3 style={{ margin: 0, fontSize: 18 }}>{cameraMode === 'scan' ? 'Scan document' : 'Take a photo'}</h3><p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{cameraMode === 'scan' ? 'Position each page in the frame. Capture all pages before reviewing.' : 'Position the care document in the frame and take a photo.'}</p></div>
+              <button type="button" onClick={closeCameraIntake} aria-label="Close camera" style={{ minWidth: 42, minHeight: 42, border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface)', color: 'var(--text)' }}>✕</button>
+            </header>
+            <div style={{ position: 'relative', background: '#111', borderRadius: 12, overflow: 'hidden', minHeight: 220 }}>
+              <video ref={cameraVideoRef} autoPlay playsInline muted style={{ display: 'block', width: '100%', maxHeight: '58dvh', objectFit: 'contain' }} />
+              {cameraStarting && <p style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', margin: 0, color: '#fff' }}>Opening camera…</p>}
+            </div>
+            {cameraError && <p role="alert" style={{ margin: 0, padding: 10, borderRadius: 8, background: 'rgba(180,50,50,.1)', color: 'var(--text)' }}>{cameraError}</p>}
+            {cameraMode === 'scan' && capturedPages.length > 0 && <p role="status" style={{ margin: 0, fontSize: 13 }}>{capturedPages.length} page{capturedPages.length === 1 ? '' : 's'} captured. Capture another page or continue to review.</p>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' }}>
+              <button type="button" onClick={captureCameraPage} disabled={cameraStarting || !!cameraError} style={{ minHeight: 46, flex: '1 1 160px', border: 0, borderRadius: 10, background: '#b9d5b5', color: '#17251c', fontWeight: 750 }}>{cameraMode === 'scan' ? 'Capture page' : 'Take photo'}</button>
+              {cameraMode === 'scan' && <button type="button" onClick={() => finishCameraIntake(capturedPages, 'scan')} disabled={!capturedPages.length} style={{ minHeight: 46, flex: '1 1 160px', border: '1px solid #8eae8a', borderRadius: 10, background: 'var(--surface)', color: 'var(--text)', fontWeight: 700 }}>Review {capturedPages.length || ''} page{capturedPages.length === 1 ? '' : 's'}</button>}
+              {cameraMode === 'scan' && capturedPages.length > 0 && <button type="button" onClick={() => setCapturedPages([])} style={{ minHeight: 42, border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface)', color: 'var(--text)', padding: '8px 12px' }}>Clear pages</button>}
+            </div>
+          </section>
+        </div>
+      )}
 
       <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
 
@@ -649,6 +812,66 @@ export default function Companion() {
           .companion-composer textarea { min-height:50px; font-size:16px; } .companion-input-hint { max-width:calc(100% - 98px); font-size:9px; } .companion-send { min-width:82px; min-height:42px; padding:8px 11px; } .companion-footer-note { font-size:9px; }
         }
         @media (prefers-reduced-motion:reduce) { .companion-typing i,.companion-send-spinner { animation:none; } .companion-starter,.companion-send,.companion-new { transition:none; } }
+
+         .companion-shell.is-home { width:100%; max-width:860px; height:100%; min-height:0; gap:0; padding:0 0 10px; }
+        .companion-shell.is-home .companion-topbar { flex:0 0 auto; padding:10px 4px 16px; border-bottom:1px solid #edf1ed; }
+        .companion-shell.is-home .companion-mark { width:34px; height:34px; flex-basis:34px; border-radius:11px; }
+        .companion-shell.is-home .companion-brand h2 { font-size:18px; font-weight:650; letter-spacing:-.02em; }
+        .companion-shell.is-home .companion-eyebrow { font-size:9px; letter-spacing:.09em; }
+        .companion-shell.is-home .companion-new { min-height:38px; padding:8px 11px; border-radius:999px; background:#f7faf6; }
+        .companion-shell.is-home .companion-workspace { display:block; flex:1 1 auto; min-height:0; margin:0; }
+        .companion-shell.is-home .companion-conversation { height:100%; min-height:0; border:0; border-radius:0; background:transparent; overflow-y:auto; }
+         .companion-shell.is-home .companion-empty { max-width:840px; margin:0 auto; padding:clamp(32px,7vh,72px) 22px 30px; }
+        .companion-shell.is-home .companion-empty-icon { width:42px; height:42px; border-radius:50%; }
+        .companion-shell.is-home .companion-empty-heading { margin-top:18px; }
+        .companion-shell.is-home .companion-empty-heading h3 { max-width:700px; font-size:clamp(26px,3.5vw,34px); font-weight:600; letter-spacing:-.035em; line-height:1.16; }
+        .companion-shell.is-home .companion-empty-heading p { max-width:650px; font-size:16px; line-height:1.7; }
+        .companion-shell.is-home .companion-starters { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:24px; }
+        .companion-shell.is-home .companion-starter { min-height:104px; padding:16px; border-radius:14px; box-shadow:none; }
+        .companion-shell.is-home .companion-starter-copy strong { font-size:14px; line-height:1.4; }
+        .companion-shell.is-home .companion-starter-copy>span { font-size:13px; line-height:1.55; }
+        .companion-shell.is-home .companion-starter:focus-visible { outline:3px solid #8caf8d; outline-offset:3px; }
+         .companion-shell.is-home .companion-message-list { max-width:760px; margin:0 auto; padding:30px 22px 42px; }
+        .companion-shell.is-home .companion-message { margin-bottom:25px; }
+         .companion-shell.is-home .companion-message.is-assistant .companion-bubble { border:0; border-radius:0; background:transparent; padding:2px 0; }
+        .companion-shell.is-home .companion-message.is-user .companion-bubble { border:0; border-radius:18px; background:#f1f2ef; padding:12px 16px; }
+        .companion-shell.is-home .companion-composer-wrap { flex:0 0 auto; width:min(100%,860px); margin:0 auto; padding:0 12px; }
+        .companion-shell.is-home .companion-composer { border:1px solid #d7dfd6; border-radius:24px; padding:10px 12px 10px 16px; box-shadow:0 3px 18px rgba(30,50,35,.055); }
+        .companion-shell.is-home .companion-composer textarea { min-height:52px; max-height:190px; font-size:16px; }
+        .companion-shell.is-home .companion-composer-footer { border-top:0; padding-top:3px; }
+        .companion-shell.is-home .companion-send { min-width:42px; width:42px; height:42px; min-height:42px; padding:0; border-radius:50%; }
+        .companion-shell.is-home .companion-send span:last-child { display:none; }
+        .companion-shell.is-home .companion-footer-note { margin:9px 0 0; font-size:11px; line-height:1.55; }
+        .companion-shell.is-home .companion-empty { min-height:100%; display:flex; flex-direction:column; justify-content:center; padding-top:clamp(22px,5vh,54px); padding-bottom:clamp(22px,5vh,54px); }
+        .companion-shell.is-home .companion-empty-heading h3 { max-width:660px; color:#24352a; }
+        .companion-shell.is-home .companion-empty-heading p { max-width:590px; color:#647267; }
+        .companion-shell.is-home .companion-starter { min-height:116px; border:1px solid #e0e8de; background:#fff; box-shadow:0 3px 14px rgba(35,55,39,.035); transition:border-color .16s ease,background .16s ease,transform .16s ease; }
+        .companion-shell.is-home .companion-starter:hover { border-color:#b9cfb5; background:#fbfdf9; transform:translateY(-1px); }
+        .companion-shell.is-home .companion-starter-copy strong { color:#2c4031; font-size:14px; }
+        .companion-shell.is-home .companion-starter-copy>span { color:#718074; }
+        .companion-shell.is-home .companion-composer { border:1px solid #d5e0d3; border-radius:22px; padding:12px 14px 11px 17px; box-shadow:0 8px 28px rgba(36,57,39,.07); }
+        .companion-shell.is-home .companion-composer:focus-within { border-color:#a5c2a1; box-shadow:0 0 0 4px rgba(166,194,161,.16),0 8px 28px rgba(36,57,39,.06); }
+        .companion-shell.is-home .companion-composer textarea { min-height:58px; font-size:16px; line-height:1.65; }
+        .companion-shell.is-home .companion-send { background:#c7dfc4; border-color:#a9c7a6; color:#203927; }
+        .companion-shell.is-home .companion-input-hint { font-size:11px; color:#7c897d; }
+        .companion-add-wrap { position:relative; }
+        .companion-add-button { display:grid; place-items:center; width:38px; height:38px; border:1px solid #dce5da; border-radius:50%; background:#f7faf6; color:#314d36; cursor:pointer; }
+        .companion-add-button:hover { background:#edf5eb; }
+        .companion-add-menu { position:absolute; z-index:40; left:0; bottom:calc(100% + 10px); width:min(320px,calc(100vw - 48px)); padding:7px; border:1px solid #e0e7df; border-radius:16px; background:#fff; box-shadow:0 14px 40px rgba(25,45,30,.14); }
+        .companion-add-menu button { display:flex; align-items:center; gap:11px; width:100%; padding:11px 10px; border:0; border-radius:10px; background:transparent; text-align:left; color:#25372b; cursor:pointer; }
+        .companion-add-menu button:hover { background:#f4f8f3; }
+        .companion-add-icon { display:grid; place-items:center; flex:0 0 34px; width:34px; height:34px; border-radius:10px; background:#edf5ec; color:#547657; }
+        .companion-add-menu strong { display:block; font-size:13px; font-weight:700; }
+        .companion-add-menu small { display:block; margin-top:3px; color:#748077; font-size:11px; line-height:1.4; }
+        @media(max-width:600px) {
+          .companion-shell.is-home .companion-topbar { padding:6px 2px 12px; }
+          .companion-shell.is-home .companion-empty { padding:26px 10px 18px; }
+          .companion-shell.is-home .companion-starters { grid-template-columns:1fr; gap:9px; margin-top:18px; }
+          .companion-shell.is-home .companion-starter { min-height:76px; padding:13px 14px; }
+          .companion-shell.is-home .companion-empty-heading h3 { font-size:26px; }
+          .companion-shell.is-home .companion-empty-heading p { font-size:15px; }
+          .companion-shell.is-home .companion-composer-wrap { padding:0 2px; }
+        }
       `}</style>
     </section>
   )

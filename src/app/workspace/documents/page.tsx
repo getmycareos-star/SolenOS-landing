@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
-  Camera,
   CheckCircle2,
   Download,
   FileImage,
@@ -12,13 +11,12 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  Upload,
   X,
 } from "lucide-react";
 
-import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
+import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
 
 type EvidenceRecord = {
   id: string;
@@ -41,13 +39,6 @@ type DocumentItem = {
   status: string;
   extractedText: string;
   evidence: EvidenceRecord;
-  duplicateDetected: boolean;
-  duplicateOfEvidenceId: string | null;
-  extractionStatus: string;
-  originalBinaryAvailable: boolean | null;
-  freshnessStatus: string;
-  completenessStatus: string;
-  missingFields: string[];
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
@@ -57,8 +48,6 @@ type ReviewPage = { file: File; text: string; note: string | null; reviewed: boo
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_FILES = ".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif";
-
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
   if (value && typeof value === "object") return value;
   if (typeof value === "string") {
@@ -93,28 +82,6 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     status: item.evidence_status || "recorded",
     extractedText: item.source_text || "",
     evidence: item,
-    duplicateDetected: meta.duplicate_detected === true,
-    duplicateOfEvidenceId: asString(meta.duplicate_of_evidence_id) || null,
-    extractionStatus: asString(
-      (meta.source_integrity as Record<string, unknown> | undefined)?.text_extraction_status,
-    ) || (item.source_text?.trim() ? "text_available" : "unavailable"),
-    originalBinaryAvailable: (() => {
-      const value = (meta.source_integrity as Record<string, unknown> | undefined)?.original_binary_available;
-      return typeof value === "boolean" ? value : null;
-    })(),
-    freshnessStatus: asString(
-      (meta.source_integrity as Record<string, unknown> | undefined)?.freshness_status,
-    ) || "not_assessed",
-    completenessStatus: asString(
-      (meta.source_integrity as Record<string, unknown> | undefined)?.completeness_status,
-    ) || "not_assessed",
-    missingFields: (() => {
-      const assessment = (meta.source_integrity as Record<string, unknown> | undefined)?.completeness_assessment;
-      const fields = assessment && typeof assessment === "object"
-        ? (assessment as Record<string, unknown>).missing_fields
-        : null;
-      return Array.isArray(fields) ? fields.filter((field): field is string => typeof field === "string") : [];
-    })(),
   };
 }
 
@@ -296,8 +263,7 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
 }
 
 export default function DocumentsPage() {
-  const fileInput = useRef<HTMLInputElement>(null);
-  const cameraInput = useRef<HTMLInputElement>(null);
+  const [intakeMode, setIntakeMode] = useState<DocumentIntakeMode | null>(null);
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
@@ -356,11 +322,11 @@ export default function DocumentsPage() {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return documents;
     return documents.filter((doc) =>
-      [doc.title, doc.mimeType, doc.status, doc.extractedText, doc.duplicateDetected ? "duplicate" : "original", doc.extractionStatus].some((value) => value.toLowerCase().includes(normalized)),
+      [doc.title, doc.mimeType, doc.status, doc.extractedText].some((value) => value.toLowerCase().includes(normalized)),
     );
   }, [documents, query]);
 
-  const handleFiles = async (fileList: FileList | null) => {
+  const handleFiles = async (fileList: FileList | File[] | null) => {
     const files = Array.from(fileList || []);
     if (!files.length) return;
     setUploadMessage(null);
@@ -383,10 +349,24 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
     } finally {
       setPreparingScan(false);
-      if (fileInput.current) fileInput.current.value = "";
-      if (cameraInput.current) cameraInput.current.value = "";
     }
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("intake") !== "1") return;
+    params.delete("intake");
+    const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
+    window.history.replaceState({}, "", next);
+
+    const pending = consumePendingDocumentIntake();
+    if (!pending?.files.length) {
+      setUploadMessage({ kind: "error", text: "The selected file or photo was not available after opening Documents. Return to Companion and try again." });
+      return;
+    }
+    setIntakeMode(pending.mode);
+    void handleFiles(pending.files);
+  }, []);
 
   const prepareImagePage = async (index: number) => {
     const page = reviewPages[index];
@@ -475,6 +455,7 @@ export default function DocumentsPage() {
       }
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
+      setIntakeMode(null);
       setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Scanned statements remain source evidence, not verified LCR facts.` });
       await loadDocuments(true);
     } catch {
@@ -517,27 +498,6 @@ export default function DocumentsPage() {
     link.remove();
   };
 
-  const aiDocuments = useMemo(() => {
-    const selected = documents.find((doc) => doc.id === selectedId);
-    return [
-      ...(selected ? [selected] : []),
-      ...documents.filter((doc) => doc.id !== selectedId),
-    ].slice(0, 10);
-  }, [documents, selectedId]);
-
-  const aiContext = useMemo(() => aiDocuments.map((doc) =>
-    [
-      "Document ID: " + doc.id,
-      "Filename: " + doc.title,
-      "MIME type: " + doc.mimeType,
-      "Saved at: " + (doc.uploadedAt || "unknown"),
-      "Storage status: " + doc.status,
-      "Available extracted text: " + (doc.extractedText.trim() || "No extracted text is stored for this document."),
-    ].join("\n"),
-  ).join("\n\n").slice(0, 3000), [aiDocuments]);
-
-  const aiEvidenceIds = useMemo(() => aiDocuments.map((doc) => doc.id), [aiDocuments]);
-
   return (
     <div className="mobile-screen" style={{ gap: 18, paddingBottom: 28 }}>
       <header className="mobile-page-head" style={{ marginBottom: 0 }}>
@@ -556,17 +516,10 @@ export default function DocumentsPage() {
           </button>
         </div>
 
-        <input ref={fileInput} type="file" accept={ACCEPTED_FILES} multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
-        <input ref={cameraInput} type="file" accept="image/*" capture="environment" multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 10, marginTop: 16 }}>
-          <button type="button" onClick={() => cameraInput.current?.click()} disabled={uploading || preparingScan} style={{ width: "100%", minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><Camera size={19} />Snap &amp; scan with camera</button>
-          <button type="button" onClick={() => fileInput.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)", color: "var(--text)", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><Upload size={19} />Upload files / pages</button>
-        </div>
-        <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary)" }}>Use your phone camera or select multiple files/pages. Maximum 10 MiB per file.</p>
         {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Extracting readable text…</p>}
         {reviewPages.length > 0 && <section aria-label="Review extracted text before saving" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
-          <h3 style={{ margin: 0, fontSize: 17 }}>Review scan and extracted text</h3>
-          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You can combine two or more reviewed image pages into one PDF. SolenOS also saves each original page unchanged for source traceability.</p>
+          <h3 style={{ margin: 0, fontSize: 17 }}>Review before saving</h3>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Check each captured page, add more pages if needed, then review the text before saving the document." : "Check the selected file or photo. You can add more pages, correct extracted text and review everything before saving."} Original files are preserved.</p>
           <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine reviewed image pages into one PDF</button>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
@@ -657,39 +610,12 @@ export default function DocumentsPage() {
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontWeight: 700, overflowWrap: "anywhere", fontSize: 14 }}>{doc.title}</span>
                   <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</span>
-                  <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{doc.extractedText.trim() ? "Text available for document understanding" : doc.originalBinaryAvailable === false ? "Original file missing · text not available" : "Original file stored · text not available"}</span>
-                  {doc.originalBinaryAvailable === false && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#a33" }}>Original file unavailable. The evidence record remains, but the source binary is missing.</span>}
-                  {doc.originalBinaryAvailable === true && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>Original file stored · byte integrity is checked when opened.</span>}
-                  {doc.freshnessStatus !== "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: doc.freshnessStatus === "stale" || doc.freshnessStatus === "expired" || doc.freshnessStatus === "historical" ? "#a33" : "var(--text-secondary)" }}>Freshness: {doc.freshnessStatus} under an explicit source policy.</span>}
-                  {doc.freshnessStatus === "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>Freshness has not been assessed under a source-specific policy.</span>}
-                  {doc.completenessStatus !== "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: doc.missingFields.length > 0 ? "#8a5a18" : "var(--text-secondary)" }}>Completeness: {doc.completenessStatus}{doc.missingFields.length > 0 ? ` · Missing: ${doc.missingFields.join(", ")}` : ""}.</span>}
-                  {doc.completenessStatus === "not_assessed" && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>Completeness has not been assessed for a declared purpose.</span>}
-                  {doc.duplicateDetected && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#8a5a18" }}>Exact binary duplicate of an earlier upload{doc.duplicateOfEvidenceId ? ` · original record ${doc.duplicateOfEvidenceId}` : ""}. Both uploads remain preserved.</span>}
+                  <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{doc.extractedText.trim() ? "Text available for document understanding" : "Original saved · text not available"}</span>
                 </span>
                 <span aria-hidden="true" style={{ flexShrink: 0, fontSize: 12, color: "var(--text-secondary)" }}>Open</span>
               </button>
             ))}
           </div>
-        )}
-      </section>
-
-      <section aria-label="Document intelligence" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <span style={{ width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 9, background: "var(--bg)", flexShrink: 0 }}><ShieldCheck size={20} /></span>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Document intelligence</h2>
-            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>Review saved documents, compare available wording, dates and instructions, and surface changes or contradictions for caregiver review. Relevant saved document evidence can also support the AI Companion. Suggestions remain reviewable and do not silently rewrite the Living Care Record.</p>
-          </div>
-        </div>
-        {documents.length === 0 ? <p style={{ margin: "12px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Save a document first so the document specialist can use its saved evidence rather than guessing.</p> : (
-          <QwenAssistPanel
-            title="Ask about your documents"
-            description="Ask in your own words. Qwen answers from available saved document evidence, can compare wording and flag possible contradictions, and cannot silently turn scanned statements into verified LCR facts."
-            defaultWorkflow="document"
-            compact
-            contextText={aiContext}
-            evidenceIds={aiEvidenceIds}
-          />
         )}
       </section>
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Activity,
   AlertCircle,
@@ -9,20 +8,14 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  Copy,
-  Download,
   FileText,
   Handshake,
-  MoreHorizontal,
-  PanelLeftOpen,
-  Plus,
   RefreshCw,
   Search,
-  Share2,
   ShieldCheck,
   X,
 } from "lucide-react";
-import { ensureAnonymousSession, getBlob, getJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON } from "@/api/client";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
@@ -621,33 +614,6 @@ function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
   };
 }
 
-function recordText(record: HistoryRecord, compact = false): string {
-  const content = parseDescription(record.description);
-  const safeContent = compact && content.length > 4000
-    ? content.slice(0, 4000) + "\n[Content shortened for sharing. Open the original record for the full text.]"
-    : content;
-  const lines = [
-    record.title,
-    categoryLabel(categoryFor(record), record.event_type),
-    "",
-    record.source_kind === "care-event" ? "Original care event:" :
-      record.source_kind === "document" ? "Document record and extracted text:" :
-      record.source_kind === "appointment" ? "Saved appointment workspace:" :
-      record.source_kind === "lcr-revision" ? "Living Care Record revision:" :
-      record.source_kind === "decision" ? "Recorded care decision:" :
-      record.source_kind === "outcome" ? "Recorded outcome:" : "Handoff record:",
-    safeContent || "No additional text was saved with this record.",
-    "",
-    "Event time: " + formatDateTime(record.occurred_at),
-    "Recorded in SolenOS: " + formatDateTime(record.recorded_at),
-    "Status: " + (record.status || "Not specified"),
-    "Time provenance: " + (record.time_provenance || "Not recorded"),
-    "Evidence references: " + (record.evidence_ids?.length ? record.evidence_ids.join(", ") : "None attached"),
-    ...(record.source_details ?? []).map((field) => field.label + ": " + field.value),
-  ];
-  return lines.join("\n");
-}
-
 function eventMatchesFilter(record: HistoryRecord, filter: FilterKey): boolean {
   if (filter === "all") return true;
   const category = categoryFor(record);
@@ -667,21 +633,17 @@ function CategoryIcon({ category }: { category: HistoryCategory }) {
 }
 
 export function HistoryDrawer() {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const open = true;
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [menuId, setMenuId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
-
   const loadHistory = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     else setLoading(true);
@@ -841,24 +803,7 @@ export function HistoryDrawer() {
     if (open && !hasLoaded && !loading) void loadHistory();
   }, [open, hasLoaded, loading, loadHistory]);
 
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
 
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setMenuId(null);
-      }
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
 
   const visibleRecords = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -895,74 +840,7 @@ export function HistoryDrawer() {
 
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
 
-  const closeDrawer = () => {
-    setOpen(false);
-    setMenuId(null);
-  };
-
-  const copyRecord = async (record: HistoryRecord) => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(recordText(record));
-      setActionMessage("Record details copied.");
-    } catch {
-      setActionMessage("Copy is unavailable in this browser. Try Download record instead.");
-    }
-    setMenuId(null);
-  };
-
-  const downloadRecord = async (record: HistoryRecord) => {
-    if (record.source_kind === "document" && record.evidence_id) {
-      try {
-        const blob = await getBlob("/upload/" + encodeURIComponent(record.evidence_id));
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = record.original_filename || "care-document";
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        setActionMessage("Original document download started.");
-      } catch {
-        setActionMessage("The original document could not be retrieved. Its saved evidence record remains in history.");
-      }
-      setMenuId(null);
-      return;
-    }
-
-    const blob = new Blob([recordText(record)], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = (record.title || "care-record").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() + ".txt";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setActionMessage("Record download started.");
-    setMenuId(null);
-  };
-
-  const shareRecord = async (record: HistoryRecord) => {
-    const text = recordText(record, true);
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: record.title, text });
-        setActionMessage("Share sheet opened.");
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setActionMessage("Sharing is unavailable here; record details copied instead.");
-      } else {
-        setActionMessage("Sharing is unavailable in this browser. Try Download record instead.");
-      }
-    } catch (cause) {
-      if (!(cause instanceof DOMException && cause.name === "AbortError")) {
-        setActionMessage("The record could not be shared from this browser.");
-      }
-    }
-    setMenuId(null);
-  };
+  const closeDrawer = () => setSelectedId(null);
 
   const selectedDescriptionHeading = selectedRecord?.source_kind === "document"
     ? "Extracted text"
@@ -980,30 +858,9 @@ export function HistoryDrawer() {
 
   return (
     <>
-      <button
-        type="button"
-        className="history-trigger"
-        aria-label="Open care history"
-        aria-expanded={open}
-        aria-controls="solenos-history-drawer"
-        onClick={() => setOpen(true)}
-      >
-        <PanelLeftOpen size={21} aria-hidden />
-      </button>
-
-      {open && (
-        <div
-          className="history-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeDrawer();
-          }}
-        >
-          <aside
+      <aside
             id="solenos-history-drawer"
-            className="history-drawer"
-            role="dialog"
-            aria-modal="true"
+            className={`history-drawer${selectedRecord ? " is-detail" : ""}`}
             aria-label="Care history"
           >
             <header className="history-drawer-header">
@@ -1024,23 +881,8 @@ export function HistoryDrawer() {
                   <strong>{selectedRecord ? "Care record" : "Care history"}</strong>
                   <span>{selectedRecord ? "Saved source information and record details" : "A chronological view across your saved care records"}</span>
                 </div>
-                <button type="button" className="history-icon-button" aria-label="Close care history" onClick={closeDrawer}>
-                  <X size={19} aria-hidden />
-                </button>
+
               </div>
-              {!selectedRecord && (
-                <button
-                  type="button"
-                  className="history-new-entry"
-                  onClick={() => {
-                    closeDrawer();
-                    router.push("/workspace?compose=1");
-                  }}
-                >
-                  <Plus size={17} aria-hidden />
-                  New care entry
-                </button>
-              )}
             </header>
 
             {selectedRecord ? (
@@ -1109,11 +951,6 @@ export function HistoryDrawer() {
                   <span>Original information is shown separately from recorded metadata. A missing field is not treated as proof that something did not happen. Related events are not assumed to share a cause.</span>
                 </section>
 
-                <div className="history-detail-actions">
-                  <button type="button" onClick={() => void shareRecord(selectedRecord)}><Share2 size={16} aria-hidden />Share details</button>
-                  <button type="button" onClick={() => void copyRecord(selectedRecord)}><Copy size={16} aria-hidden />Copy</button>
-                  <button type="button" onClick={() => void downloadRecord(selectedRecord)}><Download size={16} aria-hidden />{selectedRecord.source_kind === "document" ? "Download original" : "Download"}</button>
-                </div>
               </div>
             ) : (
               <>
@@ -1165,9 +1002,8 @@ export function HistoryDrawer() {
 
                   {sourceWarnings.length > 0 && !loading && (
                     <div className="history-source-warning" role="status">
-                      <strong>Some history sources are unavailable</strong>
-                      <ul>{sourceWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
-                      <span>Records from available sources are still shown. An unavailable source is not treated as an empty history.</span>
+                      <strong>Some care history could not be loaded</strong>
+                      <span>The entries we could retrieve are still shown. Other entries may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
                     </div>
                   )}
 
@@ -1189,7 +1025,7 @@ export function HistoryDrawer() {
                     <div className="history-empty">
                       <HistoryEmptyIcon />
                       <strong>{records.length ? "No matching records" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : "No saved care records were returned from the available sources. SolenOS will not create example history."}</p>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
@@ -1203,13 +1039,12 @@ export function HistoryDrawer() {
                             {group.records.map((record) => {
                               const category = categoryFor(record);
                               const description = parseDescription(record.description);
-                              const menuOpen = menuId === record.id;
                               return (
                                 <article key={record.id} className="history-event-card">
                                   <button
                                     type="button"
                                     className="history-event-open"
-                                    onClick={() => { setSelectedId(record.id); setMenuId(null); }}
+                                    onClick={() => setSelectedId(record.id)}
                                     aria-label={"Open record: " + record.title}
                                   >
                                     <span className="history-event-topline">
@@ -1223,25 +1058,6 @@ export function HistoryDrawer() {
                                       <span className="history-event-flag">Flagged for follow-up</span>
                                     )}
                                   </button>
-                                  <div className="history-event-menu-wrap">
-                                    <button
-                                      type="button"
-                                      className="history-icon-button history-event-menu-trigger"
-                                      aria-label={"Actions for " + record.title}
-                                      aria-haspopup="menu"
-                                      aria-expanded={menuOpen}
-                                      onClick={() => setMenuId(menuOpen ? null : record.id)}
-                                    >
-                                      <MoreHorizontal size={19} aria-hidden />
-                                    </button>
-                                    {menuOpen && (
-                                      <div className="history-action-menu" role="menu" aria-label={"Actions for " + record.title}>
-                                        <button type="button" role="menuitem" onClick={() => void shareRecord(record)}><Share2 size={16} aria-hidden />Share details</button>
-                                        <button type="button" role="menuitem" onClick={() => void copyRecord(record)}><Copy size={16} aria-hidden />Copy details</button>
-                                        <button type="button" role="menuitem" onClick={() => void downloadRecord(record)}><Download size={16} aria-hidden />{record.source_kind === "document" ? "Download original" : "Download record"}</button>
-                                      </div>
-                                    )}
-                                  </div>
                                 </article>
                               );
                             })}
@@ -1259,15 +1075,7 @@ export function HistoryDrawer() {
               </>
             )}
 
-            {actionMessage && (
-              <div className="history-action-status" role="status">
-                <span>{actionMessage}</span>
-                <button type="button" aria-label="Dismiss message" onClick={() => setActionMessage(null)}><X size={14} aria-hidden /></button>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
+      </aside>
     </>
   );
 }
