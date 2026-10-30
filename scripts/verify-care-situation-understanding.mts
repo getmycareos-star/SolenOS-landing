@@ -344,6 +344,12 @@ async function main() {
       false,
       "an unrelated new care topic must not be linked to the held walking/eating thread",
     );
+    assert.equal(
+      unrelated.baseline_comparison.has_comparable_prior,
+      false,
+      "a prior in another care domain must not make the new topic's baseline appear known",
+    );
+    assert.equal(unrelated.baseline_comparison.mode, "initial_assessment");
 
     const related = buildCareRealitySituationModel({
       situation: second.situation,

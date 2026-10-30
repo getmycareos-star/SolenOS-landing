@@ -144,13 +144,19 @@ export function buildCareRealitySituationModel(params: {
 
   const baselineFromText = latest ? extractBaselineHint(latest) : null;
   const baseline =
-    baseline_comparison.known_baseline[0] ||
+    (baseline_comparison.has_comparable_prior
+      ? baseline_comparison.known_baseline[0]
+      : null) ||
     params.baselineChangeNote?.trim() ||
     baselineFromText ||
-    situation.familiarity_baseline?.[0]?.trim() ||
-    params.crs?.current_understanding?.find((h) =>
-      /\b(?:usual|normally|used to|before)\b/i.test(h),
-    ) ||
+    (baseline_comparison.has_comparable_prior
+      ? situation.familiarity_baseline?.[0]?.trim()
+      : null) ||
+    (baseline_comparison.has_comparable_prior
+      ? params.crs?.current_understanding?.find((h) =>
+          /\b(?:usual|normally|used to|before)\b/i.test(h),
+        )
+      : null) ||
     null;
 
   const observed_changes: string[] = [];

@@ -257,6 +257,22 @@ function inferDomain(text: string): BaselineDomain {
   return "general";
 }
 
+/** Prior memory is comparable only when the current capture shares a topic. */
+function isTopicRelated(priorText: string, currentText: string): boolean {
+  const sharedTerms = tokenOverlap(contentTokens(priorText), contentTokens(currentText));
+  if (sharedTerms > 0) return true;
+  const priorDomain = inferDomain(priorText);
+  const currentDomain = inferDomain(currentText);
+  const explicitContinuation = /\\b(?:still|again|same|continues?|continuing|since then|that|it)\\b/i.test(
+    currentText,
+  );
+  return (
+    priorDomain !== "general" &&
+    priorDomain === currentDomain &&
+    explicitContinuation
+  );
+}
+
 function isNonRecipientBaselineNoise(clause: string): boolean {
   return (
     looksLikeContributorLoadFragment(clause) ||
@@ -399,13 +415,6 @@ export function compareAgainstBaseline(params: {
     const habitual = extractHabitualSpan(c);
     if (habitual && BASELINE_CUE.test(c) && !isNonRecipientBaselineNoise(habitual)) {
       baselineClauses.push(habitual);
-      if (
-        !known_baseline.some((b) =>
-          b.toLowerCase().includes(habitual.toLowerCase().slice(0, 24)),
-        )
-      ) {
-        known_baseline.push(habitual.endsWith(".") ? habitual : `${habitual}.`);
-      }
     }
     if (isChangeClause(c)) {
       const changeSpan = extractChangeSpan(c);
@@ -415,13 +424,31 @@ export function compareAgainstBaseline(params: {
     }
   }
 
-  for (const f of durableFacts) {
+  const latestFocus =
+    changeClauses[0] ??
+    clauses.find((clause) => !isNonRecipientBaselineNoise(clause)) ??
+    latest;
+  const relevantBaselineClauses = baselineClauses.filter(
+    (baselineClause) =>
+      changeClauses.length === 0 ||
+      changeClauses.some((changeClause) => isTopicRelated(baselineClause, changeClause)),
+  );
+  const relevantDurableFacts = durableFacts.filter(
+    (fact) => latestFocus && isTopicRelated(fact.statement, latestFocus),
+  );
+  for (const baselineClause of relevantBaselineClauses) {
+    const line = baselineClause.endsWith(".") ? baselineClause : `${baselineClause}.`;
+    if (!known_baseline.some((item) => item.toLowerCase() === line.toLowerCase())) {
+      known_baseline.push(line);
+    }
+  }
+  for (const fact of relevantDurableFacts) {
     if (
       !known_baseline.some(
-        (b) => b.toLowerCase().slice(0, 36) === f.statement.toLowerCase().slice(0, 36),
+        (item) => item.toLowerCase().slice(0, 36) === fact.statement.toLowerCase().slice(0, 36),
       )
     ) {
-      known_baseline.push(f.statement);
+      known_baseline.push(fact.statement);
     }
   }
 
@@ -455,9 +482,13 @@ export function compareAgainstBaseline(params: {
       heldPriorFacts.push(f.endsWith(".") ? f : `${f}.`);
     }
   }
-  const has_held_care_memory = heldPriorFacts.length > 0;
+  const relevantHeldPriorFacts = heldPriorFacts.filter(
+    (fact) => latestFocus && isTopicRelated(fact, latestFocus),
+  );
   const has_comparable_prior =
-    durableFacts.length > 0 || baselineClauses.length > 0 || has_held_care_memory;
+    relevantDurableFacts.length > 0 ||
+    relevantBaselineClauses.length > 0 ||
+    relevantHeldPriorFacts.length > 0;
   const mode: "initial_assessment" | "change_detection" = has_comparable_prior
     ? "change_detection"
     : "initial_assessment";
@@ -517,7 +548,7 @@ export function compareAgainstBaseline(params: {
 
     let previous: string | null = null;
     let bestScore = 0;
-    for (const b of [...baselineClauses, ...durableFacts.map((f) => f.statement)]) {
+    for (const b of [...relevantBaselineClauses, ...relevantDurableFacts.map((f) => f.statement)]) {
       if (isNonRecipientBaselineNoise(b)) continue;
       const score = tokenOverlap(contentTokens(b), changeTokens);
       const domainBoost = inferDomain(b) === changeDomain ? 1 : 0;
@@ -528,8 +559,8 @@ export function compareAgainstBaseline(params: {
       }
     }
     if (previous && isNonRecipientBaselineNoise(previous)) previous = null;
-    if (!previous && baselineClauses[0] && !isNonRecipientBaselineNoise(baselineClauses[0]!)) {
-      previous = baselineClauses[0]!;
+    if (!previous && relevantBaselineClauses[0] && !isNonRecipientBaselineNoise(relevantBaselineClauses[0]!)) {
+      previous = relevantBaselineClauses[0]!;
     }
     if (
       !previous &&
@@ -595,12 +626,12 @@ export function compareAgainstBaseline(params: {
 
   if (
     meaningful_changes.length === 0 &&
-    durableFacts.length > 0 &&
+    relevantDurableFacts.length > 0 &&
     latest &&
     CHANGE_CUE.test(latest) &&
     !BASELINE_CUE.test(latest)
   ) {
-    const prior = durableFacts[durableFacts.length - 1]!;
+    const prior = relevantDurableFacts[relevantDurableFacts.length - 1]!;
     meaningful_changes.push(
       `Different from the usual pattern held earlier (${prior.statement.replace(/\.$/, "")}): ${latest.slice(0, 140).replace(/\.$/, "")}.`,
     );
@@ -622,10 +653,10 @@ export function compareAgainstBaseline(params: {
   // Do not embed long near-raw prior/latest blobs (echo theater).
   if (
     meaningful_changes.length === 0 &&
-    heldPriorFacts.length > 0 &&
+    relevantHeldPriorFacts.length > 0 &&
     latest
   ) {
-    const priorFocus = heldPriorFacts[heldPriorFacts.length - 1]!.replace(/\.$/, "");
+    const priorFocus = relevantHeldPriorFacts[relevantHeldPriorFacts.length - 1]!.replace(/\.$/, "");
     const latestFocus = (
       changeClauses[0] ??
       clauses.find((c) => !isNonRecipientBaselineNoise(c)) ??
@@ -687,7 +718,7 @@ export function compareAgainstBaseline(params: {
     }
   }
 
-  const has_baseline = known_baseline.length > 0 || durableFacts.length > 0;
+  const has_baseline = known_baseline.length > 0 || relevantDurableFacts.length > 0;
   const has_meaningful_change = meaningful_changes.length > 0;
 
   if (has_meaningful_change) {
@@ -721,7 +752,7 @@ export function compareAgainstBaseline(params: {
     unknowns: uniq(unknowns).slice(0, 4),
     has_baseline,
     has_meaningful_change,
-    has_comparable_prior: true,
+    has_comparable_prior,
     causation_forbidden: true,
   };
 }
