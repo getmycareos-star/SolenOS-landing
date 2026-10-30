@@ -19,7 +19,7 @@ import {
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 import { ShareCareSummaryPanel } from "@/components/mvp-workspace/share/ShareCareSummaryPanel";
-import { ensureAnonymousSession } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, revokeAnonymousSession } from "@/api/client";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
 
@@ -175,9 +175,10 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
       case "delete": {
         if (!window.confirm("Delete this workspace from this device? This clears local session and workspace data from this browser. It does NOT delete care information already stored on SolenOS servers. Continue?")) return;
         try {
+          if (getAnonymousAccessToken()) await revokeAnonymousSession();
           LOCAL_WORKSPACE_KEYS.forEach((key) => window.localStorage.removeItem(key));
         } catch {
-          window.alert("This browser could not clear all local workspace data. The operation may be incomplete; review browser storage before continuing.");
+          window.alert("SolenOS could not revoke this device's server-issued session. Local workspace data was not cleared. Check your connection and try again.");
           return;
         }
         window.location.assign("/start");
