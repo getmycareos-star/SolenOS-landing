@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   FileText,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
+import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
 
 type NavItem = { href: string; label: string; icon?: string };
 type AppShellProps = {
@@ -26,6 +27,11 @@ type AppShellProps = {
   onMenuToggle?: () => void;
 };
 
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
+
 const NAVIGATION = [
   { href: "/workspace", label: "AI Companion", icon: MessageCircle },
   { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
@@ -34,14 +40,150 @@ const NAVIGATION = [
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
 ] as const;
 
+const LOCAL_WORKSPACE_KEYS = [
+  "solenos_durable_care_key",
+  "solenos_care_session_id",
+  "solenos_telemetry_user_id",
+  "solenos_situations",
+  "solenos_timeline",
+  "solenos_active_situation_id",
+  "solenos_care_recipient_display_name",
+  "solenos_care_profile",
+  "solenos_care_recipient_id",
+  "solenos_last_input_raw",
+  "solenos_notif_prefs",
+  "solenos_data_training",
+  "solenos_language_preference",
+  "solenos_early_access_consent_v1",
+  "onboarding_complete",
+  "onboarding_complete_at",
+  "solenos_workspace_pinned",
+  "solenos_workspace_archived",
+] as const;
+
 export function AppShell({ children, careContext, brandHref = "/workspace" }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isArchived, setIsArchived] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
 
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    try {
+      setIsPinned(window.localStorage.getItem("solenos_workspace_pinned") === "1");
+      setIsArchived(window.localStorage.getItem("solenos_workspace_archived") === "1");
+    } catch {
+      setIsPinned(false);
+      setIsArchived(false);
+    }
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+  }, []);
+
+  const handleWorkspaceAction = useCallback(async (action: WorkspaceAction) => {
+    switch (action) {
+      case "share_care_summary": {
+        let displayName = "";
+        let latestEntry = "";
+        try {
+          displayName = window.localStorage.getItem("solenos_care_recipient_display_name")?.trim() ?? "";
+          latestEntry = window.localStorage.getItem("solenos_last_input_raw")?.trim() ?? "";
+        } catch {
+          window.alert("Saved care information is unavailable in this browser session.");
+          return;
+        }
+        if (!latestEntry) {
+          window.alert("There is no saved care information available to share yet.");
+          return;
+        }
+        const summary = [
+          "SolenOS — Living Care Record summary",
+          displayName ? `Person: ${displayName}` : null,
+          `Recent caregiver entry:\n${latestEntry}`,
+        ].filter((part): part is string => Boolean(part)).join("\n\n");
+        try {
+          if (typeof navigator.share === "function") {
+            await navigator.share({ title: "SolenOS Living Care Record summary", text: summary });
+          } else if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(summary);
+            window.alert("Care summary copied. You can paste it into the app or message of your choice.");
+          } else {
+            window.prompt("Copy this care summary:", summary);
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") return;
+          try {
+            await navigator.clipboard.writeText(summary);
+            window.alert("Care summary copied. You can paste it into the app or message of your choice.");
+          } catch {
+            window.prompt("Copy this care summary:", summary);
+          }
+        }
+        return;
+      }
+      case "pin":
+      case "unpin": {
+        const next = action === "pin";
+        try {
+          window.localStorage.setItem("solenos_workspace_pinned", next ? "1" : "0");
+          setIsPinned(next);
+        } catch {
+          window.alert("This browser could not save the pin preference. No change was made.");
+        }
+        return;
+      }
+      case "archive": {
+        if (!window.confirm("Hide this workspace on this device? This does not delete or server-archive care information. You can restore it later.")) return;
+        try {
+          window.localStorage.setItem("solenos_workspace_archived", "1");
+          setIsArchived(true);
+        } catch {
+          window.alert("This browser could not save the archive preference. No change was made.");
+        }
+        return;
+      }
+      case "restore": {
+        try {
+          window.localStorage.removeItem("solenos_workspace_archived");
+          setIsArchived(false);
+        } catch {
+          window.alert("This browser could not restore the workspace. No change was made.");
+        }
+        return;
+      }
+      case "delete": {
+        if (!window.confirm("Clear this workspace from this device? This removes local session and workspace data from this browser. It does not delete care information already stored on SolenOS servers. Continue?")) return;
+        try {
+          LOCAL_WORKSPACE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+        } catch {
+          window.alert("This browser could not clear all local workspace data. The operation may be incomplete; review browser storage before continuing.");
+          return;
+        }
+        window.location.assign("/start");
+        return;
+      }
+      case "add_to_home": {
+        if (!installPrompt) return;
+        try {
+          await installPrompt.prompt();
+          const choice = await installPrompt.userChoice;
+          if (choice.outcome === "accepted") setInstallPrompt(null);
+        } catch {
+          window.alert("The browser could not open its install prompt. Try the browser's Add to Home Screen option.");
+        }
+        return;
+      }
+    }
+  }, [installPrompt]);
 
   const active = (href: string) =>
     href === "/workspace"
@@ -137,8 +279,23 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             <span className="solenos-chat-brand-mark">S</span>
           </button>
           <div className="solenos-chat-topbar-context">{careContext}</div>
+          {pathname === "/workspace" && (
+            <WorkspaceMoreMenu
+              onAction={(action) => void handleWorkspaceAction(action)}
+              isPinned={isPinned}
+              isArchived={isArchived}
+              canAddToHome={Boolean(installPrompt)}
+            />
+          )}
         </header>
-        <main className="solenos-chat-main">{children}</main>
+        <main className="solenos-chat-main">
+          {pathname === "/workspace" && isArchived ? (
+            <section className="panel" aria-label="Archived workspace">
+              <h2 className="workspace-headline">Workspace archived</h2>
+              <p className="panel-muted">This workspace is hidden on this device. Care information stored on SolenOS has not been deleted.</p>
+            </section>
+          ) : children}
+        </main>
       </div>
     </div>
   );
