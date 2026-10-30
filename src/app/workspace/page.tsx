@@ -61,8 +61,12 @@ function WorkspacePageInner() {
     (situation) => situation.persistedThread && situation.status !== "resolved",
   );
 
-  async function linkRelatedSituation(sourceSituationId: string) {
-    const relatedId = relationshipTargets[sourceSituationId];
+  async function linkRelatedSituation(
+    sourceSituationId: string,
+    explicitTargetId?: string,
+    relationshipType: "related_to" | "unrelated_to" = "related_to",
+  ) {
+    const relatedId = explicitTargetId ?? relationshipTargets[sourceSituationId];
     if (!relatedId || relatedId === sourceSituationId) return;
     setLinkingSituationId(sourceSituationId);
     setRelationshipFeedback("");
@@ -79,10 +83,12 @@ function WorkspacePageInner() {
         body: JSON.stringify({
           source_type: "situation",
           source_id: sourceSituationId,
-          relationship_type: "related_to",
+          relationship_type: relationshipType,
           target_type: "situation",
           target_id: relatedId,
-          provenance: "Caregiver explicitly linked these concerns as related; this relationship does not merge their care threads or establish causation.",
+          provenance: relationshipType === "related_to"
+            ? "Caregiver explicitly linked these concerns as related; this relationship does not merge their care threads or establish causation."
+            : "Caregiver explicitly retracted the prior related-concern link; the historical link remains in the audit record.",
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -105,7 +111,11 @@ function WorkspacePageInner() {
         ...previous,
         situations: openSituationsFromSituationApi(payload),
       }));
-      setRelationshipFeedback("Related concerns linked. Their separate care threads and evidence remain intact.");
+      setRelationshipFeedback(
+        relationshipType === "related_to"
+          ? "Related concerns linked. Their separate care threads and evidence remain intact."
+          : "Relationship retracted. The prior link remains in audit history; both care threads remain separate.",
+      );
       setRelationshipTargets((previous) => ({ ...previous, [sourceSituationId]: "" }));
     } catch (error) {
       setRelationshipFeedback(error instanceof Error ? error.message : "The related-care link was not saved.");
@@ -312,7 +322,10 @@ function WorkspacePageInner() {
                         >
                           <option value="">Choose another care thread</option>
                           {resumableSituations
-                            .filter((candidate) => candidate.id !== situation.id)
+                            .filter((candidate) =>
+                              candidate.id !== situation.id &&
+                              !situation.relatedSituations?.some((related) => related.id === candidate.id)
+                            )
                             .map((candidate) => (
                               <option key={candidate.id} value={candidate.id}>{candidate.title}</option>
                             ))}
@@ -328,11 +341,22 @@ function WorkspacePageInner() {
                       </div>
                     )}
                     {situation.relatedSituations && situation.relatedSituations.length > 0 && (
-                      <p>
-                        Related concerns kept separate: {situation.relatedSituations.map((related) =>
-                          situations.find((candidate) => candidate.id === related.id)?.title ?? "Related care thread"
-                        ).join(" · ")}
-                      </p>
+                      <div className="lcr-related-situation-list">
+                        <p>Related concerns kept separate:</p>
+                        {situation.relatedSituations.map((related) => (
+                          <div key={related.relationship_id}>
+                            <span>{situations.find((candidate) => candidate.id === related.id)?.title ?? "Related care thread"}</span>
+                            <button
+                              type="button"
+                              className="lcr-text-action"
+                              disabled={linkingSituationId === situation.id}
+                              onClick={() => void linkRelatedSituation(situation.id, related.id, "unrelated_to")}
+                            >
+                              {linkingSituationId === situation.id ? "Updating…" : "Unlink"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {situation.persistedThread && situation.status !== "resolved" && (
                       <button
