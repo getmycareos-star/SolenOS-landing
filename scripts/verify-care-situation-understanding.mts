@@ -263,7 +263,7 @@ Notes: Family reports increased evening confusion since last week.`;
     });
     const turn2 = ingestActiveCareObservation({
       caregiverId: contributorId,
-      rawText: "She seems more tired today.",
+      rawText: "She is still more confused in the evenings today.",
       kind: "general",
       nowIso: "2026-07-23T20:00:00.000Z",
     });
@@ -278,7 +278,7 @@ Notes: Family reports increased evening confusion since last week.`;
     );
     const composed2 = composeCaregiverResponse({
       turn: turn2,
-      latestRawText: "She seems more tired today.",
+      latestRawText: "She is still more confused in the evenings today.",
       kind: "general",
     });
     assert.ok(
