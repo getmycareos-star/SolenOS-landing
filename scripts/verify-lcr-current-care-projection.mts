@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const component = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
-const workspace = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const workspace = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8");
 const timeline = fs.readFileSync("src/app/workspace/timeline/page.tsx", "utf8");
 
 assert.match(workspace, /<LCRCurrentUnderstanding\s*\/>/, "LCR home must render the longitudinal projection");
