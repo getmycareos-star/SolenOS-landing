@@ -28,6 +28,9 @@ assert.match(careSituationBrief, /\/change\/changes\//, "the brief must load per
 assert.match(careSituationBrief, /source_collection/, "brief sections must be derived from returned record provenance");
 assert.match(careSituationBrief, /isConflict/, "conflicting accounts must remain separately visible");
 assert.match(careSituationBrief, /isQuestionOrGap/, "uncertainties and missing information must remain visible");
+assert.match(careSituationBrief, /reported_by_label/, "the brief must show who reported each record item when attribution exists");
+assert.match(careSituationBrief, /decisionItems/, "the brief must show persisted decisions and outcomes");
+assert.match(careSituationBrief, /openActionItems/, "the brief must show open care actions and follow-ups");
 assert.match(careSituationBrief, /follow_up_links/, "open follow-ups must remain visible in the brief");
 assert.match(careSituationBrief, /decision_outcomes/, "recorded decisions and outcomes must remain visible in the brief");
 assert.match(careSituationBrief, /schema_status/, "the brief must disclose incomplete record-source coverage");
