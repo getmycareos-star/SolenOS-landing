@@ -684,7 +684,8 @@ export function HistoryDrawer() {
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
-  const [recordActions, setRecordActions] = useState<RecordActionState>({});\n  const [recordActionsLoaded, setRecordActionsLoaded] = useState(false);
+  const [recordActions, setRecordActions] = useState<RecordActionState>({});
+  const [recordActionsLoaded, setRecordActionsLoaded] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
 
   const RECORD_ACTIONS_KEY = "solenos_history_record_actions_v1";
@@ -1222,7 +1223,8 @@ export function HistoryDrawer() {
                                     <strong>{record.title}</strong>
                                     {description && <span className="history-event-description">{description}</span>}
                                     {(record.follow_up_candidate || record.attention_candidate || recordActions[record.id]?.followUp) && (
-                                      <span className="history-event-flag">Flagged for follow-up</span>\n                                    {recordActions[record.id]?.pinned && <span className="history-event-flag">Pinned to Home</span>}
+                                      <span className="history-event-flag">Flagged for follow-up</span>
+                                    {recordActions[record.id]?.pinned && <span className="history-event-flag">Pinned to Home</span>}
                                     )}
                                   </button>
                                   <div className="history-event-menu-wrap">
