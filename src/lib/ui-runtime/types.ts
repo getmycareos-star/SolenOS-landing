@@ -185,6 +185,9 @@ export type Situation = {
     source_passage: string;
     source_span_start: number | null;
     source_span_end: number | null;
+    occurred_at: string | null;
+    observed_at: string | null;
+    context: string | null;
     reported_at: string | null;
     epistemic_status: string;
     observation_kind: string;
