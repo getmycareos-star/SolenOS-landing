@@ -31,6 +31,14 @@ assert.match(careSituationBrief, /isQuestionOrGap/, "uncertainties and missing i
 assert.match(careSituationBrief, /schema_status/, "the brief must disclose incomplete record-source coverage");
 assert.match(careSituationBrief, /\/workspace\/timeline/, "the brief must link to the full saved care timeline");
 const documents = read("src/app/workspace/documents/page.tsx");
+const documentIntelligence = read("src/components/workflows/DocumentIntelligenceReview.tsx");
+assert.match(documents, /DocumentIntelligenceReview/, "saved document library must expose persisted document-intelligence review");
+assert.match(documents, /\/documents\/.*\/intelligence/, "saving a source document must invoke the authenticated document-intelligence endpoint");
+assert.match(documentIntelligence, /\/documents\/intelligence\?limit=50/, "pending document analyses must reload from backend persistence");
+assert.match(documentIntelligence, /source_quote/, "document candidates must expose their verbatim source passage");
+assert.match(documentIntelligence, /Accept into Living Care Record/, "caregiver must explicitly accept a document claim before LCR promotion");
+assert.match(documentIntelligence, /written_to_lcr !== true/, "the UI must require server confirmation before claiming LCR persistence");
+assert.match(documentIntelligence, /Reject/, "caregiver must be able to reject unsupported extracted candidates");
 assert.match(companion, /companion-shell.*is-home/);
 assert.doesNotMatch(companion, /Add to care story/);
 assert.match(companion, /companion-add-menu/);
