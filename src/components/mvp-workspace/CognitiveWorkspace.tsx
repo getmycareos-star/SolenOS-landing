@@ -28,7 +28,6 @@ import type { Situation } from "@/lib/ui-runtime/types";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { AddSituationPanel } from "./AddSituationPanel";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
-import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
 import { ActivationOutputPanel } from "./ActivationOutputPanel";
 import { SituationResponsePanel } from "./SituationResponsePanel";
 import { CareRecipientNameGate } from "./CareRecipientNameGate";
@@ -1186,9 +1185,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                         ? "update"
                         : "initial"
                     }
-                    caregiverId={caregiverId}
-                    careSessionId={interactionSessionId()}
-                    careRecipientName={displayName ?? undefined}
                   />
                 </>
               )}
