@@ -55,6 +55,7 @@ function WorkspacePageInner() {
   const [relationshipTargets, setRelationshipTargets] = useState<Record<string, string>>({});
   const [linkingSituationId, setLinkingSituationId] = useState<string | null>(null);
   const [relationshipFeedback, setRelationshipFeedback] = useState("");
+  const [relationshipFeedbackFor, setRelationshipFeedbackFor] = useState<string | null>(null);
 
   const resumableSituations = runtime.situations.filter(
     (situation) => situation.persistedThread && situation.status !== "resolved",
@@ -65,6 +66,7 @@ function WorkspacePageInner() {
     if (!relatedId || relatedId === sourceSituationId) return;
     setLinkingSituationId(sourceSituationId);
     setRelationshipFeedback("");
+    setRelationshipFeedbackFor(sourceSituationId);
     try {
       const session = await ensureAnonymousSession();
       if (!session.access_token) throw new Error("A secure care session is required.");
@@ -341,7 +343,7 @@ function WorkspacePageInner() {
                         Add update to this thread <span aria-hidden="true">→</span>
                       </button>
                     )}
-                    {relationshipFeedback && linkingSituationId === null && (
+                    {relationshipFeedback && relationshipFeedbackFor === situation.id && linkingSituationId === null && (
                       <p role="status">{relationshipFeedback}</p>
                     )}
                   </div>
