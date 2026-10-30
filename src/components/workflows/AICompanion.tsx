@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
@@ -127,7 +128,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [pendingCareReportId, setPendingCareReportId] = useState<string | null>(null)
   const [savingCareReportId, setSavingCareReportId] = useState<string | null>(null)
   const [savedCareReportIds, setSavedCareReportIds] = useState<Set<string>>(() => new Set())
-  const [careReportFeedback, setCareReportFeedback] = useState<{ id: string; message: string; error?: boolean } | null>(null)
+  const [careReportFeedback, setCareReportFeedback] = useState<{ id: string; message: string; error?: boolean; eventId?: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
@@ -297,13 +298,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const result = await postJSON(
         `/conversation/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(message.id)}/care-report`,
         {},
-      ) as { saved?: boolean; evidence_id?: string; assertion_id?: string; written_to_lcr?: boolean; message?: string }
-      if (result.saved !== true || result.written_to_lcr !== true || !result.evidence_id || !result.assertion_id) {
+      ) as { saved?: boolean; evidence_id?: string; event_id?: string; assertion_id?: string; written_to_lcr?: boolean; message?: string }
+      if (result.saved !== true || result.written_to_lcr !== true || !result.evidence_id || !result.event_id || !result.assertion_id) {
         throw new Error('The server did not confirm the source-linked Living Care Record write.')
       }
       setSavedCareReportIds(current => new Set(current).add(message.id!))
       setPendingCareReportId(null)
-      setCareReportFeedback({ id: message.id, message: result.message || 'Caregiver report saved to the Living Care Record.' })
+      setCareReportFeedback({ id: message.id, message: result.message || 'Caregiver report saved to the Living Care Record.', eventId: result.event_id })
       window.dispatchEvent(new Event('solenos:lcr-updated'))
     } catch (cause) {
       setCareReportFeedback({
@@ -659,7 +660,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       </div>
                     )}
                     {isUser && msg.id && savedCareReportIds.has(msg.id) && <p className="companion-provenance" role="status">Saved to the Living Care Record as a caregiver-reported statement.</p>}
-                    {isUser && msg.id && careReportFeedback?.id === msg.id && <p className="companion-provenance" role={careReportFeedback.error ? 'alert' : 'status'}>{careReportFeedback.message}</p>}
+                    {isUser && msg.id && careReportFeedback?.id === msg.id && (
+                      <p className="companion-provenance" role={careReportFeedback.error ? 'alert' : 'status'}>
+                        {careReportFeedback.message}
+                        {careReportFeedback.eventId && <> <Link href={`/workspace/timeline?event_id=${encodeURIComponent(careReportFeedback.eventId)}`}>Open source event</Link></>}
+                      </p>
+                    )}
                     {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount + (msg.source_record_refs?.length ?? 0) > 0
                       ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
                       : 'No matching care context was returned for this response.'} Conversation only; not added to the Living Care Record.</span></div>}
