@@ -387,6 +387,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       return
     }
     setSourceIntegrityLoading(true)
+    setSourceIntegrity(null)
     setSourceIntegrityError('')
     try {
       const result = await getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/integrity`)
