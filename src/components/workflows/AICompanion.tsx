@@ -102,9 +102,9 @@ const HANDOFF_TEMPLATE_FALLBACK = {
 const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\s]*$/i
 
 const STARTER_PROMPTS = [
-  { icon: MessageCircle, title: 'Talk through a difficult moment', description: 'Sort out what happened and what might help next.', prompt: 'Help me think through a difficult moment in care.' },
-  { icon: Clock3, title: 'Make sense of a change', description: 'Separate what we know from what is still unclear.', prompt: 'Help me make sense of a recent change without jumping to conclusions.' },
-  { icon: FileText, title: 'Prepare for an appointment', description: 'Organise observations and questions to take along.', prompt: 'Help me prepare clear questions for an upcoming care appointment.' },
+  { icon: MessageCircle, title: 'I need to talk it through', description: 'One thing at a time. No need to organise it first.', prompt: "I'm overwhelmed. Help me work through one thing at a time." },
+  { icon: Clock3, title: 'Something has changed', description: 'Sort what is known from what is still unclear.', prompt: 'Something has changed in care. Help me work out what we know and what is unclear.' },
+  { icon: FileText, title: 'Help me get ready', description: 'Prepare a few questions for a visit or handover.', prompt: 'Help me prepare for an upcoming care appointment or handover.' },
 ]
 
 export default function Companion({ home = false }: { home?: boolean }) {
@@ -263,9 +263,9 @@ export default function Companion({ home = false }: { home?: boolean }) {
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">SOLENOS · CARE SUPPORT</div><h2>AI Companion</h2></div>
+          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h2>Your care companion</h2></div>
         </div>
-        <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>
+        {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
 
       {!home && (
@@ -444,7 +444,7 @@ export default function Companion({ home = false }: { home?: boolean }) {
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>START WHERE YOU ARE</span><h3>What’s on your mind today?</h3><p>Start with a question, a worry, or a few details. We can work through it step by step.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Tell me one small thing about today. A few words are enough. We can take it one step at a time.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
@@ -455,7 +455,7 @@ export default function Companion({ home = false }: { home?: boolean }) {
                   </button>
                 })}
               </div>
-              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You can start with incomplete information. We’ll keep uncertainty visible.</p>
+              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
             </div>
           ) : (
             <div className="companion-message-list">
@@ -494,7 +494,7 @@ export default function Companion({ home = false }: { home?: boolean }) {
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading} rows={2} />
+          }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
             <div className="companion-add-wrap">
               <button type="button" className="companion-add-button" aria-label="Add document or image" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
@@ -648,13 +648,16 @@ export default function Companion({ home = false }: { home?: boolean }) {
         .companion-shell.is-home .companion-new { min-height:38px; padding:8px 11px; border-radius:999px; background:#f7faf6; }
         .companion-shell.is-home .companion-workspace { display:block; flex:1 1 auto; min-height:0; margin:0; }
         .companion-shell.is-home .companion-conversation { height:100%; min-height:0; border:0; border-radius:0; background:transparent; overflow-y:auto; }
-         .companion-shell.is-home .companion-empty { max-width:760px; margin:0 auto; padding:clamp(56px,11vh,112px) 22px 34px; }
+         .companion-shell.is-home .companion-empty { max-width:840px; margin:0 auto; padding:clamp(32px,7vh,72px) 22px 30px; }
         .companion-shell.is-home .companion-empty-icon { width:42px; height:42px; border-radius:50%; }
         .companion-shell.is-home .companion-empty-heading { margin-top:18px; }
-        .companion-shell.is-home .companion-empty-heading h3 { font-size:clamp(25px,3.5vw,34px); font-weight:600; letter-spacing:-.04em; }
-        .companion-shell.is-home .companion-empty-heading p { font-size:14px; }
-        .companion-shell.is-home .companion-starters { gap:10px; margin-top:28px; }
-        .companion-shell.is-home .companion-starter { padding:13px 15px; border-radius:13px; box-shadow:none; }
+        .companion-shell.is-home .companion-empty-heading h3 { max-width:700px; font-size:clamp(26px,3.5vw,34px); font-weight:600; letter-spacing:-.035em; line-height:1.16; }
+        .companion-shell.is-home .companion-empty-heading p { max-width:650px; font-size:16px; line-height:1.7; }
+        .companion-shell.is-home .companion-starters { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:24px; }
+        .companion-shell.is-home .companion-starter { min-height:104px; padding:16px; border-radius:14px; box-shadow:none; }
+        .companion-shell.is-home .companion-starter-copy strong { font-size:14px; line-height:1.4; }
+        .companion-shell.is-home .companion-starter-copy>span { font-size:13px; line-height:1.55; }
+        .companion-shell.is-home .companion-starter:focus-visible { outline:3px solid #8caf8d; outline-offset:3px; }
          .companion-shell.is-home .companion-message-list { max-width:760px; margin:0 auto; padding:30px 22px 42px; }
         .companion-shell.is-home .companion-message { margin-bottom:25px; }
          .companion-shell.is-home .companion-message.is-assistant .companion-bubble { border:0; border-radius:0; background:transparent; padding:2px 0; }
@@ -677,9 +680,11 @@ export default function Companion({ home = false }: { home?: boolean }) {
         .companion-add-menu small { display:block; margin-top:3px; color:#748077; font-size:11px; line-height:1.4; }
         @media(max-width:600px) {
           .companion-shell.is-home .companion-topbar { padding:6px 2px 12px; }
-          .companion-shell.is-home .companion-empty { padding:34px 10px 20px; }
-          .companion-shell.is-home .companion-starters { grid-template-columns:1fr; margin-top:20px; }
-          .companion-shell.is-home .companion-starter { padding:11px 12px; }
+          .companion-shell.is-home .companion-empty { padding:26px 10px 18px; }
+          .companion-shell.is-home .companion-starters { grid-template-columns:1fr; gap:9px; margin-top:18px; }
+          .companion-shell.is-home .companion-starter { min-height:76px; padding:13px 14px; }
+          .companion-shell.is-home .companion-empty-heading h3 { font-size:26px; }
+          .companion-shell.is-home .companion-empty-heading p { font-size:15px; }
           .companion-shell.is-home .companion-composer-wrap { padding:0 2px; }
         }
       `}</style>
