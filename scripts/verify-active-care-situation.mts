@@ -14,6 +14,7 @@ import {
 import { classifyCareEventKind } from "../src/lib/living-care-record-ux";
 import fs from "node:fs";
 import path from "node:path";
+import { openSituationsFromSituationApi } from "../src/lib/ui-runtime/open-situations";
 import {
   evaluateSourceConflict,
   listSourceClaims,
@@ -433,4 +434,28 @@ assert(
 );
 console.log("✓ source conflicts preserve both contributors; complete source ledger retained");
 
+const hydratedThreadCards = openSituationsFromSituationApi({
+  situations: [{
+    id: "persisted-thread-1",
+    title: "Compact summary",
+    state: "active",
+  } as never],
+  ui_situations: [{
+    id: "persisted-thread-1",
+    title: "Mobility concern",
+    status: "active",
+    riskLevel: "LOW",
+    documents: [],
+    openQuestions: [],
+    nextActions: [],
+    risks: [],
+    responsibilities: [],
+    contextSummary: "Persisted mobility thread",
+    updatedAt: "2026-07-18T12:00:00.000Z",
+    persisted_thread: true,
+  } as never],
+});
+assert.equal(hydratedThreadCards.length, 1, "duplicate summary and UI rows collapse to one thread card");
+assert.equal(hydratedThreadCards[0]!.title, "Mobility concern", "complete UI row wins over compact summary");
+assert.equal(hydratedThreadCards[0]!.persistedThread, true, "only a backend-persisted thread is marked resumable");
 console.log("\n=== Active Care Situation: all checks passed ===\n");
