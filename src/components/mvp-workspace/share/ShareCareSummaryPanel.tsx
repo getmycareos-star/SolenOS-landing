@@ -48,6 +48,8 @@ export type ShareRequestState =
   | "offline";
 
 interface ShareCareSummaryPanelProps {
+  /** Selects a reviewed sharing or download/export flow. */
+  intent?: "share" | "export";
   /** Durable care key for fetching care data. */
   caregiverId: string;
   /** Care session id. */
@@ -85,6 +87,7 @@ async function copyTextToClipboard(text: string): Promise<void> {
 }
 
 export function ShareCareSummaryPanel({
+  intent = "share",
   caregiverId,
   careSessionId,
   careRecipientName,
@@ -332,7 +335,7 @@ export function ShareCareSummaryPanel({
             <ChevronLeft size={20} aria-hidden />
           </button>
         )}
-        <h2 className="share-panel-title">Share care summary</h2>
+        <h2 className="share-panel-title">{intent === "export" ? "Download / Export care summary" : "Share care summary"}</h2>
       </div>
       <button
         type="button"
@@ -386,7 +389,7 @@ export function ShareCareSummaryPanel({
 
   const renderAudienceSelection = () => (
     <div className="share-panel-body">
-      <p className="share-panel-lede">Who is this care summary for?</p>
+      <p className="share-panel-lede">{intent === "export" ? "Who should this summary be prepared for?" : "Who is this care summary for?"}</p>
       <div className="share-audience-options">
         {AUDIENCE_OPTIONS.map((opt) => (
           <button
@@ -500,7 +503,7 @@ export function ShareCareSummaryPanel({
 
   const renderFormatSelection = () => (
     <div className="share-panel-body">
-      <p className="share-panel-lede">Choose how to share this summary.</p>
+      <p className="share-panel-lede">{intent === "export" ? "Review the summary, then download it or save it as a PDF." : "Choose how to share this summary."}</p>
       <div className="share-format-options">
         <button
           type="button"
@@ -520,22 +523,43 @@ export function ShareCareSummaryPanel({
           <span className="share-format-label">Print / PDF</span>
           <span className="share-format-desc">Open print dialog to save as PDF.</span>
         </button>
-        <button
-          type="button"
-          className={`share-format-option${format === "native" ? " is-selected" : ""}`}
-          onClick={() => setFormat("native")}
-          disabled={typeof navigator === "undefined" || typeof (navigator as any).share !== "function"}
-        >
-          <Share2 size={20} aria-hidden />
-          <span className="share-format-label">Share</span>
-          <span className="share-format-desc">
-            {typeof navigator !== "undefined" && typeof (navigator as any).share === "function"
-              ? "Use your device's share sheet."
-              : "Not available on this device."}
-          </span>
-        </button>
+        {intent !== "export" && (
+          <button
+            type="button"
+            className={`share-format-option${format === "native" ? " is-selected" : ""}`}
+            onClick={() => setFormat("native")}
+            disabled={typeof navigator === "undefined" || typeof (navigator as any).share !== "function"}
+          >
+            <Share2 size={20} aria-hidden />
+            <span className="share-format-label">Share</span>
+            <span className="share-format-desc">
+              {typeof navigator !== "undefined" && typeof (navigator as any).share === "function"
+                ? "Use your device's share sheet."
+                : "Not available on this device."}
+            </span>
+          </button>
+        )}
       </div>
-      {format && (
+      {intent === "export" ? (
+        <div className="share-confirm-bar">
+          {summary && (
+            <p className="share-confirm-detail">
+              Ready to export for <strong>{summary.preparedFor}</strong>. The download contains the reviewed summary and its stated limitations, not every underlying source file.
+            </p>
+          )}
+          <div className="share-confirm-actions">
+            <Button variant="primary" onClick={handleSaveDownload}>
+              <Download size={16} aria-hidden /> Download summary (.txt)
+            </Button>
+            {format === "print" && (
+              <Button variant="secondary" onClick={handleShare} loading={state === "sharing"}>
+                {state === "sharing" ? "Preparing PDF…" : "Print / Save PDF"}
+              </Button>
+            )}
+            <Button variant="secondary" onClick={handleBackToReview}>Back</Button>
+          </div>
+        </div>
+      ) : format && (
         <div className="share-confirm-bar">
           {summary && (
             <p className="share-confirm-detail">
@@ -548,9 +572,7 @@ export function ShareCareSummaryPanel({
             <Button variant="primary" onClick={handleShare} loading={state === "sharing"}>
               {state === "sharing" ? "Sharing…" : "Share"}
             </Button>
-            <Button variant="secondary" onClick={handleBackToReview}>
-              Back
-            </Button>
+            <Button variant="secondary" onClick={handleBackToReview}>Back</Button>
           </div>
         </div>
       )}
