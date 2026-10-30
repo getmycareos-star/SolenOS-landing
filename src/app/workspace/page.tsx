@@ -49,6 +49,7 @@ function WorkspacePageInner() {
   const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const [archiveRestoreError, setArchiveRestoreError] = useState("");
   const compose = searchParams.get("compose") === "1";
+  const targetSituationId = searchParams.get("situation");
 
   useEffect(() => {
     try {
@@ -106,8 +107,8 @@ function WorkspacePageInner() {
           </Button>
           <div>
             <p className="lcr-eyebrow">LIVING CARE RECORD</p>
-            <h1>Add to the record</h1>
-            <p>Notes, messages, documents, or photos. Fragments are fine.</p>
+            <h1>{targetSituationId ? "Update this care thread" : "Add to the record"}</h1>
+            <p>{targetSituationId ? "This entry will be added to the selected care thread. Other concerns stay separate." : "Notes, messages, documents, or photos. Fragments are fine."}</p>
           </div>
         </div>
         <ErrorBoundary name="CognitiveWorkspace" fallback={
@@ -116,7 +117,7 @@ function WorkspacePageInner() {
             <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
           </section>
         }>
-          <CognitiveWorkspace />
+          <CognitiveWorkspace targetSituationId={targetSituationId} />
         </ErrorBoundary>
       </main>
     );
@@ -190,6 +191,15 @@ function WorkspacePageInner() {
                     </div>
                     {situation.contextSummary && <p>{situation.contextSummary}</p>}
                     <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? situation.status}</span>
+                    {situation.persistedThread && situation.status !== "resolved" && (
+                      <button
+                        type="button"
+                        className="lcr-text-action"
+                        onClick={() => router.push(`/workspace?compose=1&situation=${encodeURIComponent(situation.id)}`)}
+                      >
+                        Add update to this thread <span aria-hidden="true">→</span>
+                      </button>
+                    )}
                   </div>
                 </article>
               ))}
