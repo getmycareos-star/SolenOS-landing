@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
+import { ShareCareSummaryPanel } from "@/components/mvp-workspace/share/ShareCareSummaryPanel";
+import { ensureAnonymousSession } from "@/api/client";
+import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
 
 type NavItem = { href: string; label: string; icon?: string };
@@ -26,6 +29,8 @@ type AppShellProps = {
   brandHref?: string;
   onMenuToggle?: () => void;
 };
+
+type SharePanelContext = { caregiverId: string; careSessionId: string; careRecipientName?: string };
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -68,6 +73,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [sharePanelContext, setSharePanelContext] = useState<SharePanelContext | null>(null);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -92,41 +98,19 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const handleWorkspaceAction = useCallback(async (action: WorkspaceAction) => {
     switch (action) {
       case "share_care_summary": {
-        let displayName = "";
-        let latestEntry = "";
         try {
-          displayName = window.localStorage.getItem("solenos_care_recipient_display_name")?.trim() ?? "";
-          latestEntry = window.localStorage.getItem("solenos_last_input_raw")?.trim() ?? "";
-        } catch {
-          window.alert("Saved care information is unavailable in this browser session.");
-          return;
-        }
-        if (!latestEntry) {
-          window.alert("There is no saved care information available to share yet.");
-          return;
-        }
-        const summary = [
-          "SolenOS — Living Care Record summary",
-          displayName ? `Person: ${displayName}` : null,
-          `Recent caregiver entry:\n${latestEntry}`,
-        ].filter((part): part is string => Boolean(part)).join("\n\n");
-        try {
-          if (typeof navigator.share === "function") {
-            await navigator.share({ title: "SolenOS Living Care Record summary", text: summary });
-          } else if (navigator.clipboard?.writeText) {
-            await navigator.clipboard?.writeText(summary);
-            window.alert("Care summary copied. You can paste it into the app or message of your choice.");
-          } else {
-            window.prompt("Copy this care summary:", summary);
-          }
+          const session = await ensureAnonymousSession();
+          const storedSessionId = window.localStorage.getItem("solenos_care_session_id");
+          const careSessionId = ensureClientInteractionSessionId(storedSessionId);
+          window.localStorage.setItem("solenos_care_session_id", careSessionId);
+          const careRecipientName = window.localStorage.getItem("solenos_care_recipient_display_name")?.trim() || undefined;
+          setSharePanelContext({
+            caregiverId: session.caregiver.id,
+            careSessionId,
+            careRecipientName,
+          });
         } catch (error) {
-          if (error instanceof Error && error.name === "AbortError") return;
-          try {
-            await navigator.clipboard?.writeText(summary);
-            window.alert("Care summary copied. You can paste it into the app or message of your choice.");
-          } catch {
-            window.prompt("Copy this care summary:", summary);
-          }
+          window.alert(error instanceof Error ? error.message : "The care session could not be opened for sharing.");
         }
         return;
       }
@@ -296,6 +280,14 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             </section>
           ) : children}
         </main>
+        {sharePanelContext && (
+          <ShareCareSummaryPanel
+            caregiverId={sharePanelContext.caregiverId}
+            careSessionId={sharePanelContext.careSessionId}
+            careRecipientName={sharePanelContext.careRecipientName}
+            onClose={() => setSharePanelContext(null)}
+          />
+        )}
       </div>
     </div>
   );
