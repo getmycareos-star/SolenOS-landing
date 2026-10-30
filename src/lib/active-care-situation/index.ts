@@ -15,6 +15,7 @@ export {
 } from "../progressive-understanding/clarity-pillars";
 export {
   getActiveCareSituation,
+  listActiveCareSituations,
   clearActiveCareSituation,
   clearActiveCareSituationMemoryCache,
   pauseActiveCareSituationSession,
