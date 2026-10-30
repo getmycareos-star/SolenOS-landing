@@ -3,9 +3,11 @@
 
 import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
+import CareSituationBrief from '@/components/workflows/CareSituationBrief'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
 import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
@@ -65,6 +67,7 @@ interface HandoffDraft {
 }
 
 interface Message {
+  id?: string
   role: 'user' | 'assistant'
   text: string
   guard_verdict?: string | null
@@ -84,6 +87,7 @@ interface Message {
 }
 
 const CARE_REVIEW_SIGNAL = /\b(sleep|slept|awake|wandering|wandered|sundowning|medication|medicine|dose|pill|missed|refused|pain|fall|fell|confused|agitated|agitation|behavio[u]?r|eating|drinking|hydration|appetite|appointment|doctor|nurse|hospital|toilet|continence|breathing|fever|symptom|memory|dementia|caregiver|mood|blood pressure|blood sugar|mobility|injury|rash|swelling|constipation|diarrh?ea|bowel|urine|infection|safety|unsafe|hurt|hit|shout|distress|anxiety|anxious|depressed|depression|weight|temperature)\b/i
+const CARE_REPORT_SIGNAL = /\b(?:i\s+(?:saw|noticed|observed|recorded|measured|spoke|talked|was\s+told|heard)|we\s+(?:saw|noticed|observed|recorded|heard)|(?:the\s+)?(?:nurse|doctor|clinician|therapist|care\s+professional)\s+(?:said|told\s+me|reported|explained)|(?:my|our)\s+(?:sister|brother|mother|father|family\s+member|caregiver)\s+(?:said|told\s+me|reported|noticed|observed))\b/i
 const HANDOFF_TEMPLATE_FALLBACK = {
   family: [
     'What matters most right now', 'How the person is doing', 'How to care for them',
@@ -121,6 +125,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [cameraStarting, setCameraStarting] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
+  const [pendingCareReportId, setPendingCareReportId] = useState<string | null>(null)
+  const [savingCareReportId, setSavingCareReportId] = useState<string | null>(null)
+  const [savedCareReportIds, setSavedCareReportIds] = useState<Set<string>>(() => new Set())
+  const [careReportFeedback, setCareReportFeedback] = useState<{ id: string; message: string; error?: boolean; eventId?: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
@@ -282,6 +290,33 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
+  const saveCareReport = async (message: Message) => {
+    if (!message.id || !sessionId || savingCareReportId) return
+    setSavingCareReportId(message.id)
+    setCareReportFeedback(null)
+    try {
+      const result = await postJSON(
+        `/conversation/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(message.id)}/care-report`,
+        {},
+      ) as { saved?: boolean; evidence_id?: string; event_id?: string; assertion_id?: string; written_to_lcr?: boolean; message?: string }
+      if (result.saved !== true || result.written_to_lcr !== true || !result.evidence_id || !result.event_id || !result.assertion_id) {
+        throw new Error('The server did not confirm the source-linked Living Care Record write.')
+      }
+      setSavedCareReportIds(current => new Set(current).add(message.id!))
+      setPendingCareReportId(null)
+      setCareReportFeedback({ id: message.id, message: result.message || 'Caregiver report saved to the Living Care Record.', eventId: result.event_id })
+      window.dispatchEvent(new Event('solenos:lcr-updated'))
+    } catch (cause) {
+      setCareReportFeedback({
+        id: message.id,
+        message: cause instanceof Error ? cause.message : 'The report could not be saved. The conversation remains unchanged.',
+        error: true,
+      })
+    } finally {
+      setSavingCareReportId(null)
+    }
+  }
+
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText || loading) return
@@ -303,6 +338,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
+      if (typeof response.user_message_id === 'string') {
+        userMsg.id = response.user_message_id
+        setMessages(prev => prev.map(message => message === userMsg ? { ...message, id: response.user_message_id } : message))
+      }
       const safetyText = String(response.safety_note ?? '').toLowerCase()
       const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
       if (isEmergency) setEmergency(true)
@@ -398,6 +437,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         </div>
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
+
+      <CareSituationBrief />
 
       {!home && (
       <section className="companion-purpose">
@@ -600,6 +641,31 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
+                    {isUser && msg.id && CARE_REPORT_SIGNAL.test(msg.text) && !savedCareReportIds.has(msg.id) && (
+                      <div className="companion-care-report" style={{ marginTop: 9, padding: 11, border: '1px solid #d7e5d5', borderRadius: 10, background: '#f7faf6' }}>
+                        <p style={{ margin: '0 0 8px', fontSize: 12, lineHeight: 1.5, color: '#405b43' }}>
+                          This sounds like a new care report. You can add the exact message to the Living Care Record as information reported by you. Any statement attributed to a nurse, doctor or another person will remain unverified unless separately supported.
+                        </p>
+                        {pendingCareReportId === msg.id ? (
+                          <div style={{ display: 'grid', gap: 8 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: '#314b37' }}><strong>Confirm this exact report:</strong> “{msg.text}”</p>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <button type="button" onClick={() => void saveCareReport(msg)} disabled={savingCareReportId !== null} style={{ minHeight: 38, border: '1px solid #b9d5b5', borderRadius: 8, padding: '7px 11px', background: '#dcebd9', color: '#263b2b', fontWeight: 750 }}>{savingCareReportId === msg.id ? 'Saving report…' : 'Confirm and add to LCR'}</button>
+                              <button type="button" onClick={() => setPendingCareReportId(null)} disabled={savingCareReportId !== null} style={{ minHeight: 38, border: '1px solid #d8e1d6', borderRadius: 8, padding: '7px 11px', background: '#fff', color: '#405b43' }}>Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button type="button" onClick={() => { setCareReportFeedback(null); setPendingCareReportId(msg.id!); }} style={{ minHeight: 38, border: '1px solid #b9d5b5', borderRadius: 8, padding: '7px 11px', background: '#e7f0e5', color: '#294631', fontWeight: 750 }}>Review report for the Living Care Record</button>
+                        )}
+                      </div>
+                    )}
+                    {isUser && msg.id && savedCareReportIds.has(msg.id) && <p className="companion-provenance" role="status">Saved to the Living Care Record as a caregiver-reported statement.</p>}
+                    {isUser && msg.id && careReportFeedback?.id === msg.id && (
+                      <p className="companion-provenance" role={careReportFeedback.error ? 'alert' : 'status'}>
+                        {careReportFeedback.message}
+                        {careReportFeedback.eventId && <> <Link href={`/workspace/timeline?event_id=${encodeURIComponent(careReportFeedback.eventId)}`}>Open source event</Link></>}
+                      </p>
+                    )}
                     {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount + (msg.source_record_refs?.length ?? 0) > 0
                       ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
                       : 'No matching care context was returned for this response.'} Conversation only; not added to the Living Care Record.</span></div>}

@@ -173,6 +173,13 @@ export default function TimelinePage() {
     void loadEvents();
   }, [loadEvents]);
 
+  useEffect(() => {
+    const requestedEventId = new URLSearchParams(window.location.search).get("event_id");
+    if (requestedEventId && events.some(event => event.id === requestedEventId)) {
+      setExpandedId(requestedEventId);
+    }
+  }, [events]);
+
   const visibleEvents = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return events.filter((event) => {

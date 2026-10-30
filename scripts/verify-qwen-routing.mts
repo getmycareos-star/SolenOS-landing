@@ -81,25 +81,11 @@ assert(!companion.includes("The Qwen model service"), "Model runtime details mus
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
 
 requireText("src/app/workspace/documents/page.tsx", [
-  'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
-  'defaultWorkflow="document"',
-  "Ask about your documents",
+  'import DocumentIntelligenceReview from "@/components/workflows/DocumentIntelligenceReview";',
   'getJSON("/evidence/"',
   'postFormData("/upload"',
   'getBlob("/upload/"',
-  "Document intelligence",
-  "evidenceIds={aiEvidenceIds}",
-  'capture="environment"',
-  "createProcessedImage",
-  "CropInsets",
-  "data-scan-crop-stage",
-  "Move crop area",
-  "Apply crop / straighten and extract text",
-  "function createMultiPagePdf",
-  "Combine reviewed image pages into one PDF",
-  "Original uploaded page files remain separate and unchanged.",
-
-  "Review scan and extracted text",
+  "saveReviewedPages",
   "Save reviewed documents",
   "I reviewed this text against the original scan.",
   "UNCERTAIN EXTRACTION",
@@ -110,16 +96,24 @@ assert(!documentPage.includes("setTimeout(() => setPreviewLoading"), "Document p
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Documents must persist original uploads through the backend.");
-assert(documentPage.includes('evidenceIds={aiEvidenceIds}'), "Document intelligence must receive saved document evidence IDs.");
-assert(documentPage.includes('capture="environment"'), "Documents must offer mobile rear-camera capture.");
-assert(documentPage.includes('multiple hidden onChange={(event) => void handleFiles(event.target.files)}'), "Documents must accept multiple files/pages for review.");
+assert(documentPage.includes("DocumentIntelligenceReview"), "Saved documents must expose persisted document-intelligence review.");
+assert(documentPage.includes("/documents/"), "Saved documents must invoke the document-intelligence backend.");
+assert(!documentPage.includes('capture="environment"'), "The Documents library must not remain an intake launcher; camera intake belongs in AI Companion.");
+assert(!documentPage.includes('type="file"'), "The Documents library must not expose a second upload surface.");
 assert(documentPage.includes("page.reviewed"), "Scanned text must require explicit caregiver review before save.");
 assert(documentPage.includes("page.uncertain"), "Caregivers must be able to mark OCR text as uncertain.");
 assert(documentPage.includes("UNCERTAIN EXTRACTION"), "Uncertain scan text must be labelled before persistence.");
 assert(documentPage.includes("Scanned statements remain source evidence, not verified LCR facts."), "Scanned statements must not silently become verified LCR facts.");
-assert(documentPage.includes('title="Ask about your documents"'), "Documents must provide a document-scoped AI question interface.");
-assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
 assert(!documentPage.includes('router.push("/workspace?compose=1")'), "Document upload must not redirect to the general capture composer.");
+requireText("src/components/workflows/DocumentIntelligenceReview.tsx", [
+  'getJSON("/documents/intelligence?limit=50")',
+  'postJSON(`/documents/${encodeURIComponent(document.id)}/intelligence`, {})',
+  'postJSON(`/documents/intelligence/${encodeURIComponent(analysis.analysis_id)}/review`',
+  "Accept into Living Care Record",
+  "written_to_lcr !== true",
+  "source_quote",
+  '"accepted_by_caregiver"',
+]);
 
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",

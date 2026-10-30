@@ -590,6 +590,7 @@ export default function StructuredDailyCapture() {
       setSaveError(null);
       setSavedEntrySummary(variables.notes.trim() || 'Entry recorded.');
       setSaved(true);
+      window.dispatchEvent(new Event('solenos:lcr-updated'));
       // Once Daily Capture is persisted, reconcile the saved observations against the longitudinal LCR.
       // Reconciliation failure is shown by the Delta panel and never rolls back a successfully saved capture.
       const deltaContent = JSON.stringify({

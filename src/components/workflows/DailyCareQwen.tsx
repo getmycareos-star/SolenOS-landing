@@ -110,6 +110,7 @@ export default function DailyCareQwen() {
         return { ...current, proposals };
       });
       setFeedback(response.message);
+      if (response.written_to_lcr) window.dispatchEvent(new Event("solenos:lcr-updated"));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The review decision could not be saved. Please try again.");
     } finally {
