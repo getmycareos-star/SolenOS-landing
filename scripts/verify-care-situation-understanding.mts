@@ -367,9 +367,15 @@ async function main() {
       latestRawText: "She now walks with difficulty.",
       careKey,
     });
-    assert.ok(
-      related.baseline_comparison.meaningful_changes.some((line) => /related update/i.test(line)),
-      "a topic-linked follow-up should remain connected",
+    assert.equal(
+      related.baseline_comparison.has_comparable_prior,
+      true,
+      "a topic-linked follow-up should retain the prior care thread as comparable context",
+    );
+    assert.equal(
+      related.baseline_comparison.mode,
+      "change_detection",
+      "a held topic match must not be downgraded to a first-time assessment",
     );
     console.log("✓ Topic continuity — unrelated care concerns are not falsely linked");
   }
