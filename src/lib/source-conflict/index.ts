@@ -161,21 +161,6 @@ export function sourcePriorityRank(kind: CareEventKind, rawText = ""): number {
   return 20;
 }
 
-function preferredOrientation(
-  incoming: ObservationSourceRef,
-  prior: ObservationSourceRef,
-): "incoming" | "prior" {
-  const inRank = sourcePriorityRank(incoming.kind, incoming.raw_text);
-  const priorRank = sourcePriorityRank(prior.kind, prior.raw_text);
-  if (inRank !== priorRank) {
-    return inRank > priorRank ? "incoming" : "prior";
-  }
-  // Same class — newer orients.
-  return Date.parse(incoming.captured_at) >= Date.parse(prior.captured_at)
-    ? "incoming"
-    : "prior";
-}
-
 type Topic =
   | "eating"
   | "medication"
