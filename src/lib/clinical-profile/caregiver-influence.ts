@@ -76,6 +76,17 @@ function gatherAskForUnknown(
     return isCaregiverFacingAsk(timingAsk) ? timingAsk : null;
   }
 
+  // When concrete care changes are already present, caregiver-load gaps should
+  // become a practical coordination question, not a redundant generic change prompt.
+  const concreteCareChangeAlreadyReported =
+    /\b(?:fell|fall|walking|mobility|confus|medication|medicines?|dose|prescription|eating|appetite|sleep|wandering|hospital|doctor)\b/i.test(context) &&
+    /\b(?:chang(?:e|ed|ing)|worse|more|again|recent|two weeks|last week|since)\b/i.test(context);
+  if (u.category === "caregiver_load" && concreteCareChangeAlreadyReported) {
+    const coordinationAsk =
+      "Who can help you gather the medication list, hospital papers, and family observations?";
+    return isCaregiverFacingAsk(coordinationAsk) ? coordinationAsk : null;
+  }
+
   const careVisitAlreadyReported =
     /\b(?:doctor|hospital|clinic|appointment|discharge|admitted|visit)\b/i.test(context);
   if (u.category === "clinical_events" && careVisitAlreadyReported) {

@@ -265,6 +265,28 @@ assert(!/\bcommon in dementia\b/i.test(mvp), "caregiver workspace must not use g
   );
   console.log("✓ Existing medication change shifts the follow-up to timing, not a redundant change question");
 
+  // Mixed, messy care: concrete changes plus caregiver coordination burden.
+  const mixedCare = caregiverAsksFromClinicalProfile({
+    eventTexts: [
+      "Mom fell again this morning. Her walking has been getting worse and she seems confused more in the evenings.",
+      "The doctor changed one of her medications two weeks ago but I can't remember if this started before or after that.",
+      "My brother asked what happened. I have her medication list somewhere, hospital papers from last month, and messages from my sister. I feel like I'm the only person holding all these pieces.",
+    ],
+    clinicalProfileId: "dementia",
+    maxAsks: 2,
+  });
+  assert(
+    !mixedCare.asks.some((ask) => /has something changed with care recently/i.test(ask)),
+    `mixed care already states changes; do not ask a generic change question — got ${mixedCare.asks.join(" | ")}`,
+  );
+  assert(
+    mixedCare.asks.some((ask) => /when did the medication change happen relative/i.test(ask)) ||
+      mixedCare.asks.some((ask) => /who can help you gather/i.test(ask)),
+    `mixed care should ask about timing or practical coordination — got ${mixedCare.asks.join(" | ")}`,
+  );
+  console.log("✓ Messy multi-signal care replaces generic prompts with targeted timing/coordination questions");
+
+
 
 
 
