@@ -11,6 +11,7 @@ import {
   readDurableJson,
   sanitizeDurableCareKey,
   writeDurableJson,
+  withDurableFileLock,
 } from "../living-care-record-persistence/fs-store";
 
 const GLOBAL_KEY = "__solenos_acs_cache__";
@@ -66,14 +67,16 @@ export function persistActiveCareSituationToDurable(
   situation: ActiveCareSituation,
 ): void {
   const key = situation.care_recipient_id ?? situation.caregiver_id;
-  writeDurableJson(acsDurablePath(key), situation);
-  const indexed = readDurableJson<ActiveCareSituation[]>(acsIndexPath(key)) ?? [];
-  const position = indexed.findIndex((item) => item.id === situation.id);
-  const next =
-    position < 0
-      ? [...indexed, situation]
-      : indexed.map((item, index) => index === position ? situation : item);
-  writeDurableJson(acsIndexPath(key), next);
+  withDurableFileLock(`${acsIndexPath(key)}.lock`, () => {
+    writeDurableJson(acsDurablePath(key), situation);
+    const indexed = readDurableJson<ActiveCareSituation[]>(acsIndexPath(key)) ?? [];
+    const position = indexed.findIndex((item) => item.id === situation.id);
+    const next =
+      position < 0
+        ? [...indexed, situation]
+        : indexed.map((item, index) => index === position ? situation : item);
+    writeDurableJson(acsIndexPath(key), next);
+  });
 }
 
 export function deleteActiveCareSituationDurable(caregiverId: string): void {
