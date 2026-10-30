@@ -269,7 +269,7 @@ Notes: Family reports increased evening confusion since last week.`;
     });
     assert.ok(
       turn2.situation.observations.length >= 2,
-      "second capture must attach to existing ACS",
+      `second capture must attach to existing ACS; relation=${turn2.relation}; situation=${turn2.situation.id}; caregiver=${turn2.situation.caregiver_id}; recipient=${turn2.situation.care_recipient_id}; lifecycle=${turn2.situation.lifecycle_status}; observations=${turn2.situation.observations.map((o) => o.raw_text).join(" || ")}`,
     );
     const composed2 = composeCaregiverResponse({
       turn: turn2,
