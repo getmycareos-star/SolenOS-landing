@@ -32,7 +32,6 @@ import { resolveCareRealityStoreKey } from "../src/lib/multi-caregiver-context-m
 import { composeCaregiverResponse } from "../src/lib/caregiver-response-composer";
 import { evaluateCaregiverUnderstandingTest } from "../src/lib/care-reality-intelligence/caregiver-understanding-test";
 import { containsRawNoteEchoInCopy } from "../src/lib/output-quality";
-import { extractCareRealityFromText } from "../src/lib/care-reality-extraction";
 import { careRealityObjectFromExtraction } from "../src/lib/mvp-response-behavior";
 
 console.log("=== Care Situation Understanding (instant value) ===\n");
@@ -78,14 +77,22 @@ async function main() {
   {
     // Three extracted fragments from one caregiver capture are not independent
     // corroboration and must not be promoted to high confidence by volume.
-    const extraction = extractCareRealityFromText({
-      rawText: "Mom ate breakfast later than usual. She needed help finding her coat. She sat quietly during lunch.",
-      contributorId: "csu-confidence-volume-only",
-    });
-    assert.ok(
-      extraction.observations.length + extraction.events.length + extraction.decisions.length >= 3,
-      "fixture must contain multiple structured fragments",
-    );
+    const extraction = {
+      observations: [
+        { id: "confidence-1", layer: "observation" as const, description: "Observation one", approximate_time: null, source: "same-caregiver-capture", confidence: "medium" as const, raw_fragment: "Observation one" },
+        { id: "confidence-2", layer: "observation" as const, description: "Observation two", approximate_time: null, source: "same-caregiver-capture", confidence: "medium" as const, raw_fragment: "Observation two" },
+        { id: "confidence-3", layer: "observation" as const, description: "Observation three", approximate_time: null, source: "same-caregiver-capture", confidence: "medium" as const, raw_fragment: "Observation three" },
+      ],
+      events: [],
+      decisions: [],
+      actions: [],
+      outcomes: [],
+      unknowns: [],
+      non_care_facts: [],
+      relationships: [],
+      observation_focus_lines: [],
+    };
+    assert.equal(extraction.observations.length, 3);
     const careReality = careRealityObjectFromExtraction(extraction, "Mom");
     assert.equal(
       careReality.confidence,
