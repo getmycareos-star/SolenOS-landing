@@ -67,6 +67,7 @@ assert.equal(singleExplicitSpeaker[0]?.speaker_attribution_status, "explicit");
 const unattributed = splitCareThreadWithAttribution(
   "She ate half her lunch today.\n\nShe seemed tired afterwards.",
 );
+assert.equal(unattributed.length, 2, "unlabelled paragraphs remain separate observations");
 assert(
   unattributed.every((fragment) => fragment.speaker_label === null && fragment.speaker_attribution_status === "unknown"),
   "unlabelled source statements remain unattributed rather than guessed",
