@@ -9,6 +9,7 @@ import {
   sanitizeDurableCareKey,
   writeDurableJson,
   clearDurableDirectory,
+  withDurableFileLock,
 } from "../living-care-record-persistence/fs-store";
 import { resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
 
@@ -82,7 +83,6 @@ export function recordMemoryCorrection(params: {
 }): MemoryCorrectionRecord {
   const careRecipientId = resolveCareRealityStoreKey(params.careRecipientId);
   const now = params.nowIso ?? new Date().toISOString();
-  const store = load(careRecipientId);
   const record: MemoryCorrectionRecord = {
     id: `corr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     care_recipient_id: careRecipientId,
@@ -98,16 +98,33 @@ export function recordMemoryCorrection(params: {
     reason: params.reason ?? null,
     history_preserved: true,
   };
-  store.corrections = [...store.corrections, record].slice(-100);
-  store.updated_at = now;
-  save(store);
+  withDurableFileLock(`${pathFor(careRecipientId)}.lock`, () => {
+    // Refresh under lock to prevent concurrent workers overwriting audit entries.
+    const durable = readDurableJson<CorrectionStore>(pathFor(careRecipientId));
+    const store = durable?.corrections
+      ? durable
+      : {
+          care_recipient_id: careRecipientId,
+          corrections: [],
+          updated_at: now,
+        };
+    store.corrections = [...store.corrections, record];
+    store.updated_at = now;
+    save(store);
+  });
   return record;
 }
 
 export function listMemoryCorrections(
   careRecipientId: string,
 ): MemoryCorrectionRecord[] {
-  return [...load(resolveCareRealityStoreKey(careRecipientId)).corrections];
+  const key = resolveCareRealityStoreKey(careRecipientId);
+  const durable = readDurableJson<CorrectionStore>(pathFor(key));
+  if (durable?.corrections) {
+    memory.set(key, durable);
+    return [...durable.corrections];
+  }
+  return [...load(key).corrections];
 }
 
 export function resetMemoryCorrectionStore(): void {
