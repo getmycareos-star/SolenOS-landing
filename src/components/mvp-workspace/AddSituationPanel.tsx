@@ -16,8 +16,6 @@ import Link from "next/link";
 import { extractAttachedDocument } from "./capture/extract-attached";
 import { SnapCameraCapture } from "./capture/SnapCameraCapture";
 import { ScanDocumentCapture } from "./capture/ScanDocumentCapture";
-import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
-import { ShareCareSummaryPanel } from "./share/ShareCareSummaryPanel";
 
 type Props = {
   value: string;
@@ -33,15 +31,7 @@ type Props = {
   pendingShareId?: string | null;
   onShareClaimed?: () => void;
   /** Workspace-level metadata for the More menu. */
-  caregiverId?: string;
-  careSessionId?: string;
-  careRecipientName?: string;
   /** Fired when a workspace-level action is selected from the More menu. */
-  onWorkspaceAction?: (action: WorkspaceAction) => void;
-  isPinned?: boolean;
-  isArchived?: boolean;
-  canAddToHome?: boolean;
-  hasCareInfo?: boolean;
 };
 
 /**
@@ -61,21 +51,12 @@ export function AddSituationPanel({
   mode = "initial",
   pendingShareId = null,
   onShareClaimed,
-  caregiverId = "",
-  careSessionId = "",
-  careRecipientName,
-  onWorkspaceAction,
-  isPinned = false,
-  isArchived = false,
-  canAddToHome = false,
-  hasCareInfo = false,
 }: Props) {
   const [extracting, setExtracting] = useState(false);
   const [localHint, setLocalHint] = useState<string | null>(null);
   const [snapOpen, setSnapOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [lastEntryMethod, setLastEntryMethod] = useState<InputEntryMethod | null>(null);
-  const [sharePanelOpen, setSharePanelOpen] = useState(false);
 
   const hasReadyDocs = documents.some((d) => d.status === "ready" && d.extractedText.trim());
   const canSubmit = (value.trim().length > 0 || hasReadyDocs) && !loading && !extracting;
@@ -167,20 +148,6 @@ export function AddSituationPanel({
 
   const isFirstCapture = mode === "initial" && !hasContextRoot;
 
-  const handleWorkspaceAction = useCallback(
-    (action: WorkspaceAction) => {
-      if (action === "share_care_summary") {
-        setSharePanelOpen(true);
-      }
-      onWorkspaceAction?.(action);
-    },
-    [onWorkspaceAction],
-  );
-
-  const handleSharePanelClose = useCallback(() => {
-    setSharePanelOpen(false);
-  }, []);
-
   const handleRetryDoc = useCallback(
     async (doc: AttachedDocument) => {
       setLocalHint(null);
@@ -262,13 +229,7 @@ export function AddSituationPanel({
               <span>{extracting ? "Reading…" : "Upload"}</span>
             </label>
 
-            <WorkspaceMoreMenu
-              onAction={handleWorkspaceAction}
-              isPinned={isPinned}
-              isArchived={isArchived}
-              canAddToHome={canAddToHome}
-              hasCareInfo={hasCareInfo}
-            />
+
           </div>
 
           <button
@@ -376,14 +337,7 @@ export function AddSituationPanel({
         }}
       />
 
-      {sharePanelOpen && caregiverId && careSessionId && (
-        <ShareCareSummaryPanel
-          caregiverId={caregiverId}
-          careSessionId={careSessionId}
-          careRecipientName={careRecipientName}
-          onClose={handleSharePanelClose}
-        />
-      )}
+
     </div>
   );
 }
