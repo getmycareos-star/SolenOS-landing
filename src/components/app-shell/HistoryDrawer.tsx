@@ -682,7 +682,7 @@ export function HistoryDrawer() {
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [loadedAt, setLoadedAt] = useState<string | null>(null);\n  const [recordActions, setRecordActions] = useState<RecordActionState>({});\n  const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);\n  const [recordActions, setRecordActions] = useState<RecordActionState>({});\n  const [recordActionsLoaded, setRecordActionsLoaded] = useState(false);\n  const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
 
   const RECORD_ACTIONS_KEY = "solenos_history_record_actions_v1";
   useEffect(() => {
@@ -699,7 +699,7 @@ export function HistoryDrawer() {
   useEffect(() => {
     try { window.localStorage.setItem(RECORD_ACTIONS_KEY, JSON.stringify(recordActions)); }
     catch { setActionMessage("History preferences could not be saved in this browser."); }
-  }, [recordActions]);
+  }, [recordActions, recordActionsLoaded]);
   const updateRecordAction = (record: HistoryRecord, key: "pinned" | "archived" | "followUp", value: boolean) => {
     setRecordActions(current => ({
       ...current,
@@ -1232,7 +1232,7 @@ export function HistoryDrawer() {
                                         <button type="button" role="menuitem" onClick={() => updateRecordAction(record, "followUp", !recordActions[record.id]?.followUp)}><Clock3 size={16} aria-hidden />{recordActions[record.id]?.followUp ? "Remove follow-up flag" : "Mark for follow-up"}</button>
                                         <button type="button" role="menuitem" onClick={() => void copyRecord(record)}><Copy size={16} aria-hidden />Copy</button>
                                         {record.source_kind === "document" && <button type="button" role="menuitem" onClick={() => void downloadRecord(record)}><Download size={16} aria-hidden />Download original</button>}
-                                        <button type="button" role="menuitem" onClick={() => { setMenuId(null); setConfirmArchive(record.id); }}><ArchiveIcon />{recordActions[record.id]?.archived ? "Restore" : "Archive"}</button>
+                                        <button type="button" role="menuitem" onClick={() => { setMenuId(null); setConfirmArchive(record.id); }}><Archive size={16} aria-hidden />{recordActions[record.id]?.archived ? "Restore" : "Archive"}</button>
                                       </div>
                                     )}
                                   </div>
