@@ -668,7 +668,7 @@ function CategoryIcon({ category }: { category: HistoryCategory }) {
 
 export function HistoryDrawer() {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const open = true;
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -841,24 +841,7 @@ export function HistoryDrawer() {
     if (open && !hasLoaded && !loading) void loadHistory();
   }, [open, hasLoaded, loading, loadHistory]);
 
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
 
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setMenuId(null);
-      }
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
 
   const visibleRecords = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -896,7 +879,7 @@ export function HistoryDrawer() {
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
 
   const closeDrawer = () => {
-    setOpen(false);
+    setSelectedId(null);
     setMenuId(null);
   };
 
@@ -980,30 +963,9 @@ export function HistoryDrawer() {
 
   return (
     <>
-      <button
-        type="button"
-        className="history-trigger"
-        aria-label="Open care history"
-        aria-expanded={open}
-        aria-controls="solenos-history-drawer"
-        onClick={() => setOpen(true)}
-      >
-        <PanelLeftOpen size={21} aria-hidden />
-      </button>
-
-      {open && (
-        <div
-          className="history-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeDrawer();
-          }}
-        >
-          <aside
+      <aside
             id="solenos-history-drawer"
             className="history-drawer"
-            role="dialog"
-            aria-modal="true"
             aria-label="Care history"
           >
             <header className="history-drawer-header">
@@ -1024,9 +986,7 @@ export function HistoryDrawer() {
                   <strong>{selectedRecord ? "Care record" : "Care history"}</strong>
                   <span>{selectedRecord ? "Saved source information and record details" : "A chronological view across your saved care records"}</span>
                 </div>
-                <button type="button" className="history-icon-button" aria-label="Close care history" onClick={closeDrawer}>
-                  <X size={19} aria-hidden />
-                </button>
+
               </div>
               {!selectedRecord && (
                 <button
@@ -1265,9 +1225,7 @@ export function HistoryDrawer() {
                 <button type="button" aria-label="Dismiss message" onClick={() => setActionMessage(null)}><X size={14} aria-hidden /></button>
               </div>
             )}
-          </aside>
-        </div>
-      )}
+      </aside>
     </>
   );
 }
