@@ -26,6 +26,7 @@ interface WorkspaceMoreMenuProps {
   isPinned?: boolean;
   isArchived?: boolean;
   canAddToHome?: boolean;
+  hasCareInfo?: boolean;
 }
 
 const MENU_ITEMS: {
