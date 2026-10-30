@@ -80,6 +80,8 @@ assert.match(shell, /<LCRCurrentUnderstanding \/>/);
 assert.match(shell, /case "download_export"/);
 assert.match(shell, /intent={sharePanelIntent}/);
 assert.match(shell, /does NOT delete care information already stored on SolenOS servers/i);
+assert.match(shell, /getAnonymousAccessToken/);
+assert.match(shell, /revokeAnonymousSession/);
 assert.match(home, /Update your care record/);
 assert.match(home, /startInUpdateMode={updateRecord}/);
 assert.match(cognitive, /startInUpdateMode = false/);
@@ -110,4 +112,4 @@ assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWo
 assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.match(companionAlias, /redirect\("\/workspace"\)/);
 
-console.log("Companion home contract passed: AI Companion home, on-demand sidebar, five agreed care-record menu actions, three document-intake actions, and no duplicate navigation menu.");
+console.log("Companion home contract passed: caregiver-first home, eight requested menu actions, real update/details/export routes, device-session revocation, browse-only History, and preserved conversation input.");
