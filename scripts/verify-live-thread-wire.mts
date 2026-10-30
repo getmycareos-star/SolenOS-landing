@@ -65,6 +65,12 @@ assert(
   unattributed.every((fragment) => fragment.speaker_label === null && fragment.speaker_attribution_status === "unknown"),
   "unlabelled source statements remain unattributed rather than guessed",
 );
+const singleSpeaker = splitCareThreadWithAttribution(
+  "Daughter: She fell yesterday.\nShe was checked at urgent care afterwards.",
+);
+assert.equal(singleSpeaker.length, 1, "one explicit speaker block remains one source fragment");
+assert.equal(singleSpeaker[0]!.speaker_label, "Daughter");
+assert.equal(singleSpeaker[0]!.speaker_attribution_status, "explicit");
 
 
 {
