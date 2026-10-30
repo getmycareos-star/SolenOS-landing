@@ -14,6 +14,12 @@ import {
 import { classifyCareEventKind } from "../src/lib/living-care-record-ux";
 import fs from "node:fs";
 import path from "node:path";
+import {
+  evaluateSourceConflict,
+  listSourceClaims,
+  recordSourceClaim,
+  resetSourceConflictStore,
+} from "../src/lib/source-conflict";
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -356,5 +362,50 @@ assert(
   fs.existsSync(path.join(process.cwd(), "scripts/verify-living-care-record-regression.mts")),
   "ACS happy path is not enough — living-care-record-regression verify must exist",
 );
+
+// Source ledger: contributor disagreement is retained and history is not capped.
+resetSourceConflictStore();
+const sourceCareKey = "acs_source_integrity";
+recordSourceClaim({
+  careKey: sourceCareKey,
+  rawText: "She ate well at lunch.",
+  kind: "general",
+  capturedAt: "2026-07-18T12:00:00.000Z",
+  contributorId: "cg_daughter",
+});
+const disagreement = evaluateSourceConflict({
+  careKey: sourceCareKey,
+  incomingText: "She barely ate lunch.",
+  incomingKind: "general",
+  incomingCapturedAt: "2026-07-18T12:05:00.000Z",
+  incomingContributorId: "cg_nurse",
+});
+assert(disagreement.has_conflict, "opposing claims from distinct contributors are surfaced");
+assert(disagreement.both_retained === true, "conflict never discards either side");
+assert(disagreement.prior_text === "She ate well at lunch.", "prior source text retained verbatim");
+recordSourceClaim({
+  careKey: sourceCareKey,
+  rawText: "She barely ate lunch.",
+  kind: "general",
+  capturedAt: "2026-07-18T12:05:00.000Z",
+  contributorId: "cg_nurse",
+});
+for (let index = 0; index < 55; index += 1) {
+  recordSourceClaim({
+    careKey: sourceCareKey,
+    rawText: `Additional source note ${index}.`,
+    kind: "general",
+    capturedAt: new Date(Date.UTC(2026, 6, 19, 0, index)).toISOString(),
+    contributorId: index % 2 === 0 ? "cg_daughter" : "cg_nurse",
+  });
+}
+const sourceLedger = listSourceClaims(sourceCareKey);
+assert(sourceLedger.length === 57, "source ledger must not silently truncate after 40 claims");
+assert(
+  sourceLedger.some((claim) => claim.contributor_id === "cg_daughter") &&
+    sourceLedger.some((claim) => claim.contributor_id === "cg_nurse"),
+  "source ledger preserves contributor identity",
+);
+console.log("✓ source conflicts preserve both contributors; complete source ledger retained");
 
 console.log("\n=== Active Care Situation: all checks passed ===\n");
