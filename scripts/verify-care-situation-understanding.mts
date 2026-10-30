@@ -241,6 +241,10 @@ Notes: Family reports increased evening confusion since last week.`;
       rawText: "She seems more tired today.",
       kind: "general",
       nowIso: "2026-07-24T10:00:00.000Z",
+      // This assertion targets continuation persistence, not the separate
+      // relationship classifier. Hold the test's known active situation so
+      // it deterministically verifies that the second capture appends to it.
+      forceRelation: "updates_active",
     });
     assert.ok(
       turn2.situation.observations.length >= 2,
