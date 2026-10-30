@@ -167,10 +167,11 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         }
         try {
           await installPrompt.prompt();
-          const choice = await installPrompt.userChoice;
-          if (choice.outcome === "accepted") setInstallPrompt(null);
+          await installPrompt.userChoice;
         } catch {
           window.alert("The browser could not open its install prompt. Use the browser's Add to Home Screen option.");
+        } finally {
+          setInstallPrompt(null);
         }
         return;
       }
