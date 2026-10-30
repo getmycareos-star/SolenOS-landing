@@ -23,6 +23,12 @@ assert.doesNotMatch(cognitiveWorkspace, /ConsentGatePanel|consentState|setConsen
   "the active LCR workspace must not block viewing or saving behind a privacy acknowledgement checkbox");
 assert.match(consentPanel, /api\/v1\/consent/,
   "legacy consent API integration may remain for action-specific backend policy; it must not gate workspace entry");
+assert.match(consentPanel, /const confirmed = data\.verified === true && data\.required === false/,
+  "GET status must be verified before it is accepted");
+assert.match(consentPanel, /setStatus\(confirmed \? data : \{ \.\.\.data, required: true \}\)/,
+  "unverified GET status must keep consent required");
+assert.match(consentPanel, /onStatusChange\?\.\(confirmed \? "accepted" : "required"\)/,
+  "only verified GET status may report consent as accepted");
 
 console.log("✓ workspace routes mount without a privacy or early-version checkbox gate");
 console.log("✓ direct workspace entry does not disable server-side authentication or authorisation");
