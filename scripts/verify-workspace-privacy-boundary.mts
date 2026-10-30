@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
-const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const workspacePage = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8");
+const companionHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const consentPanel = fs.readFileSync("src/components/mvp-workspace/ConsentGatePanel.tsx", "utf8");
 const previewGate = fs.readFileSync("src/components/mvp-workspace/ResearchPreviewAckGate.tsx", "utf8");
 
@@ -12,6 +13,8 @@ assert.match(layout, /<WorkspaceProvider>\s*<ErrorBoundary/,
   "workspace provider and shell mount directly");
 assert.doesNotMatch(layout, /type="checkbox"|ResearchPreviewAckGate|EarlyAccessConsentForm/,
   "no acknowledgement checkbox may gate workspace routes");
+assert.doesNotMatch(companionHome, /ResearchPreviewAckGate/,
+  "the AI Companion home must not mount an early-version acknowledgement gate");
 assert.doesNotMatch(workspacePage, /ResearchPreviewAckGate/,
   "the LCR page must not mount an early-version acknowledgement gate");
 assert.match(workspacePage, /Living Care Record/,
