@@ -682,7 +682,8 @@ export function HistoryDrawer() {
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [loadedAt, setLoadedAt] = useState<string | null>(null);\n  const [recordActions, setRecordActions] = useState<RecordActionState>({});\n  const [recordActionsLoaded, setRecordActionsLoaded] = useState(false);\n  const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);
+  const [recordActions, setRecordActions] = useState<RecordActionState>({});\n  const [recordActionsLoaded, setRecordActionsLoaded] = useState(false);\n  const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
 
   const RECORD_ACTIONS_KEY = "solenos_history_record_actions_v1";
   useEffect(() => {
