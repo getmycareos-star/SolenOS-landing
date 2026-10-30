@@ -19,7 +19,10 @@ export type WorkspaceAction =
   | "archive"
   | "restore"
   | "delete"
-  | "add_to_home";
+  | "add_to_home"
+  | "edit_record"
+  | "view_record_details"
+  | "download_export";
 
 interface WorkspaceMoreMenuProps {
   onAction: (action: WorkspaceAction) => void;
