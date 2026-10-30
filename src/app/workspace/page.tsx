@@ -190,6 +190,23 @@ function WorkspacePageInner() {
                       <span>{formatLastUpdated(situation.updatedAt)}</span>
                     </div>
                     {situation.contextSummary && <p>{situation.contextSummary}</p>}
+                    {(situation.sourceStatements?.length ?? 0) > 0 && (
+                      <div className="lcr-source-statements" aria-label="Statements preserved from original sources">
+                        <p>Statements from original sources</p>
+                        {situation.sourceStatements!.map((statement) => (
+                          <div key={statement.id} className="lcr-source-statement">
+                            <p>
+                              <strong>{statement.speaker_label || "Speaker not identified"}</strong>
+                              {statement.speaker_attribution_status === "explicit"
+                                ? " · label recorded in source; identity not independently verified"
+                                : " · no speaker label in source"}
+                            </p>
+                            <p>{statement.source_passage}</p>
+                            <small>Submitted by authenticated caregiver · {statement.reported_at ? formatLastUpdated(statement.reported_at) : "report time unavailable"} · {statement.epistemic_status}</small>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {(situation.conflicts?.length ?? 0) > 0 && (
                       <p role="status">
                         {situation.conflicts!.length} conflicting report{situation.conflicts!.length === 1 ? "" : "s"} remain unresolved. No account has been selected as correct.
