@@ -8,6 +8,7 @@ import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
+import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/document-intake'
 
 interface HandoffDraftItem {
   source_type: string
@@ -110,6 +111,9 @@ const STARTER_PROMPTS = [
 export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
   const router = useRouter()
   const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const intakeModeRef = useRef<DocumentIntakeMode>('upload')
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -128,6 +132,21 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
+
+  const openDocumentIntake = (mode: DocumentIntakeMode) => {
+    setAddMenuOpen(false)
+    intakeModeRef.current = mode
+    if (mode === 'upload') uploadInputRef.current?.click()
+    else cameraInputRef.current?.click()
+  }
+
+  const completeDocumentIntake = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.currentTarget.files ?? [])
+    event.currentTarget.value = ''
+    if (!files.length) return
+    setPendingDocumentIntake(files, intakeModeRef.current)
+    router.push('/workspace/documents?intake=1')
+  }
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -502,6 +521,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </div>
 
       <div className="companion-composer-wrap">
+        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple hidden onChange={completeDocumentIntake} aria-label="Choose documents to upload" />
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden onChange={completeDocumentIntake} aria-label="Take a document photo" />
         <form className="companion-composer" aria-label="Send a message to Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
@@ -511,9 +532,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             <div className="companion-add-wrap">
               <button type="button" className="companion-add-button" aria-label="Add document or image" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
               {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?upload=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file to add to the care record</small></span></button>
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?capture=1") }}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open camera intake</small></span></button>
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?scan=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Capture, extract text, and review</small></span></button>
+                <button type="button" role="menuitem" onClick={() => openDocumentIntake("upload")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file from this device</small></span></button>
+                <button type="button" role="menuitem" onClick={() => openDocumentIntake("capture")}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open the camera now</small></span></button>
+                <button type="button" role="menuitem" onClick={() => openDocumentIntake("scan")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Photograph pages, then review them</small></span></button>
               </div>}
             </div>
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
