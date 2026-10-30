@@ -35,13 +35,14 @@ import {
  */
 function mapLlmOutputToExtractionResult(
   llm: LlmUnderstandingOutput,
+  source: string,
 ): CareRealityExtractionResult {
   const observations = llm.observations.map((o, i) => ({
     id: `llm_obs_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
     layer: "observation" as const,
     description: o.description,
     approximate_time: o.approximate_time,
-    source: "caregiver",
+    source,
     confidence: o.confidence,
     raw_fragment: o.raw_fragment,
   }));
@@ -88,7 +89,7 @@ function mapLlmOutputToExtractionResult(
     question: u.question,
     related_object_id: null as string | null,
     related_object_type: null as "observation" | "event" | "decision" | null,
-    source: "caregiver",
+    source,
     importance: "Identified by structured understanding layer — needs confirmation.",
     status: u.status,
     raw_fragment: u.raw_fragment,
@@ -233,7 +234,7 @@ export async function llmStructuredUnderstanding(params: {
     }
 
     // Map to existing types and return
-    return mapLlmOutputToExtractionResult(validated);
+    return mapLlmOutputToExtractionResult(validated, source);
   } catch (err: unknown) {
     console.warn(
       "[llm-understanding] LLM extraction failed, falling back to deterministic:",
