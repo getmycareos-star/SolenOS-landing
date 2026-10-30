@@ -462,7 +462,12 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         evidence_id?: string;
         ui_situations?: Situation[];
         situations?: Situation[];
+        situation_id?: string;
       };
+
+      if (targetSituationId && situationData.situation_id !== targetSituationId) {
+        throw new Error("The update was not attached to the selected care thread. The original thread remains unchanged.");
+      }
 
       // A successful POST is a write receipt. Prefer the read-after-write
       // projection; if no active situation was inferred, verify the event by ID
@@ -621,7 +626,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         careKey,
         caregiverId: careKey,
         situations: uiSituations,
-        activeSituationId: uiSituations.find((s) => s.status === "active")?.id ?? null,
+        activeSituationId:
+          targetSituationId ??
+          uiSituations.find((s) => s.status === "active")?.id ??
+          null,
         response: situationData,
       });
 
