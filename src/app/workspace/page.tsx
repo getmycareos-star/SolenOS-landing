@@ -202,6 +202,12 @@ function WorkspacePageInner() {
                                 : " · no speaker label in source"}
                             </p>
                             <p>{statement.source_passage}</p>
+                            {statement.supersedes_observation_id && (
+                              <small>Correction of an earlier statement · {statement.correction_rationale || "Correction reason not supplied"}</small>
+                            )}
+                            {statement.superseded_by_observation_ids.length > 0 && (
+                              <small>Original statement preserved · superseded by {statement.superseded_by_observation_ids.length} later correction{statement.superseded_by_observation_ids.length === 1 ? "" : "s"}.</small>
+                            )}
                             <small>Submitted by authenticated caregiver · {statement.reported_at ? formatLastUpdated(statement.reported_at) : "report time unavailable"} · {statement.epistemic_status}</small>
                           </div>
                         ))}
