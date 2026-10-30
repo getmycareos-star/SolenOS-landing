@@ -1002,9 +1002,8 @@ export function HistoryDrawer() {
 
                   {sourceWarnings.length > 0 && !loading && (
                     <div className="history-source-warning" role="status">
-                      <strong>Some history sources are unavailable</strong>
-                      <ul>{sourceWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
-                      <span>Records from available sources are still shown. An unavailable source is not treated as an empty history.</span>
+                      <strong>Some care history could not be loaded</strong>
+                      <span>The entries we could retrieve are still shown. Other entries may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
                     </div>
                   )}
 
@@ -1026,7 +1025,7 @@ export function HistoryDrawer() {
                     <div className="history-empty">
                       <HistoryEmptyIcon />
                       <strong>{records.length ? "No matching records" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : "No saved care records were returned from the available sources. SolenOS will not create example history."}</p>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
