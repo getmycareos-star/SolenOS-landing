@@ -77,6 +77,7 @@ export function recordSourceClaim(params: {
   rawText: string;
   kind: CareEventKind;
   capturedAt?: string;
+  contributorId?: string | null;
 }): void {
   const now = params.capturedAt ?? new Date().toISOString();
   const store = loadClaims(params.careKey);
@@ -84,6 +85,7 @@ export function recordSourceClaim(params: {
     raw_text: params.rawText.trim(),
     kind: params.kind,
     captured_at: now,
+    contributor_id: params.contributorId ?? null,
   };
   const next = [...store.claims, claim].slice(-40);
   saveClaims({ care_key: params.careKey, claims: next, updated_at: now });
