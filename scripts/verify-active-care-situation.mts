@@ -117,7 +117,24 @@ const tSoftAfterHard = ingestActiveCareObservation({
 });
 assert(tSoftAfterHard.relation === "opens_new", "soft mood after fall opens new situation");
 assert(tSoftAfterHard.situation.id !== t4.situation.id, "soft mood gets its own ACS id");
-console.log("✓ soft after hard same day → opens new (no fall absorb)");
+const retainedSituations = listActiveCareSituations("cg_acs");
+assert(
+  retainedSituations.some((s) => s.id === t1.situation.id),
+  "opening a new concern must retain the earlier unresolved concern",
+);
+assert(
+  retainedSituations.some((s) => s.id === t4.situation.id),
+  "fall concern remains separately addressable after a later concern opens",
+);
+assert(
+  retainedSituations.some((s) => s.id === tSoftAfterHard.situation.id),
+  "new concern is independently retained",
+);
+assert(
+  new Set(retainedSituations.map((s) => s.id)).size === retainedSituations.length,
+  "situation registry contains no duplicate situation identities",
+);
+console.log("✓ multiple distinct care situations retained independently");
 
 // Soft mood after medication ACS must also open new (no med Clarity bleed)
 resetActiveCareSituationStore();
