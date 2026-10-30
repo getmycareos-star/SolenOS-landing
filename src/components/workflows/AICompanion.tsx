@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ScanLine, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
@@ -497,12 +497,11 @@ export default function Companion({ home = false }: { home?: boolean }) {
           }} placeholder="Tell me what’s happening, or ask a question…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
             <div className="companion-add-wrap">
-              <button type="button" className="companion-add-button" aria-label="Add to care story" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
-              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Add to care story">
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace?compose=1") }}><span className="companion-add-icon"><ClipboardList size={17} /></span><span><strong>Add to care story</strong><small>Record an observation or care update</small></span></button>
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?upload=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Add reports, prescriptions or discharge papers</small></span></button>
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?capture=1") }}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Photograph a note or care information</small></span></button>
-                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?scan=1") }}><span className="companion-add-icon"><ScanLine size={17} /></span><span><strong>Scan document</strong><small>Capture a document and review extracted text</small></span></button>
+              <button type="button" className="companion-add-button" aria-label="Add document or image" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
+              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?upload=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file to add to the care record</small></span></button>
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?capture=1") }}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open camera intake</small></span></button>
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?scan=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Capture, extract text, and review</small></span></button>
               </div>}
             </div>
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
