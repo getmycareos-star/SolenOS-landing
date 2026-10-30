@@ -244,8 +244,8 @@ export function buildMattersNowOrientation(params: {
   // Short structured facet only — never quote a run-on note as "what matters".
   if (focus && !focusIsDump && focus.length <= 72) {
     return params.patternContinues
-      ? `Most important next: whether this keeps appearing and what surrounds it — without itemizing every action tonight.`
-      : `Most important next: how this sits with what was usual, and what else connects — without deciding everything tonight.`;
+      ? `Most important next: whether this keeps appearing and what surrounds it.`
+      : `Most important next: how this compares with what was usual, and what else connects.`;
   }
 
   if (params.topUnknown?.trim()) {
@@ -254,8 +254,8 @@ export function buildMattersNowOrientation(params: {
   }
 
   return who
-    ? `Most important next: how these concerns sit against what was usual for ${who}, and what else connects — without deciding everything tonight.`
-    : "Most important next: how these concerns sit against what was usual, and what else connects — without deciding everything tonight.";
+    ? `Most important next: how these concerns compare with what was usual for ${who}, and what else connects.`
+    : "Most important next: how these concerns compare with what was usual, and what else connects.";
 }
 
 /**
