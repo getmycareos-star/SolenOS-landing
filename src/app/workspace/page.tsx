@@ -2,13 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-
 import { BrandLoading } from "@/components/brand";
-import { CognitiveWorkspace } from "@/components/mvp-workspace";
-import { Button } from "@/components/ui/Button";
-import { ErrorBoundary } from "@/components/error-boundary";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -16,36 +10,6 @@ const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
 });
 
 function WorkspaceHomeInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const compose = searchParams.get("compose") === "1";
-  const updateRecord = searchParams.get("mode") === "update";
-
-  if (compose) {
-    return (
-      <main className="mobile-screen lcr-screen lcr-add-screen">
-        <div className="lcr-add-heading">
-          <Button variant="icon" aria-label="Back to AI Companion" onClick={() => router.push("/workspace")}>
-            <ArrowLeft size={20} aria-hidden="true" />
-          </Button>
-          <div>
-            <p className="lcr-eyebrow">LIVING CARE RECORD</p>
-            <h1>{updateRecord ? "Update your care record" : "Add to the record"}</h1>
-            <p>{updateRecord ? "Add a correction or new detail. Earlier entries are preserved." : "Notes, messages, documents, or photos. Fragments are fine."}</p>
-          </div>
-        </div>
-        <ErrorBoundary name="CognitiveWorkspace" fallback={
-          <section className="lcr-empty-state">
-            <p>The record entry could not open correctly.</p>
-            <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
-          </section>
-        }>
-          <CognitiveWorkspace startInUpdateMode={updateRecord} />
-        </ErrorBoundary>
-      </main>
-    );
-  }
-
   return (
     <div className="mobile-screen feature-page companion-route solenos-companion-home">
       <Companion home />
