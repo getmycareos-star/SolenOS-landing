@@ -69,6 +69,8 @@ assert.match(moreMenu, /label: "Delete"/);
 assert.match(moreMenu, /label: "Add to Home"/);
 assert.match(moreMenu, /id: "add_to_home", label: "Add to Home", icon: Home/);
 assert.match(shell, /To add SolenOS to your home screen/);
+assert.match(shell, /iPhone or iPad/);
+assert.match(moreMenu, /aria-label="More care record actions"/);
 assert.match(shell, /finally \{\s*setInstallPrompt\(null\)/);
 assert.doesNotMatch(moreMenu, /Edit record|View record details|Download|Daily Care|Documents|Care Handoffs|Appointments|Settings/);
 assert.doesNotMatch(shell, /MoreVertical|solenos-main-menu/);
