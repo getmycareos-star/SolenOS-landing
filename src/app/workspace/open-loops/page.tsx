@@ -197,6 +197,7 @@ export default function OpenLoopsPage() {
           { kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() },
         ];
         let selectedSourceId: string | null = null;
+        let selectedRelatedSourceId: string | null = null;
         if ((action === "response" && loop.loop_type === "professional_input") || action === "verify" || action === "reconcile") {
           const activeSession = await ensureAnonymousSession();
           const sourceRows = await getJSON(`/evidence/${encodeURIComponent(activeSession.person.id)}`);
@@ -242,6 +243,7 @@ export default function OpenLoopsPage() {
             if (!second || second.id === selectedSourceId) {
               throw new Error("Choose a different, existing source record. One source cannot corroborate itself.");
             }
+            selectedRelatedSourceId = String(second.id);
             const relationshipPath = `/care-continuity/evidence/${encodeURIComponent(selectedSourceId)}/relationships`;
             const relationshipBody = {
               related_evidence_id: String(second.id),
@@ -281,6 +283,7 @@ export default function OpenLoopsPage() {
           text: text.trim(),
           verification_rule: verificationRule?.trim() || null,
           source_evidence_id: selectedSourceId,
+          related_source_evidence_id: selectedRelatedSourceId,
         });
         const pendingKey = loop.id + ":" + action;
         const pending = pendingActionKeys.current[pendingKey];
