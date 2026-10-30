@@ -430,3 +430,32 @@
 }
 
 
+
+/* Founder profile link on the landing page. */
+.editorial-landing .el-final-cta aside .el-linkedin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  min-height: 44px;
+  margin-top: .75rem;
+  color: var(--el-ink);
+  font-weight: 650;
+  text-decoration: none;
+}
+.editorial-landing .el-final-cta aside .el-linkedin-link .el-linkedin-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.editorial-landing .el-final-cta aside .el-linkedin-link:hover {
+  color: #0a66c2;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
