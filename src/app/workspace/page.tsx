@@ -190,6 +190,19 @@ function WorkspacePageInner() {
                       <span>{formatLastUpdated(situation.updatedAt)}</span>
                     </div>
                     {situation.contextSummary && <p>{situation.contextSummary}</p>}
+                    {(situation.conflicts?.length ?? 0) > 0 && (
+                      <p role="status">
+                        {situation.conflicts!.length} conflicting report{situation.conflicts!.length === 1 ? "" : "s"} remain unresolved. No account has been selected as correct.
+                      </p>
+                    )}
+                    {(situation.informationGaps?.length ?? 0) > 0 && (
+                      <p>
+                        {situation.informationGaps!.length} information gap{situation.informationGaps!.length === 1 ? "" : "s"} still need clarification.
+                      </p>
+                    )}
+                    {situation.openQuestions.length > 0 && (
+                      <p>Still to clarify: {situation.openQuestions.join(" · ")}</p>
+                    )}
                     <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? situation.status}</span>
                     {situation.persistedThread && situation.status !== "resolved" && (
                       <button
