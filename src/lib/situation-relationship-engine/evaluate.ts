@@ -214,6 +214,35 @@ export function evaluateSituationRelationship(params: {
     sameCalendarDay(active.updated_at, nowIso) ||
     withinActiveWindow(active.updated_at, nowIso);
   const topicContinuity = continuesUnderlyingIssue(active, rawText);
+
+  // Explicit continuation language can reconnect an unresolved care issue after
+  // the short interaction window. The 12-hour window governs implicit proximity;
+  // it must not erase a caregiver's explicit "still / continues / since then"
+  // link to the same underlying topic. Topic match is required to avoid gluing
+  // unrelated notes together, and resolved/history situations are never reopened.
+  const explicitlyContinues =
+    /\\b(still|continues?|continuing|remains?|ongoing|since then|from before|same issue)\\b/i.test(
+      rawText,
+    );
+  if (
+    topicContinuity &&
+    explicitlyContinues &&
+    active.lifecycle_status !== "resolved" &&
+    active.lifecycle_status !== "historical"
+  ) {
+    return {
+      decision: "UPDATE_EXISTING_SITUATION",
+      acs_relation: "updates_active",
+      related_situation_id: active.id,
+      reason:
+        "Caregiver explicitly continues the same unresolved underlying care issue.",
+      confidence: "medium",
+      is_reinforcement: false,
+      identity_mismatch: false,
+      is_improvement_outcome: false,
+    };
+  }
+
   const activeIsIncident =
     active.theme === "incident" ||
     active.observations.some((o) => isHardEventKind(o.kind));
