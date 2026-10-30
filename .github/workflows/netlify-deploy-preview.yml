@@ -3,7 +3,7 @@ name: Netlify deploy preview
 on:
   pull_request:
     branches:
-      - feat/chatgpt-style-care-sidebar
+      - main
     types: [opened, synchronize, reopened]
     paths:
       - "src/**"
