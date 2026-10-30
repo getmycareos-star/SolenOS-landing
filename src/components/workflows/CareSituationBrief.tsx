@@ -119,6 +119,21 @@ function CareSection({
                 <p style={{ margin: "4px 0 0", color: "#596a5c", fontSize: 12, lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{description}</p>
                 <small style={{ display: "block", marginTop: 5, color: "#7a887b", fontSize: 10, lineHeight: 1.4 }}>{sourceText} · {dateLabel(when)}</small>
                 {!change && <small style={{ display: "block", marginTop: 3, color: "#68796a", fontSize: 10, lineHeight: 1.4 }}>Reported by: {item.reported_by_label || "Not recorded"} · Supporting evidence: {item.evidence_ids?.length ?? 0} linked item(s)</small>}
+                {!change && (item.source_label || item.evidence_ids?.length) && (
+                  <details style={{ marginTop: 6, color: "#536957", fontSize: 11 }}>
+                    <summary style={{ cursor: "pointer", fontWeight: 700 }}>Inspect source references</summary>
+                    <div style={{ display: "grid", gap: 5, padding: "7px 0 0 8px" }}>
+                      <span>Source: {item.source_label || item.source_type || "Not recorded"}</span>
+                      <span>Reported by: {item.reported_by_label || "Not recorded"}</span>
+                      <span>Recorded: {dateLabel(item.recorded_at || item.occurred_at)}</span>
+                      {(item.evidence_ids || []).map(evidenceId => (
+                        <Link key={evidenceId} href={`/workspace/documents?evidence_id=${encodeURIComponent(evidenceId)}`} style={{ color: "#315b39", fontWeight: 750, textDecoration: "underline", overflowWrap: "anywhere" }}>
+                          Open original evidence · {evidenceId}
+                        </Link>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </article>
             );
           })}
