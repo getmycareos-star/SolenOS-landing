@@ -323,9 +323,24 @@ function WorkspacePageInner() {
                       </div>
                     )}
                     {(situation.informationGaps?.length ?? 0) > 0 && (
-                      <p>
-                        {situation.informationGaps!.length} information gap{situation.informationGaps!.length === 1 ? "" : "s"} still need clarification.
-                      </p>
+                      <div aria-label="Outstanding evidence gaps">
+                        <p>
+                          {situation.informationGaps!.length} information gap{situation.informationGaps!.length === 1 ? "" : "s"} still need clarification.
+                        </p>
+                        {situation.informationGaps!.map((gap) => (
+                          <div key={gap.id} className="lcr-source-statement">
+                            <p><strong>{gap.field}</strong></p>
+                            {gap.description && <p>{gap.description}</p>}
+                            <small>
+                              {gap.gap_reason || "Reason not recorded"}
+                              {" · "}Priority: {gap.priority || "not assessed"}
+                              {" · "}Evidence IDs: {gap.evidence_ids.length > 0
+                                ? gap.evidence_ids.join(", ")
+                                : "none linked"}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {situation.openQuestions.length > 0 && (
                       <p>Still to clarify: {situation.openQuestions.join(" · ")}</p>
