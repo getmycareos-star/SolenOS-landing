@@ -310,7 +310,19 @@ export default function DocumentsPage() {
     }
   }, []);
 
-  useEffect(() => { void loadDocuments(); }, [loadDocuments]);
+  useEffect(() => { void loadDocuments(); }, [loadDocuments]);\n\n  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("upload") === "1" ? "upload" : params.get("capture") === "1" ? "capture" : params.get("scan") === "1" ? "scan" : null;
+    if (!action) return;
+    params.delete("upload");
+    params.delete("capture");
+    params.delete("scan");
+    const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
+    window.history.replaceState({}, "", next);
+    if (action === "upload") fileInput.current?.click();
+    else cameraInput.current?.click();
+  }, []);
+
 
   useEffect(() => {
     return () => {
