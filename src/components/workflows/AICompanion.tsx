@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
