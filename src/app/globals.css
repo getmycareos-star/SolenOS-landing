@@ -5518,3 +5518,21 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-chat-sidebar .history-drawer.is-detail .history-drawer-title-row{gap:7px}
 .solenos-chat-sidebar .history-drawer.is-detail .history-drawer-heading strong{font-size:12px}
 .solenos-chat-sidebar .history-drawer.is-detail .history-drawer-heading span{display:none}
+
+
+/* Persistent ChatGPT-style main options menu. */
+.solenos-main-menu-wrap { position:relative; display:flex; align-items:center; flex:0 0 auto; }
+.solenos-main-menu-trigger { width:40px; height:40px; border-radius:10px; }
+.solenos-main-menu-trigger:hover { background:#f0f2ef; }
+.solenos-main-menu {
+  position:absolute; z-index:90; top:calc(100% + 8px); right:0; min-width:190px;
+  display:flex; flex-direction:column; gap:2px; padding:6px;
+  border:1px solid #e1e5e1; border-radius:12px; background:#fff;
+  box-shadow:0 10px 30px rgba(20,32,24,.12);
+}
+.solenos-main-menu button {
+  width:100%; min-height:40px; padding:9px 11px; border:0; border-radius:8px;
+  background:transparent; color:#26332a; text-align:left; font:inherit; font-size:14px; cursor:pointer;
+}
+.solenos-main-menu button:hover { background:#f3f6f2; }
+.solenos-main-menu button:focus-visible { outline:2px solid #8ca98a; outline-offset:1px; }
