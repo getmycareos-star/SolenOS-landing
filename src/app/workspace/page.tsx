@@ -8,7 +8,9 @@ import { BrandLoading } from "@/components/brand";
 import { CognitiveWorkspace } from "@/components/mvp-workspace";
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
-import { listActiveSituations } from "@/lib/ui-runtime";
+import { listActiveSituations, openSituationsFromSituationApi } from "@/lib/ui-runtime";
+import { ensureAnonymousSession } from "@/api/client";
+import { apiUrl } from "@/lib/api-url";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
@@ -43,13 +45,72 @@ const STATUS_LABELS: Record<string, string> = {
 function WorkspacePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { runtime, hydrated, entryReady } = useWorkspace();
+  const { runtime, hydrated, entryReady, updateRuntime } = useWorkspace();
   const [displayName, setDisplayName] = useState("");
   const [isArchived, setIsArchived] = useState(false);
   const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const [archiveRestoreError, setArchiveRestoreError] = useState("");
   const compose = searchParams.get("compose") === "1";
   const targetSituationId = searchParams.get("situation");
+  const [relationshipTargets, setRelationshipTargets] = useState<Record<string, string>>({});
+  const [linkingSituationId, setLinkingSituationId] = useState<string | null>(null);
+  const [relationshipFeedback, setRelationshipFeedback] = useState("");
+
+  const resumableSituations = runtime.situations.filter(
+    (situation) => situation.persistedThread && situation.status !== "resolved",
+  );
+
+  async function linkRelatedSituation(sourceSituationId: string) {
+    const relatedId = relationshipTargets[sourceSituationId];
+    if (!relatedId || relatedId === sourceSituationId) return;
+    setLinkingSituationId(sourceSituationId);
+    setRelationshipFeedback("");
+    try {
+      const session = await ensureAnonymousSession();
+      if (!session.access_token) throw new Error("A secure care session is required.");
+      const response = await fetch(apiUrl("/api/v1/care-continuity/relationships"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          source_type: "situation",
+          source_id: sourceSituationId,
+          relationship_type: "related_to",
+          target_type: "situation",
+          target_id: relatedId,
+          provenance: "Caregiver explicitly linked these concerns as related; this relationship does not merge their care threads or establish causation.",
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          result && typeof result.detail === "string"
+            ? result.detail
+            : "The related-care link was not saved.",
+        );
+      }
+      const refreshed = await fetch(apiUrl("/api/situation"), {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      });
+      if (!refreshed.ok) {
+        throw new Error("The relationship was saved, but the care timeline could not be refreshed.");
+      }
+      const payload = await refreshed.json();
+      updateRuntime((previous) => ({
+        ...previous,
+        situations: openSituationsFromSituationApi(payload),
+      }));
+      setRelationshipFeedback("Related concerns linked. Their separate care threads and evidence remain intact.");
+      setRelationshipTargets((previous) => ({ ...previous, [sourceSituationId]: "" }));
+    } catch (error) {
+      setRelationshipFeedback(error instanceof Error ? error.message : "The related-care link was not saved.");
+    } finally {
+      setLinkingSituationId(null);
+    }
+  }
 
   useEffect(() => {
     try {
@@ -236,6 +297,41 @@ function WorkspacePageInner() {
                       <p>Still to clarify: {situation.openQuestions.join(" · ")}</p>
                     )}
                     <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? situation.status}</span>
+                    {situation.persistedThread && situation.status !== "resolved" && resumableSituations.length > 1 && (
+                      <div className="lcr-related-situation-control">
+                        <label htmlFor={`related-situation-${situation.id}`}>Link a related concern without merging it</label>
+                        <select
+                          id={`related-situation-${situation.id}`}
+                          value={relationshipTargets[situation.id] ?? ""}
+                          onChange={(event) => setRelationshipTargets((previous) => ({
+                            ...previous,
+                            [situation.id]: event.target.value,
+                          }))}
+                        >
+                          <option value="">Choose another care thread</option>
+                          {resumableSituations
+                            .filter((candidate) => candidate.id !== situation.id)
+                            .map((candidate) => (
+                              <option key={candidate.id} value={candidate.id}>{candidate.title}</option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="lcr-text-action"
+                          disabled={!relationshipTargets[situation.id] || linkingSituationId === situation.id}
+                          onClick={() => void linkRelatedSituation(situation.id)}
+                        >
+                          {linkingSituationId === situation.id ? "Linking…" : "Link related concern"}
+                        </button>
+                      </div>
+                    )}
+                    {situation.relatedSituations && situation.relatedSituations.length > 0 && (
+                      <p>
+                        Related concerns kept separate: {situation.relatedSituations.map((related) =>
+                          situations.find((candidate) => candidate.id === related.id)?.title ?? "Related care thread"
+                        ).join(" · ")}
+                      </p>
+                    )}
                     {situation.persistedThread && situation.status !== "resolved" && (
                       <button
                         type="button"
@@ -244,6 +340,9 @@ function WorkspacePageInner() {
                       >
                         Add update to this thread <span aria-hidden="true">→</span>
                       </button>
+                    )}
+                    {relationshipFeedback && linkingSituationId === null && (
+                      <p role="status">{relationshipFeedback}</p>
                     )}
                   </div>
                 </article>
