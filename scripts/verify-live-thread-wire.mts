@@ -11,6 +11,8 @@ import {
   THREAD_SOURCE_EVIDENCE_PREFIX,
   listThreadSourceEvidence,
   resetThreadSourceEvidenceStore,
+  splitCareThreadWithAttribution,
+  recordThreadSourceEvidence,
 } from "../src/lib/thread-ingestion";
 import {
   resetActiveCareSituationStore,
@@ -45,6 +47,25 @@ Sam: Now she says she is afraid to walk to the kitchen.`;
 
 assert.equal(looksLikeCareThread("Short note."), false, "short notes not threads");
 assert.equal(looksLikeCareThread(thread), true, "speaker thread detected");
+const parsedSpeakers = splitCareThreadWithAttribution(thread);
+assert.equal(parsedSpeakers.length, 4, "each explicit speaker block becomes its own fragment");
+assert.deepEqual(
+  parsedSpeakers.map((fragment) => fragment.speaker_label),
+  ["Alex", "Sam", "Alex", "Sam"],
+  "explicit speaker labels survive parsing in source order",
+);
+assert(
+  parsedSpeakers.every((fragment) => fragment.speaker_attribution_status === "explicit"),
+  "speaker attribution is marked explicit only for source-labelled blocks",
+);
+const unattributed = splitCareThreadWithAttribution(
+  "She ate half her lunch today.\n\nShe seemed tired afterwards.",
+);
+assert(
+  unattributed.every((fragment) => fragment.speaker_label === null && fragment.speaker_attribution_status === "unknown"),
+  "unlabelled source statements remain unattributed rather than guessed",
+);
+
 
 {
   resetActiveCareSituationStore();
@@ -55,9 +76,20 @@ assert.equal(looksLikeCareThread(thread), true, "speaker thread detected");
   const result = ingestCareThread({
     caregiverId: careKey,
     rawThread: thread,
+    contributorId: "cg_authenticated_reporter",
     nowIso: "2026-07-17T18:00:00.000Z",
   });
   assert(result.multiple_linked_events, "multi linked");
+  const attributedAcs = getActiveCareSituation(careKey)!;
+  assert(
+    attributedAcs.observations.some((observation) =>
+      observation.speaker_label === "Alex" &&
+      observation.speaker_attribution_status === "explicit" &&
+      observation.contributor_id === "cg_authenticated_reporter" &&
+      observation.source_reference_id === result.thread_id
+    ),
+    "speaker, authenticated reporter and original thread source remain distinct on each observation",
+  );
   const acs = getActiveCareSituation(careKey)!;
   assert(acs.observations.length >= 2, "ACS grew");
   assert(
@@ -85,6 +117,20 @@ assert.equal(looksLikeCareThread(thread), true, "speaker thread detected");
   assert(/held|Living Care Record|Connected|Updated|stays connected/i.test(
     view.care_event_added.confirmation,
   ), "confirmation composed");
+
+  for (let index = 0; index < 25; index += 1) {
+    recordThreadSourceEvidence({
+      careKey,
+      sourceText: `Original source report ${index}`,
+      fragmentCount: 1,
+      capturedAt: new Date(Date.UTC(2026, 6, 18, 0, index)).toISOString(),
+      threadId: `thread_integrity_${index}`,
+    });
+  }
+  assert(
+    listThreadSourceEvidence(careKey).length === 26,
+    "original thread evidence must not be truncated after twenty reports",
+  );
   console.log("✓ LCR view uses thread-aware compose + strips source envelope");
 }
 
