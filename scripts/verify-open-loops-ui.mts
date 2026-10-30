@@ -13,9 +13,12 @@ const required: Array<[string, RegExp]> = [
   ["backend reassessment is requested", /postJSON\("\/open-loops\/reassess"/],
   ["source evidence is fetched from the active person's care record", /getJSON\(\`\/evidence\/\$\{encodeURIComponent\(activeSession\.person\.id\)\}\`\)/],
   ["professional response requires an existing selected source", /action === "response" && loop\.loop_type === "professional_input"[\s\S]*?const selected = sources\.find/],
-  ["professional source references carry the actual evidence ID", /kind: action === "verify" \? "outcome_verification_source" : action === "reconcile" \? "contradiction_reconciliation_source" : "care_record_source",[\s\S]*?evidence_id: selectedSourceId/],
+  ["outcome verification selects two distinct persisted sources", /const secondSourceId = window\.prompt[\s\S]*?second\.id === selectedSourceId/],
+  ["outcome verification persists an explicit independent pair relationship", /relationship_type: "corroborates"[\s\S]*?source_independence_status: "independent"[\s\S]*?await postJSON\(relationshipPath, relationshipBody\)/],
+  ["corroboration retries verify the exact persisted relationship", /const existing = await getJSON\(relationshipPath\)[\s\S]*?row\.source_independence_status === "independent"/],
+  ["corroboration sends both persisted source IDs", /kind: "care_record_source", evidence_id: selectedSourceId[\s\S]*?kind: "care_record_source", evidence_id: String\(second\.id\)/],
   ["outcome verification and contradiction reconciliation both require source selection", /action === "verify" \|\| action === "reconcile"/],
-  ["verification and reconciliation explain that descriptive wording is not source evidence", /Outcome verification requires an existing persisted source record[\s\S]*?Contradiction reconciliation requires persisted source evidence/],
+  ["verification and reconciliation explain that descriptive wording is not source evidence", /Outcome verification requires two persisted, independently originated source records[\s\S]*?Contradiction reconciliation requires persisted source evidence/],
   ["missing source evidence blocks the action", /No source evidence is saved in this care record yet/],
   ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
   ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
@@ -27,7 +30,7 @@ for (const [label, pattern] of required) {
   assert.match(page, pattern, `Open Loop UI contract missing: ${label}`);
 }
 
-for (const action of ["responses", "actions", "outcomes", "verify-outcome", "reconcile", "close", "reopen", "cancel"]) {
+for (const action of ["responses", "actions", "outcomes", "corroborate-outcome", "reconcile", "close", "reopen", "cancel"]) {
   assert.ok(page.includes(`"${action}"`), `Open Loop action route missing: ${action}`);
 }
 
