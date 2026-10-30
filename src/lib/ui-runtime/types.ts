@@ -175,6 +175,9 @@ export type Situation = {
   sourceStatements?: readonly {
     id: string;
     evidence_id: string;
+    supersedes_observation_id: string | null;
+    correction_rationale: string | null;
+    superseded_by_observation_ids: string[];
     speaker_label: string | null;
     speaker_attribution_status: "explicit" | "unknown";
     reporter_caregiver_id: string | null;
