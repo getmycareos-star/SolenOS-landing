@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
@@ -13,6 +14,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
@@ -20,6 +22,11 @@ import { ShareCareSummaryPanel } from "@/components/mvp-workspace/share/ShareCar
 import { ensureAnonymousSession } from "@/api/client";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
+
+const LCRCurrentUnderstanding = dynamic(
+  () => import("@/components/mvp-workspace/LCRCurrentUnderstanding").then((module) => module.LCRCurrentUnderstanding),
+  { ssr: false, loading: () => <p className="solenos-record-details-loading">Loading saved care details…</p> },
+);
 
 type NavItem = { href: string; label: string; icon?: string };
 type AppShellProps = {
@@ -74,10 +81,21 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const [isArchived, setIsArchived] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [sharePanelContext, setSharePanelContext] = useState<SharePanelContext | null>(null);
+  const [sharePanelIntent, setSharePanelIntent] = useState<"share" | "export">("share");
+  const [recordDetailsOpen, setRecordDetailsOpen] = useState(false);
 
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!recordDetailsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setRecordDetailsOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [recordDetailsOpen]);
 
   useEffect(() => {
     try {
@@ -97,13 +115,15 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
   const handleWorkspaceAction = useCallback(async (action: WorkspaceAction) => {
     switch (action) {
-      case "share_care_summary": {
+      case "share_care_summary":
+      case "download_export": {
         try {
           const session = await ensureAnonymousSession();
           const storedSessionId = window.localStorage.getItem("solenos_care_session_id");
           const careSessionId = ensureClientInteractionSessionId(storedSessionId);
           window.localStorage.setItem("solenos_care_session_id", careSessionId);
           const careRecipientName = window.localStorage.getItem("solenos_care_recipient_display_name")?.trim() || undefined;
+          setSharePanelIntent(action === "download_export" ? "export" : "share");
           setSharePanelContext({
             caregiverId: session.caregiver.id,
             careSessionId,
@@ -112,6 +132,14 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         } catch (error) {
           window.alert(error instanceof Error ? error.message : "The care session could not be opened for sharing.");
         }
+        return;
+      }
+      case "edit_record": {
+        router.push("/workspace?compose=1&mode=update");
+        return;
+      }
+      case "view_record_details": {
+        setRecordDetailsOpen(true);
         return;
       }
       case "pin":
@@ -126,7 +154,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "archive": {
-        if (!window.confirm("Hide this workspace on this device? This does not delete or server-archive care information. You can restore it later.")) return;
+        if (!window.confirm("Archive this workspace on this device? This hides the workspace here only. It does not archive or change care information stored on SolenOS. You can restore this view later.")) return;
         try {
           window.localStorage.setItem("solenos_workspace_archived", "1");
           setIsArchived(true);
@@ -145,7 +173,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "delete": {
-        if (!window.confirm("Clear this workspace from this device? This removes local session and workspace data from this browser. It does not delete care information already stored on SolenOS servers. Continue?")) return;
+        if (!window.confirm("Delete this workspace from this device? This clears local session and workspace data from this browser. It does NOT delete care information already stored on SolenOS servers. Continue?")) return;
         try {
           LOCAL_WORKSPACE_KEYS.forEach((key) => window.localStorage.removeItem(key));
         } catch {
@@ -176,7 +204,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
     }
-  }, [installPrompt]);
+  }, [installPrompt, router]);
 
   const active = (href: string) =>
     href === "/workspace"
@@ -288,12 +316,34 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             </section>
           ) : children}
         </main>
+        {recordDetailsOpen && (
+          <div className="solenos-record-details-backdrop">
+            <button type="button" className="solenos-record-details-dismiss" aria-label="Close care record details" onClick={() => setRecordDetailsOpen(false)} />
+            <section className="solenos-record-details-dialog" role="dialog" aria-modal="true" aria-labelledby="solenos-record-details-title">
+              <header className="solenos-record-details-header">
+                <div>
+                  <p>YOUR LIVING CARE RECORD</p>
+                  <h2 id="solenos-record-details-title">Care record details</h2>
+                  <span>Saved information, recorded changes, and what remains uncertain.</span>
+                </div>
+                <button type="button" aria-label="Close care record details" onClick={() => setRecordDetailsOpen(false)}>
+                  <X size={20} aria-hidden />
+                </button>
+              </header>
+              <div className="solenos-record-details-content"><LCRCurrentUnderstanding /></div>
+            </section>
+          </div>
+        )}
         {sharePanelContext && (
           <ShareCareSummaryPanel
             caregiverId={sharePanelContext.caregiverId}
             careSessionId={sharePanelContext.careSessionId}
             careRecipientName={sharePanelContext.careRecipientName}
-            onClose={() => setSharePanelContext(null)}
+            intent={sharePanelIntent}
+            onClose={() => {
+              setSharePanelContext(null);
+              setSharePanelIntent("share");
+            }}
           />
         )}
       </div>
