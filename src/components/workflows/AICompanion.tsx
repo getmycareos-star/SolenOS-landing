@@ -231,6 +231,10 @@ export default function Companion({ home = false }: { home?: boolean }) {
     if (prefill) {
       autoDraftSent.current = true
       setInput(prefill)
+      params.delete('prompt')
+      const remainingQuery = params.toString()
+      const nextUrl = window.location.pathname + (remainingQuery ? '?' + remainingQuery : '') + window.location.hash
+      window.history.replaceState({}, '', nextUrl)
       return
     }
     const draft = params.get('draft')?.trim()
