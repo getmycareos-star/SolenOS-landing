@@ -13,6 +13,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  renameSync,
   writeFileSync,
 } from "fs";
 import { join } from "path";
@@ -52,10 +53,25 @@ export function readDurableJson<T>(filePath: string): T | null {
 
 export function writeDurableJson(filePath: string, value: unknown): void {
   if (isBrowser) return;
+  const directory = join(filePath, "..");
+  const temporaryPath = `${filePath}.tmp-${process.pid}-${Math.random().toString(36).slice(2)}`;
   try {
-    mkdirSync(join(filePath, ".."), { recursive: true });
-    writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
+    mkdirSync(directory, { recursive: true });
+    // Write beside the destination and atomically rename: readers see either
+    // the previous complete JSON document or the next complete one, never a
+    // truncated half-write after a process interruption.
+    writeFileSync(temporaryPath, JSON.stringify(value, null, 2), {
+      encoding: "utf8",
+      mode: 0o600,
+      flag: "wx",
+    });
+    renameSync(temporaryPath, filePath);
   } catch {
+    try {
+      rmSync(temporaryPath, { force: true });
+    } catch {
+      // Preserve the original persistence failure.
+    }
     throw new Error(
       "The durable care record could not be written; persistence was not confirmed.",
     );
