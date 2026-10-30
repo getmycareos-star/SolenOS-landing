@@ -5498,9 +5498,8 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-chat-mobile-scrim,.mobile-sidebar-open,.mobile-sidebar-brand,.mobile-sidebar-close{display:none}
 .solenos-sidebar-toggle{display:inline-grid}
 @media(max-width:760px){
- .solenos-chat-sidebar-host{position:fixed;inset:0 auto 0 0;z-index:120;width:min(300px,88vw);height:100dvh;transform:translateX(-105%);transition:transform .2s ease}
- .solenos-chat-sidebar-host.is-mobile-open{transform:translateX(0)}
- .solenos-chat-sidebar-host:has(.is-mobile-open){width:min(300px,88vw)}
+ .solenos-chat-sidebar-host{position:fixed;inset:0 auto 0 0;z-index:120;flex-basis:min(300px,88vw);width:min(300px,88vw);height:100dvh;overflow:visible;transform:translateX(-105%);transition:transform .2s ease}
+ .solenos-chat-sidebar-host.is-sidebar-open{flex-basis:min(300px,88vw);width:min(300px,88vw);transform:translateX(0)}
  .solenos-chat-sidebar{box-shadow:12px 0 35px rgba(20,35,30,.13)}
  .solenos-chat-sidebar .desktop-collapse{display:none}
  .solenos-chat-sidebar .mobile-sidebar-close{display:inline-grid}
