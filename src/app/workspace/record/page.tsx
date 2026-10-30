@@ -83,7 +83,7 @@ function WorkspacePageInner() {
                 window.localStorage.removeItem("solenos_workspace_archived");
                 setArchiveRestoreError("");
                 setIsArchived(false);
-                router.replace("/workspace");
+                router.replace("/workspace/record");
               } catch {
                 setArchiveRestoreError("This browser could not restore the workspace. Your care information has not been deleted.");
               }
@@ -100,7 +100,7 @@ function WorkspacePageInner() {
     return (
       <main className="mobile-screen lcr-screen lcr-add-screen">
         <div className="lcr-add-heading">
-          <Button variant="icon" aria-label="Back to Living Care Record" onClick={() => router.push("/workspace")}>
+          <Button variant="icon" aria-label="Back to Living Care Record" onClick={() => router.push("/workspace/record")}>
             <span aria-hidden="true">←</span>
           </Button>
           <div>
