@@ -103,6 +103,11 @@ export function recordSourceClaim(params: {
 }
 
 export function listSourceClaims(careKey: string): ObservationSourceRef[] {
+  const durable = readDurableJson<ClaimStore>(claimPath(careKey));
+  if (durable?.claims) {
+    claimMemory.set(careKey, durable);
+    return [...durable.claims];
+  }
   return [...loadClaims(careKey).claims];
 }
 
