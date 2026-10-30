@@ -27,7 +27,6 @@ import {
 import type { Situation } from "@/lib/ui-runtime/types";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { AddSituationPanel } from "./AddSituationPanel";
-import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
 import { ActivationOutputPanel } from "./ActivationOutputPanel";
 import { SituationResponsePanel } from "./SituationResponsePanel";
 import { CareRecipientNameGate } from "./CareRecipientNameGate";
@@ -171,13 +170,8 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   const [pendingShareId, setPendingShareId] = useState<string | null>(null);
 
   /** PWA install prompt — deferred until user action. */
-  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
-  const [canAddToHome, setCanAddToHome] = useState(false);
 
   /** Workspace management state. */
-  const [isPinned, setIsPinned] = useState(false);
-  const [isArchived, setIsArchived] = useState(false);
-  const [hasCareInfo, setHasCareInfo] = useState(false);
 
   const go = useCallback((next: WorkspaceState) => {
     setTransitionKey((k) => k + 1);
@@ -195,16 +189,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       window.history.replaceState({}, "", next || "/");
     }
 
-    // PWA install prompt — capture for Add to Home action.
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setCanAddToHome(true);
-    };
-    window.addEventListener("beforeinstallprompt", handler as EventListener);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handler as EventListener);
-    };
     // Intentionally mount-only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -602,8 +586,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
 
       // Update workspace info flags.
       const obsCount = situationData.active_care_situation?.observations?.length ?? 0;
-      const hasInfo = obsCount > 0 || (situationData.events_created?.length ?? 0) > 0 || Boolean(situationData.care_event_id);
-      setHasCareInfo(hasInfo);
 
       // Stay in update mode only while this ACS has more than one note.
       setEntryMode(obsCount > 1 ? "update" : "initial");
@@ -653,175 +635,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       setLoading(false);
     }
   }
-
-  async function handleWorkspaceAction(action: WorkspaceAction) {
-    switch (action) {
-      case "share_care_summary": {
-        // Share only information already present in the current caregiver session.
-        // Never generate sample facts or imply that an unverified extraction is established care history.
-        const summaryParts = [
-          "SolenOS — Living Care Record summary",
-          displayName?.trim() ? `Person: ${displayName.trim()}` : null,
-          lastSharedDisplay.trim() ? `Recent caregiver entry:\n${lastSharedDisplay.trim()}` : null,
-          savedEventReceipt?.title ? `Saved care update: ${savedEventReceipt.title}` : null,
-          savedEventReceipt?.description ? `Details: ${savedEventReceipt.description}` : null,
-        ].filter((part): part is string => Boolean(part));
-        const hasShareableCare = Boolean(
-          lastSharedDisplay.trim() || savedEventReceipt?.title || savedEventReceipt?.description,
-        );
-        if (!hasShareableCare) {
-          window.alert("There is no saved care information available to share from this screen yet.");
-          break;
-        }
-        const summary = summaryParts.join("\n\n");
-        try {
-          if (typeof navigator.share === "function") {
-            await navigator.share({ title: "SolenOS Living Care Record summary", text: summary });
-          } else if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(summary);
-            window.alert("Care summary copied. You can paste it into the app or message of your choice.");
-          } else {
-            window.prompt("Copy this care summary:", summary);
-          }
-        } catch (error) {
-          if (error instanceof Error && error.name === "AbortError") break;
-          try {
-            if (navigator.clipboard?.writeText) {
-              await navigator.clipboard.writeText(summary);
-              window.alert("Care summary copied. You can paste it into the app or message of your choice.");
-            } else {
-              window.prompt("Copy this care summary:", summary);
-            }
-          } catch {
-            window.prompt("Copy this care summary:", summary);
-          }
-        }
-        break;
-      }
-      case "pin": {
-        setIsPinned(true);
-        try {
-          window.localStorage.setItem("solenos_workspace_pinned", "1");
-        } catch {
-          /* ignore */
-        }
-        break;
-      }
-      case "unpin": {
-        setIsPinned(false);
-        try {
-          window.localStorage.removeItem("solenos_workspace_pinned");
-        } catch {
-          /* ignore */
-        }
-        break;
-      }
-      case "archive": {
-        const confirmed = window.confirm(
-          "Hide this workspace on this device?\n\nThis only hides the workspace in this browser. It does not delete or server-archive care information, and you can restore the workspace later.",
-        );
-        if (!confirmed) return;
-        try {
-          window.localStorage.setItem("solenos_workspace_archived", "1");
-        } catch {
-          window.alert(
-            "This browser could not save the workspace's local archive state. Nothing was archived or deleted. Your workspace remains available; check browser storage settings and try again.",
-          );
-          break;
-        }
-        setIsArchived(true);
-        window.location.href = "/workspace";
-        break;
-      }
-      case "restore": {
-        try {
-          window.localStorage.removeItem("solenos_workspace_archived");
-          setIsArchived(false);
-        } catch {
-          window.alert(
-            "This browser could not restore the workspace because local storage is unavailable. The archive state has not changed.",
-          );
-        }
-        break;
-      }
-      case "delete": {
-        const confirmed = window.confirm(
-          "Clear this workspace from this device?\n\nThis removes local session and workspace data from this browser. It does not delete care information already stored on SolenOS servers. Continue?",
-        );
-        if (!confirmed) return;
-        try {
-          const keysToRemove = [
-            "solenos_durable_care_key",
-            "solenos_care_session_id",
-            "solenos_telemetry_user_id",
-            "solenos_situations",
-            "solenos_timeline",
-            "solenos_active_situation_id",
-            "solenos_care_recipient_display_name",
-            "solenos_care_profile",
-            "solenos_care_recipient_id",
-            "solenos_last_input_raw",
-            "solenos_notif_prefs",
-            "solenos_data_training",
-            "solenos_language_preference",
-            "solenos_early_access_consent_v1",
-            "onboarding_complete",
-            "onboarding_complete_at",
-            "solenos_workspace_pinned",
-            "solenos_workspace_archived",
-          ];
-          keysToRemove.forEach((k) => {
-            try {
-              window.localStorage.removeItem(k);
-            } catch {
-              /* ignore */
-            }
-          });
-        } catch {
-          /* ignore */
-        }
-        window.location.href = "/start";
-        break;
-      }
-      case "add_to_home": {
-        if (deferredPrompt) {
-          try {
-            void (deferredPrompt as any).prompt();
-            const { outcome } = await (deferredPrompt as any).userChoice;
-            if (outcome === "accepted") {
-              setCanAddToHome(false);
-            }
-          } catch {
-            /* prompt may fail if already shown */
-          }
-          setDeferredPrompt(null);
-        } else {
-          // Fallback: open browser menu instructions
-          window.alert(
-            "To add SolenOS to your home screen:\n\n" +
-              "iOS: Tap Share → Add to Home Screen\n" +
-              "Android: Tap menu → Add to Home screen\n" +
-              "Desktop: Click the install icon in the address bar.",
-          );
-        }
-        break;
-      }
-    }
-  }
-
-  // Restore pinned/archived state from localStorage on mount.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const pinned = window.localStorage.getItem("solenos_workspace_pinned");
-      if (pinned === "1") setIsPinned(true);
-      const archived = window.localStorage.getItem("solenos_workspace_archived");
-      if (archived === "1") setIsArchived(true);
-    } catch {
-      /* ignore */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only
-  }, []);
 
   async function handleDoneForNow() {
     // Pause interaction only — never resolve care reality or restart-from-zero.
@@ -1021,27 +834,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     .filter(Boolean)
     .join(" ");
 
-  if (isArchived) {
-    return (
-      <div className={shellClass}>
-        <section className="panel" aria-labelledby="archived-workspace-heading">
-          <h2 id="archived-workspace-heading" className="workspace-headline">Workspace archived</h2>
-          <p className="panel-muted">
-            This workspace is hidden from the active view on this device. Archiving does not delete
-            server-held care information.
-          </p>
-          <WorkspaceMoreMenu
-            onAction={(action) => void handleWorkspaceAction(action)}
-            isPinned={isPinned}
-            isArchived={true}
-            canAddToHome={canAddToHome}
-            hasCareInfo={hasContextRoot || sessionHasNote}
-          />
-        </section>
-      </div>
-    );
-  }
-
   return (
     <div className={shellClass}>
       <div className="lcr-capture-context" role="note">
@@ -1135,14 +927,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                         ? "update"
                         : "initial"
                     }
-                    caregiverId={caregiverId}
-                    careSessionId={interactionSessionId()}
-                    careRecipientName={displayName ?? undefined}
-                    onWorkspaceAction={handleWorkspaceAction}
-                    isPinned={isPinned}
-                    isArchived={isArchived}
-                    canAddToHome={canAddToHome}
-                    hasCareInfo={hasCareInfo}
                   />
                 </>
               )}
