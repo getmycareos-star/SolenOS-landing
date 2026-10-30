@@ -36,6 +36,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
   useEffect(() => {
     setMobileOpen(false);
+    setMainMenuOpen(false);
   }, [pathname]);
 
   const active = (href: string) => href === "/workspace"
