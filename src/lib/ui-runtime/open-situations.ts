@@ -59,6 +59,8 @@ export function openSituationsFromSituationApi(
       ...s,
       title: titleFromInput(s.title),
       riskLevel: "LOW" as const,
+      persistedThread:
+        (s as Situation & { persisted_thread?: boolean }).persisted_thread === true,
     }));
   }
 
