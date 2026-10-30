@@ -5513,3 +5513,8 @@ input[type="file"] { width: 100%; white-space: normal; }
  .solenos-chat-topbar-context{flex:1}
 }
 @media(prefers-reduced-motion:reduce){.solenos-chat-sidebar-host{transition:none}}
+
+.solenos-chat-sidebar .history-drawer.is-detail .history-drawer-header{display:flex;align-items:center;padding:6px 8px;border:0;background:transparent}
+.solenos-chat-sidebar .history-drawer.is-detail .history-drawer-title-row{gap:7px}
+.solenos-chat-sidebar .history-drawer.is-detail .history-drawer-heading strong{font-size:12px}
+.solenos-chat-sidebar .history-drawer.is-detail .history-drawer-heading span{display:none}
