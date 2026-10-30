@@ -263,7 +263,7 @@ function isTopicRelated(priorText: string, currentText: string): boolean {
   if (sharedTerms > 0) return true;
   const priorDomain = inferDomain(priorText);
   const currentDomain = inferDomain(currentText);
-  const explicitContinuation = /\\b(?:still|again|same|continues?|continuing|since then|that|it)\\b/i.test(
+  const explicitContinuation = /\b(?:still|again|same|continues?|continuing|since then|that|it)\b/i.test(
     currentText,
   );
   return (
@@ -424,17 +424,19 @@ export function compareAgainstBaseline(params: {
     }
   }
 
-  const latestFocus =
-    changeClauses[0] ??
-    clauses.find((clause) => !isNonRecipientBaselineNoise(clause)) ??
-    latest;
+  const topicFocuses =
+    changeClauses.length > 0
+      ? changeClauses
+      : [clauses.find((clause) => !isNonRecipientBaselineNoise(clause)) ?? latest].filter(Boolean);
+  const latestFocus = topicFocuses[0] ?? latest;
   const relevantBaselineClauses = baselineClauses.filter(
     (baselineClause) =>
       changeClauses.length === 0 ||
       changeClauses.some((changeClause) => isTopicRelated(baselineClause, changeClause)),
   );
   const relevantDurableFacts = durableFacts.filter(
-    (fact) => latestFocus && isTopicRelated(fact.statement, latestFocus),
+    (fact) =>
+      topicFocuses.some((focus) => focus && isTopicRelated(fact.statement, focus)),
   );
   for (const baselineClause of relevantBaselineClauses) {
     const line = baselineClause.endsWith(".") ? baselineClause : `${baselineClause}.`;
@@ -483,7 +485,8 @@ export function compareAgainstBaseline(params: {
     }
   }
   const relevantHeldPriorFacts = heldPriorFacts.filter(
-    (fact) => latestFocus && isTopicRelated(fact, latestFocus),
+    (fact) =>
+      topicFocuses.some((focus) => focus && isTopicRelated(fact, focus)),
   );
   const has_comparable_prior =
     relevantDurableFacts.length > 0 ||
@@ -549,7 +552,7 @@ export function compareAgainstBaseline(params: {
     let previous: string | null = null;
     let bestScore = 0;
     for (const b of [...relevantBaselineClauses, ...relevantDurableFacts.map((f) => f.statement)]) {
-      if (isNonRecipientBaselineNoise(b)) continue;
+      if (isNonRecipientBaselineNoise(b) || !isTopicRelated(b, change)) continue;
       const score = tokenOverlap(contentTokens(b), changeTokens);
       const domainBoost = inferDomain(b) === changeDomain ? 1 : 0;
       const total = score + domainBoost;
@@ -558,19 +561,10 @@ export function compareAgainstBaseline(params: {
         previous = b;
       }
     }
-    if (previous && isNonRecipientBaselineNoise(previous)) previous = null;
-    if (!previous && relevantBaselineClauses[0] && !isNonRecipientBaselineNoise(relevantBaselineClauses[0]!)) {
-      previous = relevantBaselineClauses[0]!;
-    }
-    if (
-      !previous &&
-      known_baseline[0] &&
-      !isNonRecipientBaselineNoise(known_baseline[0]!)
-    ) {
-      previous = known_baseline[0]!;
-    }
 
-    if (!previous && durableFacts.length === 0 && baselineClauses.length === 0) {
+    // A different topic in the same capture is not a valid baseline for this
+    // change. Keep it as an observation instead of inventing a comparison.
+    if (!previous) {
       continue;
     }
 
@@ -656,33 +650,25 @@ export function compareAgainstBaseline(params: {
     relevantHeldPriorFacts.length > 0 &&
     latest
   ) {
-    const priorFocus = relevantHeldPriorFacts[relevantHeldPriorFacts.length - 1]!.replace(/\.$/, "");
-    const latestFocus = (
-      changeClauses[0] ??
-      clauses.find((c) => !isNonRecipientBaselineNoise(c)) ??
-      latest
-    )
-      .replace(/\s+/g, " ")
-      .slice(0, 140)
-      .replace(/\.$/, "");
-    const sharedTopicTerms = tokenOverlap(
-      contentTokens(priorFocus),
-      contentTokens(latestFocus),
-    );
-    const priorDomain = inferDomain(priorFocus);
-    const latestDomain = inferDomain(latestFocus);
-    const explicitContinuation = /\b(?:still|again|same|continues?|continuing|since then|that|it)\b/i.test(
-      latestFocus,
-    );
-    const relatedToHeldThread =
-      sharedTopicTerms > 0 ||
-      (priorDomain !== "general" && priorDomain === latestDomain && explicitContinuation);
-
-    if (
-      latestFocus.length >= 8 &&
-      relatedToHeldThread &&
-      !priorFocus.toLowerCase().includes(latestFocus.toLowerCase().slice(0, 36))
-    ) {
+    const relatedHeldPair = [...relevantHeldPriorFacts]
+      .reverse()
+      .flatMap((fact) =>
+        topicFocuses
+          .filter((focus) => isTopicRelated(fact, focus))
+          .map((focus) => ({ fact, focus })),
+      )[0];
+    if (!relatedHeldPair) {
+      // A prior record exists, but not for this topic. Do not connect them.
+    } else {
+      const priorFocus = relatedHeldPair.fact.replace(/\.$/, "");
+      const latestFocus = relatedHeldPair.focus
+        .replace(/\s+/g, " ")
+        .slice(0, 140)
+        .replace(/\.$/, "");
+      if (
+        latestFocus.length >= 8 &&
+        !priorFocus.toLowerCase().includes(latestFocus.toLowerCase().slice(0, 36))
+      ) {
       meaningful_changes.push(
         "Related update to an existing care thread — the wording connects to what was already recorded; whether it represents a change from the person's usual pattern remains unclear.",
       );
@@ -706,7 +692,7 @@ export function compareAgainstBaseline(params: {
       ]) {
         if (!unknowns.includes(u)) unknowns.push(u);
       }
-      for (const f of heldPriorFacts.slice(0, 3)) {
+      for (const f of relevantHeldPriorFacts.slice(0, 3)) {
         if (
           !known_baseline.some(
             (b) => b.toLowerCase().slice(0, 36) === f.toLowerCase().slice(0, 36),
@@ -714,6 +700,7 @@ export function compareAgainstBaseline(params: {
         ) {
           known_baseline.push(f);
         }
+      }
       }
     }
   }
