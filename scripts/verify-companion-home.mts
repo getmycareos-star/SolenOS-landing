@@ -19,7 +19,7 @@ assert.match(home, /@\/components\/workflows\/AICompanion/);
 assert.match(home, /solenos-companion-home/);
 assert.match(home, /companion-conversation/);
 assert.match(home, /conversation|Companion/);
-assert.match(home, /<Companion home \/>/);
+assert.match(home, /<Companion home key=\{prompt \|\| "home"\} \/>/, "Companion remounts when Edit record supplies a prompt");
 const companion = read("src/components/workflows/AICompanion.tsx");
 const documents = read("src/app/workspace/documents/page.tsx");
 assert.match(companion, /companion-shell.*is-home/);
