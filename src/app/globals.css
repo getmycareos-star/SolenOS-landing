@@ -5441,3 +5441,24 @@ input[type="file"] { width: 100%; white-space: normal; }
   .policy-settings-panel .consent-checkbox { padding: .8rem; }
   .policy-acknowledge-button { min-height: 52px; }
 }
+
+ 
+/* Main workspace actions live in the page header, not inside the care-entry composer. */
+.workspace-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  z-index: 30;
+  min-height: 44px;
+  padding: 0.2rem 1.25rem 0;
+}
+.workspace-top-actions .workspace-more-menu {
+  position: relative;
+}
+@media (max-width: 640px) {
+  .workspace-top-actions {
+    min-height: 42px;
+    padding-inline: 0.85rem;
+  }
+}
