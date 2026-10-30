@@ -23,7 +23,7 @@ const NAVIGATION = [
   { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
-  { href: "/workspace/appointment", label: "Appointments", icon: ShieldCheck },
+  { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
   { href: "/workspace", label: "Living Care Record", icon: ShieldCheck },
 ] as const;
 
