@@ -85,7 +85,8 @@ console.log("✓ learning-first contracts");
     path.join(root, "src", "components", "mvp-workspace", "ResearchPreviewAckGate.tsx"),
     "utf8",
   );
-  assert.ok(ack.includes("hasResearchPreviewAck"));
+  assert.doesNotMatch(ack, /type="checkbox"|hasResearchPreviewAck|RESEARCH_PREVIEW_SECTION/);
+  assert.match(ack, /return <>\{children\}<\/>/);
   // Must not be a polish-heavy redesign of the panel
   assert.ok(!/animate-|keyframes|gradient-glow/i.test(panel));
   console.log("✓ SoT + rule + API + panel wiring + research preview");

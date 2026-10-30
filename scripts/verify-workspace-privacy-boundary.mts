@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const layout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const cognitiveWorkspace = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const consentPanel = fs.readFileSync("src/components/mvp-workspace/ConsentGatePanel.tsx", "utf8");
 const previewGate = fs.readFileSync("src/components/mvp-workspace/ResearchPreviewAckGate.tsx", "utf8");
 
@@ -16,8 +17,10 @@ assert.doesNotMatch(workspacePage, /ResearchPreviewAckGate/,
   "the LCR page must not mount an early-version acknowledgement gate");
 assert.match(workspacePage, /Living Care Record/,
   "the destination is the Living Care Record workspace");
-assert.match(previewGate, /RESEARCH_PREVIEW_SECTION\.ackLabel|early version/i,
-  "legacy component remains identifiable for regression detection, but must not be mounted in the workspace");
+assert.doesNotMatch(previewGate, /type="checkbox"|RESEARCH_PREVIEW_SECTION|hasResearchPreviewAck/,
+  "legacy preview wrapper must not render an acknowledgement checkbox");
+assert.doesNotMatch(cognitiveWorkspace, /ConsentGatePanel|consentState|setConsentState|Retry the privacy check/,
+  "the active LCR workspace must not block viewing or saving behind a privacy acknowledgement checkbox");
 assert.match(consentPanel, /api\/v1\/consent/,
   "legacy consent API integration may remain for action-specific backend policy; it must not gate workspace entry");
 
