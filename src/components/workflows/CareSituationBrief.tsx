@@ -174,6 +174,25 @@ export default function CareSituationBrief() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // Refresh when caregivers return to the Companion and periodically while it
+  // remains open. The Companion's answer endpoint independently retrieves fresh
+  // server-side LCR context for every question.
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void load(true);
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load(true);
+    }, 60_000);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.clearInterval(interval);
+    };
+  }, [load]);
+
   const items = data?.items ?? [];
   const currentItems = useMemo(() => items.filter(isCurrent), [items]);
   const attentionItems = useMemo(() => items.filter(isAttention), [items]);
