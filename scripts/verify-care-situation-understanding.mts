@@ -329,7 +329,7 @@ async function main() {
     });
     const second = ingestActiveCareObservation({
       caregiverId: contributorId,
-      rawText: "Mom ate less breakfast this morning.",
+      rawText: "Mom is still needing help walking this morning.",
       kind: "general",
       nowIso: "2026-10-29T08:00:00.000Z",
     });
@@ -342,7 +342,7 @@ async function main() {
     assert.equal(
       unrelated.baseline_comparison.has_meaningful_change,
       false,
-      "an unrelated new care topic must not be linked to the held walking/eating thread",
+      "an unrelated new care topic must not be linked to the held walking thread",
     );
     assert.equal(
       unrelated.baseline_comparison.has_comparable_prior,
