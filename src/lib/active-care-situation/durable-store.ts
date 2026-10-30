@@ -59,6 +59,58 @@ export function listActiveCareSituationsFromDurable(
   return current ? [current] : [];
 }
 
+function mergeConcurrentSituationWrites(
+  current: ActiveCareSituation,
+  incoming: ActiveCareSituation,
+): ActiveCareSituation {
+  if (current.id !== incoming.id) return incoming;
+
+  const currentTime = Date.parse(current.updated_at) || 0;
+  const incomingTime = Date.parse(incoming.updated_at) || 0;
+  const preferred = incomingTime >= currentTime ? incoming : current;
+  const observationRows = preferred === current
+    ? [...incoming.observations, ...current.observations]
+    : [...current.observations, ...incoming.observations];
+  const observationsById = new Map<string, ActiveCareSituation["observations"][number]>();
+  for (const observation of observationRows) {
+    observationsById.set(observation.id, observation);
+  }
+  const union = (left: readonly string[] = [], right: readonly string[] = []) =>
+    [...new Set([...left, ...right])];
+
+  const correlations = [
+    ...(preferred === current
+      ? [...(incoming.cross_signal_correlations ?? []), ...(current.cross_signal_correlations ?? [])]
+      : [...(current.cross_signal_correlations ?? []), ...(incoming.cross_signal_correlations ?? [])]),
+  ];
+  const correlationsByPair = new Map<string, NonNullable<ActiveCareSituation["cross_signal_correlations"]>[number]>();
+  for (const correlation of correlations) {
+    const key = [correlation.signal_a, correlation.signal_b].sort().join("\\u0000");
+    correlationsByPair.set(key, correlation);
+  }
+
+  return {
+    ...current,
+    ...incoming,
+    ...preferred,
+    care_recipient_id: incoming.care_recipient_id ?? current.care_recipient_id,
+    root_event_id: current.root_event_id ?? incoming.root_event_id,
+    opened_at: current.opened_at < incoming.opened_at ? current.opened_at : incoming.opened_at,
+    updated_at: currentTime > incomingTime ? current.updated_at : incoming.updated_at,
+    observations: [...observationsById.values()].sort(
+      (left, right) => left.captured_at.localeCompare(right.captured_at) || left.id.localeCompare(right.id),
+    ),
+    open_questions: union(current.open_questions, incoming.open_questions),
+    asked_questions: union(current.asked_questions, incoming.asked_questions),
+    familiarity_baseline: union(current.familiarity_baseline, incoming.familiarity_baseline),
+    trajectory_by_domain: {
+      ...(preferred === current ? incoming.trajectory_by_domain : current.trajectory_by_domain),
+      ...(preferred.trajectory_by_domain ?? {}),
+    },
+    cross_signal_correlations: [...correlationsByPair.values()],
+  };
+}
+
 /**
  * Persist the current projection and an append-preserving per-recipient index.
  * A new unrelated situation must not erase the prior unresolved situation.
@@ -68,13 +120,21 @@ export function persistActiveCareSituationToDurable(
 ): void {
   const key = situation.care_recipient_id ?? situation.caregiver_id;
   withDurableFileLock(`${acsIndexPath(key)}.lock`, () => {
-    writeDurableJson(acsDurablePath(key), situation);
+    // Merge against the latest durable version while holding the lock. Two
+    // callers can both start from the same stale snapshot; their distinct
+    // observations must both survive the second writer's commit.
     const indexed = readDurableJson<ActiveCareSituation[]>(acsIndexPath(key)) ?? [];
     const position = indexed.findIndex((item) => item.id === situation.id);
-    const next =
-      position < 0
-        ? [...indexed, situation]
-        : indexed.map((item, index) => index === position ? situation : item);
+    const current = position < 0
+      ? readDurableJson<ActiveCareSituation>(acsDurablePath(key))
+      : indexed[position]!;
+    const merged = current
+      ? mergeConcurrentSituationWrites(current, situation)
+      : situation;
+    writeDurableJson(acsDurablePath(key), merged);
+    const next = position < 0
+      ? [...indexed, merged]
+      : indexed.map((item, index) => index === position ? merged : item);
     writeDurableJson(acsIndexPath(key), next);
   });
 }
