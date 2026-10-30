@@ -89,6 +89,9 @@ export default function DocumentIntelligenceReview({ documents, refreshKey = 0 }
       }) as { written_to_lcr?: boolean; candidate?: Candidate; message?: string };
       if (decision === "accept" && result.written_to_lcr !== true) throw new Error("The server did not confirm that the accepted statement was saved to the Living Care Record.");
       await load(true);
+      if (decision === "accept" && result.written_to_lcr === true) {
+        window.dispatchEvent(new Event("solenos:lcr-updated"));
+      }
       setMessage(result.message || (result.written_to_lcr ? "Source-linked statement saved to the Living Care Record." : "Review decision saved."));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The document review decision could not be saved.");
