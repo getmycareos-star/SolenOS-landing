@@ -133,31 +133,6 @@ try {
     body: JSON.stringify({
       person_id: session.personId,
       uploaded_by_caregiver_id: session.caregiverId,
-      type: "professional_record",
-      evidence_kind: "documented_record",
-      epistemic_status: "unverified",
-      source_text: "Synthetic CI-only independently originated professional record for corroboration workflow.",
-      source_type: "ci_e2e_fixture",
-      original_source_reference: "ci-e2e-independent-clinic-record-0003",
-      ingestion_key: "ui-e2e-independent-source-0003",
-    }),
-  });
-  if (!independentSourceResponse.ok) {
-    throw new Error(`Could not seed independent source evidence: HTTP ${independentSourceResponse.status} ${await independentSourceResponse.text()}`);
-  }
-  const independentSourceEvidence = await independentSourceResponse.json();
-  const independentEvidenceId = independentSourceEvidence.id;
-  if (!independentEvidenceId) throw new Error("The backend did not return the independent source evidence ID.");
-
-  const independentSourceResponse = await fetch(new URL("/api/v1/evidence", backend), {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${session.token}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      person_id: session.personId,
-      uploaded_by_caregiver_id: session.caregiverId,
       type: "document",
       evidence_kind: "professional_observation",
       epistemic_status: "unverified",
