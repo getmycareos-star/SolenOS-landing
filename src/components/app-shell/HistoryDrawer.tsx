@@ -15,7 +15,6 @@ import {
   FileText,
   Handshake,
   MoreHorizontal,
-  Plus,
   RefreshCw,
   Search,
   Share2,
