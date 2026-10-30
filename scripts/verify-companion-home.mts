@@ -37,9 +37,9 @@ assert.match(shell, /Daily Care/);
 assert.match(shell, /Documents/);
 assert.match(shell, /Care Handoffs/);
 assert.match(shell, /Appointments/);
-assert.match(record, /LCRCurrentUnderstanding/);
-assert.match(record, /Record timeline/);
+assert.match(record, /redirect\("\/workspace"\)/);
+assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/);
 assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.match(companionAlias, /redirect\("\/workspace"\)/);
 
-console.log("Companion home contract passed: AI Companion home, three document-intake actions, persistent main options menu, no LCR sidebar destination, and no AI agent embedded in Daily Care.");
+console.log("Companion home contract passed: AI Companion home, three document-intake actions, persistent main options menu, no LCR sidebar destination, and the legacy LCR route redirected away from the main experience, with no AI agent embedded in Daily Care.");
