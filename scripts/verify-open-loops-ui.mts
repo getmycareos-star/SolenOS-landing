@@ -13,12 +13,11 @@ const required: Array<[string, RegExp]> = [
   ["backend reassessment is requested", /postJSON\("\/open-loops\/reassess"/],
   ["source evidence is fetched from the active person's care record", /getJSON\(\`\/evidence\/\$\{encodeURIComponent\(activeSession\.person\.id\)\}\`\)/],
   ["professional response requires an existing selected source", /action === "response" && loop\.loop_type === "professional_input"[\s\S]*?const selected = sources\.find/],
-  ["outcome verification selects two distinct persisted sources", /const secondSourceId = window\.prompt[\s\S]*?second\.id === selectedSourceId/],
-  ["outcome verification persists an explicit independent pair relationship", /relationship_type: "corroborates"[\s\S]*?source_independence_status: "independent"[\s\S]*?await postJSON\(relationshipPath, relationshipBody\)/],
-  ["corroboration retries verify the exact persisted relationship", /const existing = await getJSON\(relationshipPath\)[\s\S]*?row\.source_independence_status === "independent"/],
-  ["corroboration sends both persisted source IDs", /kind: "care_record_source", evidence_id: selectedSourceId[\s\S]*?kind: "care_record_source", evidence_id: String\(second\.id\)/],
+  ["outcome corroboration requires two distinct persisted source IDs", /if \(action === "verify"\)[\s\S]*?secondSourceId[\s\S]*?second\.id === selectedSourceId[\s\S]*?evidence_id: String\(second\.id\)/],
+  ["independent source relationship is persisted before corroboration", /relationship_type: "corroborates"[\s\S]*?source_independence_status: "independent"[\s\S]*?scope_type: "evidence_pair"[\s\S]*?await postJSON\(relationshipPath, relationshipBody\)/],
+  ["outcome verification calls the explicit corroboration endpoint", /action === "verify" \? "corroborate-outcome"/],
   ["outcome verification and contradiction reconciliation both require source selection", /action === "verify" \|\| action === "reconcile"/],
-  ["verification and reconciliation explain that descriptive wording is not source evidence", /Outcome verification requires two persisted, independently originated source records[\s\S]*?Contradiction reconciliation requires persisted source evidence/],
+  ["verification requires two independent persisted sources", /Outcome verification requires two persisted, independently originated source records/],
   ["missing source evidence blocks the action", /No source evidence is saved in this care record yet/],
   ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
   ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
@@ -35,7 +34,7 @@ for (const action of ["responses", "actions", "outcomes", "corroborate-outcome",
 }
 
 assert.ok(
-  page.includes("Verification means a caregiver reviewed two persisted sources and explicitly assessed their origins as independent."),
+  page.includes("Independent-source corroboration means a caregiver reviewed two persisted source records. SolenOS does not automatically establish semantic entailment or prove that an action caused the outcome."),
   "verified outcomes must disclose the limits of semantic grounding and causation",
 );
 
