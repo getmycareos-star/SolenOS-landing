@@ -631,6 +631,11 @@ export function ingestActiveCareObservation(params: {
   rootEventId?: string | null;
   /** G3 — contributor on shared Care Reality (defaults to caregiverId). */
   contributorId?: string;
+  /** Explicit speaker prefix parsed from a source thread; never inferred. */
+  speakerLabel?: string | null;
+  speakerAttributionStatus?: "explicit" | "unknown";
+  /** Original preserved source id for a split report. */
+  sourceReferenceId?: string | null;
   /**
    * Thread ingest (Locked B): keep fragments on one ACS.
    * When set, skips Relationship Engine open_new for subsequent fragments.
@@ -792,6 +797,9 @@ export function ingestActiveCareObservation(params: {
     event_ids: eventIds,
     epistemic_kind: epistemic,
     contributor_id: contributorId,
+    speaker_label: params.speakerLabel ?? null,
+    speaker_attribution_status: params.speakerAttributionStatus ?? "unknown",
+    source_reference_id: params.sourceReferenceId ?? null,
   };
 
   const sourceConflict = evaluateSourceConflict({
@@ -813,6 +821,9 @@ export function ingestActiveCareObservation(params: {
     kind: params.kind,
     capturedAt: nowIso,
     contributorId,
+    speakerLabel: params.speakerLabel,
+    speakerAttributionStatus: params.speakerAttributionStatus,
+    sourceReferenceId: params.sourceReferenceId,
   });
 
   const priorBaselineCount = listFamiliarityBaseline(careRecipientId).length;
