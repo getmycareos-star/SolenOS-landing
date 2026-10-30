@@ -95,6 +95,9 @@ console.log("✓ explicit correction cues are structural (any topic)");
   const records = listMemoryCorrections(careKey);
   assert.equal(records.length, 1);
   assert.equal(records[0]!.history_preserved, true);
+  assert.equal(records[0]!.target_observation_id, disputed!.id);
+  assert.deepEqual(records[0]!.original_event_ids, disputed!.event_ids);
+  assert.deepEqual(records[0]!.correction_event_ids, correctionObs!.event_ids);
   assert.match(records[0]!.original_value.toLowerCase(), /fell|hallway/);
   console.log("✓ text correction updates belief + keeps disputed prior");
 }
