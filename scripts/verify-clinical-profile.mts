@@ -246,6 +246,25 @@ assert(!/\bcommon in dementia\b/i.test(mvp), "caregiver workspace must not use g
   );
   console.log("✓ dementia profile influences caregiver asks + matters (no diagnosis)");
 }
+  // When a medication change is already in the note, ask about its timing,
+  // not whether any care change happened.
+  const medicationChange = caregiverAsksFromClinicalProfile({
+    eventTexts: [
+      "The doctor changed her medication two weeks ago. Walking and evening confusion changed around that time.",
+    ],
+    clinicalProfileId: "dementia",
+    maxAsks: 2,
+  });
+  assert(
+    medicationChange.asks.some((ask) => /when did the medication change happen relative/i.test(ask)),
+    `known medication change must produce a timing question — got ${medicationChange.asks.join(" | ")}`,
+  );
+  assert(
+    medicationChange.asks.every((ask) => !/has something changed with care recently/i.test(ask)),
+    `do not ask whether a care change happened after it was already reported — got ${medicationChange.asks.join(" | ")}`,
+  );
+  console.log("✓ Existing medication change shifts the follow-up to timing, not a redundant change question");
+
 
 
 

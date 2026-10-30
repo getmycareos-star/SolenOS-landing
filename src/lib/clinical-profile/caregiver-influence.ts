@@ -54,9 +54,36 @@ const CATEGORY_GATHER_ASK: Record<string, string> = {
 const DISEASE_OR_DIAGNOSIS =
   /\b(?:dementia|alzheimer|diagnosis|diagnosed|progression|prognosis|disease)\b/i;
 
-function gatherAskForUnknown(u: ExplicitUnknown): string | null {
+function gatherAskForUnknown(
+  u: ExplicitUnknown,
+  eventTexts: readonly string[],
+): string | null {
   const mapped = CATEGORY_GATHER_ASK[u.category]?.trim();
   if (!mapped || DISEASE_OR_DIAGNOSIS.test(mapped)) return null;
+
+  // Do not ask whether a care change happened when the caregiver has already
+  // recorded one. Move the question to the unresolved relationship: timing.
+  const context = eventTexts.join("\\n");
+  const medicationChangeAlreadyReported =
+    /\\b(?:medication|medicines?|meds?|dose|prescription)\\b/i.test(context) &&
+    /\\b(?:chang(?:e|ed|ing)|start(?:ed|ing)?|stop(?:ped|ping)?|switch(?:ed|ing)?|increas(?:ed|ing)|decreas(?:ed|ing)|adjust(?:ed|ing)|new)\\b/i.test(context);
+  if (
+    ["medication", "medications", "perception"].includes(u.category) &&
+    medicationChangeAlreadyReported
+  ) {
+    const timingAsk =
+      "When did the medication change happen relative to the other changes you noticed?";
+    return isCaregiverFacingAsk(timingAsk) ? timingAsk : null;
+  }
+
+  const careVisitAlreadyReported =
+    /\\b(?:doctor|hospital|clinic|appointment|discharge|admitted|visit)\\b/i.test(context);
+  if (u.category === "clinical_events" && careVisitAlreadyReported) {
+    const timingAsk =
+      "When did the care visit happen relative to the changes you noticed?";
+    return isCaregiverFacingAsk(timingAsk) ? timingAsk : null;
+  }
+
   if (!isCaregiverFacingAsk(mapped)) return null;
   return mapped;
 }
@@ -99,7 +126,7 @@ export function caregiverAsksFromClinicalProfile(params: {
 
   for (const u of unresolved) {
     if (asks.length >= maxAsks) break;
-    const ask = gatherAskForUnknown(u);
+    const ask = gatherAskForUnknown(u, texts);
     if (!ask) continue;
     const key = ask.toLowerCase();
     if (seen.has(key)) continue;
