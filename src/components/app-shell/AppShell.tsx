@@ -156,13 +156,21 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "add_to_home": {
-        if (!installPrompt) return;
+        if (!installPrompt) {
+          window.alert(
+            "To add SolenOS to your home screen:\n\n" +
+              "iPhone or iPad: Open the Share menu in Safari, then choose Add to Home Screen.\n" +
+              "Android: Open the browser menu, then choose Add to Home screen.\n" +
+              "Desktop: Use the install icon in the browser address bar when available.",
+          );
+          return;
+        }
         try {
           await installPrompt.prompt();
           const choice = await installPrompt.userChoice;
           if (choice.outcome === "accepted") setInstallPrompt(null);
         } catch {
-          window.alert("The browser could not open its install prompt. Try the browser's Add to Home Screen option.");
+          window.alert("The browser could not open its install prompt. Use the browser's Add to Home Screen option.");
         }
         return;
       }
@@ -268,7 +276,6 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               onAction={(action) => void handleWorkspaceAction(action)}
               isPinned={isPinned}
               isArchived={isArchived}
-              canAddToHome={Boolean(installPrompt)}
             />
           )}
         </header>
