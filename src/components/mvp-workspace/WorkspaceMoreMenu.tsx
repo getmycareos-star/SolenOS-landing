@@ -25,7 +25,6 @@ interface WorkspaceMoreMenuProps {
   onAction: (action: WorkspaceAction) => void;
   isPinned?: boolean;
   isArchived?: boolean;
-  canAddToHome?: boolean;
 }
 
 const MENU_ITEMS: {
@@ -40,14 +39,13 @@ const MENU_ITEMS: {
   { id: "archive", label: "Archive", icon: Archive, condition: (props) => !props.isArchived },
   { id: "restore", label: "Restore", icon: Archive, condition: (props) => Boolean(props.isArchived) },
   { id: "delete", label: "Delete", icon: Trash2, condition: (props) => !props.isArchived },
-  { id: "add_to_home", label: "Add to Home", icon: Home, condition: (props) => Boolean(props.canAddToHome) },
+  { id: "add_to_home", label: "Add to Home", icon: Home },
 ];
 
 export function WorkspaceMoreMenu({
   onAction,
   isPinned = false,
   isArchived = false,
-  canAddToHome = false,
 }: WorkspaceMoreMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -75,7 +73,7 @@ export function WorkspaceMoreMenu({
   }, [open]);
 
   const visibleItems = MENU_ITEMS.filter((item) =>
-    item.condition ? item.condition({ onAction, isPinned, isArchived, canAddToHome }) : true,
+    item.condition ? item.condition({ onAction, isPinned, isArchived }) : true,
   );
 
   return (
