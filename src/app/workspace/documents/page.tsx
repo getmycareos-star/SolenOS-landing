@@ -310,7 +310,9 @@ export default function DocumentsPage() {
     }
   }, []);
 
-  useEffect(() => { void loadDocuments(); }, [loadDocuments]);\n\n  useEffect(() => {
+  useEffect(() => { void loadDocuments(); }, [loadDocuments]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const action = params.get("upload") === "1" ? "upload" : params.get("capture") === "1" ? "capture" : params.get("scan") === "1" ? "scan" : null;
     if (!action) return;
