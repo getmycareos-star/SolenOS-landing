@@ -303,9 +303,24 @@ function WorkspacePageInner() {
                       </div>
                     )}
                     {(situation.conflicts?.length ?? 0) > 0 && (
-                      <p role="status">
-                        {situation.conflicts!.length} conflicting report{situation.conflicts!.length === 1 ? "" : "s"} remain unresolved. No account has been selected as correct.
-                      </p>
+                      <div aria-label="Unresolved conflicting reports">
+                        <p role="status">
+                          {situation.conflicts!.length} conflicting report{situation.conflicts!.length === 1 ? "" : "s"} remain unresolved. Both accounts are retained; no winner is selected.
+                        </p>
+                        {situation.conflicts!.map((conflict) => (
+                          <div key={conflict.id} className="lcr-source-statement">
+                            <p><strong>{conflict.field}</strong></p>
+                            <p>{conflict.description}</p>
+                            <small>
+                              Resolution: {conflict.resolution_status}
+                              {" · "}Winner selected: no
+                              {" · "}Source evidence IDs: {conflict.evidence_ids.length > 0
+                                ? conflict.evidence_ids.join(", ")
+                                : "not linked"}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {(situation.informationGaps?.length ?? 0) > 0 && (
                       <p>
