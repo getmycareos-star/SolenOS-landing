@@ -9,6 +9,7 @@ on:
       - "package-lock.json"
       - "netlify.toml"
       - "tsconfig*.json"
+      - "scripts/verify-care-situation-understanding.mts"
       - ".github/workflows/frontend-checks.yml"
       - ".github/workflows/netlify-production-deploy.yml"
   pull_request:
