@@ -2,7 +2,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
@@ -107,6 +108,8 @@ const STARTER_PROMPTS = [
 ]
 
 export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
+  const router = useRouter()
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -505,6 +508,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
+            <div className="companion-add-wrap">
+              <button type="button" className="companion-add-button" aria-label="Add document or image" aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}><Plus size={19} /></button>
+              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?upload=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file to add to the care record</small></span></button>
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?capture=1") }}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open camera intake</small></span></button>
+                <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); router.push("/workspace/documents?scan=1") }}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Capture, extract text, and review</small></span></button>
+              </div>}
+            </div>
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
@@ -682,6 +693,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-shell.is-home .companion-composer textarea { min-height:58px; font-size:16px; line-height:1.65; }
         .companion-shell.is-home .companion-send { background:#c7dfc4; border-color:#a9c7a6; color:#203927; }
         .companion-shell.is-home .companion-input-hint { font-size:11px; color:#7c897d; }
+        .companion-add-wrap { position:relative; }
+        .companion-add-button { display:grid; place-items:center; width:38px; height:38px; border:1px solid #dce5da; border-radius:50%; background:#f7faf6; color:#314d36; cursor:pointer; }
+        .companion-add-button:hover { background:#edf5eb; }
+        .companion-add-menu { position:absolute; z-index:40; left:0; bottom:calc(100% + 10px); width:min(320px,calc(100vw - 48px)); padding:7px; border:1px solid #e0e7df; border-radius:16px; background:#fff; box-shadow:0 14px 40px rgba(25,45,30,.14); }
+        .companion-add-menu button { display:flex; align-items:center; gap:11px; width:100%; padding:11px 10px; border:0; border-radius:10px; background:transparent; text-align:left; color:#25372b; cursor:pointer; }
+        .companion-add-menu button:hover { background:#f4f8f3; }
+        .companion-add-icon { display:grid; place-items:center; flex:0 0 34px; width:34px; height:34px; border-radius:10px; background:#edf5ec; color:#547657; }
+        .companion-add-menu strong { display:block; font-size:13px; font-weight:700; }
+        .companion-add-menu small { display:block; margin-top:3px; color:#748077; font-size:11px; line-height:1.4; }
         @media(max-width:600px) {
           .companion-shell.is-home .companion-topbar { padding:6px 2px 12px; }
           .companion-shell.is-home .companion-empty { padding:26px 10px 18px; }
