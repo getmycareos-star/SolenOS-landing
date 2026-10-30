@@ -183,7 +183,7 @@ export default function OpenLoopsPage() {
         const text = action === "response" ? window.prompt("Record the actual response received. Do not invent a response.") :
           action === "action" ? window.prompt("Record the action actually taken. Do not imply an outcome unless it was observed.") :
           action === "outcome" ? window.prompt("Record the outcome that was reported.") :
-          action === "verify" ? window.prompt("Describe the verification actually performed.") :
+          action === "verify" ? window.prompt("Describe what the two independent source records jointly support. Do not claim causation or certainty beyond the evidence.") :
           action === "reconcile" ? window.prompt("Record the explicit reconciliation decision. Preserve disagreement if it remains unresolved.") :
           action === "close" ? window.prompt("Describe the evidence supporting closure. This will not bypass backend verification.") :
           action === "reopen" ? window.prompt("Why is this closed or cancelled loop being reopened?") :
@@ -197,6 +197,7 @@ export default function OpenLoopsPage() {
           { kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() },
         ];
         let selectedSourceId: string | null = null;
+        let selectedRelatedSourceId: string | null = null;
         if ((action === "response" && loop.loop_type === "professional_input") || action === "verify" || action === "reconcile") {
           const activeSession = await ensureAnonymousSession();
           const sourceRows = await getJSON(`/evidence/${encodeURIComponent(activeSession.person.id)}`);
@@ -218,12 +219,12 @@ export default function OpenLoopsPage() {
             `${index + 1}. ${String(item.type)} — ${String(item.source_text ?? "Source text unavailable").slice(0, 110)} [ID: ${String(item.id)}]`,
           ).join("\\n");
           const sourceRequirement = action === "verify"
-            ? "Outcome verification requires an existing persisted source record; descriptive wording alone is not verification."
+            ? "Outcome verification requires two persisted, independently originated source records. A caregiver review does not prove semantic entailment or causation."
             : action === "reconcile"
               ? "Contradiction reconciliation requires persisted source evidence. Preserve unresolved disagreement when the sources do not settle it."
               : "A caregiver note alone cannot verify professional input.";
           const sourceId = window.prompt(
-            "Select an existing source record by entering its exact ID. " + sourceRequirement + "\\n\\n" + choices,
+            "Select the FIRST existing source record by entering its exact ID. " + sourceRequirement + "\\n\\n" + choices,
           );
           if (!sourceId?.trim()) return;
           const selected = sources.find((item) => item.id === sourceId.trim());
@@ -231,21 +232,58 @@ export default function OpenLoopsPage() {
             throw new Error("Choose an exact source ID from the list. No evidence-backed action was saved.");
           }
           selectedSourceId = String(selected.id);
-          evidence = [{
-            kind: action === "verify" ? "outcome_verification_source" : action === "reconcile" ? "contradiction_reconciliation_source" : "care_record_source",
-            evidence_id: selectedSourceId,
-            text: action === "verify"
-              ? "Existing source record selected by caregiver for outcome verification."
-              : action === "reconcile"
+          if (action === "verify") {
+            // A persisted pair-level caregiver assessment is required before the backend can record corroboration.
+            // This records source independence review, not semantic entailment or proof of causation.
+            const secondSourceId = window.prompt(
+              "Select a SECOND, independently originated source record by entering its exact ID. It must not be a copy, forwarded record, or another record from the same origin.\\n\\n" + choices,
+            );
+            if (!secondSourceId?.trim()) return;
+            const second = sources.find((item) => item.id === secondSourceId.trim());
+            if (!second || second.id === selectedSourceId) {
+              throw new Error("Choose a different, existing source record. One source cannot corroborate itself.");
+            }
+            selectedRelatedSourceId = String(second.id);
+            const relationshipPath = `/care-continuity/evidence/${encodeURIComponent(selectedSourceId)}/relationships`;
+            const relationshipBody = {
+              related_evidence_id: String(second.id),
+              relationship_type: "corroborates",
+              source_independence_status: "independent",
+              scope_type: "evidence_pair",
+              rationale: "Caregiver reviewed this pair and explicitly assessed the source origins as independent.",
+            };
+            try {
+              await postJSON(relationshipPath, relationshipBody);
+            } catch (relationshipError) {
+              const existing = await getJSON(relationshipPath);
+              const matches = Array.isArray(existing) && existing.some((row: Record<string, unknown>) =>
+                row.relationship_type === "corroborates" &&
+                row.source_independence_status === "independent" &&
+                ((row.source_evidence_id === selectedSourceId && row.related_evidence_id === String(second.id)) ||
+                 (row.source_evidence_id === String(second.id) && row.related_evidence_id === selectedSourceId)),
+              );
+              if (!matches) throw relationshipError;
+            }
+            evidence = [
+              { kind: "care_record_source", evidence_id: selectedSourceId, text: "First persisted source selected by caregiver for independent corroboration." },
+              { kind: "care_record_source", evidence_id: String(second.id), text: "Second persisted source selected by caregiver for independent corroboration." },
+            ];
+          } else {
+            evidence = [{
+              kind: action === "reconcile" ? "contradiction_reconciliation_source" : "care_record_source",
+              evidence_id: selectedSourceId,
+              text: action === "reconcile"
                 ? "Existing source record selected by caregiver for contradiction reconciliation."
                 : "Existing source record selected by caregiver for professional-response verification.",
-          }];
+            }];
+          }
         }
         const signature = JSON.stringify({
           action,
           text: text.trim(),
           verification_rule: verificationRule?.trim() || null,
           source_evidence_id: selectedSourceId,
+          related_source_evidence_id: selectedRelatedSourceId,
         });
         const pendingKey = loop.id + ":" + action;
         const pending = pendingActionKeys.current[pendingKey];
@@ -257,7 +295,7 @@ export default function OpenLoopsPage() {
           ...(verificationRule?.trim() ? { verification_rule: verificationRule.trim() } : {}),
           idempotency_key: idempotencyKey,
         };
-        const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "verify-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
+        const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "corroborate-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
         await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/${endpoint}`, payload);
         pendingActionKeyToClear = pendingKey;
       }
@@ -351,7 +389,7 @@ export default function OpenLoopsPage() {
               <p style={{ fontSize: 12, opacity: 0.75 }}>Outcome: {loop.outcome_status.replaceAll("_", " ")} · Updated {dateLabel(loop.updated_at)}</p>
               {loop.outcome_status === "outcome_verified" && (
                 <p role="note" style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.85 }}>
-                  Verification means a caregiver recorded a review against persisted source evidence. SolenOS does not automatically establish semantic entailment or prove that an action caused the outcome.
+                  Verification means a caregiver reviewed two persisted sources and explicitly assessed their origins as independent. This records a corroboration assessment; it does not automatically establish semantic entailment, truth, or causation.
                 </p>
               )}
               {historyById[loop.id] && <section aria-label={`Audit history for ${loop.title}`} style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "var(--surface-muted, #f6f7f4)" }}>

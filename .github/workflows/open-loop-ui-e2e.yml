@@ -10,10 +10,12 @@ on:
       - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
       - "src/api/client.ts"
       - "e2e/open-loop-workflow.mjs"
+      - "scripts/verify-care-situation-understanding.mts"
       - ".github/workflows/open-loop-ui-e2e.yml"
   pull_request:
     paths:
       - "src/app/workspace/open-loops/**"
+      - "scripts/verify-care-situation-understanding.mts"
       - "src/api/client.ts"
       - "e2e/open-loop-workflow.mjs"
       - ".github/workflows/open-loop-ui-e2e.yml"
@@ -43,11 +45,11 @@ jobs:
       - name: Check out frontend
         uses: actions/checkout@v4
 
-      - name: Check out backend main for real API integration
+      - name: Check out backend corroboration commit for real API integration
         uses: actions/checkout@v4
         with:
           repository: getmycareos-star/SolenOS_backend
-          ref: main
+          ref: 2f826904d0d29ccc4a8e2230ed4f58954d7b57bf
           path: backend-service
 
       - name: Set up Node.js
