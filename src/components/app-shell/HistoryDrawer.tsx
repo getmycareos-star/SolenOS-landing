@@ -1224,8 +1224,8 @@ export function HistoryDrawer() {
                                     {description && <span className="history-event-description">{description}</span>}
                                     {(record.follow_up_candidate || record.attention_candidate || recordActions[record.id]?.followUp) && (
                                       <span className="history-event-flag">Flagged for follow-up</span>
-                                    {recordActions[record.id]?.pinned && <span className="history-event-flag">Pinned to Home</span>}
                                     )}
+                                    {recordActions[record.id]?.pinned && <span className="history-event-flag">Pinned to Home</span>}
                                   </button>
                                   <div className="history-event-menu-wrap">
                                     <button
