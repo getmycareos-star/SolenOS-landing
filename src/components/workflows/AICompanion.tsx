@@ -106,7 +106,7 @@ const STARTER_PROMPTS = [
   { icon: FileText, title: 'Help me get ready', description: 'Prepare a few questions for a visit or handover.', prompt: 'Help me prepare for an upcoming care appointment or handover.' },
 ]
 
-export default function Companion({ home = false }: { home?: boolean }) {
+export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -225,19 +225,20 @@ export default function Companion({ home = false }: { home?: boolean }) {
   }
 
   useEffect(() => {
-    if (autoDraftSent.current) return
+    const prompt = initialPrompt?.trim()
+    if (!prompt) return
+    setInput(prompt)
+    setRequestError(null)
     const params = new URLSearchParams(window.location.search)
-    const prefill = params.get('prompt')?.trim()
-    if (prefill) {
-      autoDraftSent.current = true
-      setInput(prefill)
-      params.delete('prompt')
-      const remainingQuery = params.toString()
-      const nextUrl = window.location.pathname + (remainingQuery ? '?' + remainingQuery : '') + window.location.hash
-      window.history.replaceState({}, '', nextUrl)
-      return
-    }
-    const draft = params.get('draft')?.trim()
+    params.delete('prompt')
+    const remainingQuery = params.toString()
+    const nextUrl = window.location.pathname + (remainingQuery ? '?' + remainingQuery : '') + window.location.hash
+    window.history.replaceState({}, '', nextUrl)
+  }, [initialPrompt])
+
+  useEffect(() => {
+    if (autoDraftSent.current) return
+    const draft = new URLSearchParams(window.location.search).get('draft')?.trim()
     if (!draft) return
     autoDraftSent.current = true
     setInput(draft)
