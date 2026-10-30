@@ -10,9 +10,11 @@ const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
 });
 
 function WorkspaceHomeInner() {
+  const searchParams = useSearchParams();
+  const prompt = searchParams.get("prompt");
   return (
     <div className="mobile-screen feature-page companion-route solenos-companion-home">
-      <Companion home />
+      <Companion home key={prompt || "home"} />
       <style jsx global>{`
         .solenos-companion-home {
           display: flex;
