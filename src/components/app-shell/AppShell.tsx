@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, FileText, Handshake,
+  CalendarDays, FileText, Handshake,
   Menu, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
@@ -32,11 +32,9 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   useEffect(() => {
     setMobileOpen(false);
-    setQuickAddOpen(false);
   }, [pathname]);
 
   const active = (href: string) => href === "/workspace"
@@ -104,7 +102,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
       </div>
       <div className="solenos-chat-workspace">
         <header className="solenos-chat-topbar">
-          <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-open" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
+          <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-open" aria-label="Open navigation" onClick={() => { setCollapsed(false); setMobileOpen(true); }}><Menu size={21} /></button>
           <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-brand" aria-label="SolenOS home" onClick={() => router.push(brandHref)}><span className="solenos-chat-brand-mark">S</span></button>
           <div className="solenos-chat-topbar-context">{careContext}</div>
         </header>
