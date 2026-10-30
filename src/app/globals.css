@@ -5542,3 +5542,66 @@ input[type="file"] { width: 100%; white-space: normal; }
 }
 .solenos-main-menu button:hover { background:#f3f6f2; }
 .solenos-main-menu button:focus-visible { outline:2px solid #8ca98a; outline-offset:1px; }
+
+
+/* Main-screen care actions and record-details surface. */
+.workspace-more-menu-dropdown {
+  min-width: 252px;
+  max-width: min(320px, calc(100vw - 24px));
+  max-height: min(78dvh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 7px;
+}
+.workspace-more-menu-item {
+  min-height: 46px;
+  padding: 11px 12px;
+  border-radius: 9px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.workspace-more-menu-item.is-destructive { color: #8b3d37; }
+.workspace-more-menu-item.is-destructive:hover { background: #fff3f1; }
+.workspace-more-menu-item:focus-visible { outline: 2px solid #8caf8d; outline-offset: 1px; }
+.solenos-record-details-backdrop {
+  position: fixed; z-index: 150; inset: 0; display: grid; place-items: center;
+  padding: 18px; background: rgba(18, 30, 24, .42);
+}
+.solenos-record-details-dismiss {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: 0; background: transparent; cursor: default;
+}
+.solenos-record-details-dialog {
+  position: relative; z-index: 1; display: flex; flex-direction: column;
+  width: min(100%, 1040px); max-height: min(92dvh, 920px); min-height: 0;
+  overflow: hidden; border: 1px solid #dfe8e1; border-radius: 18px;
+  background: #fff; box-shadow: 0 24px 70px rgba(12, 26, 18, .22);
+}
+.solenos-record-details-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 18px 22px; border-bottom: 1px solid #e7eee7; background: #fbfdfb;
+}
+.solenos-record-details-header p {
+  margin: 0 0 5px; color: #68806a; font-size: 10px; font-weight: 800; letter-spacing: .1em;
+}
+.solenos-record-details-header h2 { margin: 0; color: #26392c; font-size: 21px; line-height: 1.25; }
+.solenos-record-details-header span {
+  display: block; margin-top: 5px; color: #6e7d71; font-size: 13px; line-height: 1.5;
+}
+.solenos-record-details-header button {
+  display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px;
+  border: 1px solid #e0e8df; border-radius: 11px; background: #fff; color: #415446; cursor: pointer;
+}
+.solenos-record-details-content {
+  min-height: 0; overflow: auto; overscroll-behavior: contain;
+  padding: 18px clamp(14px, 2.5vw, 26px) 28px;
+}
+.solenos-record-details-content > .lcr-record-section { max-width: 100%; margin: 0 auto; }
+.solenos-record-details-loading { padding: 24px; color: #5f7063; }
+@media (max-width: 600px) {
+  .workspace-more-menu-dropdown { right: -4px; min-width: min(270px, calc(100vw - 20px)); max-height: min(72dvh, 520px); }
+  .solenos-record-details-backdrop { padding: 0; }
+  .solenos-record-details-dialog { width: 100%; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; }
+  .solenos-record-details-header { padding: 14px 14px 12px; }
+  .solenos-record-details-content { padding: 14px 12px 24px; }
+}
