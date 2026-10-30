@@ -1,5 +1,6 @@
 # Dedicated draft-only deploy for the History review; deliberately omits --prod.
 # Re-run after the repository Netlify token is configured to publish the review URL.
+# Token presence is checked in the deploy job; the value is never printed.
 name: Netlify History preview
 
 on:
