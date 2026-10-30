@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
-  Camera,
   CheckCircle2,
   Download,
   FileImage,
@@ -12,7 +11,6 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  Upload,
   X,
 } from "lucide-react";
 
@@ -50,8 +48,6 @@ type ReviewPage = { file: File; text: string; note: string | null; reviewed: boo
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_FILES = ".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif";
-
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
   if (value && typeof value === "object") return value;
   if (typeof value === "string") {
@@ -267,8 +263,6 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
 }
 
 export default function DocumentsPage() {
-  const fileInput = useRef<HTMLInputElement>(null);
-  const cameraInput = useRef<HTMLInputElement>(null);
   const [intakeMode, setIntakeMode] = useState<DocumentIntakeMode | null>(null);
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
@@ -355,8 +349,6 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
     } finally {
       setPreparingScan(false);
-      if (fileInput.current) fileInput.current.value = "";
-      if (cameraInput.current) cameraInput.current.value = "";
     }
   };
 
@@ -524,18 +516,10 @@ export default function DocumentsPage() {
           </button>
         </div>
 
-        <input ref={fileInput} type="file" accept={ACCEPTED_FILES} multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
-        <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(event) => void handleFiles(event.target.files)} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 10, marginTop: 16 }}>
-          <button type="button" onClick={() => cameraInput.current?.click()} disabled={uploading || preparingScan} style={{ width: "100%", minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><Camera size={19} />Snap &amp; scan with camera</button>
-          <button type="button" onClick={() => fileInput.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)", color: "var(--text)", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><Upload size={19} />Upload files / pages</button>
-        </div>
-        <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary)" }}>Use your phone camera or select multiple files/pages. Maximum 10 MiB per file.</p>
         {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Extracting readable text…</p>}
         {reviewPages.length > 0 && <section aria-label="Review extracted text before saving" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Review before saving</h3>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Check each captured page, add more pages if needed, then review the text before saving the document." : "Check the selected file or photo. You can add more pages, correct extracted text and review everything before saving."} Original files are preserved.</p>
-          <button type="button" onClick={() => cameraInput.current?.click()} disabled={preparingScan || uploading} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}><Camera size={16} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Add another page with camera</button>
           <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine reviewed image pages into one PDF</button>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
