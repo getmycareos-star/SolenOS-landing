@@ -4,7 +4,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const component = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
-const workspace = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
+const workspace = fs.readFileSync(path.join(root, "src/app/workspace/record/page.tsx"), "utf8");
 
 assert.match(component, /ensureAnonymousSession/);
 assert.match(component, /fetch\(`\/api\/situation\?\${params\.toString\(\)}`/);
