@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/brand";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
