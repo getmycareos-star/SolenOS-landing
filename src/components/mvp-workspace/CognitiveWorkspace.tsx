@@ -177,7 +177,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   /** Workspace management state. */
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
-  const [hasCareInfo, setHasCareInfo] = useState(false);
 
   const go = useCallback((next: WorkspaceState) => {
     setTransitionKey((k) => k + 1);
