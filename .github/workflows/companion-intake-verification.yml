@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/chatgpt-style-care-sidebar
+      - feat/lcr-powered-companion-brief
   workflow_dispatch:
 
 permissions:
