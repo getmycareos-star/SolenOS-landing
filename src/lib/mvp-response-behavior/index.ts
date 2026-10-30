@@ -62,12 +62,16 @@ export const MVP_BEHAVIOR_HARD_NEVER = [
 function confidenceFromExtraction(
   extraction: CareRealityExtractionResult,
 ): CareRealityObjectConfidence {
-  const n =
-    extraction.observations.length +
-    extraction.events.length +
-    extraction.decisions.length;
-  if (n >= 3) return "high";
-  if (n >= 1) return "medium";
+  // Fragment volume is not confidence. A single caregiver capture does not
+  // establish independent corroboration or calibrated truth, regardless of
+  // how many facts it contains. Keep "high" unavailable at this boundary.
+  if (
+    extraction.observations.some(
+      (observation) => observation.confidence === "medium" || observation.confidence === "high",
+    )
+  ) {
+    return "medium";
+  }
   return "low";
 }
 

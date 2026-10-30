@@ -32,6 +32,8 @@ import { resolveCareRealityStoreKey } from "../src/lib/multi-caregiver-context-m
 import { composeCaregiverResponse } from "../src/lib/caregiver-response-composer";
 import { evaluateCaregiverUnderstandingTest } from "../src/lib/care-reality-intelligence/caregiver-understanding-test";
 import { containsRawNoteEchoInCopy } from "../src/lib/output-quality";
+import { extractCareRealityFromText } from "../src/lib/care-reality-extraction";
+import { careRealityObjectFromExtraction } from "../src/lib/mvp-response-behavior";
 
 console.log("=== Care Situation Understanding (instant value) ===\n");
 console.log(CARE_SITUATION_UNDERSTANDING_PURPOSE);
@@ -73,6 +75,25 @@ I have her medication list somewhere, the hospital papers from last month, and m
 I just feel like I'm the only person holding all these pieces.`;
 
 async function main() {
+  {
+    // Three extracted fragments from one caregiver capture are not independent
+    // corroboration and must not be promoted to high confidence by volume.
+    const extraction = extractCareRealityFromText({
+      rawText: "Mom ate breakfast later than usual. She needed help finding her coat. She sat quietly during lunch.",
+      contributorId: "csu-confidence-volume-only",
+    });
+    assert.ok(
+      extraction.observations.length + extraction.events.length + extraction.decisions.length >= 3,
+      "fixture must contain multiple structured fragments",
+    );
+    const careReality = careRealityObjectFromExtraction(extraction, "Mom");
+    assert.equal(
+      careReality.confidence,
+      "medium",
+      "multiple same-source fragments must not imply high confidence",
+    );
+  }
+
   {
     resetAll();
     const contributorId = "csu_golden_multi";
