@@ -39,6 +39,7 @@ type AnswerEvent = {
   person_id: string;
   answer: string;
   answer_provenance: string;
+  evidence_ids: string[];
   answered_by_caregiver_id: string;
   created_at: string;
 };
@@ -73,6 +74,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [answer, setAnswer] = useState("");
   const [answerProvenance, setAnswerProvenance] = useState("");
+  const [answerEvidenceIds, setAnswerEvidenceIds] = useState<string[]>([]);
   const [history, setHistory] = useState<AnswerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -210,6 +212,14 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       setError("An answer requires the answer text and an explicit source/provenance description.");
       return;
     }
+    if (status === "answered" && answerEvidenceIds.length === 0) {
+      setError("Select at least one persisted evidence record that supports this answer. Typed text alone cannot answer the question.");
+      return;
+    }
+    if (status === "answered" && answerEvidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
+      setError("Every answer evidence reference must belong to this authenticated care record.");
+      return;
+    }
     setSaving(true);
     setError("");
     setNotice("");
@@ -218,6 +228,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       if (status === "answered") {
         payload.answer = answer.trim();
         payload.answer_provenance = answerProvenance.trim();
+        payload.evidence_ids = answerEvidenceIds;
       }
       if (status === "declined") {
         payload.closed_reason = answerProvenance.trim();
@@ -229,7 +240,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       setNotice(status === "answered"
         ? "Answer saved with session-attributed identity and immutable answer history."
         : status === "open" ? "Question reopened; previous answer history is preserved." : "Decline saved with its recorded reason.");
-      if (status === "answered") { setAnswer(""); setAnswerProvenance(""); }
+      if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }
       await loadAll();
       await loadHistory();
     } catch {
@@ -316,7 +327,21 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
               <label style={{ display: "block", marginBottom: 8 }}>Answer source / provenance
                 <textarea style={{ ...field, minHeight: 55 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="Who answered, and what source or firsthand knowledge supports it?" />
               </label>
-              <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>Record answer</button>{" "}
+              <label style={{ display: "block", marginBottom: 8 }}>Persisted evidence supporting this answer (required)
+                <select
+                  multiple
+                  style={{ ...field, minHeight: 86 }}
+                  value={answerEvidenceIds}
+                  onChange={(event) => setAnswerEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}
+                >
+                  {evidence.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.type} · {item.id} · {item.source_text.slice(0, 65)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving || answerEvidenceIds.length === 0}>Record answer</button>{" "}
               <button type="button" style={button} onClick={() => void updateQuestion("declined")} disabled={saving}>Decline (use provenance field for reason)</button>
             </>}
             {selectedQuestion.status !== "open" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen without deleting prior answers</button>}
