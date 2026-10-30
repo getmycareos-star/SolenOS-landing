@@ -1,0 +1,49 @@
+name: Netlify Companion preview
+
+on:
+  push:
+    branches:
+      - feat/lcr-powered-companion-brief
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "netlify.toml"
+      - ".github/workflows/netlify-companion-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solenos-netlify-companion-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Build and deploy isolated preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: dfbe1cd8-6450-4ed7-b9d8-e3bb39a0acbe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Verify Netlify credentials
+        shell: bash
+        run: |
+          if [[ -z "${NETLIFY_AUTH_TOKEN}" ]]; then
+            echo "::error::Missing GitHub Actions secret NETLIFY_AUTH_TOKEN. No preview was deployed."
+            exit 1
+          fi
+      - name: Build and deploy a draft preview (never production)
+        shell: bash
+        run: |
+          npx --yes netlify-cli@latest deploy --build --site "$NETLIFY_SITE_ID" --context deploy-preview --json > netlify-preview.json
+          cat netlify-preview.json
+          node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("netlify-preview.json","utf8")); const url=d.deploy_url || d.url; if (!url) throw new Error("Netlify did not return a preview URL"); console.log("NETLIFY_PREVIEW_URL="+url); console.log("NETLIFY_DEPLOY_ID="+(d.deploy_id || d.id || "not-returned"));'
