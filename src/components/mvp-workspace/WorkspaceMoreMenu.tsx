@@ -23,65 +23,24 @@ export type WorkspaceAction =
 
 interface WorkspaceMoreMenuProps {
   onAction: (action: WorkspaceAction) => void;
-  /** Whether the workspace is currently pinned. */
   isPinned?: boolean;
-  /** Whether the workspace is currently archived. */
   isArchived?: boolean;
-  /** Whether the PWA install prompt is available. */
   canAddToHome?: boolean;
-  /** Whether the workspace has any care information. */
-  hasCareInfo?: boolean;
 }
 
 const MENU_ITEMS: {
   id: WorkspaceAction;
   label: string;
   icon: LucideIcon;
-  variant?: "default" | "destructive";
   condition?: (props: WorkspaceMoreMenuProps) => boolean;
 }[] = [
-  {
-    id: "share_care_summary",
-    label: "Share care summary",
-    icon: Share2,
-  },
-  {
-    id: "pin",
-    label: "Pin",
-    icon: Pin,
-    condition: (props) => !props.isPinned && !props.isArchived,
-  },
-  {
-    id: "unpin",
-    label: "Unpin",
-    icon: Pin,
-    condition: (props) => Boolean(props.isPinned),
-  },
-  {
-    id: "archive",
-    label: "Archive",
-    icon: Archive,
-    condition: (props) => !props.isArchived,
-  },
-  {
-    id: "restore",
-    label: "Restore",
-    icon: Archive,
-    condition: (props) => Boolean(props.isArchived),
-  },
-  {
-    id: "delete",
-    label: "Delete",
-    icon: Trash2,
-    variant: "destructive",
-    condition: (props) => !props.isArchived,
-  },
-  {
-    id: "add_to_home",
-    label: "Add to Home",
-    icon: Home,
-    condition: (props) => props.canAddToHome === true,
-  },
+  { id: "share_care_summary", label: "Share care summary", icon: Share2 },
+  { id: "pin", label: "Pin", icon: Pin, condition: (props) => !props.isPinned && !props.isArchived },
+  { id: "unpin", label: "Unpin", icon: Pin, condition: (props) => Boolean(props.isPinned) },
+  { id: "archive", label: "Archive", icon: Archive, condition: (props) => !props.isArchived },
+  { id: "restore", label: "Restore", icon: Archive, condition: (props) => Boolean(props.isArchived) },
+  { id: "delete", label: "Delete", icon: Trash2, condition: (props) => !props.isArchived },
+  { id: "add_to_home", label: "Add to Home", icon: Home, condition: (props) => Boolean(props.canAddToHome) },
 ];
 
 export function WorkspaceMoreMenu({
@@ -89,34 +48,23 @@ export function WorkspaceMoreMenu({
   isPinned = false,
   isArchived = false,
   canAddToHome = false,
-  hasCareInfo = false,
 }: WorkspaceMoreMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleToggle = useCallback(() => {
-    setOpen((v) => !v);
-  }, []);
-
-  const handleSelect = useCallback(
-    (action: WorkspaceAction) => {
-      setOpen(false);
-      onAction(action);
-    },
-    [onAction],
-  );
+  const handleToggle = useCallback(() => setOpen((value) => !value), []);
+  const handleSelect = useCallback((action: WorkspaceAction) => {
+    setOpen(false);
+    onAction(action);
+  }, [onAction]);
 
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false);
     }
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
+      if (event.key === "Escape") setOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
@@ -126,17 +74,16 @@ export function WorkspaceMoreMenu({
     };
   }, [open]);
 
-  const visibleItems = MENU_ITEMS.filter((item) => {
-    if (item.condition) return item.condition({ onAction: () => {}, isPinned, isArchived, canAddToHome, hasCareInfo });
-    return true;
-  });
+  const visibleItems = MENU_ITEMS.filter((item) =>
+    item.condition ? item.condition({ onAction, isPinned, isArchived, canAddToHome }) : true,
+  );
 
   return (
     <div className="workspace-more-menu" ref={menuRef}>
       <Button
         variant="icon"
         className="workspace-more-menu-trigger"
-        aria-label="More actions"
+        aria-label="More care record actions"
         aria-haspopup="true"
         aria-expanded={open}
         onClick={handleToggle}
@@ -145,7 +92,7 @@ export function WorkspaceMoreMenu({
         <MoreHorizontal size={20} aria-hidden />
       </Button>
       {open && (
-        <div className="workspace-more-menu-dropdown" role="menu" aria-label="Workspace actions">
+        <div className="workspace-more-menu-dropdown" role="menu" aria-label="Care record actions">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -153,7 +100,7 @@ export function WorkspaceMoreMenu({
                 key={item.id}
                 type="button"
                 role="menuitem"
-                className={`workspace-more-menu-item${item.variant === "destructive" ? " workspace-more-menu-item--destructive" : ""}`}
+                className="workspace-more-menu-item"
                 onClick={() => handleSelect(item.id)}
               >
                 <Icon size={16} aria-hidden />
