@@ -35,7 +35,7 @@ for (const action of ["responses", "actions", "outcomes", "corroborate-outcome",
 }
 
 assert.ok(
-  page.includes("Verification means a caregiver recorded a review against persisted source evidence."),
+  page.includes("Verification means a caregiver reviewed two persisted sources and explicitly assessed their origins as independent."),
   "verified outcomes must disclose the limits of semantic grounding and causation",
 );
 
