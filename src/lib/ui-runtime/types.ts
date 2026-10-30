@@ -171,6 +171,12 @@ export type Situation = {
   updatedAt: string;
   /** True only when the backend has a durable situation row that can be resumed. */
   persistedThread?: boolean;
+  relatedSituations?: readonly {
+    id: string;
+    relationship_id: string;
+    relationship_type: "related_to" | string;
+    rationale: string | null;
+  }[];
   /** Individual source statements, distinct from the authenticated reporter. */
   sourceStatements?: readonly {
     id: string;
