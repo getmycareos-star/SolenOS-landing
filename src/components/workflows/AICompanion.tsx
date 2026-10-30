@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
@@ -140,7 +140,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     else cameraInputRef.current?.click()
   }
 
-  const completeDocumentIntake = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const completeDocumentIntake = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? [])
     event.currentTarget.value = ''
     if (!files.length) return
