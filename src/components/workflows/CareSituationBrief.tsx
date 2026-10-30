@@ -14,6 +14,7 @@ type RecordItem = {
   status?: string;
   epistemic_status?: string;
   source_collection?: string;
+  source_event_id?: string | null;
   source_type?: string;
   source_label?: string;
   reported_by_label?: string | null;
@@ -126,6 +127,11 @@ function CareSection({
                       <span>Source: {item.source_label || item.source_type || "Not recorded"}</span>
                       <span>Reported by: {item.reported_by_label || "Not recorded"}</span>
                       <span>Recorded: {dateLabel(item.recorded_at || item.occurred_at)}</span>
+                      {item.source_event_id && (
+                        <Link href={`/workspace/timeline?event_id=${encodeURIComponent(item.source_event_id)}`} style={{ color: "#315b39", fontWeight: 750, textDecoration: "underline" }}>
+                          Open source event in care timeline
+                        </Link>
+                      )}
                       {(item.evidence_ids || []).map(evidenceId => (
                         (String(item.source_label || "").startsWith("Document:") || /document/i.test(item.kind || "") || /document/i.test(item.source_type || "")) ? (
                           <Link key={evidenceId} href={`/workspace/documents?evidence_id=${encodeURIComponent(evidenceId)}`} style={{ color: "#315b39", fontWeight: 750, textDecoration: "underline", overflowWrap: "anywhere" }}>
