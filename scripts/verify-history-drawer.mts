@@ -33,7 +33,7 @@ assert.match(drawer, /time_provenance/);
 assert.match(drawer, /Search care history/);
 assert.match(drawer, /role="dialog"/);
 assert.match(drawer, /className=\{`history-drawer/);
-assert.doesNotMatch(drawer, /history-action-menu|history-event-menu-trigger|Add to Home|Pinned to Home|Archive record|Restore record|Share details|history-detail-actions|copyRecord|downloadRecord|shareRecord/, "History is browse-only and exposes no record action menus or action buttons");
+assert.doesNotMatch(drawer, /history-action-menu|history-event-menu-trigger|Share care summary|Add to Home|Edit record|View record details|Download \/ Export|Pin to Home|Archive record|Restore record|Delete record|history-detail-actions|copyRecord|downloadRecord|shareRecord/, "History is browse-only and exposes none of the main-screen care actions");
 assert.match(drawer, /No saved care records were returned/);
 assert.match(drawer, /SolenOS will not create example history/);
 assert.match(shell, /<HistoryDrawer \/>/);
