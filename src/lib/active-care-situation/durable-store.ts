@@ -78,6 +78,7 @@ export function persistActiveCareSituationToDurable(
 
 export function deleteActiveCareSituationDurable(caregiverId: string): void {
   deleteDurableFile(acsDurablePath(caregiverId));
+  deleteDurableFile(acsIndexPath(caregiverId));
 }
 
 /** Drop Map cache only — durable files remain (simulates process bounce). */
