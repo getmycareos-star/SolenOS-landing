@@ -169,6 +169,8 @@ export type Situation = {
     importance: "LOW" | "MEDIUM" | "HIGH";
   }[];
   updatedAt: string;
+  /** True only when the backend has a durable situation row that can be resumed. */
+  persistedThread?: boolean;
 };
 
 export type SituationDocument = {
