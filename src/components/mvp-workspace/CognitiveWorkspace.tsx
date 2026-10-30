@@ -28,6 +28,7 @@ import type { Situation } from "@/lib/ui-runtime/types";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { AddSituationPanel } from "./AddSituationPanel";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
+import { WorkspaceMoreMenu, type WorkspaceAction } from "./WorkspaceMoreMenu";
 import { ActivationOutputPanel } from "./ActivationOutputPanel";
 import { SituationResponsePanel } from "./SituationResponsePanel";
 import { CareRecipientNameGate } from "./CareRecipientNameGate";
@@ -35,7 +36,7 @@ import { track } from "@/lib/trackEvent";
 import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, getBlob, getPersonId } from "@/api/client";
 import { EMERGENCY_BOUNDARY } from "@/lib/early-access-trust";
 
 function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string {
@@ -698,6 +699,47 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         }
         break;
       }
+      case "edit_record": {
+        if (!lastSharedDisplay.trim()) {
+          window.alert("There is no saved entry available to prefill for editing yet.");
+          break;
+        }
+        setRawInput(lastSharedDisplay);
+        setDocuments([]);
+        setEntryMode("update");
+        setCaregiverError("The original saved entry remains unchanged. Submit this as a new update after making your correction.");
+        go("REAL_MOMENT");
+        break;
+      }
+      case "view_record_details": {
+        if (!situationResponse) {
+          window.alert("No detailed care-record view is currently loaded. Open or refresh the saved care record first.");
+          break;
+        }
+        go("CARRYING");
+        break;
+      }
+      case "download_export": {
+        const personId = getPersonId();
+        if (!personId) {
+          window.alert("A care-record identity is not available for export in this session.");
+          break;
+        }
+        try {
+          const pdf = await getBlob(`/care-summary/${encodeURIComponent(personId)}/pdf`);
+          const url = URL.createObjectURL(pdf);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = `solenos-care-summary-${new Date().toISOString().slice(0, 10)}.pdf`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          URL.revokeObjectURL(url);
+        } catch (error) {
+          window.alert(error instanceof Error ? error.message : "The care summary could not be exported.");
+        }
+        break;
+      }
       case "pin": {
         setIsPinned(true);
         try {
@@ -1044,6 +1086,15 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
 
   return (
     <div className={shellClass}>
+      <div className="workspace-top-actions" aria-label="Care record actions">
+        <WorkspaceMoreMenu
+          onAction={(action) => void handleWorkspaceAction(action)}
+          isPinned={isPinned}
+          isArchived={isArchived}
+          canAddToHome={canAddToHome}
+          hasCareInfo={hasContextRoot || sessionHasNote || Boolean(lastSharedDisplay.trim())}
+        />
+      </div>
       <div className="lcr-capture-context" role="note">
         <p className="workspace-muted">Add information to the shared care record. Suggestions are not treated as confirmed facts, and nothing is submitted until you choose to save it.</p>
       </div>
@@ -1138,11 +1189,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                     caregiverId={caregiverId}
                     careSessionId={interactionSessionId()}
                     careRecipientName={displayName ?? undefined}
-                    onWorkspaceAction={handleWorkspaceAction}
-                    isPinned={isPinned}
-                    isArchived={isArchived}
-                    canAddToHome={canAddToHome}
-                    hasCareInfo={hasCareInfo}
                   />
                 </>
               )}
