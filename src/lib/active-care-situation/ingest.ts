@@ -124,6 +124,36 @@ export function listActiveCareSituations(contributorId: string): ActiveCareSitua
   return merged.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 }
 
+/**
+ * Explicitly resume one retained unresolved care thread. Selection is by stable
+ * situation id; no text similarity is allowed to silently switch the active thread.
+ */
+export function activateCareSituation(
+  contributorId: string,
+  situationId: string,
+): ActiveCareSituation | null {
+  const careRecipientId = realityKey(contributorId);
+  const target = listActiveCareSituationsFromDurable(careRecipientId).find(
+    (situation) => situation.id === situationId,
+  );
+  if (
+    !target ||
+    target.care_recipient_id !== careRecipientId ||
+    target.lifecycle_status === "resolved" ||
+    target.lifecycle_status === "historical"
+  ) {
+    return null;
+  }
+  const activated: ActiveCareSituation = {
+    ...target,
+    care_recipient_id: careRecipientId,
+    interaction_paused_at: null,
+  };
+  acsCache().set(careRecipientId, activated);
+  persistActiveCareSituationToDurable(activated);
+  return activated;
+}
+
 export function getActiveCareSituation(contributorId: string): ActiveCareSituation | null {
   const careRecipientId = realityKey(contributorId);
   const cached = acsCache().get(careRecipientId);
