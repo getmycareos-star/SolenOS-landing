@@ -10,6 +10,8 @@ on:
       - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
       - "src/api/client.ts"
       - "e2e/open-loop-workflow.mjs"
+      - "scripts/verify-care-situation-understanding.mts"
+      - "scripts/verify-care-situation-understanding.mts"
       - ".github/workflows/open-loop-ui-e2e.yml"
   pull_request:
     paths:

@@ -27,12 +27,12 @@ for (const [label, pattern] of required) {
   assert.match(page, pattern, `Open Loop UI contract missing: ${label}`);
 }
 
-for (const action of ["responses", "actions", "outcomes", "verify-outcome", "reconcile", "close", "reopen", "cancel"]) {
+for (const action of ["responses", "actions", "outcomes", "corroborate-outcome", "reconcile", "close", "reopen", "cancel"]) {
   assert.ok(page.includes(`"${action}"`), `Open Loop action route missing: ${action}`);
 }
 
 assert.ok(
-  page.includes("Verification means a caregiver recorded a review against persisted source evidence."),
+  page.includes("Verification means a caregiver reviewed two persisted sources and explicitly assessed their origins as independent. This records a corroboration assessment; it does not automatically establish semantic entailment, truth, or causation."),
   "verified outcomes must disclose the limits of semantic grounding and causation",
 );
 
