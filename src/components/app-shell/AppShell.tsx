@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  CalendarDays, FileText, Handshake,
+  CalendarDays, FileText, Handshake, MessageCircle,
   Menu, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
@@ -20,11 +20,12 @@ type AppShellProps = {
 };
 
 const NAVIGATION = [
+  { href: "/workspace", label: "AI Companion", icon: MessageCircle },
   { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
-  { href: "/workspace", label: "Living Care Record", icon: ShieldCheck },
+  { href: "/workspace/record", label: "Living Care Record", icon: ShieldCheck },
 ] as const;
 
 export function AppShell({ children, careContext, brandHref = "/workspace" }: AppShellProps) {
