@@ -139,15 +139,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const personId = getPersonId()
 
   const openDocumentIntake = (mode: DocumentIntakeMode) => {
-    setAddMenuOpen(false)
+    // Invoke native pickers before scheduling React state updates. Mobile browsers
+    // require the picker call to remain directly inside the trusted user gesture.
     if (mode === 'upload') {
       uploadInputRef.current?.click()
+      setAddMenuOpen(false)
       return
     }
     if (mode === 'capture') {
       captureInputRef.current?.click()
+      setAddMenuOpen(false)
       return
     }
+    setAddMenuOpen(false)
     setCapturedPages([])
     setCameraError(null)
     setCameraMode('scan')
@@ -617,8 +621,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </div>
 
       <div className="companion-composer-wrap">
-        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple hidden onChange={event => completeDocumentIntake(event, 'upload')} aria-label="Choose documents to upload" />
-        <input ref={captureInputRef} type="file" accept="image/*" capture="environment" hidden onChange={event => completeDocumentIntake(event, 'capture')} aria-label="Take a photo with the device camera" />
+        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'upload')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
+        <input ref={captureInputRef} type="file" accept="image/*" capture="environment" tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'capture')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
         <form className="companion-composer" aria-label="Send a message to Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
