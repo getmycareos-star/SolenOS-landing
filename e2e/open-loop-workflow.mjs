@@ -152,7 +152,7 @@ try {
     const message = dialog.message();
     if (message.startsWith("Record the actual response received")) {
       await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
-    } else if (message.startsWith("Select an existing source record")) {
+    } else if (message.startsWith("Select the FIRST existing source record")) {
       await dialog.accept(sourceEvidenceId);
     } else if (message.startsWith("Select a SECOND, independently originated source record")) {
       await dialog.accept(independentEvidenceId);
