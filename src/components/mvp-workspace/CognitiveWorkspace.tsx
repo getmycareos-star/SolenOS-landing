@@ -116,13 +116,14 @@ type Props = {
     activeCareSituation: SituationResponse["active_care_situation"];
     suppressFirstTimeUx: boolean;
   }) => void;
+  startInUpdateMode?: boolean;
 };
 
 /**
  * Caregiver workspace — single entry pipeline: POST /api/situation.
  * Analyze / Clarity / Clear-my-head paths removed (ops-gated elsewhere).
  */
-export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props) {
+export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startInUpdateMode = false }: Props) {
   const [state, setState] = useState<WorkspaceState>("REAL_MOMENT");
   const [rawInput, setRawInput] = useState("");
   const [documents, setDocuments] = useState<AttachedDocument[]>([]);
@@ -146,7 +147,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
     readbackVerified: boolean;
   } | null>(null);
   const [hasContextRoot, setHasContextRoot] = useState(false);
-  const [entryMode, setEntryMode] = useState<"initial" | "update">("initial");
+  const [entryMode, setEntryMode] = useState<"initial" | "update">(startInUpdateMode ? "update" : "initial");
   /** This browser session shared at least one note — gates Continuity / dual pane. */
   const [sessionHasNote, setSessionHasNote] = useState(false);
   /** Soft privacy line after first capture — never a consent wall. */
@@ -293,7 +294,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
             setSituationResponse(restored);
             setHasContextRoot(true);
             setSessionHasNote(true);
-            setEntryMode(obs.length > 1 ? "update" : "initial");
+            setEntryMode(startInUpdateMode || obs.length > 1 ? "update" : "initial");
             setLastSharedDisplay(lastRaw);
             setShowSoftPrivacyNote(true);
             go("CARRYING");
@@ -588,7 +589,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
       const obsCount = situationData.active_care_situation?.observations?.length ?? 0;
 
       // Stay in update mode only while this ACS has more than one note.
-      setEntryMode(obsCount > 1 ? "update" : "initial");
+      setEntryMode(startInUpdateMode || obsCount > 1 ? "update" : "initial");
       setSubmitPhase("done");
       setLastSharedDisplay(sharedDisplay);
       setRawInput("");
@@ -1014,7 +1015,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                   setDocuments([]);
                   const obs =
                     situationResponse.active_care_situation?.observations?.length ?? 0;
-                  setEntryMode(obs > 1 ? "update" : "initial");
+                  setEntryMode(startInUpdateMode || obs > 1 ? "update" : "initial");
                   go("REAL_MOMENT");
                 }}
                 onContinue={handleDoneForNow}
@@ -1028,7 +1029,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
                 setDocuments([]);
                 const obs =
                   situationResponse.active_care_situation?.observations?.length ?? 0;
-                setEntryMode(obs > 1 ? "update" : "initial");
+                setEntryMode(startInUpdateMode || obs > 1 ? "update" : "initial");
                 go("REAL_MOMENT");
               }}
             >
