@@ -384,7 +384,7 @@ export default function OpenLoopsPage() {
               <p style={{ fontSize: 12, opacity: 0.75 }}>Outcome: {loop.outcome_status.replaceAll("_", " ")} · Updated {dateLabel(loop.updated_at)}</p>
               {loop.outcome_status === "outcome_verified" && (
                 <p role="note" style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.85 }}>
-                  Verification means a caregiver recorded a review against persisted source evidence. SolenOS does not automatically establish semantic entailment or prove that an action caused the outcome.
+                  Verification means a caregiver reviewed two persisted sources and explicitly assessed their origins as independent. This records a corroboration assessment; it does not automatically establish semantic entailment, truth, or causation.
                 </p>
               )}
               {historyById[loop.id] && <section aria-label={`Audit history for ${loop.title}`} style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "var(--surface-muted, #f6f7f4)" }}>
