@@ -36,6 +36,18 @@ type SourceIntegrity = {
   stored_source_text_sha256: string | null
   recomputed_source_text_sha256: string | null
   hash_scope: string
+  original_binary_status: 'not_applicable' | 'missing' | 'match' | 'mismatch'
+  original_binary_available: boolean | null
+  original_binary_stored_sha256: string | null
+  original_binary_recomputed_sha256: string | null
+  binary_hash_scope: string
+  exact_source_text_duplicate_candidate_ids: string[]
+  exact_binary_duplicate_candidate_ids: string[]
+  duplicate_candidate_status: string
+  freshness_status: string
+  freshness_assessment_id: string | null
+  completeness_status: string
+  completeness_assessment_id: string | null
   original_file_authenticity_verified: false
 }
 type Observation = {
@@ -380,6 +392,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       const result = await getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/integrity`)
       if (!result || result.evidence_id !== selectedId || result.person_id !== personId ||
           !['match', 'mismatch', 'unavailable'].includes(result.source_text_integrity_status) ||
+          !['not_applicable', 'missing', 'match', 'mismatch'].includes(result.original_binary_status) ||
+          !Array.isArray(result.exact_source_text_duplicate_candidate_ids) ||
+          !Array.isArray(result.exact_binary_duplicate_candidate_ids) ||
+          typeof result.freshness_status !== 'string' ||
+          typeof result.completeness_status !== 'string' ||
           typeof result.hash_scope !== 'string' || result.original_file_authenticity_verified !== false) {
         throw new Error('Invalid source-integrity response')
       }
@@ -859,7 +876,23 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Hash scope:</strong> {sourceIntegrity.hash_scope}</p>
             <p style={{ overflowWrap: 'anywhere' }}><strong>Stored:</strong> {sourceIntegrity.stored_source_text_sha256 || 'Unavailable'}</p>
             <p style={{ overflowWrap: 'anywhere' }}><strong>Recomputed:</strong> {sourceIntegrity.recomputed_source_text_sha256 || 'Unavailable'}</p>
-            <p><strong>Original file authenticity:</strong> Not verified by this hash check.</p>
+            <p><strong>Original uploaded file:</strong> {sourceIntegrity.original_binary_status.replaceAll('_', ' ')}
+              {sourceIntegrity.original_binary_available === false ? ' · binary source is inaccessible' : ''}
+            </p>
+            {sourceIntegrity.original_binary_status === 'match' && (
+              <p>Original file bytes match the stored SHA-256 and byte length.</p>
+            )}
+            {sourceIntegrity.original_binary_status === 'mismatch' && (
+              <p role="alert">Original file bytes do not match their stored fingerprint or byte length.</p>
+            )}
+            <p><strong>Exact source-text duplicate candidates:</strong> {sourceIntegrity.exact_source_text_duplicate_candidate_ids.length
+              ? sourceIntegrity.exact_source_text_duplicate_candidate_ids.join(', ')
+              : 'No exact fingerprint candidate found; semantic duplicates were not assessed.'}</p>
+            <p><strong>Exact binary duplicate candidates:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
+              ? sourceIntegrity.exact_binary_duplicate_candidate_ids.join(', ')
+              : 'No exact binary fingerprint candidate found.'}</p>
+            <p><strong>Freshness:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>Completeness:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
+            <p>Original-file authenticity is not established by a stored hash. A matching hash proves byte consistency, not who created the source.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>Integrity has not been verified.</p>}
           <p style={{ overflowWrap: 'anywhere' }}>{selected.source_text_sha256 || 'Hash unavailable for this record'}</p>
