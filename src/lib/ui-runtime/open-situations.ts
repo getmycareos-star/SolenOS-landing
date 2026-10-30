@@ -50,7 +50,9 @@ export function openSituationsFromSituationApi(
 ): Situation[] {
   if (!data) return [];
 
-  const fromUi = [...(data.situations ?? []), ...(data.ui_situations ?? [])].filter(
+  // ui_situations carries the complete caregiver presentation contract;
+  // the compact situations collection is a fallback and must not shadow it.
+  const fromUi = [...(data.ui_situations ?? []), ...(data.situations ?? [])].filter(
     (s, i, arr) => arr.findIndex((x) => x.id === s.id) === i,
   );
   const openUi = fromUi.filter((s) => s.status !== "resolved");
