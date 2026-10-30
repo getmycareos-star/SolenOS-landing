@@ -1333,6 +1333,51 @@
   color: #466451;
   font-size: .75rem;
 }
+.lcr-related-situation-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .45rem .7rem;
+  align-items: center;
+  margin-top: .7rem;
+}
+.lcr-related-situation-control label {
+  grid-column: 1 / -1;
+  color: #52675c;
+  font-size: .82rem;
+}
+.lcr-related-situation-control select {
+  min-width: 0;
+  max-width: 100%;
+  padding: .55rem .65rem;
+  border: 1px solid #cbd8cf;
+  border-radius: .55rem;
+  background: #fff;
+  color: #20372c;
+}
+.lcr-related-situation-control button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.lcr-source-statements {
+  margin: .7rem 0;
+  padding: .65rem .75rem;
+  border-left: 2px solid #cbd8cf;
+  background: #f7faf7;
+}
+.lcr-source-statement {
+  margin-top: .55rem;
+  padding-top: .55rem;
+  border-top: 1px solid #e0e8e2;
+}
+.lcr-source-statement p {
+  margin: .2rem 0;
+  overflow-wrap: anywhere;
+}
+.lcr-source-statement small {
+  display: block;
+  color: #617267;
+  line-height: 1.5;
+}
 .lcr-support-section {
   display: grid;
   gap: .7rem;
