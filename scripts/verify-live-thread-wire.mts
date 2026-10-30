@@ -58,6 +58,12 @@ assert(
   parsedSpeakers.every((fragment) => fragment.speaker_attribution_status === "explicit"),
   "speaker attribution is marked explicit only for source-labelled blocks",
 );
+const singleExplicitSpeaker = splitCareThreadWithAttribution(
+  "[Nurse]: She needed support when standing.",
+);
+assert.equal(singleExplicitSpeaker.length, 1);
+assert.equal(singleExplicitSpeaker[0]?.speaker_label, "Nurse");
+assert.equal(singleExplicitSpeaker[0]?.speaker_attribution_status, "explicit");
 const unattributed = splitCareThreadWithAttribution(
   "She ate half her lunch today.\n\nShe seemed tired afterwards.",
 );
