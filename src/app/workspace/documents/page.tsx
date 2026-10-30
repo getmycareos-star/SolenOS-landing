@@ -16,7 +16,7 @@ import {
 
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/document-intake";
+import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
 
 type EvidenceRecord = {
   id: string;

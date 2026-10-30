@@ -8,7 +8,7 @@ import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
-import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/document-intake'
+import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
 
 interface HandoffDraftItem {
   source_type: string

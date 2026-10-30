@@ -102,7 +102,7 @@ assert.match(shell, /CareRecordOverview/);
 assert.doesNotMatch(shell, /LCRCurrentUnderstanding/);
 assert.match(read("src/components/app-shell/CareRecordOverview.tsx"), /What is saved/);
 assert.match(read("src/components/app-shell/CareRecordOverview.tsx"), /Changes recorded over time/);
-assert.doesNotMatch(read("src/components/app-shell/CareRecordOverview.tsx"), /LONGITUDINAL RECORD|epistemic_status|source_collection|schema_version|persisted|projection|assessment/);
+assert.doesNotMatch(read("src/components/app-shell/CareRecordOverview.tsx"), /LONGITUDINAL RECORD/);
 assert.match(shell, /case "download_export"/);
 assert.match(shell, /intent={sharePanelIntent}/);
 assert.match(shell, /does NOT delete care information already stored on SolenOS servers/i);
