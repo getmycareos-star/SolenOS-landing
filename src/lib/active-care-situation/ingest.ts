@@ -504,6 +504,9 @@ function ingestMemoryCorrection(params: {
     originalValue,
     correctedValue,
     correctedBy: params.contributorId,
+    targetObservationId: params.target.id,
+    originalEventIds: params.target.event_ids,
+    correctionEventIds: params.eventIds,
     reason: params.trimmed.slice(0, 240),
     nowIso: params.nowIso,
   });
