@@ -24,6 +24,12 @@ export type SituationObservation = {
   /** Epistemic kind — interpretation must not be promoted as settled fact (G37). */
   epistemic_kind?: "caregiver_interpretation" | "observable_observation" | "baseline_establishment" | "mixed";
   /** G3 — who contributed this observation (same Care Reality). */
+  /** Person explicitly named as the speaker inside a multi-person source. */
+  speaker_label?: string | null;
+  /** explicit only when a speaker prefix was present in the source; never inferred. */
+  speaker_attribution_status?: "explicit" | "unknown";
+  /** Original source container, e.g. a preserved family-thread id. */
+  source_reference_id?: string | null;
   contributor_id?: string | null;
   /** When caregiver explicitly corrected this observation — prior kept as evidence. */
   disputed_by_correction_id?: string | null;
