@@ -34,7 +34,8 @@ type HistoryCategory =
   | "follow-up"
   | "lcr-update"
   | "other";
-type FilterKey = "all" | HistoryCategory;
+type FilterKey = "all" | "pinned" | "archived" | HistoryCategory;
+type RecordActionState = Record<string, { pinned?: boolean; archived?: boolean; followUp?: boolean }>;
 
 type DetailField = { label: string; value: string };
 
@@ -159,6 +160,8 @@ type CareOutcome = {
 
 const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "all", label: "All" },
+  { id: "pinned", label: "Pinned" },
+  { id: "archived", label: "Archived" },
   { id: "daily-care", label: "Daily Care" },
   { id: "document", label: "Documents" },
   { id: "appointment", label: "Appointments" },
@@ -679,7 +682,34 @@ export function HistoryDrawer() {
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [loadedAt, setLoadedAt] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);\n  const [recordActions, setRecordActions] = useState<RecordActionState>({});\n  const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
+
+  const RECORD_ACTIONS_KEY = "solenos_history_record_actions_v1";
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(RECORD_ACTIONS_KEY);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) setRecordActions(parsed as RecordActionState);
+      }
+    } catch {
+      setActionMessage("Saved history preferences could not be read in this browser.");
+    }
+  }, []);
+  useEffect(() => {
+    try { window.localStorage.setItem(RECORD_ACTIONS_KEY, JSON.stringify(recordActions)); }
+    catch { setActionMessage("History preferences could not be saved in this browser."); }
+  }, [recordActions]);
+  const updateRecordAction = (record: HistoryRecord, key: "pinned" | "archived" | "followUp", value: boolean) => {
+    setRecordActions(current => ({
+      ...current,
+      [record.id]: { ...current[record.id], [key]: value },
+    }));
+    setMenuId(null);
+    setConfirmArchive(null);
+    const labels = { pinned: value ? "Added to pinned history." : "Removed from pinned history.", archived: value ? "Archived in this browser’s history." : "Restored to active history.", followUp: value ? "Marked for follow-up." : "Follow-up flag removed." };
+    setActionMessage(labels[key]);
+  };
 
   const loadHistory = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -845,7 +875,10 @@ export function HistoryDrawer() {
   const visibleRecords = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return records.filter((record) => {
-      if (!eventMatchesFilter(record, filter)) return false;
+      const actions = recordActions[record.id];
+      if (filter === "archived" ? !actions?.archived : actions?.archived) return false;
+      if (filter === "pinned" && !actions?.pinned) return false;
+      if (filter !== "pinned" && filter !== "archived" && !eventMatchesFilter(record, filter)) return false;
       if (!needle) return true;
       const haystack = [
         record.title,
@@ -862,7 +895,7 @@ export function HistoryDrawer() {
       ].join(" ").toLowerCase();
       return haystack.includes(needle);
     });
-  }, [records, filter, query]);
+  }, [records, filter, query, recordActions]);
 
   const groupedRecords = useMemo(() => {
     const groups: { label: string; records: HistoryRecord[] }[] = [];
@@ -1178,8 +1211,8 @@ export function HistoryDrawer() {
                                     </span>
                                     <strong>{record.title}</strong>
                                     {description && <span className="history-event-description">{description}</span>}
-                                    {(record.follow_up_candidate || record.attention_candidate) && (
-                                      <span className="history-event-flag">Flagged for follow-up</span>
+                                    {(record.follow_up_candidate || record.attention_candidate || recordActions[record.id]?.followUp) && (
+                                      <span className="history-event-flag">Flagged for follow-up</span>\n                                    {recordActions[record.id]?.pinned && <span className="history-event-flag">Pinned to Home</span>}
                                     )}
                                   </button>
                                   <div className="history-event-menu-wrap">
@@ -1195,9 +1228,11 @@ export function HistoryDrawer() {
                                     </button>
                                     {menuOpen && (
                                       <div className="history-action-menu" role="menu" aria-label={"Actions for " + record.title}>
-                                        <button type="button" role="menuitem" onClick={() => void shareRecord(record)}><Share2 size={16} aria-hidden />Share details</button>
-                                        <button type="button" role="menuitem" onClick={() => void copyRecord(record)}><Copy size={16} aria-hidden />Copy details</button>
-                                        <button type="button" role="menuitem" onClick={() => void downloadRecord(record)}><Download size={16} aria-hidden />{record.source_kind === "document" ? "Download original" : "Download record"}</button>
+                                        <button type="button" role="menuitem" onClick={() => updateRecordAction(record, "pinned", !recordActions[record.id]?.pinned)}><CheckCircle2 size={16} aria-hidden />{recordActions[record.id]?.pinned ? "Remove from Home" : "Add to Home"}</button>
+                                        <button type="button" role="menuitem" onClick={() => updateRecordAction(record, "followUp", !recordActions[record.id]?.followUp)}><Clock3 size={16} aria-hidden />{recordActions[record.id]?.followUp ? "Remove follow-up flag" : "Mark for follow-up"}</button>
+                                        <button type="button" role="menuitem" onClick={() => void copyRecord(record)}><Copy size={16} aria-hidden />Copy</button>
+                                        {record.source_kind === "document" && <button type="button" role="menuitem" onClick={() => void downloadRecord(record)}><Download size={16} aria-hidden />Download original</button>}
+                                        <button type="button" role="menuitem" onClick={() => { setMenuId(null); setConfirmArchive(record.id); }}><ArchiveIcon />{recordActions[record.id]?.archived ? "Restore" : "Archive"}</button>
                                       </div>
                                     )}
                                   </div>
@@ -1218,6 +1253,18 @@ export function HistoryDrawer() {
               </>
             )}
 
+            {confirmArchive && (() => {
+              const record = records.find(item => item.id === confirmArchive);
+              if (!record) return null;
+              const restoring = Boolean(recordActions[record.id]?.archived);
+              return <div className="history-confirm-backdrop" role="presentation" onClick={() => setConfirmArchive(null)}>
+                <section className="history-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="history-archive-title" onClick={event => event.stopPropagation()}>
+                  <h3 id="history-archive-title">{restoring ? "Restore this record?" : "Archive this record?"}</h3>
+                  <p>{restoring ? "This record will return to active history." : "This hides the item from active history in this browser. Its original saved record and Living Care Record references are not deleted or changed."}</p>
+                  <div><button type="button" onClick={() => setConfirmArchive(null)}>Cancel</button><button type="button" onClick={() => updateRecordAction(record, "archived", !restoring)}>{restoring ? "Restore record" : "Archive record"}</button></div>
+                </section>
+              </div>;
+            })()}
             {actionMessage && (
               <div className="history-action-status" role="status">
                 <span>{actionMessage}</span>
