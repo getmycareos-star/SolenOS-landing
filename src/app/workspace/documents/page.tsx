@@ -14,9 +14,10 @@ import {
   X,
 } from "lucide-react";
 
-import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
+import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
+import DocumentIntelligenceReview from "@/components/workflows/DocumentIntelligenceReview";
 
 type EvidenceRecord = {
   id: string;
@@ -283,6 +284,7 @@ export default function DocumentsPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [intelligenceRefreshKey, setIntelligenceRefreshKey] = useState(0);
 
   const loadDocuments = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true);
@@ -436,6 +438,7 @@ export default function DocumentsPage() {
     setUploading(true);
     setUploadMessage(null);
     let saved = 0;
+    const savedEvidenceIds: string[] = [];
     try {
       const session = await ensureAnonymousSession();
       for (const page of reviewPages) {
@@ -451,13 +454,30 @@ export default function DocumentsPage() {
         form.append("scan_text_prepared", String(page.file.type.startsWith("image/") && page.prepared));
         const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
+        savedEvidenceIds.push(stored.evidence_id);
         saved += 1;
       }
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
       setIntakeMode(null);
-      setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Scanned statements remain source evidence, not verified LCR facts.` });
       await loadDocuments(true);
+      let analysed = 0;
+      let analysisFailed = 0;
+      for (let index = 0; index < savedEvidenceIds.length; index += 1) {
+        if (!reviewPages[index]?.text.trim()) continue;
+        try {
+          const analysis = await postJSON(`/documents/${encodeURIComponent(savedEvidenceIds[index])}/intelligence`, {}) as { analysis_id?: string; source_evidence_id?: string };
+          if (!analysis.analysis_id || analysis.source_evidence_id !== savedEvidenceIds[index]) throw new Error("Document intelligence was not confirmed for the saved source.");
+          analysed += 1;
+        } catch {
+          analysisFailed += 1;
+        }
+      }
+      setIntelligenceRefreshKey(value => value + 1);
+      setUploadMessage({
+        kind: "success",
+        text: `Saved ${saved} original file(s). Document intelligence completed for ${analysed} file(s); extracted statements require caregiver review before they enter the Living Care Record.${analysisFailed ? ` Intelligence could not run for ${analysisFailed} file(s); retry from the document intelligence section.` : ""}`,
+      });
     } catch {
       setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });
       await loadDocuments(true);
@@ -589,6 +609,10 @@ export default function DocumentsPage() {
         </section>}
         {uploading && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}>Reading available text and saving the original file. Please keep this page open.</p>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
+        <DocumentIntelligenceReview
+          documents={documents.map(document => ({ id: document.id, title: document.title, extractedText: document.extractedText }))}
+          refreshKey={intelligenceRefreshKey}
+        />
         {listError && <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14 }}><p style={{ margin: "0 0 10px" }}>{listError}</p><button type="button" onClick={() => void loadDocuments()} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Try again</button></div>}
 
         <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border)", borderRadius: 9, padding: "0 12px", minHeight: 44 }}>
