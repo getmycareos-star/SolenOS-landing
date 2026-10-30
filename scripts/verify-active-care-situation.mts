@@ -445,6 +445,7 @@ const concurrentBase = ingestActiveCareObservation({
   kind: classifyCareEventKind("Walking stability concern."),
   nowIso: "2026-07-18T12:00:00.000Z",
 }).situation;
+const concurrentCareKey = concurrentBase.care_recipient_id ?? "cg_durable_concurrent";
 const staleWriteA = {
   ...concurrentBase,
   updated_at: "2026-07-18T12:01:00.000Z",
@@ -480,7 +481,7 @@ const staleWriteB = {
 persistActiveCareSituationToDurable(staleWriteA);
 persistActiveCareSituationToDurable(staleWriteB);
 clearActiveCareSituationMemoryCache();
-const afterConcurrentWrites = listActiveCareSituationsFromDurable("cg_durable_concurrent")
+const afterConcurrentWrites = listActiveCareSituationsFromDurable(concurrentCareKey)
   .find((situation) => situation.id === concurrentBase.id);
 assert(afterConcurrentWrites, "the situation must survive a process-cache reset");
 assert(
