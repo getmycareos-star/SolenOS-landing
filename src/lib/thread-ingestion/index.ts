@@ -63,7 +63,7 @@ export function splitCareThreadWithAttribution(rawThread: string): CareThreadFra
   if (!raw) return [];
 
   const speakerBlocks = raw.split(
-    /\n(?=(?:\[[^\]]+\]\s*)?[A-Za-z][A-Za-z .'-]{0,40}:\s|\n(?=\[[^\]]+\]:\s)/,
+    /\n(?=(?:\[[^\]]+\]\s*)?[A-Za-z][A-Za-z .'-]{0,40}:\s|\[[^\]]+\]:\s)/,
   ).map((block) => block.trim()).filter(Boolean);
 
   let candidates: CareThreadFragment[] = [];
@@ -164,6 +164,7 @@ export function ingestCareThread(params: {
   let rootEventId = params.rootEventId ?? null;
 
   fragments.forEach((frag, i) => {
+    const attributed = attributedFragments[i]!;
     // First obs: durable pointer + fragment (full source is in thread-evidence store).
     // Later obs: fragment only. Never embed a truncated "chat summary" as the product.
     const text =
