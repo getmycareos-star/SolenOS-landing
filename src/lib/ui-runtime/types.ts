@@ -171,6 +171,21 @@ export type Situation = {
   updatedAt: string;
   /** True only when the backend has a durable situation row that can be resumed. */
   persistedThread?: boolean;
+  /** Individual source statements, distinct from the authenticated reporter. */
+  sourceStatements?: readonly {
+    id: string;
+    evidence_id: string;
+    speaker_label: string | null;
+    speaker_attribution_status: "explicit" | "unknown";
+    reporter_caregiver_id: string | null;
+    observer_caregiver_id: string | null;
+    source_passage: string;
+    source_span_start: number | null;
+    source_span_end: number | null;
+    reported_at: string | null;
+    epistemic_status: string;
+    observation_kind: string;
+  }[];
   /** Persisted unresolved contradictions; no side is implicitly selected. */
   conflicts?: readonly {
     id: string;
