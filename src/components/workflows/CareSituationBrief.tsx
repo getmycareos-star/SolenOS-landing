@@ -127,9 +127,13 @@ function CareSection({
                       <span>Reported by: {item.reported_by_label || "Not recorded"}</span>
                       <span>Recorded: {dateLabel(item.recorded_at || item.occurred_at)}</span>
                       {(item.evidence_ids || []).map(evidenceId => (
-                        <Link key={evidenceId} href={`/workspace/documents?evidence_id=${encodeURIComponent(evidenceId)}`} style={{ color: "#315b39", fontWeight: 750, textDecoration: "underline", overflowWrap: "anywhere" }}>
-                          Open original evidence · {evidenceId}
-                        </Link>
+                        (String(item.source_label || "").startsWith("Document:") || /document/i.test(item.kind || "") || /document/i.test(item.source_type || "")) ? (
+                          <Link key={evidenceId} href={`/workspace/documents?evidence_id=${encodeURIComponent(evidenceId)}`} style={{ color: "#315b39", fontWeight: 750, textDecoration: "underline", overflowWrap: "anywhere" }}>
+                            Open original document · {evidenceId}
+                          </Link>
+                        ) : (
+                          <span key={evidenceId} style={{ overflowWrap: "anywhere" }}>Evidence ID: {evidenceId}</span>
+                        )
                       ))}
                     </div>
                   </details>
