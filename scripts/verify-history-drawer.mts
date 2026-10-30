@@ -44,7 +44,7 @@ assert.match(drawer, /Mark for follow-up/);
 assert.match(drawer, /"archived"/);
 assert.match(drawer, /Restore record/);
 assert.match(drawer, /RECORD_ACTIONS_KEY/);
-assert.match(drawer, /Original saved record and Living Care Record references are not deleted or changed/);
+assert.match(drawer, /original saved record and Living Care Record references are not deleted or changed/i);
 assert.match(drawer, /saved in this browser only/);
 assert.doesNotMatch(drawer, /delete.*record/i, "history actions must not expose unsafe record deletion");
 assert.match(drawer, /No saved care records were returned/);
