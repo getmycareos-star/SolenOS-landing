@@ -644,7 +644,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, targetS
         careKey,
         caregiverId: careKey,
         situations: uiSituations,
-        activeSituationId: uiSituations.find((s) => s.status === "active")?.id ?? null,
+        activeSituationId:
+          targetSituationId ??
+          uiSituations.find((s) => s.status === "active")?.id ??
+          null,
         response: situationData,
       });
 
