@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
+import CareSituationBrief from '@/components/workflows/CareSituationBrief'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
 import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
@@ -398,6 +399,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         </div>
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
+
+      <CareSituationBrief />
 
       {!home && (
       <section className="companion-purpose">
