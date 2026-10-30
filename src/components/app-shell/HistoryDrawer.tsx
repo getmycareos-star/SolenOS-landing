@@ -964,7 +964,7 @@ export function HistoryDrawer() {
     <>
       <aside
             id="solenos-history-drawer"
-            className="history-drawer"
+            className={`history-drawer${selectedRecord ? " is-detail" : ""}`}
             aria-label="Care history"
           >
             <header className="history-drawer-header">
