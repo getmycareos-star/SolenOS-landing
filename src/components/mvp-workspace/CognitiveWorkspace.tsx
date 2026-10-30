@@ -99,6 +99,8 @@ function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string 
 }
 
 type Props = {
+  /** Explicit durable thread selected from the care timeline. */
+  targetSituationId?: string | null;
   /** Fired after MVP /api/situation so sidebar can hydrate from TrackedSituation. */
   onSituationComplete?: (payload: {
     careKey: string;
@@ -123,7 +125,7 @@ type Props = {
  * Caregiver workspace — single entry pipeline: POST /api/situation.
  * Analyze / Clarity / Clear-my-head paths removed (ops-gated elsewhere).
  */
-export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props) {
+export function CognitiveWorkspace({ onSituationComplete, onPauseActive, targetSituationId }: Props) {
   const [state, setState] = useState<WorkspaceState>("REAL_MOMENT");
   const [rawInput, setRawInput] = useState("");
   const [documents, setDocuments] = useState<AttachedDocument[]>([]);
@@ -412,6 +414,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           person_id: anonymousSession.person.id,
           caregiver_id: anonymousSession.caregiver.id,
           client_care_key: caregiverId,
+          target_situation_id: targetSituationId ?? undefined,
           raw_input: text,
           care_session_id: interactionSessionId(),
           timestamp: provenance.captured_at,
@@ -475,7 +478,12 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
         evidence_id?: string;
         ui_situations?: Situation[];
         situations?: Situation[];
+        situation_id?: string;
       };
+
+      if (targetSituationId && situationData.situation_id !== targetSituationId) {
+        throw new Error("The update was not attached to the selected care thread. The original thread remains unchanged.");
+      }
 
       // A successful POST is a write receipt. Prefer the read-after-write
       // projection; if no active situation was inferred, verify the event by ID
