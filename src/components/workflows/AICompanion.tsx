@@ -104,7 +104,7 @@ const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening
 const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'Talk through a difficult moment', description: 'Sort out what happened and what might help next.', prompt: 'Help me think through a difficult moment in care.' },
   { icon: Clock3, title: 'Make sense of a change', description: 'Separate what we know from what is still unclear.', prompt: 'Help me make sense of a recent change without jumping to conclusions.' },
-  { icon: FileText, title: 'Prepare for an appointment', description: 'Organise observations and questions to take along.', prompt: 'Help me prepare clear questions for an upcoming care appointment.' },
+  { icon: Users, title: 'Keep everyone on the same page', description: 'Bring together care updates, outstanding questions, and what each family caregiver needs to know.', prompt: 'Help me prepare a family care coordination update using only the relevant information available in the Living Care Record. Separate documented facts from caregiver reports and unresolved questions. Identify open follow-up actions and what still needs confirmation. Do not invent missing details or change the Living Care Record.' },
 ]
 
 export default function Companion() {
@@ -219,6 +219,7 @@ export default function Companion() {
       }
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
+      setInput(submittedText)
       setRequestError('Your message could not be sent. It remains in the box below. Check your connection and try again.')
     } finally {
       setLoading(false)
@@ -442,7 +443,7 @@ export default function Companion() {
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
-                  return <button className="companion-starter" type="button" key={item.title} onClick={() => { setInput(item.prompt); setRequestError(null); textareaRef.current?.focus() }}>
+                  return <button className="companion-starter" type="button" key={item.title} onClick={() => { void sendMessage(item.prompt) }}>
                     <span className="companion-starter-icon"><Icon size={18} aria-hidden="true" /></span>
                     <span className="companion-starter-copy"><strong>{item.title}</strong><span>{item.description}</span></span>
                     <span className="companion-starter-arrow" aria-hidden="true">↗</span>
