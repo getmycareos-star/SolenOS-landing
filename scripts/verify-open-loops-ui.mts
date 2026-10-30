@@ -34,7 +34,7 @@ for (const action of ["responses", "actions", "outcomes", "corroborate-outcome",
 }
 
 assert.ok(
-  page.includes("Independent-source corroboration means a caregiver reviewed two persisted source records. SolenOS does not automatically establish semantic entailment or prove that an action caused the outcome."),
+  page.includes("Verification means a caregiver reviewed two persisted sources and explicitly assessed their origins as independent. This records a corroboration assessment; it does not automatically establish semantic entailment, truth, or causation."),
   "verified outcomes must disclose the limits of semantic grounding and causation",
 );
 
