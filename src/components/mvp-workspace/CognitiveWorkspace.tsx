@@ -177,6 +177,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
   /** Workspace management state. */
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
+  const [hasCareInfo, setHasCareInfo] = useState(false);
 
   const go = useCallback((next: WorkspaceState) => {
     setTransitionKey((k) => k + 1);
@@ -1090,7 +1091,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive }: Props
           isPinned={isPinned}
           isArchived={isArchived}
           canAddToHome={canAddToHome}
-          hasCareInfo={hasContextRoot || sessionHasNote || Boolean(lastSharedDisplay.trim())}
+          hasCareInfo={hasCareInfo || hasContextRoot || sessionHasNote || Boolean(lastSharedDisplay.trim())}
         />
       </div>
       <div className="lcr-capture-context" role="note">
