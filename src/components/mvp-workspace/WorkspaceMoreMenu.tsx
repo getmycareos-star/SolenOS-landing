@@ -1,24 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  type LucideIcon,
-  MoreHorizontal,
-  Pin,
-  Archive,
-  Trash2,
-  Share2,
-  Home,
-} from "lucide-react";
+import { type LucideIcon, MoreHorizontal, Pin, Archive, Trash2, Share2, Home, Pencil, Eye, Download } from "lucide-react";
 
 export type WorkspaceAction =
-  | "share_care_summary"
-  | "pin"
-  | "unpin"
-  | "archive"
-  | "restore"
-  | "delete"
-  | "add_to_home";
+  | "share_care_summary" | "add_to_home" | "edit_record" | "view_record_details"
+  | "download_export" | "archive" | "restore" | "pin" | "unpin" | "delete";
 
 interface WorkspaceMoreMenuProps {
   onAction: (action: WorkspaceAction) => void;
@@ -31,24 +18,23 @@ const MENU_ITEMS: {
   label: string;
   icon: LucideIcon;
   condition?: (props: WorkspaceMoreMenuProps) => boolean;
+  destructive?: boolean;
 }[] = [
   { id: "share_care_summary", label: "Share care summary", icon: Share2 },
-  { id: "pin", label: "Pin", icon: Pin, condition: (props) => !props.isPinned && !props.isArchived },
-  { id: "unpin", label: "Unpin", icon: Pin, condition: (props) => Boolean(props.isPinned) },
+  { id: "add_to_home", label: "Add to Home", icon: Home },
+  { id: "edit_record", label: "Edit record", icon: Pencil },
+  { id: "view_record_details", label: "View record details", icon: Eye },
+  { id: "download_export", label: "Download / Export", icon: Download },
   { id: "archive", label: "Archive", icon: Archive, condition: (props) => !props.isArchived },
   { id: "restore", label: "Restore", icon: Archive, condition: (props) => Boolean(props.isArchived) },
-  { id: "delete", label: "Delete", icon: Trash2, condition: (props) => !props.isArchived },
-  { id: "add_to_home", label: "Add to Home", icon: Home },
+  { id: "pin", label: "Pin", icon: Pin, condition: (props) => !props.isPinned },
+  { id: "unpin", label: "Unpin", icon: Pin, condition: (props) => Boolean(props.isPinned) },
+  { id: "delete", label: "Delete", icon: Trash2, destructive: true },
 ];
 
-export function WorkspaceMoreMenu({
-  onAction,
-  isPinned = false,
-  isArchived = false,
-}: WorkspaceMoreMenuProps) {
+export function WorkspaceMoreMenu({ onAction, isPinned = false, isArchived = false }: WorkspaceMoreMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
   const handleToggle = useCallback(() => setOpen((value) => !value), []);
   const handleSelect = useCallback((action: WorkspaceAction) => {
     setOpen(false);
@@ -57,16 +43,16 @@ export function WorkspaceMoreMenu({
 
   useEffect(() => {
     if (!open) return;
-    function handleClickOutside(event: MouseEvent) {
+    function handlePointerOutside(event: PointerEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false);
     }
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handlePointerOutside);
     document.addEventListener("keydown", handleEscape);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handlePointerOutside);
       document.removeEventListener("keydown", handleEscape);
     };
   }, [open]);
@@ -97,7 +83,7 @@ export function WorkspaceMoreMenu({
                 key={item.id}
                 type="button"
                 role="menuitem"
-                className="workspace-more-menu-item"
+                className={`workspace-more-menu-item${item.destructive ? " is-destructive" : ""}`}
                 onClick={() => handleSelect(item.id)}
               >
                 <Icon size={16} aria-hidden />
