@@ -48,45 +48,75 @@ function looksCareRelevant(text: string): boolean {
  * Split a long family thread into care-relevant fragments.
  * Does not invent content — only partitions the source.
  */
-export function splitCareThread(rawThread: string): string[] {
+export type CareThreadFragment = {
+  text: string;
+  speaker_label: string | null;
+  speaker_attribution_status: "explicit" | "unknown";
+};
+
+/**
+ * Parse only explicit speaker headers. Reporter identity is supplied separately
+ * by the authenticated caller. A missing header remains unknown, never guessed.
+ */
+export function splitCareThreadWithAttribution(rawThread: string): CareThreadFragment[] {
   const raw = rawThread.replace(/\r\n/g, "\n").trim();
   if (!raw) return [];
 
-  // 1) Speaker / timestamp blocks (WhatsApp-like / email)
-  const speakerBlocks = raw
-    .split(/\n(?=(?:\[[^\]]+\]\s*)?[A-Za-z][A-Za-z .'-]{0,40}:\s)/)
-    .map((b) => b.trim())
-    .filter(Boolean);
+  const speakerBlocks = raw.split(
+    /\n(?=(?:\[[^\]]+\]\s*)?[A-Za-z][A-Za-z .'-]{0,40}:\s|\n(?=\[[^\]]+\]:\s)/,
+  ).map((block) => block.trim()).filter(Boolean);
 
-  let candidates: string[] = [];
+  let candidates: CareThreadFragment[] = [];
   if (speakerBlocks.length >= 2) {
-    candidates = speakerBlocks.map((b) =>
-      b.replace(/^(?:\[[^\]]+\]\s*)?[A-Za-z][A-Za-z .'-]{0,40}:\s*/u, "").trim(),
-    );
+    candidates = speakerBlocks.map((block) => {
+      const named = block.match(/^(?:\[[^\]]+\]\s*)?([A-Za-z][A-Za-z .'-]{0,40}):\s*([\s\S]*)$/);
+      const bracketed = block.match(/^\[([^\]]+)\]:\s*([\s\S]*)$/);
+      const speaker = named?.[1]?.trim() || bracketed?.[1]?.trim() || null;
+      const body = named?.[2] ?? bracketed?.[2] ?? block;
+      return {
+        text: body.replace(/\s+/g, " ").trim(),
+        speaker_label: speaker,
+        speaker_attribution_status: speaker ? "explicit" as const : "unknown" as const,
+      };
+    });
   } else {
-    // 2) Blank-line paragraphs
     const paras = raw.split(/\n\s*\n/).map((p) => p.replace(/\n/g, " ").trim()).filter(Boolean);
     if (paras.length >= 2) {
-      candidates = paras;
+      candidates = paras.map((text) => ({
+        text,
+        speaker_label: null,
+        speaker_attribution_status: "unknown" as const,
+      }));
     } else {
-      // 3) Sentence split for dense blobs
-      candidates = raw
-        .split(/(?<=[.!?])\s+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
+      candidates = raw.split(/(?<=[.!?])\s+/).map((text) => ({
+        text: text.trim(),
+        speaker_label: null,
+        speaker_attribution_status: "unknown" as const,
+      }));
     }
   }
 
   const fragments = candidates
-    .map((c) => c.replace(/\s+/g, " ").trim())
-    .filter(looksCareRelevant)
+    .map((fragment) => ({
+      ...fragment,
+      text: fragment.text.replace(/\s+/g, " ").trim(),
+    }))
+    .filter((fragment) => looksCareRelevant(fragment.text))
     .slice(0, MAX_FRAGMENTS);
 
-  // If nothing split usefully, keep whole as one fragment (still not a "summary product")
   if (fragments.length === 0 && raw.length >= MIN_FRAGMENT_LEN) {
-    return [raw.slice(0, 500)];
+    return [{
+      text: raw.slice(0, 500),
+      speaker_label: null,
+      speaker_attribution_status: "unknown",
+    }];
   }
   return fragments;
+}
+
+/** Backward-compatible text-only splitter. */
+export function splitCareThread(rawThread: string): string[] {
+  return splitCareThreadWithAttribution(rawThread).map((fragment) => fragment.text);
 }
 
 export type ThreadIngestResult = {
@@ -118,7 +148,8 @@ export function ingestCareThread(params: {
   rootEventId?: string | null;
 }): ThreadIngestResult {
   const source_preserved = params.rawThread.replace(/\r\n/g, "\n").trim();
-  const fragments = splitCareThread(source_preserved);
+  const attributedFragments = splitCareThreadWithAttribution(source_preserved);
+  const fragments = attributedFragments.map((fragment) => fragment.text);
   const turns: ActiveSituationTurn[] = [];
   const base = Date.parse(params.nowIso ?? new Date().toISOString()) || Date.now();
 
@@ -146,6 +177,9 @@ export function ingestCareThread(params: {
       rawText: text,
       kind,
       contributorId: params.contributorId,
+      speakerLabel: attributed.speaker_label,
+      speakerAttributionStatus: attributed.speaker_attribution_status,
+      sourceReferenceId: evidence.thread_id,
       nowIso: new Date(base + i * 60_000).toISOString(),
       eventIds: isLast ? params.eventIds : undefined,
       situationId,
