@@ -100,6 +100,9 @@ export function resetSourceConflictStore(): void {
   clearDurableDirectory(livingCareRecordDataDir("source-claims"));
 }
 
+export { listSourceClaims };
+export type { ObservationSourceRef };
+
 function isDocumentLike(kind: CareEventKind): boolean {
   return (
     kind === "document" ||
