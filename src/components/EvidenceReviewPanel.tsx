@@ -44,6 +44,10 @@ type SourceIntegrity = {
   exact_source_text_duplicate_candidate_ids: string[]
   exact_binary_duplicate_candidate_ids: string[]
   duplicate_candidate_status: string
+  near_duplicate_comparison_status: string
+  near_duplicate_algorithm_version: string
+  near_duplicate_candidate_groups: Array<{ evidence_ids: string[]; candidate_basis: string; interpretation: string }>
+  near_duplicate_interpretation_limit: string
   freshness_status: string
   freshness_assessment_id: string | null
   completeness_status: string
@@ -396,6 +400,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           !['not_applicable', 'missing', 'match', 'mismatch'].includes(result.original_binary_status) ||
           !Array.isArray(result.exact_source_text_duplicate_candidate_ids) ||
           !Array.isArray(result.exact_binary_duplicate_candidate_ids) ||
+          !Array.isArray(result.near_duplicate_candidate_groups) ||
+          typeof result.near_duplicate_comparison_status !== 'string' ||
+          typeof result.near_duplicate_interpretation_limit !== 'string' ||
           typeof result.freshness_status !== 'string' ||
           typeof result.completeness_status !== 'string' ||
           typeof result.hash_scope !== 'string' || result.original_file_authenticity_verified !== false) {
@@ -892,6 +899,13 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Exact binary duplicate candidates:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_binary_duplicate_candidate_ids.join(', ')
               : 'No exact binary fingerprint candidate found.'}</p>
+            <p><strong>Near-duplicate comparison:</strong> {sourceIntegrity.near_duplicate_comparison_status.replaceAll('_', ' ')} · algorithm {sourceIntegrity.near_duplicate_algorithm_version}</p>
+            {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
+              <p key={group.evidence_ids.join(':') + index}>
+                Similarity candidate with evidence {group.evidence_ids.filter(id => id !== selectedId).join(', ')} · {group.interpretation}
+              </p>
+            ))}
+            <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
             <p><strong>Freshness:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>Completeness:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
             <p>Original file authenticity is not established by a stored hash. A matching hash proves byte consistency, not who created the source.</p>
           </>}
