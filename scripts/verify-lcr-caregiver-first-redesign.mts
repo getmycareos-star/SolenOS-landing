@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const workspacePage = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8");
 const capture = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
