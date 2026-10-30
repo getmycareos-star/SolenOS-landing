@@ -238,7 +238,7 @@ try {
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await conflict.getByText(/contradiction · closed/i).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "View audit history" }).click();
-  for (const eventName of ["action recorded", "contradiction reconciled", "outcome attested", "outcome corroborated", "closure verified"]) {
+  for (const eventName of ["action recorded", "contradiction reconciled", "outcome reported", "outcome corroborated", "closure verified"]) {
     await conflict.getByText(eventName, { exact: true }).first().waitFor({ timeout: 10_000 });
   }
 
