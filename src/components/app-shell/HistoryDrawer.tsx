@@ -3,24 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
-  Archive,
   AlertCircle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock3,
-  Copy,
-  Download,
   FileText,
   Handshake,
-  MoreHorizontal,
   RefreshCw,
   Search,
-  Share2,
   ShieldCheck,
   X,
 } from "lucide-react";
-import { ensureAnonymousSession, getBlob, getJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON } from "@/api/client";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
@@ -33,8 +28,7 @@ type HistoryCategory =
   | "follow-up"
   | "lcr-update"
   | "other";
-type FilterKey = "all" | "pinned" | "archived" | HistoryCategory;
-type RecordActionState = Record<string, { pinned?: boolean; archived?: boolean; followUp?: boolean }>;
+type FilterKey = "all" | HistoryCategory;
 
 type DetailField = { label: string; value: string };
 
@@ -159,8 +153,6 @@ type CareOutcome = {
 
 const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "pinned", label: "Pinned" },
-  { id: "archived", label: "Archived" },
   { id: "daily-care", label: "Daily Care" },
   { id: "document", label: "Documents" },
   { id: "appointment", label: "Appointments" },
@@ -622,33 +614,6 @@ function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
   };
 }
 
-function recordText(record: HistoryRecord, compact = false): string {
-  const content = parseDescription(record.description);
-  const safeContent = compact && content.length > 4000
-    ? content.slice(0, 4000) + "\n[Content shortened for sharing. Open the original record for the full text.]"
-    : content;
-  const lines = [
-    record.title,
-    categoryLabel(categoryFor(record), record.event_type),
-    "",
-    record.source_kind === "care-event" ? "Original care event:" :
-      record.source_kind === "document" ? "Document record and extracted text:" :
-      record.source_kind === "appointment" ? "Saved appointment workspace:" :
-      record.source_kind === "lcr-revision" ? "Living Care Record revision:" :
-      record.source_kind === "decision" ? "Recorded care decision:" :
-      record.source_kind === "outcome" ? "Recorded outcome:" : "Handoff record:",
-    safeContent || "No additional text was saved with this record.",
-    "",
-    "Event time: " + formatDateTime(record.occurred_at),
-    "Recorded in SolenOS: " + formatDateTime(record.recorded_at),
-    "Status: " + (record.status || "Not specified"),
-    "Time provenance: " + (record.time_provenance || "Not recorded"),
-    "Evidence references: " + (record.evidence_ids?.length ? record.evidence_ids.join(", ") : "None attached"),
-    ...(record.source_details ?? []).map((field) => field.label + ": " + field.value),
-  ];
-  return lines.join("\n");
-}
-
 function eventMatchesFilter(record: HistoryRecord, filter: FilterKey): boolean {
   if (filter === "all") return true;
   const category = categoryFor(record);
@@ -673,52 +638,12 @@ export function HistoryDrawer() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [menuId, setMenuId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
-  const [recordActions, setRecordActions] = useState<RecordActionState>({});
-  const [recordActionsLoaded, setRecordActionsLoaded] = useState(false);
-  const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
-
-  const RECORD_ACTIONS_KEY = "solenos_history_record_actions_v1";
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(RECORD_ACTIONS_KEY);
-      if (raw) {
-        const parsed: unknown = JSON.parse(raw);
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) setRecordActions(parsed as RecordActionState);
-      }
-    } catch {
-      setActionMessage("Saved history preferences could not be read in this browser.");
-    } finally {
-      setRecordActionsLoaded(true);
-    }
-  }, []);
-  useEffect(() => {
-    if (!recordActionsLoaded) return;
-    try {
-      window.localStorage.setItem(RECORD_ACTIONS_KEY, JSON.stringify(recordActions));
-    } catch {
-      setActionMessage("History preferences could not be saved in this browser.");
-    }
-  }, [recordActions, recordActionsLoaded]);
-
-  const updateRecordAction = (record: HistoryRecord, key: "pinned" | "archived" | "followUp", value: boolean) => {
-    setRecordActions(current => ({
-      ...current,
-      [record.id]: { ...current[record.id], [key]: value },
-    }));
-    setMenuId(null);
-    setConfirmArchive(null);
-    const labels = { pinned: value ? "Added to pinned history." : "Removed from pinned history.", archived: value ? "Archived in this browser’s history." : "Restored to active history.", followUp: value ? "Marked for follow-up." : "Follow-up flag removed." };
-    setActionMessage(labels[key]);
-  };
-
   const loadHistory = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     else setLoading(true);
@@ -883,10 +808,7 @@ export function HistoryDrawer() {
   const visibleRecords = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return records.filter((record) => {
-      const actions = recordActions[record.id];
-      if (filter === "archived" ? !actions?.archived : actions?.archived) return false;
-      if (filter === "pinned" && !actions?.pinned) return false;
-      if (filter !== "pinned" && filter !== "archived" && !eventMatchesFilter(record, filter)) return false;
+      if (!eventMatchesFilter(record, filter)) return false;
       if (!needle) return true;
       const haystack = [
         record.title,
@@ -903,7 +825,7 @@ export function HistoryDrawer() {
       ].join(" ").toLowerCase();
       return haystack.includes(needle);
     });
-  }, [records, filter, query, recordActions]);
+  }, [records, filter, query]);
 
   const groupedRecords = useMemo(() => {
     const groups: { label: string; records: HistoryRecord[] }[] = [];
@@ -918,74 +840,7 @@ export function HistoryDrawer() {
 
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
 
-  const closeDrawer = () => {
-    setSelectedId(null);
-    setMenuId(null);
-  };
-
-  const copyRecord = async (record: HistoryRecord) => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(recordText(record));
-      setActionMessage("Record details copied.");
-    } catch {
-      setActionMessage("Copy is unavailable in this browser. Try Download record instead.");
-    }
-    setMenuId(null);
-  };
-
-  const downloadRecord = async (record: HistoryRecord) => {
-    if (record.source_kind === "document" && record.evidence_id) {
-      try {
-        const blob = await getBlob("/upload/" + encodeURIComponent(record.evidence_id));
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = record.original_filename || "care-document";
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        setActionMessage("Original document download started.");
-      } catch {
-        setActionMessage("The original document could not be retrieved. Its saved evidence record remains in history.");
-      }
-      setMenuId(null);
-      return;
-    }
-
-    const blob = new Blob([recordText(record)], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = (record.title || "care-record").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() + ".txt";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setActionMessage("Record download started.");
-    setMenuId(null);
-  };
-
-  const shareRecord = async (record: HistoryRecord) => {
-    const text = recordText(record, true);
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: record.title, text });
-        setActionMessage("Share sheet opened.");
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setActionMessage("Sharing is unavailable here; record details copied instead.");
-      } else {
-        setActionMessage("Sharing is unavailable in this browser. Try Download record instead.");
-      }
-    } catch (cause) {
-      if (!(cause instanceof DOMException && cause.name === "AbortError")) {
-        setActionMessage("The record could not be shared from this browser.");
-      }
-    }
-    setMenuId(null);
-  };
+  const closeDrawer = () => setSelectedId(null);
 
   const selectedDescriptionHeading = selectedRecord?.source_kind === "document"
     ? "Extracted text"
@@ -1096,11 +951,6 @@ export function HistoryDrawer() {
                   <span>Original information is shown separately from recorded metadata. A missing field is not treated as proof that something did not happen. Related events are not assumed to share a cause.</span>
                 </section>
 
-                <div className="history-detail-actions">
-                  <button type="button" onClick={() => void shareRecord(selectedRecord)}><Share2 size={16} aria-hidden />Share details</button>
-                  <button type="button" onClick={() => void copyRecord(selectedRecord)}><Copy size={16} aria-hidden />Copy</button>
-                  <button type="button" onClick={() => void downloadRecord(selectedRecord)}><Download size={16} aria-hidden />{selectedRecord.source_kind === "document" ? "Download original" : "Download"}</button>
-                </div>
               </div>
             ) : (
               <>
@@ -1190,13 +1040,12 @@ export function HistoryDrawer() {
                             {group.records.map((record) => {
                               const category = categoryFor(record);
                               const description = parseDescription(record.description);
-                              const menuOpen = menuId === record.id;
                               return (
                                 <article key={record.id} className="history-event-card">
                                   <button
                                     type="button"
                                     className="history-event-open"
-                                    onClick={() => { setSelectedId(record.id); setMenuId(null); }}
+                                    onClick={() => setSelectedId(record.id)}
                                     aria-label={"Open record: " + record.title}
                                   >
                                     <span className="history-event-topline">
@@ -1206,32 +1055,10 @@ export function HistoryDrawer() {
                                     </span>
                                     <strong>{record.title}</strong>
                                     {description && <span className="history-event-description">{description}</span>}
-                                    {(record.follow_up_candidate || record.attention_candidate || recordActions[record.id]?.followUp) && (
+                                    {(record.follow_up_candidate || record.attention_candidate) && (
                                       <span className="history-event-flag">Flagged for follow-up</span>
                                     )}
-                                    {recordActions[record.id]?.pinned && <span className="history-event-flag">Pinned to Home</span>}
                                   </button>
-                                  <div className="history-event-menu-wrap">
-                                    <button
-                                      type="button"
-                                      className="history-icon-button history-event-menu-trigger"
-                                      aria-label={"Actions for " + record.title}
-                                      aria-haspopup="menu"
-                                      aria-expanded={menuOpen}
-                                      onClick={() => setMenuId(menuOpen ? null : record.id)}
-                                    >
-                                      <MoreHorizontal size={19} aria-hidden />
-                                    </button>
-                                    {menuOpen && (
-                                      <div className="history-action-menu" role="menu" aria-label={"Actions for " + record.title}>
-                                        <button type="button" role="menuitem" onClick={() => updateRecordAction(record, "pinned", !recordActions[record.id]?.pinned)}><CheckCircle2 size={16} aria-hidden />{recordActions[record.id]?.pinned ? "Remove from Home" : "Add to Home"}</button>
-                                        <button type="button" role="menuitem" onClick={() => updateRecordAction(record, "followUp", !recordActions[record.id]?.followUp)}><Clock3 size={16} aria-hidden />{recordActions[record.id]?.followUp ? "Remove follow-up flag" : "Mark for follow-up"}</button>
-                                        <button type="button" role="menuitem" onClick={() => void copyRecord(record)}><Copy size={16} aria-hidden />Copy</button>
-                                        {record.source_kind === "document" && <button type="button" role="menuitem" onClick={() => void downloadRecord(record)}><Download size={16} aria-hidden />Download original</button>}
-                                        <button type="button" role="menuitem" onClick={() => { setMenuId(null); setConfirmArchive(record.id); }}><Archive size={16} aria-hidden />{recordActions[record.id]?.archived ? "Restore" : "Archive"}</button>
-                                      </div>
-                                    )}
-                                  </div>
                                 </article>
                               );
                             })}
@@ -1244,29 +1071,11 @@ export function HistoryDrawer() {
 
                 <footer className="history-drawer-footer">
                   <ShieldCheck size={15} aria-hidden />
-                  <span>History combines saved care events, documents, appointment workspaces, handoffs, Living Care Record revisions, decisions and outcomes where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}. Pin, archive and follow-up preferences are saved in this browser only.</span>
+                  <span>History combines saved care events, documents, appointment workspaces, handoffs, Living Care Record revisions, decisions and outcomes where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
                 </footer>
               </>
             )}
 
-            {confirmArchive && (() => {
-              const record = records.find(item => item.id === confirmArchive);
-              if (!record) return null;
-              const restoring = Boolean(recordActions[record.id]?.archived);
-              return <div className="history-confirm-backdrop" role="presentation" onClick={() => setConfirmArchive(null)}>
-                <section className="history-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="history-archive-title" onClick={event => event.stopPropagation()}>
-                  <h3 id="history-archive-title">{restoring ? "Restore this record?" : "Archive this record?"}</h3>
-                  <p>{restoring ? "This record will return to active history." : "This hides the item from active history in this browser. Its original saved record and Living Care Record references are not deleted or changed."}</p>
-                  <div><button type="button" onClick={() => setConfirmArchive(null)}>Cancel</button><button type="button" onClick={() => updateRecordAction(record, "archived", !restoring)}>{restoring ? "Restore record" : "Archive record"}</button></div>
-                </section>
-              </div>;
-            })()}
-            {actionMessage && (
-              <div className="history-action-status" role="status">
-                <span>{actionMessage}</span>
-                <button type="button" aria-label="Dismiss message" onClick={() => setActionMessage(null)}><X size={14} aria-hidden /></button>
-              </div>
-            )}
       </aside>
     </>
   );

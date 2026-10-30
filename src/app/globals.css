@@ -4113,11 +4113,19 @@ button.public-cta-primary:disabled:hover {
 
 .workspace-more-menu {
   position: relative;
+  z-index: 81;
   display: inline-flex;
+  flex: 0 0 auto;
+  margin-left: auto;
+  pointer-events: auto;
 }
 
 .workspace-more-menu-trigger {
   appearance: none;
+  position: relative;
+  z-index: 82;
+  pointer-events: auto;
+  touch-action: manipulation;
   border: 1px solid transparent;
   background: transparent;
   color: inherit;
@@ -4143,6 +4151,7 @@ button.public-cta-primary:disabled:hover {
 
 .workspace-more-menu-dropdown {
   position: absolute;
+  z-index: 83;
   top: calc(100% + 0.35rem);
   right: 0;
   z-index: 50;
@@ -5471,7 +5480,7 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-chat-sidebar.is-collapsed .solenos-chat-sidebar-bottom .solenos-chat-nav-item,.solenos-chat-sidebar.is-collapsed .solenos-chat-account{justify-content:center;padding-inline:0}
 .solenos-chat-sidebar.is-collapsed .solenos-chat-sidebar-bottom .solenos-chat-avatar{margin:0}
 .solenos-chat-workspace{display:flex;flex:1;flex-direction:column;min-width:0;min-height:100dvh;background:#fff}
-.solenos-chat-topbar{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 18px;border-bottom:1px solid #edf0ee;background:#fff}
+.solenos-chat-topbar{position:relative;z-index:80;display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 18px;border-bottom:1px solid #edf0ee;background:#fff;overflow:visible;pointer-events:auto}
 .solenos-chat-topbar-context{flex:1;min-width:0;overflow:hidden}
 .solenos-chat-main{flex:1;min-width:0;padding:0 0 32px}
 .solenos-chat-main>.mobile-screen{width:100%;max-width:100%;margin-inline:auto}

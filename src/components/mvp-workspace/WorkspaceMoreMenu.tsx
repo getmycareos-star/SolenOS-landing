@@ -10,7 +10,6 @@ import {
   Share2,
   Home,
 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 
 export type WorkspaceAction =
   | "share_care_summary"
@@ -78,19 +77,19 @@ export function WorkspaceMoreMenu({
 
   return (
     <div className="workspace-more-menu" ref={menuRef}>
-      <Button
-        variant="icon"
+      <button
+        type="button"
         className="workspace-more-menu-trigger"
         aria-label="More care record actions"
-        aria-haspopup="true"
+        aria-haspopup="menu"
+        aria-controls="solenos-care-record-actions-menu"
         aria-expanded={open}
         onClick={handleToggle}
-        type="button"
       >
         <MoreHorizontal size={20} aria-hidden />
-      </Button>
+      </button>
       {open && (
-        <div className="workspace-more-menu-dropdown" role="menu" aria-label="Care record actions">
+        <div id="solenos-care-record-actions-menu" className="workspace-more-menu-dropdown" role="menu" aria-label="Care record actions">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
