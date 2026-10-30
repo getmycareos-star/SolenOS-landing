@@ -112,7 +112,7 @@ requireText("src/components/workflows/DocumentIntelligenceReview.tsx", [
   "Accept into Living Care Record",
   "written_to_lcr !== true",
   "source_quote",
-  "review_status === \"accepted_by_caregiver\"",
+  '"accepted_by_caregiver"',
 ]);
 
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
