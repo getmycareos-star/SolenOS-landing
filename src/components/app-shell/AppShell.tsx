@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays,
-  FileText,
   Handshake,
   MessageCircle,
   Menu,
@@ -47,7 +46,6 @@ type InstallPromptEvent = Event & {
 const NAVIGATION = [
   { href: "/workspace", label: "AI Companion", icon: MessageCircle },
   { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
-  { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
 ] as const;
@@ -135,7 +133,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "edit_record": {
-        router.push("/workspace?compose=1&mode=update");
+        router.push("/workspace?prompt=" + encodeURIComponent("I want to correct or update information in the care record. Help me describe what changed, when it happened, what we know, and what is still uncertain."));
         return;
       }
       case "view_record_details": {
