@@ -794,6 +794,7 @@ export function ingestActiveCareObservation(params: {
     rawText: factSource,
     kind: params.kind,
     capturedAt: nowIso,
+    contributorId,
   });
 
   const priorBaselineCount = listFamiliarityBaseline(careRecipientId).length;
