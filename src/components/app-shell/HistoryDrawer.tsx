@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Activity,
   Archive,
@@ -669,7 +668,6 @@ function CategoryIcon({ category }: { category: HistoryCategory }) {
 }
 
 export function HistoryDrawer() {
-  const router = useRouter();
   const open = true;
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [query, setQuery] = useState("");
