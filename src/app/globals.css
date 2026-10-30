@@ -4129,10 +4129,10 @@ button.public-cta-primary:disabled:hover {
   border: 1px solid transparent;
   background: transparent;
   color: inherit;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
-  min-width: 36px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  min-width: 44px;
   padding: 0;
   border-radius: 6px;
   cursor: pointer;
@@ -4150,35 +4150,39 @@ button.public-cta-primary:disabled:hover {
 }
 
 .workspace-more-menu-dropdown {
-  position: absolute;
-  z-index: 83;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  z-index: 50;
-  min-width: 14rem;
-  background: var(--solenos-paper, #f7f5f0);
-  color: var(--solenos-slate, #3d4543);
-  border: 1px solid var(--solenos-hairline, #e5e7eb);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 0.35rem 0;
+  z-index: 9999;
+  width: min(17rem, calc(100vw - 1.5rem));
+  min-width: 0;
+  max-width: calc(100vw - 1.5rem);
+  max-height: min(78dvh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 7px;
+  background: #fff;
+  color: #35453a;
+  border: 1px solid #dfe8df;
+  border-radius: 13px;
+  box-shadow: 0 16px 44px rgba(25, 42, 29, .18);
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 3px;
 }
 
 .workspace-more-menu-item {
   appearance: none;
-  border: none;
+  border: 0;
+  min-height: 46px;
+  padding: 11px 12px;
+  border-radius: 9px;
   background: transparent;
   color: inherit;
   font-family: var(--font-solenos-sans);
-  font-size: 0.9rem;
-  padding: 0.6rem 0.9rem;
+  font-size: 14px;
+  line-height: 1.4;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 10px;
   width: 100%;
   text-align: left;
   transition: background 120ms ease;

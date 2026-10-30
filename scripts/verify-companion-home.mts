@@ -94,6 +94,11 @@ assert.match(read("src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx"
 assert.match(moreMenu, /id: "add_to_home", label: "Add to Home", icon: Home/);
 assert.match(shell, /To add SolenOS to your home screen/);
 assert.match(shell, /iPhone or iPad/);
+assert.match(moreMenu, /createPortal/);
+assert.match(moreMenu, /position: "fixed"/);
+assert.match(moreMenu, /window.addEventListener\("scroll", updateMenuPosition, true\)/);
+assert.match(moreMenu, /triggerRef.current\?\.contains\(target\)/);
+assert.match(moreMenu, /menuRef.current\?\.contains\(target\)/);
 assert.match(moreMenu, /aria-label="More care record actions"/);
 assert.match(moreMenu, /aria-haspopup="menu"/);
 assert.match(moreMenu, /aria-expanded={open}/);
