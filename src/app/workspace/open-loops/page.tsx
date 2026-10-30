@@ -232,6 +232,8 @@ export default function OpenLoopsPage() {
           }
           selectedSourceId = String(selected.id);
           if (action === "verify") {
+            // A persisted pair-level caregiver assessment is required before the backend can record corroboration.
+            // This records source independence review, not semantic entailment or proof of causation.
             const secondSourceId = window.prompt(
               "Select a SECOND, independently originated source record by entering its exact ID. It must not be a copy, forwarded record, or another record from the same origin.\\n\\n" + choices,
             );
