@@ -76,6 +76,35 @@ I just feel like I'm the only person holding all these pieces.`;
 
 async function main() {
   {
+    // Initial assessment observations must not be projected as baseline deltas.
+    const model = {
+      person: "Mom",
+      baseline: null,
+      observed_changes: ["Mom needs help walking."],
+      timeline: ["Now: Mom needs help walking."],
+      events: [],
+      decisions: [],
+      outcomes: [],
+      unknowns: ["Prior walking ability is not recorded."],
+      context_only: [],
+      confidence: "medium",
+      can_orient: true,
+      extraction: null,
+      care_recipient_anchor: {},
+      baseline_comparison: {
+        has_comparable_prior: false,
+        has_meaningful_change: false,
+        meaningful_changes: [],
+      },
+      generated_situation: {},
+    } as unknown as import("../src/lib/care-reality-intelligence/situation-model").CareRealitySituationModel;
+    const projected = toCareRealityObject(model);
+    assert.equal(projected.prior_pattern_unknown, true);
+    assert.deepEqual(projected.changes_detected, []);
+    assert.ok(projected.observations.some((item) => item.description.includes("needs help walking")));
+  }
+
+  {
     // The situation-model path must obey the same cap as extraction-only projection.
     resetAll();
     const raw = "Mom ate breakfast later than usual. She seemed more tired after lunch. She walked less than she normally does.";
@@ -92,6 +121,45 @@ async function main() {
     assert.notEqual(model.confidence, "high", "same-source fragment volume must not create high model confidence");
     assert.notEqual(toCareRealityObject(model).confidence, "high", "projected care object must preserve the confidence cap");
   }
+  {
+    // A baseline cue or temporal sequence alone must not manufacture a change.
+    const extraction = (description: string) => ({
+      observations: [{
+        id: "baseline-only",
+        layer: "observation" as const,
+        description,
+        approximate_time: null,
+        source: "same-caregiver-capture",
+        confidence: "medium" as const,
+        raw_fragment: description,
+      }],
+      events: [],
+      decisions: [],
+      actions: [],
+      outcomes: [],
+      unknowns: [],
+      non_care_facts: [],
+      relationships: [],
+      observation_focus_lines: [],
+    });
+    const baselineOnly = careRealityObjectFromExtraction(
+      extraction("Mom usually eats breakfast at 8am."),
+      "Mom",
+      "Mom usually eats breakfast at 8am.",
+    );
+    assert.deepEqual(baselineOnly.changes_detected, [], "usual routine alone is not a change");
+    assert.equal(baselineOnly.prior_pattern_unknown, true);
+
+    const explicitContrastText = "Mom used to walk independently, but now needs help.";
+    const explicitContrast = careRealityObjectFromExtraction(
+      extraction(explicitContrastText),
+      "Mom",
+      explicitContrastText,
+    );
+    assert.ok(explicitContrast.changes_detected.length > 0, "explicit prior-to-now contrast should be retained");
+    console.log("✓ Baseline discipline — routine and sequence alone do not create a change");
+  }
+
   {
     // Three extracted fragments from one caregiver capture are not independent
     // corroboration and must not be promoted to high confidence by volume.

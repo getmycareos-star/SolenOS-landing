@@ -81,13 +81,22 @@ export function careRealityObjectFromExtraction(
   person: string | null = null,
   rawText?: string,
 ): CareRealityObject {
-  const beforeAfter =
-    extraction.observations.some((o) =>
-      /\b(?:used to|before|normally|usually)\b/i.test(o.description + o.raw_fragment),
-    ) ||
-    extraction.events.some((e) =>
-      /\b(?:after|since|now)\b/i.test(e.description + e.raw_fragment),
-    );
+  // A baseline cue alone is not a change, and an event occurring after
+  // something is not proof that the person's prior state was different.
+  // Require an explicit prior-to-now contrast in the source narrative.
+  const sourceNarrative = rawText?.trim() || [
+    ...(extraction.observations ?? []).map((o) => `${o.description} ${o.raw_fragment}`),
+    ...(extraction.events ?? []).map((e) => `${e.description} ${e.raw_fragment}`),
+  ].join(" ");
+  const priorCue = "(?:used to|before|normally|usually|previously)";
+  const currentCue = "(?:but now|now|no longer|not anymore|stopped|has become|became|different from|unlike before|instead)";
+  const beforeAfter = new RegExp(
+    `\\b${priorCue}\\b[^.!?]{0,180}\\b${currentCue}\\b`,
+    "i",
+  ).test(sourceNarrative) || new RegExp(
+    `\\b${currentCue}\\b[^.!?]{0,180}\\b${priorCue}\\b`,
+    "i",
+  ).test(sourceNarrative);
 
   const changes: string[] = [];
   if (beforeAfter) {
@@ -142,8 +151,9 @@ export function careRealityObjectFromExtraction(
 export function toCareRealityObject(
   model: CareRealitySituationModel,
 ): CareRealityObject {
-  const priorUnknown =
-    !model.baseline?.trim() && model.observed_changes.length === 0;
+  const hasComparablePrior = model.baseline_comparison.has_comparable_prior;
+  const hasEstablishedChange = model.baseline_comparison.has_meaningful_change;
+  const priorUnknown = !hasComparablePrior;
   return {
     person: model.person,
     events: model.events.map((description) => ({
@@ -153,7 +163,11 @@ export function toCareRealityObject(
     observations: model.observed_changes.length
       ? model.observed_changes.map((description) => ({ description }))
       : model.timeline.slice(0, 3).map((description) => ({ description })),
-    changes_detected: model.observed_changes.slice(0, 5),
+    // Initial-assessment observations are not deltas. Only the baseline
+    // comparison's validated meaningful changes enter this field.
+    changes_detected: hasEstablishedChange
+      ? model.baseline_comparison.meaningful_changes.slice(0, 5)
+      : [],
     decisions: model.decisions.map((what) => ({ what, why: null })),
     outcomes: model.outcomes.map((description) => ({ description })),
     relationships: [],
