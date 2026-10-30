@@ -1031,19 +1031,6 @@ export function HistoryDrawer() {
                 </div>
 
               </div>
-              {!selectedRecord && (
-                <button
-                  type="button"
-                  className="history-new-entry"
-                  onClick={() => {
-                    closeDrawer();
-                    router.push("/workspace?compose=1");
-                  }}
-                >
-                  <Plus size={17} aria-hidden />
-                  New care entry
-                </button>
-              )}
             </header>
 
             {selectedRecord ? (
