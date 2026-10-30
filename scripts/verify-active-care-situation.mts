@@ -21,6 +21,11 @@ import {
   recordSourceClaim,
   resetSourceConflictStore,
 } from "../src/lib/source-conflict";
+import {
+  clearActiveCareSituationMemoryCache,
+  listActiveCareSituationsFromDurable,
+  persistActiveCareSituationToDurable,
+} from "../src/lib/active-care-situation/durable-store";
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -433,6 +438,61 @@ assert(
   "source ledger preserves contributor identity",
 );
 console.log("✓ source conflicts preserve both contributors; complete source ledger retained");
+
+const concurrentBase = ingestActiveCareObservation({
+  caregiverId: "cg_durable_concurrent",
+  rawText: "Walking stability concern.",
+  kind: classifyCareEventKind("Walking stability concern."),
+  nowIso: "2026-07-18T12:00:00.000Z",
+}).situation;
+const staleWriteA = {
+  ...concurrentBase,
+  updated_at: "2026-07-18T12:01:00.000Z",
+  observations: [
+    ...concurrentBase.observations,
+    {
+      id: "concurrent-observation-a",
+      raw_text: "She was unsteady near the kitchen.",
+      human_fact: "She was unsteady near the kitchen.",
+      kind: classifyCareEventKind("She was unsteady near the kitchen."),
+      captured_at: "2026-07-18T12:01:00.000Z",
+      event_ids: [],
+      contributor_id: "cg_durable_concurrent",
+    },
+  ],
+};
+const staleWriteB = {
+  ...concurrentBase,
+  updated_at: "2026-07-18T12:02:00.000Z",
+  observations: [
+    ...concurrentBase.observations,
+    {
+      id: "concurrent-observation-b",
+      raw_text: "She needed support when turning.",
+      human_fact: "She needed support when turning.",
+      kind: classifyCareEventKind("She needed support when turning."),
+      captured_at: "2026-07-18T12:02:00.000Z",
+      event_ids: [],
+      contributor_id: "cg_durable_concurrent",
+    },
+  ],
+};
+persistActiveCareSituationToDurable(staleWriteA);
+persistActiveCareSituationToDurable(staleWriteB);
+clearActiveCareSituationMemoryCache();
+const afterConcurrentWrites = listActiveCareSituationsFromDurable("cg_durable_concurrent")
+  .find((situation) => situation.id === concurrentBase.id);
+assert(afterConcurrentWrites, "the situation must survive a process-cache reset");
+assert(
+  afterConcurrentWrites.observations.some((item) => item.id === "concurrent-observation-a") &&
+  afterConcurrentWrites.observations.some((item) => item.id === "concurrent-observation-b"),
+  "stale concurrent writers must merge both distinct observations instead of last-write-wins loss",
+);
+assert(
+  afterConcurrentWrites.observations.length === concurrentBase.observations.length + 2,
+  "durable situation history must retain each unique observation exactly once",
+);
+console.log("✓ concurrent stale writes merge observations and survive cache reset");
 
 const hydratedThreadCards = openSituationsFromSituationApi({
   situations: [{
