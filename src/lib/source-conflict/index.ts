@@ -87,7 +87,9 @@ export function recordSourceClaim(params: {
     captured_at: now,
     contributor_id: params.contributorId ?? null,
   };
-  const next = [...store.claims, claim].slice(-40);
+  // This is an audit ledger, not a rolling context window. Never silently
+  // discard older source claims when the record grows beyond an arbitrary cap.
+  const next = [...store.claims, claim];
   saveClaims({ care_key: params.careKey, claims: next, updated_at: now });
 }
 
@@ -100,8 +102,6 @@ export function resetSourceConflictStore(): void {
   clearDurableDirectory(livingCareRecordDataDir("source-claims"));
 }
 
-export { listSourceClaims };
-export type { ObservationSourceRef };
 
 function isDocumentLike(kind: CareEventKind): boolean {
   return (
