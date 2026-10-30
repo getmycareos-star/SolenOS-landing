@@ -528,6 +528,7 @@ export default function DocumentsPage() {
           <div>
             <h2 style={{ margin: 0, fontSize: 18 }}>Your document library</h2>
             <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>Original files are stored separately from AI interpretation.</p>
+            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Scanned statements remain source evidence, not verified LCR facts.</p>
           </div>
           <button type="button" onClick={() => void loadDocuments(true)} disabled={refreshing || loading} style={{ minHeight: 42, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }} aria-label="Refresh documents">
             <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
