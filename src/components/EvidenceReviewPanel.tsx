@@ -893,7 +893,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               ? sourceIntegrity.exact_binary_duplicate_candidate_ids.join(', ')
               : 'No exact binary fingerprint candidate found.'}</p>
             <p><strong>Freshness:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>Completeness:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
-            <p>Original-file authenticity is not established by a stored hash. A matching hash proves byte consistency, not who created the source.</p>
+            <p>Original file authenticity is not established by a stored hash. A matching hash proves byte consistency, not who created the source.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>Integrity has not been verified.</p>}
           <p style={{ overflowWrap: 'anywhere' }}>{selected.source_text_sha256 || 'Hash unavailable for this record'}</p>
