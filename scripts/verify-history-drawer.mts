@@ -32,7 +32,7 @@ assert.match(drawer, /recorded_at/);
 assert.match(drawer, /evidence_ids/);
 assert.match(drawer, /time_provenance/);
 assert.match(drawer, /Search care history/);
-assert.doesNotMatch(drawer, /aria-modal="true"/, "care history is embedded in the persistent navigation, not a modal drawer");
+assert.match(drawer, /history-confirm-dialog/);\nassert.match(drawer, /role="dialog"/);
 assert.match(drawer, /className=\{`history-drawer/);
 assert.match(drawer, /role="menu"/);
 assert.match(drawer, /Share details/);
