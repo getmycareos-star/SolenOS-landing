@@ -5472,7 +5472,7 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-chat-sidebar.is-collapsed .solenos-chat-sidebar-bottom .solenos-chat-avatar{margin:0}
 .solenos-chat-workspace{display:flex;flex:1;flex-direction:column;min-width:0;min-height:100dvh;background:#fff}
 .solenos-chat-topbar{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 18px;border-bottom:1px solid #edf0ee;background:#fff}
-.solenos-chat-topbar-context{min-width:0;overflow:hidden}
+.solenos-chat-topbar-context{flex:1;min-width:0;overflow:hidden}
 .solenos-chat-main{flex:1;min-width:0;padding:0 0 32px}
 .solenos-chat-main>.mobile-screen{width:100%;max-width:100%;margin-inline:auto}
 .solenos-chat-sidebar .history-trigger,.solenos-chat-sidebar .history-drawer-header .history-icon-button[aria-label="Close care history"]{display:none}
@@ -5520,10 +5520,7 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-chat-sidebar .history-drawer.is-detail .history-drawer-heading span{display:none}
 
 
-/* Persistent ChatGPT-style main options menu. */
-.solenos-main-menu-wrap { position:relative; display:flex; align-items:center; flex:0 0 auto; }
-.solenos-main-menu-trigger { width:40px; height:40px; border-radius:10px; }
-.solenos-main-menu-trigger:hover { background:#f0f2ef; }
+
 .solenos-main-menu {
   position:absolute; z-index:90; top:calc(100% + 8px); right:0; min-width:190px;
   display:flex; flex-direction:column; gap:2px; padding:6px;
