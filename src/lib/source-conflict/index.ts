@@ -14,6 +14,7 @@ import {
   sanitizeDurableCareKey,
   writeDurableJson,
   clearDurableDirectory,
+  withDurableFileLock,
 } from "../living-care-record-persistence/fs-store";
 
 export const SOURCE_CONFLICT_PURPOSE =
@@ -80,17 +81,25 @@ export function recordSourceClaim(params: {
   contributorId?: string | null;
 }): void {
   const now = params.capturedAt ?? new Date().toISOString();
-  const store = loadClaims(params.careKey);
   const claim: ObservationSourceRef = {
     raw_text: params.rawText.trim(),
     kind: params.kind,
     captured_at: now,
     contributor_id: params.contributorId ?? null,
   };
-  // This is an audit ledger, not a rolling context window. Never silently
-  // discard older source claims when the record grows beyond an arbitrary cap.
-  const next = [...store.claims, claim];
-  saveClaims({ care_key: params.careKey, claims: next, updated_at: now });
+  withDurableFileLock(`${claimPath(params.careKey)}.lock`, () => {
+    // Always refresh from durable storage inside the lock. A process-local
+    // cache may be stale when another worker records a caregiver observation.
+    const durable = readDurableJson<ClaimStore>(claimPath(params.careKey));
+    const store = durable?.claims
+      ? durable
+      : { care_key: params.careKey, claims: [], updated_at: now };
+    // This is an audit ledger, not a rolling context window. Never silently
+    // discard older source claims when the record grows beyond an arbitrary cap.
+    const next = [...store.claims, claim];
+    const updated = { care_key: params.careKey, claims: next, updated_at: now };
+    saveClaims(updated);
+  });
 }
 
 export function listSourceClaims(careKey: string): ObservationSourceRef[] {
