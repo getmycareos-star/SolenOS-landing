@@ -506,6 +506,18 @@ export default function DocumentsPage() {
     setPreviewUrl(null);
   };
 
+  useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const evidenceId = url.searchParams.get("evidence_id");
+    if (!evidenceId) return;
+    const document = documents.find(item => item.id === evidenceId);
+    if (!document) return;
+    url.searchParams.delete("evidence_id");
+    window.history.replaceState(window.history.state, "", url.toString());
+    void openOriginal(document);
+  }, [documents, loading]);
+
   const downloadOriginal = () => {
     if (!previewUrl || !selected) return;
     const link = document.createElement("a");
