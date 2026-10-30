@@ -19,17 +19,13 @@ export type WorkspaceAction =
   | "archive"
   | "restore"
   | "delete"
-  | "add_to_home"
-  | "edit_record"
-  | "view_record_details"
-  | "download_export";
+  | "add_to_home";
 
 interface WorkspaceMoreMenuProps {
   onAction: (action: WorkspaceAction) => void;
   isPinned?: boolean;
   isArchived?: boolean;
   canAddToHome?: boolean;
-  hasCareInfo?: boolean;
 }
 
 const MENU_ITEMS: {
