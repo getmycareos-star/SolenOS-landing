@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays, FileText, Handshake, MessageCircle,
-  Menu, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck,
+  Menu, MoreVertical, PanelLeftClose, PanelLeftOpen, Settings, ShieldCheck,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
@@ -25,7 +25,6 @@ const NAVIGATION = [
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
-  { href: "/workspace/record", label: "Living Care Record", icon: ShieldCheck },
 ] as const;
 
 export function AppShell({ children, careContext, brandHref = "/workspace" }: AppShellProps) {
@@ -33,6 +32,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mainMenuOpen, setMainMenuOpen] = useState(false);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -62,10 +62,6 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         }}>
           <span className="solenos-chat-nav-icon"><SearchIcon /></span>
           {!collapsed && <span>Search history</span>}
-        </button>
-        <button type="button" className="solenos-chat-nav-item" title="New care entry" onClick={() => router.push("/workspace?compose=1")}>
-          <span className="solenos-chat-nav-icon"><Plus size={19} /></span>
-          {!collapsed && <span>New care entry</span>}
         </button>
         {NAVIGATION.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`} aria-current={active(href) ? "page" : undefined} title={label}>
@@ -106,6 +102,20 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-open" aria-label="Open navigation" onClick={() => { setCollapsed(false); setMobileOpen(true); }}><Menu size={21} /></button>
           <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-brand" aria-label="SolenOS home" onClick={() => router.push(brandHref)}><span className="solenos-chat-brand-mark">S</span></button>
           <div className="solenos-chat-topbar-context">{careContext}</div>
+          <div className="solenos-main-menu-wrap">
+            <button type="button" className="solenos-sidebar-icon-button solenos-main-menu-trigger" aria-label="More options" aria-haspopup="menu" aria-expanded={mainMenuOpen} onClick={() => setMainMenuOpen(value => !value)}>
+              <MoreVertical size={20} />
+            </button>
+            {mainMenuOpen && (
+              <div className="solenos-main-menu" role="menu" aria-label="Main options">
+                <button type="button" role="menuitem" onClick={() => { setMainMenuOpen(false); router.push("/workspace/daily-care"); }}>Daily Care</button>
+                <button type="button" role="menuitem" onClick={() => { setMainMenuOpen(false); router.push("/workspace/documents"); }}>Documents</button>
+                <button type="button" role="menuitem" onClick={() => { setMainMenuOpen(false); router.push("/workspace/handoffs"); }}>Care Handoffs</button>
+                <button type="button" role="menuitem" onClick={() => { setMainMenuOpen(false); router.push("/workspace/appointments"); }}>Appointments</button>
+                <button type="button" role="menuitem" onClick={() => { setMainMenuOpen(false); router.push("/workspace/settings"); }}>Settings</button>
+              </div>
+            )}
+          </div>
         </header>
         <main className="solenos-chat-main">{children}</main>
       </div>
