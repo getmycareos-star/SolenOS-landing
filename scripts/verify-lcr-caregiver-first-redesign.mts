@@ -1,24 +1,23 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const workspacePage = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const legacyRoute = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8");
 const capture = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
+const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
 
-assert.match(workspacePage, /SOLENOS · LIVING CARE RECORD/, "workspace is visibly branded as the LCR");
-assert.match(workspacePage, /Record timeline/, "LCR provides a longitudinal record timeline");
-assert.match(workspacePage, /Add to record/, "primary action is adding information to the record");
-assert.match(workspacePage, /Daily care/, "daily care remains available as a distinct capture flow");
-assert.doesNotMatch(workspacePage, /Care handoffs|\/workspace\/handoffs|Deep care continuity/, "handoffs and technical continuity are not separate LCR home sections");
-assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|ResearchPreviewAckGate/, "LCR capture is not blocked by acknowledgement checkboxes");
+assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR home must redirect to the Companion");
+assert.doesNotMatch(legacyRoute, /SOLENOS · LIVING CARE RECORD|Record timeline|Add to record|CognitiveWorkspace/, "old LCR interface must not be rendered as a separate home");
+assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|ResearchPreviewAckGate/, "care-record capture is not blocked by acknowledgement checkboxes");
 assert.doesNotMatch(capture, /HelpImproveSolenos|QwenAssistPanel/, "capture workspace does not interleave feedback or a separate AI chat panel");
-assert.match(capture, /Add information to the shared care record/, "capture keeps a clear, calm instruction");
+assert.match(capture, /Add information to the shared care record/, "underlying care-record capture remains implemented");
+assert.match(dailyCare, /StructuredDailyCapture/, "Daily Care retains its structured capture workflow");
+assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "Daily Care has no embedded AI agent");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
-assert.match(styles, /\.lcr-home/, "LCR redesign styles are present");
-assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout is explicitly handled");
+assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
+assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
 
-console.log("✓ LCR is a single caregiver-first workspace with no pre-entry checkbox gate");
-console.log("✓ Add Record focuses on capture; no unrelated improvement or AI chat panel");
-console.log("✓ No standalone care-handoff or deep-continuity section on the LCR home");
-console.log("✓ Responsive LCR timeline and action hierarchy styles are present");
+console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
+console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
+console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
