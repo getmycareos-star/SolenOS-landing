@@ -40,11 +40,40 @@ export function loadActiveCareSituationFromDurable(
   return readDurableJson<ActiveCareSituation>(acsDurablePath(caregiverId));
 }
 
+function acsIndexPath(careRecipientId: string): string {
+  return livingCareRecordDataDir(
+    "active-care-situation-index",
+    `${sanitizeDurableCareKey(careRecipientId)}.json`,
+  );
+}
+
+export function listActiveCareSituationsFromDurable(
+  careRecipientId: string,
+): ActiveCareSituation[] {
+  const indexed = readDurableJson<ActiveCareSituation[]>(acsIndexPath(careRecipientId));
+  if (Array.isArray(indexed)) {
+    return [...indexed].sort((a, b) => a.opened_at.localeCompare(b.opened_at));
+  }
+  const current = loadActiveCareSituationFromDurable(careRecipientId);
+  return current ? [current] : [];
+}
+
+/**
+ * Persist the current projection and an append-preserving per-recipient index.
+ * A new unrelated situation must not erase the prior unresolved situation.
+ */
 export function persistActiveCareSituationToDurable(
   situation: ActiveCareSituation,
 ): void {
   const key = situation.care_recipient_id ?? situation.caregiver_id;
   writeDurableJson(acsDurablePath(key), situation);
+  const indexed = readDurableJson<ActiveCareSituation[]>(acsIndexPath(key)) ?? [];
+  const position = indexed.findIndex((item) => item.id === situation.id);
+  const next =
+    position < 0
+      ? [...indexed, situation]
+      : indexed.map((item, index) => index === position ? situation : item);
+  writeDurableJson(acsIndexPath(key), next);
 }
 
 export function deleteActiveCareSituationDurable(caregiverId: string): void {
@@ -60,4 +89,5 @@ export function clearActiveCareSituationMemoryCache(): void {
 export function resetActiveCareSituationDurableStore(): void {
   acsCache().clear();
   clearDurableDirectory(livingCareRecordDataDir("active-care-situation"));
+  clearDurableDirectory(livingCareRecordDataDir("active-care-situation-index"));
 }
