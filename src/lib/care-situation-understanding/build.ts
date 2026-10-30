@@ -186,30 +186,6 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
   const context_only: string[] = [];
   const changes_from_baseline: string[] = [];
 
-  // The async/LLM path must receive the same longitudinal context as the
-  // synchronous composer path. Without this, returning caregivers lose prior
-  // change signals and unresolved questions precisely on the richer path.
-  const continuityDecision = params.continuityDecision;
-  const isReturningOrContinuation =
-    continuityDecision?.continuity_type === "returning" ||
-    continuityDecision?.continuity_type === "continuation";
-  if (isReturningOrContinuation && continuityDecision?.care_reality_diff) {
-    changes_from_baseline.push(
-      ...continuityDecision.care_reality_diff.changed,
-      ...continuityDecision.care_reality_diff.added,
-    );
-  }
-  const effectivePriorHooks =
-    params.priorContinuityHooks ??
-    (isReturningOrContinuation
-      ? continuityDecision?.context.continuity_hooks
-      : undefined);
-  const effectivePriorUnknowns =
-    params.priorUnknowns ??
-    (isReturningOrContinuation
-      ? continuityDecision?.context.open_uncertainties
-      : undefined);
-
   for (const e of extraction.events) {
     facts.push({ kind: "event", text: e.description, source_fragment: e.raw_fragment });
   }
@@ -451,6 +427,29 @@ export async function buildCareSituationUnderstanding(params: {
   const possible_links: CareSituationPossibleLink[] = [];
   const context_only: string[] = [];
   const changes_from_baseline: string[] = [];
+
+  // Async LLM extraction must preserve the same longitudinal context as the
+  // synchronous composer path for returning caregivers.
+  const continuityDecision = params.continuityDecision;
+  const isReturningOrContinuation =
+    continuityDecision?.continuity_type === "returning" ||
+    continuityDecision?.continuity_type === "continuation";
+  if (isReturningOrContinuation && continuityDecision?.care_reality_diff) {
+    changes_from_baseline.push(
+      ...continuityDecision.care_reality_diff.changed,
+      ...continuityDecision.care_reality_diff.added,
+    );
+  }
+  const effectivePriorHooks =
+    params.priorContinuityHooks ??
+    (isReturningOrContinuation
+      ? continuityDecision?.context.continuity_hooks
+      : undefined);
+  const effectivePriorUnknowns =
+    params.priorUnknowns ??
+    (isReturningOrContinuation
+      ? continuityDecision?.context.open_uncertainties
+      : undefined);
 
   for (const e of extraction.events) {
     facts.push({ kind: "event", text: e.description, source_fragment: e.raw_fragment });
