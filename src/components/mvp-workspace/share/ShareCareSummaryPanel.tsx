@@ -102,7 +102,7 @@ export function ShareCareSummaryPanel({
   const [selectedContent, setSelectedContent] = useState<SelectedContent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [situationResponse, setSituationResponse] = useState<any>(null);
-  const [format, setFormat] = useState<ShareFormat | null>(null);
+  const [format, setFormat] = useState<ShareFormat | null>(intent === "export" ? "copy" : null);
   const [sharingResult, setSharingResult] = useState<string | null>(null);
 
   const isOffline = useMemo(() => typeof navigator !== "undefined" && !navigator.onLine, []);
@@ -511,8 +511,8 @@ export function ShareCareSummaryPanel({
           onClick={() => setFormat("copy")}
         >
           <ClipboardCopy size={20} aria-hidden />
-          <span className="share-format-label">Copy text</span>
-          <span className="share-format-desc">Copy the summary to paste anywhere.</span>
+          <span className="share-format-label">{intent === "export" ? "Download text" : "Copy text"}</span>
+          <span className="share-format-desc">{intent === "export" ? "Save a reviewed text file to this device." : "Copy the summary to paste anywhere."}</span>
         </button>
         <button
           type="button"
