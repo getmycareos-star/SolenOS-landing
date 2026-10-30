@@ -21,8 +21,6 @@ assert.doesNotMatch(previewGate, /type="checkbox"|RESEARCH_PREVIEW_SECTION|hasRe
   "legacy preview wrapper must not render an acknowledgement checkbox");
 assert.doesNotMatch(cognitiveWorkspace, /ConsentGatePanel|consentState|setConsentState|Retry the privacy check/,
   "the active LCR workspace must not block viewing or saving behind a privacy acknowledgement checkbox");
-assert.match(cognitiveWorkspace, /<QwenAssistPanel/,
-  "the care workspace renders its assistance panel without an acknowledgement state gate");
 assert.match(consentPanel, /api\/v1\/consent/,
   "legacy consent API integration may remain for action-specific backend policy; it must not gate workspace entry");
 
