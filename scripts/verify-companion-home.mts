@@ -78,7 +78,7 @@ assert.doesNotMatch(home, /startInUpdateMode|CognitiveWorkspace/);
 assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /I need to talk it through/);
 assert.match(companion, /A few words are enough/);
-assert.match(companion, /companion-starter-copy strong \{ font-size:14px/);
+assert.match(companion, /companion-starter-copy strong \{[^}]*font-size:14px/);
 assert.match(read("src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx"), /Download summary \(\.txt\)/);
 assert.match(moreMenu, /id: "add_to_home", label: "Add to Home", icon: Home/);
 assert.match(shell, /To add SolenOS to your home screen/);
