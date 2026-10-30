@@ -98,6 +98,7 @@ function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string 
 }
 
 type Props = {
+  targetSituationId?: string | null;
   /** Fired after MVP /api/situation so sidebar can hydrate from TrackedSituation. */
   onSituationComplete?: (payload: {
     careKey: string;
@@ -123,7 +124,7 @@ type Props = {
  * Caregiver workspace — single entry pipeline: POST /api/situation.
  * Analyze / Clarity / Clear-my-head paths removed (ops-gated elsewhere).
  */
-export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startInUpdateMode = false }: Props) {
+export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startInUpdateMode = false, targetSituationId }: Props) {
   const [state, setState] = useState<WorkspaceState>("REAL_MOMENT");
   const [rawInput, setRawInput] = useState("");
   const [documents, setDocuments] = useState<AttachedDocument[]>([]);
@@ -397,6 +398,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
           person_id: anonymousSession.person.id,
           caregiver_id: anonymousSession.caregiver.id,
           client_care_key: caregiverId,
+          target_situation_id: targetSituationId ?? undefined,
           raw_input: text,
           care_session_id: interactionSessionId(),
           timestamp: provenance.captured_at,
