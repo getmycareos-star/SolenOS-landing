@@ -4,23 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  BookOpen,
-  FileText,
-  Settings,
-  PlusCircle,
-  CalendarDays,
-  type LucideIcon,
+  CalendarDays, ChevronLeft, ChevronRight, FileText, Handshake,
+  Menu, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
-import { Button } from "@/components/ui/Button";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon?: string;
-};
-
+type NavItem = { href: string; label: string; icon?: string };
 type AppShellProps = {
   children: ReactNode;
   navItems?: readonly NavItem[];
@@ -29,128 +19,101 @@ type AppShellProps = {
   onMenuToggle?: () => void;
 };
 
-/** Tab icons per position — Care Record, Timeline, Documents, Settings. */
-const TAB_ICONS: LucideIcon[] = [BookOpen, CalendarDays, FileText, Settings];
+const NAVIGATION = [
+  { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
+  { href: "/workspace/documents", label: "Documents", icon: FileText },
+  { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
+  { href: "/workspace/appointment", label: "Appointments", icon: ShieldCheck },
+  { href: "/workspace", label: "Living Care Record", icon: ShieldCheck },
+] as const;
 
-const FALLBACK_TABS: NavItem[] = [
-  { href: "/workspace", label: "Care Record", icon: "◉" },
-  { href: "/workspace/timeline", label: "Timeline", icon: "◷" },
-  { href: "/workspace/documents", label: "Documents", icon: "📄" },
-  { href: "/workspace/settings", label: "Settings", icon: "⚙" },
-];
-
-type FABActionId = "record" | "daily-care";
-
-const FAB_ACTIONS: {
-  id: FABActionId;
-  label: string;
-  icon: LucideIcon;
-  href: string;
-}[] = [
-  { id: "daily-care", label: "Daily Care", icon: CalendarDays, href: "/workspace/daily-care" },
-  { id: "record", label: "Add Record", icon: PlusCircle, href: "/workspace?compose=1" },
-];
-
-/**
- * SolenOS mobile app shell.
- * Fixed bottom tab bar (Care Record | Timeline | Documents | Settings) with
- * active accent underline, a FAB above the bar opening an Add bottom sheet,
- * and real-data care context supplied by the workspace layout.
- */
-export function AppShell({
-  children,
-  navItems,
-  careContext,
-  brandHref = "/",
-  onMenuToggle,
-}: AppShellProps) {
+export function AppShell({ children, careContext, brandHref = "/workspace" }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [fabOpen, setFabOpen] = useState(false);
-
-  const tabs = navItems && navItems.length > 0 ? navItems : FALLBACK_TABS;
-
-  const isNavActive = (href: string) =>
-    href === "/workspace" ? pathname === href : pathname.startsWith(href);
-
-  const handleFabAction = (href: string | undefined) => {
-    setFabOpen(false);
-    if (href) router.push(href);
-  };
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   useEffect(() => {
-    setFabOpen(false);
+    setMobileOpen(false);
+    setQuickAddOpen(false);
   }, [pathname]);
 
-  return (
-    <div className="solenos-shell mobile-app-shell">
-      {/* Compact brand header — wordmark only, no dropdown, no MENU */}
-      <header className="mobile-app-header">
-        <div className="mobile-app-header-start">
-          <HistoryDrawer />
-          <Link href={brandHref} className="mobile-app-brandlink">
-            <SolenosWordmark size="sm" as="span" />
-          </Link>
-        </div>
-      </header>
+  const active = (href: string) => href === "/workspace"
+    ? pathname === href
+    : pathname === href || pathname.startsWith(href + "/");
 
-      {careContext && <div className="care-context-bar">{careContext}</div>}
-
-      <main className="mobile-app-main">{children}</main>
-
-      {/* Floating Action Button + Add bottom sheet */}
-      <div className="mobile-fab">
-        {fabOpen && (
-          <div className="mobile-fab-sheet" role="dialog" aria-label="Add to record">
-            <p className="mobile-fab-sheet-title">Add to record</p>
-            {FAB_ACTIONS.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Button
-                  key={action.id}
-                  variant="secondary"
-                  className="mobile-fab-sheet-item"
-                  onClick={() => handleFabAction(action.href)}
-                >
-                  <Icon size={18} aria-hidden />
-                  {action.label}
-                </Button>
-              );
-            })}
-          </div>
-        )}
-        <Button
-          variant="primary"
-          className="mobile-fab-button"
-          aria-label={fabOpen ? "Close add menu" : "Add to record"}
-          aria-expanded={fabOpen}
-          onClick={() => setFabOpen((v) => !v)}
-        >
-          <PlusCircle size={24} aria-hidden />
-        </Button>
+  const sidebar = (
+    <aside className={`solenos-chat-sidebar${collapsed ? " is-collapsed" : ""}`} aria-label="SolenOS navigation">
+      <div className="solenos-chat-sidebar-top">
+        <Link href={brandHref} className="solenos-chat-brand" aria-label="SolenOS home">
+          <span className="solenos-chat-brand-mark" aria-hidden="true">S</span>
+          {!collapsed && <SolenosWordmark size="sm" as="span" />}
+        </Link>
+        <button type="button" className="solenos-sidebar-icon-button desktop-collapse" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setCollapsed((value) => !value)}>
+          {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
+        </button>
+        <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-close" aria-label="Close navigation" onClick={() => setMobileOpen(false)}>×</button>
       </div>
 
-      {/* Bottom tab bar — ICON + label, active accent underline */}
-      <nav className="mobile-tabbar" aria-label="Primary">
-        {tabs.map((tab, i) => {
-          const Icon = TAB_ICONS[i] ?? TAB_ICONS[0];
-          const isActive = isNavActive(tab.href);
-          return (
-            <button
-              key={tab.href}
-              type="button"
-              className={`mobile-tabbar-item${isActive ? " is-active" : ""}`}
-              aria-current={isActive ? "page" : undefined}
-              onClick={() => router.push(tab.href)}
-            >
-              <span className="mobile-tabbar-icon">
-                <Icon size={20} aria-hidden />
-              </span>
-              <span className="mobile-tabbar-label">{tab.label}</span>
-            </button>
-          );
-        })}
+      <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
+        <button type="button" className="solenos-chat-nav-item" title="Search history" onClick={() => {
+          const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
+          if (input) { input.focus(); input.scrollIntoView({ block: "nearest" }); }
+        }}>
+          <span className="solenos-chat-nav-icon"><SearchIcon /></span>
+          {!collapsed && <span>Search history</span>}
+        </button>
+        <button type="button" className="solenos-chat-nav-item" title="New care entry" onClick={() => router.push("/workspace?compose=1")}>
+          <span className="solenos-chat-nav-icon"><Plus size={19} /></span>
+          {!collapsed && <span>New care entry</span>}
+        </button>
+        {NAVIGATION.map(({ href, label, icon: Icon }) => (
+          <Link key={href} href={href} className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`} aria-current={active(href) ? "page" : undefined} title={label}>
+            <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
+            {!collapsed && <span>{label}</span>}
+          </Link>
+        ))}
       </nav>
+
+      {!collapsed && (
+        <div className="solenos-chat-history-section">
+          <div className="solenos-chat-history-heading">Recent history</div>
+          <HistoryDrawer />
+        </div>
+      )}
+
+      <div className="solenos-chat-sidebar-bottom">
+        <Link href="/workspace/settings" className={`solenos-chat-nav-item${active("/workspace/settings") ? " is-active" : ""}`} title="Settings">
+          <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
+          {!collapsed && <span>Settings</span>}
+        </Link>
+        <button type="button" className="solenos-chat-account" title="Caregiver account">
+          <span className="solenos-chat-avatar">C</span>
+          {!collapsed && <span>Caregiver account</span>}
+        </button>
+      </div>
+    </aside>
+  );
+
+  return (
+    <div className="solenos-chat-app">
+      {mobileOpen && <button className="solenos-chat-mobile-scrim" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />}
+      <div className={`solenos-chat-sidebar-host${mobileOpen ? " is-mobile-open" : ""}`}>
+        {sidebar}
+      </div>
+      <div className="solenos-chat-workspace">
+        <header className="solenos-chat-topbar">
+          <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-open" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={21} /></button>
+          <button type="button" className="solenos-sidebar-icon-button mobile-sidebar-brand" aria-label="SolenOS home" onClick={() => router.push(brandHref)}><span className="solenos-chat-brand-mark">S</span></button>
+          <div className="solenos-chat-topbar-context">{careContext}</div>
+        </header>
+        <main className="solenos-chat-main">{children}</main>
+      </div>
     </div>
   );
+}
+
+function SearchIcon() {
+  return <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.2 4.2" /></svg>;
 }
