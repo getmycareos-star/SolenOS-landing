@@ -44,6 +44,7 @@ type DocumentItem = {
   duplicateDetected: boolean;
   duplicateOfEvidenceId: string | null;
   extractionStatus: string;
+  originalBinaryAvailable: boolean | null;
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
@@ -94,6 +95,10 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     extractionStatus: asString(
       (meta.source_integrity as Record<string, unknown> | undefined)?.text_extraction_status,
     ) || (item.source_text?.trim() ? "text_available" : "unavailable"),
+    originalBinaryAvailable: (() => {
+      const value = (meta.source_integrity as Record<string, unknown> | undefined)?.original_binary_available;
+      return typeof value === "boolean" ? value : null;
+    })(),
   };
 }
 
@@ -637,6 +642,8 @@ export default function DocumentsPage() {
                   <span style={{ display: "block", fontWeight: 700, overflowWrap: "anywhere", fontSize: 14 }}>{doc.title}</span>
                   <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</span>
                   <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{doc.extractedText.trim() ? "Text available for document understanding" : "Original saved · text not available"}</span>
+                  {doc.originalBinaryAvailable === false && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#a33" }}>Original file unavailable. The evidence record remains, but the source binary is missing.</span>}
+                  {doc.originalBinaryAvailable === true && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>Original file stored · byte integrity is checked when opened.</span>}
                   {doc.duplicateDetected && <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#8a5a18" }}>Exact binary duplicate of an earlier upload{doc.duplicateOfEvidenceId ? ` · original record ${doc.duplicateOfEvidenceId}` : ""}. Both uploads remain preserved.</span>}
                 </span>
                 <span aria-hidden="true" style={{ flexShrink: 0, fontSize: 12, color: "var(--text-secondary)" }}>Open</span>
