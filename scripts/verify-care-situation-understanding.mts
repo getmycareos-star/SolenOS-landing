@@ -364,7 +364,7 @@ async function main() {
 
     const related = buildCareRealitySituationModel({
       situation: second.situation,
-      latestRawText: "She is still having trouble walking today.",
+      latestRawText: "She now walks with difficulty.",
       careKey,
     });
     assert.ok(

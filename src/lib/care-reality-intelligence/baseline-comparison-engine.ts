@@ -188,6 +188,13 @@ function contentTokens(text: string): string[] {
     .toLowerCase()
     .replace(/[^a-z0-9\s']/g, " ")
     .split(/\s+/)
+    .map((word) => {
+      if (word.length > 5 && word.endsWith("ing")) return word.slice(0, -3);
+      if (word.length > 4 && word.endsWith("ed")) return word.slice(0, -2);
+      if (word.length > 4 && word.endsWith("es")) return word.slice(0, -2);
+      if (word.length > 3 && word.endsWith("s")) return word.slice(0, -1);
+      return word;
+    })
     .filter((w) => w.length > 2)
     .filter(
       (w) =>
