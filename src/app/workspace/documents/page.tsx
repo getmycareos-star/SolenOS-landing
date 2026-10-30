@@ -18,6 +18,7 @@ import {
 
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
+import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/document-intake";
 
 type EvidenceRecord = {
   id: string;
@@ -268,7 +269,7 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
 export default function DocumentsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
-  const [requestedIntake, setRequestedIntake] = useState<"upload" | "capture" | "scan" | null>(null);
+  const [intakeMode, setIntakeMode] = useState<DocumentIntakeMode | null>(null);
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
@@ -313,21 +314,6 @@ export default function DocumentsPage() {
   useEffect(() => { void loadDocuments(); }, [loadDocuments]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const action = params.get("upload") === "1" ? "upload" : params.get("capture") === "1" ? "capture" : params.get("scan") === "1" ? "scan" : null;
-    if (!action) return;
-    params.delete("upload");
-    params.delete("capture");
-    params.delete("scan");
-    const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
-    window.history.replaceState({}, "", next);
-    // Navigation ends the original click's browser user-activation window.
-    // Show an explicit intake prompt; its button opens the native picker from a fresh tap.
-    setRequestedIntake(action);
-  }, []);
-
-
-  useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
@@ -346,7 +332,7 @@ export default function DocumentsPage() {
     );
   }, [documents, query]);
 
-  const handleFiles = async (fileList: FileList | null) => {
+  const handleFiles = async (fileList: FileList | File[] | null) => {
     const files = Array.from(fileList || []);
     if (!files.length) return;
     setUploadMessage(null);
@@ -373,6 +359,22 @@ export default function DocumentsPage() {
       if (cameraInput.current) cameraInput.current.value = "";
     }
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("intake") !== "1") return;
+    params.delete("intake");
+    const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
+    window.history.replaceState({}, "", next);
+
+    const pending = consumePendingDocumentIntake();
+    if (!pending?.files.length) {
+      setUploadMessage({ kind: "error", text: "The selected file or photo was not available after opening Documents. Return to Companion and try again." });
+      return;
+    }
+    setIntakeMode(pending.mode);
+    void handleFiles(pending.files);
+  }, []);
 
   const prepareImagePage = async (index: number) => {
     const page = reviewPages[index];
@@ -461,6 +463,7 @@ export default function DocumentsPage() {
       }
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
+      setIntakeMode(null);
       setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Scanned statements remain source evidence, not verified LCR facts.` });
       await loadDocuments(true);
     } catch {
@@ -510,29 +513,6 @@ export default function DocumentsPage() {
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
 
-      {requestedIntake && (
-        <section aria-label="Start document intake" style={{ border: "1px solid #9bb89a", borderRadius: 14, padding: 18, background: "var(--surface)", display: "grid", gap: 10 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>
-              {requestedIntake === "upload" ? "Upload a document" : requestedIntake === "capture" ? "Take a photo" : "Scan a document"}
-            </h2>
-            <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}>
-              {requestedIntake === "upload"
-                ? "Choose a file. SolenOS will prepare it for review before saving."
-                : requestedIntake === "capture"
-                  ? "Open your device camera to photograph care information."
-                  : "Capture the document. You can straighten, crop, extract text and review it before saving."}
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => requestedIntake === "upload" ? fileInput.current?.click() : cameraInput.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 46, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 16px" }}>
-              {requestedIntake === "upload" ? "Choose document" : requestedIntake === "capture" ? "Open camera" : "Capture document"}
-            </button>
-            <button type="button" onClick={() => setRequestedIntake(null)} style={{ minHeight: 46, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)", color: "var(--text)", fontWeight: 600, padding: "10px 16px" }}>Close</button>
-          </div>
-        </section>
-      )}
-
       <section aria-label="Document library" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
@@ -545,7 +525,7 @@ export default function DocumentsPage() {
         </div>
 
         <input ref={fileInput} type="file" accept={ACCEPTED_FILES} multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
-        <input ref={cameraInput} type="file" accept="image/*" capture="environment" multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
+        <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(event) => void handleFiles(event.target.files)} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 10, marginTop: 16 }}>
           <button type="button" onClick={() => cameraInput.current?.click()} disabled={uploading || preparingScan} style={{ width: "100%", minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid #8eae8a", borderRadius: 10, background: "#b9d5b5", color: "#17251c", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><Camera size={19} />Snap &amp; scan with camera</button>
           <button type="button" onClick={() => fileInput.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 54, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)", color: "var(--text)", fontWeight: 750, fontSize: 15, padding: "12px 16px" }}><Upload size={19} />Upload files / pages</button>
@@ -553,8 +533,9 @@ export default function DocumentsPage() {
         <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary)" }}>Use your phone camera or select multiple files/pages. Maximum 10 MiB per file.</p>
         {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Extracting readable text…</p>}
         {reviewPages.length > 0 && <section aria-label="Review extracted text before saving" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
-          <h3 style={{ margin: 0, fontSize: 17 }}>Review scan and extracted text</h3>
-          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You can combine two or more reviewed image pages into one PDF. SolenOS also saves each original page unchanged for source traceability.</p>
+          <h3 style={{ margin: 0, fontSize: 17 }}>Review before saving</h3>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Check each captured page, add more pages if needed, then review the text before saving the document." : "Check the selected file or photo. You can add more pages, correct extracted text and review everything before saving."} Original files are preserved.</p>
+          <button type="button" onClick={() => cameraInput.current?.click()} disabled={preparingScan || uploading} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}><Camera size={16} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Add another page with camera</button>
           <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine reviewed image pages into one PDF</button>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
