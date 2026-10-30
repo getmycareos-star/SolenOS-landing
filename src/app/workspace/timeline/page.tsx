@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   AlertCircle,
@@ -128,6 +128,8 @@ function groupLabel(event: CareEvent): string {
 
 export default function TimelinePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedEventId = searchParams.get("event_id");
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
@@ -172,6 +174,12 @@ export default function TimelinePage() {
   useEffect(() => {
     void loadEvents();
   }, [loadEvents]);
+
+  useEffect(() => {
+    if (requestedEventId && events.some(event => event.id === requestedEventId)) {
+      setExpandedId(requestedEventId);
+    }
+  }, [requestedEventId, events]);
 
   const visibleEvents = useMemo(() => {
     const needle = query.trim().toLowerCase();
