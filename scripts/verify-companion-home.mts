@@ -37,6 +37,9 @@ assert.match(careSituationBrief, /follow_up_links/, "open follow-ups must remain
 assert.match(careSituationBrief, /decision_outcomes/, "recorded decisions and outcomes must remain visible in the brief");
 assert.match(careSituationBrief, /schema_status/, "the brief must disclose incomplete record-source coverage");
 assert.match(careSituationBrief, /\/workspace\/timeline/, "the brief must link to the full saved care timeline");
+assert.match(careSituationBrief, /Inspect source references/, "each record entry must expose expandable source provenance");
+assert.match(careSituationBrief, /Open original document/, "document-backed record evidence must link to the original file");
+assert.match(documents, /searchParams\.get\("evidence_id"\)/, "the document library must open a source selected from the Companion brief");
 const documents = read("src/app/workspace/documents/page.tsx");
 const documentIntelligence = read("src/components/workflows/DocumentIntelligenceReview.tsx");
 assert.match(documents, /DocumentIntelligenceReview/, "saved document library must expose persisted document-intelligence review");
