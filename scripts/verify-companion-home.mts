@@ -31,6 +31,8 @@ assert.match(careSituationBrief, /isQuestionOrGap/, "uncertainties and missing i
 assert.match(careSituationBrief, /reported_by_label/, "the brief must show who reported each record item when attribution exists");
 assert.match(careSituationBrief, /decisionItems/, "the brief must show persisted decisions and outcomes");
 assert.match(careSituationBrief, /openActionItems/, "the brief must show open care actions and follow-ups");
+assert.match(careSituationBrief, /visibilitychange/, "the brief must refresh when the caregiver returns to the Companion");
+assert.match(careSituationBrief, /window\.setInterval/, "the brief must refresh periodically while visible");
 assert.match(careSituationBrief, /follow_up_links/, "open follow-ups must remain visible in the brief");
 assert.match(careSituationBrief, /decision_outcomes/, "recorded decisions and outcomes must remain visible in the brief");
 assert.match(careSituationBrief, /schema_status/, "the brief must disclose incomplete record-source coverage");
