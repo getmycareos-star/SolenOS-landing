@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: getmycareos-star/SolenOS_backend
-          ref: 4805bc07573fdfc9b8db285dab937e47de6633c1
+          ref: 2f826904d0d29ccc4a8e2230ed4f58954d7b57bf
           path: backend-service
 
       - name: Set up Node.js
