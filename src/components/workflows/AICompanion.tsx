@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
@@ -181,8 +182,8 @@ export default function Companion() {
       setInput('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
-      const safetyText = String(response.safety_note ?? '').toLowerCase()
-      const isEmergency = response.guard_verdict === 'blocked' || safetyText.includes('emergency') || safetyText.includes('immediate')
+      // Generic "blocked" verdicts also represent evidence limits, not emergencies.
+      const isEmergency = isEmergencyCompanionResponse(response)
       if (isEmergency) setEmergency(true)
 
       const assistantMsg: Message = {
