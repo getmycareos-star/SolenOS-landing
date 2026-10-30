@@ -40,8 +40,10 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
       });
       if (!res.ok) throw new Error("Could not load consent status.");
       const data = (await res.json()) as ConsentStatus;
-      setStatus(data);
-      onStatusChange?.(data.required ? "required" : "accepted");
+      // Fail closed: HTTP success alone is not proof of verified consent.
+      const confirmed = data.verified === true && data.required === false;
+      setStatus(confirmed ? data : { ...data, required: true });
+      onStatusChange?.(confirmed ? "accepted" : "required");
     } catch {
       // A failed status read must not replace the acknowledgement form with a dead-end.
       // Keep the required confirmations available; the POST below is authoritative.
