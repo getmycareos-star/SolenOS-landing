@@ -221,7 +221,7 @@ export function evaluateSituationRelationship(params: {
   // link to the same underlying topic. Topic match is required to avoid gluing
   // unrelated notes together, and resolved/history situations are never reopened.
   const explicitlyContinues =
-    /\\b(still|continues?|continuing|remains?|ongoing|since then|from before|same issue)\\b/i.test(
+    /\b(still|continues?|continuing|remains?|ongoing|since then|from before|same issue)\b/i.test(
       rawText,
     );
   if (
