@@ -124,18 +124,44 @@ try {
   const relatedEvidenceId = relatedSourceEvidence.id;
   if (!relatedEvidenceId) throw new Error("The backend did not return the related evidence ID.");
 
+  const independentSourceResponse = await fetch(new URL("/api/v1/evidence", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      person_id: session.personId,
+      uploaded_by_caregiver_id: session.caregiverId,
+      type: "document",
+      evidence_kind: "professional_observation",
+      epistemic_status: "unverified",
+      source_text: "Synthetic CI-only independent clinician note recorded as a separate source.",
+      source_type: "independent_ci_fixture",
+      ingestion_key: "ui-e2e-independent-source-0003",
+    }),
+  });
+  if (!independentSourceResponse.ok) {
+    throw new Error(`Could not seed independent source evidence: HTTP ${independentSourceResponse.status} ${await independentSourceResponse.text()}`);
+  }
+  const independentSourceEvidence = await independentSourceResponse.json();
+  const independentEvidenceId = independentSourceEvidence.id;
+  if (!independentEvidenceId) throw new Error("The backend did not return the independent source evidence ID.");
+
   page.on("dialog", async (dialog) => {
     const message = dialog.message();
     if (message.startsWith("Record the actual response received")) {
       await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
-    } else if (message.startsWith("Select an existing source record")) {
+    } else if (message.startsWith("Select the FIRST existing source record")) {
       await dialog.accept(sourceEvidenceId);
+    } else if (message.startsWith("Select a SECOND, independently originated source record")) {
+      await dialog.accept(independentEvidenceId);
     } else if (message.startsWith("Record the action actually taken")) {
       await dialog.accept("CI-only action: asked the care team to confirm the conflicting reports.");
     } else if (message.startsWith("Record the outcome that was reported")) {
       await dialog.accept("CI-only reported outcome: the care team confirmed the reports refer to different dates.");
-    } else if (message.startsWith("Describe the verification actually performed")) {
-      await dialog.accept("CI-only verification: compared the recorded source references and explicit reconciliation.");
+    } else if (message.startsWith("Describe what the two independent source records jointly support")) {
+      await dialog.accept("CI-only corroboration review: both separate records support the same reported appointment date.");
     } else if (message.startsWith("What explicit criterion was used to verify the outcome")) {
       await dialog.accept("Both source references were reviewed and the date discrepancy was explicitly reconciled.");
     } else if (message.startsWith("Record the explicit reconciliation decision")) {
@@ -212,7 +238,7 @@ try {
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await conflict.getByText(/contradiction · closed/i).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "View audit history" }).click();
-  for (const eventName of ["action recorded", "contradiction reconciled", "outcome reported", "outcome verified", "closure verified"]) {
+  for (const eventName of ["action recorded", "contradiction reconciled", "outcome attested", "outcome corroborated", "closure verified"]) {
     await conflict.getByText(eventName, { exact: true }).first().waitFor({ timeout: 10_000 });
   }
 
