@@ -9,6 +9,7 @@ import {
   sanitizeDurableCareKey,
   writeDurableJson,
   clearDurableDirectory,
+  withDurableFileLock,
 } from "../living-care-record-persistence/fs-store";
 
 export type ThreadSourceEvidence = {
@@ -68,15 +69,28 @@ export function recordThreadSourceEvidence(params: {
     fragment_count: params.fragmentCount,
     captured_at: now,
   };
-  const store = loadStore(params.careKey);
-  const next = [...store.threads.filter((t) => t.thread_id !== evidence.thread_id), evidence].slice(
-    -20,
-  );
-  saveStore({ care_key: params.careKey, threads: next, updated_at: now });
+  withDurableFileLock(`${storePath(params.careKey)}.lock`, () => {
+    // Refresh while holding the cross-process lock. This is an audit source,
+    // not a rolling cache: never truncate original family reports.
+    const durable = readDurableJson<ThreadEvidenceStore>(storePath(params.careKey));
+    const store = durable?.threads
+      ? durable
+      : { care_key: params.careKey, threads: [], updated_at: now };
+    const next = [
+      ...store.threads.filter((t) => t.thread_id !== evidence.thread_id),
+      evidence,
+    ];
+    saveStore({ care_key: params.careKey, threads: next, updated_at: now });
+  });
   return evidence;
 }
 
 export function listThreadSourceEvidence(careKey: string): ThreadSourceEvidence[] {
+  const durable = readDurableJson<ThreadEvidenceStore>(storePath(careKey));
+  if (durable?.threads) {
+    memory.set(careKey, durable);
+    return [...durable.threads];
+  }
   return [...loadStore(careKey).threads];
 }
 
