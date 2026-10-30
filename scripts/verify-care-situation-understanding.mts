@@ -317,6 +317,47 @@ async function main() {
   }
 
   {
+    // Held memory is not permission to connect unrelated care topics.
+    resetAll();
+    const contributorId = "baseline-topic-isolation";
+    const careKey = resolveCareRealityStoreKey(contributorId);
+    const first = ingestActiveCareObservation({
+      caregiverId: contributorId,
+      rawText: "Mom needed help walking yesterday.",
+      kind: "general",
+      nowIso: "2026-10-28T08:00:00.000Z",
+    });
+    const second = ingestActiveCareObservation({
+      caregiverId: contributorId,
+      rawText: "Mom ate less breakfast this morning.",
+      kind: "general",
+      nowIso: "2026-10-29T08:00:00.000Z",
+    });
+    assert.equal(second.situation.id, first.situation.id);
+    const unrelated = buildCareRealitySituationModel({
+      situation: second.situation,
+      latestRawText: "Mom developed a rash on her arm this afternoon.",
+      careKey,
+    });
+    assert.equal(
+      unrelated.baseline_comparison.has_meaningful_change,
+      false,
+      "an unrelated new care topic must not be linked to the held walking/eating thread",
+    );
+
+    const related = buildCareRealitySituationModel({
+      situation: second.situation,
+      latestRawText: "She is still having trouble walking today.",
+      careKey,
+    });
+    assert.ok(
+      related.baseline_comparison.meaningful_changes.some((line) => /related update/i.test(line)),
+      "a topic-linked follow-up should remain connected",
+    );
+    console.log("✓ Topic continuity — unrelated care concerns are not falsely linked");
+  }
+
+  {
     // Emotional / load-only — invite care reality, never therapy, never invent decline
     resetAll();
     const text =

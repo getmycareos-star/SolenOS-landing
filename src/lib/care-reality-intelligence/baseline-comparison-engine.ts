@@ -634,12 +634,26 @@ export function compareAgainstBaseline(params: {
       .replace(/\s+/g, " ")
       .slice(0, 140)
       .replace(/\.$/, "");
+    const sharedTopicTerms = tokenOverlap(
+      contentTokens(priorFocus),
+      contentTokens(latestFocus),
+    );
+    const priorDomain = inferDomain(priorFocus);
+    const latestDomain = inferDomain(latestFocus);
+    const explicitContinuation = /\b(?:still|again|same|continues?|continuing|since then|that|it)\b/i.test(
+      latestFocus,
+    );
+    const relatedToHeldThread =
+      sharedTopicTerms > 0 ||
+      (priorDomain !== "general" && priorDomain === latestDomain && explicitContinuation);
+
     if (
       latestFocus.length >= 8 &&
+      relatedToHeldThread &&
       !priorFocus.toLowerCase().includes(latestFocus.toLowerCase().slice(0, 36))
     ) {
       meaningful_changes.push(
-        "Related update to what was already held — new details connect to the care situation already underway.",
+        "Related update to an existing care thread — the wording connects to what was already recorded; whether it represents a change from the person's usual pattern remains unclear.",
       );
       states.push({
         person_id,
