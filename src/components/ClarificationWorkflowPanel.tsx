@@ -40,6 +40,7 @@ type AnswerEvent = {
   answer: string;
   answer_provenance: string;
   evidence_ids: string[];
+  answer_version: number;
   answered_by_caregiver_id: string;
   created_at: string;
 };
@@ -353,6 +354,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
             <ol style={{ fontSize: 12, paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
                 <p>{item.answer}</p><p>Source: {item.answer_provenance}</p>
+                <p>Answer version {item.answer_version} · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "not recorded"}</p>
                 <p>Answered by {item.answered_by_caregiver_id} · {item.created_at}</p>
               </li>)}
             </ol>
