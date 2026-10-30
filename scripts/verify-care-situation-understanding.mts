@@ -32,7 +32,8 @@ import { resolveCareRealityStoreKey } from "../src/lib/multi-caregiver-context-m
 import { composeCaregiverResponse } from "../src/lib/caregiver-response-composer";
 import { evaluateCaregiverUnderstandingTest } from "../src/lib/care-reality-intelligence/caregiver-understanding-test";
 import { containsRawNoteEchoInCopy } from "../src/lib/output-quality";
-import { careRealityObjectFromExtraction } from "../src/lib/mvp-response-behavior";
+import { careRealityObjectFromExtraction, toCareRealityObject } from "../src/lib/mvp-response-behavior";
+import { buildCareRealitySituationModel } from "../src/lib/care-reality-intelligence";
 
 console.log("=== Care Situation Understanding (instant value) ===\n");
 console.log(CARE_SITUATION_UNDERSTANDING_PURPOSE);
@@ -74,6 +75,23 @@ I have her medication list somewhere, the hospital papers from last month, and m
 I just feel like I'm the only person holding all these pieces.`;
 
 async function main() {
+  {
+    // The situation-model path must obey the same cap as extraction-only projection.
+    resetAll();
+    const raw = "Mom ate breakfast later than usual. She seemed more tired after lunch. She walked less than she normally does.";
+    const turn = ingestActiveCareObservation({
+      caregiverId: "csu-model-confidence-volume-only",
+      rawText: raw,
+      kind: "general",
+    });
+    const model = buildCareRealitySituationModel({
+      situation: turn.situation,
+      latestRawText: raw,
+      careKey: "csu-model-confidence-volume-only",
+    });
+    assert.notEqual(model.confidence, "high", "same-source fragment volume must not create high model confidence");
+    assert.notEqual(toCareRealityObject(model).confidence, "high", "projected care object must preserve the confidence cap");
+  }
   {
     // Three extracted fragments from one caregiver capture are not independent
     // corroboration and must not be promoted to high confidence by volume.

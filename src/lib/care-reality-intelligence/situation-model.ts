@@ -90,13 +90,17 @@ function extractChangeHint(text: string): string | null {
 function confidenceFromModel(m: Omit<CareRealitySituationModel, "confidence" | "can_orient" | "extraction"> & {
   extraction: CareRealityExtractionResult | null;
 }): SituationModelConfidence {
-  const evidence =
-    m.observed_changes.length +
-    m.events.length +
-    m.decisions.length +
-    (m.baseline ? 1 : 0);
-  if (evidence >= 4 && m.unknowns.length <= 2) return "high";
-  if (evidence >= 2 || m.baseline) return "medium";
+  // A single caregiver's capture can establish useful observations, but item
+  // count and baseline presence do not establish independent corroboration.
+  // Keep the model at medium at most until calibrated, multi-source evidence
+  // is available to this boundary.
+  if (
+    m.extraction?.observations.some(
+      (observation) => observation.confidence === "medium" || observation.confidence === "high",
+    )
+  ) {
+    return "medium";
+  }
   return "low";
 }
 
