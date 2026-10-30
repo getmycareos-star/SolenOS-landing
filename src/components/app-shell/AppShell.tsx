@@ -114,7 +114,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           if (typeof navigator.share === "function") {
             await navigator.share({ title: "SolenOS Living Care Record summary", text: summary });
           } else if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(summary);
+            await navigator.clipboard?.writeText(summary);
             window.alert("Care summary copied. You can paste it into the app or message of your choice.");
           } else {
             window.prompt("Copy this care summary:", summary);
@@ -122,7 +122,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         } catch (error) {
           if (error instanceof Error && error.name === "AbortError") return;
           try {
-            await navigator.clipboard.writeText(summary);
+            await navigator.clipboard?.writeText(summary);
             window.alert("Care summary copied. You can paste it into the app or message of your choice.");
           } catch {
             window.prompt("Copy this care summary:", summary);
