@@ -84,6 +84,7 @@ import {
   clearActiveCareSituationMemoryCache,
   deleteActiveCareSituationDurable,
   loadActiveCareSituationFromDurable,
+  listActiveCareSituationsFromDurable,
   persistActiveCareSituationToDurable,
   resetActiveCareSituationDurableStore,
 } from "./durable-store";
@@ -107,6 +108,20 @@ export function resetActiveCareSituationStore(): void {
 
 function realityKey(contributorOrRealityId: string): string {
   return resolveCareRealityStoreKey(contributorOrRealityId);
+}
+
+/** Return every distinct care situation retained for this recipient. */
+export function listActiveCareSituations(contributorId: string): ActiveCareSituation[] {
+  const careRecipientId = realityKey(contributorId);
+  const indexed = listActiveCareSituationsFromDurable(careRecipientId);
+  const current = acsCache().get(careRecipientId);
+  const merged = current
+    ? [
+        ...indexed.filter((item) => item.id !== current.id),
+        current,
+      ]
+    : indexed;
+  return merged.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 }
 
 export function getActiveCareSituation(contributorId: string): ActiveCareSituation | null {
