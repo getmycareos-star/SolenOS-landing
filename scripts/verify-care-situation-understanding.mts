@@ -13,6 +13,7 @@ import {
   INSTANT_VALUE_RULE,
   acceptCareSituationUnderstanding,
   buildCareSituationUnderstanding,
+  buildCareSituationUnderstandingFromExtraction,
   projectCareSituationOrientation,
 } from "../src/lib/care-situation-understanding";
 import {
@@ -175,6 +176,30 @@ async function main() {
     );
 
     console.log("✓ Multi-signal golden — understanding + compose + midnight");
+  }
+
+  {
+    // A factual entry is not automatically an understood or prioritised care situation.
+    // The same rule must hold in both async and synchronous extraction paths.
+    resetAll();
+    const raw = "Mom ate breakfast this morning.";
+    const asyncUnderstanding = await buildCareSituationUnderstanding({
+      rawText: raw,
+      contributorId: "csu_fact_without_orientation_async",
+    });
+    assert.ok(asyncUnderstanding.facts.length > 0, "the ordinary event must be preserved as a fact");
+    assert.equal(asyncUnderstanding.matters_now.length, 0, "an ordinary event must not acquire an invented priority");
+    assert.equal(asyncUnderstanding.can_orient, false, "facts without a meaningful priority must not claim orientation");
+
+    resetAll();
+    const syncUnderstanding = buildCareSituationUnderstandingFromExtraction({
+      rawText: raw,
+      contributorId: "csu_fact_without_orientation_sync",
+    });
+    assert.ok(syncUnderstanding.facts.length > 0, "the synchronous path must preserve the ordinary event");
+    assert.equal(syncUnderstanding.matters_now.length, 0, "the synchronous path must not invent priority");
+    assert.equal(syncUnderstanding.can_orient, false, "the synchronous path must not claim orientation from facts alone");
+    console.log("✓ Ordinary factual capture — preserved without false situation orientation");
   }
 
   {

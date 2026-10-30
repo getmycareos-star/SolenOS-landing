@@ -310,10 +310,12 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
   // New users need stronger evidence or a clear care signal.
   const canOrientFromContinuity =
     isReturningOrContinuation && continuityDecision?.can_orient;
+  // Facts alone are not orientation. A caregiver needs a meaningful priority,
+  // a supported change, or continuity from an already understood care situation.
   const can_orient =
     canOrientFromContinuity ||
     prioritized.matters_now.length > 0 ||
-    facts.length > 0 ||
+    changes_from_baseline.length > 0 ||
     (context_only.length > 0 && raw.length < 200);
 
   const understanding: CareSituationUnderstanding = {
@@ -516,9 +518,11 @@ export async function buildCareSituationUnderstanding(params: {
   const confidence: CareSituationUnderstanding["confidence"] =
     evidenceCount >= 4 ? "high" : evidenceCount >= 2 ? "medium" : "low";
 
+  // Facts alone are not orientation. A caregiver needs a meaningful priority,
+  // a supported change, or continuity from an already understood care situation.
   const can_orient =
     prioritized.matters_now.length > 0 ||
-    facts.length > 0 ||
+    changes_from_baseline.length > 0 ||
     (context_only.length > 0 && raw.length < 200);
 
   const understanding: CareSituationUnderstanding = {
