@@ -10,6 +10,8 @@
 import {
   existsSync,
   mkdirSync,
+  openSync,
+  closeSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -109,6 +111,48 @@ export function clearDurableDirectory(dirPath: string): void {
     }
   } catch {
     throw new Error("The durable care directory could not be cleared completely.");
+  }
+}
+
+
+/**
+ * Cross-process critical section for read-modify-write care-record operations.
+ * Lock acquisition is exclusive; bounded wait fails closed rather than silently
+ * dropping a concurrent caregiver update.
+ */
+export function withDurableFileLock<T>(
+  lockPath: string,
+  operation: () => T,
+  timeoutMs = 5000,
+): T {
+  if (isBrowser) return operation();
+  mkdirSync(join(lockPath, ".."), { recursive: true });
+  const deadline = Date.now() + timeoutMs;
+  let descriptor: number | null = null;
+  while (descriptor === null) {
+    try {
+      descriptor = openSync(lockPath, "wx", 0o600);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") {
+        throw new Error("Care record write lock could not be acquired.");
+      }
+      if (Date.now() >= deadline) {
+        throw new Error("Care record is busy; concurrent update was not applied.");
+      }
+      // Synchronous bounded backoff: no unprotected read-modify-write window.
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    }
+  }
+  try {
+    return operation();
+  } finally {
+    try {
+      closeSync(descriptor);
+      rmSync(lockPath, { force: true });
+    } catch {
+      throw new Error("Care record write lock could not be released safely.");
+    }
   }
 }
 
