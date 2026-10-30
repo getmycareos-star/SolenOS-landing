@@ -58,7 +58,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         />
       )}
       <div className={`solenos-chat-sidebar-host${sidebarOpen ? " is-sidebar-open" : ""}`}>
-        <aside className="solenos-chat-sidebar" aria-label="SolenOS navigation">
+        <aside id="solenos-navigation" className="solenos-chat-sidebar" aria-label="SolenOS navigation">
           <div className="solenos-chat-sidebar-top">
             <Link href={brandHref} className="solenos-chat-brand" aria-label="SolenOS home">
               <span className="solenos-chat-brand-mark" aria-hidden="true">S</span>
