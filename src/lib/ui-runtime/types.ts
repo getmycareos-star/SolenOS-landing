@@ -175,7 +175,7 @@ export type Situation = {
     id: string;
     relationship_id: string;
     relationship_type: "related_to" | string;
-    rationale: string | null;
+    provenance: string | null;
   }[];
   /** Individual source statements, distinct from the authenticated reporter. */
   sourceStatements?: readonly {
