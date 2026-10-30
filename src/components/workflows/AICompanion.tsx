@@ -73,6 +73,8 @@ interface Message {
   source_event_ids?: string[]
   source_evidence_ids?: string[]
   source_appointment_ids?: string[]
+  source_assertion_ids?: string[]
+  source_lcr_context_ids?: string[]
   source_freshness_assessment_ids?: string[]
   freshness_source_status?: string
   source_record_refs?: Array<{ record_type: string; record_id: string }>
@@ -125,6 +127,8 @@ export default function Companion() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const autoDraftSent = useRef(false)
+  const pendingTurnId = useRef<string | null>(null)
+  const pendingTurnText = useRef<string | null>(null)
   const personId = getPersonId()
 
   const prepareHandoffDraft = async () => {
@@ -167,6 +171,15 @@ export default function Companion() {
     setRequestError(null)
     setLoading(true)
     setEmergency(false)
+    // Reuse the logical turn ID after an ambiguous network/response failure.
+    if (!pendingTurnId.current || pendingTurnText.current !== submittedText) {
+      const randomId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `turn-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
+      pendingTurnId.current = randomId
+      pendingTurnText.current = submittedText
+    }
+    const clientTurnId = pendingTurnId.current
     const userMsg: Message = { role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
@@ -176,10 +189,13 @@ export default function Companion() {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
+        client_turn_id: clientTurnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
+      pendingTurnId.current = null
+      pendingTurnText.current = null
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (!sessionId && response.session_id) setSessionId(response.session_id)
       // Generic "blocked" verdicts also represent evidence limits, not emergencies.
@@ -196,6 +212,8 @@ export default function Companion() {
         source_event_ids: response.source_event_ids,
         source_evidence_ids: response.source_evidence_ids,
         source_appointment_ids: response.source_appointment_ids,
+        source_assertion_ids: response.source_assertion_ids,
+        source_lcr_context_ids: response.source_lcr_context_ids,
         source_freshness_assessment_ids: response.source_freshness_assessment_ids,
         freshness_source_status: response.freshness_source_status,
         source_record_refs: response.source_record_refs,
@@ -239,6 +257,10 @@ export default function Companion() {
 
   const handleInput = (value: string) => {
     setInput(value)
+    if (pendingTurnText.current !== null && value.trim() !== pendingTurnText.current) {
+      pendingTurnId.current = null
+      pendingTurnText.current = null
+    }
     setRequestError(null)
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -251,6 +273,8 @@ export default function Companion() {
     setMessages([])
     setInput('')
     setSessionId(null)
+    pendingTurnId.current = null
+    pendingTurnText.current = null
     setEmergency(false)
     setRequestError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -457,7 +481,7 @@ export default function Companion() {
               <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
               {messages.map((msg, index) => {
                 const isUser = msg.role === 'user'
-                const contextCount = (msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0)
+                const contextCount = (msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0) + (msg.source_assertion_ids?.length ?? 0) + (msg.source_lcr_context_ids?.length ?? 0)
                 const freshnessCount = msg.source_freshness_assessment_ids?.length ?? 0
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
@@ -465,7 +489,7 @@ export default function Companion() {
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount + (msg.source_record_refs?.length ?? 0) > 0
-                      ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
+                      ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, ' + (msg.source_assertion_ids?.length ?? 0) + ' caregiver-reviewed assertions, ' + (msg.source_lcr_context_ids?.length ?? 0) + ' additional record references, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
                       : 'No matching care context was returned for this response.'} Conversation only; not added to the Living Care Record.</span></div>}
                     {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">Freshness assessment storage is unavailable in this schema. Currentness is unknown.</p>}
                     {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No freshness assessment was returned for the selected evidence; this does not establish currentness.</p>}
