@@ -1,0 +1,35 @@
+name: SolenOS Companion intake verification
+
+on:
+  push:
+    branches:
+      - feat/chatgpt-style-care-sidebar
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: companion-intake-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact commit
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Companion and Documents intake contract
+        run: npx tsx scripts/verify-companion-home.mts
+      - name: Production build
+        run: npm run build
