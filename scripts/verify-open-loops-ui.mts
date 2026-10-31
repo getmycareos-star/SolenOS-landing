@@ -23,10 +23,10 @@ const required: Array<[string, RegExp]> = [
   ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
   ["action errors are shown rather than reported as success", /The requested change was not confirmed/],
   ["no sample Open Loop records are fabricated", /No sample records are shown/],
-  ["caregiver capture uses one free-text note", /id="open-loop-note"[\\s\\S]*?value={description}[\\s\\S]*?onChange/],
+  ["caregiver capture uses one free-text note", /id="open-loop-note"[\s\S]*?value={description}[\s\S]*?onChange/],
   ["caregiver is not asked to classify the item", /loop_type: "unresolved_concern"/],
   ["caregiver note is preserved as reported information", /kind: "caregiver_recorded", text: rawText/],
-  ["source IDs and deadlines are not required during capture", /Source reference \\(optional\\)|datetime-local/],
+  ["source IDs and deadlines are not required during capture", /Source reference \(optional\)|datetime-local/],
   ["advanced record operations are progressively disclosed", /<details className="open-loop-more-actions">/],
 ];
 
