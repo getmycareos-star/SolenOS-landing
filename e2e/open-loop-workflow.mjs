@@ -6,6 +6,13 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 let isolateConflictUiRequests = false;
 
+async function openRecordActions(record) {
+  const details = record.locator("details.open-loop-more-actions");
+  if (!(await details.evaluate((element) => element.open))) {
+    await details.locator("summary").click();
+  }
+}
+
 try {
   // Exercise the real Next.js UI while forwarding its same-origin API calls to
   // the real FastAPI process. No mocked API responses or sample care records.
@@ -220,7 +227,7 @@ try {
     has: page.getByRole("heading", { name: handoffTitle }),
   });
   await handoff.waitFor({ timeout: 15_000 });
-  await handoff.locator("details.open-loop-more-actions summary").click();
+  await openRecordActions(handoff);
 
   await handoff.getByRole("button", { name: "Record response" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
@@ -256,7 +263,7 @@ try {
     has: page.getByRole("heading", { name: conflictTitle }),
   });
   await conflict.waitFor({ timeout: 15_000 });
-  await conflict.locator("details.open-loop-more-actions summary").click();
+  await openRecordActions(conflict);
 
   await conflict.getByRole("button", { name: "Record action" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
@@ -296,13 +303,13 @@ try {
   const reloadedHandoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
   });
-  await reloadedHandoff.locator("details.open-loop-more-actions summary").click();
+  await openRecordActions(reloadedHandoff);
   await reloadedHandoff.getByRole("button", { name: "View audit history" }).click();
   await reloadedHandoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
   const reloadedConflict = page.locator("article").filter({
     has: page.getByRole("heading", { name: conflictTitle }),
   });
-  await reloadedConflict.locator("details.open-loop-more-actions summary").click();
+  await openRecordActions(reloadedConflict);
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
