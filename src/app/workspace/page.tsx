@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/brand";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
@@ -12,7 +12,20 @@ const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
 
 function WorkspaceHomeInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const prompt = searchParams.get("prompt");
+  const enterCareRecord = searchParams.get("enter") === "1";
+
+  useEffect(() => {
+    if (enterCareRecord) {
+      router.replace("/workspace/care-continuity");
+      return;
+    }
+  }, [enterCareRecord, router]);
+
+  if (enterCareRecord) {
+    return <BrandLoading message="Opening your Living Care Record…" />;
+  }
   return (
     <div className="mobile-screen feature-page companion-route solenos-companion-home">
       <Companion home initialPrompt={prompt} />

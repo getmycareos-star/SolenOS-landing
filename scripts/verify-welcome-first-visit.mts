@@ -23,7 +23,9 @@ assert.match(landing, /href=\{start\}/);
 assert.match(start, /primaryCtaHref/);
 assert.match(earlyAccess, /href="\/workspace\?enter=1"/);
 assert.match(shell, /href="\/workspace\?enter=1"/);
-assert.match(workspace, /CognitiveWorkspace/);
+assert.match(workspace, /enterCareRecord/);
+assert.match(workspace, /router\.replace\("\/workspace\/care-continuity"\)/);
+assert.match(workspace, /compose/);
 assert.doesNotMatch(earlyAccess, /EarlyAccessConsentForm|type="checkbox"|ResearchPreviewAckGate/);
 assert.doesNotMatch(layout, /ConsentGatePanel|WorkspacePrivacyBoundary|ResearchPreviewAckGate|type="checkbox"/);
 

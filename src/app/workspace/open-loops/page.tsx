@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, RefreshCw, Plus, Clock3, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Clock3, AlertCircle, CheckCircle2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 
@@ -37,19 +37,6 @@ type OpenLoop = {
   updated_at: string;
 };
 
-const LOOP_TYPES = [
-  ["unresolved_concern", "Unresolved concern"],
-  ["pending_decision", "Pending decision"],
-  ["pending_action", "Pending action"],
-  ["follow_up", "Follow-up"],
-  ["unconfirmed_outcome", "Unconfirmed outcome"],
-  ["missing_information", "Missing information"],
-  ["awaiting_response", "Awaiting response"],
-  ["professional_input", "Professional input"],
-  ["contradiction", "Conflicting information"],
-  ["deferred_decision", "Deferred decision"],
-] as const;
-
 function dateLabel(value: string | null): string {
   if (!value) return "No deadline recorded";
   const date = new Date(value);
@@ -63,12 +50,7 @@ function safeMessage(error: unknown): string {
 export default function OpenLoopsPage() {
   const [loops, setLoops] = useState<OpenLoop[]>([]);
   const [historyById, setHistoryById] = useState<Record<string, LoopHistoryEvent[]>>({});
-  const [loopType, setLoopType] = useState<string>("unresolved_concern");
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [sourceId, setSourceId] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [deadlineSource, setDeadlineSource] = useState("explicit_user");
   const [filter, setFilter] = useState("open");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -111,20 +93,21 @@ export default function OpenLoopsPage() {
 
   async function createLoop(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!title.trim() || !description.trim()) return;
+    const rawText = description.trim();
+    if (!rawText) return;
     setSaving(true);
     setError("");
     setNotice("");
     try {
+      // Keep the caregiver's original words intact. The first sentence is only
+      // a navigation label, not an AI-generated interpretation or care fact.
+      const title = rawText.split(/\r?\n|(?<=[.!?])\s+/)[0].trim().slice(0, 240) || "Care update";
       const createPayload = {
-        loop_type: loopType,
-        title: title.trim(),
-        description: description.trim(),
-        source_type: sourceId.trim() ? "care_record_reference" : null,
-        source_id: sourceId.trim() || null,
-        evidence: [],
+        loop_type: "unresolved_concern",
+        title,
+        description: rawText,
+        evidence: [{ kind: "caregiver_recorded", text: rawText }],
         uncertainty: "unknown",
-        ...(deadline ? { deadline_at: new Date(deadline).toISOString(), deadline_source: deadlineSource, deadline_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } : {}),
       };
       const signature = JSON.stringify(createPayload);
       const pending = pendingCreateKey.current;
@@ -136,15 +119,12 @@ export default function OpenLoopsPage() {
       });
       await refresh();
       pendingCreateKey.current = null;
-      setTitle("");
       setDescription("");
-      setSourceId("");
-      setDeadline("");
       setNotice((saved as { recurrence_detected?: boolean }).recurrence_detected
-        ? "This occurrence was linked to an existing unresolved issue. Its source occurrence is preserved."
-        : "Open loop saved to the care record.");
+        ? "This update was linked to an existing unresolved item. The new occurrence remains recorded."
+        : "Saved. Your original words are preserved as an unresolved item. No deadline or outcome was assumed.");
     } catch (reason) {
-      setError("The loop was not saved. " + safeMessage(reason));
+      setError("The note was not saved. " + safeMessage(reason));
     } finally {
       setSaving(false);
     }
@@ -312,49 +292,46 @@ export default function OpenLoopsPage() {
   }
 
   return (
-    <main className="mobile-screen" style={{ maxWidth: 880, margin: "0 auto", padding: "24px 16px 56px" }}>
-      <header style={{ marginBottom: 24 }}>
+    <main className="mobile-screen open-loops-page">
+      <header className="open-loops-header">
         <Link href="/workspace" style={{ display: "inline-flex", gap: 8, alignItems: "center", marginBottom: 20 }}>
           <ArrowLeft size={18} aria-hidden /> Back to Living Care Record
         </Link>
-        <p style={{ fontSize: 12, letterSpacing: "0.12em", fontWeight: 700, opacity: 0.7 }}>CARE CONTINUITY</p>
-        <h1 style={{ fontSize: "clamp(28px, 6vw, 40px)", lineHeight: 1.15, margin: "8px 0" }}>Open Loops</h1>
-        <p style={{ maxWidth: 660, lineHeight: 1.6 }}>Keep unresolved concerns, decisions, actions and follow-ups visible. Acknowledging an item does not mean its outcome has been verified.</p>
+        <p className="open-loop-eyebrow">CARE CONTINUITY</p>
+        <h1>Things to follow up</h1>
+        <p>Keep unfinished care matters visible without having to manage another form. SolenOS preserves what was said and what is still unknown.</p>
       </header>
 
-      <form onSubmit={createLoop} style={{ border: "1px solid var(--border, #d6d9d3)", borderRadius: 16, padding: 18, marginBottom: 24, display: "grid", gap: 14 }}>
-        <h2 style={{ fontSize: 20, margin: 0, display: "flex", alignItems: "center", gap: 8 }}><Plus size={19} aria-hidden /> Track an unresolved item</h2>
-        <label style={{ display: "grid", gap: 6 }}>Type
-          <select value={loopType} onChange={(event) => setLoopType(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }}>
-            {LOOP_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-        </label>
-        <label style={{ display: "grid", gap: 6 }}>Short title
-          <input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={240} placeholder="What still needs attention?" style={{ minHeight: 44, padding: 10, borderRadius: 8 }} />
-        </label>
-        <label style={{ display: "grid", gap: 6 }}>Context and what is known
-          <textarea value={description} onChange={(event) => setDescription(event.target.value)} required maxLength={12000} rows={4} placeholder="Separate what was observed, what was reported, and what remains uncertain." style={{ padding: 10, borderRadius: 8 }} />
-        </label>
-        <label style={{ display: "grid", gap: 6 }}>Source reference (optional)
-          <input value={sourceId} onChange={(event) => setSourceId(event.target.value)} maxLength={160} placeholder="Existing event or evidence ID, if known" style={{ minHeight: 44, padding: 10, borderRadius: 8 }} />
-        </label>
-        <label style={{ display: "grid", gap: 6 }}>Deadline (optional; leave blank if none is established)
-          <input type="datetime-local" value={deadline} onChange={(event) => setDeadline(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }} />
-        </label>
-        {deadline && <label style={{ display: "grid", gap: 6 }}>Why this deadline exists
-          <select value={deadlineSource} onChange={(event) => setDeadlineSource(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }}>
-            <option value="explicit_user">Explicitly entered by caregiver</option>
-            <option value="recorded_commitment">Recorded commitment</option>
-            <option value="system_policy">Documented system policy</option>
-          </select>
-        </label>}
-        <Button type="submit" variant="primary" disabled={saving || !title.trim() || !description.trim()}>{saving ? "Saving…" : "Save open loop"}</Button>
+      <form onSubmit={createLoop} className="open-loop-capture">
+        <div className="open-loop-capture-heading">
+          <div>
+            <p className="open-loop-eyebrow">QUICK CAPTURE</p>
+            <h2>What still needs attention?</h2>
+            <p>Write it the way you would explain it to someone helping with care. A sentence is enough.</p>
+          </div>
+        </div>
+        <label className="open-loop-capture-label" htmlFor="open-loop-note">Your note</label>
+        <textarea
+          id="open-loop-note"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          required
+          maxLength={12000}
+          rows={4}
+          placeholder="For example: The clinic said they would call with the test results, but we have not heard back."
+        />
+        <div className="open-loop-capture-footer">
+          <p>SolenOS keeps your words as written. It will not assume a deadline, owner, source, or outcome.</p>
+          <Button type="submit" variant="primary" disabled={saving || !description.trim()}>
+            {saving ? "Saving…" : "Save note"}
+          </Button>
+        </div>
       </form>
 
       <section aria-labelledby="open-loop-list-heading">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h2 id="open-loop-list-heading" style={{ fontSize: 22, margin: 0 }}>Your tracked items</h2>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className="open-loop-list-heading">
+          <h2 id="open-loop-list-heading">Your follow-ups</h2>
+          <div className="open-loop-list-controls">
             <select aria-label="Filter open loops" value={filter} onChange={(event) => setFilter(event.target.value)} style={{ minHeight: 40, padding: 8, borderRadius: 8 }}>
               <option value="open">Open</option><option value="waiting">Waiting</option><option value="deferred">Deferred</option><option value="blocked">Blocked</option><option value="review_abandoned">Needs review</option><option value="closed">Verified closed</option><option value="cancelled">Cancelled</option><option value="all">All statuses</option>
             </select>
@@ -364,11 +341,21 @@ export default function OpenLoopsPage() {
           </div>
         </div>
 
-        {error && <p role="alert" style={{ border: "1px solid #b91c1c", padding: 12, borderRadius: 10 }}>{error}</p>}
+        {error && (
+          <div className="open-loop-load-error" role="alert">
+            <p>{error} An empty view does not mean nothing happened in the care journey.</p>
+            <Button variant="secondary" onClick={() => {
+              setLoading(true);
+              setError("");
+              void refresh().catch(() => setError("Saved follow-ups could not be loaded. Check your connection and try again.")).finally(() => setLoading(false));
+            }} disabled={loading}>Try again</Button>
+          </div>
+        )}
         {notice && <p role="status" style={{ border: "1px solid #a3b18a", padding: 12, borderRadius: 10 }}>{notice}</p>}
-        {loading ? <p aria-live="polite">Loading saved open loops…</p> :
+        {loading ? <p aria-live="polite">Loading saved follow-ups…</p> :
+          error ? null :
           visibleLoops.length === 0 ? <div style={{ border: "1px dashed var(--border, #d6d9d3)", borderRadius: 14, padding: 24 }}>
-            <CheckCircle2 size={22} aria-hidden /><h3>No items in this view</h3><p>No sample records are shown. If this is unexpected, refresh and check that the correct caregiver session is active.</p>
+            <CheckCircle2 size={22} aria-hidden /><h3>Nothing needs following up here right now.</h3><p>When something needs attention, it will appear here. You can add a note whenever you need to keep track of something.</p>
           </div> : <div style={{ display: "grid", gap: 14 }}>
             {visibleLoops.map((loop) => <article key={loop.id} style={{ border: "1px solid var(--border, #d6d9d3)", borderRadius: 14, padding: 16 }}>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "start" }}>
@@ -402,21 +389,24 @@ export default function OpenLoopsPage() {
                     </li>)}
                   </ol>}
               </section>}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reassess")}>Reassess</Button>
-                <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "history")}>View audit history</Button>
-                {(loop.loop_type === "awaiting_response" || loop.loop_type === "professional_input" || loop.loop_type === "follow_up") && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "response")}>Record response</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "action")}>Record action</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "outcome")}>Record outcome</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "verify")}>Verify outcome</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "dependency")}>Add prerequisite</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "defer")}>Defer decision</Button>}
-                {["open", "waiting"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "review")}>Flag for review</Button>}
-                {loop.loop_type === "contradiction" && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reconcile")}>Record reconciliation</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "close")}>Attempt closure</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "cancel")}>Cancel pursuit</Button>}
-                {["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reopen")}>Reopen with reason</Button>}
-              </div>
+              <details className="open-loop-more-actions">
+                <summary>More record actions</summary>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                  <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reassess")}>Reassess</Button>
+                  <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "history")}>View audit history</Button>
+                  {(loop.loop_type === "awaiting_response" || loop.loop_type === "professional_input" || loop.loop_type === "follow_up") && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "response")}>Record response</Button>}
+                  {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "action")}>Record action</Button>}
+                  {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "outcome")}>Record outcome</Button>}
+                  {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "verify")}>Verify outcome</Button>}
+                  {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "dependency")}>Add prerequisite</Button>}
+                  {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "defer")}>Defer decision</Button>}
+                  {["open", "waiting"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "review")}>Flag for review</Button>}
+                  {loop.loop_type === "contradiction" && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reconcile")}>Record reconciliation</Button>}
+                  {!["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "close")}>Attempt closure</Button>}
+                  {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "cancel")}>Cancel pursuit</Button>}
+                  {["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reopen")}>Reopen with reason</Button>}
+                </div>
+              </details>
             </article>)}
           </div>}
       </section>

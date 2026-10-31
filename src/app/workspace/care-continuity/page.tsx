@@ -1,17 +1,15 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, FileText, MessageCircle, Plus, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CalendarDays, FileText, MessageCircle, Users } from "lucide-react";
 
 import { BrandLoading } from "@/components/brand";
-import { CognitiveWorkspace } from "@/components/mvp-workspace";
 import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations, openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { ensureAnonymousSession } from "@/api/client";
 import { apiUrl } from "@/lib/api-url";
-import { ErrorBoundary } from "@/components/error-boundary";
 import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
 import { ChangeIntelligencePanel } from "@/components/mvp-workspace/ChangeIntelligencePanel";
@@ -44,14 +42,12 @@ const STATUS_LABELS: Record<string, string> = {
 
 function WorkspacePageInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { runtime, hydrated, entryReady, updateRuntime } = useWorkspace();
   const [displayName, setDisplayName] = useState("");
+  const [persistedEntryState, setPersistedEntryState] = useState<"loading" | "new" | "returning" | "unavailable">("loading");
   const [isArchived, setIsArchived] = useState(false);
   const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const [archiveRestoreError, setArchiveRestoreError] = useState("");
-  const compose = searchParams.get("compose") === "1";
-  const targetSituationId = searchParams.get("situation");
   const [relationshipTargets, setRelationshipTargets] = useState<Record<string, string>>({});
   const [linkingSituationId, setLinkingSituationId] = useState<string | null>(null);
   const [relationshipFeedback, setRelationshipFeedback] = useState("");
@@ -136,10 +132,6 @@ function WorkspacePageInner() {
     }
   }, []);
 
-  const openComposer = useCallback(() => {
-    router.push("/workspace?compose=1");
-  }, [router]);
-
   if (!hydrated || !entryReady || !archiveStateLoaded) {
     return <BrandLoading message="Opening your Living Care Record…" />;
   }
@@ -158,7 +150,7 @@ function WorkspacePageInner() {
                 window.localStorage.removeItem("solenos_workspace_archived");
                 setArchiveRestoreError("");
                 setIsArchived(false);
-                router.replace("/workspace");
+                router.replace("/workspace/care-continuity");
               } catch {
                 setArchiveRestoreError("This browser could not restore the workspace. Your care information has not been deleted.");
               }
@@ -171,30 +163,6 @@ function WorkspacePageInner() {
     );
   }
 
-  if (compose) {
-    return (
-      <main className="mobile-screen lcr-screen lcr-add-screen">
-        <div className="lcr-add-heading">
-          <Button variant="icon" aria-label="Back to Living Care Record" onClick={() => router.push("/workspace")}>
-            <span aria-hidden="true">←</span>
-          </Button>
-          <div>
-            <p className="lcr-eyebrow">LIVING CARE RECORD</p>
-            <h1>{targetSituationId ? "Update this care thread" : "Add to the record"}</h1>
-            <p>{targetSituationId ? "This entry will be added to the selected care thread. Other concerns stay separate." : "Notes, messages, documents, or photos. Fragments are fine."}</p>
-          </div>
-        </div>
-        <ErrorBoundary name="CognitiveWorkspace" fallback={
-          <section className="lcr-empty-state">
-            <p>The record entry could not open correctly.</p>
-            <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
-          </section>
-        }>
-          <CognitiveWorkspace targetSituationId={targetSituationId} />
-        </ErrorBoundary>
-      </main>
-    );
-  }
 
   const activeSituations = listActiveSituations(runtime.situations);
   const situations = [...runtime.situations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -212,31 +180,40 @@ function WorkspacePageInner() {
           </div>
           <div className="lcr-record-meta">
             <span className="lcr-status-dot" aria-hidden="true" />
-            <span>{activeSituations.length > 0 ? (STATUS_LABELS[activeSituations[0].status] ?? "Current") : "Ready when you are"}</span>
-            <span className="lcr-meta-divider" aria-hidden="true">·</span>
-            <span>Updated {formatLastUpdated(latestUpdated)}</span>
+            <span>{activeSituations.length > 0
+              ? (STATUS_LABELS[activeSituations[0].status] ?? "Current")
+              : persistedEntryState === "returning"
+                ? "Saved care information"
+                : persistedEntryState === "unavailable"
+                  ? "Record status unavailable"
+                  : persistedEntryState === "loading"
+                    ? "Checking your record"
+                    : "Ready when you are"}</span>
+            {latestUpdated && (
+              <>
+                <span className="lcr-meta-divider" aria-hidden="true">·</span>
+                <span>Updated {formatLastUpdated(latestUpdated)}</span>
+              </>
+            )}
           </div>
         </header>
 
-        <PersistedCareOrientation />
+        <PersistedCareOrientation onEntryStateChange={setPersistedEntryState} />
 
-        <section className="lcr-primary-actions" aria-label="Record actions">
-          <button type="button" className="lcr-add-primary" onClick={openComposer}>
-            <span className="lcr-action-icon" aria-hidden="true"><Plus size={22} /></span>
-            <span><strong>Add to record</strong><small>Write a note or add a message, document, or photo</small></span>
-            <span className="lcr-action-arrow" aria-hidden="true">→</span>
-          </button>
+        <section className="lcr-primary-actions" aria-label="Care actions">
           <button type="button" className="lcr-daily-action" onClick={() => router.push("/workspace/daily-care")}>
             <CalendarDays size={21} aria-hidden="true" />
             <span><strong>Daily care</strong><small>Capture how today is going</small></span>
           </button>
         </section>
 
-        <LCRCurrentUnderstanding />
+        {hasAnyContent && (
+          <>
+            <LCRCurrentUnderstanding />
 
-        <ChangeIntelligencePanel />
+            <ChangeIntelligencePanel />
 
-        <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
+            <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
           <div className="lcr-section-heading">
             <div>
               <p className="lcr-eyebrow">YOUR CARE HISTORY</p>
@@ -249,8 +226,7 @@ function WorkspacePageInner() {
             <div className="lcr-empty-state">
               <div className="lcr-empty-icon" aria-hidden="true"><FileText size={27} /></div>
               <h3>Your record starts with what you know.</h3>
-              <p>Add a small detail from today, a message you received, or a document you want to keep connected to the care journey. You do not need to organise it first.</p>
-              <button type="button" className="lcr-text-action" onClick={openComposer}>Add the first detail <span aria-hidden="true">→</span></button>
+              <p>You can record how today is going in Daily Care, or talk through a care update with the AI Companion. You do not need to organise everything first.</p>
             </div>
           ) : (
             <div className="lcr-timeline">
@@ -399,9 +375,9 @@ function WorkspacePageInner() {
                       <button
                         type="button"
                         className="lcr-text-action"
-                        onClick={() => router.push(`/workspace?compose=1&situation=${encodeURIComponent(situation.id)}`)}
+                        onClick={() => router.push("/workspace?prompt=" + encodeURIComponent("I need to add an update about this care thread: " + situation.title + ". Help me capture what has changed and what is still uncertain."))}
                       >
-                        Add update to this thread <span aria-hidden="true">→</span>
+                        Talk through an update <span aria-hidden="true">→</span>
                       </button>
                     )}
                     {relationshipFeedback && relationshipFeedbackFor === situation.id && linkingSituationId === null && (
@@ -412,7 +388,9 @@ function WorkspacePageInner() {
               ))}
             </div>
           )}
-        </section>
+            </section>
+          </>
+        )}
 
         <section className="lcr-support-section" aria-label="Other care tools">
           <div>
@@ -440,9 +418,5 @@ function WorkspacePageInner() {
 }
 
 export default function WorkspacePage() {
-  return (
-    <Suspense fallback={<BrandLoading message="Opening your Living Care Record…" />}>
-      <WorkspacePageInner />
-    </Suspense>
-  );
+  return <WorkspacePageInner />;
 }
