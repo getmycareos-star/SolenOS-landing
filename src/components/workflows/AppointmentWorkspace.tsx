@@ -279,6 +279,7 @@ export default function AppointmentWorkspace() {
             <label>
               <span>Saved appointment workspaces</span>
               <select value={recordId || ''} onChange={event => void loadSavedRecord(event.target.value)} disabled={loadingRecord || savingRecord}>
+                {!recordId && <option value="">New unsaved appointment</option>}
                 {savedRecords.map(record => (
                   <option key={record.id} value={record.id}>
                     {record.status.replaceAll('_', ' ')} · version {record.version_number} · {record.id.slice(0, 8)}
