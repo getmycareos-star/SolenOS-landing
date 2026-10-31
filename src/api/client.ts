@@ -290,11 +290,15 @@ export async function getBlob(path: string): Promise<Blob> {
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown) {
+export async function postJSON(
+  path: string,
+  body: unknown,
+  extraHeaders: Record<string, string> = {},
+) {
   const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetchWithTimeout(resolveApiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders, ...authHeaders },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
