@@ -205,8 +205,8 @@ export function ShareCareSummaryPanel({
         const text = buildPlainTextSummary(summary, selectedContent);
         await copyTextToClipboard(text);
         setSharingResult("Summary copied to clipboard.");
-        recordShareHistory(summary.preparedFor, "text", "shared");
-        setState("shared");
+        recordShareHistory(summary.preparedFor, "text", "completed");
+        setState("completed");
         onShared?.();
         return;
       }
@@ -226,8 +226,8 @@ export function ShareCareSummaryPanel({
           printWindow.print();
         }, 300);
         setSharingResult("Print dialog opened.");
-        recordShareHistory(summary.preparedFor, "PDF", "shared");
-        setState("shared");
+        recordShareHistory(summary.preparedFor, "PDF", "completed");
+        setState("completed");
         onShared?.();
         return;
       }
@@ -240,8 +240,8 @@ export function ShareCareSummaryPanel({
             text,
           });
           setSharingResult("The share sheet closed. SolenOS cannot confirm whether the recipient received or opened the summary.");
-          recordShareHistory(summary.preparedFor, "native", "shared");
-          setState("shared");
+          recordShareHistory(summary.preparedFor, "native", "completed");
+          setState("completed");
           onShared?.();
           return;
         }
@@ -275,8 +275,8 @@ export function ShareCareSummaryPanel({
       const text = buildPlainTextSummary(summary, selectedContent);
       await copyTextToClipboard(text);
       setSharingResult("Summary copied to clipboard.");
-      recordShareHistory(summary.preparedFor, "text", "shared");
-      setState("shared");
+      recordShareHistory(summary.preparedFor, "text", "completed");
+      setState("completed");
       onShared?.();
     } catch {
       recordShareHistory(summary?.preparedFor ?? "unknown", "text", "failed");
@@ -298,8 +298,8 @@ export function ShareCareSummaryPanel({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setSharingResult("The summary download was started by this browser.");
-    recordShareHistory(summary.preparedFor, "download", "shared");
-    setState("shared");
+    recordShareHistory(summary.preparedFor, "download", "completed");
+    setState("completed");
     onShared?.();
   }, [summary, selectedContent, onShared]);
 
