@@ -116,6 +116,9 @@ assert.ok(appointmentWorkspace.includes("New appointment workspace") && appointm
 assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
 assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
 assert.ok(appointmentWorkspace.includes("expected_version: recordVersion"), "appointment saves must use optimistic concurrency to avoid silently overwriting edits");
+assert.ok(appointmentWorkspace.includes("updated.id !== recordId") && appointmentWorkspace.includes("updated.version_number"), "appointment updates must verify the backend returned the expected record and a new revision before showing success");
+assert.ok(appointmentWorkspace.includes("!created.id") && appointmentWorkspace.includes("created.version_number"), "appointment creation must verify a persisted record ID and revision before showing success");
+assert.ok(appointmentWorkspace.includes("status: persistedStatus"), "new appointment workspaces must retain the caregiver-selected persisted status");
 assert.ok(appointmentWorkspace.includes("lcr_reconciliation: 'not_performed'"), "saving appointment notes must not silently promote them into LCR facts");
 for (const label of ["Before the visit", "During the visit", "After the visit", "Clinician findings", "Medication reconciliation", "Follow-up actions", "Not yet reconciled into LCR facts"]) {
   assert.ok(appointmentWorkspace.includes(label), "appointment workflow must include " + label);
