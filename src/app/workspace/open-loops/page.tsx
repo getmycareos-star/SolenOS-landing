@@ -355,7 +355,7 @@ export default function OpenLoopsPage() {
         {loading ? <p aria-live="polite">Loading saved follow-ups…</p> :
           error ? null :
           visibleLoops.length === 0 ? <div style={{ border: "1px dashed var(--border, #d6d9d3)", borderRadius: 14, padding: 24 }}>
-            <CheckCircle2 size={22} aria-hidden /><h3>No items in this view</h3><p>No sample records are shown. If this is unexpected, refresh and check that the correct caregiver session is active.</p>
+            <CheckCircle2 size={22} aria-hidden /><h3>Nothing needs following up here right now.</h3><p>When something needs attention, it will appear here. You can add a note whenever you need to keep track of something.</p>
           </div> : <div style={{ display: "grid", gap: 14 }}>
             {visibleLoops.map((loop) => <article key={loop.id} style={{ border: "1px solid var(--border, #d6d9d3)", borderRadius: 14, padding: 16 }}>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "start" }}>
