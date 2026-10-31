@@ -437,7 +437,7 @@ export const WELCOME_HOME = {
   promise:
     "Bring the mess as it is. SolenOS preserves it, connects related moments, and helps you leave clearer than you arrived.",
   primaryCtaLabel: "Start Adding Care Information",
-  primaryCtaHref: "/workspace/care-continuity",
+  primaryCtaHref: "/workspace?enter=1",
   secondaryCtaLabel: "Why SolenOS exists",
   secondaryCtaHref: "/why-solenos",
 } as const;
