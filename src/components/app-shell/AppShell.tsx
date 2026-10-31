@@ -51,7 +51,7 @@ const NAVIGATION = [
   { href: "/workspace/care-continuity", label: "Care overview", icon: ClipboardList },
   { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
   { href: "/workspace/timeline", label: "Care Timeline", icon: Clock3 },
-  { href: "/workspace/open-loops", label: "Open Loops", icon: CircleHelp },
+  { href: "/workspace/open-loops", label: "Follow-ups", icon: CircleHelp },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
