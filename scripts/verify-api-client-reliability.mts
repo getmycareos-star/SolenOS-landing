@@ -24,6 +24,11 @@ for (const key of [
 }
 assert.match(appShell, /await revokeAnonymousSession\(\)/, "device deletion must revoke the server-issued session before clearing local state");
 assert.match(appShell, /Local workspace data was not cleared/, "failed server revocation must not be reported as a successful deletion");
+assert.match(appShell, /This workspace is pinned on this device/, "pin status must be accurately described as device-local");
+assert.match(appShell, /This workspace is archived on this device/, "archive status must be accurately described as device-local");
+assert.match(appShell, /does NOT delete care information already stored on SolenOS servers/, "device deletion must not imply remote care-record deletion");
+assert.match(appShell, /localStorage\.setItem\("solenos_workspace_pinned"/, "pin changes must persist locally");
+assert.match(appShell, /localStorage\.setItem\("solenos_workspace_archived"/, "archive changes must persist locally");
 
 const accountSettings = fs.readFileSync(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
 assert.match(accountSettings, /signInToAccount\(email, password\)/, "settings must authenticate existing caregiver accounts against the backend");
