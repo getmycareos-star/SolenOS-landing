@@ -82,8 +82,24 @@ assert.throws(() => buildReviewedHandoffDraft({
 }), /no saved care facts/);
 
 const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.tsx", import.meta.url), "utf8");
-assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
-  "standalone handoff page must route caregivers into AI Companion");
+assert.match(handoffPage, /postJSON\("\/handoff-drafts\/prepare"/,
+  "handoff draft must come from the authenticated backend source adapter");
+assert.match(handoffPage, /putJSON\(\`\/handoffs\/\$\{encodeURIComponent\(handoffId\)\}\/summary\`/,
+  "reviewed handoff summary must be persisted through the backend");
+assert.match(handoffPage, /getJSON\(\`\/handoffs\/\$\{encodeURIComponent\(handoffId\)\}\/summary\`/,
+  "persisted handoff summaries must be retrievable");
+assert.match(handoffPage, /getJSON\("\/handoffs\/outbox"\)/,
+  "handoff history must be loaded from the backend outbox");
+assert.match(handoffPage, /caregiver_reviewed: true/,
+  "summary attachment must carry an explicit caregiver review attestation");
+assert.match(handoffPage, /can_receive_handoff/,
+  "recipient must be eligible under backend consent rules");
+assert.match(handoffPage, /Documents are not currently available through the verified handoff-draft source adapter/,
+  "handoff UI must disclose that document content is not included in the current verified source adapter");
+assert.match(handoffPage, /A handoff record already exists, but its summary was not confirmed/,
+  "partial handoff creation must not be reported as a completed share");
+assert.match(handoffPage, /semantic_grounding_status/,
+  "retrieved summary must disclose that semantic grounding is not automatically verified");
 const companionPage = await readFile(new URL("../src/components/workflows/AICompanion.tsx", import.meta.url), "utf8");
 for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Full care overview"]) {
   assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
