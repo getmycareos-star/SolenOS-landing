@@ -314,6 +314,7 @@ function AccountCard() {
         setPassword("");
         show("Signed in to your SolenOS account.", "success");
       } else if (mode === "sign_out") {
+        if (!window.confirm("Sign out on this device? Your care record remains stored on SolenOS. You can sign in again to reopen the account-linked record.")) return;
         await revokeAnonymousSession();
         setAccount(null);
         setLoadFailed(true);
@@ -377,10 +378,14 @@ function AccountCard() {
               <input id="account-email" className="mobile-settings-input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
             </label>
           )}
-          <label className="mobile-settings-label" htmlFor="account-password">
-            {mode === "delete" ? "Enter your password to confirm" : mode === "sign_out" ? "Enter your password to revoke this device session" : "Password"}
-            <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
-          </label>
+          {mode !== "sign_out" ? (
+            <label className="mobile-settings-label" htmlFor="account-password">
+              {mode === "delete" ? "Enter your password to confirm" : "Password"}
+              <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
+            </label>
+          ) : (
+            <p className="mobile-settings-hint">This revokes the current device's server-issued session only. Your care record and history remain stored.</p>
+          )}
           {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
 
           {mode === "delete" && <p className="mobile-settings-hint">This deletes the email/password account, not the Living Care Record or its care history. Those remain under the current anonymous session.</p>}
