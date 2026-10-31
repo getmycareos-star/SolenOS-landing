@@ -222,7 +222,7 @@ try {
     }),
   });
   if (!handoffCreate.ok) throw new Error(`Could not seed professional-input loop: HTTP ${handoffCreate.status} ${await handoffCreate.text()}`);
-  await page.getByRole("button", { name: "Refresh" }).click();
+  await page.locator(".open-loop-list-heading").getByRole("button", { name: "Refresh" }).click();
   const handoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
   });
@@ -258,7 +258,7 @@ try {
     }),
   });
   if (!conflictCreate.ok) throw new Error(`Could not seed contradiction loop: HTTP ${conflictCreate.status} ${await conflictCreate.text()}`);
-  await page.getByRole("button", { name: "Refresh" }).click();
+  await page.locator(".open-loop-list-heading").getByRole("button", { name: "Refresh" }).click();
   const conflict = page.locator("article").filter({
     has: page.getByRole("heading", { name: conflictTitle }),
   });
