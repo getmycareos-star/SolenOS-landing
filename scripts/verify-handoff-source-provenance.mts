@@ -111,6 +111,8 @@ assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-bri
 assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
 assert.ok(appointmentWorkspace.includes("Source availability") && appointmentWorkspace.includes("Object.entries(lcrBrief.source_coverage)"), "appointment preparation must expose unavailable and excluded sources");
 assert.ok(appointmentWorkspace.includes("getJSON('/appointment-workspaces')"), "appointment workspace must hydrate durable backend records");
+assert.ok(appointmentWorkspace.includes("savedRecords") && appointmentWorkspace.includes("loadSavedRecord"), "all persisted appointment workspaces must be selectable, not only the first");
+assert.ok(appointmentWorkspace.includes("New appointment workspace") && appointmentWorkspace.includes("startNewAppointment"), "caregivers must be able to create a separate appointment workspace without overwriting an existing one");
 assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
 assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
 assert.ok(appointmentWorkspace.includes("expected_version: recordVersion"), "appointment saves must use optimistic concurrency to avoid silently overwriting edits");
