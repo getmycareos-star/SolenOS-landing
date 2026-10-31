@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   ClipboardList,
+  Clock3,
   FileText,
   Handshake,
   MessageCircle,
@@ -15,6 +16,8 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Users,
+  CircleHelp,
   X,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
@@ -46,12 +49,15 @@ type InstallPromptEvent = Event & {
 };
 
 const NAVIGATION = [
-  { href: "/workspace", label: "AI Companion", icon: MessageCircle },
-  { href: "/workspace/care-continuity", label: "Care continuity", icon: ClipboardList },
-  { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
+  { href: "/workspace/care-continuity", label: "Care overview", icon: ClipboardList },
+  { href: "/workspace/daily-care", label: "Daily care", icon: CalendarDays },
+  { href: "/workspace/timeline", label: "Care timeline", icon: Clock3 },
+  { href: "/workspace/open-loops", label: "Open loops", icon: CircleHelp },
+  { href: "/workspace/community", label: "Community", icon: Users },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
-  { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
+  { href: "/workspace/handoffs", label: "Care handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
+  { href: "/workspace/companion", label: "AI companion", icon: MessageCircle },
 ] as const;
 
 const LOCAL_WORKSPACE_KEYS = [
