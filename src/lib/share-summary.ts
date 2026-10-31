@@ -550,13 +550,13 @@ export interface ShareHistoryEntry {
   date: string;
   audience: string;
   format: string;
-  result: "shared" | "failed";
+  result: "completed" | "failed";
 }
 
 export function recordShareHistory(
   audience: string,
   format: string,
-  result: "shared" | "failed",
+  result: "completed" | "failed",
 ): void {
   if (typeof window === "undefined") return;
   try {
