@@ -68,7 +68,13 @@ function eventTitle(event: PersistedEvent): string {
   return event.title?.trim() || event.description?.trim() || event.event_type?.trim() || "Care update details unavailable";
 }
 
-export function PersistedCareOrientation() {
+type EntryState = "loading" | "new" | "returning" | "unavailable";
+
+export function PersistedCareOrientation({
+  onEntryStateChange,
+}: {
+  onEntryStateChange?: (state: EntryState) => void;
+}) {
   const [state, setState] = useState<LoadState>("loading");
   const [snapshot, setSnapshot] = useState<CareSnapshot | null>(null);
   const [situationAssessment, setSituationAssessment] = useState<SituationAssessment | null>(null);
@@ -96,7 +102,15 @@ export function PersistedCareOrientation() {
       if (!data || typeof data !== "object" || data.ok === false) {
         throw new Error("Your saved care information isn't available right now.");
       }
+      const events = data.events ?? [];
+      const situations = data.ui_situations ?? [];
+      const observations = data.active_care_situation?.observations ?? [];
+      const understanding = typeof data.what_i_understood === "string"
+        ? data.what_i_understood
+        : data.what_i_understood?.summary || data.what_i_understood?.text || "";
+      const hasPersistedEntries = (data.total_events ?? 0) > 0 || events.length > 0 || situations.length > 0 || observations.length > 0 || Boolean(understanding.trim()) || Boolean(data.active_care_situation?.summary || data.active_care_situation?.current_situation);
       setSnapshot(data);
+      onEntryStateChange?.(hasPersistedEntries ? "returning" : "new");
       // Use the shared API client for base URL, authorization, timeout and retry behaviour.
       // Reassess on entry; the backend deduplicates semantically unchanged snapshots.
       try {
@@ -110,9 +124,10 @@ export function PersistedCareOrientation() {
       setSnapshot(null);
       setSituationAssessment(null);
       setError("Your care information isn't available right now. Check your connection and try again.");
+      onEntryStateChange?.("unavailable");
       setState("unavailable");
     }
-  }, []);
+  }, [onEntryStateChange]);
 
   useEffect(() => {
     void load();
