@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "A Living Care Record for family caregivers. Keep the moments, changes, decisions and context of care connected in one place.",
 };
 
-const start = "/workspace?enter=1";
+const start = "/workspace/care-continuity";
 const capabilities = [
   ["⌕", "What happened?", "Keep important moments together."],
   ["↔", "What changed?", "See what is different across the care journey — not just what was written most recently."],
