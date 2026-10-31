@@ -184,6 +184,37 @@ export default function AppointmentWorkspace() {
     return () => { cancelled = true }
   }, [open])
 
+  const startNewAppointment = () => {
+    setRecordId(null)
+    setRecordVersion(0)
+    setStage('prepare')
+    setVisitPurpose('')
+    setClinician('')
+    setSpecialty('')
+    setVisitDate('')
+    setLocation('')
+    setAttendees('')
+    setTopConcerns(['', '', ''])
+    setChanges('')
+    setSymptoms('')
+    setMedicationQuestions('')
+    setHistoryQuestions('')
+    setPracticalNotes('')
+    setConcernsDiscussed('')
+    setCaregiverReport('')
+    setClinicianFindings('')
+    setDecisions('')
+    setInstructions('')
+    setUnanswered('')
+    setMedicationReconciliation('')
+    setPendingResults('')
+    setFamilySummary('')
+    setFollowUps([emptyFollowUp()])
+    setReviewStatus('Awaiting documentation')
+    setSaveError('')
+    setSaveMessage('New appointment workspace. Nothing has been saved yet.')
+  }
+
   const saveWorkspace = async () => {
     setSavingRecord(true)
     setSaveError('')
@@ -213,7 +244,8 @@ export default function AppointmentWorkspace() {
         setSaveMessage('Saved securely · version ' + updated.version_number + '. Not yet reconciled into LCR facts.')
       } else {
         const created = await postJSON('/appointment-workspaces', {
-          status: 'preparation', payload, change_reason: 'Initial caregiver appointment workspace save',
+          status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
+          payload, change_reason: 'Initial caregiver appointment workspace save',
         }) as { id: string; version_number: number }
         setRecordId(created.id)
         setRecordVersion(created.version_number)
@@ -243,16 +275,19 @@ export default function AppointmentWorkspace() {
 
       {open && <>
         {savedRecords.length > 0 && (
-          <label className="appointment-saved-record-selector">
-            <span>Saved appointment workspaces</span>
-            <select value={recordId || ''} onChange={event => void loadSavedRecord(event.target.value)} disabled={loadingRecord || savingRecord}>
-              {savedRecords.map(record => (
-                <option key={record.id} value={record.id}>
-                  {record.status.replaceAll('_', ' ')} · version {record.version_number} · {record.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="appointment-saved-record-selector">
+            <label>
+              <span>Saved appointment workspaces</span>
+              <select value={recordId || ''} onChange={event => void loadSavedRecord(event.target.value)} disabled={loadingRecord || savingRecord}>
+                {savedRecords.map(record => (
+                  <option key={record.id} value={record.id}>
+                    {record.status.replaceAll('_', ' ')} · version {record.version_number} · {record.id.slice(0, 8)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="appointment-secondary" onClick={startNewAppointment} disabled={loadingRecord || savingRecord}>New appointment workspace</button>
+          </div>
         )}
         <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from LCR facts. Caregiver reports, caregiver-recorded clinician statements, and AI suggestions remain distinct; saving does not verify clinical statements or silently change the LCR.</span></div>
         <nav className="appointment-stages" aria-label="Appointment stages">
@@ -387,7 +422,8 @@ export default function AppointmentWorkspace() {
       <style jsx>{`
         .appointment-workspace { padding:22px; border:1px solid #dfe8df; border-radius:20px; background:#fff; color:#26392c; }
         .appointment-heading { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-        .appointment-saved-record-selector { display:grid; gap:6px; margin:14px 0 0; color:#405343; font-size:12px; font-weight:700; }
+        .appointment-saved-record-selector { display:flex; align-items:end; flex-wrap:wrap; gap:8px; margin:14px 0 0; color:#405343; font-size:12px; font-weight:700; }
+        .appointment-saved-record-selector label { display:grid; flex:1; min-width:220px; gap:6px; }
         .appointment-saved-record-selector select { min-height:40px; padding:8px 10px; border:1px solid #dce6da; border-radius:9px; background:#fff; color:#26392c; font:inherit; }
         .appointment-heading-icon { display:grid; place-items:center; flex:0 0 42px; width:42px; height:42px; border:1px solid #dbe8d9; border-radius:13px; background:#edf5ec; color:#527657; }
         .appointment-heading-copy { flex:1; min-width:190px; }
