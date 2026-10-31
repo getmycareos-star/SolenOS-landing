@@ -216,3 +216,6 @@
   .open-loop-list-controls { width: 100%; }
   .open-loop-list-controls select { flex: 1; min-width: 0; }
 }
+
+.open-loop-load-error { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; padding: 14px 16px; border: 1px solid #d8c7b9; border-radius: 9px; background: #fbf7f2; color: #5d4635; }
+.open-loop-load-error p { flex: 1 1 280px; margin: 0; line-height: 1.5; }
