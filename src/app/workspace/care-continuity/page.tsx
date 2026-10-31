@@ -47,6 +47,7 @@ function WorkspacePageInner() {
   const searchParams = useSearchParams();
   const { runtime, hydrated, entryReady, updateRuntime } = useWorkspace();
   const [displayName, setDisplayName] = useState("");
+  const [persistedEntryState, setPersistedEntryState] = useState<"loading" | "new" | "returning" | "unavailable">("loading");
   const [isArchived, setIsArchived] = useState(false);
   const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const [archiveRestoreError, setArchiveRestoreError] = useState("");
@@ -212,13 +213,25 @@ function WorkspacePageInner() {
           </div>
           <div className="lcr-record-meta">
             <span className="lcr-status-dot" aria-hidden="true" />
-            <span>{activeSituations.length > 0 ? (STATUS_LABELS[activeSituations[0].status] ?? "Current") : "Ready when you are"}</span>
-            <span className="lcr-meta-divider" aria-hidden="true">·</span>
-            <span>Updated {formatLastUpdated(latestUpdated)}</span>
+            <span>{activeSituations.length > 0
+              ? (STATUS_LABELS[activeSituations[0].status] ?? "Current")
+              : persistedEntryState === "returning"
+                ? "Saved care information"
+                : persistedEntryState === "unavailable"
+                  ? "Record status unavailable"
+                  : persistedEntryState === "loading"
+                    ? "Checking your record"
+                    : "Ready when you are"}</span>
+            {latestUpdated && (
+              <>
+                <span className="lcr-meta-divider" aria-hidden="true">·</span>
+                <span>Updated {formatLastUpdated(latestUpdated)}</span>
+              </>
+            )}
           </div>
         </header>
 
-        <PersistedCareOrientation />
+        <PersistedCareOrientation onEntryStateChange={setPersistedEntryState} />
 
         <section className="lcr-primary-actions" aria-label="Record actions">
           <button type="button" className="lcr-add-primary" onClick={openComposer}>
@@ -232,11 +245,13 @@ function WorkspacePageInner() {
           </button>
         </section>
 
-        <LCRCurrentUnderstanding />
+        {hasAnyContent && (
+          <>
+            <LCRCurrentUnderstanding />
 
-        <ChangeIntelligencePanel />
+            <ChangeIntelligencePanel />
 
-        <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
+            <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
           <div className="lcr-section-heading">
             <div>
               <p className="lcr-eyebrow">YOUR CARE HISTORY</p>
@@ -412,7 +427,9 @@ function WorkspacePageInner() {
               ))}
             </div>
           )}
-        </section>
+            </section>
+          </>
+        )}
 
         <section className="lcr-support-section" aria-label="Other care tools">
           <div>
