@@ -6,6 +6,7 @@ const root = process.cwd();
 const component = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
 const legacyRoute = fs.readFileSync(path.join(root, "src/app/workspace/record/page.tsx"), "utf8");
 const overview = fs.readFileSync(path.join(root, "src/app/workspace/care-continuity/page.tsx"), "utf8");
+const home = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 const shell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
 const featureFlags = fs.readFileSync(path.join(root, "src/lib/feature-flags.ts"), "utf8");
 const openLoops = fs.readFileSync(path.join(root, "src/app/workspace/open-loops/page.tsx"), "utf8");
@@ -30,6 +31,10 @@ assert.match(overview, /onEntryStateChange=\{setPersistedEntryState\}/, "overvie
 assert.match(overview, /persistedEntryState === "returning"/, "overview distinguishes server-confirmed returning caregivers");
 assert.match(overview, /Record status unavailable/, "failed record retrieval is not presented as a first visit");
 assert.match(overview, /hasAnyContent && \(/, "local-only timeline content does not contradict a server-confirmed returning state");
+assert.doesNotMatch(overview, /compose=1|lcr-add-screen|Add to the record|Add to record|openComposer/, "standalone Add Record UI and entry points are removed from the care overview");
+assert.match(overview, /router\.push\("\/workspace\/daily-care"\)/, "Daily Care remains the direct structured capture route");
+assert.match(overview, /router\.push\("\/workspace\?prompt=/, "care-thread updates are handed to the AI Companion");
+assert.doesNotMatch(home, /compose=1|lcr-add-screen|CognitiveWorkspace/, "AI Companion home no longer redirects to a standalone Add Record page");
 assert.doesNotMatch(shell, /label: "Community"|href: "\/workspace\/community"/, "disabled Community is absent from workspace navigation");
 assert.match(featureFlags, /community: false/);
 assert.match(featureFlags, /professionalCommunity: false/);
