@@ -49,11 +49,11 @@ type InstallPromptEvent = Event & {
 
 const NAVIGATION = [
   { href: "/workspace/care-continuity", label: "Care overview", icon: ClipboardList },
-  { href: "/workspace/daily-care", label: "Daily care", icon: CalendarDays },
-  { href: "/workspace/timeline", label: "Care timeline", icon: Clock3 },
-  { href: "/workspace/open-loops", label: "Open loops", icon: CircleHelp },
+  { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
+  { href: "/workspace/timeline", label: "Care Timeline", icon: Clock3 },
+  { href: "/workspace/open-loops", label: "Open Loops", icon: CircleHelp },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
-  { href: "/workspace/handoffs", label: "Care handoffs", icon: Handshake },
+  { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
   { href: "/workspace", label: "AI Companion", icon: MessageCircle },
 ] as const;
