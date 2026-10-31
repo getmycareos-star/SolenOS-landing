@@ -1,9 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 import { BrandLoading } from "@/components/brand";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
