@@ -62,6 +62,15 @@ type SavedSummary = {
   };
 };
 
+const PENDING_HANDOFF_CREATE_KEY = "solenos_pending_handoff_create_v1";
+
+type PendingHandoffCreate = {
+  personId: string;
+  requestId: string;
+  recipientId: string;
+  scope: string[];
+};
+
 const SCOPE_OPTIONS = [
   { id: "lcr_summary", label: "Living Care Record summary" },
   { id: "open_loops", label: "Open questions and follow-ups" },
@@ -143,6 +152,9 @@ export default function CareHandoffsPage() {
   const [reviewed, setReviewed] = useState(false);
   const [outbox, setOutbox] = useState<Handoff[]>([]);
   const [pendingHandoffId, setPendingHandoffId] = useState("");
+  const [handoffRequestId, setHandoffRequestId] = useState("");
+  const [pendingCreateRecipient, setPendingCreateRecipient] = useState("");
+  const [pendingCreateScope, setPendingCreateScope] = useState<string[]>([]);
   const [createUncertain, setCreateUncertain] = useState(false);
   const [savedSummary, setSavedSummary] = useState<SavedSummary | null>(null);
   const [summaryLoadingId, setSummaryLoadingId] = useState("");
@@ -154,6 +166,29 @@ export default function CareHandoffsPage() {
     try {
       const session = await ensureAnonymousSession();
       setSessionPersonId(session.person.id);
+      try {
+        const rawPending = window.localStorage.getItem(PENDING_HANDOFF_CREATE_KEY);
+        if (rawPending) {
+          const pending = JSON.parse(rawPending) as PendingHandoffCreate;
+          const validScope = Array.isArray(pending.scope) && pending.scope.length > 0 &&
+            pending.scope.every((value) => SCOPE_OPTIONS.some((option) => option.id === value));
+          if (
+            pending.personId === session.person.id &&
+            typeof pending.requestId === "string" && pending.requestId.length > 0 &&
+            typeof pending.recipientId === "string" && validScope
+          ) {
+            setHandoffRequestId(pending.requestId);
+            setPendingCreateRecipient(pending.recipientId);
+            setPendingCreateScope(pending.scope);
+            setSelectedRecipient(pending.recipientId);
+            setScope(pending.scope);
+          } else {
+            window.localStorage.removeItem(PENDING_HANDOFF_CREATE_KEY);
+          }
+        }
+      } catch {
+        window.localStorage.removeItem(PENDING_HANDOFF_CREATE_KEY);
+      }
       const outboxResult = await getJSON("/handoffs/outbox") as { items?: Handoff[] };
       setOutbox(outboxResult.items ?? []);
       setCreateUncertain(false);
@@ -212,6 +247,7 @@ export default function CareHandoffsPage() {
     setError("");
     setNotice("");
     let handoffId = pendingHandoffId;
+    let requestId = handoffRequestId;
     try {
       const session = await ensureAnonymousSession();
       const prepared = makeSummary(draft, scope);
@@ -220,11 +256,33 @@ export default function CareHandoffsPage() {
         throw new Error("This selected handoff scope exceeds the server's 20,000-character summary limit. Reduce the preparation window or select fewer sections before creating a handoff.");
       }
       if (!handoffId) {
+        if (!requestId) {
+          requestId = window.crypto.randomUUID();
+          const pending: PendingHandoffCreate = {
+            personId: session.person.id,
+            requestId,
+            recipientId: selectedRecipient,
+            scope: [...scope],
+          };
+          window.localStorage.setItem(PENDING_HANDOFF_CREATE_KEY, JSON.stringify(pending));
+          setHandoffRequestId(requestId);
+          setPendingCreateRecipient(selectedRecipient);
+          setPendingCreateScope([...scope]);
+        }
+        if (
+          (pendingCreateRecipient && pendingCreateRecipient !== selectedRecipient) ||
+          (pendingCreateScope.length && (
+            pendingCreateScope.length !== scope.length ||
+            pendingCreateScope.some((value) => !scope.includes(value))
+          ))
+        ) {
+          throw new Error("A previous handoff creation is awaiting confirmation. Retry it with the original recipient and scope before starting a different handoff.");
+        }
         const created = await postJSON("/handoffs", {
           person_id: session.person.id,
           recipient_caregiver_ids: [selectedRecipient],
           scope,
-        }) as Handoff;
+        }, { "X-Request-ID": requestId }) as Handoff;
         if (!created.id) throw new Error("The backend did not return a handoff ID. Check the handoff outbox before retrying.");
         handoffId = created.id;
         setPendingHandoffId(handoffId);
@@ -239,6 +297,10 @@ export default function CareHandoffsPage() {
         throw new Error("The backend did not confirm the persisted summary. The handoff must be checked before retrying.");
       }
       setPendingHandoffId("");
+      setHandoffRequestId("");
+      setPendingCreateRecipient("");
+      setPendingCreateScope([]);
+      window.localStorage.removeItem(PENDING_HANDOFF_CREATE_KEY);
       setNotice("Caregiver-reviewed summary persisted. The recipient can review it in their handoff inbox; the Living Care Record itself was not changed.");
       await loadWorkspace();
     } catch (cause) {
@@ -250,6 +312,10 @@ export default function CareHandoffsPage() {
           if (recovered.summary?.content_sha256) {
             setSavedSummary(recovered);
             setPendingHandoffId("");
+            setHandoffRequestId("");
+            setPendingCreateRecipient("");
+            setPendingCreateScope([]);
+            window.localStorage.removeItem(PENDING_HANDOFF_CREATE_KEY);
             setNotice("The server confirms that the summary was persisted. The earlier response was interrupted; the saved summary has now been retrieved and verified.");
           } else {
             setNotice("A handoff record exists, but its summary is not confirmed. Use Retry attach to finish; do not create another handoff.");
@@ -257,9 +323,9 @@ export default function CareHandoffsPage() {
         } catch {
           setNotice("A handoff record exists, but its summary could not be confirmed. Use Retry attach to finish; do not create another handoff.");
         }
-      } else if (cause instanceof Error && /timed out|failed to fetch|network|load failed/i.test(cause.message)) {
+      } else if (requestId) {
         setCreateUncertain(true);
-        setNotice("The create request outcome is unknown. Refresh the saved handoffs before trying again; this prevents accidental duplicate shares.");
+        setNotice("The create request outcome is unknown. Retry with the same recipient and scope; SolenOS will reuse the same server request ID instead of creating a duplicate handoff.");
       }
     } finally {
       setSaving(false);
@@ -370,7 +436,7 @@ export default function CareHandoffsPage() {
             <p style={{ margin: 0, color: "#68766c", fontSize: 12, lineHeight: 1.55 }}>Documents are not currently available through the verified handoff-draft source adapter. They are deliberately excluded rather than described as reviewed.</p>
             <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700, color: "#405343" }}>
               Recipient caregiver
-              <select value={selectedRecipient} onChange={(event) => setSelectedRecipient(event.target.value)} disabled={!recipients.length} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
+              <select value={selectedRecipient} onChange={(event) => setSelectedRecipient(event.target.value)} disabled={!recipients.length || Boolean(handoffRequestId || pendingHandoffId)} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
                 <option value="">Choose a caregiver with active consent</option>
                 {recipients.map((recipient) => <option key={recipient.caregiver_id} value={recipient.caregiver_id}>{recipient.name} · {recipient.relationship}</option>)}
               </select>
@@ -380,7 +446,7 @@ export default function CareHandoffsPage() {
               <legend style={{ padding: "0 5px", fontSize: 12, fontWeight: 700, color: "#405343" }}>Information scope</legend>
               <div style={{ display: "grid", gap: 8 }}>
                 {SCOPE_OPTIONS.map((item) => <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#46564a" }}>
-                  <input type="checkbox" checked={scope.includes(item.id)} onChange={(event) => setScope((current) => event.target.checked ? [...current, item.id] : current.filter((value) => value !== item.id))} />
+                  <input type="checkbox" checked={scope.includes(item.id)} disabled={Boolean(handoffRequestId || pendingHandoffId)} onChange={(event) => setScope((current) => event.target.checked ? [...current, item.id] : current.filter((value) => value !== item.id))} />
                   {item.label}
                 </label>)}
               </div>
@@ -391,7 +457,7 @@ export default function CareHandoffsPage() {
             </label>
             {pendingHandoffId && <p role="status" style={{ margin: 0, color: "#7a6037", fontSize: 12 }}>Handoff {pendingHandoffId} exists without a confirmed summary. Retry attaches the reviewed summary to that same handoff.</p>}
             <button type="button" onClick={() => void createOrAttachSummary()} disabled={saving || createUncertain || !reviewed || !selectedRecipient || !scope.length || !recipients.some((item) => item.caregiver_id === selectedRecipient)} style={{ minHeight: 42, border: "1px solid #cbdcc9", borderRadius: 9, background: "#e7f0e5", color: "#203b27", fontWeight: 750, cursor: saving ? "wait" : "pointer" }}>
-              {saving ? "Saving handoff…" : pendingHandoffId ? "Retry attach reviewed summary" : "Create handoff and save summary"}
+              {saving ? "Saving handoff…" : pendingHandoffId ? "Retry attach reviewed summary" : handoffRequestId ? "Retry handoff creation and attach summary" : "Create handoff and save summary"}
             </button>
             {createUncertain && <p role="alert" style={{ margin: 0, color: "#7a6037", fontSize: 12 }}>Creation has an unknown outcome. Refresh the outbox below and resume an incomplete handoff if it appears. Do not submit another create request until the outbox has been checked.</p>}
             <p style={{ margin: 0, fontSize: 11, color: "#778278" }}>Server consent and recipient authorization are mandatory. If the backend rejects the request, no success state will be shown.</p>
