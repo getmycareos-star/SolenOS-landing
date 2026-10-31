@@ -156,92 +156,105 @@ export function PersistedCareOrientation() {
   const hasServerEntries = (snapshot.total_events ?? 0) > 0 || events.length > 0 || situations.length > 0 || observations.length > 0 || Boolean(understanding.trim()) || Boolean(snapshot.active_care_situation?.summary || snapshot.active_care_situation?.current_situation);
 
   return (
-    <section className="persisted-care-orientation" aria-label="Your care record">
-      <div className="persisted-care-orientation-header">
-        <div>
-          <p className="persisted-care-orientation-eyebrow">Your care record</p>
-          <h2>{snapshot.care_recipient_display_name?.trim() ? `Care record for ${snapshot.care_recipient_display_name.trim()}` : "Saved care record"}</h2>
-        </div>
-        <button type="button" aria-label="Refresh saved care context" onClick={() => setAttempt((value) => value + 1)}>
-          <RefreshCw size={16} aria-hidden />
-          <span>Refresh</span>
-        </button>
-      </div>
-
+    <section
+      className={`persisted-care-orientation ${hasServerEntries ? "is-returning-caregiver" : "is-new-caregiver"}`}
+      aria-label={hasServerEntries ? "Your saved care record" : "Start your care record"}
+    >
       {hasServerEntries ? (
         <>
-          <p>{snapshot.total_events ?? (events.length || situations.length)} saved care update{(snapshot.total_events ?? (events.length || situations.length)) === 1 ? "" : "s"} in your record.</p>
-          {understanding.trim() && <div className="persisted-care-orientation-latest"><strong>Current understanding</strong><p>{understanding}</p></div>}
-          {situations.map((situation, index) => (
-            <div className="persisted-care-orientation-latest" key={situation.id || `situation-${index}`}>
-              <strong>{situation.title?.trim() || "Care update"}</strong>
-              {situation.context_summary && <p>{situation.context_summary}</p>}
-              {situation.status && <p>{situation.status.replace(/_/g, " ")}</p>}
-              {situation.updated_at && <p>{formatDate(situation.updated_at)}</p>}
+          <div className="care-entry-heading">
+            <div>
+              <p className="persisted-care-orientation-eyebrow">YOUR LIVING CARE RECORD</p>
+              <h2>{snapshot.care_recipient_display_name?.trim()
+                ? `Care for ${snapshot.care_recipient_display_name.trim()}`
+                : "Pick up where you left off"}</h2>
+              <p className="care-entry-intro">Your saved information is here. You do not need to start again.</p>
             </div>
-          ))}
+            <button type="button" className="care-entry-refresh" aria-label="Refresh saved care context" onClick={() => setAttempt((value) => value + 1)}>
+              <RefreshCw size={16} aria-hidden />
+              <span>Refresh</span>
+            </button>
+          </div>
+          <div className="care-entry-summary">
+            <div>
+              <span className="care-entry-label">SAVED UPDATES</span>
+              <strong>{snapshot.total_events ?? (events.length || situations.length)}</strong>
+            </div>
+            <div>
+              <span className="care-entry-label">CARE THREADS</span>
+              <strong>{situations.length}</strong>
+            </div>
+            {situationAssessment?.assessment?.open_loops?.count !== undefined && (
+              <div>
+                <span className="care-entry-label">OPEN ITEMS</span>
+                <strong>{situationAssessment.assessment.open_loops.count}</strong>
+              </div>
+            )}
+          </div>
+          {understanding.trim() && (
+            <div className="care-entry-current">
+              <span className="care-entry-label">CURRENT UNDERSTANDING</span>
+              <p>{understanding}</p>
+            </div>
+          )}
           {latestEvent ? (
-            <div className="persisted-care-orientation-latest">
-              <strong>Latest care update</strong>
+            <div className="care-entry-latest">
+              <span className="care-entry-label">LATEST SAVED UPDATE</span>
               <p>{eventTitle(latestEvent)}</p>
-              <p>{formatDate(latestEvent.occurred_at)}</p>
+              <small>{formatDate(latestEvent.occurred_at)}</small>
             </div>
-          ) : (snapshot.total_events ?? 0) > 0 ? (
-            <p role="status">Some saved updates are unavailable to display right now. Try refreshing your record.</p>
-          ) : null}
-          {latestObservation ? (
-            <div className="persisted-care-orientation-latest">
-              <strong>Latest supporting information</strong>
-              <p>{latestObservation.human_fact?.trim() || latestObservation.raw_text?.trim() || "Supporting information is saved, but its details are not available to display right now."}</p>
-              <p>{formatDate(latestObservation.captured_at)}</p>
+          ) : latestObservation ? (
+            <div className="care-entry-latest">
+              <span className="care-entry-label">LATEST SUPPORTING INFORMATION</span>
+              <p>{latestObservation.human_fact?.trim() || latestObservation.raw_text?.trim() || "Supporting information is saved, but its details are unavailable."}</p>
+              <small>{formatDate(latestObservation.captured_at)}</small>
             </div>
-          ) : null}
+          ) : situations.length > 0 ? (
+            <div className="care-entry-latest">
+              <span className="care-entry-label">RECENT CARE THREAD</span>
+              <p>{situations[0].title?.trim() || "Saved care information"}</p>
+              {situations[0].updated_at && <small>{formatDate(situations[0].updated_at)}</small>}
+            </div>
+          ) : (
+            <p className="care-entry-note">Your saved record is available. Some details could not be displayed in this view.</p>
+          )}
+          <div className="care-entry-actions">
+            <Link href="/workspace?compose=1" className="care-entry-primary">Add a care update <span aria-hidden="true">→</span></Link>
+            <Link href="/workspace/daily-care" className="care-entry-secondary">Open daily care</Link>
+          </div>
         </>
       ) : (
-        <p>Your care record is ready to build. Add a note, daily update, or document to keep important care information in one place.</p>
+        <>
+          <p className="persisted-care-orientation-eyebrow">A PLACE TO KEEP THE STORY TOGETHER</p>
+          <h2>You can start with what you remember.</h2>
+          <p className="care-entry-intro">You do not need a complete history or the right words. Add one detail, a message, or something that happened today. SolenOS will keep the information connected as your care story develops.</p>
+          <div className="care-entry-actions">
+            <Link href="/workspace?compose=1" className="care-entry-primary">Start with one detail <span aria-hidden="true">→</span></Link>
+            <Link href="/workspace/daily-care" className="care-entry-secondary">Record how today is going</Link>
+          </div>
+          <p className="care-entry-note">Nothing has been added to this care record yet.</p>
+        </>
       )}
-
-      {situationAssessment?.assessment ? (
-        <div className="persisted-care-orientation-latest" aria-label="Evidence-grounded situation understanding">
-          <strong>Situation understanding</strong>
-          <p>
-            {situationAssessment.assessment.coverage?.records_examined ?? 0} persisted record(s) examined.
-            {" "}Confidence: {situationAssessment.assessment.confidence_assessment?.overall || "not assessed"}.
-          </p>
-          <p>What remains unresolved: {situationAssessment.assessment.open_loops?.count ?? 0} open loop(s).</p>
-          {(situationAssessment.assessment.open_loops?.items ?? []).slice(0, 5).map((loop) => (
-            <div key={loop.id} className="persisted-care-orientation-latest">
+      {situationAssessment?.assessment && hasServerEntries && (
+        <div className="care-entry-open-items">
+          <span className="care-entry-label">STILL TO FOLLOW UP</span>
+          {(situationAssessment.assessment.open_loops?.items ?? []).slice(0, 3).map((loop) => (
+            <div key={loop.id}>
               <strong>{loop.title || loop.loop_type.replace(/_/g, " ")}</strong>
-              <p>{loop.description || "No further description was recorded."}</p>
-              <small>Status: {loop.recorded_status.replace(/_/g, " ")}</small>
-              {loop.owner && <small>Owner: {loop.owner}</small>}
-              {loop.due_at && <small>Due: {formatDate(loop.due_at)}</small>}
+              <span>{loop.recorded_status.replace(/_/g, " ")}</span>
             </div>
           ))}
-          {situationAssessment.assessment.open_loops?.has_more && <p>Additional unresolved items are available in the full LCR view.</p>}
-          <p>Observation coverage: {situationAssessment.assessment.observation_coverage?.count ?? 0} recorded interval(s); status: {situationAssessment.assessment.observation_coverage?.status || "unknown"}.</p>
-          <small>{situationAssessment.assessment.observation_coverage?.absence_rule || "No coverage record means unknown, not no events."}</small>
-          <p>Personal baseline: {situationAssessment.assessment.baseline_assessment?.status?.replace(/_/g, " ") || "not established"}.</p>
-          {situationAssessment.assessment.baseline_assessment?.limitation && <small>{situationAssessment.assessment.baseline_assessment.limitation}</small>}
-          {(situationAssessment.assessment.situation_trajectory?.entries ?? []).slice(-5).reverse().map((entry) => (
-            <div key={entry.source + ":" + entry.record_id} className="persisted-care-orientation-latest">
-              <strong>{entry.title || "Recorded care event"}</strong>
-              <p>{entry.epistemic_status.replace(/_/g, " ")}</p>
-              <p>{formatDate(entry.event_time || entry.recorded_at)}</p>
-              <small>{entry.temporal_basis.replace(/_/g, " ")}. Sequence does not establish causation.</small>
-            </div>
-          ))}
-          {situationAssessment.assessment.situation_trajectory?.has_more && <p>Showing the five most recent entries in the bounded situation trajectory.</p>}
-          {situationAssessment.assessment.confidence_assessment?.limitations?.length ? (
-            <p>Assessment limitations: {situationAssessment.assessment.confidence_assessment.limitations.join(" ")}</p>
-          ) : null}
+          {(situationAssessment.assessment.open_loops?.count ?? 0) === 0 && (
+            <p>No open follow-up items were returned in this assessment. This does not establish that every aspect of care is resolved.</p>
+          )}
+          {situationAssessment.assessment.open_loops?.has_more && <p>More follow-up items are available in the full record.</p>}
         </div>
-      ) : null}
-
+      )}
       <div className="persisted-care-orientation-links">
         <Link href="/workspace/timeline">Review timeline</Link>
         <Link href="/workspace/documents">Review documents</Link>
       </div>
     </section>
   );
+
 }
