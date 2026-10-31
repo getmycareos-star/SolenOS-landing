@@ -363,6 +363,9 @@ export async function putJSON(path: string, body: unknown) {
 /** Revoke the current server-issued bearer session; never silently replace it. */
 export async function revokeAnonymousSession(): Promise<void> {
   await postJSON("/sessions/revoke", {});
+  // Cancel the proactive refresh before clearing the credential. Otherwise a
+  // queued timer could bootstrap a brand-new anonymous record after sign-out.
+  stopTokenRefresh();
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
     window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
