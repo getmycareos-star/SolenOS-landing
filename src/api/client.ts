@@ -490,7 +490,7 @@ function scheduleSessionRefresh(): void {
 
   const attemptRefresh = async () => {
     try {
-      await ensureAnonymousSessionInternal();
+      await ensureAnonymousSession();
       notifyAuthStateChanged();
       scheduleSessionRefresh();
     } catch {
