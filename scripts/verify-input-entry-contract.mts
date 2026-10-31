@@ -187,7 +187,9 @@ console.log("\nAll input-entry-contract checks passed.");
 
 const settingsPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "settings", "page.tsx"), "utf8");
 assert(settingsPage.includes('putJSON("/notifications/preferences"'));
-assert(!settingsPage.includes("revokeAnonymousSession"));
+assert(settingsPage.includes("revokeAnonymousSession"), "Settings must expose explicit backend session revocation for device sign-out");
+assert(settingsPage.includes("Sign out on this device"), "Settings must expose the device sign-out action");
+assert(settingsPage.includes("Sign in to restore an existing account"), "Settings must expose account recovery without silently creating a new care record");
 assert(!settingsPage.includes("SecurityCard"));
 assert(settingsPage.includes('getJSON("/notifications?limit=100&offset=0")'));
 assert(settingsPage.includes('getJSON("/notifications/unread-count")'));
