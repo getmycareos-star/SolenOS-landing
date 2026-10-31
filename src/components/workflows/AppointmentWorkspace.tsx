@@ -52,6 +52,8 @@ type PreparationBrief = {
   }
   limitations: string[]
 }
+type AppointmentWorkspaceSummary = { id: string; status: string; version_number: number; updated_at?: string | null; appointment_id?: string | null }
+type AppointmentWorkspaceRecord = { id: string; version_number: number; status: string; payload: Record<string, unknown>; updated_at?: string | null }
 type FollowUp = { action: string; owner: string; due: string; status: 'Open' | 'In progress' | 'Done' | 'Needs clarification' }
 
 const emptyFollowUp = (): FollowUp => ({ action: '', owner: '', due: '', status: 'Open' })
@@ -60,6 +62,7 @@ export default function AppointmentWorkspace() {
   const [open, setOpen] = useState(false)
   const [recordId, setRecordId] = useState<string | null>(null)
   const [recordVersion, setRecordVersion] = useState(0)
+  const [savedRecords, setSavedRecords] = useState<AppointmentWorkspaceSummary[]>([])
   const [loadingRecord, setLoadingRecord] = useState(false)
   const [savingRecord, setSavingRecord] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
@@ -91,6 +94,53 @@ export default function AppointmentWorkspace() {
   const [followUps, setFollowUps] = useState<FollowUp[]>([emptyFollowUp()])
   const [reviewStatus, setReviewStatus] = useState<'Awaiting documentation' | 'Follow-up pending' | 'Ready for review' | 'Closed with documented outstanding items'>('Awaiting documentation')
 
+  const applySavedRecord = (record: AppointmentWorkspaceRecord) => {
+    const p = record.payload || {}
+    setRecordId(record.id)
+    setRecordVersion(record.version_number)
+    setVisitPurpose(String(p.visitPurpose || ''))
+    setClinician(String(p.clinician || ''))
+    setSpecialty(String(p.specialty || ''))
+    setVisitDate(String(p.visitDate || ''))
+    setLocation(String(p.location || ''))
+    setAttendees(String(p.attendees || ''))
+    setTopConcerns(Array.isArray(p.topConcerns) ? p.topConcerns.map(String).concat(['', '', '']).slice(0, 3) : ['', '', ''])
+    setChanges(String(p.changes || ''))
+    setSymptoms(String(p.symptoms || ''))
+    setMedicationQuestions(String(p.medicationQuestions || ''))
+    setHistoryQuestions(String(p.historyQuestions || ''))
+    setPracticalNotes(String(p.practicalNotes || ''))
+    setConcernsDiscussed(String(p.concernsDiscussed || ''))
+    setCaregiverReport(String(p.caregiverReport || ''))
+    setClinicianFindings(String(p.clinicianFindings || ''))
+    setDecisions(String(p.decisions || ''))
+    setInstructions(String(p.instructions || ''))
+    setUnanswered(String(p.unanswered || ''))
+    setMedicationReconciliation(String(p.medicationReconciliation || ''))
+    setPendingResults(String(p.pendingResults || ''))
+    setFamilySummary(String(p.familySummary || ''))
+    setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => ({ ...emptyFollowUp(), ...(item as Partial<FollowUp>) })) : [emptyFollowUp()])
+    const validStatuses = ['Awaiting documentation', 'Follow-up pending', 'Ready for review', 'Closed with documented outstanding items'] as const
+    setReviewStatus(validStatuses.includes(p.reviewStatus as typeof validStatuses[number]) ? p.reviewStatus as typeof validStatuses[number] : 'Awaiting documentation')
+    setSaveError('')
+    setSaveMessage('Loaded saved appointment workspace · version ' + record.version_number)
+  }
+
+  const loadSavedRecord = async (id: string) => {
+    if (!id) return
+    setLoadingRecord(true)
+    setSaveError('')
+    setSaveMessage('')
+    try {
+      const record = await getJSON('/appointment-workspaces/' + encodeURIComponent(id)) as AppointmentWorkspaceRecord
+      applySavedRecord(record)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'The selected appointment workspace could not be retrieved.')
+    } finally {
+      setLoadingRecord(false)
+    }
+  }
+
   const updateConcern = (index: number, value: string) => setTopConcerns(current => current.map((item, i) => i === index ? value : item))
   const updateFollowUp = (index: number, key: keyof FollowUp, value: string) =>
     setFollowUps(current => current.map((item, i) => i === index ? { ...item, [key]: value } as FollowUp : item))
@@ -115,41 +165,16 @@ export default function AppointmentWorkspace() {
             setBriefError(error instanceof Error ? error.message : 'LCR preparation sources are unavailable.')
           }
         }
-        const response = await getJSON('/appointment-workspaces') as { items?: Array<{ id: string }> }
-        const first = response.items?.[0]
+        const response = await getJSON('/appointment-workspaces') as { items?: AppointmentWorkspaceSummary[] }
+        const records = response.items ?? []
+        if (!cancelled) setSavedRecords(records)
+        const first = records[0]
         if (!first || cancelled) return
         const record = await getJSON('/appointment-workspaces/' + encodeURIComponent(first.id)) as {
           id: string; version_number: number; status: string; payload: Record<string, unknown>
         }
         if (cancelled) return
-        const p = record.payload || {}
-        setRecordId(record.id)
-        setRecordVersion(record.version_number)
-        setVisitPurpose(String(p.visitPurpose || ''))
-        setClinician(String(p.clinician || ''))
-        setSpecialty(String(p.specialty || ''))
-        setVisitDate(String(p.visitDate || ''))
-        setLocation(String(p.location || ''))
-        setAttendees(String(p.attendees || ''))
-        setTopConcerns(Array.isArray(p.topConcerns) ? p.topConcerns.map(String).concat(['', '', '']).slice(0, 3) : ['', '', ''])
-        setChanges(String(p.changes || ''))
-        setSymptoms(String(p.symptoms || ''))
-        setMedicationQuestions(String(p.medicationQuestions || ''))
-        setHistoryQuestions(String(p.historyQuestions || ''))
-        setPracticalNotes(String(p.practicalNotes || ''))
-        setConcernsDiscussed(String(p.concernsDiscussed || ''))
-        setCaregiverReport(String(p.caregiverReport || ''))
-        setClinicianFindings(String(p.clinicianFindings || ''))
-        setDecisions(String(p.decisions || ''))
-        setInstructions(String(p.instructions || ''))
-        setUnanswered(String(p.unanswered || ''))
-        setMedicationReconciliation(String(p.medicationReconciliation || ''))
-        setPendingResults(String(p.pendingResults || ''))
-        setFamilySummary(String(p.familySummary || ''))
-        setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => ({ ...emptyFollowUp(), ...(item as Partial<FollowUp>) })) : [emptyFollowUp()])
-        const validStatuses = ['Awaiting documentation', 'Follow-up pending', 'Ready for review', 'Closed with documented outstanding items'] as const
-        setReviewStatus(validStatuses.includes(p.reviewStatus as typeof validStatuses[number]) ? p.reviewStatus as typeof validStatuses[number] : 'Awaiting documentation')
-        setSaveMessage('Loaded saved appointment workspace · version ' + record.version_number)
+        applySavedRecord(record)
       } catch (error) {
         if (!cancelled) setSaveError(error instanceof Error ? error.message : 'Could not load saved appointment workspace.')
       } finally {
@@ -184,6 +209,7 @@ export default function AppointmentWorkspace() {
           payload, change_reason: 'Caregiver saved appointment workspace',
         }) as { version_number: number }
         setRecordVersion(updated.version_number)
+        setSavedRecords(current => current.map(item => item.id === recordId ? { ...item, version_number: updated.version_number, status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus], updated_at: new Date().toISOString() } : item))
         setSaveMessage('Saved securely · version ' + updated.version_number + '. Not yet reconciled into LCR facts.')
       } else {
         const created = await postJSON('/appointment-workspaces', {
@@ -191,6 +217,7 @@ export default function AppointmentWorkspace() {
         }) as { id: string; version_number: number }
         setRecordId(created.id)
         setRecordVersion(created.version_number)
+        setSavedRecords(current => [{ id: created.id, status: 'preparation', version_number: created.version_number, updated_at: new Date().toISOString() }, ...current.filter(item => item.id !== created.id)])
         setSaveMessage('Saved securely · version ' + created.version_number + '. Not yet reconciled into LCR facts.')
       }
     } catch (error) {
@@ -215,6 +242,18 @@ export default function AppointmentWorkspace() {
       </div>
 
       {open && <>
+        {savedRecords.length > 0 && (
+          <label className="appointment-saved-record-selector">
+            <span>Saved appointment workspaces</span>
+            <select value={recordId || ''} onChange={event => void loadSavedRecord(event.target.value)} disabled={loadingRecord || savingRecord}>
+              {savedRecords.map(record => (
+                <option key={record.id} value={record.id}>
+                  {record.status.replaceAll('_', ' ')} · version {record.version_number} · {record.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from LCR facts. Caregiver reports, caregiver-recorded clinician statements, and AI suggestions remain distinct; saving does not verify clinical statements or silently change the LCR.</span></div>
         <nav className="appointment-stages" aria-label="Appointment stages">
           {([
@@ -348,6 +387,8 @@ export default function AppointmentWorkspace() {
       <style jsx>{`
         .appointment-workspace { padding:22px; border:1px solid #dfe8df; border-radius:20px; background:#fff; color:#26392c; }
         .appointment-heading { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+        .appointment-saved-record-selector { display:grid; gap:6px; margin:14px 0 0; color:#405343; font-size:12px; font-weight:700; }
+        .appointment-saved-record-selector select { min-height:40px; padding:8px 10px; border:1px solid #dce6da; border-radius:9px; background:#fff; color:#26392c; font:inherit; }
         .appointment-heading-icon { display:grid; place-items:center; flex:0 0 42px; width:42px; height:42px; border:1px solid #dbe8d9; border-radius:13px; background:#edf5ec; color:#527657; }
         .appointment-heading-copy { flex:1; min-width:190px; }
         .appointment-kicker { display:block; margin-bottom:5px; color:#53745a; font-size:9px; font-weight:850; letter-spacing:.13em; }
