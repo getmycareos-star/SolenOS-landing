@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
 import { getJSON, postJSON } from "../src/api/client";
+import fs from "node:fs";
+
+const clientSource = fs.readFileSync(new URL("../src/api/client.ts", import.meta.url), "utf8");
+assert.match(clientSource, /\/api\/v1\/sessions\/refresh/, "session refresh must use the backend rotation endpoint");
+assert.match(clientSource, /scheduleSessionRefresh/, "session rotation must be scheduled proactively");
+assert.match(clientSource, /notifyAuthStateChanged/, "account/session changes must notify auth subscribers");
+assert.doesNotMatch(clientSource, /No backend-issued token exists to refresh/, "token refresh must not remain a no-op");
 
 const values = new Map<string, string>([
   ["solenos_anonymous_access_token", "server-issued-token"],
