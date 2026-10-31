@@ -225,6 +225,7 @@ export default function CareHandoffsPage() {
           recipient_caregiver_ids: [selectedRecipient],
           scope,
         }) as Handoff;
+        if (!created.id) throw new Error("The backend did not return a handoff ID. Check the handoff outbox before retrying.");
         handoffId = created.id;
         setPendingHandoffId(handoffId);
       }
