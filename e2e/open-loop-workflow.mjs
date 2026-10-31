@@ -300,7 +300,10 @@ try {
   await page.evaluate(() => {
     localStorage.setItem("solenos_care_recipient_display_name", "CI synthetic care recipient");
   });
-  await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
+  // Conflict resolution is part of the Living Care Record, not the
+  // Companion-first workspace home. Navigate to the page that actually owns
+  // the panel instead of relying on a stale route assumption.
+  await page.goto(new URL("/workspace/care-continuity", frontend).toString(), { waitUntil: "domcontentloaded" });
   const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
   await conflictPanel.getByRole("heading", { name: "Conflict comparison and resolution history" }).waitFor({ timeout: 20_000 });
   await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);

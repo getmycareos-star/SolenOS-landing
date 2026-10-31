@@ -55,6 +55,7 @@ const NAVIGATION = [
 ] as const;
 
 const LOCAL_WORKSPACE_KEYS = [
+  "solenos_entered_care_record",
   "solenos_durable_care_key",
   "solenos_care_session_id",
   "solenos_telemetry_user_id",
@@ -69,6 +70,11 @@ const LOCAL_WORKSPACE_KEYS = [
   "solenos_data_training",
   "solenos_language_preference",
   "solenos_early_access_consent_v1",
+  "solenos_research_preview_ack_v1",
+  "solenos_share_history",
+  "solenos_activation_dismissed_prompts",
+  "solenos_activation_prior_follow_up_count",
+  "solenos_activation_last_input_snippet",
   "onboarding_complete",
   "onboarding_complete_at",
   "solenos_workspace_pinned",

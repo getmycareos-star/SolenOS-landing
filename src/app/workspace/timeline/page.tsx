@@ -39,6 +39,20 @@ type CareEvent = {
   situation_id?: string | null;
 };
 
+type CareEvidence = {
+  id: string;
+  type?: string;
+  source_text?: string | null;
+  source_type?: string | null;
+  evidence_status?: string | null;
+  epistemic_status?: string | null;
+  uploaded_at?: string | null;
+  occurred_at?: string | null;
+  reported_by_label?: string | null;
+  original_author?: string | null;
+  extra_metadata?: Record<string, unknown> | null;
+};
+
 type FilterKey = "all" | "observations" | "decisions" | "documents" | "open";
 
 const FILTERS: { id: FilterKey; label: string }[] = [
@@ -129,6 +143,8 @@ function groupLabel(event: CareEvent): string {
 export default function TimelinePage() {
   const router = useRouter();
   const [events, setEvents] = useState<CareEvent[]>([]);
+  const [evidenceById, setEvidenceById] = useState<Record<string, CareEvidence>>({});
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -160,6 +176,31 @@ export default function TimelinePage() {
         if (aTime !== bTime) return bTime - aTime;
         return (safeDate(b.recorded_at)?.getTime() ?? 0) - (safeDate(a.recorded_at)?.getTime() ?? 0);
       }));
+
+      // Hydrate only evidence explicitly referenced by these care events.
+      const evidenceIds = [...new Set(validEvents.flatMap((event) => event.evidence_ids ?? []).filter(Boolean))];
+      if (evidenceIds.length) {
+        try {
+          const params = new URLSearchParams();
+          evidenceIds.forEach((id) => params.append("ids", id));
+          const evidenceResult = await getJSON(
+            `/evidence/${encodeURIComponent(session.person.id)}?${params.toString()}`
+          );
+          if (!Array.isArray(evidenceResult)) throw new Error("The evidence response was not a list.");
+          const nextEvidence: Record<string, CareEvidence> = {};
+          evidenceResult.forEach((item) => {
+            if (item && typeof item.id === "string") nextEvidence[item.id] = item as CareEvidence;
+          });
+          setEvidenceById(nextEvidence);
+          setEvidenceError(null);
+        } catch {
+          setEvidenceById({});
+          setEvidenceError("Linked evidence details are temporarily unavailable. The event references remain visible; this does not mean the source files or notes are missing.");
+        }
+      } else {
+        setEvidenceById({});
+        setEvidenceError(null);
+      }
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The care timeline could not be loaded.");
@@ -322,6 +363,38 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>Tags</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.join(", ") : "No tags recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
                           </dl>
+                          {event.evidence_ids?.length ? (
+                            <section aria-label="Linked source evidence" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--solenos-hairline)" }}>
+                              <h5 style={{ margin: "0 0 8px", fontSize: 13 }}>Linked source evidence</h5>
+                              {evidenceError && <p role="status" style={{ margin: "0 0 8px", color: "var(--solenos-muted)", fontSize: 12 }}>{evidenceError}</p>}
+                              <div style={{ display: "grid", gap: 8 }}>
+                                {event.evidence_ids.map((evidenceId) => {
+                                  const source = evidenceById[evidenceId];
+                                  return (
+                                    <article key={evidenceId} style={{ padding: 10, border: "1px solid var(--solenos-hairline)", borderRadius: 10, background: "white" }}>
+                                      <strong style={{ display: "block", fontSize: 12 }}>Evidence {evidenceId}</strong>
+                                      {source ? (
+                                        <>
+                                          <p style={{ margin: "5px 0", fontSize: 12, color: "var(--solenos-muted)" }}>
+                                            {[source.type, source.source_type, source.evidence_status || source.epistemic_status].filter(Boolean).join(" · ") || "Source type/status not recorded"}
+                                          </p>
+                                          <p style={{ margin: "5px 0", fontSize: 12 }}>
+                                            Reported by: {source.reported_by_label || source.original_author || "Not recorded"}
+                                          </p>
+                                          <p style={{ margin: "5px 0", fontSize: 12, color: "var(--solenos-muted)" }}>
+                                            Event time: {formatDateTime(source.occurred_at)} · Uploaded: {formatDateTime(source.uploaded_at)}
+                                          </p>
+                                          {source.source_text && <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{source.source_text.slice(0, 3000)}{source.source_text.length > 3000 ? "… Source text is truncated in this view." : ""}</p>}
+                                        </>
+                                      ) : !evidenceError ? (
+                                        <p style={{ margin: "5px 0 0", fontSize: 12, color: "var(--solenos-muted)" }}>This referenced evidence was not returned by the person-scoped evidence lookup.</p>
+                                      ) : null}
+                                    </article>
+                                  );
+                                })}
+                              </div>
+                            </section>
+                          ) : null}
                           {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Recorded significance:</strong> {event.significance_verdict}</p>}
                           <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This entry shows persisted event fields. Missing metadata is displayed as missing, not inferred. Corrections and original-document viewing are only offered where the backend provides a verified workflow.</p>
                         </div>

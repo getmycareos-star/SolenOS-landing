@@ -453,10 +453,15 @@ export default function DocumentsPage() {
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
       }
+      const withText = reviewPages.filter((page) => page.text.trim().length > 0).length;
+      const withoutText = saved - withText;
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
       setIntakeMode(null);
-      setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Scanned statements remain source evidence, not verified LCR facts.` });
+      setUploadMessage({
+        kind: "success",
+        text: `Saved ${saved} original file(s). ${withText} have text available; ${withoutText} were saved without extracted text. Scanned statements remain source evidence, not verified LCR facts.`,
+      });
       await loadDocuments(true);
     } catch {
       setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });

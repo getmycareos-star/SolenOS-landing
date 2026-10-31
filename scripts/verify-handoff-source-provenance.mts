@@ -82,8 +82,33 @@ assert.throws(() => buildReviewedHandoffDraft({
 }), /no saved care facts/);
 
 const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.tsx", import.meta.url), "utf8");
-assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
-  "standalone handoff page must route caregivers into AI Companion");
+assert.match(handoffPage, /postJSON\("\/handoffs"/, "handoff creation must use the authenticated backend API");
+assert.match(handoffPage, /PENDING_HANDOFF_CREATE_KEY/, "uncertain handoff create requests must survive page reloads on the same care record");
+assert.match(handoffPage, /window\.crypto\.randomUUID\(\)/, "handoff creation must generate a stable idempotency key");
+assert.match(handoffPage, /"X-Request-ID": requestId/, "handoff creation retries must send the same idempotency key to the backend");
+assert.match(handoffPage, /Retry handoff creation and attach summary/, "caregivers must be able to retry an uncertain create without starting a duplicate share");
+assert.match(handoffPage, /postJSON\("\/handoff-drafts\/prepare"/,
+  "handoff draft must come from the authenticated backend source adapter");
+assert.match(handoffPage, /putJSON\(\`\/handoffs\/\$\{encodeURIComponent\(handoffId\)\}\/summary\`/,
+  "reviewed handoff summary must be persisted through the backend");
+assert.match(handoffPage, /getJSON\(\`\/handoffs\/\$\{encodeURIComponent\(handoffId\)\}\/summary\`/,
+  "persisted handoff summaries must be retrievable");
+assert.match(handoffPage, /getJSON\("\/handoffs\/outbox"\)/,
+  "handoff history must be loaded from the backend outbox");
+assert.match(handoffPage, /caregiver_reviewed: true/,
+  "summary attachment must carry an explicit caregiver review attestation");
+assert.match(handoffPage, /can_receive_handoff/,
+  "recipient must be eligible under backend consent rules");
+assert.match(handoffPage, /Documents are not currently available through the verified handoff-draft source adapter/,
+  "handoff UI must disclose that document content is not included in the current verified source adapter");
+assert.match(handoffPage, /A handoff record exists, but its summary is not confirmed/,
+  "partial handoff creation must not be reported as a completed share");
+assert.match(handoffPage, /const recovered = await getJSON\(\`\/handoffs\/\$\{encodeURIComponent\(handoffId\)\}\/summary\`\)/,
+  "a lost summary-write response must be reconciled by reading the persisted summary before retrying");
+assert.match(handoffPage, /if \(!created\.id\)/,
+  "handoff creation must validate the backend-issued handoff ID before attempting summary attachment");
+assert.match(handoffPage, /semantic_grounding_status/,
+  "retrieved summary must disclose that semantic grounding is not automatically verified");
 const companionPage = await readFile(new URL("../src/components/workflows/AICompanion.tsx", import.meta.url), "utf8");
 for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Full care overview"]) {
   assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
@@ -95,9 +120,14 @@ assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-bri
 assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
 assert.ok(appointmentWorkspace.includes("Source availability") && appointmentWorkspace.includes("Object.entries(lcrBrief.source_coverage)"), "appointment preparation must expose unavailable and excluded sources");
 assert.ok(appointmentWorkspace.includes("getJSON('/appointment-workspaces')"), "appointment workspace must hydrate durable backend records");
+assert.ok(appointmentWorkspace.includes("savedRecords") && appointmentWorkspace.includes("loadSavedRecord"), "all persisted appointment workspaces must be selectable, not only the first");
+assert.ok(appointmentWorkspace.includes("New appointment workspace") && appointmentWorkspace.includes("startNewAppointment"), "caregivers must be able to create a separate appointment workspace without overwriting an existing one");
 assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
 assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
 assert.ok(appointmentWorkspace.includes("expected_version: recordVersion"), "appointment saves must use optimistic concurrency to avoid silently overwriting edits");
+assert.ok(appointmentWorkspace.includes("updated.id !== recordId") && appointmentWorkspace.includes("updated.version_number"), "appointment updates must verify the backend returned the expected record and a new revision before showing success");
+assert.ok(appointmentWorkspace.includes("!created.id") && appointmentWorkspace.includes("created.version_number"), "appointment creation must verify a persisted record ID and revision before showing success");
+assert.ok(appointmentWorkspace.includes("status: persistedStatus"), "new appointment workspaces must retain the caregiver-selected persisted status");
 assert.ok(appointmentWorkspace.includes("lcr_reconciliation: 'not_performed'"), "saving appointment notes must not silently promote them into LCR facts");
 for (const label of ["Before the visit", "During the visit", "After the visit", "Clinician findings", "Medication reconciliation", "Follow-up actions", "Not yet reconciled into LCR facts"]) {
   assert.ok(appointmentWorkspace.includes(label), "appointment workflow must include " + label);

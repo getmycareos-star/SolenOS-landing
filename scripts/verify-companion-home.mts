@@ -141,3 +141,13 @@ assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.match(companionAlias, /redirect\("\/workspace"\)/);
 
 console.log("Companion home contract passed: caregiver-first home, restored upload/photo/scan menu and intake, plain-language record details, caregiver update route, device-session actions, export flow, and browseable history.");
+
+const sharePanel = read("src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
+assert.match(sharePanel, /The share sheet closed\. SolenOS cannot confirm whether the recipient received or opened the summary\./,
+  "native share must not claim recipient delivery");
+assert.doesNotMatch(sharePanel, /setSharingResult\("Shared successfully\."/,
+  "native share must not report unverified external delivery as success");
+assert.match(read("src/components/app-shell/AppShell.tsx"), /Archive this workspace on this device[\s\S]*?does not archive or change care information stored on SolenOS/,
+  "archive action must disclose its device-local scope");
+assert.match(read("src/components/app-shell/AppShell.tsx"), /Delete this workspace from this device[\s\S]*?does NOT delete care information already stored on SolenOS servers/,
+  "delete action must not imply server-side care-record erasure");
