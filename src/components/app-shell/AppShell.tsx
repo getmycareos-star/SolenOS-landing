@@ -16,7 +16,6 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  Users,
   CircleHelp,
   X,
 } from "lucide-react";
@@ -53,11 +52,10 @@ const NAVIGATION = [
   { href: "/workspace/daily-care", label: "Daily care", icon: CalendarDays },
   { href: "/workspace/timeline", label: "Care timeline", icon: Clock3 },
   { href: "/workspace/open-loops", label: "Open loops", icon: CircleHelp },
-  { href: "/workspace/community", label: "Community", icon: Users },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
-  { href: "/workspace/companion", label: "AI companion", icon: MessageCircle },
+  { href: "/workspace", label: "AI companion", icon: MessageCircle },
 ] as const;
 
 const LOCAL_WORKSPACE_KEYS = [
