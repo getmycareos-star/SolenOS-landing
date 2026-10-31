@@ -196,7 +196,10 @@ let anonymousSessionPromise: Promise<AnonymousSession> | null = null;
 /** Share one in-flight bootstrap/refresh across concurrent components. */
 export function ensureAnonymousSession(): Promise<AnonymousSession> {
   if (!anonymousSessionPromise) {
-    anonymousSessionPromise = ensureAnonymousSessionInternal().finally(() => {
+    anonymousSessionPromise = ensureAnonymousSessionInternal().then((session) => {
+      scheduleSessionRefresh();
+      return session;
+    }).finally(() => {
       anonymousSessionPromise = null;
     });
   }
@@ -342,6 +345,8 @@ export async function signInToAccount(email: string, password: string): Promise<
   window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, result.caregiver_id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
   setPersonId(result.person_id);
+  scheduleSessionRefresh();
+  notifyAuthStateChanged();
   return result;
 }
 
@@ -406,21 +411,105 @@ export interface AuthSessionInfo {
   mfa_verified: boolean
 }
 
+const authStateListeners = new Set<(authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void>();
+let sessionRefreshTimer: number | null = null;
+let authStateCheckPromise: Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> | null = null;
+
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (authStateCheckPromise) return authStateCheckPromise;
+  authStateCheckPromise = (async () => {
+    try {
+      const session = await ensureAnonymousSession();
+      const result = await getJSON("/accounts/me") as {
+        account: { id: string; email: string; created_at: string | null } | null;
+      };
+      if (!result.account) return { authenticated: false, sessionInfo: null };
+      return {
+        authenticated: true,
+        sessionInfo: {
+          authenticated: true,
+          account_id: result.account.id,
+          session_type: "caregiver_account",
+          authorized_person_ids: [session.person.id],
+          caregiver_roles: { [session.person.id]: session.caregiver.relationship || "caregiver" },
+          professional_roles: {},
+          anonymous_session_id: session.session_id ?? null,
+          expires_at: session.expires_at,
+          mfa_verified: false,
+        },
+      };
+    } catch {
+      // A failed status request is not proof of an authenticated account.
+      return { authenticated: false, sessionInfo: null };
+    }
+  })().finally(() => {
+    authStateCheckPromise = null;
+  });
+  return authStateCheckPromise;
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
+  callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
-  // No backend session event stream exists yet.
-  return () => undefined
+  authStateListeners.add(callback);
+  const refresh = () => {
+    void checkAuthState().then(({ authenticated, sessionInfo }) => {
+      authStateListeners.forEach((listener) => listener(authenticated, sessionInfo));
+    });
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("solenosAuthStateChanged", refresh);
+    window.addEventListener("storage", refresh);
+  }
+  return () => {
+    authStateListeners.delete(callback);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("solenosAuthStateChanged", refresh);
+      window.removeEventListener("storage", refresh);
+    }
+  };
+}
+
+export function notifyAuthStateChanged(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("solenosAuthStateChanged"));
+  }
+}
+
+function scheduleSessionRefresh(): void {
+  if (typeof window === "undefined") return;
+  if (sessionRefreshTimer !== null) window.clearTimeout(sessionRefreshTimer);
+  const expiryText = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
+  const expiry = expiryText ? Date.parse(expiryText) : Number.NaN;
+  if (!Number.isFinite(expiry) || !window.localStorage.getItem(ANONYMOUS_TOKEN_KEY)) return;
+
+  // Rotate 30 days before expiry. The API only refreshes a still-valid token,
+  // so refresh proactively rather than waiting for a failed care-record write.
+  const refreshAt = expiry - 30 * 24 * 60 * 60 * 1000 - 60 * 1000;
+  const delay = Math.max(1_000, Math.min(refreshAt - Date.now(), expiry - Date.now() - 60_000));
+  sessionRefreshTimer = window.setTimeout(async () => {
+    try {
+      await ensureAnonymousSessionInternal();
+      notifyAuthStateChanged();
+      scheduleSessionRefresh();
+    } catch {
+      // Retain the current credential and retry while it is still valid.
+      // Never bootstrap a different care record after a refresh failure.
+      const remaining = expiry - Date.now();
+      if (remaining > 60_000) {
+        sessionRefreshTimer = window.setTimeout(scheduleSessionRefresh, Math.min(60_000, remaining - 30_000));
+      }
+    }
+  }, delay);
 }
 
 export function startTokenRefresh(): void {
-  // No backend-issued token exists to refresh until authentication is implemented.
+  scheduleSessionRefresh();
 }
 
 export function stopTokenRefresh(): void {
-  // No active token-refresh task exists.
+  if (typeof window !== "undefined" && sessionRefreshTimer !== null) {
+    window.clearTimeout(sessionRefreshTimer);
+  }
+  sessionRefreshTimer = null;
 }
