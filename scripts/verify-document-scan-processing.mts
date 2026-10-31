@@ -18,3 +18,9 @@ console.log("✓ crop and straighten are applied to pixels before OCR");
 console.log("✓ caregiver can move crop area and adjust margins");
 console.log("✓ multi-page PDF assembly preserves individual originals");
 console.log("✓ original scan bytes, reviewed text, and scan processing metadata are required");
+
+assert.match(source, /postFormData\("\/upload", form\)/, "original files must be sent to the backend upload endpoint");
+assert.match(source, /if \(!stored\.persisted \|\| !stored\.evidence_id\)/, "upload success requires a backend persistence receipt and evidence ID");
+assert.match(source, /Saved \$\{saved\} of \$\{reviewPages\.length\} file\(s\) before saving stopped/, "partial upload failures must be reported as partial, not complete");
+assert.match(source, /getBlob\("\/upload\/" \+ encodeURIComponent\(doc\.id\)\)/, "original bytes must be retrieved from the backend before preview or download");
+assert.match(source, /have text available; \$\{withoutText\} were saved without extracted text/, "the UI must not claim extracted text exists when a file was stored without text");
