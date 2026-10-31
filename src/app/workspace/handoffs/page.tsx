@@ -248,6 +248,7 @@ export default function CareHandoffsPage() {
     setNotice("");
     let handoffId = pendingHandoffId;
     let requestId = handoffRequestId;
+    let createRequestSent = false;
     try {
       const session = await ensureAnonymousSession();
       const prepared = makeSummary(draft, scope);
@@ -278,6 +279,7 @@ export default function CareHandoffsPage() {
         ) {
           throw new Error("A previous handoff creation is awaiting confirmation. Retry it with the original recipient and scope before starting a different handoff.");
         }
+        createRequestSent = true;
         const created = await postJSON("/handoffs", {
           person_id: session.person.id,
           recipient_caregiver_ids: [selectedRecipient],
@@ -323,7 +325,7 @@ export default function CareHandoffsPage() {
         } catch {
           setNotice("A handoff record exists, but its summary could not be confirmed. Use Retry attach to finish; do not create another handoff.");
         }
-      } else if (requestId) {
+      } else if (requestId && createRequestSent) {
         setCreateUncertain(true);
         setNotice("The create request outcome is unknown. Retry with the same recipient and scope; SolenOS will reuse the same server request ID instead of creating a duplicate handoff.");
       }
