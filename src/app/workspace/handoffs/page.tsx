@@ -143,6 +143,7 @@ export default function CareHandoffsPage() {
   const [reviewed, setReviewed] = useState(false);
   const [outbox, setOutbox] = useState<Handoff[]>([]);
   const [pendingHandoffId, setPendingHandoffId] = useState("");
+  const [createUncertain, setCreateUncertain] = useState(false);
   const [savedSummary, setSavedSummary] = useState<SavedSummary | null>(null);
   const [summaryLoadingId, setSummaryLoadingId] = useState("");
 
@@ -155,6 +156,7 @@ export default function CareHandoffsPage() {
       setSessionPersonId(session.person.id);
       const outboxResult = await getJSON("/handoffs/outbox") as { items?: Handoff[] };
       setOutbox(outboxResult.items ?? []);
+      setCreateUncertain(false);
       try {
         const directory = await getJSON("/handoffs/directory/recipients") as { items?: Recipient[] };
         const available = (directory.items ?? []).filter((item) => item.can_receive_handoff);
@@ -242,7 +244,21 @@ export default function CareHandoffsPage() {
       setError(cause instanceof Error ? cause.message : "The handoff was not confirmed.");
       if (handoffId) {
         setPendingHandoffId(handoffId);
-        setNotice("A handoff record already exists, but its summary was not confirmed. Use Retry attach to finish; do not create another handoff.");
+        try {
+          const recovered = await getJSON(`/handoffs/${encodeURIComponent(handoffId)}/summary`) as SavedSummary;
+          if (recovered.summary?.content_sha256) {
+            setSavedSummary(recovered);
+            setPendingHandoffId("");
+            setNotice("The server confirms that the summary was persisted. The earlier response was interrupted; the saved summary has now been retrieved and verified.");
+          } else {
+            setNotice("A handoff record exists, but its summary is not confirmed. Use Retry attach to finish; do not create another handoff.");
+          }
+        } catch {
+          setNotice("A handoff record exists, but its summary could not be confirmed. Use Retry attach to finish; do not create another handoff.");
+        }
+      } else if (cause instanceof Error && /timed out|failed to fetch|network|load failed/i.test(cause.message)) {
+        setCreateUncertain(true);
+        setNotice("The create request outcome is unknown. Refresh the saved handoffs before trying again; this prevents accidental duplicate shares.");
       }
     } finally {
       setSaving(false);
@@ -284,7 +300,7 @@ export default function CareHandoffsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 10 }}>
           <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700, color: "#405343" }}>
             Handoff purpose
-            <select value={purpose} onChange={(event) => setPurpose(event.target.value)} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
+            <select value={purpose} onChange={(event) => { setPurpose(event.target.value); setDraft(null); setReviewed(false); }} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
               <option value="family_transition">Family transition</option>
               <option value="professional_appointment">Professional appointment</option>
               <option value="hospital_discharge">Hospital discharge</option>
@@ -294,14 +310,14 @@ export default function CareHandoffsPage() {
           </label>
           <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700, color: "#405343" }}>
             Intended audience
-            <select value={audience} onChange={(event) => setAudience(event.target.value as "family" | "professional")} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
+            <select value={audience} onChange={(event) => { setAudience(event.target.value as "family" | "professional"); setDraft(null); setReviewed(false); }} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
               <option value="family">Family caregiver</option>
               <option value="professional">Care professional</option>
             </select>
           </label>
           <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700, color: "#405343" }}>
             Preparation window
-            <select value={windowDays} onChange={(event) => setWindowDays(Number(event.target.value))} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
+            <select value={windowDays} onChange={(event) => { setWindowDays(Number(event.target.value)); setDraft(null); setReviewed(false); }} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
               <option value={90}>Last 90 days</option>
@@ -373,9 +389,10 @@ export default function CareHandoffsPage() {
               I have reviewed the returned source records, timestamps, status labels, and unavailable-source warnings. I understand that this summary is not independently verified clinical information.
             </label>
             {pendingHandoffId && <p role="status" style={{ margin: 0, color: "#7a6037", fontSize: 12 }}>Handoff {pendingHandoffId} exists without a confirmed summary. Retry attaches the reviewed summary to that same handoff.</p>}
-            <button type="button" onClick={() => void createOrAttachSummary()} disabled={saving || !reviewed || !selectedRecipient || !scope.length || !recipients.some((item) => item.caregiver_id === selectedRecipient)} style={{ minHeight: 42, border: "1px solid #cbdcc9", borderRadius: 9, background: "#e7f0e5", color: "#203b27", fontWeight: 750, cursor: saving ? "wait" : "pointer" }}>
+            <button type="button" onClick={() => void createOrAttachSummary()} disabled={saving || createUncertain || !reviewed || !selectedRecipient || !scope.length || !recipients.some((item) => item.caregiver_id === selectedRecipient)} style={{ minHeight: 42, border: "1px solid #cbdcc9", borderRadius: 9, background: "#e7f0e5", color: "#203b27", fontWeight: 750, cursor: saving ? "wait" : "pointer" }}>
               {saving ? "Saving handoff…" : pendingHandoffId ? "Retry attach reviewed summary" : "Create handoff and save summary"}
             </button>
+            {createUncertain && <p role="alert" style={{ margin: 0, color: "#7a6037", fontSize: 12 }}>Creation has an unknown outcome. Refresh the outbox below and resume an incomplete handoff if it appears. Do not submit another create request until the outbox has been checked.</p>}
             <p style={{ margin: 0, fontSize: 11, color: "#778278" }}>Server consent and recipient authorization are mandatory. If the backend rejects the request, no success state will be shown.</p>
           </div>
         </section>
@@ -399,7 +416,11 @@ export default function CareHandoffsPage() {
               <p style={{ margin: "6px 0", fontSize: 12, color: "#66756a" }}>Created {formatDate(handoff.created_at)} · Expires {formatDate(handoff.expires_at)}</p>
               <p style={{ margin: "6px 0", fontSize: 12, color: "#66756a" }}>Scope: {handoff.scope.join(", ")}</p>
               <p style={{ margin: "6px 0", fontSize: 12, color: "#66756a" }}>Recipients: {handoff.recipients.map((recipient) => recipient.name || recipient.caregiver_id).join(", ") || "Not listed"}</p>
-              {handoff.has_summary && <button type="button" onClick={() => void loadSavedSummary(handoff.id)} disabled={summaryLoadingId === handoff.id} style={{ marginTop: 5, minHeight: 36, padding: "7px 10px", border: "1px solid #dce6da", borderRadius: 8, background: "#f7faf6", color: "#405343", fontWeight: 700 }}>{summaryLoadingId === handoff.id ? "Retrieving…" : "Retrieve saved summary"}</button>}
+              {handoff.has_summary ? (
+                <button type="button" onClick={() => void loadSavedSummary(handoff.id)} disabled={summaryLoadingId === handoff.id} style={{ marginTop: 5, minHeight: 36, padding: "7px 10px", border: "1px solid #dce6da", borderRadius: 8, background: "#f7faf6", color: "#405343", fontWeight: 700 }}>{summaryLoadingId === handoff.id ? "Retrieving…" : "Retrieve saved summary"}</button>
+              ) : (
+                <button type="button" onClick={() => { setPendingHandoffId(handoff.id); setCreateUncertain(false); setSelectedRecipient(handoff.recipients[0]?.caregiver_id || ""); setScope(handoff.scope); setReviewed(false); setNotice("Incomplete handoff selected. Prepare or review the current draft, then attach it to this existing handoff."); }} style={{ marginTop: 5, minHeight: 36, padding: "7px 10px", border: "1px solid #dce6da", borderRadius: 8, background: "#f7faf6", color: "#405343", fontWeight: 700 }}>Resume this handoff</button>
+              )}
             </article>)}
           </div>
         ) : <p style={{ margin: 0, color: "#68766c", fontSize: 13 }}>No persisted handoffs were returned for this caregiver.</p>}
