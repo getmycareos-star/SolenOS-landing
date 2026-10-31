@@ -138,6 +138,7 @@ export default function CareHandoffsPage() {
   const [scope, setScope] = useState<string[]>(["lcr_summary", "open_loops", "appointments"]);
   const [purpose, setPurpose] = useState("family_transition");
   const [audience, setAudience] = useState<"family" | "professional">("family");
+  const [windowDays, setWindowDays] = useState(30);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [reviewed, setReviewed] = useState(false);
   const [outbox, setOutbox] = useState<Handoff[]>([]);
@@ -184,7 +185,7 @@ export default function CareHandoffsPage() {
       const result = await postJSON("/handoff-drafts/prepare", {
         purpose,
         audience,
-        window_days: 30,
+        window_days: windowDays,
       }) as Draft;
       if (!result.read_only || result.creates_handoff || result.updates_lcr) {
         throw new Error("The server returned an unexpected handoff draft contract. Nothing was shared.");
@@ -211,6 +212,11 @@ export default function CareHandoffsPage() {
     let handoffId = pendingHandoffId;
     try {
       const session = await ensureAnonymousSession();
+      const prepared = makeSummary(draft, scope);
+      const totalSummaryCharacters = Object.values(prepared.sections).reduce((total, value) => total + value.length, 0);
+      if (totalSummaryCharacters > 20_000) {
+        throw new Error("This selected handoff scope exceeds the server's 20,000-character summary limit. Reduce the preparation window or select fewer sections before creating a handoff.");
+      }
       if (!handoffId) {
         const created = await postJSON("/handoffs", {
           person_id: session.person.id,
@@ -220,7 +226,6 @@ export default function CareHandoffsPage() {
         handoffId = created.id;
         setPendingHandoffId(handoffId);
       }
-      const prepared = makeSummary(draft, scope);
       const attached = await putJSON(`/handoffs/${encodeURIComponent(handoffId)}/summary`, {
         sections: prepared.sections,
         source_record_ids: prepared.sourceRecordIds,
@@ -294,6 +299,14 @@ export default function CareHandoffsPage() {
               <option value="professional">Care professional</option>
             </select>
           </label>
+          <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 700, color: "#405343" }}>
+            Preparation window
+            <select value={windowDays} onChange={(event) => setWindowDays(Number(event.target.value))} style={{ minHeight: 40, padding: 8, border: "1px solid #dce6da", borderRadius: 8, background: "#fff" }}>
+              <option value={7}>Last 7 days</option>
+              <option value={30}>Last 30 days</option>
+              <option value={90}>Last 90 days</option>
+            </select>
+          </label>
         </div>
         <button type="button" onClick={() => void prepareDraft()} disabled={preparing} style={{ minHeight: 42, border: "1px solid #cbdcc9", borderRadius: 9, background: "#e7f0e5", color: "#203b27", fontWeight: 750, cursor: preparing ? "wait" : "pointer" }}>
           {preparing ? "Preparing from saved records…" : "Prepare source-linked draft"}
@@ -304,7 +317,7 @@ export default function CareHandoffsPage() {
         <section style={{ padding: 16, border: "1px solid #dfe8df", borderRadius: 14, background: "#fff", display: "grid", gap: 14 }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 17, color: "#26392c" }}>Review the prepared information</h2>
-            <p style={{ margin: "5px 0 0", color: "#68766c", fontSize: 12 }}>Prepared {formatDate(draft.prepared_at)} · {preparedRecordCount} source record(s) returned · 30-day window</p>
+            <p style={{ margin: "5px 0 0", color: "#68766c", fontSize: 12 }}>Prepared {formatDate(draft.prepared_at)} · {preparedRecordCount} source record(s) returned · {windowDays}-day window</p>
             <p style={{ margin: "8px 0 0", color: "#7a6037", fontSize: 12, lineHeight: 1.55 }}>{draft.warning}</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 }}>
