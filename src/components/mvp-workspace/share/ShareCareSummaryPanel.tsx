@@ -239,7 +239,7 @@ export function ShareCareSummaryPanel({
             title: "Care summary",
             text,
           });
-          setSharingResult("Shared successfully.");
+          setSharingResult("The share sheet closed. SolenOS cannot confirm whether the recipient received or opened the summary.");
           recordShareHistory(summary.preparedFor, "native", "shared");
           setState("shared");
           onShared?.();
@@ -297,7 +297,7 @@ export function ShareCareSummaryPanel({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setSharingResult("Summary downloaded.");
+    setSharingResult("The summary download was started by this browser.");
     recordShareHistory(summary.preparedFor, "download", "shared");
     setState("shared");
     onShared?.();
