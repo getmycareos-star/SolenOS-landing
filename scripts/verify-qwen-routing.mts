@@ -119,7 +119,9 @@ requireText("src/app/workspace/settings/page.tsx", [
   'postJSON("/accounts"',
   'deleteJSON("/accounts/me"',
 ]);
-assert(!read("src/app/workspace/settings/page.tsx").includes("Sign in"), "Settings account controls must not expose a Sign in button.");
+assert(read("src/app/workspace/settings/page.tsx").includes('signInToAccount(email, password)'), "Settings must authenticate an existing caregiver account through the backend.");
+assert(read("src/app/workspace/settings/page.tsx").includes("Sign in to restore an existing account"), "Settings must expose account recovery when no active account session is available.");
+assert(read("src/app/workspace/settings/page.tsx").includes("Sign out on this device"), "Settings must expose device-session revocation for signed-in caregivers.");
 assert(!read("src/app/workspace/settings/page.tsx").includes("multi-factor authentication"), "Settings must not show technical account capability messaging.");
 requireText("src/api/client.ts", [
   'export async function deleteJSON(path: string, body?: unknown)',
