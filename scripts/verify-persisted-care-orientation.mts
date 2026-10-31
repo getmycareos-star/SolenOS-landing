@@ -8,6 +8,7 @@ const legacyRoute = fs.readFileSync(path.join(root, "src/app/workspace/record/pa
 const overview = fs.readFileSync(path.join(root, "src/app/workspace/care-continuity/page.tsx"), "utf8");
 const shell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
 const featureFlags = fs.readFileSync(path.join(root, "src/lib/feature-flags.ts"), "utf8");
+const openLoops = fs.readFileSync(path.join(root, "src/app/workspace/open-loops/page.tsx"), "utf8");
 
 assert.match(component, /ensureAnonymousSession/);
 assert.match(component, /fetch\(`\/api\/situation\?\${params\.toString\(\)}`/);
@@ -32,5 +33,15 @@ assert.match(overview, /hasAnyContent && \(/, "local-only timeline content does 
 assert.doesNotMatch(shell, /label: "Community"|href: "\/workspace\/community"/, "disabled Community is absent from workspace navigation");
 assert.match(featureFlags, /community: false/);
 assert.match(featureFlags, /professionalCommunity: false/);
+
+// Open Loops must not expose the internal case-management schema to caregivers.
+assert.match(openLoops, /id="open-loop-note"/);
+assert.match(openLoops, /What still needs attention\\?/);
+assert.match(openLoops, /description: rawText/);
+assert.match(openLoops, /kind: "caregiver_recorded", text: rawText/);
+assert.match(openLoops, /uncertainty: "unknown"/);
+assert.doesNotMatch(openLoops, /Source reference \\(optional\\)|datetime-local|Short title|<label[^>]*>Type/);
+assert.match(openLoops, /<details className="open-loop-more-actions">/);
+assert.match(openLoops, /No deadline or outcome was assumed/);
 
 console.log("Persisted-care orientation contract checks passed.");
