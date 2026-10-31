@@ -234,7 +234,7 @@ export function PersistedCareOrientation({
             <p className="care-entry-note">Your saved record is available. Some details could not be displayed in this view.</p>
           )}
           <div className="care-entry-actions">
-            <Link href="/workspace?compose=1" className="care-entry-primary">Add a care update <span aria-hidden="true">→</span></Link>
+            <Link href="/workspace?prompt=I%20want%20to%20add%20a%20care%20update.%20Help%20me%20capture%20what%20has%20changed%20and%20what%20is%20still%20uncertain." className="care-entry-primary">Add a care update <span aria-hidden="true">→</span></Link>
             <Link href="/workspace/daily-care" className="care-entry-secondary">Open daily care</Link>
           </div>
         </>
@@ -244,7 +244,7 @@ export function PersistedCareOrientation({
           <h2>You can start with what you remember.</h2>
           <p className="care-entry-intro">You do not need a complete history or the right words. Add one detail, a message, or something that happened today. SolenOS will keep the information connected as your care story develops.</p>
           <div className="care-entry-actions">
-            <Link href="/workspace?compose=1" className="care-entry-primary">Start with one detail <span aria-hidden="true">→</span></Link>
+            <Link href="/workspace?prompt=I%20want%20to%20share%20one%20detail%20about%20care.%20Help%20me%20capture%20it%20accurately." className="care-entry-primary">Start with one detail <span aria-hidden="true">→</span></Link>
             <Link href="/workspace/daily-care" className="care-entry-secondary">Record how today is going</Link>
           </div>
           <p className="care-entry-note">Nothing has been added to this care record yet.</p>
