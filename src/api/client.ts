@@ -477,7 +477,11 @@ export function notifyAuthStateChanged(): void {
 }
 
 function scheduleSessionRefresh(): void {
-  if (typeof window === "undefined") return;
+  if (
+    typeof window === "undefined" ||
+    typeof window.setTimeout !== "function" ||
+    typeof window.clearTimeout !== "function"
+  ) return;
   if (sessionRefreshTimer !== null) window.clearTimeout(sessionRefreshTimer);
   const expiryText = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
   const expiry = expiryText ? Date.parse(expiryText) : Number.NaN;
@@ -486,7 +490,13 @@ function scheduleSessionRefresh(): void {
   // ensureAnonymousSessionInternal rotates a still-valid token once it enters
   // the final 30 days. Schedule just inside that boundary, not before it.
   const refreshAt = expiry - 30 * 24 * 60 * 60 * 1000 + 60 * 1000;
-  const delay = Math.max(1_000, Math.min(refreshAt - Date.now(), expiry - Date.now() - 60_000));
+  // Browser timers clamp values above 2^31-1 ms and can fire immediately.
+  // Wake periodically for long-lived sessions, then re-evaluate the refresh boundary.
+  const MAX_TIMER_DELAY_MS = 2_147_000_000;
+  const delay = Math.max(
+    1_000,
+    Math.min(refreshAt - Date.now(), expiry - Date.now() - 60_000, MAX_TIMER_DELAY_MS),
+  );
 
   const attemptRefresh = async () => {
     try {
@@ -510,7 +520,11 @@ export function startTokenRefresh(): void {
 }
 
 export function stopTokenRefresh(): void {
-  if (typeof window !== "undefined" && sessionRefreshTimer !== null) {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.clearTimeout === "function" &&
+    sessionRefreshTimer !== null
+  ) {
     window.clearTimeout(sessionRefreshTimer);
   }
   sessionRefreshTimer = null;
