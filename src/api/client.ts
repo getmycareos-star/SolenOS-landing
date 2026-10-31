@@ -192,11 +192,30 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
 }
 
 let anonymousSessionPromise: Promise<AnonymousSession> | null = null;
+let sessionTimingSequence = 0;
 
 /** Share one in-flight bootstrap/refresh across concurrent components. */
 export function ensureAnonymousSession(): Promise<AnonymousSession> {
   if (!anonymousSessionPromise) {
+    const timingEnabled = typeof performance !== "undefined" && typeof performance.mark === "function";
+    const sequence = ++sessionTimingSequence;
+    const startMark = `solenos-session-start-${sequence}`;
+    const endMark = `solenos-session-end-${sequence}`;
+    if (timingEnabled) {
+      try { performance.mark(startMark); } catch { /* Performance API is optional. */ }
+    }
     anonymousSessionPromise = ensureAnonymousSessionInternal().finally(() => {
+      if (timingEnabled && typeof performance.measure === "function") {
+        try {
+          performance.mark(endMark);
+          performance.measure("solenos.session.bootstrap", { start: startMark, end: endMark });
+        } catch {
+          // Instrumentation must never interfere with session restoration.
+        } finally {
+          performance.clearMarks(startMark);
+          performance.clearMarks(endMark);
+        }
+      }
       anonymousSessionPromise = null;
     });
   }
