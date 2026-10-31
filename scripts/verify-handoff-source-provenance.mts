@@ -82,6 +82,11 @@ assert.throws(() => buildReviewedHandoffDraft({
 }), /no saved care facts/);
 
 const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.tsx", import.meta.url), "utf8");
+assert.match(handoffPage, /postJSON\("\/handoffs"/, "handoff creation must use the authenticated backend API");
+assert.match(handoffPage, /PENDING_HANDOFF_CREATE_KEY/, "uncertain handoff create requests must survive page reloads on the same care record");
+assert.match(handoffPage, /window\.crypto\.randomUUID\(\)/, "handoff creation must generate a stable idempotency key");
+assert.match(handoffPage, /"X-Request-ID": requestId/, "handoff creation retries must send the same idempotency key to the backend");
+assert.match(handoffPage, /Retry handoff creation and attach summary/, "caregivers must be able to retry an uncertain create without starting a duplicate share");
 assert.match(handoffPage, /postJSON\("\/handoff-drafts\/prepare"/,
   "handoff draft must come from the authenticated backend source adapter");
 assert.match(handoffPage, /putJSON\(\`\/handoffs\/\$\{encodeURIComponent\(handoffId\)\}\/summary\`/,
