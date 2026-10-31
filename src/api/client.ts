@@ -483,11 +483,12 @@ function scheduleSessionRefresh(): void {
   const expiry = expiryText ? Date.parse(expiryText) : Number.NaN;
   if (!Number.isFinite(expiry) || !window.localStorage.getItem(ANONYMOUS_TOKEN_KEY)) return;
 
-  // Rotate 30 days before expiry. The API only refreshes a still-valid token,
-  // so refresh proactively rather than waiting for a failed care-record write.
-  const refreshAt = expiry - 30 * 24 * 60 * 60 * 1000 - 60 * 1000;
+  // ensureAnonymousSessionInternal rotates a still-valid token once it enters
+  // the final 30 days. Schedule just inside that boundary, not before it.
+  const refreshAt = expiry - 30 * 24 * 60 * 60 * 1000 + 60 * 1000;
   const delay = Math.max(1_000, Math.min(refreshAt - Date.now(), expiry - Date.now() - 60_000));
-  sessionRefreshTimer = window.setTimeout(async () => {
+
+  const attemptRefresh = async () => {
     try {
       await ensureAnonymousSessionInternal();
       notifyAuthStateChanged();
@@ -497,12 +498,13 @@ function scheduleSessionRefresh(): void {
       // Never bootstrap a different care record after a refresh failure.
       const remaining = expiry - Date.now();
       if (remaining > 60_000) {
-        sessionRefreshTimer = window.setTimeout(scheduleSessionRefresh, Math.min(60_000, remaining - 30_000));
+        sessionRefreshTimer = window.setTimeout(() => { void attemptRefresh(); }, Math.min(60_000, remaining - 30_000));
       }
     }
-  }, delay);
-}
+  };
 
+  sessionRefreshTimer = window.setTimeout(() => { void attemptRefresh(); }, delay);
+}
 export function startTokenRefresh(): void {
   scheduleSessionRefresh();
 }
