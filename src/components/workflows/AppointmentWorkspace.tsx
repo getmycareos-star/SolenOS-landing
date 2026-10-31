@@ -233,23 +233,35 @@ export default function AppointmentWorkspace() {
     }
     try {
       await ensureAnonymousSession()
+      const persistedStatus = ({
+        'Awaiting documentation': 'preparation',
+        'Follow-up pending': 'follow_up_pending',
+        'Ready for review': 'ready_for_review',
+        'Closed with documented outstanding items': 'closed_with_outstanding_items',
+      } as const)[reviewStatus]
       if (recordId) {
         const updated = await patchJSON('/appointment-workspaces/' + encodeURIComponent(recordId), {
           expected_version: recordVersion,
-          status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
+          status: persistedStatus,
           payload, change_reason: 'Caregiver saved appointment workspace',
-        }) as { version_number: number }
-        setRecordVersion(updated.version_number)
-        setSavedRecords(current => current.map(item => item.id === recordId ? { ...item, version_number: updated.version_number, status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus], updated_at: new Date().toISOString() } : item))
+        }) as { id?: string; version_number?: number }
+        if (updated.id !== recordId || !Number.isInteger(updated.version_number) || (updated.version_number ?? 0) <= recordVersion) {
+          throw new Error('The backend did not confirm a new appointment revision. Your edits remain unsaved on this screen.')
+        }
+        setRecordVersion(updated.version_number!)
+        setSavedRecords(current => current.map(item => item.id === recordId ? { ...item, version_number: updated.version_number!, status: persistedStatus, updated_at: new Date().toISOString() } : item))
         setSaveMessage('Saved securely · version ' + updated.version_number + '. Not yet reconciled into LCR facts.')
       } else {
         const created = await postJSON('/appointment-workspaces', {
-          status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
+          status: persistedStatus,
           payload, change_reason: 'Initial caregiver appointment workspace save',
-        }) as { id: string; version_number: number }
+        }) as { id?: string; version_number?: number }
+        if (!created.id || !Number.isInteger(created.version_number) || (created.version_number ?? 0) < 1) {
+          throw new Error('The backend did not confirm a persisted appointment workspace. Your edits remain unsaved on this screen.')
+        }
         setRecordId(created.id)
-        setRecordVersion(created.version_number)
-        setSavedRecords(current => [{ id: created.id, status: 'preparation', version_number: created.version_number, updated_at: new Date().toISOString() }, ...current.filter(item => item.id !== created.id)])
+        setRecordVersion(created.version_number!)
+        setSavedRecords(current => [{ id: created.id!, status: persistedStatus, version_number: created.version_number!, updated_at: new Date().toISOString() }, ...current.filter(item => item.id !== created.id)])
         setSaveMessage('Saved securely · version ' + created.version_number + '. Not yet reconciled into LCR facts.')
       }
     } catch (error) {
