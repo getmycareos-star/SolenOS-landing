@@ -5,7 +5,7 @@ const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 
 const required: Array<[string, RegExp]> = [
   ["create loop posts to the authoritative API", /postJSON\("\/open-loops"/],
-  ["create response refreshes persisted records", /await refresh\(\)[\s\S]*?Open loop saved to the care record/],
+  ["create response refreshes persisted records before showing the saved-result notice", /await refresh\(\)[\s\S]*?setNotice\(\(saved as/],
   ["create retries reuse an idempotency key for the same payload", /pendingCreateKey\.current = \{ signature, key: idempotencyKey \}/],
   ["successful create clears the pending idempotency key", /await refresh\(\)[\s\S]*?pendingCreateKey\.current = null/],
   ["history is loaded from the backend", /getJSON\(\`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/history/],
