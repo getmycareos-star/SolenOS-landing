@@ -337,11 +337,32 @@ try {
   const persistedConflict = await conflictResponse.json();
   if (!persistedConflict.id) throw new Error("Backend did not return the persisted conflict ID.");
 
+  const situationResponse = await fetch(new URL("/api/situation", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      person_id: session.personId,
+      caregiver_id: session.caregiverId,
+      client_care_key: "ci-open-loop-conflict-panel",
+      care_session_id: "ci-open-loop-conflict-panel-session",
+      raw_input: "CI-only synthetic care situation used to mount the persisted conflict review in the Living Care Record.",
+      timestamp: new Date().toISOString(),
+      captured_at: new Date().toISOString(),
+      provenance: { input_type: "text", source: "ci_e2e_fixture" },
+    }),
+  });
+  if (!situationResponse.ok) {
+    throw new Error(`Could not seed synthetic care situation: HTTP ${situationResponse.status} ${await situationResponse.text()}`);
+  }
+
   isolateConflictUiRequests = true;
   await page.evaluate(() => {
     localStorage.setItem("solenos_care_recipient_display_name", "CI synthetic care recipient");
   });
-  await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/workspace/care-continuity", frontend).toString(), { waitUntil: "domcontentloaded" });
   const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
   await conflictPanel.getByRole("heading", { name: "Conflict comparison and resolution history" }).waitFor({ timeout: 20_000 });
   await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);
