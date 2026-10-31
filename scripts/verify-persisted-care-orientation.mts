@@ -27,6 +27,8 @@ assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR screen redirects
 assert.doesNotMatch(legacyRoute, /PersistedCareOrientation|LCRCurrentUnderstanding|Record timeline/, "legacy route must not render the old LCR interface");
 assert.match(component, /Start with one detail/, "new caregivers get a direct first action");
 assert.match(component, /Add a care update/, "returning caregivers can continue their saved record");
+assert.match(component, /href="\/workspace\?prompt=/, "first-visit and returning caregivers use the AI Companion rather than a standalone Add Record page");
+assert.doesNotMatch(component, /compose=1/, "orientation contains no Add Record page link");
 assert.match(overview, /onEntryStateChange=\{setPersistedEntryState\}/, "overview receives the persisted entry classification");
 assert.match(overview, /persistedEntryState === "returning"/, "overview distinguishes server-confirmed returning caregivers");
 assert.match(overview, /Record status unavailable/, "failed record retrieval is not presented as a first visit");
