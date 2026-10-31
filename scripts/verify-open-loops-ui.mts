@@ -22,7 +22,7 @@ const required: Array<[string, RegExp]> = [
   ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
   ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
   ["action errors are shown rather than reported as success", /The requested change was not confirmed/],
-  ["caregiver-friendly follow-up empty state", /Nothing needs following up here right now\\.\\s*<\\/h3>/],
+  ["caregiver-friendly follow-up empty state", /Nothing needs following up here right now\.\s*<\/h3>/],
   ["caregiver capture uses one free-text note", /id="open-loop-note"[\s\S]*?value={description}[\s\S]*?onChange/],
   ["caregiver is not asked to classify the item", /loop_type: "unresolved_concern"/],
   ["caregiver note is preserved as reported information", /kind: "caregiver_recorded", text: rawText/],
