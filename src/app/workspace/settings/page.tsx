@@ -263,7 +263,7 @@ function AccountCard() {
   const [account, setAccount] = useState<{ id: string; email: string; created_at: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [mode, setMode] = useState<"idle" | "create" | "sign_in" | "delete">("idle");
+  const [mode, setMode] = useState<"idle" | "create" | "sign_in" | "sign_out" | "delete">("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
