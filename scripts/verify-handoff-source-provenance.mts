@@ -96,8 +96,12 @@ assert.match(handoffPage, /can_receive_handoff/,
   "recipient must be eligible under backend consent rules");
 assert.match(handoffPage, /Documents are not currently available through the verified handoff-draft source adapter/,
   "handoff UI must disclose that document content is not included in the current verified source adapter");
-assert.match(handoffPage, /A handoff record already exists, but its summary was not confirmed/,
+assert.match(handoffPage, /A handoff record exists, but its summary is not confirmed/,
   "partial handoff creation must not be reported as a completed share");
+assert.match(handoffPage, /const recovered = await getJSON\(\`\/handoffs\/\$\{encodeURIComponent\(handoffId\)\}\/summary\`\)/,
+  "a lost summary-write response must be reconciled by reading the persisted summary before retrying");
+assert.match(handoffPage, /if \(!created\.id\)/,
+  "handoff creation must validate the backend-issued handoff ID before attempting summary attachment");
 assert.match(handoffPage, /semantic_grounding_status/,
   "retrieved summary must disclose that semantic grounding is not automatically verified");
 const companionPage = await readFile(new URL("../src/components/workflows/AICompanion.tsx", import.meta.url), "utf8");
