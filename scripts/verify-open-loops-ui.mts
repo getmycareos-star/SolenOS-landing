@@ -26,13 +26,22 @@ const required: Array<[string, RegExp]> = [
   ["caregiver capture uses one free-text note", /id="open-loop-note"[\s\S]*?value={description}[\s\S]*?onChange/],
   ["caregiver is not asked to classify the item", /loop_type: "unresolved_concern"/],
   ["caregiver note is preserved as reported information", /kind: "caregiver_recorded", text: rawText/],
-  ["source IDs and deadlines are not required during capture", /Source reference \(optional\)|datetime-local/],
+
   ["advanced record operations are progressively disclosed", /<details className="open-loop-more-actions">/],
 ];
 
 for (const [label, pattern] of required) {
   assert.match(page, pattern, `Open Loop UI contract missing: ${label}`);
 }
+
+const captureStart = page.indexOf("<form onSubmit={createLoop}");
+const captureEnd = page.indexOf("</form>", captureStart);
+assert.ok(captureStart >= 0 && captureEnd > captureStart, "caregiver capture form must exist");
+assert.doesNotMatch(
+  page.slice(captureStart, captureEnd),
+  /source[_ ]?id|evidence_id|datetime-local|deadline_at/i,
+  "source IDs and deadlines must not be required during capture",
+);
 
 for (const action of ["responses", "actions", "outcomes", "corroborate-outcome", "reconcile", "close", "reopen", "cancel"]) {
   assert.ok(page.includes(`"${action}"`), `Open Loop action route missing: ${action}`);
