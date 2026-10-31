@@ -8,6 +8,7 @@ assert.match(clientSource, /scheduleSessionRefresh/, "session rotation must be s
 assert.match(clientSource, /notifyAuthStateChanged/, "account/session changes must notify auth subscribers");
 assert.match(clientSource, /stopTokenRefresh\(\)[\s\S]*?removeItem\(ANONYMOUS_TOKEN_KEY\)/, "revocation must cancel scheduled refresh before clearing credentials");
 assert.match(clientSource, /MAX_TIMER_DELAY_MS = 2_147_000_000/, "long-lived sessions must not overflow browser timer limits");
+assert.match(clientSource, /extraHeaders: Record<string, string> = \{\}/, "POST requests must support explicit idempotency headers without weakening session authorization");
 assert.doesNotMatch(clientSource, /No backend-issued token exists to refresh/, "token refresh must not remain a no-op");
 const accountSettings = fs.readFileSync(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
 assert.match(accountSettings, /signInToAccount\(email, password\)/, "settings must authenticate existing caregiver accounts against the backend");
