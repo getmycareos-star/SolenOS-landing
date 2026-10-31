@@ -101,12 +101,12 @@ export default function OpenLoopsPage() {
     try {
       // Keep the caregiver's original words intact. The first sentence is only
       // a navigation label, not an AI-generated interpretation or care fact.
-      const title = rawText.split(/\\r?\\n|(?<=[.!?])\\s+/)[0].trim().slice(0, 240) || "Care update";
+      const title = rawText.split(/\r?\n|(?<=[.!?])\s+/)[0].trim().slice(0, 240) || "Care update";
       const createPayload = {
         loop_type: "unresolved_concern",
         title,
         description: rawText,
-        evidence: [],
+        evidence: [{ kind: "caregiver_recorded", text: rawText }],
         uncertainty: "unknown",
       };
       const signature = JSON.stringify(createPayload);
