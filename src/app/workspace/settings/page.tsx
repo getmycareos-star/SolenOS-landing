@@ -19,7 +19,7 @@ import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { deleteJSON, ensureAnonymousSession, getJSON, patchJSON, postJSON, putJSON } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getJSON, notifyAuthStateChanged, patchJSON, postJSON, putJSON, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
@@ -263,7 +263,7 @@ function AccountCard() {
   const [account, setAccount] = useState<{ id: string; email: string; created_at: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [mode, setMode] = useState<"idle" | "create" | "delete">("idle");
+  const [mode, setMode] = useState<"idle" | "create" | "sign_in" | "delete">("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -296,10 +296,23 @@ function AccountCard() {
       if (mode === "create") {
         const result = await postJSON("/accounts", { email, password }) as { account: typeof account; message?: string };
         setAccount(result.account ?? null);
+        notifyAuthStateChanged();
         setMessage("Account created and linked to this care record.");
         setMode("idle");
         setPassword("");
         show("Account created.", "success");
+      } else if (mode === "sign_in") {
+        const confirmed = window.confirm(
+          "Sign in to an existing SolenOS account? This switches this device to the care record linked to that account. It does not merge the anonymous care record currently open on this device. Cancel if you still need information from that anonymous record."
+        );
+        if (!confirmed) return;
+        const result = await signInToAccount(email, password);
+        setAccount(result.account ?? null);
+        setMessage("Signed in. This device is now using the care record linked to this account.");
+        setMode("idle");
+        setEmail("");
+        setPassword("");
+        show("Signed in to your SolenOS account.", "success");
       } else if (mode === "delete") {
         await deleteJSON("/accounts/me", { password });
         setAccount(null);
@@ -341,9 +354,9 @@ function AccountCard() {
       {mode !== "idle" && (
         <form onSubmit={(event) => void submit(event)} style={{ display: "grid", gap: "0.8rem", marginTop: "0.8rem" }}>
           <h3 className="mobile-settings-label" style={{ margin: 0 }}>
-            {mode === "create" ? "Create your account" : "Confirm account deletion"}
+            {mode === "create" ? "Create your account" : mode === "sign_in" ? "Sign in to an existing account" : "Confirm account deletion"}
           </h3>
-          {mode === "create" && (
+          {(mode === "create" || mode === "sign_in") && (
             <label className="mobile-settings-label" htmlFor="account-email">
               Email address
               <input id="account-email" className="mobile-settings-input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
