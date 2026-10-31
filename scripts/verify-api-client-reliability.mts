@@ -10,6 +10,21 @@ assert.match(clientSource, /stopTokenRefresh\(\)[\s\S]*?removeItem\(ANONYMOUS_TO
 assert.match(clientSource, /MAX_TIMER_DELAY_MS = 2_147_000_000/, "long-lived sessions must not overflow browser timer limits");
 assert.match(clientSource, /extraHeaders: Record<string, string> = \{\}/, "POST requests must support explicit idempotency headers without weakening session authorization");
 assert.doesNotMatch(clientSource, /No backend-issued token exists to refresh/, "token refresh must not remain a no-op");
+const appShell = fs.readFileSync(new URL("../src/components/app-shell/AppShell.tsx", import.meta.url), "utf8");
+for (const key of [
+  "solenos_entered_care_record",
+  "solenos_durable_care_key",
+  "solenos_share_history",
+  "solenos_research_preview_ack_v1",
+  "solenos_activation_dismissed_prompts",
+  "solenos_activation_prior_follow_up_count",
+  "solenos_activation_last_input_snippet",
+]) {
+  assert.match(appShell, new RegExp('"'+key+'"'), "device deletion must clear "+key);
+}
+assert.match(appShell, /await revokeAnonymousSession\(\)/, "device deletion must revoke the server-issued session before clearing local state");
+assert.match(appShell, /Local workspace data was not cleared/, "failed server revocation must not be reported as a successful deletion");
+
 const accountSettings = fs.readFileSync(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
 assert.match(accountSettings, /signInToAccount\(email, password\)/, "settings must authenticate existing caregiver accounts against the backend");
 assert.match(accountSettings, /revokeAnonymousSession\(\)/, "device sign-out must revoke the current server-issued session");
