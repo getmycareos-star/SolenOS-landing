@@ -240,7 +240,7 @@ try {
   // verify the persisted terminal state and exercise the explicit reopen path.
   await page.getByLabel("Filter open loops").selectOption("all");
   await handoff.getByText(/professional input · closed/i).waitFor({ timeout: 10_000 });
-  await handoff.locator("details.open-loop-more-actions summary").click();
+  await openRecordActions(handoff);
   await handoff.getByRole("button", { name: "Reopen with reason" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await handoff.getByText(/professional input · open/i).waitFor({ timeout: 10_000 });
