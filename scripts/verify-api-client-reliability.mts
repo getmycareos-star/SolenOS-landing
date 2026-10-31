@@ -7,6 +7,10 @@ assert.match(clientSource, /\/api\/v1\/sessions\/refresh/, "session refresh must
 assert.match(clientSource, /scheduleSessionRefresh/, "session rotation must be scheduled proactively");
 assert.match(clientSource, /notifyAuthStateChanged/, "account/session changes must notify auth subscribers");
 assert.doesNotMatch(clientSource, /No backend-issued token exists to refresh/, "token refresh must not remain a no-op");
+const accountSettings = fs.readFileSync(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
+assert.match(accountSettings, /signInToAccount\(email, password\)/, "settings must authenticate existing caregiver accounts against the backend");
+assert.match(accountSettings, /revokeAnonymousSession\(\)/, "device sign-out must revoke the current server-issued session");
+assert.match(accountSettings, /does not merge the anonymous care record currently open on this device/, "account sign-in must disclose the record-switch boundary");
 
 const values = new Map<string, string>([
   ["solenos_anonymous_access_token", "server-issued-token"],
