@@ -341,9 +341,19 @@ export default function OpenLoopsPage() {
           </div>
         </div>
 
-        {error && <p role="alert" style={{ border: "1px solid #b91c1c", padding: 12, borderRadius: 10 }}>{error}</p>}
+        {error && (
+          <div className="open-loop-load-error" role="alert">
+            <p>{error} An empty view does not mean nothing happened in the care journey.</p>
+            <Button variant="secondary" onClick={() => {
+              setLoading(true);
+              setError("");
+              void refresh().catch(() => setError("Saved follow-ups could not be loaded. Check your connection and try again.")).finally(() => setLoading(false));
+            }} disabled={loading}>Try again</Button>
+          </div>
+        )}
         {notice && <p role="status" style={{ border: "1px solid #a3b18a", padding: 12, borderRadius: 10 }}>{notice}</p>}
-        {loading ? <p aria-live="polite">Loading saved open loops…</p> :
+        {loading ? <p aria-live="polite">Loading saved follow-ups…</p> :
+          error ? null :
           visibleLoops.length === 0 ? <div style={{ border: "1px dashed var(--border, #d6d9d3)", borderRadius: 14, padding: 24 }}>
             <CheckCircle2 size={22} aria-hidden /><h3>No items in this view</h3><p>No sample records are shown. If this is unexpected, refresh and check that the correct caregiver session is active.</p>
           </div> : <div style={{ display: "grid", gap: 14 }}>
