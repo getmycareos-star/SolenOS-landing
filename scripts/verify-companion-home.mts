@@ -4,7 +4,8 @@ import path from "node:path";
 
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
-const home = read("src/app/workspace/page.tsx");
+const lcrHome = read("src/app/workspace/page.tsx");
+const home = read("src/app/workspace/companion/page.tsx");
 const dailyCare = read("src/app/workspace/daily-care/page.tsx");
 const shell = read("src/components/app-shell/AppShell.tsx");
 const moreMenu = read("src/components/mvp-workspace/WorkspaceMoreMenu.tsx");
@@ -13,7 +14,6 @@ const shellStyles = read("src/app/globals.css");
 const addPanel = read("src/components/mvp-workspace/AddSituationPanel.tsx");
 const cognitive = read("src/components/mvp-workspace/CognitiveWorkspace.tsx");
 const record = read("src/app/workspace/record/page.tsx");
-const companionAlias = read("src/app/workspace/companion/page.tsx");
 
 assert.match(home, /@\/components\/workflows\/AICompanion/);
 assert.match(home, /solenos-companion-home/);
@@ -52,7 +52,7 @@ assert.match(documents, /getBlob\("\/upload\//, "saved original files remain ret
 assert.doesNotMatch(home, /compose=1|CognitiveWorkspace|lcr-add-screen/, "the legacy LCR entry screen is removed from Companion home");
 assert.match(dailyCare, /StructuredDailyCapture/);
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask|Ask Daily Care Qwen/);
-assert.match(shell, /href: "\/workspace", label: "AI Companion"/);
+assert.match(shell, /href: "\/workspace\/companion", label: "AI Companion"/);
 assert.doesNotMatch(shell, /href: "\/workspace\/record"/);
 assert.match(shell, /useState\(false\)/);
 assert.match(shell, /is-sidebar-open/);
@@ -138,6 +138,7 @@ assert.doesNotMatch(shell, /MoreVertical|solenos-main-menu/);
 assert.match(record, /redirect\("\/workspace"\)/);
 assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/);
 assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
-assert.match(companionAlias, /redirect\("\/workspace"\)/);
+assert.match(lcrHome, /LCRCurrentUnderstanding/);
+assert.doesNotMatch(lcrHome, /companion-conversation/);
 
 console.log("Companion home contract passed: caregiver-first home, restored upload/photo/scan menu and intake, plain-language record details, caregiver update route, device-session actions, export flow, and browseable history.");
