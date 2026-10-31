@@ -206,18 +206,64 @@ export function ensureAnonymousSession(): Promise<AnonymousSession> {
 const API_REQUEST_TIMEOUT_MS = 15_000;
 const RETRYABLE_GET_STATUSES = new Set([502, 503, 504]);
 
+let apiTimingSequence = 0;
+
+/** Keep browser performance entries content-free: no query strings, IDs, tokens, or payloads. */
+function apiTimingLabel(input: RequestInfo | URL): string {
+  try {
+    const raw = typeof input === "string"
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url;
+    const pathname = new URL(raw, window.location.origin).pathname;
+    const segments = pathname.split("/").filter(Boolean);
+    // The first three route segments identify an API family without recording
+    // person, caregiver, document, conversation, or other record identifiers.
+    return segments.slice(0, 3).join("-").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 48) || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  const timingEnabled = typeof performance !== "undefined" && typeof performance.mark === "function";
+  const sequence = ++apiTimingSequence;
+  const startMark = `solenos-api-start-${sequence}`;
+  const endMark = `solenos-api-end-${sequence}`;
+  const method = (init.method || (typeof Request !== "undefined" && input instanceof Request ? input.method : "GET")).toUpperCase();
+  let outcome = "network-error";
+  if (timingEnabled) {
+    try { performance.mark(startMark); } catch { /* Performance API is optional. */ }
+  }
   try {
-    return await fetch(input, { ...init, signal: init.signal ?? controller.signal });
+    const response = await fetch(input, { ...init, signal: init.signal ?? controller.signal });
+    outcome = String(response.status);
+    return response;
   } catch (error) {
     if (controller.signal.aborted) {
+      outcome = "timeout";
       throw new Error("The SolenOS API request timed out. Check your connection and try again.");
     }
     throw error;
   } finally {
     clearTimeout(timeout);
+    if (timingEnabled && typeof performance.measure === "function") {
+      try {
+        performance.mark(endMark);
+        performance.measure(
+          `solenos.api.${method}.${apiTimingLabel(input)}.${outcome}`,
+          { start: startMark, end: endMark },
+        );
+      } catch {
+        // Instrumentation must never interfere with a care-record request.
+      } finally {
+        performance.clearMarks(startMark);
+        performance.clearMarks(endMark);
+      }
+    }
   }
 }
 
