@@ -55,7 +55,7 @@ const NAVIGATION = [
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
-  { href: "/workspace", label: "AI companion", icon: MessageCircle },
+  { href: "/workspace", label: "AI Companion", icon: MessageCircle },
 ] as const;
 
 const LOCAL_WORKSPACE_KEYS = [
