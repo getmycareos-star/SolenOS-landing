@@ -5,6 +5,9 @@ import path from "node:path";
 const root = process.cwd();
 const component = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
 const legacyRoute = fs.readFileSync(path.join(root, "src/app/workspace/record/page.tsx"), "utf8");
+const overview = fs.readFileSync(path.join(root, "src/app/workspace/care-continuity/page.tsx"), "utf8");
+const shell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
+const featureFlags = fs.readFileSync(path.join(root, "src/lib/feature-flags.ts"), "utf8");
 
 assert.match(component, /ensureAnonymousSession/);
 assert.match(component, /fetch\(`\/api\/situation\?\${params\.toString\(\)}`/);
@@ -22,5 +25,12 @@ assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR screen redirects
 assert.doesNotMatch(legacyRoute, /PersistedCareOrientation|LCRCurrentUnderstanding|Record timeline/, "legacy route must not render the old LCR interface");
 assert.match(component, /Start with one detail/, "new caregivers get a direct first action");
 assert.match(component, /Add a care update/, "returning caregivers can continue their saved record");
+assert.match(overview, /onEntryStateChange=\{setPersistedEntryState\}/, "overview receives the persisted entry classification");
+assert.match(overview, /persistedEntryState === "returning"/, "overview distinguishes server-confirmed returning caregivers");
+assert.match(overview, /Record status unavailable/, "failed record retrieval is not presented as a first visit");
+assert.match(overview, /hasAnyContent && \(/, "local-only timeline content does not contradict a server-confirmed returning state");
+assert.doesNotMatch(shell, /label: "Community"|href: "\/workspace\/community"/, "disabled Community is absent from workspace navigation");
+assert.match(featureFlags, /community: false/);
+assert.match(featureFlags, /professionalCommunity: false/);
 
 console.log("Persisted-care orientation contract checks passed.");
