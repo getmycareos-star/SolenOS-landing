@@ -114,8 +114,8 @@ function makeSummary(draft: Draft, scope: string[]) {
   }
 
   const idCounts = new Map<string, number>();
-  for (const record of includedRecords) {
-    idCounts.set(record.source_id, (idCounts.get(record.source_id) ?? 0) + 1);
+  for (const reference of draft.source_references) {
+    idCounts.set(reference.source_id, (idCounts.get(reference.source_id) ?? 0) + 1);
   }
   const sourceRecordIds = [...new Set(
     includedRecords
