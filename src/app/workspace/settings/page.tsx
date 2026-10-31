@@ -19,7 +19,7 @@ import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { deleteJSON, ensureAnonymousSession, getJSON, notifyAuthStateChanged, patchJSON, postJSON, putJSON, signInToAccount } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getJSON, notifyAuthStateChanged, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
@@ -313,8 +313,19 @@ function AccountCard() {
         setEmail("");
         setPassword("");
         show("Signed in to your SolenOS account.", "success");
+      } else if (mode === "sign_out") {
+        await revokeAnonymousSession();
+        setAccount(null);
+        setLoadFailed(true);
+        setLoaded(true);
+        notifyAuthStateChanged();
+        setMessage("Signed out on this device. Sign in again to reopen the care record linked to your account.");
+        setMode("idle");
+        setPassword("");
+        show("Signed out on this device.", "success");
       } else if (mode === "delete") {
         await deleteJSON("/accounts/me", { password });
+        notifyAuthStateChanged();
         setAccount(null);
         setMessage("Account deleted. Your care record remains available in this anonymous session; deleting the account does not erase care history.");
         setMode("idle");
@@ -334,6 +345,9 @@ function AccountCard() {
       {!loaded && <p className="mobile-settings-hint" role="status">Loading account options…</p>}
       {loaded && account && mode === "idle" && (
         <div className="mobile-settings-buttons">
+          <Button variant="secondary" onClick={() => { setMode("sign_out"); setError(""); setMessage(""); }}>
+            Sign out on this device
+          </Button>
           <Button variant="destructive" onClick={() => { setMode("delete"); setPassword(""); setError(""); setMessage(""); }}>
             <Trash2 size={16} aria-hidden /> Delete account
           </Button>
@@ -348,13 +362,14 @@ function AccountCard() {
       )}
       {loaded && loadFailed && mode === "idle" && (
         <div className="mobile-settings-buttons">
+          <Button variant="secondary" onClick={() => { setMode("sign_in"); setError(""); setMessage(""); }}>Sign in to restore an existing account</Button>
           <Button variant="secondary" onClick={() => void refreshAccount()} disabled={busy}>Retry account status</Button>
         </div>
       )}
       {mode !== "idle" && (
         <form onSubmit={(event) => void submit(event)} style={{ display: "grid", gap: "0.8rem", marginTop: "0.8rem" }}>
           <h3 className="mobile-settings-label" style={{ margin: 0 }}>
-            {mode === "create" ? "Create your account" : mode === "sign_in" ? "Sign in to an existing account" : "Confirm account deletion"}
+            {mode === "create" ? "Create your account" : mode === "sign_in" ? "Sign in to an existing account" : mode === "sign_out" ? "Sign out on this device" : "Confirm account deletion"}
           </h3>
           {(mode === "create" || mode === "sign_in") && (
             <label className="mobile-settings-label" htmlFor="account-email">
@@ -363,7 +378,7 @@ function AccountCard() {
             </label>
           )}
           <label className="mobile-settings-label" htmlFor="account-password">
-            {mode === "delete" ? "Enter your password to confirm" : "Password"}
+            {mode === "delete" ? "Enter your password to confirm" : mode === "sign_out" ? "Enter your password to revoke this device session" : "Password"}
             <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
           {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
