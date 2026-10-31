@@ -9,7 +9,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { BrandLoading } from "@/components/brand";
 
 const WORKSPACE_NAV = [
-  { href: "/workspace", label: "Living Care Record", icon: "◉" },
+  { href: "/workspace/care-continuity", label: "Care overview", icon: "◉" },
   { href: "/workspace/timeline", label: "Care Timeline", icon: "◷" },
   { href: "/workspace/open-loops", label: "Open Loops", icon: "↻" },
   { href: "/workspace/documents", label: "Documents", icon: "📄" },
@@ -86,7 +86,7 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
       }>
         <AppShell
           navItems={WORKSPACE_NAV}
-          brandHref="/workspace"
+          brandHref="/workspace/care-continuity"
           careContext={<CareContextBar />}
         >
           {children}
