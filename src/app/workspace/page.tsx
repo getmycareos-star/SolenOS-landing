@@ -15,23 +15,16 @@ function WorkspaceHomeInner() {
   const router = useRouter();
   const prompt = searchParams.get("prompt");
   const enterCareRecord = searchParams.get("enter") === "1";
-  const compose = searchParams.get("compose") === "1";
-  const situation = searchParams.get("situation");
 
   useEffect(() => {
     if (enterCareRecord) {
       router.replace("/workspace/care-continuity");
       return;
     }
-    if (compose) {
-      const params = new URLSearchParams({ compose: "1" });
-      if (situation) params.set("situation", situation);
-      router.replace(`/workspace/care-continuity?${params.toString()}`);
-    }
-  }, [compose, enterCareRecord, router, situation]);
+  }, [enterCareRecord, router]);
 
-  if (enterCareRecord || compose) {
-    return <BrandLoading message={compose ? "Opening a place to add your update…" : "Opening your Living Care Record…"} />;
+  if (enterCareRecord) {
+    return <BrandLoading message="Opening your Living Care Record…" />;
   }
   return (
     <div className="mobile-screen feature-page companion-route solenos-companion-home">
