@@ -6,6 +6,13 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 let isolateConflictUiRequests = false;
 
+async function openRecordActions(record) {
+  const details = record.locator("details.open-loop-more-actions");
+  if (!(await details.evaluate((element) => element.open))) {
+    await details.locator("summary").click();
+  }
+}
+
 try {
   // Exercise the real Next.js UI while forwarding its same-origin API calls to
   // the real FastAPI process. No mocked API responses or sample care records.
@@ -60,8 +67,8 @@ try {
   });
 
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Open Loops" }).waitFor();
-  await page.getByText("No items in this view").waitFor({ timeout: 15_000 }).catch(() => {});
+  await page.getByRole("heading", { name: "Things to follow up" }).waitFor();
+  await page.getByText("Nothing to follow up here").waitFor({ timeout: 15_000 }).catch(() => {});
   await page.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -175,29 +182,52 @@ try {
     }
   });
 
-  await page.getByLabel("Type").selectOption("professional_input");
-
-  const handoffTitle = "CI E2E professional callback";
-  await page.getByLabel("Short title").fill(handoffTitle);
-  await page.getByLabel("Context and what is known").fill(
-    "Synthetic test only. The care team has not yet confirmed the appointment date."
+  // The caregiver-facing flow is a single natural-language note. The first
+  // sentence becomes a navigation label; the original text is preserved.
+  const caregiverNote = "The care team has not yet confirmed the appointment date. We are waiting for their call.";
+  await page.getByLabel("Your note").fill(caregiverNote);
+  await page.getByRole("button", { name: "Save note" }).click();
+  await page.getByRole("alert").filter({ hasText: "The note was not saved" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("button", { name: "Save note" }).click();
+  const noteTitle = "The care team has not yet confirmed the appointment date.";
+  const noteCard = page.locator("article").filter({
+    has: page.getByRole("heading", { name: noteTitle }),
+  });
+  await noteCard.waitFor({ timeout: 15_000 });
+  const savedNoteResponse = await fetch(new URL("/api/v1/open-loops", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!savedNoteResponse.ok) throw new Error(`Could not verify persisted caregiver note: HTTP ${savedNoteResponse.status}`);
+  const savedNotes = await savedNoteResponse.json();
+  const noteMatches = (savedNotes.items ?? []).filter((item) =>
+    item.title === noteTitle && item.description === caregiverNote && item.loop_type === "unresolved_concern"
   );
-  await page.getByRole("button", { name: "Save open loop" }).click();
-  await page.getByRole("alert").filter({ hasText: "The loop was not saved" }).waitFor({ timeout: 10_000 });
-  await page.getByRole("button", { name: "Save open loop" }).click();
+  if (noteMatches.length !== 1) {
+    throw new Error(`Caregiver note retry produced ${noteMatches.length} matching persisted records; expected exactly one.`);
+  }
+
+  // Seed a typed professional-input loop through the authenticated API so the
+  // lifecycle test can exercise the specialist response workflow without
+  // exposing internal loop classifications in the caregiver capture form.
+  const handoffTitle = "CI E2E professional callback";
+  const handoffCreate = await fetch(new URL("/api/v1/open-loops", backend), {
+    method: "POST",
+    headers: { authorization: `Bearer ${session.token}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      loop_type: "professional_input",
+      title: handoffTitle,
+      description: "Synthetic test only. The care team has not yet confirmed the appointment date.",
+      evidence: [],
+      uncertainty: "unknown",
+    }),
+  });
+  if (!handoffCreate.ok) throw new Error(`Could not seed professional-input loop: HTTP ${handoffCreate.status} ${await handoffCreate.text()}`);
+  await page.locator(".open-loop-list-heading").getByRole("button", { name: "Refresh" }).click();
   const handoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
   });
   await handoff.waitFor({ timeout: 15_000 });
-  const savedLoopsResponse = await fetch(new URL("/api/v1/open-loops", backend), {
-    headers: { authorization: `Bearer ${session.token}` },
-  });
-  if (!savedLoopsResponse.ok) throw new Error(`Could not verify persisted Open Loops: HTTP ${savedLoopsResponse.status}`);
-  const savedLoops = await savedLoopsResponse.json();
-  const handoffMatches = (savedLoops.items ?? []).filter((item) => item.title === handoffTitle);
-  if (handoffMatches.length !== 1) {
-    throw new Error(`Create retry produced ${handoffMatches.length} matching persisted loops; expected exactly one.`);
-  }
+  await openRecordActions(handoff);
 
   await handoff.getByRole("button", { name: "Record response" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
@@ -210,21 +240,30 @@ try {
   // verify the persisted terminal state and exercise the explicit reopen path.
   await page.getByLabel("Filter open loops").selectOption("all");
   await handoff.getByText(/professional input · closed/i).waitFor({ timeout: 10_000 });
+  await openRecordActions(handoff);
   await handoff.getByRole("button", { name: "Reopen with reason" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
   await handoff.getByText(/professional input · open/i).waitFor({ timeout: 10_000 });
 
   const conflictTitle = "CI E2E conflicting reports";
-  await page.getByLabel("Type").selectOption("contradiction");
-  await page.getByLabel("Short title").fill(conflictTitle);
-  await page.getByLabel("Context and what is known").fill(
-    "Synthetic test only. Two reports disagree; the discrepancy must remain visible until explicitly reconciled."
-  );
-  await page.getByRole("button", { name: "Save open loop" }).click();
+  const conflictCreate = await fetch(new URL("/api/v1/open-loops", backend), {
+    method: "POST",
+    headers: { authorization: `Bearer ${session.token}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      loop_type: "contradiction",
+      title: conflictTitle,
+      description: "Synthetic test only. Two reports disagree; the discrepancy must remain visible until explicitly reconciled.",
+      evidence: [],
+      uncertainty: "unknown",
+    }),
+  });
+  if (!conflictCreate.ok) throw new Error(`Could not seed contradiction loop: HTTP ${conflictCreate.status} ${await conflictCreate.text()}`);
+  await page.locator(".open-loop-list-heading").getByRole("button", { name: "Refresh" }).click();
   const conflict = page.locator("article").filter({
     has: page.getByRole("heading", { name: conflictTitle }),
   });
   await conflict.waitFor({ timeout: 15_000 });
+  await openRecordActions(conflict);
 
   await conflict.getByRole("button", { name: "Record action" }).click();
   await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
@@ -264,11 +303,13 @@ try {
   const reloadedHandoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
   });
+  await openRecordActions(reloadedHandoff);
   await reloadedHandoff.getByRole("button", { name: "View audit history" }).click();
   await reloadedHandoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
   const reloadedConflict = page.locator("article").filter({
     has: page.getByRole("heading", { name: conflictTitle }),
   });
+  await openRecordActions(reloadedConflict);
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
@@ -296,11 +337,32 @@ try {
   const persistedConflict = await conflictResponse.json();
   if (!persistedConflict.id) throw new Error("Backend did not return the persisted conflict ID.");
 
+  const situationResponse = await fetch(new URL("/api/situation", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      person_id: session.personId,
+      caregiver_id: session.caregiverId,
+      client_care_key: "ci-open-loop-conflict-panel",
+      care_session_id: "ci-open-loop-conflict-panel-session",
+      raw_input: "CI-only synthetic care situation used to mount the persisted conflict review in the Living Care Record.",
+      timestamp: new Date().toISOString(),
+      captured_at: new Date().toISOString(),
+      provenance: { input_type: "text", source: "ci_e2e_fixture" },
+    }),
+  });
+  if (!situationResponse.ok) {
+    throw new Error(`Could not seed synthetic care situation: HTTP ${situationResponse.status} ${await situationResponse.text()}`);
+  }
+
   isolateConflictUiRequests = true;
   await page.evaluate(() => {
     localStorage.setItem("solenos_care_recipient_display_name", "CI synthetic care recipient");
   });
-  await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/workspace/care-continuity", frontend).toString(), { waitUntil: "domcontentloaded" });
   const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
   await conflictPanel.getByRole("heading", { name: "Conflict comparison and resolution history" }).waitFor({ timeout: 20_000 });
   await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);

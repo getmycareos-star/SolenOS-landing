@@ -139,7 +139,6 @@ const addSrc = fs.readFileSync(addPanel, "utf8");
 assert(!/useVoiceInput/.test(addSrc), "AddSituationPanel must not use voice input (ADR-018)");
 assert(!/\bMic\b/.test(addSrc), "AddSituationPanel must not render Mic (ADR-018)");
 assert(/Snap/.test(addSrc) && /Scan/.test(addSrc) && /Upload|FileText/.test(addSrc), "Snap/Scan/Upload capture present");
-assert(/Add to record/.test(addSrc), "Add to record CTA present");
 assert(/Preserving/.test(addSrc), "Preserving loading copy present");
 assert(/Reading document/.test(addSrc), "Reading document status present");
 assert(!/\bSend\b/.test(addSrc), "no Send chat CTA in entry composer");

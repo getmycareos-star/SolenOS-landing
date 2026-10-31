@@ -5,7 +5,7 @@ const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 
 const required: Array<[string, RegExp]> = [
   ["create loop posts to the authoritative API", /postJSON\("\/open-loops"/],
-  ["create response refreshes persisted records", /await refresh\(\)[\s\S]*?Open loop saved to the care record/],
+  ["create response refreshes persisted records before showing the saved-result notice", /await refresh\(\)[\s\S]*?setNotice\(\(saved as/],
   ["create retries reuse an idempotency key for the same payload", /pendingCreateKey\.current = \{ signature, key: idempotencyKey \}/],
   ["successful create clears the pending idempotency key", /await refresh\(\)[\s\S]*?pendingCreateKey\.current = null/],
   ["history is loaded from the backend", /getJSON\(\`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/history/],
@@ -22,12 +22,26 @@ const required: Array<[string, RegExp]> = [
   ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
   ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
   ["action errors are shown rather than reported as success", /The requested change was not confirmed/],
-  ["no sample Open Loop records are fabricated", /No sample records are shown/],
+  ["caregiver-friendly follow-up empty state", /Nothing needs following up here right now\.\s*<\/h3>/],
+  ["caregiver capture uses one free-text note", /id="open-loop-note"[\s\S]*?value={description}[\s\S]*?onChange/],
+  ["caregiver is not asked to classify the item", /loop_type: "unresolved_concern"/],
+  ["caregiver note is preserved as reported information", /kind: "caregiver_recorded", text: rawText/],
+
+  ["advanced record operations are progressively disclosed", /<details className="open-loop-more-actions">/],
 ];
 
 for (const [label, pattern] of required) {
   assert.match(page, pattern, `Open Loop UI contract missing: ${label}`);
 }
+
+const captureStart = page.indexOf("<form onSubmit={createLoop}");
+const captureEnd = page.indexOf("</form>", captureStart);
+assert.ok(captureStart >= 0 && captureEnd > captureStart, "caregiver capture form must exist");
+assert.doesNotMatch(
+  page.slice(captureStart, captureEnd),
+  /source[_ ]?id|evidence_id|datetime-local|deadline_at/i,
+  "source IDs and deadlines must not be required during capture",
+);
 
 for (const action of ["responses", "actions", "outcomes", "corroborate-outcome", "reconcile", "close", "reopen", "cancel"]) {
   assert.ok(page.includes(`"${action}"`), `Open Loop action route missing: ${action}`);
