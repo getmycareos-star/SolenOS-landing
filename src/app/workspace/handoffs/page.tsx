@@ -76,6 +76,16 @@ function formatDate(value?: string | null): string {
 
 function makeSummary(draft: Draft, scope: string[]) {
   const allRecords = draft.sections.flatMap((section) => section.items);
+  const openLoopRecords = allRecords.filter((record) => ["actions", "open_questions", "information_gaps"].includes(record.source_table));
+  const appointmentRecords = allRecords.filter((record) => record.source_table === "appointments");
+  const lcrRecords = allRecords.filter((record) =>
+    !["actions", "open_questions", "information_gaps", "appointments"].includes(record.source_table)
+  );
+  const includedRecords = [
+    ...(scope.includes("lcr_summary") ? lcrRecords : []),
+    ...(scope.includes("open_loops") ? openLoopRecords : []),
+    ...(scope.includes("appointments") ? appointmentRecords : []),
+  ];
   const lines = (records: DraftRecord[]) => records.map((record) => {
     const metadata = [
       `Source ${record.source_table}:${record.source_id}`,
@@ -94,25 +104,23 @@ function makeSummary(draft: Draft, scope: string[]) {
 
   const sections: Record<string, string> = {};
   if (scope.includes("lcr_summary")) {
-    sections.lcr_summary = lines(allRecords) || "No source records were returned in the selected preparation window. Review source coverage before sharing.";
+    sections.lcr_summary = lines(lcrRecords) || "No Living Care Record facts, events, or timeline records were returned in the selected preparation window. Review source coverage before sharing.";
   }
   if (scope.includes("open_loops")) {
-    const records = allRecords.filter((record) => ["actions", "open_questions", "information_gaps"].includes(record.source_table));
-    sections.open_loops = lines(records) || "No open questions, information gaps, or actions were returned by the available source adapters.";
+    sections.open_loops = lines(openLoopRecords) || "No open questions, information gaps, or actions were returned by the available source adapters.";
   }
   if (scope.includes("appointments")) {
-    const records = allRecords.filter((record) => record.source_table === "appointments");
-    sections.appointments = lines(records) || "No appointment records were returned by the appointment source adapter.";
+    sections.appointments = lines(appointmentRecords) || "No appointment records were returned by the appointment source adapter.";
   }
 
   const idCounts = new Map<string, number>();
-  for (const reference of draft.source_references) {
-    idCounts.set(reference.source_id, (idCounts.get(reference.source_id) ?? 0) + 1);
+  for (const record of includedRecords) {
+    idCounts.set(record.source_id, (idCounts.get(record.source_id) ?? 0) + 1);
   }
   const sourceRecordIds = [...new Set(
-    draft.source_references
-      .filter((reference) => idCounts.get(reference.source_id) === 1)
-      .map((reference) => reference.source_id)
+    includedRecords
+      .filter((record) => idCounts.get(record.source_id) === 1)
+      .map((record) => record.source_id)
   )];
   return { sections, sourceRecordIds };
 }
@@ -200,9 +208,9 @@ export default function CareHandoffsPage() {
     setSaving(true);
     setError("");
     setNotice("");
+    let handoffId = pendingHandoffId;
     try {
       const session = await ensureAnonymousSession();
-      let handoffId = pendingHandoffId;
       if (!handoffId) {
         const created = await postJSON("/handoffs", {
           person_id: session.person.id,
@@ -227,7 +235,8 @@ export default function CareHandoffsPage() {
       await loadWorkspace();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The handoff was not confirmed.");
-      if (pendingHandoffId) {
+      if (handoffId) {
+        setPendingHandoffId(handoffId);
         setNotice("A handoff record already exists, but its summary was not confirmed. Use Retry attach to finish; do not create another handoff.");
       }
     } finally {
