@@ -206,7 +206,7 @@ export function ShareCareSummaryPanel({
         await copyTextToClipboard(text);
         setSharingResult("Summary copied to clipboard.");
         recordShareHistory(summary.preparedFor, "text", "completed");
-        setState("completed");
+        setState("shared");
         onShared?.();
         return;
       }
@@ -227,7 +227,7 @@ export function ShareCareSummaryPanel({
         }, 300);
         setSharingResult("Print dialog opened.");
         recordShareHistory(summary.preparedFor, "PDF", "completed");
-        setState("completed");
+        setState("shared");
         onShared?.();
         return;
       }
@@ -241,7 +241,7 @@ export function ShareCareSummaryPanel({
           });
           setSharingResult("The share sheet closed. SolenOS cannot confirm whether the recipient received or opened the summary.");
           recordShareHistory(summary.preparedFor, "native", "completed");
-          setState("completed");
+          setState("shared");
           onShared?.();
           return;
         }
@@ -276,7 +276,7 @@ export function ShareCareSummaryPanel({
       await copyTextToClipboard(text);
       setSharingResult("Summary copied to clipboard.");
       recordShareHistory(summary.preparedFor, "text", "completed");
-      setState("completed");
+      setState("shared");
       onShared?.();
     } catch {
       recordShareHistory(summary?.preparedFor ?? "unknown", "text", "failed");
@@ -299,7 +299,7 @@ export function ShareCareSummaryPanel({
     URL.revokeObjectURL(url);
     setSharingResult("The summary download was started by this browser.");
     recordShareHistory(summary.preparedFor, "download", "completed");
-    setState("completed");
+    setState("shared");
     onShared?.();
   }, [summary, selectedContent, onShared]);
 
