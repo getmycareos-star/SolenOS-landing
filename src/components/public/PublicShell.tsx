@@ -32,7 +32,7 @@ export function PublicNav({
             ))}
           </nav>
         )}
-        <Link href="/workspace?enter=1" className="public-nav-product">
+        <Link href="/workspace/care-continuity" className="public-nav-product">
           Living Care Record
         </Link>
       </div>
@@ -55,7 +55,7 @@ export function PublicFooter() {
               {item.label}
             </Link>
           ))}
-          <Link href="/workspace?enter=1">Living Care Record</Link>
+          <Link href="/workspace/care-continuity">Living Care Record</Link>
         </nav>
         <p className="public-footer-emergency" role="note">
           {EMERGENCY_BOUNDARY}
@@ -84,7 +84,7 @@ export function PublicShell({
 }
 
 export function PublicCtaGroup({
-  primaryHref = "/workspace?enter=1",
+  primaryHref = "/workspace/care-continuity",
   primaryLabel = "Start Adding Care Information",
   secondaryHref = "/why-solenos",
   secondaryLabel = "Why solenos exists",
