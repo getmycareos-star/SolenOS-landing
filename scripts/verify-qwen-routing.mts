@@ -119,7 +119,15 @@ requireText("src/app/workspace/settings/page.tsx", [
   'postJSON("/accounts"',
   'deleteJSON("/accounts/me"',
 ]);
-assert(!read("src/app/workspace/settings/page.tsx").includes("Sign in"), "Settings account controls must not expose a Sign in button.");
+const accountSettings = read("src/app/workspace/settings/page.tsx");
+const accountCard = accountSettings.slice(
+  accountSettings.indexOf("function AccountCard()"),
+  accountSettings.indexOf("/** Legal"),
+);
+assert(accountCard.includes("Sign in to an existing account"), "Optional account sign-in must remain available.");
+assert(accountCard.includes("signInToAccount(email, password)"), "Account sign-in must use the authenticated backend client.");
+assert(accountSettings.includes("An account is optional. Anonymous care access remains available."), "Account creation and sign-in must remain optional; anonymous care access must not be gated.");
+assert(accountCard.includes('if (!getAnonymousAccessToken())'), "Opening account settings must not create or require a new care record.");
 assert(!read("src/app/workspace/settings/page.tsx").includes("multi-factor authentication"), "Settings must not show technical account capability messaging.");
 requireText("src/api/client.ts", [
   'export async function deleteJSON(path: string, body?: unknown)',
