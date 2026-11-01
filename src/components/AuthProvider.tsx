@@ -34,12 +34,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true
 
     const initAuth = async () => {
-      const { authenticated: auth, sessionInfo: info } = await checkAuthState()
-      if (mounted) {
-        setAuthenticated(auth)
-        setSessionInfo(info)
-        setLoading(false)
-        if (auth) startTokenRefresh()
+      try {
+        const { authenticated: auth, sessionInfo: info } = await checkAuthState()
+        if (mounted) {
+          setAuthenticated(auth)
+          setSessionInfo(info)
+          if (auth) startTokenRefresh()
+        }
+      } catch {
+        if (mounted) {
+          setAuthenticated(false)
+          setSessionInfo(null)
+        }
+      } finally {
+        if (mounted) setLoading(false)
       }
     }
 
@@ -62,9 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshAuth = async () => {
-    const { authenticated: auth, sessionInfo: info } = await checkAuthState()
-    setAuthenticated(auth)
-    setSessionInfo(info)
+    try {
+      const { authenticated: auth, sessionInfo: info } = await checkAuthState()
+      setAuthenticated(auth)
+      setSessionInfo(info)
+    } catch {
+      setAuthenticated(false)
+      setSessionInfo(null)
+    }
   }
 
   return (
