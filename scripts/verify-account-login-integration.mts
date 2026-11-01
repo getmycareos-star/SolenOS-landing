@@ -8,7 +8,7 @@ assert.match(client, /export async function signInToAccount\(email: string, pass
 assert.match(client, /export async function checkAuthState\(\)/);
 assert.match(client, /fetchWithTimeout\("\/api\/v1\/accounts\/me"/);
 assert.match(client, /window\.addEventListener\("personIdChanged", refresh\)/);
-assert.doesNotMatch(client, /return \{ authenticated: false, sessionInfo: null \} \}/);
+assert.equal(client.includes('export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {\n  return { authenticated: false, sessionInfo: null }\n}'), false);
 
 assert.match(client, /\/api\/v1\/accounts\/login/);
 assert.match(client, /ANONYMOUS_TOKEN_KEY, result\.access_token/);
