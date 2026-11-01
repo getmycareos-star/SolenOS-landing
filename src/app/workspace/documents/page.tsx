@@ -14,9 +14,10 @@ import {
   X,
 } from "lucide-react";
 
-import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
+import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
+import DocumentIntelligenceReview from "@/components/workflows/DocumentIntelligenceReview";
 
 type EvidenceRecord = {
   id: string;
@@ -283,6 +284,7 @@ export default function DocumentsPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [intelligenceRefreshKey, setIntelligenceRefreshKey] = useState(0);
 
   const loadDocuments = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true);
@@ -436,6 +438,8 @@ export default function DocumentsPage() {
     setUploading(true);
     setUploadMessage(null);
     let saved = 0;
+    let analysed = 0;
+    let analysisFailed = 0;
     try {
       const session = await ensureAnonymousSession();
       for (const page of reviewPages) {
@@ -452,15 +456,29 @@ export default function DocumentsPage() {
         const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
+        if (page.text.trim()) {
+          try {
+            const analysis = await postJSON(`/documents/${encodeURIComponent(stored.evidence_id)}/intelligence`, {}) as { analysis_id?: string; source_evidence_id?: string };
+            if (!analysis.analysis_id || analysis.source_evidence_id !== stored.evidence_id) throw new Error("Document intelligence was not confirmed for the saved source.");
+            analysed += 1;
+          } catch {
+            analysisFailed += 1;
+          }
+        }
       }
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
       setIntakeMode(null);
-      setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Scanned statements remain source evidence, not verified LCR facts.` });
       await loadDocuments(true);
+      setIntelligenceRefreshKey(value => value + 1);
+      setUploadMessage({
+        kind: "success",
+        text: `Saved ${saved} original file(s). Document intelligence completed for ${analysed} file(s); extracted statements require caregiver review before they enter the Living Care Record.${analysisFailed ? ` Intelligence could not run for ${analysisFailed} file(s); retry from the document intelligence section.` : ""}`,
+      });
     } catch {
-      setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });
+      setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Any readable saved files were submitted for document intelligence; refresh the library before retrying to avoid duplicate originals.` });
       await loadDocuments(true);
+      setIntelligenceRefreshKey(value => value + 1);
     } finally { setUploading(false); }
   };
 
@@ -488,6 +506,18 @@ export default function DocumentsPage() {
     setPreviewUrl(null);
   };
 
+  useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const evidenceId = url.searchParams.get("evidence_id");
+    if (!evidenceId) return;
+    const document = documents.find(item => item.id === evidenceId);
+    if (!document) return;
+    url.searchParams.delete("evidence_id");
+    window.history.replaceState(window.history.state, "", url.toString());
+    void openOriginal(document);
+  }, [documents, loading]);
+
   const downloadOriginal = () => {
     if (!previewUrl || !selected) return;
     const link = document.createElement("a");
@@ -510,6 +540,7 @@ export default function DocumentsPage() {
           <div>
             <h2 style={{ margin: 0, fontSize: 18 }}>Your document library</h2>
             <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>Original files are stored separately from AI interpretation.</p>
+            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Scanned statements remain source evidence, not verified LCR facts.</p>
           </div>
           <button type="button" onClick={() => void loadDocuments(true)} disabled={refreshing || loading} style={{ minHeight: 42, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }} aria-label="Refresh documents">
             <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
@@ -589,6 +620,10 @@ export default function DocumentsPage() {
         </section>}
         {uploading && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}>Reading available text and saving the original file. Please keep this page open.</p>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
+        <DocumentIntelligenceReview
+          documents={documents.map(document => ({ id: document.id, title: document.title, extractedText: document.extractedText }))}
+          refreshKey={intelligenceRefreshKey}
+        />
         {listError && <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14 }}><p style={{ margin: "0 0 10px" }}>{listError}</p><button type="button" onClick={() => void loadDocuments()} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Try again</button></div>}
 
         <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border)", borderRadius: 9, padding: "0 12px", minHeight: 44 }}>
