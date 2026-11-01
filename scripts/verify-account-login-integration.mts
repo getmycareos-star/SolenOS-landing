@@ -5,6 +5,11 @@ const client = await readFile(new URL("../src/api/client.ts", import.meta.url), 
 const settings = await readFile(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
 
 assert.match(client, /export async function signInToAccount\(email: string, password: string\)/);
+assert.match(client, /export async function checkAuthState\(\)/);
+assert.match(client, /fetchWithTimeout\("\/api\/v1\/accounts\/me"/);
+assert.match(client, /window\.addEventListener\("personIdChanged", refresh\)/);
+assert.doesNotMatch(client, /return \{ authenticated: false, sessionInfo: null \} \}/);
+
 assert.match(client, /\/api\/v1\/accounts\/login/);
 assert.match(client, /ANONYMOUS_TOKEN_KEY, result\.access_token/);
 assert.match(client, /ANONYMOUS_PERSON_KEY, result\.person_id/);
