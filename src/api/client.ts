@@ -472,14 +472,68 @@ export interface AuthSessionInfo {
 }
 
 export async function checkAuthState(): Promise<{ authenticated: boolean; sessionInfo: AuthSessionInfo | null }> {
-  return { authenticated: false, sessionInfo: null }
+  if (typeof window === "undefined") return { authenticated: false, sessionInfo: null };
+
+  const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
+  const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
+  const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
+  const expiresAt = window.localStorage.getItem(ANONYMOUS_EXPIRY_KEY);
+  if (!token || !personId || !caregiverId || !expiresAt) {
+    return { authenticated: false, sessionInfo: null };
+  }
+
+  // Validate the current capability without calling getJSON(): that helper may
+  // bootstrap a new anonymous record when no token exists. Auth checks must
+  // never create or silently switch a care record.
+  const response = await fetchWithTimeout("/api/v1/accounts/me", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (response.status === 401 || response.status === 403) {
+    return { authenticated: false, sessionInfo: null };
+  }
+  const result = await handleResponse(response) as {
+    account: { id: string; email: string; created_at: string | null } | null;
+  };
+  if (!result.account) return { authenticated: false, sessionInfo: null };
+
+  return {
+    authenticated: true,
+    sessionInfo: {
+      authenticated: true,
+      account_id: result.account.id,
+      session_type: "account",
+      authorized_person_ids: [personId],
+      caregiver_roles: {},
+      professional_roles: {},
+      anonymous_session_id: null,
+      expires_at: expiresAt,
+      mfa_verified: false,
+    },
+  };
 }
 
 export function subscribeToAuthState(
-  _callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
+  callback: (authenticated: boolean, sessionInfo: AuthSessionInfo | null) => void,
 ): () => void {
-  // No backend session event stream exists yet.
-  return () => undefined
+  if (typeof window === "undefined") return () => undefined;
+  let active = true;
+  const refresh = () => {
+    void checkAuthState()
+      .then(({ authenticated, sessionInfo }) => {
+        if (active) callback(authenticated, sessionInfo);
+      })
+      .catch(() => {
+        if (active) callback(false, null);
+      });
+  };
+  window.addEventListener("personIdChanged", refresh);
+  window.addEventListener("storage", refresh);
+  return () => {
+    active = false;
+    window.removeEventListener("personIdChanged", refresh);
+    window.removeEventListener("storage", refresh);
+  };
 }
 
 export function startTokenRefresh(): void {
