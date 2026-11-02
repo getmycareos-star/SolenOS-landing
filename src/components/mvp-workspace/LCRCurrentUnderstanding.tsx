@@ -9,6 +9,7 @@ import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
 import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
+import PossibleRelationshipsPanel from "@/components/mvp-workspace/PossibleRelationshipsPanel";
 
 type CurrentCareItem = {
   id: string;
@@ -899,6 +900,8 @@ export function LCRCurrentUnderstanding() {
         )}
       </div>
 
+      <PossibleRelationshipsPanel personId={personId} patterns={patterns} patternsError={patternsError} />
+
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-change-history-heading">Recorded changes</h3>
@@ -1343,7 +1346,7 @@ export function LCRCurrentUnderstanding() {
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
       <ConflictResolutionPanel personId={personId} />
-      <ClarificationWorkflowPanel personId={personId} />
+      <ClarificationWorkflowPanel personId={personId} id="lcr-clarification-workflow" />
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
