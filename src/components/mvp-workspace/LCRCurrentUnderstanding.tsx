@@ -426,6 +426,7 @@ export function LCRCurrentUnderstanding() {
   const [createReminderForSuggestion, setCreateReminderForSuggestion] = useState(false);
   const [reminderDueInput, setReminderDueInput] = useState("");
   const [actionTransitionReasons, setActionTransitionReasons] = useState<Record<string, string>>({});
+  const [actionDeferredUntil, setActionDeferredUntil] = useState<Record<string, string>>({});
   const [actionTransitionLoadingId, setActionTransitionLoadingId] = useState<string | null>(null);
   const [actionTransitionErrors, setActionTransitionErrors] = useState<Record<string, string>>({});
   const [actionHistory, setActionHistory] = useState<Record<string, RegisteredActionAudit[]>>({});
@@ -786,6 +787,7 @@ export function LCRCurrentUnderstanding() {
           expected_version: action.version,
           explicit_completion_confirmation: status === "completed",
           reason: reason || undefined,
+          ...(status === "deferred" && actionDeferredUntil[action.id] ? { deferred_until: new Date(actionDeferredUntil[action.id]).toISOString() } : {}),
         },
       ) as RegisteredAction;
       if (!updated?.id || updated.id !== action.id || updated.person_id !== personId) {
@@ -1135,6 +1137,16 @@ export function LCRCurrentUnderstanding() {
                           maxLength={2000}
                         />
                       </label>
+                      {action.status !== "completed" && action.status !== "cancelled" && (
+                        <label>
+                          New reminder date when deferring (required only if this action has a linked reminder)
+                          <input
+                            type="datetime-local"
+                            value={actionDeferredUntil[action.id] ?? ""}
+                            onChange={(event) => setActionDeferredUntil((current) => ({ ...current, [action.id]: event.target.value }))}
+                          />
+                        </label>
+                      )}
                       {action.status === "approved" && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
                       {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
                       {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
