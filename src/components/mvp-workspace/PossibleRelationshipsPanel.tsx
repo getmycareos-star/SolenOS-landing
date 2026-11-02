@@ -558,8 +558,12 @@ export default function PossibleRelationshipsPanel({
     }
     return index;
   }, [temporalEvents, cards]);
-  const meaningfulTemporalGroups = temporalGroups.filter((group) => group.pairs.length >= 2);
-  const isolatedTemporalGroups = temporalGroups.filter((group) => group.pairs.length === 1);
+  const meaningfulTemporalGroups = temporalGroups.filter((group) =>
+    group.pairs.length >= 2
+    && new Set(group.pairs.map((pair) => pair.eventA.id)).size >= 2
+    && new Set(group.pairs.map((pair) => pair.eventB.id)).size >= 2,
+  );
+  const isolatedTemporalGroups = temporalGroups.filter((group) => !meaningfulTemporalGroups.includes(group));
   const meaningful = cards.filter((card) => isMeaningfulPattern(card.pattern, card.events));
   const historical = cards.filter((card) => !card.pattern.is_active || Boolean(card.pattern.superseded_by_pattern_id));
   const withheld = cards.filter((card) => !historical.includes(card) && !meaningful.includes(card));
@@ -862,13 +866,13 @@ export default function PossibleRelationshipsPanel({
       ))}
       {isolatedTemporalGroups.length > 0 && (
         <details>
-          <summary>Single temporal sequences — insufficient evidence ({isolatedTemporalGroups.length})</summary>
+          <summary>Temporal sequences — insufficient independent repetition ({isolatedTemporalGroups.length})</summary>
           <ul>
             {isolatedTemporalGroups.map((group) => {
               const pair = group.pairs[0];
               return (
                 <li key={group.key}>
-                  {group.eventTypeA.replaceAll("_", " ")} + {group.eventTypeB.replaceAll("_", " ")}: {pair.sequence} This is one recorded sequence, not a repeated relationship. Not enough evidence to identify a meaningful relationship.
+                  {group.eventTypeA.replaceAll("_", " ")} + {group.eventTypeB.replaceAll("_", " ")}: {pair.sequence} {group.pairs.length === 1 ? "This is one recorded sequence, not a repeated relationship." : "The recorded pairs do not show independent repetition across both event sides."} Not enough evidence to identify a meaningful relationship.
                 </li>
               );
             })}
