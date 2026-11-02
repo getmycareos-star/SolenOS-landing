@@ -10,6 +10,10 @@ const dailyCarePage = fs.readFileSync(
   `${root}/src/app/workspace/daily-care/page.tsx`,
   "utf8",
 );
+const lcr = fs.readFileSync(
+  `${root}/src/components/mvp-workspace/LCRCurrentUnderstanding.tsx`,
+  "utf8",
+);
 
 assert.match(dailyCarePage, /<QuickDailyCheckIn\s*\/>/,
   "Daily Care mounts the quick check-in before the detailed capture form");
@@ -32,6 +36,10 @@ assert.match(checkIn, /epistemic_status:\s*"caregiver_reported"/,
   "the source is attributed as caregiver-reported");
 assert.match(checkIn, /idempotency_key:\s*requestId/,
   "retries reuse a stable idempotency key rather than creating duplicate check-ins");
+assert.match(lcr, /quickValue/,
+  "the LCR renders structured quick check-in details instead of raw JSON");
+assert.match(lcr, /Caregiver reported:/,
+  "the LCR distinguishes caregiver report time from server-recorded time");
 assert.match(checkIn, /response\?\.success !== true/,
   "the interface requires a backend success receipt");
 assert.match(checkIn, /Check your care record before trying again/,
