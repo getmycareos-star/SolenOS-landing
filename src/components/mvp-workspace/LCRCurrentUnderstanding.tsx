@@ -613,6 +613,12 @@ export function LCRCurrentUnderstanding() {
   const watchChanges = selectWatchChanges(changes);
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
   const watchPriorityCandidates = assessment?.priorities ?? [];
+  const watchMissingInformation = assessment?.missing_information ?? [];
+  const watchOpenLoops = openLoopItems.filter((item) =>
+    !needsAttentionNow.some((candidate) => candidate.id === item.id && candidate.source === item.source) &&
+    !canWaitItems.some((candidate) => candidate.id === item.id && candidate.source === item.source) &&
+    item.source === "open_loop_records"
+  );
   const baselineItems = assessment?.baseline_assessment?.items ?? [];
   const activeWatchPatterns = patterns.filter((pattern) =>
     pattern.is_active && !pattern.superseded_by_pattern_id
@@ -720,7 +726,7 @@ export function LCRCurrentUnderstanding() {
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Watch for changes</h4>
-              {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
+              {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
                 <p>No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed.</p>
               ) : (
                 <ul className="lcr-current-facts">
@@ -750,6 +756,28 @@ export function LCRCurrentUnderstanding() {
                       </li>
                     );
                   })}
+                  {watchOpenLoops.map((item) => (
+                    <li key={"open-loop:" + item.source + ":" + item.id} className="lcr-current-fact">
+                      <strong>Open item · {item.title}</strong>
+                      <p>The saved record does not classify this item as immediate or deferred. Its timing should not be assumed.</p>
+                      <p className="lcr-entry-status">Status: {item.recorded_status.replaceAll("_", " ")} · Recorded priority: {item.priority || "not assessed"} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      {item.description && <p>{item.description}</p>}
+                      {item.owner && <small>Recorded owner: {item.owner}</small>}
+                      {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
+                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      <small>Source record: {item.source} · {item.id}</small>
+                    </li>
+                  ))}
+                  {watchMissingInformation.map((item) => (
+                    <li key={"missing:" + item.source + ":" + item.id} className="lcr-current-fact">
+                      <strong>Information still missing · {item.title}</strong>
+                      <p>This gap remains in the persisted assessment. Its urgency is not established by the missing information alone.</p>
+                      <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      <small>Source record: {item.id}</small>
+                    </li>
+                  ))}
                   {watchUncertainties.map((item) => {
                     const source = projection?.items.find((candidate) =>
                       candidate.id === item.id && candidate.source_collection === item.source
