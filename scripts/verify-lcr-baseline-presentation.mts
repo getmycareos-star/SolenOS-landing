@@ -18,6 +18,9 @@ assert.ok(component.includes("superseded_by_baseline_id"));
 assert.ok(component.includes("baselineComparison.as_of"));
 assert.ok(component.includes("does not establish that the domain remained unchanged"));
 assert.ok(component.includes("What Needs Attention Now?"));
+assert.ok(component.includes("Current recorded domains without an established baseline"));
+assert.ok(component.includes("attention_candidate"));
+assert.ok(component.includes("Correction history"));
 assert.ok(styles.includes(".lcr-baseline-columns"));
 assert.ok(styles.includes("@media (max-width: 640px)"));
 
