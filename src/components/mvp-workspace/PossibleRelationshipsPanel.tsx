@@ -636,7 +636,7 @@ export default function PossibleRelationshipsPanel({
       {meaningfulTemporalGroups.map((group) => (
         <article key={group.key} className="lcr-current-fact">
           <div className="lcr-entry-heading">
-            <strong>{group.eventTypeA.replaceAll("_", " ")} → {group.eventTypeB.replaceAll("_", " ")}</strong>
+            <strong>{group.eventTypeA.replaceAll("_", " ")} + {group.eventTypeB.replaceAll("_", " ")}</strong>
             <span>Repeated temporal sequence observed</span>
           </div>
           <p>
@@ -646,6 +646,7 @@ export default function PossibleRelationshipsPanel({
             Alternative interpretations: no record-specific alternative interpretation is stored for these temporal links. Coincidence, shared circumstances, incomplete capture, or imprecise event times remain possible and have not been assessed.
           </p>
           <p className="lcr-entry-status">The temporal-link confidence field is not used as a calibrated probability. Sequence is recalculated from the current event timestamps before display.</p>
+          <p className="lcr-entry-status">The temporal-link record does not retain a creator or its own review status. It is treated only as a stored timestamp calculation; source-event attribution and evidence reviews remain the relevant record.</p>
           <details>
             <summary>Inspect source event pairs ({group.pairs.length})</summary>
             <ul>
@@ -695,7 +696,7 @@ export default function PossibleRelationshipsPanel({
               const pair = group.pairs[0];
               return (
                 <li key={group.key}>
-                  {group.eventTypeA.replaceAll("_", " ")} → {group.eventTypeB.replaceAll("_", " ")}: {pair.sequence} This is one recorded sequence, not a repeated relationship. Not enough evidence to identify a meaningful relationship.
+                  {group.eventTypeA.replaceAll("_", " ")} + {group.eventTypeB.replaceAll("_", " ")}: {pair.sequence} This is one recorded sequence, not a repeated relationship. Not enough evidence to identify a meaningful relationship.
                 </li>
               );
             })}
