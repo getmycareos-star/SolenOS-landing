@@ -104,7 +104,7 @@ type SituationAssessment = {
     }>;
     policy: string;
   };
-  priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
   situation_trajectory?: {
     entries: Array<{
       source: string;
@@ -612,6 +612,7 @@ export function LCRCurrentUnderstanding() {
   const canWaitItems = selectDeferredItems(openLoopItems);
   const watchChanges = selectWatchChanges(changes);
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
+  const watchPriorityCandidates = assessment?.priorities ?? [];
   const baselineItems = assessment?.baseline_assessment?.items ?? [];
   const activeWatchPatterns = patterns.filter((pattern) =>
     pattern.is_active && !pattern.superseded_by_pattern_id
@@ -719,7 +720,7 @@ export function LCRCurrentUnderstanding() {
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Watch for changes</h4>
-              {watchChanges.length === 0 && watchUncertainties.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
+              {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
                 <p>No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed.</p>
               ) : (
                 <ul className="lcr-current-facts">
@@ -733,6 +734,22 @@ export function LCRCurrentUnderstanding() {
                       {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
                     </li>
                   ))}
+                  {watchPriorityCandidates.map((item) => {
+                    const source = projection?.items.find((candidate) =>
+                      candidate.id === item.id && candidate.source_collection === item.source
+                    );
+                    return (
+                      <li key={"candidate:" + item.source + ":" + item.id} className="lcr-current-fact">
+                        <strong>Recorded follow-up candidate · {item.title}</strong>
+                        <p>This record was flagged for attention or follow-through. That flag does not establish immediate urgency.</p>
+                        <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                        {source?.description && <p>{source.description}</p>}
+                        <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                        <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                        <small>Source record: {item.id}</small>
+                      </li>
+                    );
+                  })}
                   {watchUncertainties.map((item) => {
                     const source = projection?.items.find((candidate) =>
                       candidate.id === item.id && candidate.source_collection === item.source
