@@ -622,7 +622,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   }
 
   if (!personId && !evidenceLoading && !evidenceError) return null
-  return <section style={panel} aria-label="Persisted evidence assessments">
+  return <section id="clarification-evidence-review" style={panel} aria-label="Persisted evidence assessments">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence quality and source review</h3>
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
     {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading persisted evidence…</p>}
