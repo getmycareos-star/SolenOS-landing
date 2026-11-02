@@ -20,6 +20,9 @@ assert(panel.includes("No important unanswered questions identified from the ava
 assert(panel.includes("/reviews`, payload)"), "caregiver review decisions must use the persisted backend endpoint");
 assert(panel.includes("/review-history`)"), "review decisions must load from persisted history");
 assert(panel.includes("Accept and reconcile") && panel.includes("Reject answer") && panel.includes("Request more information"), "all clarification review outcomes must be available");
+assert(panel.includes('latest.evidence_ids.length === 0'), "a plain-language answer without attachments must remain recordable but cannot be accepted into the LCR");
+assert(panel.includes("Caregiver answer saved with session-attributed identity and immutable history"), "answer submission must not imply automatic verification");
+assert(panel.includes("Add evidence through Daily Care or Documents"), "the evidence requirement for acceptance must point to existing capture workflows");
 assert(panel.includes("reconciliation_status") && panel.includes("resulting_assertion_id") && panel.includes("resulting_gap_ids") && panel.includes("resulting_assessment_id"), "acceptance must display assertion and information-gap reconciliation references");
 assert(panel.includes("open_question_answer_events") || panel.includes("Immutable answer history"), "answer history must remain visible");
 assert(panel.includes('href="/workspace/daily-care"') && panel.includes('href="/workspace/documents"'), "caregivers must be routed to existing evidence-capture workflows");
