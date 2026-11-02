@@ -28,4 +28,4 @@ assert.match(settings, /Sign in to an existing account/);
 assert.match(settings, /getAnonymousAccessToken\(\)/);
 assert.match(settings, /Do not create a new anonymous care record merely to inspect account status/);
 
-console.log("PASS: returning caregivers can sign in through the account API without creating a replacement care record first.");
+console.log("PASS: signup links the current anonymous care record; login restores the existing account care record.");
