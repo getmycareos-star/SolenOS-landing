@@ -488,6 +488,7 @@ export default function PossibleRelationshipsPanel({
       {loadError && <p role="status">{loadError}</p>}
       {reviewError && <p role="status">{reviewError}</p>}
       {loading && <p role="status">Loading the original observations linked to persisted patterns…</p>}
+      {temporalLoading && <p role="status">Loading authenticated temporal links and their original events…</p>}
       {temporalError && <p role="status">Temporal sequence context could not be loaded: {temporalError}. No temporal relationship is inferred from unavailable data.</p>}
       {unresolvedTemporalCount > 0 && <p className="lcr-entry-status">{unresolvedTemporalCount} persisted temporal link(s) could not be matched to current, timestamped source events and were not surfaced.</p>}
       {!loading && !temporalLoading && !patternsError && !temporalError && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
