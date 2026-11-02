@@ -101,6 +101,12 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const selectedGap = gapCandidates.find((item) => item.source_id === selectedGapId);
     const openQuestions = questions.filter((item) => ["open", "unresolved", "pending"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
   const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
+  const questionRelatedRecord = (item: Question) => {
+    const context = item.context ?? [];
+    const linked = context.find((entry) => typeof entry.claim_field === "string" || typeof entry.field === "string");
+    const field = typeof linked?.claim_field === "string" ? linked.claim_field : typeof linked?.field === "string" ? linked.field : "";
+    return `${item.subject_type.replaceAll("_", " ")} / ${item.subject_id}${field ? ` · ${field.replaceAll("_", " ")}` : ""}`;
+  };
   const questionReason = (item: Question) => {
     const context = (item.context ?? []).filter((entry) => entry && typeof entry === "object");
     const linked = context.find((entry) => typeof entry.reason === "string" || typeof entry.purpose === "string");
@@ -301,6 +307,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           kind: "claim_clarification",
           claim_id: selectedClaim.id,
           claim_field: selectedClaim.field,
+          field: selectedClaim.field,
           claim_text: selectedClaim.asserted_value,
           purpose: "Resolve a declared evidence gap; the question itself does not establish the claim.",
           ...(selectedGap ? { source_kind: "information_gap", source_id: selectedGap.source_id, reason: selectedGap.reason } : {}),
@@ -405,7 +412,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             <ul style={{ paddingLeft: 18 }}>{openQuestions.slice(0, 5).map((item) => <li key={item.id} style={{ marginBottom: 10 }}>
               <strong>{item.question}</strong>
               <p style={{ margin: "4px 0" }}>Why it matters: {questionReason(item)}</p>
-              <small>{priorityBand(item.priority)} · {item.priority.replaceAll("_", " ")} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · {questionStatusLabel(item.status)}</small>
+              <small>{priorityBand(item.priority)} · {item.priority.replaceAll("_", " ")} · {questionRelatedRecord(item)} · {questionStatusLabel(item.status)}</small>
               {item.evidence_ids?.length ? <small style={{ display: "block" }}>Trigger evidence: {item.evidence_ids.join(", ")}</small> : null}
               <div><button type="button" style={button} onClick={() => { setSelectedQuestionId(item.id); setError(""); setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }}>Open and respond</button></div>
             </li>)}</ul>
