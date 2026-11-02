@@ -475,7 +475,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                       {event.decision === "accepted" && <small>Accepted as an attributed report; not verified as fact.</small>}
                     </div>
                   ))}
-                  {question.status === "answered" && !(reviewHistory[question.id] ?? []).some((event) => event.answer_version === latestAnswerVersions[question.id]) && (
+                  {question.status === "answered" && Boolean(latestAnswerVersions[question.id]) && !(reviewHistory[question.id] ?? []).some((event) => event.answer_version === latestAnswerVersions[question.id]) && (
                     <div className="lcr-current-fact">
                       <label>Reviewer rationale
                         <textarea rows={2} maxLength={4000} value={reviewRationales[question.id] ?? ""} onChange={(event) => setReviewRationales((current) => ({ ...current, [question.id]: event.target.value }))} placeholder="Explain why this answer is accepted into the record, rejected, or needs more clarification." />
