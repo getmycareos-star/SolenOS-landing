@@ -95,6 +95,15 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
     const linked = context.find((entry) => typeof entry.reason === "string" || typeof entry.purpose === "string");
     return typeof linked?.reason === "string" ? linked.reason : typeof linked?.purpose === "string" ? linked.purpose : item.necessity_rationale || "The saved question is linked to a care-record subject; a more specific reason was not returned.";
   };
+  const priorityBand = (priority: string) => ["critical", "high"].includes(priority.toLowerCase()) ? "Important now" : ["low", "informational"].includes(priority.toLowerCase()) ? "Can wait" : "Needs attention";
+  const uncertaintyLabel = (item: AssessmentItem) => {
+    const state = `${item.status} ${item.epistemic_status}`.toLowerCase();
+    if (state.includes("conflict") || state.includes("contradict")) return "Conflicting information";
+    if (state.includes("review") || state.includes("pending")) return "Awaiting review";
+    if (state.includes("stale") || state.includes("outdated")) return "May be outdated";
+    if (state.includes("unverified") || state.includes("uncertain") || state.includes("unknown") || state.includes("partially")) return "Uncertain / not independently confirmed";
+    return "Incomplete or not yet reconciled";
+  };
   const questionStatusLabel = (status: string) => status === "answered"
     ? "Answer recorded — review outcome not exposed by the current API"
     : status === "declined" ? "Declined with recorded reason"
@@ -276,7 +285,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       {assessmentError ? <p role="alert">The situation assessment could not be retrieved. The record cannot be treated as complete. {assessmentError}</p>
         : !assessment ? <p role="status">No persisted situation assessment is available. Reassess the record before treating this section as complete.</p>
           : <>
-            {assessment.missing_information.length > 0 && <div><strong>Missing information</strong><ul>{assessment.missing_information.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
+            {assessment.missing_information.length > 0 && <div><strong>Missing information</strong><ul>{assessment.missing_information.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Classification: {uncertaintyLabel(item)} · Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
             {assessment.uncertainties_and_conflicts.length > 0 && <div><strong>Uncertain or conflicting information</strong><ul>{assessment.uncertainties_and_conflicts.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
             {assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0 && <p>No missing-information or unresolved-uncertainty items were returned by the saved assessment.</p>}
           </>}
@@ -294,7 +303,8 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             <ul style={{ paddingLeft: 18 }}>{openQuestions.slice(0, 5).map((item) => <li key={item.id} style={{ marginBottom: 10 }}>
               <strong>{item.question}</strong>
               <p style={{ margin: "4px 0" }}>Why it matters: {questionReason(item)}</p>
-              <small>{item.priority.replaceAll("_", " ")} · {item.subject_type.replaceAll("_", " ")} · {questionStatusLabel(item.status)}</small>
+              <small>{priorityBand(item.priority)} · {item.priority.replaceAll("_", " ")} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · {questionStatusLabel(item.status)}</small>
+              {item.evidence_ids?.length ? <small style={{ display: "block" }}>Trigger evidence: {item.evidence_ids.join(", ")}</small> : null}
               <div><button type="button" style={button} onClick={() => { setSelectedQuestionId(item.id); setError(""); setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }}>Open and respond</button></div>
             </li>)}</ul>
             {openQuestions.length > 5 && <details><summary>More outstanding questions ({openQuestions.length - 5})</summary><ul>{openQuestions.slice(5).map((item) => <li key={item.id}>{item.question} — {item.priority} <button type="button" style={button} onClick={() => setSelectedQuestionId(item.id)}>Open</button></li>)}</ul></details>}
@@ -415,7 +425,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           </div>
         </>}
       </div>
-      {answeredQuestions.length > 0 && <details style={{ marginTop: 14 }}><summary>Resolved or answered question history ({answeredQuestions.length})</summary><ul>{answeredQuestions.map((item) => <li key={item.id} style={{ marginBottom: 8 }}><strong>{item.question}</strong><p>{questionStatusLabel(item.status)}</p>{item.answer && <p>Recorded answer: {item.answer}</p>}{item.answer_provenance && <small>Source: {item.answer_provenance}</small>}{item.answered_at && <small style={{ display: "block" }}>Submitted: {item.answered_at}</small>}<small style={{ display: "block" }}>The current API does not expose an acceptance/rejection reconciliation decision for this answer; it is not presented as verified.</small></li>)}</ul></details>}
+      {answeredQuestions.length > 0 && <details style={{ marginTop: 14 }}><summary>Resolved or answered question history ({answeredQuestions.length})</summary><ul>{answeredQuestions.map((item) => <li key={item.id} style={{ marginBottom: 8 }}><strong>{item.question}</strong><p>{questionStatusLabel(item.status)}</p>{item.answer && <p>Recorded answer: {item.answer}</p>}{item.answer_provenance && <small>Source: {item.answer_provenance}</small>}{item.answered_at && <small style={{ display: "block" }}>Submitted: {item.answered_at}</small>}{item.answered_by_caregiver_id && <small style={{ display: "block" }}>Provided by caregiver: {item.answered_by_caregiver_id}</small>}<small style={{ display: "block" }}>The current API does not expose an acceptance/rejection reconciliation decision for this answer; it is not presented as verified.</small></li>)}</ul></details>}
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
