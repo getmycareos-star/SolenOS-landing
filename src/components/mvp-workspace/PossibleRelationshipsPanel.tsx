@@ -294,6 +294,7 @@ export default function PossibleRelationshipsPanel({
   const [temporalLoading, setTemporalLoading] = useState(true);
   const [evidenceRelationships, setEvidenceRelationships] = useState<PersistedEvidenceRelationship[]>([]);
   const [evidenceRelationshipError, setEvidenceRelationshipError] = useState("");
+  const [evidenceRelationshipsLoading, setEvidenceRelationshipsLoading] = useState(true);
 
   const candidatePatterns = useMemo(
     () => patterns.filter((pattern) => pattern.event_ids?.length >= 2).slice(0, 20),
@@ -409,8 +410,10 @@ export default function PossibleRelationshipsPanel({
       if (!personId) {
         setEvidenceRelationships([]);
         setEvidenceRelationshipError("");
+        setEvidenceRelationshipsLoading(false);
         return;
       }
+      setEvidenceRelationshipsLoading(true);
       try {
         const rows = await getJSON("/care-continuity/evidence-source-relationships?limit=100");
         if (!Array.isArray(rows) || rows.some((row) => row?.person_id !== personId)) {
@@ -419,11 +422,13 @@ export default function PossibleRelationshipsPanel({
         if (!cancelled) {
           setEvidenceRelationships(rows as PersistedEvidenceRelationship[]);
           setEvidenceRelationshipError("");
+          setEvidenceRelationshipsLoading(false);
         }
       } catch (cause) {
         if (!cancelled) {
           setEvidenceRelationships([]);
           setEvidenceRelationshipError(cause instanceof Error ? cause.message : "Persisted evidence relationships could not be loaded.");
+          setEvidenceRelationshipsLoading(false);
         }
       }
     }
@@ -581,9 +586,10 @@ export default function PossibleRelationshipsPanel({
       {patterns.length > candidatePatterns.length && <p className="lcr-entry-status">Pattern detail review is bounded to the first 20 persisted patterns with at least two linked events. Additional patterns have not been evaluated in this view.</p>}
       {(temporalLinks.length >= 100 || temporalEvents.length >= 100) && <p className="lcr-entry-status">Temporal context is bounded to the latest 100 links and 100 events returned by the authenticated record API. Older history may not be represented here.</p>}
       {temporalLoading && <p role="status">Loading authenticated temporal links and their original events…</p>}
+      {evidenceRelationshipsLoading && <p role="status">Loading caregiver-reviewed source relationships…</p>}
       {temporalError && <p role="status">Temporal sequence context could not be loaded: {temporalError}. No temporal relationship is inferred from unavailable data.</p>}
       {unresolvedTemporalCount > 0 && <p className="lcr-entry-status">{unresolvedTemporalCount} persisted temporal link(s) could not be matched to current, timestamped source events and were not surfaced.</p>}
-      {!loading && !temporalLoading && !patternsError && !loadError && !temporalError && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
+      {!loading && !temporalLoading && !patternsError && !loadError && !temporalError && !evidenceRelationshipError && !evidenceRelationshipsLoading && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
         <p className="lcr-entry-status">Not enough evidence to identify a meaningful relationship.</p>
       )}
       {meaningful.map(({ pattern, events, changes, evidenceReviews, error }) => {
