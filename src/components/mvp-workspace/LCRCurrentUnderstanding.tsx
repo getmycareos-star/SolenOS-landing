@@ -203,7 +203,7 @@ type SituationAssessment = {
     source_of_truth: string;
     limitation: string;
   };
-  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
   confidence_assessment: { overall: string; limitations: string[] };
   evolution_since_previous_assessment?: {
     comparison_available: boolean;
@@ -786,6 +786,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>Information still missing · {item.title}</strong>
                       <p>This gap remains in the persisted assessment. Its urgency is not established by the missing information alone.</p>
                       <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                       <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
                       <small>Source record: {item.id}</small>
                     </li>
