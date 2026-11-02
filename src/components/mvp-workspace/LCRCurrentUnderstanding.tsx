@@ -1124,7 +1124,7 @@ export function LCRCurrentUnderstanding() {
                 <ul>{baselineComparison.changes.filter(change =>
                   change.is_active && !change.superseded_by_change_id
                 ).map(change => {
-                  const currentEvents = baselineComparison.events.filter(event => change.evidence_ids.includes(event.id));
+                  const currentEvents = baselineComparison.events.filter(event => change.evidence_ids.includes(event.id) && !["invalidated", "superseded", "unparsed_raw"].includes(event.status));
                   const persisted = changes.find(item => item.id === change.id);
                   return (
                     <li key={change.id}>
