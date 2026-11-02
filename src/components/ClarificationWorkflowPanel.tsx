@@ -137,6 +137,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const uncertaintyLabel = (item: AssessmentItem) => {
     const state = `${item.status} ${item.epistemic_status}`.toLowerCase();
     if (state.includes("conflict") || state.includes("contradict")) return "Conflicting information";
+    if (state.includes("ambiguous")) return "Ambiguous wording or interpretation";
     if (state.includes("review") || state.includes("pending")) return "Awaiting review";
     if (state.includes("stale") || state.includes("outdated")) return "May be outdated";
     if (state.includes("unverified") || state.includes("uncertain") || state.includes("unknown") || state.includes("partially")) return "Uncertain / not independently confirmed";
