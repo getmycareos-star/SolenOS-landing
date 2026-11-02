@@ -7,7 +7,7 @@ import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPa
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
-import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
+import LCRWhatWeStillNeedToUnderstand from "@/components/mvp-workspace/LCRWhatWeStillNeedToUnderstand";
 
 type CurrentCareItem = {
   id: string;
@@ -942,18 +942,6 @@ export function LCRCurrentUnderstanding() {
                 <ul>{assessment.priorities.slice(0, 5).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status}; {item.epistemic_status}</li>)}</ul>
               </div>
             )}
-            {assessment.uncertainties_and_conflicts.length > 0 && (
-              <div>
-                <strong>Unresolved uncertainties or conflicts</strong>
-                <ul>{assessment.uncertainties_and_conflicts.slice(0, 5).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status}</li>)}</ul>
-              </div>
-            )}
-            {assessment.missing_information.length > 0 && (
-              <div>
-                <strong>Recorded information gaps</strong>
-                <ul>{assessment.missing_information.slice(0, 5).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status}</li>)}</ul>
-              </div>
-            )}
             {assessment.confidence_assessment.limitations.map((limitation) => <small key={limitation}>{limitation}</small>)}
             <p className="lcr-footer-note">{assessment.notice}</p>
           </>
@@ -1071,7 +1059,7 @@ export function LCRCurrentUnderstanding() {
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
       <ConflictResolutionPanel personId={personId} />
-      <ClarificationWorkflowPanel personId={personId} />
+      {personId && <LCRWhatWeStillNeedToUnderstand personId={personId} />}
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
