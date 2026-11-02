@@ -84,6 +84,79 @@ type PatternReviewDecision = {
   created_at?: string | null;
 };
 
+type PersistedTemporalLink = {
+  id: string;
+  person_id: string;
+  event_a_id?: string | null;
+  event_b_id?: string | null;
+  relationship_type: string;
+  time_difference_seconds?: string | null;
+  confidence?: number | null;
+  evidence_ids?: string[] | null;
+  created_at?: string | null;
+};
+
+type CareEventRecord = PatternEvent & {
+  person_id: string;
+  created_by_caregiver_id?: string | null;
+};
+
+type TemporalPair = {
+  link: PersistedTemporalLink;
+  eventA: CareEventRecord;
+  eventB: CareEventRecord;
+  sequence: string;
+  elapsed: string;
+};
+
+type TemporalGroup = {
+  key: string;
+  eventTypeA: string;
+  eventTypeB: string;
+  relationshipType: string;
+  pairs: TemporalPair[];
+};
+
+function formatDurationSeconds(seconds: number): string {
+  const totalMinutes = Math.round(Math.abs(seconds) / 60);
+  if (totalMinutes < 60) return totalMinutes === 1 ? "1 minute" : `${totalMinutes} minutes`;
+  const hours = Math.floor(totalMinutes / 60);
+  if (hours < 24) return hours === 1 ? "1 hour" : `${hours} hours`;
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  return remainingHours
+    ? `${days} day(s), ${remainingHours} hour(s)`
+    : days === 1 ? "1 day" : `${days} days`;
+}
+
+function expectedTemporalType(seconds: number): string {
+  if (Math.abs(seconds) < 3600) return "simultaneous";
+  if (seconds > 0) {
+    if (seconds < 86400) return "followed_shortly_after";
+    if (seconds < 604800) return "followed_within_week";
+    return "followed_later";
+  }
+  if (Math.abs(seconds) < 86400) return "preceded_shortly_before";
+  if (Math.abs(seconds) < 604800) return "preceded_within_week";
+  return "preceded_earlier";
+}
+
+function temporalSequence(link: PersistedTemporalLink, eventA: CareEventRecord, eventB: CareEventRecord): TemporalPair | null {
+  if (!eventA.occurred_at || !eventB.occurred_at) return null;
+  const a = new Date(eventA.occurred_at).getTime();
+  const b = new Date(eventB.occurred_at).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  const seconds = (b - a) / 1000;
+  if (expectedTemporalType(seconds) !== link.relationship_type) return null;
+  const sequence = Math.abs(seconds) < 3600
+    ? "The two events were recorded within an hour of one another."
+    : seconds > 0
+      ? "The first event occurred before the second."
+      : "The second event occurred before the first.";
+  return { link, eventA, eventB, sequence, elapsed: formatDurationSeconds(seconds) };
+}
+
+
 function formatWhen(value?: string | null): string {
   if (!value) return "Time not recorded";
   const date = new Date(value);
@@ -173,6 +246,10 @@ export default function PossibleRelationshipsPanel({
   const [feedbackReasons, setFeedbackReasons] = useState<Record<string, string>>({});
   const [feedbackErrors, setFeedbackErrors] = useState<Record<string, string>>({});
   const [savingFeedbackId, setSavingFeedbackId] = useState<string | null>(null);
+  const [temporalLinks, setTemporalLinks] = useState<PersistedTemporalLink[]>([]);
+  const [temporalEvents, setTemporalEvents] = useState<CareEventRecord[]>([]);
+  const [temporalError, setTemporalError] = useState("");
+  const [unresolvedTemporalCount, setUnresolvedTemporalCount] = useState(0);
 
   const candidatePatterns = useMemo(
     () => patterns.filter((pattern) => pattern.event_ids?.length >= 2).slice(0, 20),
@@ -234,6 +311,49 @@ export default function PossibleRelationshipsPanel({
     void loadDetails();
     return () => { cancelled = true; };
   }, [personId, candidatePatterns]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTemporalContext() {
+      if (!personId) {
+        setTemporalLinks([]);
+        setTemporalEvents([]);
+        setTemporalError("");
+        return;
+      }
+      try {
+        const [links, eventRows] = await Promise.all([
+          getJSON("/care-continuity/temporal-relationships?limit=100"),
+          getJSON("/care-continuity/events?limit=100"),
+        ]);
+        if (
+          !Array.isArray(links)
+          || !Array.isArray(eventRows)
+          || links.some((row) => row?.person_id !== personId)
+          || eventRows.some((row) => row?.person_id !== personId)
+        ) {
+          throw new Error("Temporal relationships or source events did not match the authenticated care record.");
+        }
+        if (!cancelled) {
+          setTemporalLinks(links as PersistedTemporalLink[]);
+          setTemporalEvents(eventRows.map((event) => ({
+            ...event,
+            evidence_ids: Array.isArray(event.evidence_ids) ? event.evidence_ids : [],
+            contributor_id: event.created_by_caregiver_id || null,
+          })) as CareEventRecord[]);
+          setTemporalError("");
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setTemporalLinks([]);
+          setTemporalEvents([]);
+          setTemporalError(cause instanceof Error ? cause.message : "Persisted temporal context could not be loaded.");
+        }
+      }
+    }
+    void loadTemporalContext();
+    return () => { cancelled = true; };
+  }, [personId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -300,6 +420,47 @@ export default function PossibleRelationshipsPanel({
     }
   }
 
+  const temporalGroups = useMemo(() => {
+    const eventsById = new Map(temporalEvents.map((event) => [event.id, event]));
+    const grouped = new Map<string, TemporalGroup>();
+    let unresolved = 0;
+    const seenPairs = new Set<string>();
+    for (const link of temporalLinks) {
+      if (!link.event_a_id || !link.event_b_id) {
+        unresolved += 1;
+        continue;
+      }
+      const eventA = eventsById.get(link.event_a_id);
+      const eventB = eventsById.get(link.event_b_id);
+      if (!eventA || !eventB || !isEligibleEvent(eventA) || !isEligibleEvent(eventB)) {
+        unresolved += 1;
+        continue;
+      }
+      const pair = temporalSequence(link, eventA, eventB);
+      if (!pair) {
+        unresolved += 1;
+        continue;
+      }
+      const pairKey = [eventA.id, eventB.id].sort().join(":");
+      if (seenPairs.has(pairKey)) continue;
+      seenPairs.add(pairKey);
+      const key = [eventA.event_type, eventB.event_type, link.relationship_type].join("|");
+      const current = grouped.get(key) || {
+        key,
+        eventTypeA: eventA.event_type,
+        eventTypeB: eventB.event_type,
+        relationshipType: link.relationship_type,
+        pairs: [],
+      };
+      current.pairs.push(pair);
+      grouped.set(key, current);
+    }
+    setUnresolvedTemporalCount(unresolved);
+    return [...grouped.values()].sort((a, b) => b.pairs.length - a.pairs.length);
+  }, [temporalLinks, temporalEvents]);
+
+  const meaningfulTemporalGroups = temporalGroups.filter((group) => group.pairs.length >= 2);
+  const isolatedTemporalGroups = temporalGroups.filter((group) => group.pairs.length === 1);
   const meaningful = cards.filter((card) => isMeaningfulPattern(card.pattern, card.events));
   const historical = cards.filter((card) => !card.pattern.is_active || Boolean(card.pattern.superseded_by_pattern_id));
   const withheld = cards.filter((card) => !historical.includes(card) && !meaningful.includes(card));
@@ -308,7 +469,7 @@ export default function PossibleRelationshipsPanel({
     <section className="lcr-situation-assessment" aria-labelledby="lcr-possible-relationships-heading">
       <div className="lcr-entry-heading">
         <h3 id="lcr-possible-relationships-heading">Possible Relationships</h3>
-        <span>{meaningful.length} supported pattern(s) in loaded history</span>
+        <span>{meaningful.length + meaningfulTemporalGroups.length} repeated pattern(s) in loaded history</span>
       </div>
       <p>
         This section surfaces repeated patterns already persisted in the care record. Timing and co-occurrence can make observations worth reviewing, but neither establishes that one event caused another.
@@ -319,7 +480,9 @@ export default function PossibleRelationshipsPanel({
       {loadError && <p role="status">{loadError}</p>}
       {reviewError && <p role="status">{reviewError}</p>}
       {loading && <p role="status">Loading the original observations linked to persisted patterns…</p>}
-      {!loading && !patternsError && meaningful.length === 0 && (
+      {temporalError && <p role="status">Temporal sequence context could not be loaded: {temporalError}. No temporal relationship is inferred from unavailable data.</p>}
+      {unresolvedTemporalCount > 0 && <p className="lcr-entry-status">{unresolvedTemporalCount} persisted temporal link(s) could not be matched to current, timestamped source events and were not surfaced.</p>}
+      {!loading && !patternsError && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
         <p className="lcr-entry-status">Not enough evidence to identify a meaningful relationship.</p>
       )}
       {meaningful.map(({ pattern, events, changes, evidenceReviews, error }) => {
@@ -458,6 +621,53 @@ export default function PossibleRelationshipsPanel({
           </article>
         );
       })}
+      {meaningfulTemporalGroups.map((group) => (
+        <article key={group.key} className="lcr-current-fact">
+          <div className="lcr-entry-heading">
+            <strong>{group.eventTypeA.replaceAll("_", " ")} → {group.eventTypeB.replaceAll("_", " ")}</strong>
+            <span>Repeated temporal sequence observed</span>
+          </div>
+          <p>
+            {group.pairs.length} distinct persisted event pair(s) show the same recorded sequence category. This is a repeated timing pattern only; it does not establish that either event caused or clinically explains the other.
+          </p>
+          <p className="lcr-entry-status">
+            Alternative interpretations: no record-specific alternative interpretation is stored for these temporal links. Coincidence, shared circumstances, incomplete capture, or imprecise event times remain possible and have not been assessed.
+          </p>
+          <p className="lcr-entry-status">The temporal-link confidence field is not used as a calibrated probability. Sequence is recalculated from the current event timestamps before display.</p>
+          <details>
+            <summary>Inspect source event pairs ({group.pairs.length})</summary>
+            <ul>
+              {group.pairs.map(({ link, eventA, eventB, sequence, elapsed }) => (
+                <li key={link.id}>
+                  <strong>{sequence} Time between events: {elapsed}.</strong>
+                  <p>{eventA.title} — {formatWhen(eventA.occurred_at)} · recorded {formatWhen(eventA.recorded_at)}</p>
+                  <small>Source event {eventA.id} · {eventA.event_type.replaceAll("_", " ")} · contributor {eventA.created_by_caregiver_id || "not recorded"} · evidence {eventA.evidence_ids.length ? eventA.evidence_ids.join(", ") : "none linked"}</small>
+                  <a href={`/workspace/timeline?event_id=${encodeURIComponent(eventA.id)}`}>Open first source observation</a>
+                  <p>{eventB.title} — {formatWhen(eventB.occurred_at)} · recorded {formatWhen(eventB.recorded_at)}</p>
+                  <small>Source event {eventB.id} · {eventB.event_type.replaceAll("_", " ")} · contributor {eventB.created_by_caregiver_id || "not recorded"} · evidence {eventB.evidence_ids.length ? eventB.evidence_ids.join(", ") : "none linked"}</small>
+                  <a href={`/workspace/timeline?event_id=${encodeURIComponent(eventB.id)}`}>Open second source observation</a>
+                  <small>Temporal link ID: {link.id} · calculated {formatWhen(link.created_at)}</small>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </article>
+      ))}
+      {isolatedTemporalGroups.length > 0 && (
+        <details>
+          <summary>Single temporal sequences — insufficient evidence ({isolatedTemporalGroups.length})</summary>
+          <ul>
+            {isolatedTemporalGroups.map((group) => {
+              const pair = group.pairs[0];
+              return (
+                <li key={group.key}>
+                  {group.eventTypeA.replaceAll("_", " ")} → {group.eventTypeB.replaceAll("_", " ")}: {pair.sequence} This is one recorded sequence, not a repeated relationship. Not enough evidence to identify a meaningful relationship.
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
       {withheld.length > 0 && (
         <details>
           <summary>Patterns not shown as meaningful relationships ({withheld.length})</summary>
@@ -487,7 +697,7 @@ export default function PossibleRelationshipsPanel({
         </details>
       )}
       <p className="lcr-footer-note">
-        These are read-only interpretations of persisted patterns. They do not modify observations, baselines, care actions, attention status, or the authoritative care record. Community content is not used as evidence here.
+        These are read-only interpretations of persisted patterns and authenticated temporal records. They do not modify observations, baselines, care actions, attention status, or the authoritative care record. Temporal sequence is not causation. Community content is not used as evidence here.
       </p>
     </section>
   );
