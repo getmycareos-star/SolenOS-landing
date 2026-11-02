@@ -566,8 +566,8 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               <label style={{ display: "block", marginBottom: 8 }}>Answer source / provenance
                 <textarea style={{ ...field, minHeight: 55 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="Who answered, and what source or firsthand knowledge supports it?" />
               </label>
-              <p>To add new supporting information, use the existing <a href="/workspace/daily-care">Daily Care capture</a> or <a href="/workspace/documents">Documents</a> workflow first. Return here and select the saved evidence below. The original answer remains a caregiver report until the existing review process evaluates its evidence.</p>
-              <label style={{ display: "block", marginBottom: 8 }}>Persisted evidence supporting this answer (required)
+              <p>To add new supporting information, use the existing <a href="/workspace/daily-care">Daily Care capture</a> or <a href="/workspace/documents">Documents</a> workflow first. Return here and select the saved evidence below. You can record the answer before attaching evidence. It remains an attributed caregiver report; LCR acceptance is blocked until persisted evidence is added and reviewed.</p>
+              <label style={{ display: "block", marginBottom: 8 }}>Persisted evidence supporting this answer (optional; required before LCR acceptance)
                 <select
                   multiple
                   style={{ ...field, minHeight: 86 }}
@@ -581,7 +581,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
                   ))}
                 </select>
               </label>
-              <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving || answerEvidenceIds.length === 0}>Record answer</button>{" "}
+              <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>Record answer</button>{" "}
               <button type="button" style={button} onClick={() => void updateQuestion("declined")} disabled={saving}>Decline (use provenance field for reason)</button>
             </>}
             {selectedQuestion.status !== "open" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen without deleting prior answers</button>}
