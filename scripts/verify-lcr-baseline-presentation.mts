@@ -25,6 +25,8 @@ assert.ok(component.includes("What Needs Attention Now?"));
 assert.ok(component.includes("Current recorded domains without an established baseline"));
 assert.ok(component.includes("attention_candidate"));
 assert.ok(component.includes("Correction history"));
+assert.ok(component.includes("changes_truncated"));
+assert.ok(component.includes("most recent 200 matching change assessments"));
 assert.ok(styles.includes(".lcr-baseline-columns"));
 assert.ok(styles.includes("@media (max-width: 640px)"));
 
