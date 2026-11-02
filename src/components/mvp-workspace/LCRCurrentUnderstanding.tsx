@@ -800,16 +800,6 @@ export function LCRCurrentUnderstanding() {
                   : "No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed."}</p>
               ) : (
                 <ul className="lcr-current-facts">
-                  {baselineItems.map((item) => (
-                    <li key={"baseline:" + item.source + ":" + item.id} className="lcr-current-fact">
-                      <strong>Recorded baseline · {item.title}</strong>
-                      <p>This record was explicitly marked as a baseline or usual state. It is not a population norm.</p>
-                      <p className="lcr-entry-status">Source: {item.source.replaceAll("_", " ")} · Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
-                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
-                      {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
-                    </li>
-                  ))}
                   {watchPriorityCandidates.map((item) => {
                     const source = projection?.items.find((candidate) =>
                       candidate.id === item.id && candidate.source_collection === item.source
@@ -1093,6 +1083,23 @@ export function LCRCurrentUnderstanding() {
             <p>Previously recorded patterns are compared only with linked, persisted change assessments. Missing evidence is not treated as proof that nothing changed.</p>
           </div>
         </div>
+        {baselineItems.length > 0 && (
+          <section className="lcr-baseline-explicit">
+            <h4>Previously recorded as usual or typical</h4>
+            <ul className="lcr-current-facts">
+              {baselineItems.map(item => (
+                <li key={"baseline:" + item.source + ":" + item.id} className="lcr-current-fact">
+                  <strong>{item.title}</strong>
+                  <p>This record was explicitly marked as a baseline or usual state. It is not a population norm.</p>
+                  <p className="lcr-entry-status">Source: {item.source.replaceAll("_", " ")} · Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                  <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                  <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                  {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {baselineComparisonError ? (
           <div role="status" className="lcr-empty-state">
             <p>Baseline comparison is unavailable. {baselineComparisonError}</p>
