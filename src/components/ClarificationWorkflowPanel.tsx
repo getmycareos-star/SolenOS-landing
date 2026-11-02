@@ -59,7 +59,7 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
   }
 }
 
-export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
+export default function ClarificationWorkflowPanel({ personId, id }: { personId?: string; id?: string }) {
   const [scopePersonId, setScopePersonId] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
@@ -251,7 +251,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
     }
   }
 
-  return <section style={panel} aria-label="Evidence-grounded clarification workflow">
+  return <section id={id} style={panel} aria-label="Evidence-grounded clarification workflow">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence gaps and clarification questions</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
       Each question is tied to a source-attributed claim and can include evidence references. Answers are attributed to the authenticated caregiver and retained as immutable versions. An answer does not automatically verify or resolve the underlying claim.
