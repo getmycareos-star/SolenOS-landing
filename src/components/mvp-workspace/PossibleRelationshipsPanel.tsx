@@ -254,6 +254,9 @@ export default function PossibleRelationshipsPanel({
             <p className="lcr-entry-status">
               Evidence limitation: this persisted pattern links observations of the same recorded subject/type. It does not establish a relationship across different care domains. Review the source reports and any conflicts before drawing conclusions.
             </p>
+            <p className="lcr-entry-status">
+              Have additional source-backed information? <a href="#lcr-clarification-workflow">Open the existing clarification workflow</a>. A clarification remains a separate review item; it does not confirm this relationship.
+            </p>
             <details>
               <summary>Inspect supporting observations ({eligibleEvents.length})</summary>
               {error ? (
