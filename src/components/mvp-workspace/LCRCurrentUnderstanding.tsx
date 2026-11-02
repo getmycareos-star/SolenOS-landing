@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
 import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
@@ -584,22 +585,9 @@ export function LCRCurrentUnderstanding() {
   }, [load]);
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
-  const needsAttentionNow = openLoopItems.filter((item) =>
-    item.priority === "high" &&
-    Array.isArray(item.priority_reasons) &&
-    item.priority_reasons.some((reason) =>
-      reason === "Persisted deadline has passed" ||
-      reason === "Critical consequence of delay was explicitly recorded"
-    )
-  );
-  const canWaitItems = openLoopItems.filter((item) =>
-    item.status === "deferred" || Boolean(item.deferred_reason?.trim())
-  );
-  const watchChanges = changes.filter((change) =>
-    change.is_active !== false &&
-    !change.superseded_by_change_id &&
-    (change.attention_candidate || change.follow_up_candidate)
-  );
+  const needsAttentionNow = selectImmediatePriorities(openLoopItems);
+  const canWaitItems = selectDeferredItems(openLoopItems);
+  const watchChanges = selectWatchChanges(changes);
   const activeWatchPatterns = patterns.filter((pattern) =>
     pattern.is_active && !pattern.superseded_by_pattern_id
   );
