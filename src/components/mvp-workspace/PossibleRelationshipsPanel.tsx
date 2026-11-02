@@ -145,7 +145,9 @@ type TemporalGroup = {
 };
 
 function formatDurationSeconds(seconds: number): string {
-  const totalMinutes = Math.round(Math.abs(seconds) / 60);
+  const totalSeconds = Math.floor(Math.abs(seconds));
+  if (totalSeconds < 60) return totalSeconds === 1 ? "1 second" : `${totalSeconds} seconds`;
+  const totalMinutes = Math.floor(totalSeconds / 60);
   if (totalMinutes < 60) return totalMinutes === 1 ? "1 minute" : `${totalMinutes} minutes`;
   const hours = Math.floor(totalMinutes / 60);
   if (hours < 24) return hours === 1 ? "1 hour" : `${hours} hours`;
@@ -191,7 +193,7 @@ function temporalSequence(link: PersistedTemporalLink, eventA: CareEventRecord, 
   const seconds = (b - a) / 1000;
   if (expectedTemporalType(seconds) !== link.relationship_type) return null;
   const sequence = Math.abs(seconds) < 3600
-    ? "The two events were recorded within an hour of one another."
+    ? "The two events occurred within an hour of one another."
     : seconds > 0
       ? "The first event occurred before the second."
       : "The second event occurred before the first.";
@@ -212,15 +214,7 @@ function elapsedBetween(start?: string | null, end?: string | null): string | nu
   const a = new Date(start).getTime();
   const b = new Date(end).getTime();
   if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) return null;
-  const minutes = Math.round((b - a) / 60000);
-  if (minutes < 60) return minutes === 1 ? "1 minute" : `${minutes} minutes`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return hours === 1 ? "1 hour" : `${hours} hours`;
-  const days = Math.floor(hours / 24);
-  const remainingHours = hours % 24;
-  return remainingHours
-    ? `${days} day(s), ${remainingHours} hour(s)`
-    : days === 1 ? "1 day" : `${days} days`;
+  return formatDurationSeconds((b - a) / 1000);
 }
 
 function interpretationText(value: unknown): string {
@@ -243,7 +237,9 @@ function isEligibleEvent(event: PatternEvent): boolean {
 function isMeaningfulPattern(pattern: PersistedPattern, events: PatternEvent[]): boolean {
   const eligible = events.filter(isEligibleEvent);
   const eventTimes = new Set(
-    eligible.map((event) => event.occurred_at).filter((value): value is string => Boolean(value)),
+    eligible
+      .map((event) => event.occurred_at ? new Date(event.occurred_at).getTime() : Number.NaN)
+      .filter((value) => Number.isFinite(value)),
   );
   return pattern.is_active
     && !pattern.superseded_by_pattern_id
