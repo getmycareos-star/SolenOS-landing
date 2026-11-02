@@ -759,12 +759,15 @@ export function LCRCurrentUnderstanding() {
       if (session.person?.id !== personId) {
         throw new Error("The selected follow-up does not belong to the active care-record session.");
       }
-      await patchJSON(`/open-loops/${encodeURIComponent(item.id)}`, {
+      const updatedLoop = await patchJSON(`/open-loops/${encodeURIComponent(item.id)}`, {
         status: "deferred",
         deferred_reason: reason,
         reason,
         idempotency_key: `lcr-defer-${item.id}-${reason}`.slice(0, 160),
       });
+      if (!updatedLoop || updatedLoop.id !== item.id || updatedLoop.status !== "deferred") {
+        throw new Error("The backend did not confirm the requested deferral. The suggestion remains unchanged.");
+      }
       setReviewingSuggestionId(null);
       await load(true);
     } catch (cause) {
