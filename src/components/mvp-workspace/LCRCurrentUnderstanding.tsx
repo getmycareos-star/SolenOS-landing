@@ -2,13 +2,42 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
 import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
 import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
+
+
+type RegisteredAction = {
+  id: string;
+  person_id: string;
+  suggestion_id: string;
+  source_evidence_id: string;
+  source_evidence_ids?: string[] | null;
+  normalized_action: string;
+  original_text: string;
+  action_type: string;
+  status: "approved" | "in_progress" | "completed" | "cancelled" | "deferred" | "needs_clarification" | string;
+  deadline?: string | null;
+  approved_at?: string | null;
+  completed_at?: string | null;
+  deferred_until?: string | null;
+  created_at?: string | null;
+  version: number;
+};
+
+type RegisteredActionAudit = {
+  id: string;
+  actor_caregiver_id: string;
+  previous_status?: string | null;
+  new_status: string;
+  reason?: string | null;
+  evidence_ids: string[];
+  created_at: string;
+};
 
 type CurrentCareItem = {
   id: string;
@@ -388,6 +417,18 @@ function formatWhen(value?: string | null): string {
 
 export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
+  const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
+  const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
+  const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
+  const [actionApprovalLoadingId, setActionApprovalLoadingId] = useState<string | null>(null);
+  const [actionApprovalError, setActionApprovalError] = useState<string | null>(null);
+  const [createReminderForSuggestion, setCreateReminderForSuggestion] = useState(false);
+  const [reminderDueInput, setReminderDueInput] = useState("");
+  const [actionTransitionReasons, setActionTransitionReasons] = useState<Record<string, string>>({});
+  const [actionTransitionLoadingId, setActionTransitionLoadingId] = useState<string | null>(null);
+  const [actionTransitionErrors, setActionTransitionErrors] = useState<Record<string, string>>({});
+  const [actionHistory, setActionHistory] = useState<Record<string, RegisteredActionAudit[]>>({});
+  const [actionHistoryErrors, setActionHistoryErrors] = useState<Record<string, string>>({});
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -441,6 +482,17 @@ export function LCRCurrentUnderstanding() {
         throw new Error("A valid care-record session is required to read the longitudinal record.");
       }
       setPersonId(session.person.id);
+      try {
+        const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(session.person.id)}`);
+        if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== session.person.id)) {
+          throw new Error("Registered actions did not match the active care-record session.");
+        }
+        setRegisteredActions(savedActions as RegisteredAction[]);
+        setRegisteredActionsError(null);
+      } catch (actionCause) {
+        setRegisteredActions([]);
+        setRegisteredActionsError(actionCause instanceof Error ? actionCause.message : "Registered actions could not be loaded.");
+      }
       const result = await getJSON("/care-continuity/current-care?limit_per_source=12");
       if (!result || result.read_only !== true || !Array.isArray(result.items) ||
           typeof result.schema_status !== "string" || typeof result.projection_type !== "string" ||
@@ -630,6 +682,108 @@ export function LCRCurrentUnderstanding() {
     projection?.items.find((item) =>
       item.id === loop.id && item.source_collection === loop.source
     );
+  const suggestionReference = (item: (typeof openLoopItems)[number]) => `${item.source}:${item.id}`;
+  const actionForSuggestion = (item: (typeof openLoopItems)[number]) =>
+    registeredActions.find((action) => action.suggestion_id === suggestionReference(item));
+
+  const approveFollowUp = async (item: (typeof openLoopItems)[number]) => {
+    const suggestionId = suggestionReference(item);
+    setActionApprovalLoadingId(suggestionId);
+    setActionApprovalError(null);
+    try {
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || session.person.id !== personId) {
+        throw new Error("The suggestion does not belong to the active care-record session.");
+      }
+      if (!item.request_text?.trim() || item.evidence_ids.length === 0) {
+        throw new Error("This candidate cannot be registered safely: an explicit follow-up request and linked evidence are both required.");
+      }
+      if (createReminderForSuggestion && !reminderDueInput) {
+        throw new Error("Choose a reminder date and time, or leave reminder creation disabled.");
+      }
+      const idempotencyKey = `lcr-approval-${suggestionId}`.replace(/[^a-zA-Z0-9:_-]/g, "-").slice(0, 128);
+      const saved = await postJSON(
+        `/registered-actions/${encodeURIComponent(session.person.id)}/approve`,
+        {
+          explicit_approval: true,
+          idempotency_key: idempotencyKey,
+          suggestion_id: suggestionId.slice(0, 160),
+          title: item.request_text.trim(),
+          action_type: "follow_up",
+          rationale: (item.priority_reasons ?? []).join("; ") || item.description || "A persisted LCR follow-up request is recorded.",
+          limitations: `Information status: ${item.epistemic_status}. Registration does not resolve uncertainty or establish clinical urgency.`,
+          evidence_ids: item.evidence_ids,
+          responsible_caregiver_id: session.caregiver.id,
+          create_reminder: createReminderForSuggestion,
+          ...(createReminderForSuggestion ? { reminder_due_at: new Date(reminderDueInput).toISOString() } : {}),
+        },
+      ) as RegisteredAction;
+      if (!saved?.id || saved.person_id !== session.person.id || saved.suggestion_id !== suggestionId) {
+        throw new Error("The backend response did not confirm the expected registered action. Refresh before retrying.");
+      }
+      setRegisteredActions((current) => current.some((action) => action.id === saved.id)
+        ? current.map((action) => action.id === saved.id ? saved : action)
+        : [saved, ...current]);
+      setReviewingSuggestionId(null);
+      setCreateReminderForSuggestion(false);
+      setReminderDueInput("");
+    } catch (cause) {
+      setActionApprovalError(cause instanceof Error ? cause.message : "The action could not be registered.");
+    } finally {
+      setActionApprovalLoadingId(null);
+    }
+  };
+
+  const transitionRegisteredAction = async (
+    action: RegisteredAction,
+    status: "approved" | "in_progress" | "completed" | "cancelled" | "deferred" | "needs_clarification",
+  ) => {
+    const reason = (actionTransitionReasons[action.id] || "").trim();
+    if (["cancelled", "deferred", "needs_clarification"].includes(status) && !reason) {
+      setActionTransitionErrors((current) => ({ ...current, [action.id]: "Enter a reason before this status change." }));
+      return;
+    }
+    setActionTransitionLoadingId(action.id);
+    setActionTransitionErrors((current) => ({ ...current, [action.id]: "" }));
+    try {
+      const updated = await patchJSON(
+        `/registered-actions/${encodeURIComponent(action.id)}/status`,
+        {
+          status,
+          expected_version: action.version,
+          explicit_completion_confirmation: status === "completed",
+          reason: reason || undefined,
+        },
+      ) as RegisteredAction;
+      if (!updated?.id || updated.id !== action.id || updated.person_id !== personId) {
+        throw new Error("The backend did not confirm the expected action update. Refresh before retrying.");
+      }
+      setRegisteredActions((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (cause) {
+      setActionTransitionErrors((current) => ({
+        ...current,
+        [action.id]: cause instanceof Error ? cause.message : "The action status could not be updated.",
+      }));
+    } finally {
+      setActionTransitionLoadingId(null);
+    }
+  };
+
+  const loadActionHistory = async (action: RegisteredAction) => {
+    setActionHistoryErrors((current) => ({ ...current, [action.id]: "" }));
+    try {
+      const history = await getJSON(`/registered-actions/${encodeURIComponent(action.id)}/history`);
+      if (!Array.isArray(history) || history.some((entry) => !entry?.id || !entry?.actor_caregiver_id)) {
+        throw new Error("The action history response was incomplete.");
+      }
+      setActionHistory((current) => ({ ...current, [action.id]: history as RegisteredActionAudit[] }));
+    } catch (cause) {
+      setActionHistoryErrors((current) => ({
+        ...current,
+        [action.id]: cause instanceof Error ? cause.message : "Action history could not be loaded.",
+      }));
+    }
+  };
 
   return (
     <section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">
