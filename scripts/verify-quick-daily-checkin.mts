@@ -22,6 +22,8 @@ assert.match(checkIn, /value:\s*"same_as_usual"/,
 assert.match(checkIn, /selected_areas/);
 assert.match(checkIn, /scope:\s*"selected_areas_only"/,
   "the update is limited to explicitly selected areas");
+assert.match(checkIn, /does not establish or change the person’s baseline/,
+  "a quick check-in cannot establish or rewrite the baseline");
 assert.match(checkIn, /Other areas were not assessed by this check-in/,
   "unselected areas are never represented as unchanged");
 assert.match(checkIn, /epistemic_status:\s*"caregiver_reported"/,
