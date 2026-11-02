@@ -837,7 +837,7 @@ export default function PossibleRelationshipsPanel({
                   <small>Temporal link ID: {link.id} · calculated {formatWhen(link.created_at)}</small>
                   {reviewDecisions.filter((review) => review.target_type === "temporal_relationship" && review.target_id === link.id).slice(0, 1).map((review) => (
                     <p key={review.id} className="lcr-entry-status">
-                      Caregiver review: {review.review_decision.replaceAll("_", " ")} · {formatWhen(review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}. {review.reason || ""}
+                      Caregiver review: {review.review_decision.replaceAll("_", " ")} · {formatWhen(review.reviewed_at || review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}. {review.reason || ""}
                     </p>
                   ))}
                   <label>
