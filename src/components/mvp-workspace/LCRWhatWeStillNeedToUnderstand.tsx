@@ -312,10 +312,6 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       setReviewError("This question has no linked care claim. It cannot be reconciled into the LCR until the correct claim is linked.");
       return;
     }
-    if (decision === "accepted" && !reviewWindows[question.id]) {
-      setReviewError("Choose when this current-care report should be reviewed again.");
-      return;
-    }
     setReviewingQuestionId(question.id);
     setReviewError("");
     try {
@@ -490,7 +486,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                       </label>
                       {reviewError && reviewingQuestionId === question.id && <p role="alert">{reviewError}</p>}
                       <small>Accepting adds a source-attributed, unverified report to the LCR. It does not establish clinical truth.</small>
-                      <label>When should this current-care report be reviewed again?
+                      <label>For current-state reports, when should this information be reviewed again? Leave blank for time-bound reports.
                         <select value={reviewWindows[question.id] ?? ""} onChange={(event) => setReviewWindows((current) => ({ ...current, [question.id]: event.target.value }))}>
                           <option value="">Choose a review interval</option>
                           <option value="7">In 7 days</option>
