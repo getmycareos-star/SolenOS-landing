@@ -99,7 +99,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
   const selectedGap = gapCandidates.find((item) => item.source_id === selectedGapId);
-    const openQuestions = questions.filter((item) => ["open", "unresolved"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
+    const openQuestions = questions.filter((item) => ["open", "unresolved", "pending"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
   const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
   const questionReason = (item: Question) => {
     const context = (item.context ?? []).filter((entry) => entry && typeof entry === "object");
@@ -119,7 +119,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
     ? "Answer submitted — awaiting review"
     : status === "declined" ? "Declined with recorded reason"
       : status === "closed" ? "Closed"
-        : status === "unresolved" ? "Needs follow-up" : "Open";
+        : status === "unresolved" ? "Needs follow-up" : status === "pending" ? "Pending" : "Open";
 
   const loadAll = useCallback(async () => {
     setLoading(true);
