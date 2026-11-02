@@ -217,7 +217,7 @@ type SituationAssessment = {
 
 type BaselineRecord = {
   id: string; subject_type: string; subject_id: string; baseline_type?: string | null;
-  window_start: string; window_end: string; event_count: number; state_value?: string | null;
+  window_start: string; window_end: string; event_count: number; frequency_per_period?: number | null; state_value?: string | null;
   confidence?: string | null; is_stable: boolean; coverage_status: string; history_completeness: string;
   analysis_version: string; documentation_bias_flag: boolean; evidence_ids: string[];
   created_at: string; updated_at?: string | null; is_active: boolean;
@@ -1181,8 +1181,10 @@ export function LCRCurrentUnderstanding() {
                       <strong>Established baseline</strong>
                       {baselineEstablished ? (
                         <>
-                          <p>{baseline.state_value || `Historical records across ${baseline.event_count} events.`}</p>
+                          <p>{baseline.state_value || `Recorded historical reference: ${baseline.event_count} source events.`}</p>
+                          {baseline.frequency_per_period != null && <p>Recorded rate: {baseline.frequency_per_period.toFixed(2)} events per 30 days of covered history.</p>}
                           <p>Observed {formatWhen(baseline.window_start)} – {formatWhen(baseline.window_end)}.</p>
+                          <p>This is a reference to recorded event history, not a confirmed description of the person's usual routine or proof about unobserved days.</p>
                           <p>Confidence: {baseline.confidence}. Coverage: {baseline.coverage_status}.</p>
                         </>
                       ) : (
