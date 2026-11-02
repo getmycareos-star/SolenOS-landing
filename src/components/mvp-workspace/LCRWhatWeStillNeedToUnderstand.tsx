@@ -165,7 +165,13 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
   const [answer, setAnswer] = useState("");
   const [provenance, setProvenance] = useState("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
-  const [history, setHistory] = useState<AnswerEvent[]>([]);\n  const [reviewHistory, setReviewHistory] = useState<Record<string, ReviewEvent[]>>({});\n  const [latestAnswerVersions, setLatestAnswerVersions] = useState<Record<string, number>>({});\n  const [reviewRationales, setReviewRationales] = useState<Record<string, string>>({});\n  const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({});\n  const [reviewingQuestionId, setReviewingQuestionId] = useState("");\n  const [reviewError, setReviewError] = useState("");
+  const [history, setHistory] = useState<AnswerEvent[]>([]);
+  const [reviewHistory, setReviewHistory] = useState<Record<string, ReviewEvent[]>>({});
+  const [latestAnswerVersions, setLatestAnswerVersions] = useState<Record<string, number>>({});
+  const [reviewRationales, setReviewRationales] = useState<Record<string, string>>({});
+  const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({});
+  const [reviewingQuestionId, setReviewingQuestionId] = useState("");
+  const [reviewError, setReviewError] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [historyQuestionId, setHistoryQuestionId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -323,7 +329,8 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       if (!result?.id || result.question_id !== question.id || result.person_id !== personId || result.decision !== decision) {
         throw new Error("The server did not confirm the review decision.");
       }
-      setReviewRationales((current) => ({ ...current, [question.id]: "" }));\n      if (decision === "accepted") setReviewWindows((current) => ({ ...current, [question.id]: "" }));
+      setReviewRationales((current) => ({ ...current, [question.id]: "" }));
+      if (decision === "accepted") setReviewWindows((current) => ({ ...current, [question.id]: "" }));
       await load();
       setNotice(decision === "accepted"
         ? "The caregiver report was admitted to the LCR as an attributed, unverified assertion. It has not been marked as established fact."
