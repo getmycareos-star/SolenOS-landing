@@ -1331,7 +1331,7 @@ export function LCRCurrentUnderstanding() {
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
       <ConflictResolutionPanel personId={personId} />
-      <ClarificationWorkflowPanel personId={personId} assessment={assessment} assessmentError={assessmentError} />
+      <ClarificationWorkflowPanel personId={personId} assessment={assessment} assessmentError={assessmentError} onAssessmentRefresh={reassess} />
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
