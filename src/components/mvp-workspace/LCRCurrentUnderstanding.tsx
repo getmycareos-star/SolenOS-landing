@@ -1167,17 +1167,18 @@ export function LCRCurrentUnderstanding() {
                           New reminder date when deferring {action.linked_reminder_status === "open" ? "(required for the linked open reminder)" : "(optional)"}
                           <input
                             type="datetime-local"
+                            disabled={action.responsible_caregiver_id !== currentCaregiverId}
                             value={actionDeferredUntil[action.id] ?? ""}
                             onChange={(event) => setActionDeferredUntil((current) => ({ ...current, [action.id]: event.target.value }))}
                           />
                         </label>
                       )}
                       {action.status === "approved" && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
-                      {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
+                      {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
                       {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
-                      {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
-                      {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs clarification</button>}
-                      {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
+                      {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
+                      {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs clarification</button>}
+                      {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
                       {actionTransitionErrors[action.id] && <p role="alert">{actionTransitionErrors[action.id]}</p>}
                       <button type="button" className="lcr-text-action" onClick={() => void loadActionHistory(action)}>View audit history</button>
                       {actionHistoryErrors[action.id] && <p role="alert">{actionHistoryErrors[action.id]}</p>}
