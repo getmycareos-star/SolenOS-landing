@@ -1331,7 +1331,7 @@ export function LCRCurrentUnderstanding() {
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
       <ConflictResolutionPanel personId={personId} />
-      {personId && <LCRWhatWeStillNeedToUnderstand personId={personId} />}
+      {personId && <LCRWhatWeStillNeedToUnderstand key={personId} personId={personId} />}
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
