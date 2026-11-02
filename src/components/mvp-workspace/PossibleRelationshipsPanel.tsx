@@ -413,6 +413,7 @@ export default function PossibleRelationshipsPanel({
                         <small>Event time: {formatWhen(event.occurred_at)} · Record-entry time: {formatWhen(event.recorded_at)}</small>
                         <small>Time provenance: {event.time_provenance || "Not recorded"} · Contributor: {event.contributor_label || (event.contributor_id ? `caregiver record ${event.contributor_id}` : "Not recorded")}</small>
                         <small>Evidence references: {event.evidence_ids.length ? event.evidence_ids.join(", ") : "None linked"}</small>
+                        <a href={`/workspace/timeline?event_id=${encodeURIComponent(event.id)}`}>Open original observation in Longitudinal Care History</a>
                         {!isEligibleEvent(event) && <small>This source event is no longer eligible to support the active pattern.</small>}
                       </li>
                     ))}
