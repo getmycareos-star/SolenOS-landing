@@ -26,6 +26,8 @@ type RegisteredAction = {
   approved_at?: string | null;
   completed_at?: string | null;
   deferred_until?: string | null;
+  linked_reminder_due_at?: string | null;
+  linked_reminder_status?: string | null;
   created_at?: string | null;
   version: number;
 };
@@ -1142,6 +1144,7 @@ export function LCRCurrentUnderstanding() {
                       <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id ?? "Not assigned"} · Created by: {action.created_by_caregiver_id}</small>
                       <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).join(", ")}</small>
                       {action.deadline && <small>Recorded due date: {formatWhen(action.deadline)}</small>}
+                      {action.linked_reminder_status && <small>Linked reminder: {action.linked_reminder_status} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
                       {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
                       {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
                       <label>
@@ -1155,7 +1158,7 @@ export function LCRCurrentUnderstanding() {
                       </label>
                       {action.status !== "completed" && action.status !== "cancelled" && (
                         <label>
-                          New reminder date when deferring (required only if this action has a linked reminder)
+                          New reminder date when deferring {action.linked_reminder_status === "open" ? "(required for the linked open reminder)" : "(optional)"}
                           <input
                             type="datetime-local"
                             value={actionDeferredUntil[action.id] ?? ""}
@@ -1165,7 +1168,7 @@ export function LCRCurrentUnderstanding() {
                       )}
                       {action.status === "approved" && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
                       {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
-                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
+                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
                       {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
                       {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs clarification</button>}
                       {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
