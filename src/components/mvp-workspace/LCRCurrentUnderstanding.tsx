@@ -1156,9 +1156,11 @@ export function LCRCurrentUnderstanding() {
                 ? new Date(baselineComparison.as_of).getTime() - new Date(latestCurrentEvent.occurred_at).getTime()
                 : null;
               const currentIsRecent = currentAge !== null && currentAge >= 0 && currentAge <= 42 * 24 * 60 * 60 * 1000;
+              const baselineEvents = baselineComparison.events.filter(event => baseline.evidence_ids.includes(event.id));
               const baselineEstablished = baseline.confidence === "high" &&
                 baseline.coverage_status === "covered" && baseline.is_stable &&
-                baseline.event_count >= 5 && baseline.history_completeness === "complete";
+                baseline.event_count >= 5 && baselineEvents.length >= 5 &&
+                baseline.history_completeness === "complete";
               const confirmedChange = !!currentChange && currentChange.confirmation_status === "confirmed";
               const possibleChange = !!currentChange &&
                 ["detected", "awaiting_confirmation", "inconclusive"].includes(currentChange.confirmation_status);
@@ -1171,7 +1173,6 @@ export function LCRCurrentUnderstanding() {
                     : possibleChange
                       ? "Possible change requiring confirmation"
                       : "Not enough information to determine whether the domain is unchanged";
-              const baselineEvents = baselineComparison.events.filter(event => baseline.evidence_ids.includes(event.id));
               return (
                 <article className="lcr-baseline-domain" key={baseline.id}>
                   <h4>{baseline.subject_type.replaceAll("_", " ")}</h4>
