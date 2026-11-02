@@ -33,6 +33,8 @@ for (const contract of [
   'create_reminder: createReminderForSuggestion',
   'linked_reminder_status',
   'linked_reminder_due_at',
+  'currentCaregiverId',
+  'Only the responsible caregiver can change this action.',
 ]) {
   assert.ok(lcr.includes(contract), `LCR approved-action contract missing: ${contract}`);
 }
