@@ -583,6 +583,7 @@ export default function PossibleRelationshipsPanel({
       )}
       {loadError && <p role="status">{loadError}</p>}
       {reviewError && <p role="status">{reviewError}</p>}
+      {reviewDecisions.length >= 100 && <p className="lcr-entry-status">Caregiver review history is bounded to the latest 100 review records returned by the authenticated care API.</p>}
       {loading && <p role="status">Loading the original observations linked to persisted patterns…</p>}
       {patterns.length > candidatePatterns.length && <p className="lcr-entry-status">Pattern detail review is bounded to the first 20 persisted patterns with at least two linked events. Additional patterns have not been evaluated in this view.</p>}
       {(temporalLinks.length >= 100 || temporalEvents.length >= 100) && <p className="lcr-entry-status">Temporal context is bounded to the latest 100 links and 100 events returned by the authenticated record API. Older history may not be represented here.</p>}
@@ -643,7 +644,7 @@ export default function PossibleRelationshipsPanel({
             <p className="lcr-entry-status">
               Have additional source-backed information? <a href="#lcr-clarification-workflow">Open the existing clarification workflow</a>. A clarification remains a separate review item; it does not confirm this relationship.
             </p>
-            {reviewDecisions.filter((review) => review.target_type === "pattern" && review.target_id === pattern.id).slice(0, 1).map((review) => (
+            {reviewDecisions.filter((review) => review.target_type === "pattern" && review.target_id === pattern.id).map((review) => (
               <p key={review.id} className="lcr-entry-status">
                 Caregiver review: {review.review_decision.replaceAll("_", " ")} · reviewed {formatWhen(review.reviewed_at || review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}.
                 {review.reason ? ` Reason: ${review.reason}` : ""}
@@ -737,9 +738,9 @@ export default function PossibleRelationshipsPanel({
           {visibleEvidenceRelationships.map((relationship) => {
             const sourceEvents = eventsByEvidenceId.get(relationship.source_evidence_id) || [];
             const relatedEvents = eventsByEvidenceId.get(relationship.related_evidence_id) || [];
-            const priorReview = reviewDecisions.filter((review) =>
+            const priorReviews = reviewDecisions.filter((review) =>
               review.target_type === "evidence_source_relationship" && review.target_id === relationship.id,
-            ).slice(0, 1)[0];
+            );
             return (
               <article key={relationship.id} className="lcr-current-fact">
                 <div className="lcr-entry-heading">
@@ -779,11 +780,11 @@ export default function PossibleRelationshipsPanel({
                 <p className="lcr-entry-status">
                   Alternative interpretations: this record stores the source relationship and rationale, but not a separate alternative-interpretation assessment. Inspect both source items and their evidence reviews; shared origin or coincidence may affect how the relationship should be read.
                 </p>
-                {priorReview && (
-                  <p className="lcr-entry-status">
-                    Caregiver review: {priorReview.review_decision.replaceAll("_", " ")} · {formatWhen(priorReview.reviewed_at || priorReview.created_at)} · caregiver {priorReview.reviewed_by_caregiver_id || "not attributed"}. {priorReview.reason || ""}
+                {priorReviews.map((review) => (
+                  <p key={review.id} className="lcr-entry-status">
+                    Caregiver review: {review.review_decision.replaceAll("_", " ")} · {formatWhen(review.reviewed_at || review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}. {review.reason || ""}
                   </p>
-                )}
+                ))}
                 <label>
                   <span>Review this evidence relationship</span>
                   <textarea
@@ -835,7 +836,7 @@ export default function PossibleRelationshipsPanel({
                   <small>Source event {eventB.id} · {eventB.event_type.replaceAll("_", " ")} · contributor {eventB.created_by_caregiver_id || "not recorded"} · evidence {eventB.evidence_ids.length ? eventB.evidence_ids.join(", ") : "none linked"}</small>
                   <a href={`/workspace/timeline?event_id=${encodeURIComponent(eventB.id)}`}>Open second source observation</a>
                   <small>Temporal link ID: {link.id} · calculated {formatWhen(link.created_at)}</small>
-                  {reviewDecisions.filter((review) => review.target_type === "temporal_relationship" && review.target_id === link.id).slice(0, 1).map((review) => (
+                  {reviewDecisions.filter((review) => review.target_type === "temporal_relationship" && review.target_id === link.id).map((review) => (
                     <p key={review.id} className="lcr-entry-status">
                       Caregiver review: {review.review_decision.replaceAll("_", " ")} · {formatWhen(review.reviewed_at || review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}. {review.reason || ""}
                     </p>
