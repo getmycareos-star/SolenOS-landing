@@ -1155,7 +1155,10 @@ export function LCRCurrentUnderstanding() {
                 pattern.is_active && !pattern.superseded_by_pattern_id
               );
               const currentEvents = currentChange
-                ? baselineComparison.events.filter(event => currentChange.evidence_ids.includes(event.id))
+                ? baselineComparison.events.filter(event =>
+                    currentChange.evidence_ids.includes(event.id) &&
+                    !["invalidated", "superseded", "unparsed_raw"].includes(event.status)
+                  )
                 : [];
               const latestCurrentEvent = currentEvents.reduce<BaselineSourceEvent | null>((latest, event) =>
                 !latest || new Date(event.occurred_at).getTime() > new Date(latest.occurred_at).getTime() ? event : latest, null);
@@ -1163,7 +1166,12 @@ export function LCRCurrentUnderstanding() {
                 ? new Date(baselineComparison.as_of).getTime() - new Date(latestCurrentEvent.occurred_at).getTime()
                 : null;
               const currentIsRecent = currentAge !== null && currentAge >= 0 && currentAge <= 42 * 24 * 60 * 60 * 1000;
-              const baselineEvents = baselineComparison.events.filter(event => baseline.evidence_ids.includes(event.id));
+              const baselineEvents = baselineComparison.events.filter(event => {
+                if (!baseline.evidence_ids.includes(event.id) ||
+                    ["invalidated", "superseded", "unparsed_raw"].includes(event.status)) return false;
+                const linkedSources = baselineComparison.source_evidence.filter(source => event.evidence_ids.includes(source.id));
+                return linkedSources.length === 0 || linkedSources.some(source => source.evidence_status !== "rejected");
+              });
               const baselineEstablished = baseline.confidence === "high" &&
                 baseline.coverage_status === "covered" && baseline.is_stable &&
                 baseline.event_count >= 5 && baselineEvents.length >= 5 &&
