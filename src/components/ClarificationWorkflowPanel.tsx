@@ -35,7 +35,7 @@ type Question = {
 };
 type AssessmentItem = { id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[]; recorded_at?: string | null; occurred_at?: string | null };
 type LCRAssessment = { missing_information: AssessmentItem[]; uncertainties_and_conflicts: AssessmentItem[] };
-type GapCandidate = { question: string; subject_type: string; subject_id: string; field?: string | null; priority: string; reason: string; evidence_ids: string[]; source_kind: string; source_id: string; source_ids: string[]; persisted_question_id: string | null };
+type GapCandidate = { question: string; subject_type: string; subject_id: string; field?: string | null; intended_answerer_role?: string | null; priority: string; reason: string; evidence_ids: string[]; source_kind: string; source_id: string; source_ids: string[]; persisted_question_id: string | null };
 type ClarificationReview = { id: string; question_id: string; answer_event_id: string; answer_version: number; person_id: string; decision: "accepted" | "rejected" | "needs_more_information"; rationale: string; reviewed_by_caregiver_id: string; resulting_assertion_id?: string | null; resulting_assessment_id?: string | null; reconciliation_status: string; evidence_review_ids: string[]; resulting_gap_ids: string[]; created_at: string };
 type AnswerEvent = {
   id: string;
@@ -54,6 +54,8 @@ const field: CSSProperties = { boxSizing: "border-box", width: "100%", padding: 
 const button: CSSProperties = { border: "1px solid var(--border)", borderRadius: 7, padding: "8px 11px", background: "var(--surface)", color: "var(--text)", cursor: "pointer" };
 
 const priorityRank = (value: string) => { const ranks: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informational: 4 }; return ranks[value.toLowerCase()] ?? 5; };
+const necessityRank = (value?: string | null) => value === "necessary" ? 0 : value === "optional" ? 1 : 2;
+const answererRank = (value?: string | null) => value === "reporting_caregiver" || value === "other_caregiver" ? 0 : value === "person_receiving_care" ? 1 : value === "professional" ? 2 : 3;
 
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
   if (!Array.isArray(rows) || rows.some((value: unknown) => {
@@ -99,7 +101,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
   const selectedGap = gapCandidates.find((item) => item.source_id === selectedGapId);
-    const openQuestions = questions.filter((item) => ["open", "unresolved", "pending", "unanswered"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
+    const openQuestions = questions.filter((item) => ["open", "unresolved", "pending", "unanswered"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || necessityRank(a.necessity) - necessityRank(b.necessity) || answererRank(a.intended_answerer_role) - answererRank(b.intended_answerer_role));
   const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
   const questionRelatedRecord = (item: Question) => {
     const context = item.context ?? [];
@@ -442,7 +444,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           <ul style={{ paddingLeft: 18 }}>{gapCandidates.slice(0, 5).map((item) => <li key={item.source_id} style={{ marginBottom: 9 }}>
             <strong>{item.question}</strong>
             <p style={{ margin: "4px 0" }}>Why it matters: {gapReasonLabel(item.reason)}</p>
-            <small>{priorityBand(item.priority)} · {item.priority} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · Field: {item.field || "not specified"} · Gap ID: {item.source_id}</small>
+            <small>{priorityBand(item.priority)} · {item.priority} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · Field: {item.field || "not specified"} · Answerer: {item.intended_answerer_role?.replaceAll("_", " ") || "not assessed"} · Gap ID: {item.source_id}</small>
             {item.evidence_ids.length > 0 && <small style={{ display: "block" }}>Existing evidence: {item.evidence_ids.join(", ")}</small>}
             <button type="button" style={button} onClick={() => {
               setSelectedQuestionId("");
