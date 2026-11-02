@@ -53,6 +53,8 @@ const panel: CSSProperties = { border: "1px solid var(--border)", borderRadius: 
 const field: CSSProperties = { boxSizing: "border-box", width: "100%", padding: "9px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
 const button: CSSProperties = { border: "1px solid var(--border)", borderRadius: 7, padding: "8px 11px", background: "var(--surface)", color: "var(--text)", cursor: "pointer" };
 
+const priorityRank = (value: string) => { const ranks: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informational: 4 }; return ranks[value.toLowerCase()] ?? 5; };
+
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
   if (!Array.isArray(rows) || rows.some((value: unknown) => {
     if (!value || typeof value !== "object") return true;
@@ -97,8 +99,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
   const selectedGap = gapCandidates.find((item) => item.source_id === selectedGapId);
-  const priorityRank = (value: string) => { const ranks: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informational: 4 }; return ranks[value.toLowerCase()] ?? 5; };
-  const openQuestions = questions.filter((item) => ["open", "unresolved"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
+    const openQuestions = questions.filter((item) => ["open", "unresolved"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
   const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
   const questionReason = (item: Question) => {
     const context = (item.context ?? []).filter((entry) => entry && typeof entry === "object");
