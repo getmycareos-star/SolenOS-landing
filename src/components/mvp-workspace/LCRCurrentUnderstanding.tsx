@@ -422,6 +422,7 @@ export function LCRCurrentUnderstanding() {
   const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
   const [actionApprovalLoadingId, setActionApprovalLoadingId] = useState<string | null>(null);
   const [actionApprovalError, setActionApprovalError] = useState<string | null>(null);
+  const [suggestionDispositionReasons, setSuggestionDispositionReasons] = useState<Record<string, string>>({});
   const [createReminderForSuggestion, setCreateReminderForSuggestion] = useState(false);
   const [reminderDueInput, setReminderDueInput] = useState("");
   const [actionTransitionReasons, setActionTransitionReasons] = useState<Record<string, string>>({});
@@ -734,6 +735,38 @@ export function LCRCurrentUnderstanding() {
     }
   };
 
+  const deferSuggestion = async (item: (typeof openLoopItems)[number]) => {
+    if (item.source !== "open_loop_records") {
+      setActionApprovalError("This item is not a directly editable Open Loop record. It remains informational; no deferral was written.");
+      return;
+    }
+    const reason = (suggestionDispositionReasons[suggestionReference(item)] || "").trim();
+    if (!reason) {
+      setActionApprovalError("Enter a reason before deferring this suggestion.");
+      return;
+    }
+    setActionApprovalLoadingId(suggestionReference(item));
+    setActionApprovalError(null);
+    try {
+      const session = await ensureAnonymousSession();
+      if (session.person?.id !== personId) {
+        throw new Error("The selected follow-up does not belong to the active care-record session.");
+      }
+      await patchJSON(`/open-loops/${encodeURIComponent(item.id)}`, {
+        status: "deferred",
+        deferred_reason: reason,
+        reason,
+        idempotency_key: `lcr-defer-${item.id}-${reason}`.slice(0, 160),
+      });
+      setReviewingSuggestionId(null);
+      await load(true);
+    } catch (cause) {
+      setActionApprovalError(cause instanceof Error ? cause.message : "The suggestion could not be deferred.");
+    } finally {
+      setActionApprovalLoadingId(null);
+    }
+  };
+
   const transitionRegisteredAction = async (
     action: RegisteredAction,
     status: "approved" | "in_progress" | "completed" | "cancelled" | "deferred" | "needs_clarification",
@@ -878,9 +911,28 @@ export function LCRCurrentUnderstanding() {
                                     <input type="datetime-local" value={reminderDueInput} onChange={(event) => setReminderDueInput(event.target.value)} />
                                   </label>
                                 )}
+                                {item.source === "open_loop_records" && (
+                                  <label>
+                                    Reason for deferring consideration
+                                    <input
+                                      type="text"
+                                      value={suggestionDispositionReasons[suggestionReference(item)] ?? ""}
+                                      onChange={(event) => setSuggestionDispositionReasons((current) => ({ ...current, [suggestionReference(item)]: event.target.value }))}
+                                      maxLength={2000}
+                                    />
+                                  </label>
+                                )}
                                 {actionApprovalError && <p role="alert">{actionApprovalError}</p>}
                                 <button type="button" onClick={() => void approveFollowUp(item)} disabled={actionApprovalLoadingId === suggestionReference(item)}>
-                                  {actionApprovalLoadingId === suggestionReference(item) ? "Registering…" : "Approve and register"}
+                                  {actionApprovalLoadingId === suggestionReference(item) ? "Saving…" : "Approve and register"}
+                                </button>
+                                {item.source === "open_loop_records" && (
+                                  <button type="button" onClick={() => void deferSuggestion(item)} disabled={actionApprovalLoadingId === suggestionReference(item)}>
+                                    Defer consideration
+                                  </button>
+                                )}
+                                <button type="button" className="lcr-text-action" onClick={() => document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                                  Review clarification workflow
                                 </button>
                                 <button type="button" className="lcr-text-action" onClick={() => {
                                   setReviewingSuggestionId(null);
@@ -1590,7 +1642,7 @@ export function LCRCurrentUnderstanding() {
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
       <ConflictResolutionPanel personId={personId} />
-      <ClarificationWorkflowPanel personId={personId} />
+      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} /></div>
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
