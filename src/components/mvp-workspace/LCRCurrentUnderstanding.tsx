@@ -420,6 +420,7 @@ function formatWhen(value?: string | null): string {
 
 export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
+  const [currentCaregiverId, setCurrentCaregiverId] = useState("");
   const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
   const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
   const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
@@ -490,6 +491,7 @@ export function LCRCurrentUnderstanding() {
         throw new Error("A valid care-record session is required to read the longitudinal record.");
       }
       setPersonId(session.person.id);
+      setCurrentCaregiverId(session.caregiver.id);
       try {
         const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(session.person.id)}`);
         if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== session.person.id)) {
@@ -566,6 +568,7 @@ export function LCRCurrentUnderstanding() {
       }
     } catch (cause) {
       setPersonId("");
+      setCurrentCaregiverId("");
       setProjection(null);
       setRegisteredActions([]);
       setRegisteredActionsError("Registered actions are unavailable because the caregiver session could not be established.");
@@ -1148,6 +1151,7 @@ export function LCRCurrentUnderstanding() {
                       {action.linked_reminder_status && <small>Linked reminder: {action.linked_reminder_status} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
                       {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
                       {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
+                      {action.responsible_caregiver_id !== currentCaregiverId && <p role="status">Only the responsible caregiver can change this action. You can still review its status and audit history.</p>}
                       <label>
                         Reason for deferring, cancelling or requesting clarification
                         <input
@@ -1155,6 +1159,7 @@ export function LCRCurrentUnderstanding() {
                           value={actionTransitionReasons[action.id] ?? ""}
                           onChange={(event) => setActionTransitionReasons((current) => ({ ...current, [action.id]: event.target.value }))}
                           maxLength={2000}
+                          disabled={action.responsible_caregiver_id !== currentCaregiverId}
                         />
                       </label>
                       {action.status !== "completed" && action.status !== "cancelled" && (
@@ -1167,9 +1172,9 @@ export function LCRCurrentUnderstanding() {
                           />
                         </label>
                       )}
-                      {action.status === "approved" && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
+                      {action.status === "approved" && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
                       {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
-                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
+                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
                       {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
                       {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs clarification</button>}
                       {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
