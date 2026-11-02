@@ -690,7 +690,7 @@ export function LCRCurrentUnderstanding() {
                           : <small>Supporting evidence: no linked evidence was returned. The priority reason is retained as a persisted open-loop assessment, not independently evidenced here.</small>}
                         {source?.source_label && <small>Source label: {source.source_label}</small>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
-                        {source?.claim_count > 0 && <small>Competing claims linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
+                        {source && source.claim_count > 0 && <small>Competing claims linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
                       </li>
                     );
                   })}
