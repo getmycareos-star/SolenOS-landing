@@ -363,7 +363,30 @@ function displayDescription(value?: string | null): string {
   try {
     const parsed: unknown = JSON.parse(value);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      const entries = Object.entries(parsed as Record<string, unknown>)
+      const parsedRecord = parsed as Record<string, unknown>;
+      const quickValue = parsedRecord.quick_check_in;
+      if (quickValue && typeof quickValue === "object" && !Array.isArray(quickValue)) {
+        const quick = quickValue as Record<string, unknown>;
+        const kindLabels: Record<string, string> = {
+          same_as_usual: "Same as usual",
+          change: "Something changed",
+          concern: "I have a concern",
+          care_completed: "Care was completed",
+          uncertain: "I’m not sure",
+        };
+        const areas = Array.isArray(quick.selected_areas)
+          ? quick.selected_areas.filter((item): item is string => typeof item === "string")
+              .map((item) => item.replaceAll("_", " "))
+          : [];
+        const summary = typeof parsedRecord.notes === "string" ? parsedRecord.notes : "";
+        return [
+          summary,
+          `Update type: ${kindLabels[String(quick.kind)] || "Caregiver check-in"}`,
+          areas.length ? `Areas selected: ${areas.join(", ")}` : "",
+          quick.scope === "selected_areas_only" ? "Scope: selected areas only" : "",
+        ].filter(Boolean).join("\n");
+      }
+      const entries = Object.entries(parsedRecord)
         .filter(([, item]) => item !== null && item !== undefined && item !== "");
       if (entries.length > 0) {
         return entries.map(([key, item]) =>
