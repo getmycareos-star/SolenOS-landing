@@ -256,7 +256,7 @@ export default function QuickDailyCheckIn() {
             <button
               type="button"
               onClick={saveUpdate}
-              disabled={saving || selectedAreas.length === 0}
+              disabled={saving || (kind !== "same_as_usual" && selectedAreas.length === 0)}
               className="workspace-primary"
               style={{ minHeight: 46, padding: "10px 16px", borderRadius: 9, fontWeight: 700 }}
             >
@@ -271,7 +271,7 @@ export default function QuickDailyCheckIn() {
               Clear selection
             </button>
           </div>
-          {selectedAreas.length === 0 && (
+          {selectedAreas.length === 0 && kind !== "same_as_usual" && (
             <p style={{ margin: "8px 0 0", color: "#52656d", fontSize: 13 }}>
               Select at least one area before saving.
             </p>
