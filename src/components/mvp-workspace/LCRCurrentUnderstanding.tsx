@@ -180,7 +180,7 @@ type SituationAssessment = {
     has_more: boolean;
     notice: string;
   };
-  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
   missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   confidence_assessment: { overall: string; limitations: string[] };
   evolution_since_previous_assessment?: {
