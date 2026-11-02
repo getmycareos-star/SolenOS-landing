@@ -73,6 +73,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [gapCandidates, setGapCandidates] = useState<GapCandidate[]>([]);
+  const [gapCandidateError, setGapCandidateError] = useState("");
   const [selectedGapId, setSelectedGapId] = useState("");
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
@@ -156,19 +157,28 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const [claimRows, questionRows, evidenceRows, nextQuestionRows] = await Promise.all([
+      const [claimRows, questionRows, evidenceRows] = await Promise.all([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
         getJSON("/care-continuity/evidence?limit=100"),
-        postJSON(`/care-continuity/next-questions/${encodeURIComponent(sessionPersonId)}`, {}),
       ]);
+      let nextQuestionRows: unknown[] = [];
+      try {
+        nextQuestionRows = await postJSON(`/care-continuity/next-questions/${encodeURIComponent(sessionPersonId)}`, {});
+        setGapCandidateError("");
+      } catch {
+        setGapCandidateError("Persisted information gaps could not be retrieved. Existing questions remain available, but gap coverage cannot be confirmed.");
+      }
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
       if (!Array.isArray(nextQuestionRows) || nextQuestionRows.some((row) =>
         !row || typeof row.question !== "string" || typeof row.subject_type !== "string" ||
         typeof row.subject_id !== "string" || typeof row.source_kind !== "string" || typeof row.source_id !== "string"
-      )) throw new Error("Invalid persisted next-question candidate response");
+      )) {
+        setGapCandidateError("Persisted information-gap candidates returned an invalid response. Existing questions remain available, but gap coverage cannot be confirmed.");
+        nextQuestionRows = [];
+      }
       const linkedGapIds = new Set<string>();
       for (const question of questionRows as Question[]) {
         if (!["open", "unresolved", "pending", "unanswered", "answered"].includes(question.status)) continue;
@@ -195,6 +205,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       setQuestions([]);
       setEvidence([]);
       setGapCandidates([]);
+      setGapCandidateError("Clarification records could not be loaded from the authenticated care record.");
       setSelectedGapId("");
       setSelectedClaimId("");
       setSelectedQuestionId("");
@@ -424,9 +435,11 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       <div style={{ margin: "12px 0" }}>
         <strong style={{ fontSize: 13 }}>Important unanswered questions</strong>
         {openQuestions.length === 0
-          ? gapCandidates.length > 0
-            ? <p>{gapCandidates.length} persisted information gap(s) still need a caregiver-worded clarification question. They are listed below; none is treated as resolved.</p>
-            : assessment && assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0
+          ? gapCandidateError
+            ? <p role="status">The persisted gap list is unavailable, so the record cannot be described as having no important unanswered questions.</p>
+            : gapCandidates.length > 0
+              ? <p>{gapCandidates.length} persisted information gap(s) still need a caregiver-worded clarification question. They are listed below; none is treated as resolved.</p>
+              : assessment && assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0
               ? <p>No important unanswered questions identified from the available record.</p>
               : <p>No persisted open clarification questions were returned. Review the information gaps above; an assessment gap without a linked question is not treated as resolved.</p>
           : <>
@@ -439,6 +452,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             </li>)}</ul>
             {openQuestions.length > 5 && <details><summary>More outstanding questions ({openQuestions.length - 5})</summary><ul>{openQuestions.slice(5).map((item) => <li key={item.id}>{item.question} — {item.priority} <button type="button" style={button} onClick={() => setSelectedQuestionId(item.id)}>Open</button></li>)}</ul></details>}
           </>}
+        {gapCandidateError && <p role="alert">{gapCandidateError}</p>}
         {gapCandidates.length > 0 && <div style={{ marginTop: 12 }}>
           <strong>Persisted information gaps without an existing clarification question</strong>
           <ul style={{ paddingLeft: 18 }}>{gapCandidates.slice(0, 5).map((item) => <li key={item.source_id} style={{ marginBottom: 9 }}>
