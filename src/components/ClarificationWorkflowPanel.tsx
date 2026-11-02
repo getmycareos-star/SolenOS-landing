@@ -35,6 +35,7 @@ type Question = {
 };
 type AssessmentItem = { id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[]; recorded_at?: string | null; occurred_at?: string | null };
 type LCRAssessment = { missing_information: AssessmentItem[]; uncertainties_and_conflicts: AssessmentItem[] };
+type ClarificationReview = { id: string; question_id: string; answer_event_id: string; answer_version: number; person_id: string; decision: "accepted" | "rejected" | "needs_more_information"; rationale: string; reviewed_by_caregiver_id: string; resulting_assertion_id?: string | null; reconciliation_status: string; evidence_review_ids: string[]; created_at: string };
 type AnswerEvent = {
   id: string;
   question_id: string;
@@ -79,6 +80,11 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const [answerProvenance, setAnswerProvenance] = useState("");
   const [answerEvidenceIds, setAnswerEvidenceIds] = useState<string[]>([]);
   const [history, setHistory] = useState<AnswerEvent[]>([]);
+  const [reviewHistory, setReviewHistory] = useState<ClarificationReview[]>([]);
+  const [reviewHistoryError, setReviewHistoryError] = useState("");
+  const [reviewRationale, setReviewRationale] = useState("");
+  const [reviewAfterDays, setReviewAfterDays] = useState("30");
+  const [reviewSaving, setReviewSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -169,6 +175,67 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   }, [scopePersonId, selectedQuestionId]);
 
   useEffect(() => { void loadHistory(); }, [loadHistory]);
+  const loadReviewHistory = useCallback(async () => {
+    if (!selectedQuestionId || !scopePersonId) {
+      setReviewHistory([]);
+      setReviewHistoryError("");
+      return;
+    }
+    setReviewHistoryError("");
+    try {
+      const rows = await getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/review-history`);
+      if (!Array.isArray(rows) || rows.some((row) => row?.question_id !== selectedQuestionId || row?.person_id !== scopePersonId)) {
+        throw new Error("Invalid or cross-record clarification review history");
+      }
+      setReviewHistory(rows as ClarificationReview[]);
+    } catch {
+      setReviewHistory([]);
+      setReviewHistoryError("Clarification review history is unavailable. A failed request is not an empty history.");
+    }
+  }, [scopePersonId, selectedQuestionId]);
+
+  useEffect(() => { void loadReviewHistory(); }, [loadReviewHistory]);
+
+  async function submitClarificationDecision(decision: ClarificationReview["decision"]) {
+    if (!selectedQuestion || !scopePersonId || history.length === 0) return;
+    const latest = history[history.length - 1];
+    if (reviewRationale.trim().length < 3) {
+      setError("A review decision requires a specific rationale.");
+      return;
+    }
+    const days = Number(reviewAfterDays);
+    if (decision === "accepted" && (!Number.isInteger(days) || days < 1 || days > 3650)) {
+      setError("Choose a review window between 1 and 3650 days for an accepted current-state clarification.");
+      return;
+    }
+    setReviewSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const payload: Record<string, unknown> = { answer_version: latest.answer_version, decision, rationale: reviewRationale.trim() };
+      if (decision === "accepted") payload.review_after_days = days;
+      const result = await postJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}/reviews`, payload);
+      if (!result || result.question_id !== selectedQuestion.id || result.person_id !== scopePersonId || result.answer_version !== latest.answer_version || result.decision !== decision) {
+        throw new Error("Clarification decision response was not confirmed");
+      }
+      if (decision === "accepted" && (result.reconciliation_status !== "completed" || !result.resulting_assertion_id)) {
+        throw new Error("The backend did not confirm the resulting LCR assertion and reconciliation");
+      }
+      setReviewRationale("");
+      setNotice(decision === "accepted"
+        ? "Clarification accepted. A new source-attributed assertion was persisted and the existing change-intelligence reconciliation completed. The original claim and answer history remain preserved."
+        : decision === "rejected" ? "Clarification rejected with its rationale preserved. The question remains unresolved for follow-up."
+          : "Further information requested. The question remains open and the submitted answer history is preserved.");
+      await loadAll();
+      await loadHistory();
+      await loadReviewHistory();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Clarification decision was not confirmed. No successful review is assumed.");
+    } finally {
+      setReviewSaving(false);
+    }
+  }
+
 
   async function createQuestion() {
     if (!scopePersonId || !selectedClaim || questionText.trim().length < 5) {
@@ -286,7 +353,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
         : !assessment ? <p role="status">No persisted situation assessment is available. Reassess the record before treating this section as complete.</p>
           : <>
             {assessment.missing_information.length > 0 && <div><strong>Missing information</strong><ul>{assessment.missing_information.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Classification: {uncertaintyLabel(item)} · Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
-            {assessment.uncertainties_and_conflicts.length > 0 && <div><strong>Uncertain or conflicting information</strong><ul>{assessment.uncertainties_and_conflicts.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
+            {assessment.uncertainties_and_conflicts.length > 0 && <div><strong>Uncertain or conflicting information</strong><ul>{assessment.uncertainties_and_conflicts.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Classification: {uncertaintyLabel(item)} · Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
             {assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0 && <p>No missing-information or unresolved-uncertainty items were returned by the saved assessment.</p>}
           </>}
     </div>
@@ -411,6 +478,33 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             </>}
             {selectedQuestion.status !== "open" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen without deleting prior answers</button>}
           </div>}
+
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+            <strong style={{ fontSize: 13 }}>Clarification review decisions</strong>
+            {reviewHistoryError && <p role="alert">{reviewHistoryError}</p>}
+            {!reviewHistoryError && reviewHistory.length === 0 && <p>No review decision is recorded. Before deciding, review every linked evidence item in <a href="#clarification-evidence-review">Evidence quality and source review</a>.</p>}
+            {reviewHistory.map((item) => <div key={item.id} style={{ marginTop: 8 }}>
+              <strong>{item.decision.replaceAll("_", " ")}</strong>
+              <p>{item.rationale}</p>
+              <small>Answer version {item.answer_version} · Reviewed by {item.reviewed_by_caregiver_id} · {item.created_at}</small>
+              <small style={{ display: "block" }}>Evidence review records: {item.evidence_review_ids.join(", ") || "none returned"} · LCR reconciliation: {item.reconciliation_status}</small>
+              {item.resulting_assertion_id && <small style={{ display: "block" }}>Resulting LCR assertion: {item.resulting_assertion_id}</small>}
+            </div>)}
+            {selectedQuestion.status === "answered" && history.length > 0 && !reviewHistoryError && !reviewHistory.some((item) => item.answer_version === history[history.length - 1].answer_version) && <>
+              <label style={{ display: "block", marginTop: 8 }}>Review rationale
+                <textarea style={{ ...field, minHeight: 55 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} placeholder="Explain why this answer is accepted, rejected or needs more information." />
+              </label>
+              <label style={{ display: "block", marginTop: 8 }}>Next review window (days, required for accepted current-state information)
+                <input style={field} type="number" min="1" max="3650" value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} />
+              </label>
+              <p>Acceptance requires persisted evidence-review records for every answer evidence item and a linked source claim. Acceptance creates a new assertion; it does not overwrite the original claim.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <button type="button" style={button} onClick={() => void submitClarificationDecision("accepted")} disabled={reviewSaving || saving}>Accept and reconcile</button>
+                <button type="button" style={button} onClick={() => void submitClarificationDecision("rejected")} disabled={reviewSaving || saving}>Reject answer</button>
+                <button type="button" style={button} onClick={() => void submitClarificationDecision("needs_more_information")} disabled={reviewSaving || saving}>Request more information</button>
+              </div>
+            </>}
+          </div>
           <div style={{ marginTop: 12 }}>
             <strong style={{ fontSize: 13 }}>Immutable answer history</strong>
             {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError}</p>}
@@ -425,7 +519,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           </div>
         </>}
       </div>
-      {answeredQuestions.length > 0 && <details style={{ marginTop: 14 }}><summary>Resolved or answered question history ({answeredQuestions.length})</summary><ul>{answeredQuestions.map((item) => <li key={item.id} style={{ marginBottom: 8 }}><strong>{item.question}</strong><p>{questionStatusLabel(item.status)}</p>{item.answer && <p>Recorded answer: {item.answer}</p>}{item.answer_provenance && <small>Source: {item.answer_provenance}</small>}{item.answered_at && <small style={{ display: "block" }}>Submitted: {item.answered_at}</small>}{item.answered_by_caregiver_id && <small style={{ display: "block" }}>Provided by caregiver: {item.answered_by_caregiver_id}</small>}<small style={{ display: "block" }}>The current API does not expose an acceptance/rejection reconciliation decision for this answer; it is not presented as verified.</small></li>)}</ul></details>}
+      {answeredQuestions.length > 0 && <details style={{ marginTop: 14 }}><summary>Resolved or answered question history ({answeredQuestions.length})</summary><ul>{answeredQuestions.map((item) => <li key={item.id} style={{ marginBottom: 8 }}><strong>{item.question}</strong><p>{questionStatusLabel(item.status)}</p>{item.answer && <p>Recorded answer: {item.answer}</p>}{item.answer_provenance && <small>Source: {item.answer_provenance}</small>}{item.answered_at && <small style={{ display: "block" }}>Submitted: {item.answered_at}</small>}{item.answered_by_caregiver_id && <small style={{ display: "block" }}>Provided by caregiver: {item.answered_by_caregiver_id}</small>}<small style={{ display: "block" }}>Review outcome is shown in the immutable clarification decision history below; a recorded answer alone is not treated as verified.</small></li>)}</ul></details>}
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
