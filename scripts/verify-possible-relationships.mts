@@ -4,6 +4,7 @@ import fs from "node:fs";
 const panel = fs.readFileSync("src/components/mvp-workspace/PossibleRelationshipsPanel.tsx", "utf8");
 const lcr = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 const clarification = fs.readFileSync("src/components/ClarificationWorkflowPanel.tsx", "utf8");
+const timeline = fs.readFileSync("src/app/workspace/timeline/page.tsx", "utf8");
 
 for (const contract of [
   /Possible Relationships/,
@@ -17,6 +18,9 @@ for (const contract of [
   /recorded_at/,
   /evidence_ids/,
   /contributor_label/,
+  /evidence_reviews/,
+  /contestedReviews/,
+  /Open original observation in Longitudinal Care History/,
   /Not enough evidence to identify a meaningful relationship/,
   /\/care-continuity\/review-decisions/,
   /review_decision: decision/,
