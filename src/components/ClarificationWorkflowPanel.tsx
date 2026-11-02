@@ -195,11 +195,12 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
         .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || answererRank(a.intended_answerer_role) - answererRank(b.intended_answerer_role));
       setGapCandidates(gapRows);
       setSelectedGapId((current) => current && gapRows.some((row) => row.source_id === current) ? current : "");
+      const availableClaims = (claimRows as Claim[]).filter((claim) => !["retracted", "superseded"].includes((claim.assertion_status || "").toLowerCase()));
       setScopePersonId(sessionPersonId);
-      setClaims(claimRows as Claim[]);
+      setClaims(availableClaims);
       setQuestions(questionRows as Question[]);
       setEvidence(evidenceRows as Evidence[]);
-      setSelectedClaimId((current) => current && claimRows.some((row) => row.id === current) ? current : claimRows[0]?.id ?? "");
+      setSelectedClaimId((current) => current && availableClaims.some((row) => row.id === current) ? current : availableClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => current && questionRows.some((row) => row.id === current) ? current : questionRows[0]?.id ?? "");
     } catch {
       setScopePersonId("");
