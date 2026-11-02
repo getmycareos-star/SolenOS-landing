@@ -17,6 +17,7 @@ type RegisteredAction = {
   suggestion_id: string;
   source_evidence_id: string;
   source_evidence_ids?: string[] | null;
+  responsible_caregiver_id?: string | null;
   normalized_action: string;
   original_text: string;
   action_type: string;
@@ -1123,7 +1124,7 @@ export function LCRCurrentUnderstanding() {
                     <li key={action.id} className="lcr-current-fact">
                       <strong>{action.normalized_action}</strong>
                       <p className="lcr-entry-status">Registered action · {action.status.replaceAll("_", " ")} · Version {action.version}</p>
-                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.created_by_caregiver_id}</small>
+                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id ?? "Not assigned"} · Created by: {action.created_by_caregiver_id}</small>
                       <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).join(", ")}</small>
                       {action.deadline && <small>Recorded due date: {formatWhen(action.deadline)}</small>}
                       {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
