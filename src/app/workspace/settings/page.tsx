@@ -19,7 +19,7 @@ import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, postJSON, putJSON, signInToAccount } from "@/api/client";
+import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, putJSON, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
@@ -302,7 +302,7 @@ function AccountCard() {
     setMessage("");
     try {
       if (mode === "create") {
-        const result = await postJSON("/accounts", { email, password }) as { account: typeof account; message?: string };
+        const result = await createAccount(email, password);
         setAccount(result.account ?? null);
         setMessage("Account created and linked to this care record.");
         setMode("idle");
