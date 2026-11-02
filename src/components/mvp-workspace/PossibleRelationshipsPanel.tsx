@@ -97,6 +97,32 @@ type PersistedTemporalLink = {
   created_at?: string | null;
 };
 
+type PersistedEvidenceRelationship = {
+  id: string;
+  person_id: string;
+  source_evidence_id: string;
+  related_evidence_id: string;
+  relationship_type: string;
+  scope_type: string;
+  scope_id?: string | null;
+  source_independence_status: string;
+  origin_group_key?: string | null;
+  rationale: string;
+  reviewed_by_caregiver_id?: string | null;
+  created_at?: string | null;
+};
+
+type EvidenceLinkedEvent = {
+  id: string;
+  title: string;
+  event_type: string;
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  evidence_ids: string[];
+  contributor_id?: string | null;
+  contributor_label?: string | null;
+};
+
 type CareEventRecord = PatternEvent & {
   person_id: string;
   created_by_caregiver_id?: string | null;
@@ -251,6 +277,8 @@ export default function PossibleRelationshipsPanel({
   const [temporalEvents, setTemporalEvents] = useState<CareEventRecord[]>([]);
   const [temporalError, setTemporalError] = useState("");
   const [temporalLoading, setTemporalLoading] = useState(true);
+  const [evidenceRelationships, setEvidenceRelationships] = useState<PersistedEvidenceRelationship[]>([]);
+  const [evidenceRelationshipError, setEvidenceRelationshipError] = useState("");
 
   const candidatePatterns = useMemo(
     () => patterns.filter((pattern) => pattern.event_ids?.length >= 2).slice(0, 20),
@@ -362,6 +390,34 @@ export default function PossibleRelationshipsPanel({
 
   useEffect(() => {
     let cancelled = false;
+    async function loadEvidenceRelationships() {
+      if (!personId) {
+        setEvidenceRelationships([]);
+        setEvidenceRelationshipError("");
+        return;
+      }
+      try {
+        const rows = await getJSON("/care-continuity/evidence-source-relationships?limit=100");
+        if (!Array.isArray(rows) || rows.some((row) => row?.person_id !== personId)) {
+          throw new Error("Evidence relationships did not match the authenticated care record.");
+        }
+        if (!cancelled) {
+          setEvidenceRelationships(rows as PersistedEvidenceRelationship[]);
+          setEvidenceRelationshipError("");
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setEvidenceRelationships([]);
+          setEvidenceRelationshipError(cause instanceof Error ? cause.message : "Persisted evidence relationships could not be loaded.");
+        }
+      }
+    }
+    void loadEvidenceRelationships();
+    return () => { cancelled = true; };
+  }, [personId]);
+
+  useEffect(() => {
+    let cancelled = false;
     async function loadReviewDecisions() {
       if (!personId) {
         setReviewDecisions([]);
@@ -374,7 +430,7 @@ export default function PossibleRelationshipsPanel({
           throw new Error("Review decisions did not match the authenticated care record.");
         }
         if (!cancelled) {
-          setReviewDecisions(rows.filter((row) => ["pattern", "temporal_relationship"].includes(row.target_type)) as PatternReviewDecision[]);
+          setReviewDecisions(rows.filter((row) => ["pattern", "temporal_relationship", "evidence_source_relationship"].includes(row.target_type)) as PatternReviewDecision[]);
           setReviewError("");
         }
       } catch {
@@ -388,7 +444,7 @@ export default function PossibleRelationshipsPanel({
     return () => { cancelled = true; };
   }, [personId]);
 
-  async function submitReviewTarget(targetType: "pattern" | "temporal_relationship", targetId: string, decision: "disputed" | "not_applicable") {
+  async function submitReviewTarget(targetType: "pattern" | "temporal_relationship" | "evidence_source_relationship", targetId: string, decision: "disputed" | "not_applicable") {
     const reason = (feedbackReasons[targetId] || "").trim();
     if (reason.length < 5) {
       setFeedbackErrors((current) => ({ ...current, [targetId]: "Add a short reason so this review is attributable and understandable." }));
