@@ -15,7 +15,7 @@ assert(panel.includes("openQuestions.slice(0, 5)"), "the initial question list m
 assert(panel.includes("questionReason(item)"), "question cards must explain their recorded reason");
 assert(panel.includes("assessmentError"), "assessment retrieval failure must be explicit");
 assert(panel.includes("No important unanswered questions identified from the available record."), "the truthful no-question state must be present");
-assert(panel.includes("/reviews`)"), "caregiver review decisions must use the persisted backend endpoint");
+assert(panel.includes("/reviews`, payload)"), "caregiver review decisions must use the persisted backend endpoint");
 assert(panel.includes("/review-history`)"), "review decisions must load from persisted history");
 assert(panel.includes("Accept and reconcile") && panel.includes("Reject answer") && panel.includes("Request more information"), "all clarification review outcomes must be available");
 assert(panel.includes("reconciliation_status") && panel.includes("resulting_assertion_id"), "acceptance must display the actual reconciliation receipt");
