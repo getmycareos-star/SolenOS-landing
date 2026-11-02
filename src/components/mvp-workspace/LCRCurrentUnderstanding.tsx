@@ -182,6 +182,32 @@ type SituationAssessment = {
   notice: string;
 };
 
+type BaselineRecord = {
+  id: string; subject_type: string; subject_id: string; baseline_type?: string | null;
+  window_start: string; window_end: string; event_count: number; state_value?: string | null;
+  confidence?: string | null; is_stable: boolean; coverage_status: string; history_completeness: string;
+  analysis_version: string; documentation_bias_flag: boolean; evidence_ids: string[];
+  created_at: string; updated_at?: string | null; is_active: boolean;
+  superseded_by_baseline_id?: string | null;
+};
+type BaselineComparisonChange = {
+  id: string; subject_type: string; subject_id: string; baseline_id?: string | null;
+  previous_state?: string | null; current_state?: string | null; explanation?: string | null;
+  change_type?: string | null; change_direction?: string | null; confidence?: number | null;
+  confirmation_status: string; comparison_window_start?: string | null; comparison_window_end?: string | null;
+  persistence_days?: number | null; is_persistent?: boolean | null; evidence_ids: string[];
+  is_active: boolean; superseded_by_change_id?: string | null; created_at: string;
+};
+type BaselineSourceEvent = {
+  id: string; event_type: string; status: string; title: string; description?: string | null;
+  occurred_at: string; recorded_at?: string | null; created_by_caregiver_id: string;
+  time_provenance?: string | null; evidence_ids: string[];
+};
+type BaselineComparisonResponse = {
+  person_id: string; baselines: BaselineRecord[]; changes: BaselineComparisonChange[];
+  events: BaselineSourceEvent[]; read_only: true; notice: string;
+};
+
 type SourceFreshness = {
   status: string;
   reassessment_recommended: boolean;
@@ -367,6 +393,8 @@ export function LCRCurrentUnderstanding() {
   const [changesError, setChangesError] = useState<string | null>(null);
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
   const [patternsError, setPatternsError] = useState<string | null>(null);
+  const [baselineComparison, setBaselineComparison] = useState<BaselineComparisonResponse | null>(null);
+  const [baselineComparisonError, setBaselineComparisonError] = useState<string | null>(null);
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
   const [changeEvidence, setChangeEvidence] = useState<Record<string, { evidence: ChangeEvidence[]; assertions: ChangeAssertionEvidence[]; confirmation_history: ChangeConfirmationHistoryItem[]; error?: string }>>({});
   const [evidenceLoadingId, setEvidenceLoadingId] = useState<string | null>(null);
@@ -408,6 +436,23 @@ export function LCRCurrentUnderstanding() {
         throw new Error("A valid care-record session is required to read the longitudinal record.");
       }
       setPersonId(session.person.id);
+      setBaselineComparison(null);
+      setBaselineComparisonError(null);
+      try {
+        const baselineResult = await getJSON(
+          `/change/baselines/${encodeURIComponent(session.person.id)}/comparison`
+        ) as BaselineComparisonResponse;
+        if (baselineResult?.person_id !== session.person.id || baselineResult.read_only !== true ||
+            !Array.isArray(baselineResult.baselines) || !Array.isArray(baselineResult.changes) ||
+            !Array.isArray(baselineResult.events)) {
+          throw new Error("Baseline comparison did not match the active care-record session.");
+        }
+        setBaselineComparison(baselineResult);
+      } catch (cause) {
+        setBaselineComparisonError(cause instanceof Error
+          ? cause.message
+          : "Established baseline records could not be loaded.");
+      }
       const result = await getJSON("/care-continuity/current-care?limit_per_source=12");
       if (!result || result.read_only !== true || !Array.isArray(result.items) ||
           typeof result.schema_status !== "string" || typeof result.projection_type !== "string" ||
@@ -972,6 +1017,125 @@ export function LCRCurrentUnderstanding() {
         </div>
       ) : projection ? (
         <>
+          <section className="lcr-baseline-comparison" aria-labelledby="lcr-baseline-comparison-heading">
+            <div className="lcr-section-heading">
+              <div>
+                <h3 id="lcr-baseline-comparison-heading">Established Baseline vs Current State</h3>
+                <p>Previously recorded patterns are compared only with linked, persisted change assessments. Missing evidence is not treated as proof that nothing changed.</p>
+              </div>
+            </div>
+            {baselineComparisonError ? (
+              <div role="status" className="lcr-empty-state">
+                <p>Baseline comparison is unavailable. {baselineComparisonError}</p>
+              </div>
+            ) : !baselineComparison ? (
+              <p>Loading established baseline records…</p>
+            ) : baselineComparison.baselines.filter(row => row.is_active).length === 0 ? (
+              <div className="lcr-empty-state">
+                <h4>Baseline not yet established.</h4>
+                <p>No active persisted baseline is available for comparison. Historical observations may still exist elsewhere in the record.</p>
+              </div>
+            ) : (
+              <div className="lcr-baseline-domains">
+                {baselineComparison.baselines.filter(row => row.is_active).map((baseline) => {
+                  const domainChanges = baselineComparison.changes.filter(change =>
+                    change.subject_type === baseline.subject_type &&
+                    change.subject_id === baseline.subject_id &&
+                    change.is_active && !change.superseded_by_change_id
+                  );
+                  const currentChange = domainChanges[0];
+                  const currentEvents = currentChange
+                    ? baselineComparison.events.filter(event => currentChange.evidence_ids.includes(event.id))
+                    : [];
+                  const latestCurrentEvent = currentEvents.reduce<BaselineSourceEvent | null>((latest, event) =>
+                    !latest || new Date(event.occurred_at).getTime() > new Date(latest.occurred_at).getTime() ? event : latest, null);
+                  const currentIsRecent = !!latestCurrentEvent &&
+                    Date.now() - new Date(latestCurrentEvent.occurred_at).getTime() <= 42 * 24 * 60 * 60 * 1000;
+                  const baselineEstablished = baseline.confidence === "high" &&
+                    baseline.coverage_status === "covered" && baseline.is_stable &&
+                    baseline.event_count >= 5 && baseline.history_completeness === "complete";
+                  const confirmedChange = !!currentChange && currentChange.confirmation_status === "confirmed";
+                  const possibleChange = !!currentChange &&
+                    ["detected", "awaiting_confirmation", "inconclusive"].includes(currentChange.confirmation_status);
+                  const comparisonLabel = !baselineEstablished
+                    ? "Baseline is provisional or uncertain"
+                    : !currentIsRecent
+                      ? "Not enough recent information to compare"
+                      : confirmedChange
+                        ? "Change confirmed in the record"
+                        : possibleChange
+                          ? "Possible change requiring confirmation"
+                          : "Not enough information to determine whether the domain is unchanged";
+                  const baselineEvents = baselineComparison.events.filter(event => baseline.evidence_ids.includes(event.id));
+                  return (
+                    <article className="lcr-baseline-domain" key={baseline.id}>
+                      <h4>{baseline.subject_type.replaceAll("_", " ")}</h4>
+                      <div className="lcr-baseline-columns">
+                        <div>
+                          <strong>Established baseline</strong>
+                          {baselineEstablished ? (
+                            <>
+                              <p>{baseline.state_value || `Historical records across ${baseline.event_count} events.`}</p>
+                              <p>Observed {formatWhen(baseline.window_start)} – {formatWhen(baseline.window_end)}.</p>
+                              <p>Confidence: {baseline.confidence}. Coverage: {baseline.coverage_status}.</p>
+                            </>
+                          ) : (
+                            <p>Baseline not yet established. The available history does not meet the evidence and coverage threshold for a reliable baseline.</p>
+                          )}
+                          <details>
+                            <summary>Inspect baseline evidence ({baselineEvents.length})</summary>
+                            {baselineEvents.length ? (
+                              <ul>{baselineEvents.map(event => (
+                                <li key={event.id}>
+                                  <strong>{event.title}</strong> · Event: {formatWhen(event.occurred_at)} · Recorded: {formatWhen(event.recorded_at)}
+                                  <p>{displayDescription(event.description)}</p>
+                                  <small>Supplied by caregiver record {event.created_by_caregiver_id} · {event.status} · Record {event.id}</small>
+                                </li>
+                              ))}</ul>
+                            ) : <p>No linked source events were returned.</p>}
+                          </details>
+                        </div>
+                        <div>
+                          <strong>Current state</strong>
+                          {currentChange && currentEvents.length ? (
+                            <>
+                              <p>{currentChange.current_state || currentChange.explanation || "A persisted change assessment is linked to this domain."}</p>
+                              {latestCurrentEvent && <p>Most recent linked event: {formatWhen(latestCurrentEvent.occurred_at)} · Recorded: {formatWhen(latestCurrentEvent.recorded_at)}.</p>}
+                              <p>Review status: {currentChange.confirmation_status.replaceAll("_", " ")}.</p>
+                              <details>
+                                <summary>Inspect current evidence ({currentEvents.length})</summary>
+                                <ul>{currentEvents.map(event => (
+                                  <li key={event.id}>
+                                    <strong>{event.title}</strong> · Event: {formatWhen(event.occurred_at)} · Recorded: {formatWhen(event.recorded_at)}
+                                    <p>{displayDescription(event.description)}</p>
+                                    <small>Supplied by caregiver record {event.created_by_caregiver_id} · {event.status} · Record {event.id}</small>
+                                  </li>
+                                ))}</ul>
+                              </details>
+                            </>
+                          ) : (
+                            <p>Not enough recent information to compare. No linked current change evidence is available; this does not establish that the domain remained unchanged.</p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="lcr-entry-status"><strong>Comparison:</strong> {comparisonLabel}</p>
+                      {currentChange?.explanation && <p>{currentChange.explanation}</p>}
+                      <details>
+                        <summary>Baseline history and version details</summary>
+                        <p>Baseline version {baseline.id} · Created {formatWhen(baseline.created_at)} · Analysis {baseline.analysis_version}.</p>
+                        <p>History completeness: {baseline.history_completeness}. Documentation-bias flag: {baseline.documentation_bias_flag ? "present" : "not flagged"}.</p>
+                        {baselineComparison.baselines.filter(row => row.subject_type === baseline.subject_type && row.subject_id === baseline.subject_id && row.id !== baseline.id).map(version => (
+                          <p key={version.id}>Prior version {version.id} · {version.is_active ? "active" : "superseded"} · {formatWhen(version.created_at)}{version.superseded_by_baseline_id ? ` · Superseded by ${version.superseded_by_baseline_id}` : ""}</p>
+                        ))}
+                      </details>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+            <p className="lcr-footer-note">{baselineComparison?.notice}</p>
+          </section>
+
           {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
             <div role="status" className="lcr-empty-state">
               <AlertCircle size={20} aria-hidden="true" />
