@@ -203,9 +203,16 @@ type BaselineSourceEvent = {
   occurred_at: string; recorded_at?: string | null; created_by_caregiver_id: string;
   time_provenance?: string | null; evidence_ids: string[];
 };
+type BaselineSourceEvidence = {
+  id: string; type: string; evidence_kind?: string | null; epistemic_status?: string | null;
+  source_text: string; uploaded_at?: string | null; uploaded_by_caregiver_id: string;
+  original_author?: string | null; reported_by_label?: string | null; reported_by_caregiver_id?: string | null;
+  occurred_at?: string | null; reported_at?: string | null; source_type?: string | null;
+  original_source_reference?: string | null; evidence_status?: string | null;
+};
 type BaselineComparisonResponse = {
   person_id: string; as_of: string; baselines: BaselineRecord[]; changes: BaselineComparisonChange[];
-  events: BaselineSourceEvent[]; read_only: true; notice: string;
+  events: BaselineSourceEvent[]; source_evidence: BaselineSourceEvidence[]; read_only: true; notice: string;
 };
 
 type SourceFreshness = {
@@ -444,7 +451,7 @@ export function LCRCurrentUnderstanding() {
         ) as BaselineComparisonResponse;
         if (baselineResult?.person_id !== session.person.id || baselineResult.read_only !== true ||
             !Array.isArray(baselineResult.baselines) || !Array.isArray(baselineResult.changes) ||
-            !Array.isArray(baselineResult.events)) {
+            !Array.isArray(baselineResult.events) || !Array.isArray(baselineResult.source_evidence)) {
           throw new Error("Baseline comparison did not match the active care-record session.");
         }
         setBaselineComparison(baselineResult);
@@ -1089,7 +1096,13 @@ export function LCRCurrentUnderstanding() {
                                 <li key={event.id}>
                                   <strong>{event.title}</strong> · Event: {formatWhen(event.occurred_at)} · Recorded: {formatWhen(event.recorded_at)}
                                   <p>{displayDescription(event.description)}</p>
-                                  <small>Supplied by caregiver record {event.created_by_caregiver_id} · {event.status} · Record {event.id}</small>
+                                  <small>Entered by caregiver record {event.created_by_caregiver_id} · {event.status} · Record {event.id}</small>
+                                  {baselineComparison.source_evidence.filter(source => event.evidence_ids.includes(source.id)).map(source => (
+                                    <blockquote key={source.id}>
+                                      <p>{source.source_text}</p>
+                                      <small>Original source: {source.source_type || source.type} · Reported by: {source.reported_by_label || source.original_author || "Not recorded"} · Uploaded: {formatWhen(source.uploaded_at)} · Review: {source.evidence_status || source.epistemic_status || "Not recorded"} · Evidence {source.id}</small>
+                                    </blockquote>
+                                  ))}
                                 </li>
                               ))}</ul>
                             ) : <p>No linked source events were returned.</p>}
@@ -1113,7 +1126,13 @@ export function LCRCurrentUnderstanding() {
                                   <li key={event.id}>
                                     <strong>{event.title}</strong> · Event: {formatWhen(event.occurred_at)} · Recorded: {formatWhen(event.recorded_at)}
                                     <p>{displayDescription(event.description)}</p>
-                                    <small>Supplied by caregiver record {event.created_by_caregiver_id} · {event.status} · Record {event.id}</small>
+                                    <small>Entered by caregiver record {event.created_by_caregiver_id} · {event.status} · Record {event.id}</small>
+                                    {baselineComparison.source_evidence.filter(source => event.evidence_ids.includes(source.id)).map(source => (
+                                      <blockquote key={source.id}>
+                                        <p>{source.source_text}</p>
+                                        <small>Original source: {source.source_type || source.type} · Reported by: {source.reported_by_label || source.original_author || "Not recorded"} · Uploaded: {formatWhen(source.uploaded_at)} · Review: {source.evidence_status || source.epistemic_status || "Not recorded"} · Evidence {source.id}</small>
+                                      </blockquote>
+                                    ))}
                                   </li>
                                 ))}</ul> : <p>These references may include assertions or extracted observations. Use the linked change evidence review above to inspect available source records.</p>}
                               </details>
