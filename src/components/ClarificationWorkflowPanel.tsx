@@ -107,6 +107,24 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
     const field = typeof linked?.claim_field === "string" ? linked.claim_field : typeof linked?.field === "string" ? linked.field : "";
     return `${item.subject_type.replaceAll("_", " ")} / ${item.subject_id}${field ? ` · ${field.replaceAll("_", " ")}` : ""}`;
   };
+  const gapReasonLabel = (reason: string) => {
+    const labels: Record<string, string> = {
+      absent: "No record has been provided for this item.",
+      not_yet_observed: "This information has not yet been observed.",
+      not_provided: "No caregiver report has been provided.",
+      not_documented: "This care-record item is not documented.",
+      not_assessed: "This item has not yet been assessed.",
+      ambiguous: "The available information is ambiguous.",
+      conflicting: "Available reports conflict and need to remain distinguishable.",
+      low_quality: "The supporting evidence has a recorded quality limitation.",
+      outdated: "The available information may be out of date.",
+      missing_context: "The information lacks context needed to interpret it.",
+      expected_but_unavailable: "An expected source is currently unavailable.",
+      insufficient_evidence: "The available evidence is insufficient for confident understanding.",
+      inaccessible: "The relevant source could not be accessed.",
+    };
+    return labels[reason.toLowerCase()] ?? reason;
+  };
   const questionReason = (item: Question) => {
     const context = (item.context ?? []).filter((entry) => entry && typeof entry === "object");
     const linked = context.find((entry) => typeof entry.reason === "string" || typeof entry.purpose === "string");
@@ -422,7 +440,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           <strong>Persisted information gaps without an existing clarification question</strong>
           <ul style={{ paddingLeft: 18 }}>{gapCandidates.slice(0, 5).map((item) => <li key={item.source_id} style={{ marginBottom: 9 }}>
             <strong>{item.question}</strong>
-            <p style={{ margin: "4px 0" }}>Why it matters: {item.reason.replaceAll("_", " ")}</p>
+            <p style={{ margin: "4px 0" }}>Why it matters: {gapReasonLabel(item.reason)}</p>
             <small>{priorityBand(item.priority)} · {item.priority} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · Field: {item.field || "not specified"} · Gap ID: {item.source_id}</small>
             {item.evidence_ids.length > 0 && <small style={{ display: "block" }}>Existing evidence: {item.evidence_ids.join(", ")}</small>}
             <button type="button" style={button} onClick={() => {
