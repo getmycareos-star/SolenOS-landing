@@ -21,6 +21,7 @@ type CurrentCareItem = {
   source_type: string;
   source_label: string;
   occurred_at?: string | null;
+  reported_at?: string | null;
   recorded_at?: string | null;
   evidence_ids: string[];
   evidence_link_validation?: string;
@@ -1297,7 +1298,7 @@ export function LCRCurrentUnderstanding() {
                     </div>
                     <p>{displayDescription(item.description)}</p>
                     <p className="lcr-entry-status">{item.kind} · {item.status || "Status not recorded"}</p>
-                    <small>Source: {item.source_label || "Not recorded"} · Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    <small>Source: {item.source_label || "Not recorded"} · {item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {item.evidence_ids?.length > 0 && <small>Linked evidence: {item.evidence_ids.join(", ")}</small>}
                     {item.evidence_link_validation && <small>Evidence linkage: {item.evidence_link_validation.replaceAll("_", " ")}</small>}
                     {item.source_collection === "evidence_observations" && (
