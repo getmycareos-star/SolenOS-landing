@@ -175,6 +175,9 @@ type SituationAssessment = {
       review_at?: string | null;
       deadline_source?: string | null;
       consequence_of_delay?: string | null;
+      request_text?: string | null;
+      verification_rule?: string | null;
+      outcome_status?: string | null;
     }>;
     count: number;
     has_more: boolean;
@@ -684,6 +687,9 @@ export function LCRCurrentUnderstanding() {
                         </p>
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                         {item.owner && <small>Recorded owner: {item.owner}</small>}
+                        {item.request_text && <p>Recorded follow-up request: {item.request_text}</p>}
+                        {item.verification_rule && <small>Recorded completion check: {item.verification_rule}</small>}
+                        {item.outcome_status && <small>Recorded outcome status: {item.outcome_status.replaceAll("_", " ")}</small>}
                         {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
                         {item.evidence_ids.length > 0
                           ? <small>Supporting evidence: {item.evidence_ids.join(", ")}</small>
@@ -710,6 +716,8 @@ export function LCRCurrentUnderstanding() {
                       <p>{item.description || "No additional description was recorded."}</p>
                       <p className="lcr-entry-status">Recorded deferral: {item.deferred_reason || "The status is explicitly marked deferred; no reason was supplied."}</p>
                       <p className="lcr-entry-status">Status: {item.recorded_status.replaceAll("_", " ")} · Priority: {item.priority || "not recorded"} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      {item.request_text && <p>Recorded follow-up request: {item.request_text}</p>}
+                      {item.verification_rule && <small>Recorded completion check: {item.verification_rule}</small>}
                       {item.review_at && <small>Recorded review date: {formatWhen(item.review_at)}</small>}
                       {!item.review_at && <small>No review date was recorded.</small>}
                       {item.priority_reasons && item.priority_reasons.length > 0
@@ -801,6 +809,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{change.subject_type.replaceAll("_", " ")} · {change.change_type.replaceAll("_", " ")}</strong>
                       <p>{change.explanation || "A persisted change candidate was recorded without an explanation."}</p>
                       <p>Previously recorded: {change.previous_state ?? "Not recorded"} · Currently recorded: {change.current_state ?? "Not recorded"}</p>
+                      <p className="lcr-entry-status">Reassess this comparison if a newer source observation or correction changes the saved evidence. No clinical threshold is inferred.</p>
                       <p className="lcr-entry-status">
                         Review state: {(change.confirmation_status || "not recorded").replaceAll("_", " ")}.
                         {change.confirmation_status === "rejected"
@@ -831,6 +840,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{pattern.subject_type.replaceAll("_", " ")} · {pattern.pattern_type.replaceAll("_", " ")}</strong>
                       <p>Recorded from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)} across {pattern.evidence_count} linked event(s).</p>
                       {pattern.direction && <p>Recorded direction: {pattern.direction.replaceAll("_", " ")}</p>}
+                      <p className="lcr-entry-status">Reassess this comparison if new source observations or corrections change the recorded interval. No causal trigger or clinical threshold is inferred.</p>
                       {pattern.alternative_interpretations?.length ? (
                         <div>
                           <strong>Alternative explanations / limitations</strong>
