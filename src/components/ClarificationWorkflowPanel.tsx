@@ -266,6 +266,10 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   async function submitClarificationDecision(decision: ClarificationReview["decision"]) {
     if (!selectedQuestion || !scopePersonId || history.length === 0) return;
     const latest = history[history.length - 1];
+    if (decision === "accepted" && latest.evidence_ids.length === 0) {
+      setError("This answer is preserved as a caregiver report, but cannot be accepted into the LCR without persisted source evidence. Add evidence through Daily Care or Documents, or request more information.");
+      return;
+    }
     if (reviewRationale.trim().length < 3) {
       setError("A review decision requires a specific rationale.");
       return;
@@ -377,11 +381,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   async function updateQuestion(status: "answered" | "open" | "declined") {
     if (!selectedQuestion || !scopePersonId) return;
     if (status === "answered" && (answer.trim().length < 2 || answerProvenance.trim().length < 3)) {
-      setError("An answer requires the answer text and an explicit source/provenance description.");
-      return;
-    }
-    if (status === "answered" && answerEvidenceIds.length === 0) {
-      setError("Select at least one persisted evidence record that supports this answer. Typed text alone cannot answer the question.");
+      setError("An answer requires the answer text and an explicit source/provenance description. Evidence can be added now or later before LCR acceptance.");
       return;
     }
     if (status === "answered" && answerEvidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
@@ -406,7 +406,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
         throw new Error("Question transition response not confirmed");
       }
       setNotice(status === "answered"
-        ? "Answer saved with session-attributed identity and immutable answer history."
+        ? "Caregiver answer saved with session-attributed identity and immutable history. It remains a report, not an accepted LCR fact, until reviewed."
         : status === "open" ? "Question reopened; previous answer history is preserved." : "Decline saved with its recorded reason.");
       if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }
       await loadAll();
