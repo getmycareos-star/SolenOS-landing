@@ -250,6 +250,8 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
   const openQuestions = useMemo(
     () => questions.filter((item) => !isResolved(item)).sort((a, b) =>
       (priorityRank[a.priority] ?? 5) - (priorityRank[b.priority] ?? 5) ||
+      (a.necessity === "necessary" ? 0 : a.necessity === "optional" ? 1 : 2) -
+        (b.necessity === "necessary" ? 0 : b.necessity === "optional" ? 1 : 2) ||
       new Date(a.asked_at ?? 0).getTime() - new Date(b.asked_at ?? 0).getTime()
     ),
     [questions],
@@ -389,7 +391,8 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                     <p>{contextReason(question)}</p>
                     <small>Related record: {question.subject_type.replaceAll("_", " ")} · {question.subject_id}</small>
                     <small>Source uncertainty: {assessmentId ? `assessment ${assessmentId}` : question.claim_id ? `claim ${question.claim_id}` : "linked care-record context"}</small>
-                    <small>Asked: {formatWhen(question.asked_at)} · {question.necessity === "necessary" ? "Marked necessary" : question.necessity === "optional" ? "Optional clarification" : "Necessity not assessed"}</small>
+                    <small>Asked: {formatWhen(question.asked_at)} · {question.necessity === "necessary" ? "Marked necessary" : question.necessity === "optional" ? "Optional clarification" : "Necessity not assessed"} · {["critical", "high"].includes(question.priority) ? "Important now" : ["medium", "low"].includes(question.priority) ? "Can usually wait" : "Timing not assessed"}</small>
+                    <small>Triggering evidence: {question.evidence_ids?.length ? question.evidence_ids.map((id) => evidence.find((item) => item.id === id)?.type ? `${evidence.find((item) => item.id === id)?.type} (${id})` : id).join(", ") : "No direct evidence reference attached to the question"}</small>
                     <button type="button" className="lcr-text-action" onClick={() => { setSelectedQuestionId(question.id); setActionError(""); setNotice(""); }}>
                       {selectedQuestionId === question.id ? "Hide answer form" : "Answer this question"}
                     </button>
@@ -466,6 +469,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                   <small>Status: {question.status.replaceAll("_", " ")} · Answered: {formatWhen(question.answered_at)}</small>
                   <small>Provided by caregiver: {question.answered_by_caregiver_id || "Actor not recorded on this legacy question"}</small>
                   <button type="button" className="lcr-text-action" onClick={() => void showHistory(question)}>View immutable answer history</button>
+                  {!(reviewHistory[question.id] ?? []).some((event) => event.answer_version === latestAnswerVersions[question.id]) && latestAnswerVersions[question.id] > 0 && <small>Answer version {latestAnswerVersions[question.id]} · Awaiting review decision</small>}
                   {(reviewHistory[question.id] ?? []).map((event) => (
                     <div key={event.id} className="lcr-footer-note">
                       <strong>Review decision: {event.decision.replaceAll("_", " ")}</strong>
