@@ -249,6 +249,7 @@ export default function PossibleRelationshipsPanel({
   const [temporalLinks, setTemporalLinks] = useState<PersistedTemporalLink[]>([]);
   const [temporalEvents, setTemporalEvents] = useState<CareEventRecord[]>([]);
   const [temporalError, setTemporalError] = useState("");
+  const [temporalLoading, setTemporalLoading] = useState(true);
 
   const candidatePatterns = useMemo(
     () => patterns.filter((pattern) => pattern.event_ids?.length >= 2).slice(0, 20),
@@ -318,8 +319,10 @@ export default function PossibleRelationshipsPanel({
         setTemporalLinks([]);
         setTemporalEvents([]);
         setTemporalError("");
+        setTemporalLoading(false);
         return;
       }
+      setTemporalLoading(true);
       try {
         const [links, eventRows] = await Promise.all([
           getJSON("/care-continuity/temporal-relationships?limit=100"),
@@ -341,12 +344,14 @@ export default function PossibleRelationshipsPanel({
             contributor_id: event.created_by_caregiver_id || null,
           })) as CareEventRecord[]);
           setTemporalError("");
+          setTemporalLoading(false);
         }
       } catch (cause) {
         if (!cancelled) {
           setTemporalLinks([]);
           setTemporalEvents([]);
           setTemporalError(cause instanceof Error ? cause.message : "Persisted temporal context could not be loaded.");
+          setTemporalLoading(false);
         }
       }
     }
@@ -475,7 +480,7 @@ export default function PossibleRelationshipsPanel({
         <span>{meaningful.length + meaningfulTemporalGroups.length} repeated pattern(s) in loaded history</span>
       </div>
       <p>
-        This section surfaces repeated patterns already persisted in the care record. Timing and co-occurrence can make observations worth reviewing, but neither establishes that one event caused another.
+        This section surfaces persisted observation patterns and authenticated temporal sequences. Timing and co-occurrence can make records worth reviewing, but neither establishes that one event caused another.
       </p>
       {patternsError && (
         <p role="status">Persisted patterns could not be loaded: {patternsError}. No relationship is inferred from unavailable data.</p>
@@ -485,7 +490,7 @@ export default function PossibleRelationshipsPanel({
       {loading && <p role="status">Loading the original observations linked to persisted patterns…</p>}
       {temporalError && <p role="status">Temporal sequence context could not be loaded: {temporalError}. No temporal relationship is inferred from unavailable data.</p>}
       {unresolvedTemporalCount > 0 && <p className="lcr-entry-status">{unresolvedTemporalCount} persisted temporal link(s) could not be matched to current, timestamped source events and were not surfaced.</p>}
-      {!loading && !patternsError && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
+      {!loading && !temporalLoading && !patternsError && !temporalError && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
         <p className="lcr-entry-status">Not enough evidence to identify a meaningful relationship.</p>
       )}
       {meaningful.map(({ pattern, events, changes, evidenceReviews, error }) => {
