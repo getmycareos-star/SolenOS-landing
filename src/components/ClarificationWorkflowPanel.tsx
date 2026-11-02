@@ -112,7 +112,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
     const linked = context.find((entry) => typeof entry.reason === "string" || typeof entry.purpose === "string");
     return typeof linked?.reason === "string" ? linked.reason : typeof linked?.purpose === "string" ? linked.purpose : item.necessity_rationale || "The saved question is linked to a care-record subject; a more specific reason was not returned.";
   };
-  const priorityBand = (priority: string) => ["critical", "high"].includes(priority.toLowerCase()) ? "Important now" : ["low", "informational"].includes(priority.toLowerCase()) ? "Can wait" : "Can wait";
+  const priorityBand = (priority: string) => ["critical", "high"].includes(priority.toLowerCase()) ? "Important now" : "Can wait";
   const uncertaintyLabel = (item: AssessmentItem) => {
     const state = `${item.status} ${item.epistemic_status}`.toLowerCase();
     if (state.includes("conflict") || state.includes("contradict")) return "Conflicting information";
