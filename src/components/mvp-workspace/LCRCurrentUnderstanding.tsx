@@ -908,6 +908,8 @@ export function LCRCurrentUnderstanding() {
                             <button type="button" className="lcr-text-action" onClick={() => {
                               setReviewingSuggestionId(reviewingSuggestionId === suggestionReference(item) ? null : suggestionReference(item));
                               setActionApprovalError(null);
+                              setCreateReminderForSuggestion(false);
+                              setReminderDueInput("");
                             }}>Review suggested follow-up for approval</button>
                             {reviewingSuggestionId === suggestionReference(item) && (
                               <div className="lcr-current-fact" aria-label="Review suggested action before approval">
