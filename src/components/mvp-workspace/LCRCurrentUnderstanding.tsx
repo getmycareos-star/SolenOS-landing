@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
+import PossibleRelationshipsPanel from "@/components/mvp-workspace/PossibleRelationshipsPanel";
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
@@ -626,6 +627,8 @@ export function LCRCurrentUnderstanding() {
           </ul>
         )}
       </div>
+
+      <PossibleRelationshipsPanel personId={personId} patterns={patterns} patternsError={patternsError} />
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
