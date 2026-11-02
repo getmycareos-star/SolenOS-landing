@@ -18,6 +18,7 @@ type RegisteredAction = {
   source_evidence_id: string;
   source_evidence_ids?: string[] | null;
   responsible_caregiver_id?: string | null;
+  created_by_caregiver_id?: string | null;
   normalized_action: string;
   original_text: string;
   action_type: string;
