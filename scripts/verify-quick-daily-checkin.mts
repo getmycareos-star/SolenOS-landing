@@ -28,6 +28,8 @@ assert.match(checkIn, /value:\s*"same_as_usual", label:\s*"Same as usual"/,
 assert.match(checkIn, /selected_areas/);
 assert.match(checkIn, /scope:\s*"selected_areas_only"/,
   "the update is limited to explicitly selected areas");
+assert.match(checkIn, /overall_impression_only/,
+  "Same as usual can be saved without falsely marking every care domain as checked");
 assert.match(checkIn, /does not establish or change the person’s baseline/,
   "a quick check-in cannot establish or rewrite the baseline");
 assert.match(checkIn, /Other areas were not assessed by this check-in/,
