@@ -17,7 +17,7 @@ assert.match(checkIn, /postJSON\("\/daily\/log"/,
   "quick updates use the existing authenticated daily-log endpoint");
 assert.match(checkIn, /getPersonId\(\)/);
 assert.match(checkIn, /getCaregiverId\(\)/);
-assert.match(checkIn, /value:\s*"same_as_usual"/,
+assert.match(checkIn, /value:\s*"same_as_usual", label:\s*"Same as usual"/,
   "same-as-usual is an explicit caregiver-selected update type");
 assert.match(checkIn, /selected_areas/);
 assert.match(checkIn, /scope:\s*"selected_areas_only"/,
