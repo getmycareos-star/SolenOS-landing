@@ -5,6 +5,11 @@ const client = await readFile(new URL("../src/api/client.ts", import.meta.url), 
 const settings = await readFile(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
 const authProvider = await readFile(new URL("../src/components/AuthProvider.tsx", import.meta.url), "utf8");
 
+assert.match(client, /export async function createAccount\(email: string, password: string\)/);
+assert.match(client, /await ensureAnonymousSession\(\);\s*return await postJSON\("\/accounts", \{ email, password \}\)/);
+assert.match(settings, /createAccount\(email, password\)/);
+assert.match(settings, /mode === "create"/);
+assert.match(settings, /minLength=\{mode === "create" \? 12 : 1\}/);
 assert.match(client, /export async function signInToAccount\(email: string, password: string\)/);
 assert.match(client, /export async function checkAuthState\(\)/);
 assert.match(client, /fetchWithTimeout\("\/api\/v1\/accounts\/me"/);
