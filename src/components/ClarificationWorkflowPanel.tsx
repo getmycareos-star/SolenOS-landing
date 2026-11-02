@@ -33,6 +33,10 @@ type Question = {
   answered_at?: string | null;
   answered_by_caregiver_id?: string | null;
 };
+type AssessmentItem = { id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[]; recorded_at?: string | null; occurred_at?: string | null };
+type LCRAssessment = { missing_information: AssessmentItem[]; uncertainties_and_conflicts: AssessmentItem[] };
+type GapCandidate = { question: string; subject_type: string; subject_id: string; field?: string | null; intended_answerer_role?: string | null; priority: string; reason: string; evidence_ids: string[]; source_kind: string; source_id: string; source_ids: string[]; persisted_question_id: string | null };
+type ClarificationReview = { id: string; question_id: string; answer_event_id: string; answer_version: number; person_id: string; decision: "accepted" | "rejected" | "needs_more_information"; rationale: string; reviewed_by_caregiver_id: string; resulting_assertion_id?: string | null; resulting_assessment_id?: string | null; reconciliation_status: string; evidence_review_ids: string[]; resulting_gap_ids: string[]; created_at: string };
 type AnswerEvent = {
   id: string;
   question_id: string;
@@ -49,6 +53,10 @@ const panel: CSSProperties = { border: "1px solid var(--border)", borderRadius: 
 const field: CSSProperties = { boxSizing: "border-box", width: "100%", padding: "9px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
 const button: CSSProperties = { border: "1px solid var(--border)", borderRadius: 7, padding: "8px 11px", background: "var(--surface)", color: "var(--text)", cursor: "pointer" };
 
+const priorityRank = (value: string) => { const ranks: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informational: 4 }; return ranks[value.toLowerCase()] ?? 5; };
+const necessityRank = (value?: string | null) => value === "necessary" ? 0 : value === "optional" ? 1 : 2;
+const answererRank = (value?: string | null) => value === "reporting_caregiver" || value === "other_caregiver" ? 0 : value === "person_receiving_care" ? 1 : value === "professional" ? 2 : 3;
+
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
   if (!Array.isArray(rows) || rows.some((value: unknown) => {
     if (!value || typeof value !== "object") return true;
@@ -59,11 +67,14 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
   }
 }
 
-export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
+export default function ClarificationWorkflowPanel({ personId, assessment, assessmentError, onAssessmentRefresh }: { personId?: string; assessment?: LCRAssessment | null; assessmentError?: string | null; onAssessmentRefresh?: () => Promise<void> }) {
   const [scopePersonId, setScopePersonId] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [gapCandidates, setGapCandidates] = useState<GapCandidate[]>([]);
+  const [gapCandidateError, setGapCandidateError] = useState("");
+  const [selectedGapId, setSelectedGapId] = useState("");
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
   const [questionText, setQuestionText] = useState("");
@@ -77,6 +88,11 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   const [answerProvenance, setAnswerProvenance] = useState("");
   const [answerEvidenceIds, setAnswerEvidenceIds] = useState<string[]>([]);
   const [history, setHistory] = useState<AnswerEvent[]>([]);
+  const [reviewHistory, setReviewHistory] = useState<ClarificationReview[]>([]);
+  const [reviewHistoryError, setReviewHistoryError] = useState("");
+  const [reviewRationale, setReviewRationale] = useState("");
+  const [reviewAfterDays, setReviewAfterDays] = useState("30");
+  const [reviewSaving, setReviewSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -85,6 +101,53 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
+  const selectedGap = gapCandidates.find((item) => item.source_id === selectedGapId);
+    const openQuestions = questions.filter((item) => ["open", "unresolved", "pending", "unanswered"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || necessityRank(a.necessity) - necessityRank(b.necessity) || answererRank(a.intended_answerer_role) - answererRank(b.intended_answerer_role));
+  const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
+  const questionRelatedRecord = (item: Question) => {
+    const context = item.context ?? [];
+    const linked = context.find((entry) => typeof entry.claim_field === "string" || typeof entry.field === "string");
+    const field = typeof linked?.claim_field === "string" ? linked.claim_field : typeof linked?.field === "string" ? linked.field : "";
+    return `${item.subject_type.replaceAll("_", " ")} / ${item.subject_id}${field ? ` · ${field.replaceAll("_", " ")}` : ""}`;
+  };
+  const gapReasonLabel = (reason: string) => {
+    const labels: Record<string, string> = {
+      absent: "No record has been provided for this item.",
+      not_yet_observed: "This information has not yet been observed.",
+      not_provided: "No caregiver report has been provided.",
+      not_documented: "This care-record item is not documented.",
+      not_assessed: "This item has not yet been assessed.",
+      ambiguous: "The available information is ambiguous.",
+      conflicting: "Available reports conflict and need to remain distinguishable.",
+      low_quality: "The supporting evidence has a recorded quality limitation.",
+      outdated: "The available information may be out of date.",
+      missing_context: "The information lacks context needed to interpret it.",
+      expected_but_unavailable: "An expected source is currently unavailable.",
+      insufficient_evidence: "The available evidence is insufficient for confident understanding.",
+      inaccessible: "The relevant source could not be accessed.",
+    };
+    return labels[reason.toLowerCase()] ?? reason;
+  };
+  const questionReason = (item: Question) => {
+    const context = (item.context ?? []).filter((entry) => entry && typeof entry === "object");
+    const linked = context.find((entry) => typeof entry.reason === "string" || typeof entry.purpose === "string");
+    return typeof linked?.reason === "string" ? linked.reason : typeof linked?.purpose === "string" ? linked.purpose : item.necessity_rationale || "The saved question is linked to a care-record subject; a more specific reason was not returned.";
+  };
+  const priorityBand = (priority: string) => ["critical", "high"].includes(priority.toLowerCase()) ? "Important now" : "Can wait";
+  const uncertaintyLabel = (item: AssessmentItem) => {
+    const state = `${item.status} ${item.epistemic_status}`.toLowerCase();
+    if (state.includes("conflict") || state.includes("contradict")) return "Conflicting information";
+    if (state.includes("ambiguous")) return "Ambiguous wording or interpretation";
+    if (state.includes("review") || state.includes("pending")) return "Awaiting review";
+    if (state.includes("stale") || state.includes("outdated")) return "May be outdated";
+    if (state.includes("unverified") || state.includes("uncertain") || state.includes("unknown") || state.includes("partially")) return "Uncertain / not independently confirmed";
+    return "Incomplete or not yet reconciled";
+  };
+  const questionStatusLabel = (status: string) => status === "answered"
+    ? "Answer submitted — awaiting review"
+    : status === "declined" ? "Declined with recorded reason"
+      : status === "closed" ? "Closed"
+        : status === "unresolved" ? "Needs follow-up" : status === "pending" ? "Pending" : status === "unanswered" ? "Unanswered" : "Open";
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -100,20 +163,54 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
         getJSON("/care-continuity/evidence?limit=100"),
       ]);
+      let nextQuestionRows: unknown[] = [];
+      try {
+        nextQuestionRows = await postJSON(`/care-continuity/next-questions/${encodeURIComponent(sessionPersonId)}`, {});
+        setGapCandidateError("");
+      } catch {
+        setGapCandidateError("Persisted information gaps could not be retrieved. Existing questions remain available, but gap coverage cannot be confirmed.");
+      }
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
+      if (!Array.isArray(nextQuestionRows) || nextQuestionRows.some((value: unknown) => {
+        if (!value || typeof value !== "object") return true;
+        const row = value as Record<string, unknown>;
+        return typeof row.question !== "string" || typeof row.subject_type !== "string" ||
+          typeof row.subject_id !== "string" || typeof row.source_kind !== "string" || typeof row.source_id !== "string";
+      })) {
+        setGapCandidateError("Persisted information-gap candidates returned an invalid response. Existing questions remain available, but gap coverage cannot be confirmed.");
+        nextQuestionRows = [];
+      }
+      const linkedGapIds = new Set<string>();
+      for (const question of questionRows as Question[]) {
+        if (!["open", "unresolved", "pending", "unanswered", "answered"].includes(question.status)) continue;
+        for (const context of question.context ?? []) {
+          const kind = context.source_kind ?? context.kind;
+          const id = context.source_id ?? context.information_gap_id;
+          if (["information_gap", "missing_information", "gap"].includes(String(kind)) && typeof id === "string") linkedGapIds.add(id);
+        }
+      }
+      const gapRows = (nextQuestionRows as GapCandidate[])
+        .filter((row) => row.source_kind === "information_gap" && !row.persisted_question_id && !linkedGapIds.has(row.source_id))
+        .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || answererRank(a.intended_answerer_role) - answererRank(b.intended_answerer_role));
+      setGapCandidates(gapRows);
+      setSelectedGapId((current) => current && gapRows.some((row) => row.source_id === current) ? current : "");
+      const availableClaims = (claimRows as Claim[]).filter((claim) => !["retracted", "superseded"].includes((claim.assertion_status || "").toLowerCase()));
       setScopePersonId(sessionPersonId);
-      setClaims(claimRows as Claim[]);
+      setClaims(availableClaims);
       setQuestions(questionRows as Question[]);
       setEvidence(evidenceRows as Evidence[]);
-      setSelectedClaimId((current) => current && claimRows.some((row) => row.id === current) ? current : claimRows[0]?.id ?? "");
+      setSelectedClaimId((current) => current && availableClaims.some((row) => row.id === current) ? current : availableClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => current && questionRows.some((row) => row.id === current) ? current : questionRows[0]?.id ?? "");
     } catch {
       setScopePersonId("");
       setClaims([]);
       setQuestions([]);
       setEvidence([]);
+      setGapCandidates([]);
+      setGapCandidateError("Clarification records could not be loaded from the authenticated care record.");
+      setSelectedGapId("");
       setSelectedClaimId("");
       setSelectedQuestionId("");
       setError("Claims, clarification questions, or evidence could not be loaded from the authenticated care record. A failed read is not treated as an empty record.");
@@ -145,10 +242,76 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   }, [scopePersonId, selectedQuestionId]);
 
   useEffect(() => { void loadHistory(); }, [loadHistory]);
+  const loadReviewHistory = useCallback(async () => {
+    if (!selectedQuestionId || !scopePersonId) {
+      setReviewHistory([]);
+      setReviewHistoryError("");
+      return;
+    }
+    setReviewHistoryError("");
+    try {
+      const rows = await getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/review-history`);
+      if (!Array.isArray(rows) || rows.some((row) => row?.question_id !== selectedQuestionId || row?.person_id !== scopePersonId)) {
+        throw new Error("Invalid or cross-record clarification review history");
+      }
+      setReviewHistory(rows as ClarificationReview[]);
+    } catch {
+      setReviewHistory([]);
+      setReviewHistoryError("Clarification review history is unavailable. A failed request is not an empty history.");
+    }
+  }, [scopePersonId, selectedQuestionId]);
+
+  useEffect(() => { void loadReviewHistory(); }, [loadReviewHistory]);
+
+  async function submitClarificationDecision(decision: ClarificationReview["decision"]) {
+    if (!selectedQuestion || !scopePersonId || history.length === 0) return;
+    const latest = history[history.length - 1];
+    if (decision === "accepted" && latest.evidence_ids.length === 0) {
+      setError("This answer is preserved as a caregiver report, but cannot be accepted into the LCR without persisted source evidence. Add evidence through Daily Care or Documents, or request more information.");
+      return;
+    }
+    if (reviewRationale.trim().length < 3) {
+      setError("A review decision requires a specific rationale.");
+      return;
+    }
+    const days = Number(reviewAfterDays);
+    if (decision === "accepted" && (!Number.isInteger(days) || days < 1 || days > 3650)) {
+      setError("Choose a review window between 1 and 3650 days for an accepted current-state clarification.");
+      return;
+    }
+    setReviewSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const payload: Record<string, unknown> = { answer_version: latest.answer_version, decision, rationale: reviewRationale.trim() };
+      if (decision === "accepted") payload.review_after_days = days;
+      const result = await postJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}/reviews`, payload);
+      if (!result || result.question_id !== selectedQuestion.id || result.person_id !== scopePersonId || result.answer_version !== latest.answer_version || result.decision !== decision) {
+        throw new Error("Clarification decision response was not confirmed");
+      }
+      if (decision === "accepted" && (result.reconciliation_status !== "completed" || !result.resulting_assertion_id || !result.resulting_assessment_id)) {
+        throw new Error("The backend did not confirm the resulting LCR assertion and reconciliation");
+      }
+      setReviewRationale("");
+      setNotice(decision === "accepted"
+        ? "Clarification accepted. A new source-attributed assertion was persisted and the existing change-intelligence reconciliation completed. The original claim and answer history remain preserved."
+        : decision === "rejected" ? "Clarification rejected with its rationale preserved. The question remains unresolved for follow-up."
+          : "Further information requested. The question remains open and the submitted answer history is preserved.");
+      await loadAll();
+      await loadHistory();
+      await loadReviewHistory();
+      if (decision === "accepted") await onAssessmentRefresh?.();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Clarification decision was not confirmed. No successful review is assumed.");
+    } finally {
+      setReviewSaving(false);
+    }
+  }
+
 
   async function createQuestion() {
-    if (!scopePersonId || !selectedClaim || questionText.trim().length < 5) {
-      setError("Select a source-attributed claim and enter a specific clarification question.");
+    if (!scopePersonId || (!selectedClaim && !selectedGap) || questionText.trim().length < 5) {
+      setError("Select a source-attributed claim or an existing information gap, then enter a specific clarification question.");
       return;
     }
     if (necessity !== "not_assessed" && necessityRationale.trim().length < 3) {
@@ -170,9 +333,9 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       const created = await postJSON("/uncertainty/questions", {
         person_id: scopePersonId,
         question: questionText.trim(),
-        subject_type: selectedClaim.subject_type,
-        subject_id: selectedClaim.subject_id,
-        claim_id: selectedClaim.id,
+        subject_type: selectedClaim?.subject_type ?? selectedGap!.subject_type,
+        subject_id: selectedClaim?.subject_id ?? selectedGap!.subject_id,
+        claim_id: selectedClaim?.id ?? null,
         intended_answerer_role: intendedAnswererRole || null,
         intended_answerer_label: intendedAnswererLabel.trim() || null,
         necessity,
@@ -180,18 +343,26 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         status: "open",
         priority,
         evidence_ids: evidenceIds,
-        context: [{
+        context: selectedClaim ? [{
           kind: "claim_clarification",
           claim_id: selectedClaim.id,
           claim_field: selectedClaim.field,
+          field: selectedClaim.field,
           claim_text: selectedClaim.asserted_value,
           purpose: "Resolve a declared evidence gap; the question itself does not establish the claim.",
+          ...(selectedGap ? { source_kind: "information_gap", source_id: selectedGap.source_id, reason: selectedGap.reason } : {}),
+        }] : [{
+          source_kind: "information_gap",
+          source_id: selectedGap!.source_id,
+          reason: selectedGap!.reason,
+          purpose: "Clarify an explicitly persisted information gap; the answer remains unverified until reviewed.",
         }],
       });
       if (!created || created.person_id !== scopePersonId || typeof created.id !== "string") {
         throw new Error("Question create response not confirmed");
       }
       setQuestionText("");
+      setSelectedGapId("");
       setNotice("Clarification question saved with its claim context and selected evidence references.");
       await loadAll();
       setSelectedQuestionId(created.id);
@@ -210,11 +381,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   async function updateQuestion(status: "answered" | "open" | "declined") {
     if (!selectedQuestion || !scopePersonId) return;
     if (status === "answered" && (answer.trim().length < 2 || answerProvenance.trim().length < 3)) {
-      setError("An answer requires the answer text and an explicit source/provenance description.");
-      return;
-    }
-    if (status === "answered" && answerEvidenceIds.length === 0) {
-      setError("Select at least one persisted evidence record that supports this answer. Typed text alone cannot answer the question.");
+      setError("An answer requires the answer text and an explicit source/provenance description. Evidence can be added now or later before LCR acceptance.");
       return;
     }
     if (status === "answered" && answerEvidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
@@ -239,7 +406,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         throw new Error("Question transition response not confirmed");
       }
       setNotice(status === "answered"
-        ? "Answer saved with session-attributed identity and immutable answer history."
+        ? "Caregiver answer saved with session-attributed identity and immutable history. It remains a report, not an accepted LCR fact, until reviewed."
         : status === "open" ? "Question reopened; previous answer history is preserved." : "Decline saved with its recorded reason.");
       if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }
       await loadAll();
@@ -252,22 +419,80 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   }
 
   return <section style={panel} aria-label="Evidence-grounded clarification workflow">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence gaps and clarification questions</h3>
+    <h3 style={{ fontSize: 18, marginTop: 0 }}>What We Still Need to Understand</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      Each question is tied to a source-attributed claim and can include evidence references. Answers are attributed to the authenticated caregiver and retained as immutable versions. An answer does not automatically verify or resolve the underlying claim.
+      Important gaps and unanswered questions are shown first. An answer is a caregiver report, not an automatically verified care fact. Original answers and their attributed history are retained.
     </p>
+    <div style={{ margin: "12px 0", padding: 10, border: "1px solid var(--border)", borderRadius: 8 }}>
+      <strong style={{ fontSize: 13 }}>Uncertain or incomplete information</strong>
+      {assessmentError ? <p role="alert">The situation assessment could not be retrieved. The record cannot be treated as complete. {assessmentError}</p>
+        : !assessment ? <p role="status">No persisted situation assessment is available. Reassess the record before treating this section as complete.</p>
+          : <>
+            {assessment.missing_information.length > 0 && <div><strong>Missing information</strong><ul>{assessment.missing_information.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Classification: {uncertaintyLabel(item)} · Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
+            {assessment.uncertainties_and_conflicts.length > 0 && <div><strong>Uncertain or conflicting information</strong><ul>{assessment.uncertainties_and_conflicts.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Classification: {uncertaintyLabel(item)} · Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
+            {assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0 && <p>No missing-information or unresolved-uncertainty items were returned by the saved assessment.</p>}
+          </>}
+    </div>
     {loading && <p role="status">Loading persisted claims, questions, and evidence…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && <>
-      {claims.length === 0 && <p>No source-attributed claims were returned. A claim must exist before this workflow can create a claim-linked question.</p>}
-      {claims.length > 0 && <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
+      <div style={{ margin: "12px 0" }}>
+        <strong style={{ fontSize: 13 }}>Important unanswered questions</strong>
+        {openQuestions.length === 0
+          ? gapCandidateError
+            ? <p role="status">The persisted gap list is unavailable, so the record cannot be described as having no important unanswered questions.</p>
+            : gapCandidates.length > 0
+              ? <p>{gapCandidates.length} persisted information gap(s) still need a caregiver-worded clarification question. They are listed below; none is treated as resolved.</p>
+              : assessment && assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0
+              ? <p>No important unanswered questions identified from the available record.</p>
+              : <p>No persisted open clarification questions were returned. Review the information gaps above; an assessment gap without a linked question is not treated as resolved.</p>
+          : <>
+            <ul style={{ paddingLeft: 18 }}>{openQuestions.slice(0, 5).map((item) => <li key={item.id} style={{ marginBottom: 10 }}>
+              <strong>{item.question}</strong>
+              <p style={{ margin: "4px 0" }}>Why it matters: {questionReason(item)}</p>
+              <small>{priorityBand(item.priority)} · {item.priority.replaceAll("_", " ")} · {questionRelatedRecord(item)} · {questionStatusLabel(item.status)}</small>
+              {item.evidence_ids?.length ? <small style={{ display: "block" }}>Trigger evidence: {item.evidence_ids.join(", ")}</small> : null}
+              <div><button type="button" style={button} onClick={() => { setSelectedQuestionId(item.id); setError(""); setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }}>Open and respond</button></div>
+            </li>)}</ul>
+            {openQuestions.length > 5 && <details><summary>More outstanding questions ({openQuestions.length - 5})</summary><ul>{openQuestions.slice(5).map((item) => <li key={item.id}>{item.question} — {item.priority} <button type="button" style={button} onClick={() => setSelectedQuestionId(item.id)}>Open</button></li>)}</ul></details>}
+          </>}
+        {gapCandidateError && <p role="alert">{gapCandidateError}</p>}
+        {gapCandidates.length > 0 && <div style={{ marginTop: 12 }}>
+          <strong>Persisted information gaps without an existing clarification question</strong>
+          <ul style={{ paddingLeft: 18 }}>{gapCandidates.slice(0, 5).map((item) => <li key={item.source_id} style={{ marginBottom: 9 }}>
+            <strong>{item.question}</strong>
+            <p style={{ margin: "4px 0" }}>Why it matters: {gapReasonLabel(item.reason)}</p>
+            <small>{priorityBand(item.priority)} · {item.priority} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · Field: {item.field || "not specified"} · Answerer: {item.intended_answerer_role?.replaceAll("_", " ") || "not assessed"} · Gap ID: {item.source_id}</small>
+            {item.evidence_ids.length > 0 && <small style={{ display: "block" }}>Existing evidence: {item.evidence_ids.join(", ")}</small>}
+            <button type="button" style={button} onClick={() => {
+              setSelectedQuestionId("");
+              setSelectedClaimId("");
+              setSelectedGapId(item.source_id);
+              setPriority(item.priority);
+              setIntendedAnswererRole(item.intended_answerer_role || "");
+              setEvidenceIds(item.evidence_ids);
+              setQuestionText(item.question);
+              setError("");
+              setNotice("Review and edit the gap description into a clear caregiver question before saving.");
+            }}>Clarify this gap</button>
+          </li>)}</ul>
+          {gapCandidates.length > 5 && <details><summary>More outstanding information gaps ({gapCandidates.length - 5})</summary><ul>{gapCandidates.slice(5).map((item) => <li key={item.source_id}>{item.question} — {item.priority} · {item.field || "field not specified"}</li>)}</ul></details>}
+        </div>}
+      </div>
+      {(claims.length > 0 || gapCandidates.length > 0) && <details open={Boolean(selectedGapId)} style={{ marginBottom: 12 }}><summary>Create a targeted clarification question (only when a source-linked gap requires one)</summary><fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
         <legend style={{ fontSize: 12 }}>Create a targeted clarification</legend>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Claim
-          <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
+        {claims.length > 0 && !selectedGapId && <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Source-attributed claim
+          <select style={field} value={selectedClaimId} onChange={(event) => { setSelectedClaimId(event.target.value); setSelectedGapId(""); }}>
             {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 100)}</option>)}
           </select>
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Question
+        </label>}
+        {gapCandidates.length > 0 && <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Explicitly persisted information gap
+          <select style={field} value={selectedGapId} onChange={(event) => { setSelectedGapId(event.target.value); if (event.target.value) setSelectedClaimId(""); else if (claims[0]) setSelectedClaimId(claims[0].id); const candidate = gapCandidates.find((item) => item.source_id === event.target.value); if (candidate) { setPriority(candidate.priority); setIntendedAnswererRole(candidate.intended_answerer_role || ""); setEvidenceIds(candidate.evidence_ids); } }}>
+            <option value="">No information gap selected</option>
+            {gapCandidates.map((item) => <option key={item.source_id} value={item.source_id}>{item.priority} · {item.question.slice(0, 100)}</option>)}
+          </select>
+        </label>}
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Question wording (review and edit before saving)
           <textarea style={{ ...field, minHeight: 65 }} value={questionText} onChange={(event) => setQuestionText(event.target.value)} placeholder="What specific missing detail needs clarification?" />
         </label>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Priority
@@ -300,12 +525,13 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
             {evidence.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id} · {item.source_text.slice(0, 65)}</option>)}
           </select>
         </label>
-        <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>
+        <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || (!selectedClaim && !selectedGap)}>
           {saving ? "Saving…" : "Create clarification question"}
         </button>
-      </fieldset>}
+      </fieldset></details>}
+      {claims.length === 0 && gapCandidates.length === 0 && <p>No source-attributed claims or open persisted information gaps were returned. Existing questions can still be reviewed.</p>}
       <div style={{ marginTop: 14 }}>
-        <strong style={{ fontSize: 13 }}>Persisted questions</strong>
+        <strong style={{ fontSize: 13 }}>All persisted questions</strong>
         {questions.length === 0 && <p style={{ fontSize: 12 }}>No clarification questions were returned for this care record.</p>}
         {questions.length > 0 && <>
           <label style={{ display: "block", fontSize: 12, margin: "8px 0" }}>Question
@@ -324,12 +550,14 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
             </select>
           </label>
           {selectedQuestion && <div style={{ fontSize: 12, border: "1px solid var(--border)", borderRadius: 7, padding: 10 }}>
-            <p><strong>Subject:</strong> {selectedQuestion.subject_type} / {selectedQuestion.subject_id} · <strong>Priority:</strong> {selectedQuestion.priority}</p>
+            <p><strong>Related care record:</strong> {questionRelatedRecord(selectedQuestion)} · <strong>Priority:</strong> {selectedQuestion.priority} · <strong>Status:</strong> {questionStatusLabel(selectedQuestion.status)}</p>
+            <p><strong>Why this question was raised:</strong> {questionReason(selectedQuestion)}</p>
             <p><strong>Linked claim:</strong> {selectedQuestion.claim_id || "Legacy question without a normalized claim link"}</p>
             <p><strong>Intended answerer:</strong> {selectedQuestion.intended_answerer_role || "Not recorded"}{selectedQuestion.intended_answerer_label ? ` · ${selectedQuestion.intended_answerer_label}` : ""}</p>
             <p><strong>Necessity:</strong> {selectedQuestion.necessity.replaceAll("_", " ")}{selectedQuestion.necessity_rationale ? ` · ${selectedQuestion.necessity_rationale}` : ""}</p>
             <p>{selectedQuestion.question}</p>
             <p><strong>Evidence IDs:</strong> {selectedQuestion.evidence_ids?.length ? selectedQuestion.evidence_ids.join(", ") : "None linked"}</p>
+            <p><strong>Question origin:</strong> {selectedQuestion.context?.map((entry) => typeof entry.origin === "string" ? entry.origin : typeof entry.kind === "string" ? entry.kind : null).filter(Boolean).join(", ") || "Not recorded"} · <strong>Trigger evidence:</strong> {selectedQuestion.evidence_ids?.length ? selectedQuestion.evidence_ids.join(", ") : "No evidence references linked to the question"}</p>
             {selectedQuestion.answer && <p><strong>Current answer:</strong> {selectedQuestion.answer}<br />Source: {selectedQuestion.answer_provenance || "Not recorded"}<br />Answered by: {selectedQuestion.answered_by_caregiver_id || "Legacy answer without recorded actor"}</p>}
             {selectedQuestion.status !== "answered" && <>
               <label style={{ display: "block", marginBottom: 8 }}>Answer
@@ -338,7 +566,8 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
               <label style={{ display: "block", marginBottom: 8 }}>Answer source / provenance
                 <textarea style={{ ...field, minHeight: 55 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="Who answered, and what source or firsthand knowledge supports it?" />
               </label>
-              <label style={{ display: "block", marginBottom: 8 }}>Persisted evidence supporting this answer (required)
+              <p>To add new supporting information, use the existing <a href="/workspace/daily-care">Daily Care capture</a> or <a href="/workspace/documents">Documents</a> workflow first. Return here and select the saved evidence below. You can record the answer before attaching evidence. It remains an attributed caregiver report; LCR acceptance is blocked until persisted evidence is added and reviewed.</p>
+              <label style={{ display: "block", marginBottom: 8 }}>Persisted evidence supporting this answer (optional; required before LCR acceptance)
                 <select
                   multiple
                   style={{ ...field, minHeight: 86 }}
@@ -352,11 +581,38 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
                   ))}
                 </select>
               </label>
-              <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving || answerEvidenceIds.length === 0}>Record answer</button>{" "}
+              <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>Record answer</button>{" "}
               <button type="button" style={button} onClick={() => void updateQuestion("declined")} disabled={saving}>Decline (use provenance field for reason)</button>
             </>}
             {selectedQuestion.status !== "open" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen without deleting prior answers</button>}
           </div>}
+
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+            <strong style={{ fontSize: 13 }}>Clarification review decisions</strong>
+            {reviewHistoryError && <p role="alert">{reviewHistoryError}</p>}
+            {!reviewHistoryError && reviewHistory.length === 0 && <p>No review decision is recorded. Before accepting, review every linked evidence item in <a href="#clarification-evidence-review">Evidence quality and source review</a>.</p>}
+            {reviewHistory.map((item) => <div key={item.id} style={{ marginTop: 8 }}>
+              <strong>{item.decision.replaceAll("_", " ")}</strong>
+              <p>{item.rationale}</p>
+              <small>Answer version {item.answer_version} · Reviewed by {item.reviewed_by_caregiver_id} · {item.created_at}</small>
+              <small style={{ display: "block" }}>Evidence review records: {item.evidence_review_ids.join(", ") || "none returned"} · LCR reconciliation: {item.reconciliation_status}</small>
+              {item.resulting_assertion_id && <small style={{ display: "block" }}>Resulting LCR assertion: {item.resulting_assertion_id}</small>}{item.resulting_assessment_id && <small style={{ display: "block" }}>Updated situation assessment: {item.resulting_assessment_id}</small>}{item.resulting_gap_ids?.length > 0 && <small style={{ display: "block" }}>Resolved information gaps: {item.resulting_gap_ids.join(", ")}</small>}
+            </div>)}
+            {selectedQuestion?.status === "answered" && history.length > 0 && !reviewHistoryError && !reviewHistory.some((item) => item.answer_version === history[history.length - 1].answer_version) && <>
+              <label style={{ display: "block", marginTop: 8 }}>Review rationale
+                <textarea style={{ ...field, minHeight: 55 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} placeholder="Explain why this answer is accepted, rejected or needs more information." />
+              </label>
+              <label style={{ display: "block", marginTop: 8 }}>Next review window (days, required for accepted current-state information)
+                <input style={field} type="number" min="1" max="3650" value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} />
+              </label>
+              <p>Acceptance requires persisted evidence-review records for every answer evidence item and either a linked source claim or an explicitly linked information gap. Acceptance creates a new assertion; it does not overwrite the original claim.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <button type="button" style={button} onClick={() => void submitClarificationDecision("accepted")} disabled={reviewSaving || saving}>Accept and reconcile</button>
+                <button type="button" style={button} onClick={() => void submitClarificationDecision("rejected")} disabled={reviewSaving || saving}>Reject answer</button>
+                <button type="button" style={button} onClick={() => void submitClarificationDecision("needs_more_information")} disabled={reviewSaving || saving}>Request more information</button>
+              </div>
+            </>}
+          </div>
           <div style={{ marginTop: 12 }}>
             <strong style={{ fontSize: 13 }}>Immutable answer history</strong>
             {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError}</p>}
@@ -371,6 +627,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
           </div>
         </>}
       </div>
+      {answeredQuestions.length > 0 && <details style={{ marginTop: 14 }}><summary>Resolved or answered question history ({answeredQuestions.length})</summary><ul>{answeredQuestions.map((item) => <li key={item.id} style={{ marginBottom: 8 }}><strong>{item.question}</strong><p>{questionStatusLabel(item.status)}</p>{item.answer && <p>Recorded answer: {item.answer}</p>}{item.answer_provenance && <small>Source: {item.answer_provenance}</small>}{item.answered_at && <small style={{ display: "block" }}>Submitted: {item.answered_at}</small>}{item.answered_by_caregiver_id && <small style={{ display: "block" }}>Provided by caregiver: {item.answered_by_caregiver_id}</small>}<small style={{ display: "block" }}>Review outcome is shown in the immutable clarification decision history below; a recorded answer alone is not treated as verified.</small></li>)}</ul></details>}
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
