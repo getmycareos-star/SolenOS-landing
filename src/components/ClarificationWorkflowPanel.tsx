@@ -428,12 +428,18 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       </div>
       {(claims.length > 0 || gapCandidates.length > 0) && <details open={Boolean(selectedGapId)} style={{ marginBottom: 12 }}><summary>Create a targeted clarification question (only when a source-linked gap requires one)</summary><fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
         <legend style={{ fontSize: 12 }}>Create a targeted clarification</legend>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Claim
-          <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
+        {claims.length > 0 && !selectedGapId && <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Source-attributed claim
+          <select style={field} value={selectedClaimId} onChange={(event) => { setSelectedClaimId(event.target.value); setSelectedGapId(""); }}>
             {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 100)}</option>)}
           </select>
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Question
+        </label>}
+        {gapCandidates.length > 0 && <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Explicitly persisted information gap
+          <select style={field} value={selectedGapId} onChange={(event) => { setSelectedGapId(event.target.value); if (event.target.value) setSelectedClaimId(""); }}>
+            <option value="">No information gap selected</option>
+            {gapCandidates.map((item) => <option key={item.source_id} value={item.source_id}>{item.priority} · {item.question.slice(0, 100)}</option>)}
+          </select>
+        </label>}
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Question wording (review and edit before saving)
           <textarea style={{ ...field, minHeight: 65 }} value={questionText} onChange={(event) => setQuestionText(event.target.value)} placeholder="What specific missing detail needs clarification?" />
         </label>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Priority
@@ -466,11 +472,11 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             {evidence.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id} · {item.source_text.slice(0, 65)}</option>)}
           </select>
         </label>
-        <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>
+        <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || (!selectedClaim && !selectedGap)}>
           {saving ? "Saving…" : "Create clarification question"}
         </button>
       </fieldset></details>}
-      {claims.length === 0 && <p>No source-attributed claims were returned. Existing questions can still be reviewed, but a new claim-linked question cannot be created until a claim exists.</p>}
+      {claims.length === 0 && gapCandidates.length === 0 && <p>No source-attributed claims or open persisted information gaps were returned. Existing questions can still be reviewed.</p>}
       <div style={{ marginTop: 14 }}>
         <strong style={{ fontSize: 13 }}>All persisted questions</strong>
         {questions.length === 0 && <p style={{ fontSize: 12 }}>No clarification questions were returned for this care record.</p>}
