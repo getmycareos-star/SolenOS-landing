@@ -180,7 +180,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       }
       const gapRows = (nextQuestionRows as GapCandidate[])
         .filter((row) => row.source_kind === "information_gap" && !row.persisted_question_id && !linkedGapIds.has(row.source_id))
-        .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
+        .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || answererRank(a.intended_answerer_role) - answererRank(b.intended_answerer_role));
       setGapCandidates(gapRows);
       setSelectedGapId((current) => current && gapRows.some((row) => row.source_id === current) ? current : "");
       setScopePersonId(sessionPersonId);
