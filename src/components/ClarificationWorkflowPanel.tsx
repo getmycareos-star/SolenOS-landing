@@ -172,10 +172,12 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
-      if (!Array.isArray(nextQuestionRows) || nextQuestionRows.some((row) =>
-        !row || typeof row.question !== "string" || typeof row.subject_type !== "string" ||
-        typeof row.subject_id !== "string" || typeof row.source_kind !== "string" || typeof row.source_id !== "string"
-      )) {
+      if (!Array.isArray(nextQuestionRows) || nextQuestionRows.some((value: unknown) => {
+        if (!value || typeof value !== "object") return true;
+        const row = value as Record<string, unknown>;
+        return typeof row.question !== "string" || typeof row.subject_type !== "string" ||
+          typeof row.subject_id !== "string" || typeof row.source_kind !== "string" || typeof row.source_id !== "string";
+      })) {
         setGapCandidateError("Persisted information-gap candidates returned an invalid response. Existing questions remain available, but gap coverage cannot be confirmed.");
         nextQuestionRows = [];
       }
