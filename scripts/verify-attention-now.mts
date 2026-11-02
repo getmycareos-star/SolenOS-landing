@@ -33,5 +33,7 @@ assert.match(component, /formatWhen\(item\.occurred_at\).*formatWhen\(item\.reco
 assert.match(component, /Supporting evidence:/);
 assert.match(component, /Review state:/);
 assert.match(component, /assessmentError/);
+assert.match(component, /changesError.*No absence of change is inferred/s);
+assert.match(component, /patternsError.*No absence of a pattern is inferred/s);
 assert.match(component, /assessment\.open_loops\.has_more/);
 console.log("Attention summary classification and evidence-display contract checks passed.");
