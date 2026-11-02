@@ -33,6 +33,8 @@ type Question = {
   answered_at?: string | null;
   answered_by_caregiver_id?: string | null;
 };
+type AssessmentItem = { id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[]; recorded_at?: string | null; occurred_at?: string | null };
+type LCRAssessment = { missing_information: AssessmentItem[]; uncertainties_and_conflicts: AssessmentItem[] };
 type AnswerEvent = {
   id: string;
   question_id: string;
@@ -59,7 +61,7 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
   }
 }
 
-export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
+export default function ClarificationWorkflowPanel({ personId, assessment, assessmentError }: { personId?: string; assessment?: LCRAssessment | null; assessmentError?: string | null }) {
   const [scopePersonId, setScopePersonId] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
@@ -85,6 +87,19 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
+  const priorityRank = (value: string) => ({ critical: 0, high: 1, medium: 2, low: 3, informational: 4 }[value.toLowerCase()] ?? 5);
+  const openQuestions = questions.filter((item) => ["open", "unresolved"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
+  const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
+  const questionReason = (item: Question) => {
+    const context = (item.context ?? []).filter((entry) => entry && typeof entry === "object");
+    const linked = context.find((entry) => typeof entry.reason === "string" || typeof entry.purpose === "string");
+    return typeof linked?.reason === "string" ? linked.reason : typeof linked?.purpose === "string" ? linked.purpose : item.necessity_rationale || "The saved question is linked to a care-record subject; a more specific reason was not returned.";
+  };
+  const questionStatusLabel = (status: string) => status === "answered"
+    ? "Answer recorded — review outcome not exposed by the current API"
+    : status === "declined" ? "Declined with recorded reason"
+      : status === "closed" ? "Closed"
+        : status === "unresolved" ? "Needs follow-up" : "Open";
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -252,15 +267,40 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   }
 
   return <section style={panel} aria-label="Evidence-grounded clarification workflow">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence gaps and clarification questions</h3>
+    <h3 style={{ fontSize: 18, marginTop: 0 }}>What We Still Need to Understand</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      Each question is tied to a source-attributed claim and can include evidence references. Answers are attributed to the authenticated caregiver and retained as immutable versions. An answer does not automatically verify or resolve the underlying claim.
+      Important gaps and unanswered questions are shown first. An answer is a caregiver report, not an automatically verified care fact. Original answers and their attributed history are retained.
     </p>
+    <div style={{ margin: "12px 0", padding: 10, border: "1px solid var(--border)", borderRadius: 8 }}>
+      <strong style={{ fontSize: 13 }}>Uncertain or incomplete information</strong>
+      {assessmentError ? <p role="alert">The situation assessment could not be retrieved. The record cannot be treated as complete. {assessmentError}</p>
+        : !assessment ? <p role="status">No persisted situation assessment is available. Reassess the record before treating this section as complete.</p>
+          : <>
+            {assessment.missing_information.length > 0 && <div><strong>Missing information</strong><ul>{assessment.missing_information.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
+            {assessment.uncertainties_and_conflicts.length > 0 && <div><strong>Uncertain or conflicting information</strong><ul>{assessment.uncertainties_and_conflicts.slice(0, 8).map((item) => <li key={item.source + ":" + item.id}>{item.title} — {item.status.replaceAll("_", " ")} · {item.epistemic_status.replaceAll("_", " ")}<small style={{ display: "block" }}>Source: {item.source.replaceAll("_", " ")} · Evidence references: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "none returned"}</small></li>)}</ul></div>}
+            {assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0 && <p>No missing-information or unresolved-uncertainty items were returned by the saved assessment.</p>}
+          </>}
+    </div>
     {loading && <p role="status">Loading persisted claims, questions, and evidence…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && <>
-      {claims.length === 0 && <p>No source-attributed claims were returned. A claim must exist before this workflow can create a claim-linked question.</p>}
-      {claims.length > 0 && <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
+      <div style={{ margin: "12px 0" }}>
+        <strong style={{ fontSize: 13 }}>Important unanswered questions</strong>
+        {openQuestions.length === 0
+          ? assessment && assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0
+            ? <p>No important unanswered questions identified from the available record.</p>
+            : <p>No persisted open clarification questions were returned. Review the information gaps above; an assessment gap without a linked question is not treated as resolved.</p>
+          : <>
+            <ul style={{ paddingLeft: 18 }}>{openQuestions.slice(0, 5).map((item) => <li key={item.id} style={{ marginBottom: 10 }}>
+              <strong>{item.question}</strong>
+              <p style={{ margin: "4px 0" }}>Why it matters: {questionReason(item)}</p>
+              <small>{item.priority.replaceAll("_", " ")} · {item.subject_type.replaceAll("_", " ")} · {questionStatusLabel(item.status)}</small>
+              <div><button type="button" style={button} onClick={() => { setSelectedQuestionId(item.id); setError(""); setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }}>Open and respond</button></div>
+            </li>)}</ul>
+            {openQuestions.length > 5 && <details><summary>More outstanding questions ({openQuestions.length - 5})</summary><ul>{openQuestions.slice(5).map((item) => <li key={item.id}>{item.question} — {item.priority} <button type="button" style={button} onClick={() => setSelectedQuestionId(item.id)}>Open</button></li>)}</ul></details>}
+          </>}
+      </div>
+      {claims.length > 0 && <details style={{ marginBottom: 12 }}><summary>Create a targeted clarification question (only when a source-linked gap requires one)</summary><fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
         <legend style={{ fontSize: 12 }}>Create a targeted clarification</legend>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Claim
           <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
@@ -303,9 +343,10 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
         <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>
           {saving ? "Saving…" : "Create clarification question"}
         </button>
-      </fieldset>}
+      </fieldset></details>}
+      {claims.length === 0 && <p>No source-attributed claims were returned. Existing questions can still be reviewed, but a new claim-linked question cannot be created until a claim exists.</p>}
       <div style={{ marginTop: 14 }}>
-        <strong style={{ fontSize: 13 }}>Persisted questions</strong>
+        <strong style={{ fontSize: 13 }}>All persisted questions</strong>
         {questions.length === 0 && <p style={{ fontSize: 12 }}>No clarification questions were returned for this care record.</p>}
         {questions.length > 0 && <>
           <label style={{ display: "block", fontSize: 12, margin: "8px 0" }}>Question
@@ -324,7 +365,8 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
             </select>
           </label>
           {selectedQuestion && <div style={{ fontSize: 12, border: "1px solid var(--border)", borderRadius: 7, padding: 10 }}>
-            <p><strong>Subject:</strong> {selectedQuestion.subject_type} / {selectedQuestion.subject_id} · <strong>Priority:</strong> {selectedQuestion.priority}</p>
+            <p><strong>Subject:</strong> {selectedQuestion.subject_type} / {selectedQuestion.subject_id} · <strong>Priority:</strong> {selectedQuestion.priority} · <strong>Status:</strong> {questionStatusLabel(selectedQuestion.status)}</p>
+            <p><strong>Why this question was raised:</strong> {questionReason(selectedQuestion)}</p>
             <p><strong>Linked claim:</strong> {selectedQuestion.claim_id || "Legacy question without a normalized claim link"}</p>
             <p><strong>Intended answerer:</strong> {selectedQuestion.intended_answerer_role || "Not recorded"}{selectedQuestion.intended_answerer_label ? ` · ${selectedQuestion.intended_answerer_label}` : ""}</p>
             <p><strong>Necessity:</strong> {selectedQuestion.necessity.replaceAll("_", " ")}{selectedQuestion.necessity_rationale ? ` · ${selectedQuestion.necessity_rationale}` : ""}</p>
@@ -371,6 +413,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
           </div>
         </>}
       </div>
+      {answeredQuestions.length > 0 && <details style={{ marginTop: 14 }}><summary>Resolved or answered question history ({answeredQuestions.length})</summary><ul>{answeredQuestions.map((item) => <li key={item.id} style={{ marginBottom: 8 }}><strong>{item.question}</strong><p>{questionStatusLabel(item.status)}</p>{item.answer && <p>Recorded answer: {item.answer}</p>}{item.answer_provenance && <small>Source: {item.answer_provenance}</small>}{item.answered_at && <small style={{ display: "block" }}>Submitted: {item.answered_at}</small>}<small style={{ display: "block" }}>The current API does not expose an acceptance/rejection reconciliation decision for this answer; it is not presented as verified.</small></li>)}</ul></details>}
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
