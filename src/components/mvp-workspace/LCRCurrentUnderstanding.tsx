@@ -165,6 +165,10 @@ type SituationAssessment = {
       due_at?: string | null;
       recorded_status: string;
       status_confidence: string;
+      epistemic_status: string;
+      occurred_at?: string | null;
+      recorded_at?: string | null;
+      evidence_ids: string[];
       priority?: string | null;
       priority_reasons?: string[];
       deferred_reason?: string | null;
@@ -588,6 +592,7 @@ export function LCRCurrentUnderstanding() {
   const needsAttentionNow = selectImmediatePriorities(openLoopItems);
   const canWaitItems = selectDeferredItems(openLoopItems);
   const watchChanges = selectWatchChanges(changes);
+  const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
   const activeWatchPatterns = patterns.filter((pattern) =>
     pattern.is_active && !pattern.superseded_by_pattern_id
   );
@@ -691,10 +696,28 @@ export function LCRCurrentUnderstanding() {
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Watch for changes</h4>
-              {watchChanges.length === 0 && activeWatchPatterns.length === 0 ? (
+              {watchChanges.length === 0 && watchUncertainties.length === 0 && activeWatchPatterns.length === 0 ? (
                 <p>No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed.</p>
               ) : (
                 <ul className="lcr-current-facts">
+                  {watchUncertainties.map((item) => {
+                    const source = projection?.items.find((candidate) =>
+                      candidate.id === item.id && candidate.source_collection === item.source
+                    );
+                    const disputed = item.source === "conflicts" || item.source === "reconciliations";
+                    return (
+                      <li key={item.source + ":" + item.id} className="lcr-current-fact">
+                        <strong>{item.title}</strong>
+                        <p>{disputed ? "Conflicting accounts remain unresolved. Neither account is selected as the winner." : "This item remains uncertain or requires clarification."}</p>
+                        <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Evidence state: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                        {source?.description && <p>{source.description}</p>}
+                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
+                        <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                        <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                        <small>Source record: {item.id}</small>
+                      </li>
+                    );
+                  })}
                   {watchChanges.map((change) => (
                     <li key={change.id} className="lcr-current-fact">
                       <strong>{change.subject_type.replaceAll("_", " ")} · {change.change_type.replaceAll("_", " ")}</strong>
