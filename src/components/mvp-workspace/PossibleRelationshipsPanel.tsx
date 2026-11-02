@@ -82,6 +82,7 @@ type PatternReviewDecision = {
   reason?: string | null;
   reviewed_by_caregiver_id?: string | null;
   created_at?: string | null;
+  reviewed_at?: string | null;
 };
 
 type PersistedTemporalLink = {
@@ -488,10 +489,12 @@ export default function PossibleRelationshipsPanel({
       {loadError && <p role="status">{loadError}</p>}
       {reviewError && <p role="status">{reviewError}</p>}
       {loading && <p role="status">Loading the original observations linked to persisted patterns…</p>}
+      {patterns.length > candidatePatterns.length && <p className="lcr-entry-status">Pattern detail review is bounded to the first 20 persisted patterns with at least two linked events. Additional patterns have not been evaluated in this view.</p>}
+      {(temporalLinks.length >= 100 || temporalEvents.length >= 100) && <p className="lcr-entry-status">Temporal context is bounded to the latest 100 links and 100 events returned by the authenticated record API. Older history may not be represented here.</p>}
       {temporalLoading && <p role="status">Loading authenticated temporal links and their original events…</p>}
       {temporalError && <p role="status">Temporal sequence context could not be loaded: {temporalError}. No temporal relationship is inferred from unavailable data.</p>}
       {unresolvedTemporalCount > 0 && <p className="lcr-entry-status">{unresolvedTemporalCount} persisted temporal link(s) could not be matched to current, timestamped source events and were not surfaced.</p>}
-      {!loading && !temporalLoading && !patternsError && !temporalError && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
+      {!loading && !temporalLoading && !patternsError && !loadError && !temporalError && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
         <p className="lcr-entry-status">Not enough evidence to identify a meaningful relationship.</p>
       )}
       {meaningful.map(({ pattern, events, changes, evidenceReviews, error }) => {
@@ -546,7 +549,7 @@ export default function PossibleRelationshipsPanel({
             </p>
             {reviewDecisions.filter((review) => review.target_type === "pattern" && review.target_id === pattern.id).slice(0, 1).map((review) => (
               <p key={review.id} className="lcr-entry-status">
-                Caregiver review: {review.review_decision.replaceAll("_", " ")} · reviewed {formatWhen(review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}.
+                Caregiver review: {review.review_decision.replaceAll("_", " ")} · reviewed {formatWhen(review.reviewed_at || review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}.
                 {review.reason ? ` Reason: ${review.reason}` : ""}
                 This review is separate from the pattern and does not establish or erase an observation.
               </p>
