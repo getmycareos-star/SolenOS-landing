@@ -1074,7 +1074,7 @@ export function LCRCurrentUnderstanding() {
       <EvidenceReviewPanel personId={personId} />
       <ClaimAssessmentPanel />
       <ConflictResolutionPanel personId={personId} />
-      <ClarificationWorkflowPanel personId={personId} />
+      <ClarificationWorkflowPanel personId={personId} id="lcr-clarification-workflow" />
       <CareContinuityIntegrityPanel personId={personId} />
     </section>
   );
