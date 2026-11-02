@@ -142,6 +142,10 @@ function relationshipStatus(pattern: PersistedPattern, events: PatternEvent[]): 
   if (!pattern.is_active || pattern.superseded_by_pattern_id) {
     return "Relationship no longer supported by current evidence";
   }
+  const eligibleEvents = events.filter(isEligibleEvent);
+  if (events.length > 0 && eligibleEvents.length < 2 && events.some((event) => !isEligibleEvent(event))) {
+    return "Relationship no longer supported by current evidence";
+  }
   if (!isMeaningfulPattern(pattern, events)) return "Insufficient evidence";
   if (
     ["recurrence", "clustering"].includes(pattern.pattern_type)
@@ -298,6 +302,7 @@ export default function PossibleRelationshipsPanel({
 
   const meaningful = cards.filter((card) => isMeaningfulPattern(card.pattern, card.events));
   const historical = cards.filter((card) => !card.pattern.is_active || Boolean(card.pattern.superseded_by_pattern_id));
+  const withheld = cards.filter((card) => !historical.includes(card) && !meaningful.includes(card));
 
   return (
     <section className="lcr-situation-assessment" aria-labelledby="lcr-possible-relationships-heading">
@@ -453,6 +458,21 @@ export default function PossibleRelationshipsPanel({
           </article>
         );
       })}
+      {withheld.length > 0 && (
+        <details>
+          <summary>Patterns not shown as meaningful relationships ({withheld.length})</summary>
+          <ul>
+            {withheld.map(({ pattern, events }) => (
+              <li key={pattern.id}>
+                {pattern.subject_type.replaceAll("_", " ")} · {pattern.pattern_type.replaceAll("_", " ")} — {relationshipStatus(pattern, events)}.
+                {pattern.alternative_interpretations?.length
+                  ? ` Recorded limitation: ${pattern.alternative_interpretations.map(interpretationText).join(" ")}`
+                  : " No alternative interpretation is stored; other explanations have not been ruled out."}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {historical.length > 0 && (
         <details>
           <summary>Historical or superseded patterns ({historical.length})</summary>
