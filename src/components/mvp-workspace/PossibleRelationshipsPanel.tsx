@@ -437,7 +437,7 @@ export default function PossibleRelationshipsPanel({
       }
       const eventA = eventsById.get(link.event_a_id);
       const eventB = eventsById.get(link.event_b_id);
-      if (!eventA || !eventB || !isEligibleEvent(eventA) || !isEligibleEvent(eventB)) {
+      if (!eventA || !eventB || eventA.id === eventB.id || !isEligibleEvent(eventA) || !isEligibleEvent(eventB)) {
         unresolved += 1;
         continue;
       }
