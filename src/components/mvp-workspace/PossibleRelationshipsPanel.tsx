@@ -567,6 +567,7 @@ export default function PossibleRelationshipsPanel({
   const meaningful = cards.filter((card) => isMeaningfulPattern(card.pattern, card.events));
   const historical = cards.filter((card) => !card.pattern.is_active || Boolean(card.pattern.superseded_by_pattern_id));
   const withheld = cards.filter((card) => !historical.includes(card) && !meaningful.includes(card));
+  const visibleEvidenceRelationships = evidenceRelationships.slice(0, 20);
 
   return (
     <section className="lcr-situation-assessment" aria-labelledby="lcr-possible-relationships-heading">
@@ -733,7 +734,7 @@ export default function PossibleRelationshipsPanel({
         <div>
           <h4>Recorded Evidence Relationships</h4>
           <p>These are explicit, caregiver-attributed source relationships already stored in the record. Their type and source-independence assessment are shown as recorded; neither proves a clinical explanation.</p>
-          {evidenceRelationships.map((relationship) => {
+          {visibleEvidenceRelationships.map((relationship) => {
             const sourceEvents = eventsByEvidenceId.get(relationship.source_evidence_id) || [];
             const relatedEvents = eventsByEvidenceId.get(relationship.related_evidence_id) || [];
             const priorReview = reviewDecisions.filter((review) =>
@@ -805,7 +806,8 @@ export default function PossibleRelationshipsPanel({
           })}
         </div>
       )}
-      {evidenceRelationships.length >= 100 && <p className="lcr-entry-status">Evidence relationship history is bounded to the latest 100 records returned by the authenticated care API.</p>}
+      {evidenceRelationships.length > visibleEvidenceRelationships.length && <p className="lcr-entry-status">Showing the latest 20 of {evidenceRelationships.length} loaded evidence relationships. Older items remain in the persisted record but are not expanded here.</p>}
+      {evidenceRelationships.length >= 100 && <p className="lcr-entry-status">Evidence relationship retrieval is bounded to the latest 100 records returned by the authenticated care API.</p>}
       {meaningfulTemporalGroups.map((group) => (
         <article key={group.key} className="lcr-current-fact">
           <div className="lcr-entry-heading">
