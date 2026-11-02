@@ -472,6 +472,8 @@ export function LCRCurrentUnderstanding() {
   }, []);
 
   const load = useCallback(async (manual = false) => {
+    setRegisteredActions([]);
+    setRegisteredActionsError(null);
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -562,6 +564,8 @@ export function LCRCurrentUnderstanding() {
     } catch (cause) {
       setPersonId("");
       setProjection(null);
+      setRegisteredActions([]);
+      setRegisteredActionsError("Registered actions are unavailable because the caregiver session could not be established.");
       setError(cause instanceof Error ? cause.message : "The longitudinal care record could not be loaded.");
     } finally {
       setLoading(false);
