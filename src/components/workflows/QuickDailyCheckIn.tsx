@@ -184,6 +184,11 @@ export default function QuickDailyCheckIn() {
           <p style={{ margin: "0 0 10px", color: "#52656d", fontSize: 13, lineHeight: 1.5 }}>
             Select only the areas you can report on. Unselected areas will not be marked as checked or unchanged.
           </p>
+          {kind === "same_as_usual" && (
+            <p style={{ margin: "0 0 10px", color: "#52656d", fontSize: 13, lineHeight: 1.5 }}>
+              This saves your report for the selected areas only. It does not establish or change the person’s baseline.
+            </p>
+          )}
           <div role="group" aria-label="Select care areas" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {choices.map((area) => {
               const selected = selectedAreas.includes(area.value);
