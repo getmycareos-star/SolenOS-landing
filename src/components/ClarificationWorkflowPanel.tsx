@@ -35,6 +35,7 @@ type Question = {
 };
 type AssessmentItem = { id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[]; recorded_at?: string | null; occurred_at?: string | null };
 type LCRAssessment = { missing_information: AssessmentItem[]; uncertainties_and_conflicts: AssessmentItem[] };
+type GapCandidate = { question: string; subject_type: string; subject_id: string; priority: string; reason: string; evidence_ids: string[]; source_kind: string; source_id: string; source_ids: string[]; persisted_question_id: string | null };
 type ClarificationReview = { id: string; question_id: string; answer_event_id: string; answer_version: number; person_id: string; decision: "accepted" | "rejected" | "needs_more_information"; rationale: string; reviewed_by_caregiver_id: string; resulting_assertion_id?: string | null; reconciliation_status: string; evidence_review_ids: string[]; resulting_gap_ids: string[]; created_at: string };
 type AnswerEvent = {
   id: string;
@@ -67,6 +68,8 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [gapCandidates, setGapCandidates] = useState<GapCandidate[]>([]);
+  const [selectedGapId, setSelectedGapId] = useState("");
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
   const [questionText, setQuestionText] = useState("");
@@ -93,6 +96,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
+  const selectedGap = gapCandidates.find((item) => item.source_id === selectedGapId);
   const priorityRank = (value: string) => { const ranks: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informational: 4 }; return ranks[value.toLowerCase()] ?? 5; };
   const openQuestions = questions.filter((item) => ["open", "unresolved"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
   const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
@@ -125,14 +129,32 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const [claimRows, questionRows, evidenceRows] = await Promise.all([
+      const [claimRows, questionRows, evidenceRows, nextQuestionRows] = await Promise.all([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
         getJSON("/care-continuity/evidence?limit=100"),
+        postJSON(`/care-continuity/next-questions/${encodeURIComponent(sessionPersonId)}`, {}),
       ]);
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
+      if (!Array.isArray(nextQuestionRows) || nextQuestionRows.some((row) =>
+        !row || typeof row.question !== "string" || typeof row.subject_type !== "string" ||
+        typeof row.subject_id !== "string" || typeof row.source_kind !== "string" || typeof row.source_id !== "string"
+      )) throw new Error("Invalid persisted next-question candidate response");
+      const linkedGapIds = new Set<string>();
+      for (const question of questionRows as Question[]) {
+        if (!["open", "unresolved"].includes(question.status)) continue;
+        for (const context of question.context ?? []) {
+          const kind = context.source_kind ?? context.kind;
+          const id = context.source_id ?? context.information_gap_id;
+          if (["information_gap", "missing_information", "gap"].includes(String(kind)) && typeof id === "string") linkedGapIds.add(id);
+        }
+      }
+      const gapRows = (nextQuestionRows as GapCandidate[])
+        .filter((row) => row.source_kind === "information_gap" && !row.persisted_question_id && !linkedGapIds.has(row.source_id))
+        .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
+      setGapCandidates(gapRows);
       setScopePersonId(sessionPersonId);
       setClaims(claimRows as Claim[]);
       setQuestions(questionRows as Question[]);
@@ -144,6 +166,8 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       setClaims([]);
       setQuestions([]);
       setEvidence([]);
+      setGapCandidates([]);
+      setSelectedGapId("");
       setSelectedClaimId("");
       setSelectedQuestionId("");
       setError("Claims, clarification questions, or evidence could not be loaded from the authenticated care record. A failed read is not treated as an empty record.");
@@ -238,8 +262,8 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
 
 
   async function createQuestion() {
-    if (!scopePersonId || !selectedClaim || questionText.trim().length < 5) {
-      setError("Select a source-attributed claim and enter a specific clarification question.");
+    if (!scopePersonId || (!selectedClaim && !selectedGap) || questionText.trim().length < 5) {
+      setError("Select a source-attributed claim or an existing information gap, then enter a specific clarification question.");
       return;
     }
     if (necessity !== "not_assessed" && necessityRationale.trim().length < 3) {
@@ -261,9 +285,9 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       const created = await postJSON("/uncertainty/questions", {
         person_id: scopePersonId,
         question: questionText.trim(),
-        subject_type: selectedClaim.subject_type,
-        subject_id: selectedClaim.subject_id,
-        claim_id: selectedClaim.id,
+        subject_type: selectedClaim?.subject_type ?? selectedGap!.subject_type,
+        subject_id: selectedClaim?.subject_id ?? selectedGap!.subject_id,
+        claim_id: selectedClaim?.id ?? null,
         intended_answerer_role: intendedAnswererRole || null,
         intended_answerer_label: intendedAnswererLabel.trim() || null,
         necessity,
@@ -271,18 +295,25 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
         status: "open",
         priority,
         evidence_ids: evidenceIds,
-        context: [{
+        context: selectedClaim ? [{
           kind: "claim_clarification",
           claim_id: selectedClaim.id,
           claim_field: selectedClaim.field,
           claim_text: selectedClaim.asserted_value,
           purpose: "Resolve a declared evidence gap; the question itself does not establish the claim.",
+          ...(selectedGap ? { source_kind: "information_gap", source_id: selectedGap.source_id, reason: selectedGap.reason } : {}),
+        }] : [{
+          source_kind: "information_gap",
+          source_id: selectedGap!.source_id,
+          reason: selectedGap!.reason,
+          purpose: "Clarify an explicitly persisted information gap; the answer remains unverified until reviewed.",
         }],
       });
       if (!created || created.person_id !== scopePersonId || typeof created.id !== "string") {
         throw new Error("Question create response not confirmed");
       }
       setQuestionText("");
+      setSelectedGapId("");
       setNotice("Clarification question saved with its claim context and selected evidence references.");
       await loadAll();
       setSelectedQuestionId(created.id);
