@@ -489,7 +489,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                       </div>
                     </div>
                   )}
-                  {reviewHistory[question.id]?.some((event) => event.decision === "needs_clarification") && (
+                  {reviewHistory[question.id]?.some((event) => event.decision === "needs_clarification" || event.decision === "rejected") && (
                     <button type="button" className="lcr-text-action" onClick={() => void reopenQuestion(question)}>Reopen for another answer</button>
                   )}
                   {historyQuestionId === question.id && (
