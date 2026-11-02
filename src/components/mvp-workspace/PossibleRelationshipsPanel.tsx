@@ -572,7 +572,7 @@ export default function PossibleRelationshipsPanel({
     <section className="lcr-situation-assessment" aria-labelledby="lcr-possible-relationships-heading">
       <div className="lcr-entry-heading">
         <h3 id="lcr-possible-relationships-heading">Possible Relationships</h3>
-        <span>{meaningful.length + meaningfulTemporalGroups.length} repeated pattern(s) in loaded history</span>
+        <span>{meaningful.length + meaningfulTemporalGroups.length} repeated pattern(s) · {evidenceRelationships.length} recorded source relationship(s)</span>
       </div>
       <p>
         This section surfaces persisted observation patterns and authenticated temporal sequences. Timing and co-occurrence can make records worth reviewing, but neither establishes that one event caused another.
@@ -589,7 +589,7 @@ export default function PossibleRelationshipsPanel({
       {evidenceRelationshipsLoading && <p role="status">Loading caregiver-reviewed source relationships…</p>}
       {temporalError && <p role="status">Temporal sequence context could not be loaded: {temporalError}. No temporal relationship is inferred from unavailable data.</p>}
       {unresolvedTemporalCount > 0 && <p className="lcr-entry-status">{unresolvedTemporalCount} persisted temporal link(s) could not be matched to current, timestamped source events and were not surfaced.</p>}
-      {!loading && !temporalLoading && !patternsError && !loadError && !temporalError && !evidenceRelationshipError && !evidenceRelationshipsLoading && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && (
+      {!loading && !temporalLoading && !patternsError && !loadError && !temporalError && !evidenceRelationshipError && !evidenceRelationshipsLoading && meaningful.length === 0 && meaningfulTemporalGroups.length === 0 && evidenceRelationships.length === 0 && (
         <p className="lcr-entry-status">Not enough evidence to identify a meaningful relationship.</p>
       )}
       {meaningful.map(({ pattern, events, changes, evidenceReviews, error }) => {
