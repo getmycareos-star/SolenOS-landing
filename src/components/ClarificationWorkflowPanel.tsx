@@ -111,7 +111,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
     return "Incomplete or not yet reconciled";
   };
   const questionStatusLabel = (status: string) => status === "answered"
-    ? "Answer recorded — review outcome not exposed by the current API"
+    ? "Answer submitted — awaiting review"
     : status === "declined" ? "Declined with recorded reason"
       : status === "closed" ? "Closed"
         : status === "unresolved" ? "Needs follow-up" : "Open";
@@ -482,7 +482,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
             <strong style={{ fontSize: 13 }}>Clarification review decisions</strong>
             {reviewHistoryError && <p role="alert">{reviewHistoryError}</p>}
-            {!reviewHistoryError && reviewHistory.length === 0 && <p>No review decision is recorded. Before deciding, review every linked evidence item in <a href="#clarification-evidence-review">Evidence quality and source review</a>.</p>}
+            {!reviewHistoryError && reviewHistory.length === 0 && <p>No review decision is recorded. Before accepting, review every linked evidence item in <a href="#clarification-evidence-review">Evidence quality and source review</a>.</p>}
             {reviewHistory.map((item) => <div key={item.id} style={{ marginTop: 8 }}>
               <strong>{item.decision.replaceAll("_", " ")}</strong>
               <p>{item.rationale}</p>
