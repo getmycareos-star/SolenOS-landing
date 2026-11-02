@@ -19,8 +19,8 @@ for (const contract of [
   /evidence_ids/,
   /contributor_label/,
   /evidence_reviews/,
-  /care-continuity\\/temporal-relationships/,
-  /care-continuity\\/events/,
+  /care-continuity\/temporal-relationships/,
+  /care-continuity\/events/,
   /expectedTemporalType/,
   /temporalSequence/,
   /Repeated temporal sequence observed/,
@@ -44,6 +44,7 @@ assert.match(clarification, /id\?: string/);
 assert.match(timeline, /new URLSearchParams\(window\.location\.search\)\.get\("event_id"\)/);
 assert.match(timeline, /event\.id,/);
 assert.doesNotMatch(panel, /\/causal\//i, "The caregiver UI must not call the unsecured causal API.");
+assert.doesNotMatch(panel, /\/api\/v1\/temporal-relationships/i, "The caregiver UI must not call the legacy unauthenticated temporal relationship API.");
 assert.doesNotMatch(panel, /mock|sample|demo pattern|fabricated/i, "The caregiver UI must not generate mock relationship records.");
 
 console.log("Possible Relationships contract checks passed: persisted same-person patterns, source timestamps and references, uncertainty, supersession, caregiver review attribution, clarification handoff, and no causal endpoint exposure.");
