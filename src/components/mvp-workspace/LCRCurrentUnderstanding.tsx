@@ -230,6 +230,7 @@ type BaselineComparisonChange = {
   confirmation_status: string; comparison_window_start?: string | null; comparison_window_end?: string | null;
   persistence_days?: number | null; is_persistent?: boolean | null; evidence_ids: string[];
   is_active: boolean; superseded_by_change_id?: string | null; created_at: string;
+  attention_candidate?: boolean; follow_up_candidate?: boolean; significance_verdict?: string | null;
 };
 type BaselineSourceEvent = {
   id: string; event_type: string; status: string; title: string; description?: string | null;
@@ -1110,6 +1111,27 @@ export function LCRCurrentUnderstanding() {
                 ))}
               </details>
             )}
+            {baselineComparison.changes.filter(change => change.is_active && !change.superseded_by_change_id).length > 0 && (
+              <>
+                <h4>Current recorded domains without an established baseline</h4>
+                <ul>{baselineComparison.changes.filter(change =>
+                  change.is_active && !change.superseded_by_change_id
+                ).map(change => {
+                  const currentEvents = baselineComparison.events.filter(event => change.evidence_ids.includes(event.id));
+                  const persisted = changes.find(item => item.id === change.id);
+                  return (
+                    <li key={change.id}>
+                      <strong>{change.subject_type.replaceAll("_", " ")}</strong>
+                      <p>{change.current_state || change.explanation || "A current change assessment is recorded."}</p>
+                      <p>Baseline not yet established · Review: {change.confirmation_status.replaceAll("_", " ")} · Supporting records: {change.evidence_ids.length}.</p>
+                      {currentEvents.map(event => <small key={event.id}>Observed {formatWhen(event.occurred_at)} · Recorded {formatWhen(event.recorded_at)} · {event.title}</small>)}
+                      {change.attention_candidate && <small>This persisted assessment is already eligible for the existing attention review.</small>}
+                      {persisted && <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(persisted)}>Inspect linked evidence</button>}
+                    </li>
+                  );
+                })}</ul>
+              </>
+            )}
           </div>
         ) : (
           <div className="lcr-baseline-domains">
@@ -1288,6 +1310,31 @@ export function LCRCurrentUnderstanding() {
               );
             })}
           </div>
+        )}
+        {baselineComparison.baselines.some(row => row.is_active) && baselineComparison.changes.filter(change =>
+          change.is_active && !change.superseded_by_change_id &&
+          !baselineComparison.baselines.some(row => row.is_active && row.subject_type === change.subject_type && row.subject_id === change.subject_id)
+        ).length > 0 && (
+          <section className="lcr-baseline-unmatched-domains">
+            <h4>Current recorded domains without an established baseline</h4>
+            <ul>{baselineComparison.changes.filter(change =>
+              change.is_active && !change.superseded_by_change_id &&
+              !baselineComparison.baselines.some(row => row.is_active && row.subject_type === change.subject_type && row.subject_id === change.subject_id)
+            ).map(change => {
+              const persisted = changes.find(item => item.id === change.id);
+              const currentEvents = baselineComparison.events.filter(event => change.evidence_ids.includes(event.id));
+              return (
+                <li key={change.id}>
+                  <strong>{change.subject_type.replaceAll("_", " ")}</strong>
+                  <p>{change.current_state || change.explanation || "A current change assessment is recorded."}</p>
+                  <p>Baseline not yet established · Review: {change.confirmation_status.replaceAll("_", " ")} · Supporting records: {change.evidence_ids.length}.</p>
+                  {currentEvents.map(event => <small key={event.id}>Observed {formatWhen(event.occurred_at)} · Recorded {formatWhen(event.recorded_at)} · {event.title}</small>)}
+                  {change.attention_candidate && <small>This persisted assessment is already eligible for the existing attention review.</small>}
+                  {persisted && <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(persisted)}>Inspect linked evidence</button>}
+                </li>
+              );
+            })}</ul>
+          </section>
         )}
         <p className="lcr-footer-note">{baselineComparison?.notice}</p>
       </section>
