@@ -718,7 +718,7 @@ export function LCRCurrentUnderstanding() {
           ...(createReminderForSuggestion ? { reminder_due_at: new Date(reminderDueInput).toISOString() } : {}),
         },
       ) as RegisteredAction;
-      if (!saved?.id || saved.person_id !== session.person.id || saved.suggestion_id !== suggestionId) {
+      if (!saved?.id || saved.person_id !== session.person.id || saved.suggestion_id !== suggestionId.slice(0, 160)) {
         throw new Error("The backend response did not confirm the expected registered action. Refresh before retrying.");
       }
       setRegisteredActions((current) => current.some((action) => action.id === saved.id)
@@ -901,56 +901,6 @@ export function LCRCurrentUnderstanding() {
               )}
             </div>
 
-            <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
-              <h4 id="lcr-registered-actions-heading">Registered actions</h4>
-              {registeredActionsError && <p role="alert">Registered actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
-              {!registeredActionsError && registeredActions.length === 0 && <p>No caregiver-approved registered actions are recorded for this care recipient.</p>}
-              {registeredActions.length > 0 && (
-                <ul className="lcr-current-facts">
-                  {registeredActions.map((action) => (
-                    <li key={action.id} className="lcr-current-fact">
-                      <strong>{action.normalized_action}</strong>
-                      <p className="lcr-entry-status">Registered action · {action.status.replaceAll("_", " ")} · Version {action.version}</p>
-                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.created_by_caregiver_id}</small>
-                      <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).join(", ")}</small>
-                      {action.deadline && <small>Recorded due date: {formatWhen(action.deadline)}</small>}
-                      {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
-                      {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
-                      <label>
-                        Reason for deferring, cancelling or requesting clarification
-                        <input
-                          type="text"
-                          value={actionTransitionReasons[action.id] ?? ""}
-                          onChange={(event) => setActionTransitionReasons((current) => ({ ...current, [action.id]: event.target.value }))}
-                          maxLength={2000}
-                        />
-                      </label>
-                      {action.status === "approved" && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
-                      {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
-                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
-                      {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
-                      {["approved", "in_progress", "deferred", "needs_clarification"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs clarification</button>}
-                      {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
-                      {actionTransitionErrors[action.id] && <p role="alert">{actionTransitionErrors[action.id]}</p>}
-                      <button type="button" className="lcr-text-action" onClick={() => void loadActionHistory(action)}>View audit history</button>
-                      {actionHistoryErrors[action.id] && <p role="alert">{actionHistoryErrors[action.id]}</p>}
-                      {actionHistory[action.id] && (
-                        <ol>
-                          {actionHistory[action.id].map((event) => (
-                            <li key={event.id}>
-                              {event.previous_status ?? "not registered"} → {event.new_status.replaceAll("_", " ")} · {formatWhen(event.created_at)} · Actor: {event.actor_caregiver_id}
-                              {event.reason && <p>{event.reason}</p>}
-                              <small>Evidence: {event.evidence_ids.join(", ") || "No evidence references returned"}</small>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
               <h4 id="lcr-attention-wait-heading">Can wait</h4>
               {canWaitItems.length === 0 ? (
@@ -1108,6 +1058,56 @@ export function LCRCurrentUnderstanding() {
           </>
         )}
       </section>
+
+            <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
+              <h4 id="lcr-registered-actions-heading">Registered actions</h4>
+              {registeredActionsError && <p role="alert">Registered actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
+              {!registeredActionsError && registeredActions.length === 0 && <p>No caregiver-approved registered actions are recorded for this care recipient.</p>}
+              {registeredActions.length > 0 && (
+                <ul className="lcr-current-facts">
+                  {registeredActions.map((action) => (
+                    <li key={action.id} className="lcr-current-fact">
+                      <strong>{action.normalized_action}</strong>
+                      <p className="lcr-entry-status">Registered action · {action.status.replaceAll("_", " ")} · Version {action.version}</p>
+                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.created_by_caregiver_id}</small>
+                      <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).join(", ")}</small>
+                      {action.deadline && <small>Recorded due date: {formatWhen(action.deadline)}</small>}
+                      {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
+                      {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
+                      <label>
+                        Reason for deferring, cancelling or requesting clarification
+                        <input
+                          type="text"
+                          value={actionTransitionReasons[action.id] ?? ""}
+                          onChange={(event) => setActionTransitionReasons((current) => ({ ...current, [action.id]: event.target.value }))}
+                          maxLength={2000}
+                        />
+                      </label>
+                      {action.status === "approved" && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
+                      {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
+                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
+                      {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
+                      {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs clarification</button>}
+                      {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
+                      {actionTransitionErrors[action.id] && <p role="alert">{actionTransitionErrors[action.id]}</p>}
+                      <button type="button" className="lcr-text-action" onClick={() => void loadActionHistory(action)}>View audit history</button>
+                      {actionHistoryErrors[action.id] && <p role="alert">{actionHistoryErrors[action.id]}</p>}
+                      {actionHistory[action.id] && (
+                        <ol>
+                          {actionHistory[action.id].map((event) => (
+                            <li key={event.id}>
+                              {event.previous_status ?? "not registered"} → {event.new_status.replaceAll("_", " ")} · {formatWhen(event.created_at)} · Actor: {event.actor_caregiver_id}
+                              {event.reason && <p>{event.reason}</p>}
+                              <small>Evidence: {event.evidence_ids.join(", ") || "No evidence references returned"}</small>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
