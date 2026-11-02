@@ -372,8 +372,8 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
         </section>
 
         <section aria-labelledby="lcr-resolved-questions-heading">
-          <h4 id="lcr-resolved-questions-heading">Resolved questions and answer history</h4>
-          {resolvedQuestions.length === 0 ? <p>No resolved clarification questions are recorded yet.</p> : (
+          <h4 id="lcr-resolved-questions-heading">Submitted answers, closures and history</h4>
+          {resolvedQuestions.length === 0 ? <p>No submitted answers or closed clarification questions are recorded yet.</p> : (
             <ul className="lcr-current-facts">
               {resolvedQuestions.map((question) => (
                 <li className="lcr-current-fact" key={question.id}>
