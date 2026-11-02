@@ -87,7 +87,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
-  const priorityRank = (value: string) => ({ critical: 0, high: 1, medium: 2, low: 3, informational: 4 }[value.toLowerCase()] ?? 5);
+  const priorityRank = (value: string) => { const ranks: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informational: 4 }; return ranks[value.toLowerCase()] ?? 5; };
   const openQuestions = questions.filter((item) => ["open", "unresolved"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
   const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
   const questionReason = (item: Question) => {
@@ -372,6 +372,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             <p><strong>Necessity:</strong> {selectedQuestion.necessity.replaceAll("_", " ")}{selectedQuestion.necessity_rationale ? ` · ${selectedQuestion.necessity_rationale}` : ""}</p>
             <p>{selectedQuestion.question}</p>
             <p><strong>Evidence IDs:</strong> {selectedQuestion.evidence_ids?.length ? selectedQuestion.evidence_ids.join(", ") : "None linked"}</p>
+            <p><strong>Question origin:</strong> {selectedQuestion.context?.map((entry) => typeof entry.origin === "string" ? entry.origin : typeof entry.kind === "string" ? entry.kind : null).filter(Boolean).join(", ") || "Not recorded"} · <strong>Trigger evidence:</strong> {selectedQuestion.evidence_ids?.length ? selectedQuestion.evidence_ids.join(", ") : "No evidence references linked to the question"}</p>
             {selectedQuestion.answer && <p><strong>Current answer:</strong> {selectedQuestion.answer}<br />Source: {selectedQuestion.answer_provenance || "Not recorded"}<br />Answered by: {selectedQuestion.answered_by_caregiver_id || "Legacy answer without recorded actor"}</p>}
             {selectedQuestion.status !== "answered" && <>
               <label style={{ display: "block", marginBottom: 8 }}>Answer
@@ -380,6 +381,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               <label style={{ display: "block", marginBottom: 8 }}>Answer source / provenance
                 <textarea style={{ ...field, minHeight: 55 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="Who answered, and what source or firsthand knowledge supports it?" />
               </label>
+              <p>To add new supporting information, use the existing <a href="/workspace/daily-care">Daily Care capture</a> or <a href="/workspace/documents">Documents</a> workflow first. Return here and select the saved evidence below. The original answer remains a caregiver report until the existing review process evaluates its evidence.</p>
               <label style={{ display: "block", marginBottom: 8 }}>Persisted evidence supporting this answer (required)
                 <select
                   multiple
