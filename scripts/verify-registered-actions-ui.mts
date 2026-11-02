@@ -31,6 +31,8 @@ for (const contract of [
   'registeredActionsError',
   'responsible_caregiver_id: session.caregiver.id',
   'create_reminder: createReminderForSuggestion',
+  'linked_reminder_status',
+  'linked_reminder_due_at',
 ]) {
   assert.ok(lcr.includes(contract), `LCR approved-action contract missing: ${contract}`);
 }
