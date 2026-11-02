@@ -421,6 +421,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               setSelectedQuestionId("");
               setSelectedClaimId("");
               setSelectedGapId(item.source_id);
+              setPriority(item.priority);
               setQuestionText(item.question);
               setError("");
               setNotice("Review and edit the gap description into a clear caregiver question before saving.");
@@ -436,7 +437,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           </select>
         </label>}
         {gapCandidates.length > 0 && <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Explicitly persisted information gap
-          <select style={field} value={selectedGapId} onChange={(event) => { setSelectedGapId(event.target.value); if (event.target.value) setSelectedClaimId(""); }}>
+          <select style={field} value={selectedGapId} onChange={(event) => { setSelectedGapId(event.target.value); if (event.target.value) setSelectedClaimId(""); else if (claims[0]) setSelectedClaimId(claims[0].id); const candidate = gapCandidates.find((item) => item.source_id === event.target.value); if (candidate) setPriority(candidate.priority); }}>
             <option value="">No information gap selected</option>
             {gapCandidates.map((item) => <option key={item.source_id} value={item.source_id}>{item.priority} · {item.question.slice(0, 100)}</option>)}
           </select>
