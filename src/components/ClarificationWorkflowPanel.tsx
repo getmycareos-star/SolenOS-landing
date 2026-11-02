@@ -65,7 +65,7 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
   }
 }
 
-export default function ClarificationWorkflowPanel({ personId, assessment, assessmentError }: { personId?: string; assessment?: LCRAssessment | null; assessmentError?: string | null }) {
+export default function ClarificationWorkflowPanel({ personId, assessment, assessmentError, onAssessmentRefresh }: { personId?: string; assessment?: LCRAssessment | null; assessmentError?: string | null; onAssessmentRefresh?: () => Promise<void> }) {
   const [scopePersonId, setScopePersonId] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
@@ -279,6 +279,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       await loadAll();
       await loadHistory();
       await loadReviewHistory();
+      if (decision === "accepted") await onAssessmentRefresh?.();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Clarification decision was not confirmed. No successful review is assumed.");
     } finally {
