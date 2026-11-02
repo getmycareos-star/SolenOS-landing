@@ -315,7 +315,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
     setReviewingQuestionId(question.id);
     setReviewError("");
     try {
-      const result = await postJSON(`/uncertainty/questions/${encodeURIComponent(question.id)}/reviews`, { decision, rationale, ...(decision === "accepted" ? { review_after_days: Number(reviewWindows[question.id]) } : {}) });
+      const result = await postJSON(`/uncertainty/questions/${encodeURIComponent(question.id)}/reviews`, { decision, rationale, ...(decision === "accepted" && reviewWindows[question.id] ? { review_after_days: Number(reviewWindows[question.id]) } : {}) });
       if (!result?.id || result.question_id !== question.id || result.person_id !== personId || result.decision !== decision) {
         throw new Error("The server did not confirm the review decision.");
       }
