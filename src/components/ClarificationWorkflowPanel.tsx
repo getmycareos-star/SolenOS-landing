@@ -454,6 +454,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               setNotice("Review and edit the gap description into a clear caregiver question before saving.");
             }}>Clarify this gap</button>
           </li>)}</ul>
+          {gapCandidates.length > 5 && <details><summary>More outstanding information gaps ({gapCandidates.length - 5})</summary><ul>{gapCandidates.slice(5).map((item) => <li key={item.source_id}>{item.question} — {item.priority} · {item.field || "field not specified"}</li>)}</ul></details>}
         </div>}
       </div>
       {(claims.length > 0 || gapCandidates.length > 0) && <details open={Boolean(selectedGapId)} style={{ marginBottom: 12 }}><summary>Create a targeted clarification question (only when a source-linked gap requires one)</summary><fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
