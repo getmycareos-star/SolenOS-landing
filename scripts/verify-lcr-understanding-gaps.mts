@@ -9,6 +9,8 @@ assert(panel.includes('getJSON(`/uncertainty/questions/${encodeURIComponent(sess
 assert(panel.includes('getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/answer-history`)'), "answer history must load from persisted immutable backend events");
 assert(panel.includes('getJSON("/care-continuity/evidence?limit=100")'), "answer evidence must be selected from persisted care-record evidence");
 assert(panel.includes("priorityRank(a.priority) - priorityRank(b.priority)"), "unanswered questions must be ordered by persisted priority");
+assert(panel.includes("priorityBand(item.priority)"), "questions must distinguish important-now from can-wait priority bands");
+assert(panel.includes("uncertaintyLabel(item)"), "uncertainties must be classified separately from missing information");
 assert(panel.includes("openQuestions.slice(0, 5)"), "the initial question list must be bounded");
 assert(panel.includes("questionReason(item)"), "question cards must explain their recorded reason");
 assert(panel.includes("assessmentError"), "assessment retrieval failure must be explicit");
