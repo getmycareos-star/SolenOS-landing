@@ -99,7 +99,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedClaimId);
   const selectedGap = gapCandidates.find((item) => item.source_id === selectedGapId);
-    const openQuestions = questions.filter((item) => ["open", "unresolved", "pending"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
+    const openQuestions = questions.filter((item) => ["open", "unresolved", "pending", "unanswered"].includes(item.status)).sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
   const answeredQuestions = questions.filter((item) => ["answered", "declined", "closed"].includes(item.status));
   const questionRelatedRecord = (item: Question) => {
     const context = item.context ?? [];
@@ -143,7 +143,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
     ? "Answer submitted — awaiting review"
     : status === "declined" ? "Declined with recorded reason"
       : status === "closed" ? "Closed"
-        : status === "unresolved" ? "Needs follow-up" : status === "pending" ? "Pending" : "Open";
+        : status === "unresolved" ? "Needs follow-up" : status === "pending" ? "Pending" : status === "unanswered" ? "Unanswered" : "Open";
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -169,7 +169,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       )) throw new Error("Invalid persisted next-question candidate response");
       const linkedGapIds = new Set<string>();
       for (const question of questionRows as Question[]) {
-        if (!["open", "unresolved", "pending", "answered"].includes(question.status)) continue;
+        if (!["open", "unresolved", "pending", "unanswered", "answered"].includes(question.status)) continue;
         for (const context of question.context ?? []) {
           const kind = context.source_kind ?? context.kind;
           const id = context.source_id ?? context.information_gap_id;
