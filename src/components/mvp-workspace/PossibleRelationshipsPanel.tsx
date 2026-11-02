@@ -247,7 +247,7 @@ function isMeaningfulPattern(pattern: PersistedPattern, events: PatternEvent[]):
   );
   return pattern.is_active
     && !pattern.superseded_by_pattern_id
-    && !["weak", "none"].includes(pattern.pattern_strength.toLowerCase())
+    && ["emerging", "established"].includes(pattern.pattern_strength.toLowerCase())
     && eligible.length >= 2
     && eventTimes.size >= 2
     && pattern.evidence_count >= 2;
@@ -615,9 +615,9 @@ export default function PossibleRelationshipsPanel({
             <p className="lcr-entry-status">
               Why it appears: the persisted pattern assessment classified these records as {pattern.pattern_type.replaceAll("_", " ")}. This describes the recorded observations; it does not establish a clinical explanation or causal link.
             </p>
-            {pattern.confidence == null && (
-              <p className="lcr-entry-status">No calibrated confidence value is available. No numeric confidence is asserted.</p>
-            )}
+            <p className="lcr-entry-status">
+              Confidence limitation: {pattern.confidence == null ? "no confidence value is stored" : "a stored confidence score is not treated as a calibrated probability"}; no numeric probability or clinical certainty is asserted.
+            </p>
             {alternatives.length > 0 ? (
               <div>
                 <strong>Other possible explanations and limitations</strong>
