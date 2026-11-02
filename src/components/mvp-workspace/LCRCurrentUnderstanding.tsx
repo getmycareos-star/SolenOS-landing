@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
 import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
-import PossibleRelationshipsPanel from "@/components/mvp-workspace/PossibleRelationshipsPanel";
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
 import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
+import PossibleRelationshipsPanel from "@/components/mvp-workspace/PossibleRelationshipsPanel";
 
 type CurrentCareItem = {
   id: string;
@@ -104,7 +105,7 @@ type SituationAssessment = {
     }>;
     policy: string;
   };
-  priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
   situation_trajectory?: {
     entries: Array<{
       source: string;
@@ -165,13 +166,45 @@ type SituationAssessment = {
       due_at?: string | null;
       recorded_status: string;
       status_confidence: string;
+      epistemic_status: string;
+      occurred_at?: string | null;
+      recorded_at?: string | null;
+      evidence_ids: string[];
+      priority?: string | null;
+      priority_reasons?: string[];
+      deferred_reason?: string | null;
+      review_at?: string | null;
+      deadline_source?: string | null;
+      consequence_of_delay?: string | null;
+      request_text?: string | null;
+      verification_rule?: string | null;
+      outcome_status?: string | null;
     }>;
     count: number;
     has_more: boolean;
     notice: string;
   };
-  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
-  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
+  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
+  baseline_assessment?: {
+    status: string;
+    items: Array<{
+      id: string;
+      source: string;
+      title: string;
+      status: string;
+      epistemic_status: string;
+      occurred_at?: string | null;
+      recorded_at?: string | null;
+      evidence_ids: string[];
+      baseline_basis?: string;
+      interpretation_limit?: string;
+    }>;
+    count: number;
+    has_more: boolean;
+    source_of_truth: string;
+    limitation: string;
+  };
+  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
   confidence_assessment: { overall: string; limitations: string[] };
   evolution_since_previous_assessment?: {
     comparison_available: boolean;
@@ -578,6 +611,27 @@ export function LCRCurrentUnderstanding() {
     void load();
   }, [load]);
 
+  const openLoopItems = assessment?.open_loops?.items ?? [];
+  const needsAttentionNow = selectImmediatePriorities(openLoopItems);
+  const canWaitItems = selectDeferredItems(openLoopItems);
+  const watchChanges = selectWatchChanges(changes);
+  const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
+  const watchPriorityCandidates = assessment?.priorities ?? [];
+  const watchMissingInformation = assessment?.missing_information ?? [];
+  const watchOpenLoops = openLoopItems.filter((item) =>
+    !needsAttentionNow.some((candidate) => candidate.id === item.id && candidate.source === item.source) &&
+    !canWaitItems.some((candidate) => candidate.id === item.id && candidate.source === item.source) &&
+    item.source === "open_loop_records"
+  );
+  const baselineItems = assessment?.baseline_assessment?.items ?? [];
+  const activeWatchPatterns = patterns.filter((pattern) =>
+    pattern.is_active && !pattern.superseded_by_pattern_id
+  );
+  const sourceForLoop = (loop: (typeof openLoopItems)[number]) =>
+    projection?.items.find((item) =>
+      item.id === loop.id && item.source_collection === loop.source
+    );
+
   return (
     <section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">
       <div className="lcr-section-heading">
@@ -590,6 +644,224 @@ export function LCRCurrentUnderstanding() {
           <RefreshCw size={16} aria-hidden="true" /> Refresh
         </button>
       </div>
+
+      <section className="lcr-situation-assessment" aria-labelledby="lcr-attention-now-heading">
+        <div className="lcr-entry-heading">
+          <div>
+            <h3 id="lcr-attention-now-heading">What Needs Attention Now?</h3>
+            <p>Items below come from saved care-record assessments. A candidate or pattern is not, by itself, proof of a clinical risk.</p>
+          </div>
+        </div>
+        {sourceFreshness?.reassessment_recommended && (
+          <p role="status">This saved assessment may be out of date ({sourceFreshness.status.replaceAll("_", " ")}). Refresh the assessment before relying on it as the latest view.</p>
+        )}
+        {assessmentError && (
+          <p role="status">Priorities cannot be determined because the saved situation assessment could not be loaded. {assessmentError}</p>
+        )}
+        {!assessmentError && !assessment && !loading && !assessmentLoading && (
+          <p role="status">No persisted situation assessment is available. Reassess from the record before treating this section as complete.</p>
+        )}
+        {assessment && !assessment.open_loops && (
+          <p role="status">The saved assessment does not include open-loop priority details. No priority category is inferred.</p>
+        )}
+        {assessment?.open_loops && (
+          <>
+            <div className="lcr-current-fact" aria-labelledby="lcr-attention-immediate-heading">
+              <h4 id="lcr-attention-immediate-heading">Needs attention now</h4>
+              {needsAttentionNow.length === 0 ? (
+                <p>{assessment.open_loops.has_more
+                  ? "No explicit immediate-priority item appears in the returned records. Additional unresolved items exist beyond this bounded view."
+                  : "No immediate priorities identified from the available record."}</p>
+              ) : (
+                <ul className="lcr-current-facts">
+                  {needsAttentionNow.map((item) => {
+                    const source = sourceForLoop(item);
+                    return (
+                      <li key={item.source + ":" + item.id} className="lcr-current-fact">
+                        <strong>{item.title}</strong>
+                        <p>{item.description || source?.description || "No further description was recorded."}</p>
+                        <p className="lcr-entry-status">
+                          Why it appears: {(item.priority_reasons ?? []).join("; ") || "The saved record marks this item high priority, but the reason was not returned."}
+                        </p>
+                        <p className="lcr-entry-status">
+                          Status: {item.recorded_status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}
+                        </p>
+                        <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                        {item.owner && <small>Recorded owner: {item.owner}</small>}
+                        {item.request_text && <p>Recorded follow-up request: {item.request_text}</p>}
+                        {item.verification_rule && <small>Recorded completion check: {item.verification_rule}</small>}
+                        {item.outcome_status && <small>Recorded outcome status: {item.outcome_status.replaceAll("_", " ")}</small>}
+                        {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
+                        {item.evidence_ids.length > 0
+                          ? <small>Supporting evidence: {item.evidence_ids.join(", ")}</small>
+                          : <small>Supporting evidence: no linked evidence was returned. The priority reason is retained as a persisted open-loop assessment, not independently evidenced here.</small>}
+                        {source?.source_label && <small>Source label: {source.source_label}</small>}
+                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
+                        {source && source.claim_count > 0 && <small>Competing claims linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
+              <h4 id="lcr-attention-wait-heading">Can wait</h4>
+              {canWaitItems.length === 0 ? (
+                <p>No explicitly deferred items with a recorded reason were returned. The record does not establish that other unresolved items are safe to postpone.</p>
+              ) : (
+                <ul className="lcr-current-facts">
+                  {canWaitItems.map((item) => (
+                    <li key={item.source + ":" + item.id} className="lcr-current-fact">
+                      <strong>{item.title}</strong>
+                      <p>{item.description || "No additional description was recorded."}</p>
+                      <p className="lcr-entry-status">Recorded deferral: {item.deferred_reason || "The status is explicitly marked deferred; no reason was supplied."}</p>
+                      <p className="lcr-entry-status">Status: {item.recorded_status.replaceAll("_", " ")} · Priority: {item.priority || "not recorded"} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      {item.request_text && <p>Recorded follow-up request: {item.request_text}</p>}
+                      {item.verification_rule && <small>Recorded completion check: {item.verification_rule}</small>}
+                      {item.review_at && <small>Recorded review date: {formatWhen(item.review_at)}</small>}
+                      {!item.review_at && <small>No review date was recorded.</small>}
+                      {item.priority_reasons && item.priority_reasons.length > 0
+                        ? <small>Recorded priority factors: {item.priority_reasons.join("; ")}</small>
+                        : <small>No priority-change trigger was recorded; reassess if the underlying record changes.</small>}
+                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                      <small>Source record: {item.source.replaceAll("_", " ")} · {item.id}</small>
+                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
+              <h4 id="lcr-attention-watch-heading">Watch for changes</h4>
+              {changesError && <p role="status">Persisted change candidates could not be loaded: {changesError}. No absence of change is inferred.</p>}
+              {patternsError && <p role="status">Persisted pattern history could not be loaded: {patternsError}. No absence of a pattern is inferred.</p>}
+              {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
+                <p>{changesError || patternsError
+                  ? "Some change or pattern sources are unavailable. Their absence cannot be established."
+                  : "No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed."}</p>
+              ) : (
+                <ul className="lcr-current-facts">
+                  {baselineItems.map((item) => (
+                    <li key={"baseline:" + item.source + ":" + item.id} className="lcr-current-fact">
+                      <strong>Recorded baseline · {item.title}</strong>
+                      <p>This record was explicitly marked as a baseline or usual state. It is not a population norm.</p>
+                      <p className="lcr-entry-status">Source: {item.source.replaceAll("_", " ")} · Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
+                    </li>
+                  ))}
+                  {watchPriorityCandidates.map((item) => {
+                    const source = projection?.items.find((candidate) =>
+                      candidate.id === item.id && candidate.source_collection === item.source
+                    );
+                    return (
+                      <li key={"candidate:" + item.source + ":" + item.id} className="lcr-current-fact">
+                        <strong>Recorded follow-up candidate · {item.title}</strong>
+                        <p>This record was flagged for attention or follow-through. That flag does not establish immediate urgency.</p>
+                        <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                        {source?.description && <p>{source.description}</p>}
+                        <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                        <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                        <small>Source record: {item.id}</small>
+                      </li>
+                    );
+                  })}
+                  {watchOpenLoops.map((item) => (
+                    <li key={"open-loop:" + item.source + ":" + item.id} className="lcr-current-fact">
+                      <strong>Open item · {item.title}</strong>
+                      <p>The saved record does not classify this item as immediate or deferred. Its timing should not be assumed.</p>
+                      <p className="lcr-entry-status">Status: {item.recorded_status.replaceAll("_", " ")} · Recorded priority: {item.priority || "not assessed"} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      {item.description && <p>{item.description}</p>}
+                      {item.owner && <small>Recorded owner: {item.owner}</small>}
+                      {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
+                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      <small>Source record: {item.source} · {item.id}</small>
+                    </li>
+                  ))}
+                  {watchMissingInformation.map((item) => (
+                    <li key={"missing:" + item.source + ":" + item.id} className="lcr-current-fact">
+                      <strong>Information still missing · {item.title}</strong>
+                      <p>This gap remains in the persisted assessment. Its urgency is not established by the missing information alone.</p>
+                      <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      <small>Source record: {item.id}</small>
+                    </li>
+                  ))}
+                  {watchUncertainties.map((item) => {
+                    const source = projection?.items.find((candidate) =>
+                      candidate.id === item.id && candidate.source_collection === item.source
+                    );
+                    const disputed = item.source === "conflicts" || item.source === "reconciliations";
+                    return (
+                      <li key={item.source + ":" + item.id} className="lcr-current-fact">
+                        <strong>{item.title}</strong>
+                        <p>{disputed ? "Conflicting accounts remain unresolved. Neither account is selected as the winner." : "This item remains uncertain or requires clarification."}</p>
+                        <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Evidence state: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                        {source?.description && <p>{source.description}</p>}
+                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
+                        <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                        <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                        <small>Source record: {item.id}</small>
+                      </li>
+                    );
+                  })}
+                  {watchChanges.map((change) => (
+                    <li key={change.id} className="lcr-current-fact">
+                      <strong>{change.subject_type.replaceAll("_", " ")} · {change.change_type.replaceAll("_", " ")}</strong>
+                      <p>{change.explanation || "A persisted change candidate was recorded without an explanation."}</p>
+                      <p>Previously recorded: {change.previous_state ?? "Not recorded"} · Currently recorded: {change.current_state ?? "Not recorded"}</p>
+                      <p className="lcr-entry-status">Reassess this comparison if a newer source observation or correction changes the saved evidence. No clinical threshold is inferred.</p>
+                      <p className="lcr-entry-status">
+                        Review state: {(change.confirmation_status || "not recorded").replaceAll("_", " ")}.
+                        {change.confirmation_status === "rejected"
+                          ? " This assessment was disputed and is not presented as an established change."
+                          : change.confirmation_status === "inconclusive"
+                            ? " The assessment remains inconclusive."
+                            : change.confirmation_status === "confirmed"
+                              ? " A caregiver confirmed this change assessment; it remains a record, not a diagnosis."
+                              : " This candidate has not been confirmed."}
+                      </p>
+                      <small>Comparison window: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
+                      <small>Supporting evidence references: {change.evidence_ids.length > 0 ? change.evidence_ids.join(", ") : "None linked"}</small>
+                      <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
+                        {expandedChangeId === change.id ? "Hide supporting records" : "View supporting records"}
+                      </button>
+                      {expandedChangeId === change.id && changeEvidence[change.id]?.error && <p role="status">{changeEvidence[change.id]?.error}</p>}
+                      {expandedChangeId === change.id && changeEvidence[change.id]?.evidence.map((source) => (
+                        <article key={source.id}>
+                          <strong>{source.title}</strong>
+                          <p>{source.description || "No source description was recorded."}</p>
+                          <small>Event: {formatWhen(source.occurred_at)} · Recorded: {formatWhen(source.recorded_at)}</small>
+                        </article>
+                      ))}
+                    </li>
+                  ))}
+                  {activeWatchPatterns.map((pattern) => (
+                    <li key={pattern.id} className="lcr-current-fact">
+                      <strong>{pattern.subject_type.replaceAll("_", " ")} · {pattern.pattern_type.replaceAll("_", " ")}</strong>
+                      <p>Recorded from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)} across {pattern.evidence_count} linked event(s).</p>
+                      {pattern.direction && <p>Recorded direction: {pattern.direction.replaceAll("_", " ")}</p>}
+                      <p className="lcr-entry-status">Reassess this comparison if new source observations or corrections change the recorded interval. No causal trigger or clinical threshold is inferred.</p>
+                      {pattern.alternative_interpretations?.length ? (
+                        <div>
+                          <strong>Alternative explanations / limitations</strong>
+                          {pattern.alternative_interpretations.map((alternative, index) => <p key={index}>{typeof alternative === "string" ? alternative : JSON.stringify(alternative)}</p>)}
+                        </div>
+                      ) : <p>Alternative explanations were not returned with this pattern; no cause is inferred.</p>}
+                      <small>Source event references: {pattern.event_ids.length > 0 ? pattern.event_ids.join(", ") : "None linked"}</small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+      </section>
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
