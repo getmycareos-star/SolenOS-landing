@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
 
-type QuickUpdateKind = "same_as_usual" | "change" | "concern" | "care_completed";
+type QuickUpdateKind = "same_as_usual" | "change" | "concern" | "care_completed" | "uncertain";
 
 const CARE_AREAS = [
   { value: "sleep", label: "Sleep" },
@@ -28,6 +28,7 @@ const UPDATE_OPTIONS: Array<{ value: QuickUpdateKind; label: string }> = [
   { value: "change", label: "Something changed" },
   { value: "concern", label: "I have a concern" },
   { value: "care_completed", label: "Care was completed" },
+  { value: "uncertain", label: "I’m not sure" },
 ];
 
 const buttonStyle = (selected: boolean): CSSProperties => ({
@@ -102,7 +103,9 @@ export default function QuickDailyCheckIn() {
           ? `Caregiver reports a change relating to: ${labels}.`
           : kind === "concern"
             ? `Caregiver reports a concern relating to: ${labels}.`
-            : `Caregiver reports completing care relating to: ${labels}.`;
+            : kind === "uncertain"
+              ? `Caregiver is unsure about: ${labels}. No status is inferred for these areas.`
+              : `Caregiver reports completing care relating to: ${labels}.`;
     const summary = noteText ? `${lead} Caregiver note: ${noteText}` : lead;
 
     try {
@@ -187,10 +190,12 @@ export default function QuickDailyCheckIn() {
               ? "Which areas did you check and find usual?"
               : kind === "care_completed"
                 ? "What care was completed?"
-                : "Which areas does this update relate to?"}
+                : kind === "uncertain"
+                  ? "Which areas are you unsure about?"
+                  : "Which areas does this update relate to?"}
           </p>
           <p style={{ margin: "0 0 10px", color: "#52656d", fontSize: 13, lineHeight: 1.5 }}>
-            Select only the areas you can report on. Unselected areas will not be marked as checked or unchanged.
+            {kind === "uncertain" ? "Select only the areas you are unsure about. This will not be treated as a confirmed observation." : "Select only the areas you can report on. Unselected areas will not be marked as checked or unchanged."}
           </p>
           {kind === "same_as_usual" && (
             <p style={{ margin: "0 0 10px", color: "#52656d", fontSize: 13, lineHeight: 1.5 }}>
