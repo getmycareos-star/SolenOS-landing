@@ -7,7 +7,9 @@ const lcr = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstandin
 assert(panel.includes("What We Still Need to Understand"), "the clarification section must use the required LCR heading");
 assert(panel.includes('getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`)'), "questions must load from the authenticated backend");
 assert(panel.includes('getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/answer-history`)'), "answer history must load from persisted immutable backend events");
+assert(panel.includes('postJSON(`/care-continuity/next-questions/${encodeURIComponent(sessionPersonId)}`, {})'), "persisted information gaps must load through the existing next-questions endpoint");
 assert(panel.includes('getJSON("/care-continuity/evidence?limit=100")'), "answer evidence must be selected from persisted care-record evidence");
+assert(panel.includes("Clarify this gap") && panel.includes("source_kind: \"information_gap\""), "an existing persisted gap must be convertible into a source-linked clarification question");
 assert(panel.includes("priorityRank(a.priority) - priorityRank(b.priority)"), "unanswered questions must be ordered by persisted priority");
 assert(panel.includes("priorityBand(item.priority)"), "questions must distinguish important-now from can-wait priority bands");
 assert(panel.includes("uncertaintyLabel(item)"), "uncertainties must be classified separately from missing information");
