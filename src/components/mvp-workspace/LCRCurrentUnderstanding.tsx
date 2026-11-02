@@ -904,6 +904,7 @@ export function LCRCurrentUnderstanding() {
                                 <p>Limitations: Information is marked {item.epistemic_status.replaceAll("_", " ")}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
                                 <p>Responsible caregiver: the caregiver authenticated in this session. No other caregiver will be assigned.</p>
                                 <p>Due date: {item.due_at ? `The source record contains ${formatWhen(item.due_at)}; no reminder will be created unless you explicitly choose one below.` : "No supported due date is recorded."}</p>
+                                <p>Timing context: recorded priority {item.priority || "not recorded"} · recorded consequence of delay {item.consequence_of_delay || "not recorded"} · deadline source {item.deadline_source || "not recorded"}. No deadline is invented.</p>
                                 <label>
                                   <input type="checkbox" checked={createReminderForSuggestion} onChange={(event) => setCreateReminderForSuggestion(event.target.checked)} />
                                   Create a reminder using the existing reminder system
