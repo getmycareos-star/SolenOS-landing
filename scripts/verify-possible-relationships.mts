@@ -31,6 +31,8 @@ for (const contract of [
   /expectedTemporalType/,
   /temporalSequence/,
   /Repeated temporal sequence observed/,
+  /new Set\(group\.pairs\.map\(\(pair\) => pair\.eventA\.id\)\)\.size >= 2/,
+  /new Set\(group\.pairs\.map\(\(pair\) => pair\.eventB\.id\)\)\.size >= 2/,
   /contestedReviews/,
   /Open original observation in Longitudinal Care History/,
   /Not enough evidence to identify a meaningful relationship/,
