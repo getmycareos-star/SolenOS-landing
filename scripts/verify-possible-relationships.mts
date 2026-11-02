@@ -24,7 +24,7 @@ for (const contract of [
   /not_applicable/,
   /disputed/,
   /lcr-clarification-workflow/,
-  /does not establish that one event caused another/,
+  /(?:does not establish|neither establishes) that one event caused another/,
 ]) {
   assert.match(panel, contract, `Possible Relationships contract missing: ${contract}`);
 }
