@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 
 type Question = {
   id: string;
@@ -78,6 +78,20 @@ type Evidence = {
   source_text: string;
 };
 
+type ReviewEvent = {
+  id: string;
+  question_id: string;
+  person_id: string;
+  answer_event_id: string;
+  answer_version: number;
+  decision: "accepted" | "rejected" | "needs_clarification";
+  rationale: string;
+  reviewer_caregiver_id: string;
+  claim_assessment_id?: string | null;
+  resulting_claim_id?: string | null;
+  created_at: string;
+};
+
 type AnswerEvent = {
   id: string;
   question_id: string;
@@ -151,7 +165,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
   const [answer, setAnswer] = useState("");
   const [provenance, setProvenance] = useState("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
-  const [history, setHistory] = useState<AnswerEvent[]>([]);
+  const [history, setHistory] = useState<AnswerEvent[]>([]);\n  const [reviewHistory, setReviewHistory] = useState<Record<string, ReviewEvent[]>>({});\n  const [reviewRationales, setReviewRationales] = useState<Record<string, string>>({});\n  const [reviewingQuestionId, setReviewingQuestionId] = useState("");\n  const [reviewError, setReviewError] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [historyQuestionId, setHistoryQuestionId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -180,7 +194,22 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       if (questionResult.status === "rejected") {
         throw new Error("Clarification questions could not be retrieved from the authenticated care record.");
       }
-      setQuestions(scopedRows<Question>(questionResult.value, activePersonId, "clarification questions"));
+      const questionRows = scopedRows<Question>(questionResult.value, activePersonId, "clarification questions");
+      setQuestions(questionRows);
+      const answeredQuestions = questionRows.filter((item) => item.status === "answered");
+      const reviewResults = await Promise.allSettled(answeredQuestions.map(async (item) => {
+        const rows = await getJSON(`/uncertainty/questions/${encodeURIComponent(item.id)}/review-history`);
+        if (!Array.isArray(rows) || rows.some((row) => row?.question_id !== item.id || row?.person_id !== activePersonId)) {
+          throw new Error("Clarification review history did not match the active care record.");
+        }
+        return [item.id, rows as ReviewEvent[]] as const;
+      }));
+      const reviewMap: Record<string, ReviewEvent[]> = {};
+      reviewResults.forEach((result, index) => {
+        if (result.status === "fulfilled") reviewMap[result.value[0]] = result.value[1];
+        else errors.push(`Review history for question ${answeredQuestions[index].id} is temporarily unavailable.`);
+      });
+      setReviewHistory(reviewMap);
       if (gapResult.status === "fulfilled") setGaps(scopedRows<InformationGap>(gapResult.value, activePersonId, "information gaps"));
       else { setGaps([]); errors.push("Persisted information gaps are temporarily unavailable."); }
       if (contradictionResult.status === "fulfilled") setContradictions(scopedRows<Contradiction>(contradictionResult.value, activePersonId, "conflicts"));
@@ -254,6 +283,48 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       setActionError(cause instanceof Error ? cause.message : "The answer could not be saved. No successful submission is assumed.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function submitReview(question: Question, decision: ReviewEvent["decision"]) {
+    const rationale = (reviewRationales[question.id] ?? "").trim();
+    if (rationale.length < 3) {
+      setReviewError("Record the reason for this review decision.");
+      return;
+    }
+    if (decision === "accepted" && !question.claim_id) {
+      setReviewError("This question has no linked care claim. It cannot be reconciled into the LCR until the correct claim is linked.");
+      return;
+    }
+    setReviewingQuestionId(question.id);
+    setReviewError("");
+    try {
+      const result = await postJSON(`/uncertainty/questions/${encodeURIComponent(question.id)}/reviews`, { decision, rationale });
+      if (!result?.id || result.question_id !== question.id || result.person_id !== personId || result.decision !== decision) {
+        throw new Error("The server did not confirm the review decision.");
+      }
+      setReviewRationales((current) => ({ ...current, [question.id]: "" }));
+      await load();
+      setNotice(decision === "accepted"
+        ? "The caregiver report was admitted to the LCR as an attributed, unverified assertion. It has not been marked as established fact."
+        : decision === "rejected"
+          ? "The clarification was rejected. Its answer and review decision remain in the record history."
+          : "Further clarification was requested. The answer and review decision remain in the record history.");
+    } catch (cause) {
+      setReviewError(cause instanceof Error ? cause.message : "The review decision could not be saved.");
+    } finally {
+      setReviewingQuestionId("");
+    }
+  }
+
+  async function reopenQuestion(question: Question) {
+    setActionError("");
+    try {
+      await patchJSON(`/uncertainty/questions/${encodeURIComponent(question.id)}`, { status: "open" });
+      await load();
+      setNotice("The question was reopened. Its previous answers and review history are retained.");
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : "The question could not be reopened.");
     }
   }
 
@@ -381,6 +452,32 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                   <small>Status: {question.status.replaceAll("_", " ")} · Answered: {formatWhen(question.answered_at)}</small>
                   <small>Provided by caregiver: {question.answered_by_caregiver_id || "Actor not recorded on this legacy question"}</small>
                   <button type="button" className="lcr-text-action" onClick={() => void showHistory(question)}>View immutable answer history</button>
+                  {(reviewHistory[question.id] ?? []).map((event) => (
+                    <div key={event.id} className="lcr-footer-note">
+                      <strong>Review decision: {event.decision.replaceAll("_", " ")}</strong>
+                      <p>{event.rationale}</p>
+                      <small>Reviewer: {event.reviewer_caregiver_id} · {formatWhen(event.created_at)} · Answer version {event.answer_version}</small>
+                      {event.resulting_claim_id && <small>LCR assertion: {event.resulting_claim_id} · Claim assessment: {event.claim_assessment_id || "Not recorded"}</small>}
+                      {event.decision === "accepted" && <small>Accepted as an attributed report; not verified as fact.</small>}
+                    </div>
+                  ))}
+                  {question.status === "answered" && !(reviewHistory[question.id] ?? []).some((event) => event.answer_version === (historyQuestionId === question.id ? history.length : undefined)) && (
+                    <div className="lcr-current-fact">
+                      <label>Reviewer rationale
+                        <textarea rows={2} maxLength={4000} value={reviewRationales[question.id] ?? ""} onChange={(event) => setReviewRationales((current) => ({ ...current, [question.id]: event.target.value }))} placeholder="Explain why this answer is accepted into the record, rejected, or needs more clarification." />
+                      </label>
+                      {reviewError && reviewingQuestionId === question.id && <p role="alert">{reviewError}</p>}
+                      <small>Accepting adds a source-attributed, unverified report to the LCR. It does not establish clinical truth.</small>
+                      <div className="lcr-entry-heading">
+                        <button type="button" className="lcr-text-action" disabled={Boolean(reviewingQuestionId)} onClick={() => void submitReview(question, "accepted")}>Accept into LCR</button>
+                        <button type="button" className="lcr-text-action" disabled={Boolean(reviewingQuestionId)} onClick={() => void submitReview(question, "needs_clarification")}>Needs clarification</button>
+                        <button type="button" className="lcr-text-action" disabled={Boolean(reviewingQuestionId)} onClick={() => void submitReview(question, "rejected")}>Reject answer</button>
+                      </div>
+                    </div>
+                  )}
+                  {reviewHistory[question.id]?.some((event) => event.decision === "needs_clarification") && (
+                    <button type="button" className="lcr-text-action" onClick={() => void reopenQuestion(question)}>Reopen for another answer</button>
+                  )}
                   {historyQuestionId === question.id && (
                     <div>
                       {historyError && <p role="alert">{historyError}</p>}
