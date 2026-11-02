@@ -509,7 +509,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             </select>
           </label>
           {selectedQuestion && <div style={{ fontSize: 12, border: "1px solid var(--border)", borderRadius: 7, padding: 10 }}>
-            <p><strong>Subject:</strong> {selectedQuestion.subject_type} / {selectedQuestion.subject_id} · <strong>Priority:</strong> {selectedQuestion.priority} · <strong>Status:</strong> {questionStatusLabel(selectedQuestion.status)}</p>
+            <p><strong>Related care record:</strong> {questionRelatedRecord(selectedQuestion)} · <strong>Priority:</strong> {selectedQuestion.priority} · <strong>Status:</strong> {questionStatusLabel(selectedQuestion.status)}</p>
             <p><strong>Why this question was raised:</strong> {questionReason(selectedQuestion)}</p>
             <p><strong>Linked claim:</strong> {selectedQuestion.claim_id || "Legacy question without a normalized claim link"}</p>
             <p><strong>Intended answerer:</strong> {selectedQuestion.intended_answerer_role || "Not recorded"}{selectedQuestion.intended_answerer_label ? ` · ${selectedQuestion.intended_answerer_label}` : ""}</p>
