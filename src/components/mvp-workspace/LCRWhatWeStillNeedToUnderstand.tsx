@@ -165,7 +165,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
   const [answer, setAnswer] = useState("");
   const [provenance, setProvenance] = useState("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
-  const [history, setHistory] = useState<AnswerEvent[]>([]);\n  const [reviewHistory, setReviewHistory] = useState<Record<string, ReviewEvent[]>>({});\n  const [reviewRationales, setReviewRationales] = useState<Record<string, string>>({});\n  const [reviewingQuestionId, setReviewingQuestionId] = useState("");\n  const [reviewError, setReviewError] = useState("");
+  const [history, setHistory] = useState<AnswerEvent[]>([]);\n  const [reviewHistory, setReviewHistory] = useState<Record<string, ReviewEvent[]>>({});\n  const [latestAnswerVersions, setLatestAnswerVersions] = useState<Record<string, number>>({});\n  const [reviewRationales, setReviewRationales] = useState<Record<string, string>>({});\n  const [reviewingQuestionId, setReviewingQuestionId] = useState("");\n  const [reviewError, setReviewError] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [historyQuestionId, setHistoryQuestionId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -210,6 +210,20 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
         else errors.push(`Review history for question ${answeredQuestions[index].id} is temporarily unavailable.`);
       });
       setReviewHistory(reviewMap);
+      const answerResults = await Promise.allSettled(answeredQuestions.map(async (item) => {
+        const rows = await getJSON(`/uncertainty/questions/${encodeURIComponent(item.id)}/answer-history`);
+        if (!Array.isArray(rows) || rows.some((row) => row?.question_id !== item.id || row?.person_id !== activePersonId)) {
+          throw new Error("Answer history did not match the active care record.");
+        }
+        const latest = rows.reduce((version, row) => Math.max(version, Number(row.answer_version) || 0), 0);
+        return [item.id, latest] as const;
+      }));
+      const versionMap: Record<string, number> = {};
+      answerResults.forEach((result, index) => {
+        if (result.status === "fulfilled") versionMap[result.value[0]] = result.value[1];
+        else errors.push(`Answer version for question ${answeredQuestions[index].id} is temporarily unavailable.`);
+      });
+      setLatestAnswerVersions(versionMap);
       if (gapResult.status === "fulfilled") setGaps(scopedRows<InformationGap>(gapResult.value, activePersonId, "information gaps"));
       else { setGaps([]); errors.push("Persisted information gaps are temporarily unavailable."); }
       if (contradictionResult.status === "fulfilled") setContradictions(scopedRows<Contradiction>(contradictionResult.value, activePersonId, "conflicts"));
@@ -461,7 +475,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                       {event.decision === "accepted" && <small>Accepted as an attributed report; not verified as fact.</small>}
                     </div>
                   ))}
-                  {question.status === "answered" && !(reviewHistory[question.id] ?? []).some((event) => event.answer_version === (historyQuestionId === question.id ? history.length : undefined)) && (
+                  {question.status === "answered" && !(reviewHistory[question.id] ?? []).some((event) => event.answer_version === latestAnswerVersions[question.id]) && (
                     <div className="lcr-current-fact">
                       <label>Reviewer rationale
                         <textarea rows={2} maxLength={4000} value={reviewRationales[question.id] ?? ""} onChange={(event) => setReviewRationales((current) => ({ ...current, [question.id]: event.target.value }))} placeholder="Explain why this answer is accepted into the record, rejected, or needs more clarification." />
