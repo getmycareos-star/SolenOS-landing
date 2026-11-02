@@ -196,8 +196,8 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       }
       const questionRows = scopedRows<Question>(questionResult.value, activePersonId, "clarification questions");
       setQuestions(questionRows);
-      const answeredQuestions = questionRows.filter((item) => item.status === "answered");
-      const reviewResults = await Promise.allSettled(answeredQuestions.map(async (item) => {
+      const questionsWithPriorAnswers = questionRows.filter((item) => Boolean(item.answer));
+      const reviewResults = await Promise.allSettled(questionsWithPriorAnswers.map(async (item) => {
         const rows = await getJSON(`/uncertainty/questions/${encodeURIComponent(item.id)}/review-history`);
         if (!Array.isArray(rows) || rows.some((row) => row?.question_id !== item.id || row?.person_id !== activePersonId)) {
           throw new Error("Clarification review history did not match the active care record.");
@@ -207,10 +207,10 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       const reviewMap: Record<string, ReviewEvent[]> = {};
       reviewResults.forEach((result, index) => {
         if (result.status === "fulfilled") reviewMap[result.value[0]] = result.value[1];
-        else errors.push(`Review history for question ${answeredQuestions[index].id} is temporarily unavailable.`);
+        else errors.push(`Review history for question ${questionsWithPriorAnswers[index].id} is temporarily unavailable.`);
       });
       setReviewHistory(reviewMap);
-      const answerResults = await Promise.allSettled(answeredQuestions.map(async (item) => {
+      const answerResults = await Promise.allSettled(questionsWithPriorAnswers.map(async (item) => {
         const rows = await getJSON(`/uncertainty/questions/${encodeURIComponent(item.id)}/answer-history`);
         if (!Array.isArray(rows) || rows.some((row) => row?.question_id !== item.id || row?.person_id !== activePersonId)) {
           throw new Error("Answer history did not match the active care record.");
@@ -221,7 +221,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       const versionMap: Record<string, number> = {};
       answerResults.forEach((result, index) => {
         if (result.status === "fulfilled") versionMap[result.value[0]] = result.value[1];
-        else errors.push(`Answer version for question ${answeredQuestions[index].id} is temporarily unavailable.`);
+        else errors.push(`Answer version for question ${questionsWithPriorAnswers[index].id} is temporarily unavailable.`);
       });
       setLatestAnswerVersions(versionMap);
       if (gapResult.status === "fulfilled") setGaps(scopedRows<InformationGap>(gapResult.value, activePersonId, "information gaps"));
@@ -396,6 +396,30 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                     <button type="button" className="lcr-text-action" onClick={() => { setSelectedQuestionId(question.id); setActionError(""); setNotice(""); }}>
                       {selectedQuestionId === question.id ? "Hide answer form" : "Answer this question"}
                     </button>
+                    {Boolean(question.answer) && (
+                      <details>
+                        <summary>Previous answer and review history</summary>
+                        <p>{question.answer}</p>
+                        <small>Previous answer recorded {formatWhen(question.answered_at)}</small>
+                        {(reviewHistory[question.id] ?? []).map((event) => (
+                          <div key={event.id}>
+                            <strong>{event.decision.replaceAll("_", " ")}</strong>
+                            <p>{event.rationale}</p>
+                            <small>Reviewer {event.reviewer_caregiver_id} · {formatWhen(event.created_at)} · answer version {event.answer_version}</small>
+                            {event.resulting_claim_id && <small>Retained LCR assertion: {event.resulting_claim_id}</small>}
+                          </div>
+                        ))}
+                        <button type="button" className="lcr-text-action" onClick={() => void showHistory(question)}>Inspect immutable answer versions</button>
+                        {historyQuestionId === question.id && (
+                          <ol>{history.map((event) => <li key={event.id}>
+                            <p>{event.answer}</p>
+                            <small>Version {event.answer_version} · {formatWhen(event.created_at)} · caregiver {event.answered_by_caregiver_id}</small>
+                            <small>Source: {event.answer_provenance}</small>
+                            <small>Evidence: {event.evidence_ids.join(", ") || "None linked"}</small>
+                          </li>)}</ol>
+                        )}
+                      </details>
+                    )}
                     {selectedQuestionId === question.id && (
                       <div className="lcr-current-fact">
                         <label>Answer in your own words
