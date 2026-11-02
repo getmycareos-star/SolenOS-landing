@@ -598,7 +598,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               <small style={{ display: "block" }}>Evidence review records: {item.evidence_review_ids.join(", ") || "none returned"} · LCR reconciliation: {item.reconciliation_status}</small>
               {item.resulting_assertion_id && <small style={{ display: "block" }}>Resulting LCR assertion: {item.resulting_assertion_id}</small>}{item.resulting_assessment_id && <small style={{ display: "block" }}>Updated situation assessment: {item.resulting_assessment_id}</small>}{item.resulting_gap_ids?.length > 0 && <small style={{ display: "block" }}>Resolved information gaps: {item.resulting_gap_ids.join(", ")}</small>}
             </div>)}
-            {selectedQuestion.status === "answered" && history.length > 0 && !reviewHistoryError && !reviewHistory.some((item) => item.answer_version === history[history.length - 1].answer_version) && <>
+            {selectedQuestion?.status === "answered" && history.length > 0 && !reviewHistoryError && !reviewHistory.some((item) => item.answer_version === history[history.length - 1].answer_version) && <>
               <label style={{ display: "block", marginTop: 8 }}>Review rationale
                 <textarea style={{ ...field, minHeight: 55 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} placeholder="Explain why this answer is accepted, rejected or needs more information." />
               </label>
