@@ -15,7 +15,10 @@ assert(panel.includes("openQuestions.slice(0, 5)"), "the initial question list m
 assert(panel.includes("questionReason(item)"), "question cards must explain their recorded reason");
 assert(panel.includes("assessmentError"), "assessment retrieval failure must be explicit");
 assert(panel.includes("No important unanswered questions identified from the available record."), "the truthful no-question state must be present");
-assert(panel.includes("review outcome not exposed by the current API"), "an answer must not be represented as verified without a review decision");
+assert(panel.includes("/reviews`)"), "caregiver review decisions must use the persisted backend endpoint");
+assert(panel.includes("/review-history`)"), "review decisions must load from persisted history");
+assert(panel.includes("Accept and reconcile") && panel.includes("Reject answer") && panel.includes("Request more information"), "all clarification review outcomes must be available");
+assert(panel.includes("reconciliation_status") && panel.includes("resulting_assertion_id"), "acceptance must display the actual reconciliation receipt");
 assert(panel.includes("open_question_answer_events") || panel.includes("Immutable answer history"), "answer history must remain visible");
 assert(panel.includes('href="/workspace/daily-care"') && panel.includes('href="/workspace/documents"'), "caregivers must be routed to existing evidence-capture workflows");
 assert(lcr.includes("<ClarificationWorkflowPanel personId={personId} assessment={assessment} assessmentError={assessmentError} />"), "the LCR must pass its real persisted assessment and retrieval error to the clarification section");
