@@ -408,8 +408,25 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
             </li>)}</ul>
             {openQuestions.length > 5 && <details><summary>More outstanding questions ({openQuestions.length - 5})</summary><ul>{openQuestions.slice(5).map((item) => <li key={item.id}>{item.question} — {item.priority} <button type="button" style={button} onClick={() => setSelectedQuestionId(item.id)}>Open</button></li>)}</ul></details>}
           </>}
+        {gapCandidates.length > 0 && <div style={{ marginTop: 12 }}>
+          <strong>Persisted information gaps without an existing clarification question</strong>
+          <ul style={{ paddingLeft: 18 }}>{gapCandidates.slice(0, 5).map((item) => <li key={item.source_id} style={{ marginBottom: 9 }}>
+            <strong>{item.question}</strong>
+            <p style={{ margin: "4px 0" }}>Why it matters: {item.reason.replaceAll("_", " ")}</p>
+            <small>{priorityBand(item.priority)} · {item.priority} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · Gap ID: {item.source_id}</small>
+            {item.evidence_ids.length > 0 && <small style={{ display: "block" }}>Existing evidence: {item.evidence_ids.join(", ")}</small>}
+            <button type="button" style={button} onClick={() => {
+              setSelectedQuestionId("");
+              setSelectedClaimId("");
+              setSelectedGapId(item.source_id);
+              setQuestionText(item.question);
+              setError("");
+              setNotice("Review and edit the gap description into a clear caregiver question before saving.");
+            }}>Clarify this gap</button>
+          </li>)}</ul>
+        </div>}
       </div>
-      {claims.length > 0 && <details style={{ marginBottom: 12 }}><summary>Create a targeted clarification question (only when a source-linked gap requires one)</summary><fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
+      {(claims.length > 0 || gapCandidates.length > 0) && <details open={Boolean(selectedGapId)} style={{ marginBottom: 12 }}><summary>Create a targeted clarification question (only when a source-linked gap requires one)</summary><fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
         <legend style={{ fontSize: 12 }}>Create a targeted clarification</legend>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Claim
           <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
