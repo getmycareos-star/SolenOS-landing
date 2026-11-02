@@ -173,12 +173,21 @@ export default function TimelinePage() {
     void loadEvents();
   }, [loadEvents]);
 
+  useEffect(() => {
+    const eventId = new URLSearchParams(window.location.search).get("event_id");
+    if (!eventId) return;
+    setFilter("all");
+    setQuery(eventId);
+    setExpandedId(eventId);
+  }, []);
+
   const visibleEvents = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return events.filter((event) => {
       if (!matchesFilter(event, filter)) return false;
       if (!needle) return true;
       const haystack = [
+        event.id,
         event.title,
         event.event_type,
         event.description ?? "",
@@ -295,7 +304,7 @@ export default function TimelinePage() {
                   const category = eventCategory(event);
                   const description = parseDescription(event.description);
                   return (
-                    <article key={event.id} style={{ position: "relative", border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "white", overflow: "hidden" }}>
+                    <article id={`timeline-event-${event.id}`} key={event.id} style={{ position: "relative", border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "white", overflow: "hidden" }}>
                       <span aria-hidden="true" style={{ position: "absolute", width: 10, height: 10, borderRadius: "50%", background: "#64866b", left: -24, top: 22, boxShadow: "0 0 0 4px var(--paper)" }} />
                       <button type="button" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)} style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", padding: 16, display: "block", color: "inherit", cursor: "pointer", font: "inherit" }}>
                         <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 8 }}>
