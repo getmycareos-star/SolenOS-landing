@@ -29,6 +29,8 @@ for (const contract of [
   /Not enough evidence to identify a meaningful relationship/,
   /\/care-continuity\/review-decisions/,
   /review_decision: decision/,
+  /target_type: targetType/,
+  /submitReviewTarget\("temporal_relationship"/,
   /reviewed_by_caregiver_id/,
   /not_applicable/,
   /disputed/,
