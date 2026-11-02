@@ -156,6 +156,21 @@ function formatDurationSeconds(seconds: number): string {
     : days === 1 ? "1 day" : `${days} days`;
 }
 
+function evidenceRelationshipLabel(value: string): string {
+  const labels: Record<string, string> = {
+    same_origin: "Same origin",
+    copied_from: "Copied from",
+    forwarded_from: "Forwarded from",
+    derived_from: "Derived from",
+    corroborates: "Corroborates",
+    corroboration_attempt_failed: "Corroboration attempt failed",
+    contradicts: "Contradicts",
+    duplicates: "Duplicate source",
+    related_to: "Related source",
+  };
+  return labels[value] || value.replaceAll("_", " ");
+}
+
 function expectedTemporalType(seconds: number): string {
   if (Math.abs(seconds) < 3600) return "simultaneous";
   if (seconds > 0) {
@@ -524,6 +539,24 @@ export default function PossibleRelationshipsPanel({
 
   const temporalGroups = temporalContext.groups;
   const unresolvedTemporalCount = temporalContext.unresolved;
+  const eventsByEvidenceId = useMemo(() => {
+    const eventsById = new Map<string, EvidenceLinkedEvent>();
+    for (const event of [
+      ...temporalEvents,
+      ...cards.flatMap((card) => card.events),
+    ]) {
+      eventsById.set(event.id, event);
+    }
+    const index = new Map<string, EvidenceLinkedEvent[]>();
+    for (const event of eventsById.values()) {
+      for (const evidenceId of event.evidence_ids || []) {
+        const current = index.get(evidenceId) || [];
+        if (!current.some((item) => item.id === event.id)) current.push(event);
+        index.set(evidenceId, current);
+      }
+    }
+    return index;
+  }, [temporalEvents, cards]);
   const meaningfulTemporalGroups = temporalGroups.filter((group) => group.pairs.length >= 2);
   const isolatedTemporalGroups = temporalGroups.filter((group) => group.pairs.length === 1);
   const meaningful = cards.filter((card) => isMeaningfulPattern(card.pattern, card.events));
@@ -689,6 +722,84 @@ export default function PossibleRelationshipsPanel({
           </article>
         );
       })}
+      {evidenceRelationshipError && <p role="status">Persisted evidence relationships could not be loaded: {evidenceRelationshipError}. No evidence relationship is inferred from unavailable data.</p>}
+      {evidenceRelationships.length > 0 && (
+        <div>
+          <h4>Recorded Evidence Relationships</h4>
+          <p>These are explicit, caregiver-attributed source relationships already stored in the record. Their type and source-independence assessment are shown as recorded; neither proves a clinical explanation.</p>
+          {evidenceRelationships.map((relationship) => {
+            const sourceEvents = eventsByEvidenceId.get(relationship.source_evidence_id) || [];
+            const relatedEvents = eventsByEvidenceId.get(relationship.related_evidence_id) || [];
+            const priorReview = reviewDecisions.filter((review) =>
+              review.target_type === "evidence_source_relationship" && review.target_id === relationship.id,
+            ).slice(0, 1)[0];
+            return (
+              <article key={relationship.id} className="lcr-current-fact">
+                <div className="lcr-entry-heading">
+                  <strong>{evidenceRelationshipLabel(relationship.relationship_type)}</strong>
+                  <span>{relationship.relationship_type === "contradicts" ? "Contradictory source relationship recorded" : "Caregiver-reviewed source relationship"}</span>
+                </div>
+                <p>
+                  Evidence {relationship.source_evidence_id} {evidenceRelationshipLabel(relationship.relationship_type).toLowerCase()} evidence {relationship.related_evidence_id}.
+                </p>
+                <p>{relationship.rationale}</p>
+                <p className="lcr-entry-status">
+                  Source independence: {relationship.source_independence_status.replaceAll("_", " ")} · Scope: {relationship.scope_type.replaceAll("_", " ")}{relationship.scope_id ? ` · ${relationship.scope_id}` : ""}{relationship.origin_group_key ? ` · Origin group ${relationship.origin_group_key}` : ""}.
+                </p>
+                <p className="lcr-entry-status">
+                  Recorded {formatWhen(relationship.created_at)} · Reviewer caregiver {relationship.reviewed_by_caregiver_id || "not attributed"}.
+                </p>
+                {relationship.relationship_type === "contradicts" && (
+                  <p role="status" className="lcr-entry-status">
+                    This relationship explicitly records a contradiction between source items. The disagreement is preserved; this section does not resolve which source is correct.
+                  </p>
+                )}
+                <div>
+                  <strong>Linked source observations</strong>
+                  {sourceEvents.length + relatedEvents.length > 0 ? (
+                    <ul>
+                      {[...sourceEvents, ...relatedEvents].filter((event, index, all) => all.findIndex((item) => item.id === event.id) === index).map((event) => (
+                        <li key={event.id}>
+                          {event.title} · event {formatWhen(event.occurred_at)} · recorded {formatWhen(event.recorded_at)} · contributor {event.contributor_label || event.contributor_id || "not recorded"}
+                          <p><a href={`/workspace/timeline?event_id=${encodeURIComponent(event.id)}`}>Open source observation</a></p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No event link was returned for these evidence items. This relationship remains at source-evidence level.</p>
+                  )}
+                </div>
+                <p className="lcr-entry-status">
+                  Alternative interpretations: this record stores the source relationship and rationale, but not a separate alternative-interpretation assessment. Inspect both source items and their evidence reviews; shared origin or coincidence may affect how the relationship should be read.
+                </p>
+                {priorReview && (
+                  <p className="lcr-entry-status">
+                    Caregiver review: {priorReview.review_decision.replaceAll("_", " ")} · {formatWhen(priorReview.reviewed_at || priorReview.created_at)} · caregiver {priorReview.reviewed_by_caregiver_id || "not attributed"}. {priorReview.reason || ""}
+                  </p>
+                )}
+                <label>
+                  <span>Review this evidence relationship</span>
+                  <textarea
+                    value={feedbackReasons[relationship.id] || ""}
+                    onChange={(event) => setFeedbackReasons((current) => ({ ...current, [relationship.id]: event.target.value }))}
+                    rows={2}
+                    maxLength={1000}
+                    style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box", minHeight: 64, marginTop: 6, border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, font: "inherit" }}
+                    aria-label={`Reason for reviewing evidence relationship ${relationship.id}`}
+                    placeholder="What information supports your review?"
+                  />
+                </label>
+                <div className="lcr-entry-heading">
+                  <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewTarget("evidence_source_relationship", relationship.id, "not_applicable")} disabled={savingFeedbackId === relationship.id}>Not applicable</button>
+                  <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewTarget("evidence_source_relationship", relationship.id, "disputed")} disabled={savingFeedbackId === relationship.id}>Dispute</button>
+                </div>
+                {feedbackErrors[relationship.id] && <p role="alert">{feedbackErrors[relationship.id]}</p>}
+              </article>
+            );
+          })}
+        </div>
+      )}
+      {evidenceRelationships.length >= 100 && <p className="lcr-entry-status">Evidence relationship history is bounded to the latest 100 records returned by the authenticated care API.</p>}
       {meaningfulTemporalGroups.map((group) => (
         <article key={group.key} className="lcr-current-fact">
           <div className="lcr-entry-heading">
