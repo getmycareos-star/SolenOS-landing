@@ -1329,7 +1329,7 @@ export function LCRCurrentUnderstanding() {
             })}
           </div>
         )}
-        {baselineComparison.baselines.some(row => row.is_active) && baselineComparison.changes.filter(change =>
+        {baselineComparison && baselineComparison.baselines.some(row => row.is_active) && baselineComparison.changes.filter(change =>
           change.is_active && !change.superseded_by_change_id &&
           !baselineComparison.baselines.some(row => row.is_active && row.subject_type === change.subject_type && row.subject_id === change.subject_id)
         ).length > 0 && (
