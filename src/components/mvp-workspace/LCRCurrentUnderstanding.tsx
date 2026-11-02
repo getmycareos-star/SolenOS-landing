@@ -251,7 +251,7 @@ type BaselineSourceCorrection = {
 type BaselineComparisonResponse = {
   person_id: string; as_of: string; baselines: BaselineRecord[]; changes: BaselineComparisonChange[];
   events: BaselineSourceEvent[]; source_evidence: BaselineSourceEvidence[];
-  corrections: BaselineSourceCorrection[]; read_only: true; notice: string;
+  corrections: BaselineSourceCorrection[]; changes_truncated: boolean; read_only: true; notice: string;
 };
 
 type SourceFreshness = {
@@ -490,7 +490,7 @@ export function LCRCurrentUnderstanding() {
         ) as BaselineComparisonResponse;
         if (baselineResult?.person_id !== session.person.id || baselineResult.read_only !== true ||
             !Array.isArray(baselineResult.baselines) || !Array.isArray(baselineResult.changes) ||
-            !Array.isArray(baselineResult.events) || !Array.isArray(baselineResult.source_evidence) || !Array.isArray(baselineResult.corrections)) {
+            !Array.isArray(baselineResult.events) || !Array.isArray(baselineResult.source_evidence) || !Array.isArray(baselineResult.corrections) || typeof baselineResult.changes_truncated !== "boolean") {
           throw new Error("Baseline comparison did not match the active care-record session.");
         }
         setBaselineComparison(baselineResult);
@@ -1353,6 +1353,9 @@ export function LCRCurrentUnderstanding() {
               );
             })}</ul>
           </section>
+        )}
+        {baselineComparison?.changes_truncated && (
+          <p role="status">The backend returned the most recent 200 matching change assessments. Older assessments may not appear in this comparison; consult the full longitudinal history.</p>
         )}
         <p className="lcr-footer-note">{baselineComparison?.notice}</p>
       </section>
