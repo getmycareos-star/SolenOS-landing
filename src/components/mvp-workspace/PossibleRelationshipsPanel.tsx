@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getJSON } from "@/api/client";
+import { getJSON, postJSON } from "@/api/client";
 
 type PersistedPattern = {
   id: string;
@@ -58,6 +58,17 @@ type PatternCard = {
   events: PatternEvent[];
   changes: PatternChange[];
   error?: string;
+};
+
+type PatternReviewDecision = {
+  id: string;
+  person_id: string;
+  target_type: string;
+  target_id: string;
+  review_decision: string;
+  reason?: string | null;
+  reviewed_by_caregiver_id?: string | null;
+  created_at?: string | null;
 };
 
 function formatWhen(value?: string | null): string {
@@ -140,6 +151,11 @@ export default function PossibleRelationshipsPanel({
   const [cards, setCards] = useState<PatternCard[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [reviewDecisions, setReviewDecisions] = useState<PatternReviewDecision[]>([]);
+  const [reviewError, setReviewError] = useState("");
+  const [feedbackReasons, setFeedbackReasons] = useState<Record<string, string>>({});
+  const [feedbackErrors, setFeedbackErrors] = useState<Record<string, string>>({});
+  const [savingFeedbackId, setSavingFeedbackId] = useState<string | null>(null);
 
   const candidatePatterns = useMemo(
     () => patterns.filter((pattern) => pattern.event_ids?.length >= 2).slice(0, 20),
@@ -199,6 +215,71 @@ export default function PossibleRelationshipsPanel({
     return () => { cancelled = true; };
   }, [personId, candidatePatterns]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReviewDecisions() {
+      if (!personId) {
+        setReviewDecisions([]);
+        setReviewError("");
+        return;
+      }
+      try {
+        const rows = await getJSON("/care-continuity/review-decisions?limit=100");
+        if (!Array.isArray(rows) || rows.some((row) => row?.person_id !== personId)) {
+          throw new Error("Review decisions did not match the authenticated care record.");
+        }
+        if (!cancelled) {
+          setReviewDecisions(rows.filter((row) => row.target_type === "pattern") as PatternReviewDecision[]);
+          setReviewError("");
+        }
+      } catch {
+        if (!cancelled) {
+          setReviewDecisions([]);
+          setReviewError("Caregiver review history could not be loaded. Existing decisions are not assumed to be absent.");
+        }
+      }
+    }
+    void loadReviewDecisions();
+    return () => { cancelled = true; };
+  }, [personId]);
+
+  async function submitReviewDecision(pattern: PersistedPattern, decision: "disputed" | "not_applicable") {
+    const reason = (feedbackReasons[pattern.id] || "").trim();
+    if (reason.length < 5) {
+      setFeedbackErrors((current) => ({ ...current, [pattern.id]: "Add a short reason so this review is attributable and understandable." }));
+      return;
+    }
+    setSavingFeedbackId(pattern.id);
+    setFeedbackErrors((current) => ({ ...current, [pattern.id]: "" }));
+    try {
+      const saved = await postJSON("/care-continuity/review-decisions", {
+        target_type: "pattern",
+        target_id: pattern.id,
+        review_decision: decision,
+        reason,
+      }) as PatternReviewDecision;
+      if (
+        !saved
+        || saved.person_id !== personId
+        || saved.target_type !== "pattern"
+        || saved.target_id !== pattern.id
+        || saved.review_decision !== decision
+        || !saved.reviewed_by_caregiver_id
+      ) {
+        throw new Error("The server did not confirm the person-scoped review decision.");
+      }
+      setReviewDecisions((current) => [saved, ...current]);
+      setFeedbackReasons((current) => ({ ...current, [pattern.id]: "" }));
+    } catch (cause) {
+      setFeedbackErrors((current) => ({
+        ...current,
+        [pattern.id]: cause instanceof Error ? cause.message : "Caregiver review could not be saved.",
+      }));
+    } finally {
+      setSavingFeedbackId(null);
+    }
+  }
+
   const meaningful = cards.filter((card) => isMeaningfulPattern(card.pattern, card.events));
   const historical = cards.filter((card) => !card.pattern.is_active || Boolean(card.pattern.superseded_by_pattern_id));
 
@@ -215,6 +296,7 @@ export default function PossibleRelationshipsPanel({
         <p role="status">Persisted patterns could not be loaded: {patternsError}. No relationship is inferred from unavailable data.</p>
       )}
       {loadError && <p role="status">{loadError}</p>}
+      {reviewError && <p role="status">{reviewError}</p>}
       {loading && <p role="status">Loading the original observations linked to persisted patterns…</p>}
       {!loading && !patternsError && meaningful.length === 0 && (
         <p className="lcr-entry-status">Not enough evidence to identify a meaningful relationship.</p>
@@ -257,6 +339,37 @@ export default function PossibleRelationshipsPanel({
             <p className="lcr-entry-status">
               Have additional source-backed information? <a href="#lcr-clarification-workflow">Open the existing clarification workflow</a>. A clarification remains a separate review item; it does not confirm this relationship.
             </p>
+            {reviewDecisions.filter((review) => review.target_id === pattern.id).slice(0, 1).map((review) => (
+              <p key={review.id} className="lcr-entry-status">
+                Caregiver review: {review.review_decision.replaceAll("_", " ")} · reviewed {formatWhen(review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}.
+                {review.reason ? ` Reason: ${review.reason}` : ""}
+                This review is separate from the pattern and does not establish or erase an observation.
+              </p>
+            ))}
+            <div className="lcr-entry-status">
+              <label>
+                <span>Review this possible relationship (optional reason required)</span>
+                <textarea
+                  value={feedbackReasons[pattern.id] || ""}
+                  onChange={(event) => setFeedbackReasons((current) => ({ ...current, [pattern.id]: event.target.value }))}
+                  rows={2}
+                  maxLength={1000}
+                  placeholder="What information supports your review?"
+                  aria-label={`Reason for reviewing pattern ${pattern.id}`}
+                />
+              </label>
+              <div className="lcr-entry-heading">
+                <button type="button" className="lcr-text-action" onClick={() => void submitReviewDecision(pattern, "not_applicable")} disabled={savingFeedbackId === pattern.id}>
+                  {savingFeedbackId === pattern.id ? "Saving review…" : "Not applicable"}
+                </button>
+                <button type="button" className="lcr-text-action" onClick={() => void submitReviewDecision(pattern, "disputed")} disabled={savingFeedbackId === pattern.id}>
+                  Dispute
+                </button>
+              </div>
+              {feedbackErrors[pattern.id] && <p role="alert">{feedbackErrors[pattern.id]}</p>}
+              {reviewError && <p role="status">{reviewError}</p>}
+              <small>Reviews are appended with the authenticated caregiver identity. They do not change the pattern, source observations, baseline, or care facts.</small>
+            </div>
             <details>
               <summary>Inspect supporting observations ({eligibleEvents.length})</summary>
               {error ? (
