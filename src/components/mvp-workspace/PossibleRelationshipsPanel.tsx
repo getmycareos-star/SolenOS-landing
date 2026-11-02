@@ -656,6 +656,28 @@ export default function PossibleRelationshipsPanel({
                   <small>Source event {eventB.id} · {eventB.event_type.replaceAll("_", " ")} · contributor {eventB.created_by_caregiver_id || "not recorded"} · evidence {eventB.evidence_ids.length ? eventB.evidence_ids.join(", ") : "none linked"}</small>
                   <a href={`/workspace/timeline?event_id=${encodeURIComponent(eventB.id)}`}>Open second source observation</a>
                   <small>Temporal link ID: {link.id} · calculated {formatWhen(link.created_at)}</small>
+                  {reviewDecisions.filter((review) => review.target_type === "temporal_relationship" && review.target_id === link.id).slice(0, 1).map((review) => (
+                    <p key={review.id} className="lcr-entry-status">
+                      Caregiver review: {review.review_decision.replaceAll("_", " ")} · {formatWhen(review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}. {review.reason || ""}
+                    </p>
+                  ))}
+                  <label>
+                    <span>Review this temporal sequence</span>
+                    <textarea
+                      value={feedbackReasons[link.id] || ""}
+                      onChange={(event) => setFeedbackReasons((current) => ({ ...current, [link.id]: event.target.value }))}
+                      rows={2}
+                      maxLength={1000}
+                      style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box", minHeight: 64, marginTop: 6, border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, font: "inherit" }}
+                      aria-label={`Reason for reviewing temporal sequence ${link.id}`}
+                      placeholder="What information supports your review?"
+                    />
+                  </label>
+                  <div className="lcr-entry-heading">
+                    <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewTarget("temporal_relationship", link.id, "not_applicable")} disabled={savingFeedbackId === link.id}>Not applicable</button>
+                    <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewTarget("temporal_relationship", link.id, "disputed")} disabled={savingFeedbackId === link.id}>Dispute</button>
+                  </div>
+                  {feedbackErrors[link.id] && <p role="alert">{feedbackErrors[link.id]}</p>}
                 </li>
               ))}
             </ul>
