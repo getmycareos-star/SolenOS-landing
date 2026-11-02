@@ -156,6 +156,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
         .filter((row) => row.source_kind === "information_gap" && !row.persisted_question_id && !linkedGapIds.has(row.source_id))
         .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
       setGapCandidates(gapRows);
+      setSelectedGapId((current) => current && gapRows.some((row) => row.source_id === current) ? current : "");
       setScopePersonId(sessionPersonId);
       setClaims(claimRows as Claim[]);
       setQuestions(questionRows as Question[]);
