@@ -23,7 +23,7 @@ assert(panel.includes("Accept and reconcile") && panel.includes("Reject answer")
 assert(panel.includes("reconciliation_status") && panel.includes("resulting_assertion_id") && panel.includes("resulting_gap_ids") && panel.includes("resulting_assessment_id"), "acceptance must display assertion and information-gap reconciliation references");
 assert(panel.includes("open_question_answer_events") || panel.includes("Immutable answer history"), "answer history must remain visible");
 assert(panel.includes('href="/workspace/daily-care"') && panel.includes('href="/workspace/documents"'), "caregivers must be routed to existing evidence-capture workflows");
-assert(lcr.includes("<ClarificationWorkflowPanel personId={personId} assessment={assessment} assessmentError={assessmentError} />"), "the LCR must pass its real persisted assessment and retrieval error to the clarification section");
+assert(lcr.includes("<ClarificationWorkflowPanel personId={personId} assessment={assessment} assessmentError={assessmentError} onAssessmentRefresh={reassess} />"), "the LCR must pass its real persisted assessment and retrieval error to the clarification section");
 assert(!panel.includes("SAMPLE_") && !panel.includes("DEMO_"), "the section must not introduce fabricated care records");
 
 console.log("PASS: LCR clarification section is connected to persisted questions, assessments, evidence and answer history.");
