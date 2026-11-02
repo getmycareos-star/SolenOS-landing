@@ -36,7 +36,7 @@ type Question = {
 type AssessmentItem = { id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[]; recorded_at?: string | null; occurred_at?: string | null };
 type LCRAssessment = { missing_information: AssessmentItem[]; uncertainties_and_conflicts: AssessmentItem[] };
 type GapCandidate = { question: string; subject_type: string; subject_id: string; priority: string; reason: string; evidence_ids: string[]; source_kind: string; source_id: string; source_ids: string[]; persisted_question_id: string | null };
-type ClarificationReview = { id: string; question_id: string; answer_event_id: string; answer_version: number; person_id: string; decision: "accepted" | "rejected" | "needs_more_information"; rationale: string; reviewed_by_caregiver_id: string; resulting_assertion_id?: string | null; reconciliation_status: string; evidence_review_ids: string[]; resulting_gap_ids: string[]; created_at: string };
+type ClarificationReview = { id: string; question_id: string; answer_event_id: string; answer_version: number; person_id: string; decision: "accepted" | "rejected" | "needs_more_information"; rationale: string; reviewed_by_caregiver_id: string; resulting_assertion_id?: string | null; resulting_assessment_id?: string | null; reconciliation_status: string; evidence_review_ids: string[]; resulting_gap_ids: string[]; created_at: string };
 type AnswerEvent = {
   id: string;
   question_id: string;
@@ -243,7 +243,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       if (!result || result.question_id !== selectedQuestion.id || result.person_id !== scopePersonId || result.answer_version !== latest.answer_version || result.decision !== decision) {
         throw new Error("Clarification decision response was not confirmed");
       }
-      if (decision === "accepted" && (result.reconciliation_status !== "completed" || !result.resulting_assertion_id)) {
+      if (decision === "accepted" && (result.reconciliation_status !== "completed" || !result.resulting_assertion_id || !result.resulting_assessment_id)) {
         throw new Error("The backend did not confirm the resulting LCR assertion and reconciliation");
       }
       setReviewRationale("");
@@ -546,7 +546,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               <p>{item.rationale}</p>
               <small>Answer version {item.answer_version} · Reviewed by {item.reviewed_by_caregiver_id} · {item.created_at}</small>
               <small style={{ display: "block" }}>Evidence review records: {item.evidence_review_ids.join(", ") || "none returned"} · LCR reconciliation: {item.reconciliation_status}</small>
-              {item.resulting_assertion_id && <small style={{ display: "block" }}>Resulting LCR assertion: {item.resulting_assertion_id}</small>}{item.resulting_gap_ids?.length > 0 && <small style={{ display: "block" }}>Resolved information gaps: {item.resulting_gap_ids.join(", ")}</small>}
+              {item.resulting_assertion_id && <small style={{ display: "block" }}>Resulting LCR assertion: {item.resulting_assertion_id}</small>}{item.resulting_assessment_id && <small style={{ display: "block" }}>Updated situation assessment: {item.resulting_assessment_id}</small>}{item.resulting_gap_ids?.length > 0 && <small style={{ display: "block" }}>Resolved information gaps: {item.resulting_gap_ids.join(", ")}</small>}
             </div>)}
             {selectedQuestion.status === "answered" && history.length > 0 && !reviewHistoryError && !reviewHistory.some((item) => item.answer_version === history[history.length - 1].answer_version) && <>
               <label style={{ display: "block", marginTop: 8 }}>Review rationale
