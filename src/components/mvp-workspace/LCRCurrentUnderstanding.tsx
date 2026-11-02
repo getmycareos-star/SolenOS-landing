@@ -657,7 +657,7 @@ export function LCRCurrentUnderstanding() {
         {assessmentError && (
           <p role="status">Priorities cannot be determined because the saved situation assessment could not be loaded. {assessmentError}</p>
         )}
-        {!assessmentError && !assessment && !assessmentLoading && (
+        {!assessmentError && !assessment && !loading && !assessmentLoading && (
           <p role="status">No persisted situation assessment is available. Reassess from the record before treating this section as complete.</p>
         )}
         {assessment && !assessment.open_loops && (
@@ -734,8 +734,12 @@ export function LCRCurrentUnderstanding() {
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Watch for changes</h4>
+              {changesError && <p role="status">Persisted change candidates could not be loaded: {changesError}. No absence of change is inferred.</p>}
+              {patternsError && <p role="status">Persisted pattern history could not be loaded: {patternsError}. No absence of a pattern is inferred.</p>}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
-                <p>No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed.</p>
+                <p>{changesError || patternsError
+                  ? "Some change or pattern sources are unavailable. Their absence cannot be established."
+                  : "No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed."}</p>
               ) : (
                 <ul className="lcr-current-facts">
                   {baselineItems.map((item) => (
