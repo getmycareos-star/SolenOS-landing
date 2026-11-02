@@ -15,6 +15,7 @@ type PersistedPattern = {
   temporal_start: string;
   temporal_end: string;
   evidence_count: number;
+  confidence?: number | null;
   alternative_interpretations?: unknown[] | null;
   pattern_metrics?: Record<string, unknown> | null;
   is_active: boolean;
