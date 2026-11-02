@@ -249,7 +249,6 @@ export default function PossibleRelationshipsPanel({
   const [temporalLinks, setTemporalLinks] = useState<PersistedTemporalLink[]>([]);
   const [temporalEvents, setTemporalEvents] = useState<CareEventRecord[]>([]);
   const [temporalError, setTemporalError] = useState("");
-  const [unresolvedTemporalCount, setUnresolvedTemporalCount] = useState(0);
 
   const candidatePatterns = useMemo(
     () => patterns.filter((pattern) => pattern.event_ids?.length >= 2).slice(0, 20),
@@ -420,7 +419,7 @@ export default function PossibleRelationshipsPanel({
     }
   }
 
-  const temporalGroups = useMemo(() => {
+  const temporalContext = useMemo(() => {
     const eventsById = new Map(temporalEvents.map((event) => [event.id, event]));
     const grouped = new Map<string, TemporalGroup>();
     let unresolved = 0;
@@ -455,10 +454,14 @@ export default function PossibleRelationshipsPanel({
       current.pairs.push(pair);
       grouped.set(key, current);
     }
-    setUnresolvedTemporalCount(unresolved);
-    return [...grouped.values()].sort((a, b) => b.pairs.length - a.pairs.length);
+    return {
+      groups: [...grouped.values()].sort((a, b) => b.pairs.length - a.pairs.length),
+      unresolved,
+    };
   }, [temporalLinks, temporalEvents]);
 
+  const temporalGroups = temporalContext.groups;
+  const unresolvedTemporalCount = temporalContext.unresolved;
   const meaningfulTemporalGroups = temporalGroups.filter((group) => group.pairs.length >= 2);
   const isolatedTemporalGroups = temporalGroups.filter((group) => group.pairs.length === 1);
   const meaningful = cards.filter((card) => isMeaningfulPattern(card.pattern, card.events));
