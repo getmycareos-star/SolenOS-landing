@@ -35,7 +35,7 @@ type Question = {
 };
 type AssessmentItem = { id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[]; recorded_at?: string | null; occurred_at?: string | null };
 type LCRAssessment = { missing_information: AssessmentItem[]; uncertainties_and_conflicts: AssessmentItem[] };
-type GapCandidate = { question: string; subject_type: string; subject_id: string; priority: string; reason: string; evidence_ids: string[]; source_kind: string; source_id: string; source_ids: string[]; persisted_question_id: string | null };
+type GapCandidate = { question: string; subject_type: string; subject_id: string; field?: string | null; priority: string; reason: string; evidence_ids: string[]; source_kind: string; source_id: string; source_ids: string[]; persisted_question_id: string | null };
 type ClarificationReview = { id: string; question_id: string; answer_event_id: string; answer_version: number; person_id: string; decision: "accepted" | "rejected" | "needs_more_information"; rationale: string; reviewed_by_caregiver_id: string; resulting_assertion_id?: string | null; resulting_assessment_id?: string | null; reconciliation_status: string; evidence_review_ids: string[]; resulting_gap_ids: string[]; created_at: string };
 type AnswerEvent = {
   id: string;
@@ -416,7 +416,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           <ul style={{ paddingLeft: 18 }}>{gapCandidates.slice(0, 5).map((item) => <li key={item.source_id} style={{ marginBottom: 9 }}>
             <strong>{item.question}</strong>
             <p style={{ margin: "4px 0" }}>Why it matters: {item.reason.replaceAll("_", " ")}</p>
-            <small>{priorityBand(item.priority)} · {item.priority} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · Gap ID: {item.source_id}</small>
+            <small>{priorityBand(item.priority)} · {item.priority} · {item.subject_type.replaceAll("_", " ")} / {item.subject_id} · Field: {item.field || "not specified"} · Gap ID: {item.source_id}</small>
             {item.evidence_ids.length > 0 && <small style={{ display: "block" }}>Existing evidence: {item.evidence_ids.join(", ")}</small>}
             <button type="button" style={button} onClick={() => {
               setSelectedQuestionId("");
