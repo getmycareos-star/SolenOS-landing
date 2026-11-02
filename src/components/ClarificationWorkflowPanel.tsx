@@ -395,9 +395,11 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       <div style={{ margin: "12px 0" }}>
         <strong style={{ fontSize: 13 }}>Important unanswered questions</strong>
         {openQuestions.length === 0
-          ? assessment && assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0
-            ? <p>No important unanswered questions identified from the available record.</p>
-            : <p>No persisted open clarification questions were returned. Review the information gaps above; an assessment gap without a linked question is not treated as resolved.</p>
+          ? gapCandidates.length > 0
+            ? <p>{gapCandidates.length} persisted information gap(s) still need a caregiver-worded clarification question. They are listed below; none is treated as resolved.</p>
+            : assessment && assessment.missing_information.length === 0 && assessment.uncertainties_and_conflicts.length === 0
+              ? <p>No important unanswered questions identified from the available record.</p>
+              : <p>No persisted open clarification questions were returned. Review the information gaps above; an assessment gap without a linked question is not treated as resolved.</p>
           : <>
             <ul style={{ paddingLeft: 18 }}>{openQuestions.slice(0, 5).map((item) => <li key={item.id} style={{ marginBottom: 10 }}>
               <strong>{item.question}</strong>
