@@ -217,7 +217,6 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
     ),
     [questions],
   );
-  const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
 
   async function submitAnswer(question: Question) {
     if (!answer.trim() || !provenance.trim()) {
