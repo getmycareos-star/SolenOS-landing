@@ -898,7 +898,7 @@ export function LCRCurrentUnderstanding() {
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         {source && source.claim_count > 0 && <small>Competing claims linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
                         {actionForSuggestion(item) ? (
-                          <p className="lcr-entry-status">Registered action: {actionForSuggestion(item)?.status.replaceAll("_", " ")}. Registration was explicitly approved by this caregiver session.</p>
+                          <p className="lcr-entry-status">Registered action: {actionForSuggestion(item)?.status.replaceAll("_", " ")}. This suggestion has already been explicitly registered.</p>
                         ) : item.request_text?.trim() && item.evidence_ids.length > 0 ? (
                           <div>
                             <button type="button" className="lcr-text-action" onClick={() => {
