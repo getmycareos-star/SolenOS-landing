@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
 
 type QuickUpdateKind = "same_as_usual" | "change" | "concern" | "care_completed";
@@ -30,7 +30,7 @@ const UPDATE_OPTIONS: Array<{ value: QuickUpdateKind; label: string }> = [
   { value: "care_completed", label: "Care was completed" },
 ];
 
-const buttonStyle = (selected: boolean): React.CSSProperties => ({
+const buttonStyle = (selected: boolean): CSSProperties => ({
   minHeight: 46,
   padding: "10px 14px",
   borderRadius: 10,
@@ -244,7 +244,7 @@ export default function QuickDailyCheckIn() {
             </button>
             <button
               type="button"
-              onClick={() => chooseKind("same_as_usual")}
+              onClick={() => { setKind(null); setSelectedAreas([]); setNote(""); setError(""); }}
               disabled={saving}
               style={{ minHeight: 46, padding: "10px 14px", borderRadius: 9, border: "1px solid #cbd8d2", background: "#fff", color: "#172b35", fontWeight: 600 }}
             >
