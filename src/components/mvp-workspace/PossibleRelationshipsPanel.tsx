@@ -391,7 +391,7 @@ export default function PossibleRelationshipsPanel({
                 <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewDecision(pattern, "not_applicable")} disabled={savingFeedbackId === pattern.id}>
                   {savingFeedbackId === pattern.id ? "Saving review…" : "Not applicable"}
                 </button>
-                <button type="button" className="lcr-text-action" onClick={() => void submitReviewDecision(pattern, "disputed")} disabled={savingFeedbackId === pattern.id}>
+                <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewDecision(pattern, "disputed")} disabled={savingFeedbackId === pattern.id}>
                   Dispute
                 </button>
               </div>
