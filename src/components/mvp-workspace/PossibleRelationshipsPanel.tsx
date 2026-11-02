@@ -376,18 +376,19 @@ export default function PossibleRelationshipsPanel({
             ))}
             <div className="lcr-entry-status">
               <label>
-                <span>Review this possible relationship (optional reason required)</span>
+                <span>If you want to review this pattern, add a reason</span>
                 <textarea
                   value={feedbackReasons[pattern.id] || ""}
                   onChange={(event) => setFeedbackReasons((current) => ({ ...current, [pattern.id]: event.target.value }))}
                   rows={2}
                   maxLength={1000}
+                  style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box", minHeight: 64, marginTop: 6, border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, font: "inherit" }}
                   placeholder="What information supports your review?"
                   aria-label={`Reason for reviewing pattern ${pattern.id}`}
                 />
               </label>
               <div className="lcr-entry-heading">
-                <button type="button" className="lcr-text-action" onClick={() => void submitReviewDecision(pattern, "not_applicable")} disabled={savingFeedbackId === pattern.id}>
+                <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewDecision(pattern, "not_applicable")} disabled={savingFeedbackId === pattern.id}>
                   {savingFeedbackId === pattern.id ? "Saving review…" : "Not applicable"}
                 </button>
                 <button type="button" className="lcr-text-action" onClick={() => void submitReviewDecision(pattern, "disputed")} disabled={savingFeedbackId === pattern.id}>
