@@ -145,7 +145,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
       )) throw new Error("Invalid persisted next-question candidate response");
       const linkedGapIds = new Set<string>();
       for (const question of questionRows as Question[]) {
-        if (!["open", "unresolved", "answered"].includes(question.status)) continue;
+        if (!["open", "unresolved", "pending", "answered"].includes(question.status)) continue;
         for (const context of question.context ?? []) {
           const kind = context.source_kind ?? context.kind;
           const id = context.source_id ?? context.information_gap_id;
