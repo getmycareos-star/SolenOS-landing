@@ -181,6 +181,25 @@ type SituationAssessment = {
     notice: string;
   };
   uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
+  baseline_assessment?: {
+    status: string;
+    items: Array<{
+      id: string;
+      source: string;
+      title: string;
+      status: string;
+      epistemic_status: string;
+      occurred_at?: string | null;
+      recorded_at?: string | null;
+      evidence_ids: string[];
+      baseline_basis?: string;
+      interpretation_limit?: string;
+    }>;
+    count: number;
+    has_more: boolean;
+    source_of_truth: string;
+    limitation: string;
+  };
   missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; evidence_ids: string[] }>;
   confidence_assessment: { overall: string; limitations: string[] };
   evolution_since_previous_assessment?: {
@@ -593,6 +612,7 @@ export function LCRCurrentUnderstanding() {
   const canWaitItems = selectDeferredItems(openLoopItems);
   const watchChanges = selectWatchChanges(changes);
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
+  const baselineItems = assessment?.baseline_assessment?.items ?? [];
   const activeWatchPatterns = patterns.filter((pattern) =>
     pattern.is_active && !pattern.superseded_by_pattern_id
   );
@@ -621,6 +641,9 @@ export function LCRCurrentUnderstanding() {
             <p>Items below come from saved care-record assessments. A candidate or pattern is not, by itself, proof of a clinical risk.</p>
           </div>
         </div>
+        {sourceFreshness?.reassessment_recommended && (
+          <p role="status">This saved assessment may be out of date ({sourceFreshness.status.replaceAll("_", " ")}). Refresh the assessment before relying on it as the latest view.</p>
+        )}
         {assessmentError && (
           <p role="status">Priorities cannot be determined because the saved situation assessment could not be loaded. {assessmentError}</p>
         )}
@@ -696,10 +719,20 @@ export function LCRCurrentUnderstanding() {
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Watch for changes</h4>
-              {watchChanges.length === 0 && watchUncertainties.length === 0 && activeWatchPatterns.length === 0 ? (
+              {watchChanges.length === 0 && watchUncertainties.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
                 <p>No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed.</p>
               ) : (
                 <ul className="lcr-current-facts">
+                  {baselineItems.map((item) => (
+                    <li key={"baseline:" + item.source + ":" + item.id} className="lcr-current-fact">
+                      <strong>Recorded baseline · {item.title}</strong>
+                      <p>This record was explicitly marked as a baseline or usual state. It is not a population norm.</p>
+                      <p className="lcr-entry-status">Source: {item.source.replaceAll("_", " ")} · Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
+                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
+                    </li>
+                  ))}
                   {watchUncertainties.map((item) => {
                     const source = projection?.items.find((candidate) =>
                       candidate.id === item.id && candidate.source_collection === item.source
