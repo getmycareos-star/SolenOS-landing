@@ -451,6 +451,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               setSelectedClaimId("");
               setSelectedGapId(item.source_id);
               setPriority(item.priority);
+              setIntendedAnswererRole(item.intended_answerer_role || "");
               setEvidenceIds(item.evidence_ids);
               setQuestionText(item.question);
               setError("");
@@ -468,7 +469,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
           </select>
         </label>}
         {gapCandidates.length > 0 && <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Explicitly persisted information gap
-          <select style={field} value={selectedGapId} onChange={(event) => { setSelectedGapId(event.target.value); if (event.target.value) setSelectedClaimId(""); else if (claims[0]) setSelectedClaimId(claims[0].id); const candidate = gapCandidates.find((item) => item.source_id === event.target.value); if (candidate) { setPriority(candidate.priority); setEvidenceIds(candidate.evidence_ids); } }}>
+          <select style={field} value={selectedGapId} onChange={(event) => { setSelectedGapId(event.target.value); if (event.target.value) setSelectedClaimId(""); else if (claims[0]) setSelectedClaimId(claims[0].id); const candidate = gapCandidates.find((item) => item.source_id === event.target.value); if (candidate) { setPriority(candidate.priority); setIntendedAnswererRole(candidate.intended_answerer_role || ""); setEvidenceIds(candidate.evidence_ids); } }}>
             <option value="">No information gap selected</option>
             {gapCandidates.map((item) => <option key={item.source_id} value={item.source_id}>{item.priority} · {item.question.slice(0, 100)}</option>)}
           </select>
