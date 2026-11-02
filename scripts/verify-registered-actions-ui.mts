@@ -35,6 +35,8 @@ for (const contract of [
   'linked_reminder_due_at',
   'currentCaregiverId',
   'Only the responsible caregiver can change this action.',
+  'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id}',
+  'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])}',
 ]) {
   assert.ok(lcr.includes(contract), `LCR approved-action contract missing: ${contract}`);
 }
