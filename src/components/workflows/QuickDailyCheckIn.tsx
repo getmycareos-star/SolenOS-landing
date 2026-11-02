@@ -77,7 +77,7 @@ export default function QuickDailyCheckIn() {
   }
 
   async function saveUpdate() {
-    if (!kind || selectedAreas.length === 0 || saving) return;
+    if (!kind || (kind !== "same_as_usual" && selectedAreas.length === 0) || saving) return;
 
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
@@ -98,7 +98,9 @@ export default function QuickDailyCheckIn() {
     const noteText = note.trim();
     const lead =
       kind === "same_as_usual"
-        ? `Caregiver reports no significant change from usual in: ${labels}. Other areas were not assessed by this check-in.`
+        ? (labels
+          ? `Caregiver reports no significant change from usual in: ${labels}. Other areas were not assessed by this check-in.`
+          : "Caregiver reports no significant change in their overall impression of care. No individual care areas were assessed by this check-in.")
         : kind === "change"
           ? `Caregiver reports a change relating to: ${labels}.`
           : kind === "concern"
@@ -120,7 +122,7 @@ export default function QuickDailyCheckIn() {
           schema_version: 1,
           kind,
           selected_areas: selectedAreas,
-          scope: "selected_areas_only",
+          scope: selectedAreas.length > 0 ? "selected_areas_only" : "overall_impression_only",
           caregiver_reported_at: reportedAt,
           epistemic_status: "caregiver_reported",
           idempotency_key: requestId,
@@ -199,7 +201,7 @@ export default function QuickDailyCheckIn() {
           </p>
           {kind === "same_as_usual" && (
             <p style={{ margin: "0 0 10px", color: "#52656d", fontSize: 13, lineHeight: 1.5 }}>
-              This saves your report for the selected areas only. It does not establish or change the person’s baseline.
+              Selecting areas is optional. If you leave them blank, SolenOS records only your overall impression; no individual care domains are marked as checked or unchanged. This does not establish or change the person’s baseline.
             </p>
           )}
           <div role="group" aria-label="Select care areas" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
