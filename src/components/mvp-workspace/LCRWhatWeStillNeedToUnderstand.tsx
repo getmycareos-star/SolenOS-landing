@@ -255,7 +255,19 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
     }
   }, [personId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    setSelectedQuestionId("");
+    setAnswer("");
+    setProvenance("");
+    setEvidenceIds([]);
+    setHistory([]);
+    setHistoryQuestionId("");
+    setHistoryError("");
+    setReviewRationales({});
+    setReviewWindows({});
+    setReviewError("");
+    void load();
+  }, [load]);
 
   const openQuestions = useMemo(
     () => questions.filter((item) => !isResolved(item)).sort((a, b) =>
