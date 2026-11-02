@@ -317,13 +317,13 @@ export default function PossibleRelationshipsPanel({
       {!loading && !patternsError && meaningful.length === 0 && (
         <p className="lcr-entry-status">Not enough evidence to identify a meaningful relationship.</p>
       )}
-      {meaningful.map(({ pattern, events, changes, error }) => {
+      {meaningful.map(({ pattern, events, changes, evidenceReviews, error }) => {
         const eligibleEvents = events.filter(isEligibleEvent);
         const first = eligibleEvents[0];
         const last = eligibleEvents[eligibleEvents.length - 1];
         const elapsed = first && last ? elapsedBetween(first.occurred_at, last.occurred_at) : null;
         const alternatives = pattern.alternative_interpretations || [];
-        const contestedReviews = card.evidenceReviews.filter((review) =>
+        const contestedReviews = evidenceReviews.filter((review) =>
           ["contested", "conflicting"].includes(review.outcome.toLowerCase()),
         );
         return (
@@ -361,7 +361,7 @@ export default function PossibleRelationshipsPanel({
               </p>
             ) : (
               <p className="lcr-entry-status">
-                Evidence review coverage: {card.evidenceReviews.length} persisted review record(s) returned. No review record does not mean the source is verified or uncontested.
+                Evidence review coverage: {evidenceReviews.length} persisted review record(s) returned. No review record does not mean the source is verified or uncontested.
               </p>
             )}
             <p className="lcr-entry-status">
@@ -403,35 +403,37 @@ export default function PossibleRelationshipsPanel({
               {error ? (
                 <p role="status">Supporting observations unavailable: {error}</p>
               ) : (
-                <ul>
-                  {events.map((event) => (
-                    <li key={event.id}>
-                      <strong>{event.title || event.event_type.replaceAll("_", " ")}</strong>
-                      <p>{event.description || "No additional description was recorded."}</p>
-                      <small>Observation ID: {event.id} · Source type: {event.event_type.replaceAll("_", " ")} · Status: {event.status}</small>
-                      <small>Event time: {formatWhen(event.occurred_at)} · Record-entry time: {formatWhen(event.recorded_at)}</small>
-                      <small>Time provenance: {event.time_provenance || "Not recorded"} · Contributor: {event.contributor_label || (event.contributor_id ? `caregiver record ${event.contributor_id}` : "Not recorded")}</small>
-                      <small>Evidence references: {event.evidence_ids.length ? event.evidence_ids.join(", ") : "None linked"}</small>
-                      {!isEligibleEvent(event) && <small>This source event is no longer eligible to support the active pattern.</small>}
-                    </li>
-                  ))}
-                </ul>
-                {events.flatMap((event) => event.evidence_ids).length > 0 && (
-                  <div>
-                    <strong>Evidence review history</strong>
-                    {card.evidenceReviews.length > 0 ? (
-                      <ul>{card.evidenceReviews.map((review) => (
-                        <li key={review.id}>
-                          Evidence {review.evidence_id} · {review.review_type.replaceAll("_", " ")}: {review.outcome.replaceAll("_", " ")}
-                          <p>{review.rationale}</p>
-                          <small>Policy {review.policy_version} · Reviewed {formatWhen(review.reviewed_at)} · Caregiver {review.reviewed_by_caregiver_id || "not attributed"}</small>
-                        </li>
-                      ))}</ul>
-                    ) : (
-                      <p>No persisted evidence review is linked to the returned source references. This is unknown review status, not confirmation.</p>
-                    )}
-                  </div>
-                )}
+                <div>
+                  <ul>
+                    {events.map((event) => (
+                      <li key={event.id}>
+                        <strong>{event.title || event.event_type.replaceAll("_", " ")}</strong>
+                        <p>{event.description || "No additional description was recorded."}</p>
+                        <small>Observation ID: {event.id} · Source type: {event.event_type.replaceAll("_", " ")} · Status: {event.status}</small>
+                        <small>Event time: {formatWhen(event.occurred_at)} · Record-entry time: {formatWhen(event.recorded_at)}</small>
+                        <small>Time provenance: {event.time_provenance || "Not recorded"} · Contributor: {event.contributor_label || (event.contributor_id ? `caregiver record ${event.contributor_id}` : "Not recorded")}</small>
+                        <small>Evidence references: {event.evidence_ids.length ? event.evidence_ids.join(", ") : "None linked"}</small>
+                        {!isEligibleEvent(event) && <small>This source event is no longer eligible to support the active pattern.</small>}
+                      </li>
+                    ))}
+                  </ul>
+                  {events.flatMap((event) => event.evidence_ids).length > 0 && (
+                    <div>
+                      <strong>Evidence review history</strong>
+                      {evidenceReviews.length > 0 ? (
+                        <ul>{evidenceReviews.map((review) => (
+                          <li key={review.id}>
+                            Evidence {review.evidence_id} · {review.review_type.replaceAll("_", " ")}: {review.outcome.replaceAll("_", " ")}
+                            <p>{review.rationale}</p>
+                            <small>Policy {review.policy_version} · Reviewed {formatWhen(review.reviewed_at)} · Caregiver {review.reviewed_by_caregiver_id || "not attributed"}</small>
+                          </li>
+                        ))}</ul>
+                      ) : (
+                        <p>No persisted evidence review is linked to the returned source references. This is unknown review status, not confirmation.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
               {changes.length > 0 && (
                 <div>
