@@ -373,7 +373,7 @@ export default function PossibleRelationshipsPanel({
           throw new Error("Review decisions did not match the authenticated care record.");
         }
         if (!cancelled) {
-          setReviewDecisions(rows.filter((row) => row.target_type === "pattern") as PatternReviewDecision[]);
+          setReviewDecisions(rows.filter((row) => ["pattern", "temporal_relationship"].includes(row.target_type)) as PatternReviewDecision[]);
           setReviewError("");
         }
       } catch {
@@ -387,37 +387,37 @@ export default function PossibleRelationshipsPanel({
     return () => { cancelled = true; };
   }, [personId]);
 
-  async function submitReviewDecision(pattern: PersistedPattern, decision: "disputed" | "not_applicable") {
-    const reason = (feedbackReasons[pattern.id] || "").trim();
+  async function submitReviewTarget(targetType: "pattern" | "temporal_relationship", targetId: string, decision: "disputed" | "not_applicable") {
+    const reason = (feedbackReasons[targetId] || "").trim();
     if (reason.length < 5) {
-      setFeedbackErrors((current) => ({ ...current, [pattern.id]: "Add a short reason so this review is attributable and understandable." }));
+      setFeedbackErrors((current) => ({ ...current, [targetId]: "Add a short reason so this review is attributable and understandable." }));
       return;
     }
-    setSavingFeedbackId(pattern.id);
-    setFeedbackErrors((current) => ({ ...current, [pattern.id]: "" }));
+    setSavingFeedbackId(targetId);
+    setFeedbackErrors((current) => ({ ...current, [targetId]: "" }));
     try {
       const saved = await postJSON("/care-continuity/review-decisions", {
-        target_type: "pattern",
-        target_id: pattern.id,
+        target_type: targetType,
+        target_id: targetId,
         review_decision: decision,
         reason,
       }) as PatternReviewDecision;
       if (
         !saved
         || saved.person_id !== personId
-        || saved.target_type !== "pattern"
-        || saved.target_id !== pattern.id
+        || saved.target_type !== targetType
+        || saved.target_id !== targetId
         || saved.review_decision !== decision
         || !saved.reviewed_by_caregiver_id
       ) {
         throw new Error("The server did not confirm the person-scoped review decision.");
       }
       setReviewDecisions((current) => [saved, ...current]);
-      setFeedbackReasons((current) => ({ ...current, [pattern.id]: "" }));
+      setFeedbackReasons((current) => ({ ...current, [targetId]: "" }));
     } catch (cause) {
       setFeedbackErrors((current) => ({
         ...current,
-        [pattern.id]: cause instanceof Error ? cause.message : "Caregiver review could not be saved.",
+        [targetId]: cause instanceof Error ? cause.message : "Caregiver review could not be saved.",
       }));
     } finally {
       setSavingFeedbackId(null);
@@ -544,7 +544,7 @@ export default function PossibleRelationshipsPanel({
             <p className="lcr-entry-status">
               Have additional source-backed information? <a href="#lcr-clarification-workflow">Open the existing clarification workflow</a>. A clarification remains a separate review item; it does not confirm this relationship.
             </p>
-            {reviewDecisions.filter((review) => review.target_id === pattern.id).slice(0, 1).map((review) => (
+            {reviewDecisions.filter((review) => review.target_type === "pattern" && review.target_id === pattern.id).slice(0, 1).map((review) => (
               <p key={review.id} className="lcr-entry-status">
                 Caregiver review: {review.review_decision.replaceAll("_", " ")} · reviewed {formatWhen(review.created_at)} · caregiver {review.reviewed_by_caregiver_id || "not attributed"}.
                 {review.reason ? ` Reason: ${review.reason}` : ""}
@@ -565,10 +565,10 @@ export default function PossibleRelationshipsPanel({
                 />
               </label>
               <div className="lcr-entry-heading">
-                <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewDecision(pattern, "not_applicable")} disabled={savingFeedbackId === pattern.id}>
+                <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewTarget("pattern", pattern.id, "not_applicable")} disabled={savingFeedbackId === pattern.id}>
                   {savingFeedbackId === pattern.id ? "Saving review…" : "Not applicable"}
                 </button>
-                <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewDecision(pattern, "disputed")} disabled={savingFeedbackId === pattern.id}>
+                <button type="button" className="lcr-text-action" style={{ minHeight: 40, padding: "8px 12px", border: "1px solid var(--solenos-hairline)", borderRadius: 8, background: "white", color: "inherit" }} onClick={() => void submitReviewTarget("pattern", pattern.id, "disputed")} disabled={savingFeedbackId === pattern.id}>
                   Dispute
                 </button>
               </div>
