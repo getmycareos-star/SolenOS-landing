@@ -1051,6 +1051,11 @@ export function LCRCurrentUnderstanding() {
                     change.is_active && !change.superseded_by_change_id
                   );
                   const currentChange = domainChanges[0];
+                  const domainPatterns = patterns.filter(pattern =>
+                    pattern.subject_type === baseline.subject_type &&
+                    pattern.subject_id === baseline.subject_id &&
+                    pattern.is_active && !pattern.superseded_by_pattern_id
+                  );
                   const currentEvents = currentChange
                     ? baselineComparison.events.filter(event => currentChange.evidence_ids.includes(event.id))
                     : [];
@@ -1114,6 +1119,14 @@ export function LCRCurrentUnderstanding() {
                             <>
                               <p>{currentChange.current_state || currentChange.explanation || "A persisted change assessment is linked to this domain."}</p>
                               {latestCurrentEvent && <p>Most recent linked event: {formatWhen(latestCurrentEvent.occurred_at)} · Recorded: {formatWhen(latestCurrentEvent.recorded_at)}.</p>}
+                              {latestCurrentEvent && (
+                                <p>Elapsed since the baseline window ended: {Math.max(0, Math.round((new Date(latestCurrentEvent.occurred_at).getTime() - new Date(baseline.window_end).getTime()) / 86400000))} days.</p>
+                              )}
+                              {currentChange.comparison_window_start && currentChange.comparison_window_end && (
+                                <p>Comparison period: {formatWhen(currentChange.comparison_window_start)} – {formatWhen(currentChange.comparison_window_end)}.</p>
+                              )}
+                              {currentChange.is_persistent === true && <p>Persisted assessment marks this as persistent{currentChange.persistence_days != null ? ` for ${currentChange.persistence_days} days` : ""}.</p>}
+                              {currentChange.is_persistent === false && <p>Persistence has not been established.</p>}
                               <p>Review status: {currentChange.confirmation_status.replaceAll("_", " ")} · Linked source references: {currentChange.evidence_ids.length}.</p>
                               {changes.find(change => change.id === currentChange.id) && (
                                 <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(changes.find(change => change.id === currentChange.id)!)}>
@@ -1144,6 +1157,27 @@ export function LCRCurrentUnderstanding() {
                       </div>
                       <p className="lcr-entry-status"><strong>Comparison:</strong> {comparisonLabel}</p>
                       {currentChange?.explanation && <p>{currentChange.explanation}</p>}
+                      {domainChanges.length > 1 && (
+                        <details>
+                          <summary>Other active assessments for this domain ({domainChanges.length - 1})</summary>
+                          <ul>{domainChanges.slice(1).map(change => (
+                            <li key={change.id}>
+                              {change.current_state || change.explanation || change.change_type || "Change assessment"} · {change.confirmation_status.replaceAll("_", " ")} · {change.evidence_ids.length} linked source reference(s)
+                            </li>
+                          ))}</ul>
+                          <p>Multiple assessments are shown separately; disagreement is not silently resolved here.</p>
+                        </details>
+                      )}
+                      {domainPatterns.length > 0 && (
+                        <details>
+                          <summary>Recorded recurring or persistent patterns ({domainPatterns.length})</summary>
+                          <ul>{domainPatterns.map(pattern => (
+                            <li key={pattern.id}>
+                              {pattern.pattern_type.replaceAll("_", " ")} · {pattern.pattern_strength.replaceAll("_", " ")} · {pattern.evidence_count} source event(s) · {formatWhen(pattern.temporal_start)} – {formatWhen(pattern.temporal_end)}
+                            </li>
+                          ))}</ul>
+                        </details>
+                      )}
                       <details>
                         <summary>Baseline history and version details</summary>
                         <p>Baseline version {baseline.id} · Created {formatWhen(baseline.created_at)} · Analysis {baseline.analysis_version}.</p>
