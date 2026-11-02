@@ -28,6 +28,8 @@ assert.match(checkIn, /Other areas were not assessed by this check-in/,
   "unselected areas are never represented as unchanged");
 assert.match(checkIn, /epistemic_status:\s*"caregiver_reported"/,
   "the source is attributed as caregiver-reported");
+assert.match(checkIn, /idempotency_key:\s*requestId/,
+  "retries reuse a stable idempotency key rather than creating duplicate check-ins");
 assert.match(checkIn, /response\?\.success !== true/,
   "the interface requires a backend success receipt");
 assert.match(checkIn, /Check your care record before trying again/,
