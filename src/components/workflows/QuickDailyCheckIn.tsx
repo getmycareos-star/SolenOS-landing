@@ -24,7 +24,7 @@ const COMPLETED_CARE = [
 ] as const;
 
 const UPDATE_OPTIONS: Array<{ value: QuickUpdateKind; label: string }> = [
-  { value: "same_as_usual", label: "No significant change" },
+  { value: "same_as_usual", label: "Same as usual" },
   { value: "change", label: "Something changed" },
   { value: "concern", label: "I have a concern" },
   { value: "care_completed", label: "Care was completed" },
