@@ -204,7 +204,7 @@ type BaselineSourceEvent = {
   time_provenance?: string | null; evidence_ids: string[];
 };
 type BaselineComparisonResponse = {
-  person_id: string; baselines: BaselineRecord[]; changes: BaselineComparisonChange[];
+  person_id: string; as_of: string; baselines: BaselineRecord[]; changes: BaselineComparisonChange[];
   events: BaselineSourceEvent[]; read_only: true; notice: string;
 };
 
@@ -1050,7 +1050,7 @@ export function LCRCurrentUnderstanding() {
                   const latestCurrentEvent = currentEvents.reduce<BaselineSourceEvent | null>((latest, event) =>
                     !latest || new Date(event.occurred_at).getTime() > new Date(latest.occurred_at).getTime() ? event : latest, null);
                   const currentIsRecent = !!latestCurrentEvent &&
-                    Date.now() - new Date(latestCurrentEvent.occurred_at).getTime() <= 42 * 24 * 60 * 60 * 1000;
+                    new Date(baselineComparison.as_of).getTime() - new Date(latestCurrentEvent.occurred_at).getTime() <= 42 * 24 * 60 * 60 * 1000;
                   const baselineEstablished = baseline.confidence === "high" &&
                     baseline.coverage_status === "covered" && baseline.is_stable &&
                     baseline.event_count >= 5 && baseline.history_completeness === "complete";
@@ -1097,20 +1097,25 @@ export function LCRCurrentUnderstanding() {
                         </div>
                         <div>
                           <strong>Current state</strong>
-                          {currentChange && currentEvents.length ? (
+                          {currentChange ? (
                             <>
                               <p>{currentChange.current_state || currentChange.explanation || "A persisted change assessment is linked to this domain."}</p>
                               {latestCurrentEvent && <p>Most recent linked event: {formatWhen(latestCurrentEvent.occurred_at)} · Recorded: {formatWhen(latestCurrentEvent.recorded_at)}.</p>}
-                              <p>Review status: {currentChange.confirmation_status.replaceAll("_", " ")}.</p>
+                              <p>Review status: {currentChange.confirmation_status.replaceAll("_", " ")} · Linked source references: {currentChange.evidence_ids.length}.</p>
+                              {changes.find(change => change.id === currentChange.id) && (
+                                <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(changes.find(change => change.id === currentChange.id)!)}>
+                                  Inspect linked change evidence
+                                </button>
+                              )}
                               <details>
-                                <summary>Inspect current evidence ({currentEvents.length})</summary>
-                                <ul>{currentEvents.map(event => (
+                                <summary>Inspect current event records ({currentEvents.length})</summary>
+                                {currentEvents.length ? <ul>{currentEvents.map(event => (
                                   <li key={event.id}>
                                     <strong>{event.title}</strong> · Event: {formatWhen(event.occurred_at)} · Recorded: {formatWhen(event.recorded_at)}
                                     <p>{displayDescription(event.description)}</p>
                                     <small>Supplied by caregiver record {event.created_by_caregiver_id} · {event.status} · Record {event.id}</small>
                                   </li>
-                                ))}</ul>
+                                ))}</ul> : <p>These references may include assertions or extracted observations. Use the linked change evidence review above to inspect available source records.</p>}
                               </details>
                             </>
                           ) : (
