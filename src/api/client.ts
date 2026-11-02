@@ -394,6 +394,18 @@ export type AccountLoginResponse = {
   expires_in_seconds: number;
 };
 
+export type AccountCreateResponse = {
+  account: { id: string; email: string; created_at: string | null };
+  caregiver_profile_id: string;
+  message: string;
+};
+
+/** Create an account against the current anonymous session so its existing care record is retained. */
+export async function createAccount(email: string, password: string): Promise<AccountCreateResponse> {
+  await ensureAnonymousSession();
+  return await postJSON("/accounts", { email, password }) as AccountCreateResponse;
+}
+
 /** Sign in through the backend and replace the local anonymous capability with the account's scoped session. */
 export async function signInToAccount(email: string, password: string): Promise<AccountLoginResponse> {
   const res = await fetchWithTimeout("/api/v1/accounts/login", {
