@@ -497,7 +497,7 @@ export default function ClarificationWorkflowPanel({ personId, assessment, asses
               <label style={{ display: "block", marginTop: 8 }}>Next review window (days, required for accepted current-state information)
                 <input style={field} type="number" min="1" max="3650" value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} />
               </label>
-              <p>Acceptance requires persisted evidence-review records for every answer evidence item and a linked source claim. Acceptance creates a new assertion; it does not overwrite the original claim.</p>
+              <p>Acceptance requires persisted evidence-review records for every answer evidence item and either a linked source claim or an explicitly linked information gap. Acceptance creates a new assertion; it does not overwrite the original claim.</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 <button type="button" style={button} onClick={() => void submitClarificationDecision("accepted")} disabled={reviewSaving || saving}>Accept and reconcile</button>
                 <button type="button" style={button} onClick={() => void submitClarificationDecision("rejected")} disabled={reviewSaving || saving}>Reject answer</button>
