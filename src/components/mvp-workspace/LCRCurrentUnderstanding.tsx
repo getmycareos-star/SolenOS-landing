@@ -241,11 +241,16 @@ type BaselineSourceEvidence = {
   source_text: string; uploaded_at?: string | null; uploaded_by_caregiver_id: string;
   original_author?: string | null; reported_by_label?: string | null; reported_by_caregiver_id?: string | null;
   occurred_at?: string | null; reported_at?: string | null; source_type?: string | null;
-  original_source_reference?: string | null; evidence_status?: string | null;
+  original_source_reference?: string | null; parent_evidence_id?: string | null; ingested_at?: string | null; evidence_status?: string | null;
+};
+type BaselineSourceCorrection = {
+  id: string; target_type: string; target_id: string; original_text: string;
+  corrected_text: string; reason?: string | null; caregiver_id: string; created_at: string;
 };
 type BaselineComparisonResponse = {
   person_id: string; as_of: string; baselines: BaselineRecord[]; changes: BaselineComparisonChange[];
-  events: BaselineSourceEvent[]; source_evidence: BaselineSourceEvidence[]; read_only: true; notice: string;
+  events: BaselineSourceEvent[]; source_evidence: BaselineSourceEvidence[];
+  corrections: BaselineSourceCorrection[]; read_only: true; notice: string;
 };
 
 type SourceFreshness = {
@@ -484,7 +489,7 @@ export function LCRCurrentUnderstanding() {
         ) as BaselineComparisonResponse;
         if (baselineResult?.person_id !== session.person.id || baselineResult.read_only !== true ||
             !Array.isArray(baselineResult.baselines) || !Array.isArray(baselineResult.changes) ||
-            !Array.isArray(baselineResult.events) || !Array.isArray(baselineResult.source_evidence)) {
+            !Array.isArray(baselineResult.events) || !Array.isArray(baselineResult.source_evidence) || !Array.isArray(baselineResult.corrections)) {
           throw new Error("Baseline comparison did not match the active care-record session.");
         }
         setBaselineComparison(baselineResult);
@@ -1171,9 +1176,23 @@ export function LCRCurrentUnderstanding() {
                               {baselineComparison.source_evidence.filter(source => event.evidence_ids.includes(source.id)).map(source => (
                                 <blockquote key={source.id}>
                                   <p>{source.source_text}</p>
-                                  <small>Original source: {source.source_type || source.type} · Reported by: {source.reported_by_label || source.original_author || "Not recorded"} · Uploaded: {formatWhen(source.uploaded_at)} · Review: {source.evidence_status || source.epistemic_status || "Not recorded"} · Evidence {source.id}</small>
+                                  <small>Original source: {source.source_type || source.type} · Reported by: {source.reported_by_label || source.original_author || "Not recorded"} · Uploaded: {formatWhen(source.uploaded_at)} · Ingested: {formatWhen(source.ingested_at)} · Review: {source.evidence_status || source.epistemic_status || "Not recorded"} · Evidence {source.id}</small>
+                                  {source.parent_evidence_id && <small>Supersedes or derives from evidence {source.parent_evidence_id}</small>}
                                 </blockquote>
                               ))}
+                              {baselineComparison.corrections.filter(correction => correction.target_id === event.id || event.evidence_ids.includes(correction.target_id)).length > 0 && (
+                                <details>
+                                  <summary>Correction history</summary>
+                                  {baselineComparison.corrections.filter(correction => correction.target_id === event.id || event.evidence_ids.includes(correction.target_id)).map(correction => (
+                                    <div key={correction.id}>
+                                      <p>Original: {correction.original_text}</p>
+                                      <p>Correction: {correction.corrected_text}</p>
+                                      {correction.reason && <p>Reason: {correction.reason}</p>}
+                                      <small>Recorded {formatWhen(correction.created_at)} · Caregiver {correction.caregiver_id} · {correction.target_type} {correction.target_id}</small>
+                                    </div>
+                                  ))}
+                                </details>
+                              )}
                             </li>
                           ))}</ul>
                         ) : <p>No linked source events were returned.</p>}
@@ -1212,6 +1231,19 @@ export function LCRCurrentUnderstanding() {
                                     <small>Original source: {source.source_type || source.type} · Reported by: {source.reported_by_label || source.original_author || "Not recorded"} · Uploaded: {formatWhen(source.uploaded_at)} · Review: {source.evidence_status || source.epistemic_status || "Not recorded"} · Evidence {source.id}</small>
                                   </blockquote>
                                 ))}
+                                {baselineComparison.corrections.filter(correction => correction.target_id === event.id || event.evidence_ids.includes(correction.target_id)).length > 0 && (
+                                  <details>
+                                    <summary>Correction history</summary>
+                                    {baselineComparison.corrections.filter(correction => correction.target_id === event.id || event.evidence_ids.includes(correction.target_id)).map(correction => (
+                                      <div key={correction.id}>
+                                        <p>Original: {correction.original_text}</p>
+                                        <p>Correction: {correction.corrected_text}</p>
+                                        {correction.reason && <p>Reason: {correction.reason}</p>}
+                                        <small>Recorded {formatWhen(correction.created_at)} · Caregiver {correction.caregiver_id} · {correction.target_type} {correction.target_id}</small>
+                                      </div>
+                                    ))}
+                                  </details>
+                                )}
                               </li>
                             ))}</ul> : <p>These references may include assertions or extracted observations. Use the linked change evidence review above to inspect available source records.</p>}
                           </details>
