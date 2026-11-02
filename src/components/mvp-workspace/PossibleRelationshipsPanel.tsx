@@ -36,6 +36,17 @@ type PatternEvent = {
   contributor_label?: string | null;
 };
 
+type PatternEvidenceReview = {
+  id: string;
+  evidence_id: string;
+  review_type: string;
+  outcome: string;
+  rationale: string;
+  policy_version: string;
+  reviewed_at?: string | null;
+  reviewed_by_caregiver_id?: string | null;
+};
+
 type PatternChange = {
   id: string;
   change_type: string;
@@ -51,12 +62,14 @@ type PatternDetail = {
   pattern: PersistedPattern;
   events: PatternEvent[];
   changes: PatternChange[];
+  evidence_reviews: PatternEvidenceReview[];
 };
 
 type PatternCard = {
   pattern: PersistedPattern;
   events: PatternEvent[];
   changes: PatternChange[];
+  evidenceReviews: PatternEvidenceReview[];
   error?: string;
 };
 
@@ -183,6 +196,7 @@ export default function PossibleRelationshipsPanel({
             || detail.pattern.person_id !== personId
             || !Array.isArray(detail.events)
             || !Array.isArray(detail.changes)
+            || !Array.isArray(detail.evidence_reviews)
             || detail.events.some((event) => !pattern.event_ids.includes(event.id))
           ) {
             throw new Error("The pattern detail did not match this care record and its persisted source references.");
@@ -195,12 +209,14 @@ export default function PossibleRelationshipsPanel({
               return left - right;
             }),
             changes: detail.changes,
+            evidenceReviews: detail.evidence_reviews,
           };
         } catch (cause) {
           return {
             pattern,
             events: [],
             changes: [],
+            evidenceReviews: [],
             error: cause instanceof Error ? cause.message : "Supporting observations could not be loaded.",
           };
         }
@@ -307,6 +323,9 @@ export default function PossibleRelationshipsPanel({
         const last = eligibleEvents[eligibleEvents.length - 1];
         const elapsed = first && last ? elapsedBetween(first.occurred_at, last.occurred_at) : null;
         const alternatives = pattern.alternative_interpretations || [];
+        const contestedReviews = card.evidenceReviews.filter((review) =>
+          ["contested", "conflicting"].includes(review.outcome.toLowerCase()),
+        );
         return (
           <article key={pattern.id} className="lcr-current-fact">
             <div className="lcr-entry-heading">
@@ -336,6 +355,15 @@ export default function PossibleRelationshipsPanel({
             <p className="lcr-entry-status">
               Evidence limitation: this persisted pattern links observations of the same recorded subject/type. It does not establish a relationship across different care domains. Review the source reports and any conflicts before drawing conclusions.
             </p>
+            {contestedReviews.length > 0 ? (
+              <p role="status" className="lcr-entry-status">
+                Conflicting or contested source reviews exist for {contestedReviews.length} linked evidence item(s). Review the evidence IDs and reviewer rationales below; the conflict is not resolved by this pattern.
+              </p>
+            ) : (
+              <p className="lcr-entry-status">
+                Evidence review coverage: {card.evidenceReviews.length} persisted review record(s) returned. No review record does not mean the source is verified or uncontested.
+              </p>
+            )}
             <p className="lcr-entry-status">
               Have additional source-backed information? <a href="#lcr-clarification-workflow">Open the existing clarification workflow</a>. A clarification remains a separate review item; it does not confirm this relationship.
             </p>
@@ -388,6 +416,22 @@ export default function PossibleRelationshipsPanel({
                     </li>
                   ))}
                 </ul>
+                {events.flatMap((event) => event.evidence_ids).length > 0 && (
+                  <div>
+                    <strong>Evidence review history</strong>
+                    {card.evidenceReviews.length > 0 ? (
+                      <ul>{card.evidenceReviews.map((review) => (
+                        <li key={review.id}>
+                          Evidence {review.evidence_id} · {review.review_type.replaceAll("_", " ")}: {review.outcome.replaceAll("_", " ")}
+                          <p>{review.rationale}</p>
+                          <small>Policy {review.policy_version} · Reviewed {formatWhen(review.reviewed_at)} · Caregiver {review.reviewed_by_caregiver_id || "not attributed"}</small>
+                        </li>
+                      ))}</ul>
+                    ) : (
+                      <p>No persisted evidence review is linked to the returned source references. This is unknown review status, not confirmation.</p>
+                    )}
+                  </div>
+                )}
               )}
               {changes.length > 0 && (
                 <div>
