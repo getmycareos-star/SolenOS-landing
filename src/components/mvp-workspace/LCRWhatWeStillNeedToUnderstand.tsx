@@ -176,6 +176,8 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
     setLoading(true);
     setQuestionError("");
     setSourceErrors([]);
+    setReviewHistory({});
+    setLatestAnswerVersions({});
     try {
       const session = await ensureAnonymousSession();
       const activePersonId = session.person?.id;
@@ -239,6 +241,8 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       setContradictions([]);
       setAssessments([]);
       setEvidence([]);
+      setReviewHistory({});
+      setLatestAnswerVersions({});
       setQuestionError(cause instanceof Error ? cause.message : "Clarification records are unavailable.");
     } finally {
       setLoading(false);
