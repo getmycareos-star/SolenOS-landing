@@ -165,7 +165,7 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
   const [answer, setAnswer] = useState("");
   const [provenance, setProvenance] = useState("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
-  const [history, setHistory] = useState<AnswerEvent[]>([]);\n  const [reviewHistory, setReviewHistory] = useState<Record<string, ReviewEvent[]>>({});\n  const [latestAnswerVersions, setLatestAnswerVersions] = useState<Record<string, number>>({});\n  const [reviewRationales, setReviewRationales] = useState<Record<string, string>>({});\n  const [reviewingQuestionId, setReviewingQuestionId] = useState("");\n  const [reviewError, setReviewError] = useState("");
+  const [history, setHistory] = useState<AnswerEvent[]>([]);\n  const [reviewHistory, setReviewHistory] = useState<Record<string, ReviewEvent[]>>({});\n  const [latestAnswerVersions, setLatestAnswerVersions] = useState<Record<string, number>>({});\n  const [reviewRationales, setReviewRationales] = useState<Record<string, string>>({});\n  const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({});\n  const [reviewingQuestionId, setReviewingQuestionId] = useState("");\n  const [reviewError, setReviewError] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [historyQuestionId, setHistoryQuestionId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -312,14 +312,18 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
       setReviewError("This question has no linked care claim. It cannot be reconciled into the LCR until the correct claim is linked.");
       return;
     }
+    if (decision === "accepted" && !reviewWindows[question.id]) {
+      setReviewError("Choose when this current-care report should be reviewed again.");
+      return;
+    }
     setReviewingQuestionId(question.id);
     setReviewError("");
     try {
-      const result = await postJSON(`/uncertainty/questions/${encodeURIComponent(question.id)}/reviews`, { decision, rationale });
+      const result = await postJSON(`/uncertainty/questions/${encodeURIComponent(question.id)}/reviews`, { decision, rationale, ...(decision === "accepted" ? { review_after_days: Number(reviewWindows[question.id]) } : {}) });
       if (!result?.id || result.question_id !== question.id || result.person_id !== personId || result.decision !== decision) {
         throw new Error("The server did not confirm the review decision.");
       }
-      setReviewRationales((current) => ({ ...current, [question.id]: "" }));
+      setReviewRationales((current) => ({ ...current, [question.id]: "" }));\n      if (decision === "accepted") setReviewWindows((current) => ({ ...current, [question.id]: "" }));
       await load();
       setNotice(decision === "accepted"
         ? "The caregiver report was admitted to the LCR as an attributed, unverified assertion. It has not been marked as established fact."
@@ -486,6 +490,15 @@ export default function LCRWhatWeStillNeedToUnderstand({ personId }: { personId:
                       </label>
                       {reviewError && reviewingQuestionId === question.id && <p role="alert">{reviewError}</p>}
                       <small>Accepting adds a source-attributed, unverified report to the LCR. It does not establish clinical truth.</small>
+                      <label>When should this current-care report be reviewed again?
+                        <select value={reviewWindows[question.id] ?? ""} onChange={(event) => setReviewWindows((current) => ({ ...current, [question.id]: event.target.value }))}>
+                          <option value="">Choose a review interval</option>
+                          <option value="7">In 7 days</option>
+                          <option value="14">In 14 days</option>
+                          <option value="30">In 30 days</option>
+                          <option value="90">In 90 days</option>
+                        </select>
+                      </label>
                       <div className="lcr-entry-heading">
                         <button type="button" className="lcr-text-action" disabled={Boolean(reviewingQuestionId)} onClick={() => void submitReview(question, "accepted")}>Accept into LCR</button>
                         <button type="button" className="lcr-text-action" disabled={Boolean(reviewingQuestionId)} onClick={() => void submitReview(question, "needs_clarification")}>Needs clarification</button>
