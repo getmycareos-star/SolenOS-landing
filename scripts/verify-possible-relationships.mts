@@ -36,6 +36,8 @@ for (const contract of [
 assert.match(lcr, /<PossibleRelationshipsPanel personId={personId} patterns={patterns} patternsError={patternsError} \/>/);
 assert.match(lcr, /id="lcr-clarification-workflow"/);
 assert.match(clarification, /id\?: string/);
+assert.match(timeline, /new URLSearchParams\(window\.location\.search\)\.get\("event_id"\)/);
+assert.match(timeline, /event\.id,/);
 assert.doesNotMatch(panel, /\/causal\//i, "The caregiver UI must not call the unsecured causal API.");
 assert.doesNotMatch(panel, /mock|sample|demo pattern|fabricated/i, "The caregiver UI must not generate mock relationship records.");
 
