@@ -50,6 +50,7 @@ export default function QuickDailyCheckIn() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<{ id: string; summary: string; recordedAt: string | null } | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
 
   const choices = kind === "care_completed" ? COMPLETED_CARE : CARE_AREAS;
   const selectedLabels = choices
@@ -62,6 +63,7 @@ export default function QuickDailyCheckIn() {
     setNote("");
     setError("");
     setReceipt(null);
+    setIdempotencyKey(null);
   }
 
   function toggleArea(value: string) {
@@ -70,6 +72,7 @@ export default function QuickDailyCheckIn() {
     );
     setError("");
     setReceipt(null);
+    setIdempotencyKey(null);
   }
 
   async function saveUpdate() {
@@ -81,6 +84,9 @@ export default function QuickDailyCheckIn() {
       setError("Your care session could not be verified. Reopen Daily Care before saving.");
       return;
     }
+
+    const requestId = idempotencyKey ?? crypto.randomUUID();
+    if (!idempotencyKey) setIdempotencyKey(requestId);
 
     setSaving(true);
     setError("");
@@ -114,6 +120,7 @@ export default function QuickDailyCheckIn() {
           scope: "selected_areas_only",
           caregiver_reported_at: reportedAt,
           epistemic_status: "caregiver_reported",
+          idempotency_key: requestId,
           note: noteText || null,
         },
       })) as { success?: boolean; id?: string | number; recorded_at?: string | null };
@@ -127,6 +134,7 @@ export default function QuickDailyCheckIn() {
         summary,
         recordedAt: response.recorded_at || null,
       });
+      setIdempotencyKey(null);
       setKind(null);
       setSelectedAreas([]);
       setNote("");
@@ -217,7 +225,7 @@ export default function QuickDailyCheckIn() {
           <textarea
             id="quick-daily-checkin-note"
             value={note}
-            onChange={(event) => setNote(event.target.value)}
+            onChange={(event) => { setNote(event.target.value); setIdempotencyKey(null); }}
             maxLength={2000}
             rows={2}
             placeholder="Add a detail if it would help…"
