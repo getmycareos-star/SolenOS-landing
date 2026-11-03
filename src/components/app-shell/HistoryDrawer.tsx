@@ -757,6 +757,10 @@ export function HistoryDrawer() {
             source_kind: "care-event",
             tags: ["daily-care", "lcr-projection-fallback"],
           });
+          existingEventIds.add(item.id as string);
+        }
+        if (fallbackEvents.length > 0 && !(eventResult.status === "fulfilled" && eventItems)) {
+          availableSources += 1;
         }
         const eventCoverage = projection?.source_coverage?.events;
         const eventCoverageStatus = String(eventCoverage?.status || "").toLowerCase();
