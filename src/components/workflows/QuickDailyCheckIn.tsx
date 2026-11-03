@@ -148,8 +148,12 @@ export default function QuickDailyCheckIn() {
       setKind(null);
       setSelectedAreas([]);
       setNote("");
-    } catch {
-      setError("We couldn’t confirm whether this update was saved. Your update may already be recorded. Retry this same update; SolenOS will check for a duplicate.");
+    } catch (cause) {
+      const reason = cause instanceof Error ? cause.message.trim() : "";
+      const safeReason = reason && reason.length <= 180 && !/sql|traceback|stack|select .* from/i.test(reason)
+        ? ` Server response: ${reason}`
+        : "";
+      setError(`We couldn’t confirm whether this update was saved.${safeReason} Do not submit a different update until the record has been checked. Keep this update unchanged so its request reference can be used for a safe retry once duplicate protection is confirmed.`);
     } finally {
       setSaving(false);
     }
