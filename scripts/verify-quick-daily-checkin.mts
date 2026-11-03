@@ -14,6 +14,10 @@ const lcr = fs.readFileSync(
   `${root}/src/components/mvp-workspace/LCRCurrentUnderstanding.tsx`,
   "utf8",
 );
+const detailedCapture = fs.readFileSync(
+  `${root}/src/components/workflows/StructuredDailyCapture.tsx`,
+  "utf8",
+);
 
 assert.match(dailyCarePage, /<QuickDailyCheckIn\s*\/>/,
   "Daily Care mounts the quick check-in before the detailed capture form");
@@ -52,6 +56,17 @@ assert.match(checkIn, /updateKind !== "same_as_usual" && areas\.length === 0/,
   "only domain-specific updates require a selected area; overall-impression check-ins remain one tap");
 assert.doesNotMatch(checkIn, /registered_action|createReminder|approveAction/i,
   "a quick check-in never creates a registered action");
+
+assert.match(detailedCapture, /capture_idempotency_key: captureIdempotencyKey/,
+  "structured Daily Care submits a server-checked idempotency key");
+assert.match(detailedCapture, /captureSubmissionRef\.current\.fingerprint !== fingerprint/,
+  "an unchanged retry reuses its request key while edited content receives a new key");
+assert.match(detailedCapture, /key: crypto\.randomUUID\(\)/,
+  "a new structured capture receives a unique request key");
+assert.match(detailedCapture, /captureSubmissionRef\.current = null/,
+  "the request key is cleared only after a successful save");
+assert.match(lcr, /situation-understanding\/reassess/,
+  "the LCR rebuilds situation understanding from the persisted source record");
 
 console.log("✓ quick check-in is mounted in Daily Care");
 console.log("✓ caregiver-selected areas are persisted through the scoped daily-log API");
