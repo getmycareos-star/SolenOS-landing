@@ -149,7 +149,7 @@ export default function QuickDailyCheckIn() {
       setSelectedAreas([]);
       setNote("");
     } catch {
-      setError("We couldn’t confirm whether this update was saved. Check your care record before trying again, to avoid creating a duplicate.");
+      setError("We couldn’t confirm whether this update was saved. Your update may already be recorded. Retry this same update; SolenOS will check for a duplicate.");
     } finally {
       setSaving(false);
     }
@@ -182,6 +182,7 @@ export default function QuickDailyCheckIn() {
             key={option.value}
             type="button"
             aria-pressed={kind === option.value}
+            disabled={saving}
             onClick={() => chooseKind(option.value)}
             style={buttonStyle(kind === option.value)}
           >
