@@ -688,6 +688,7 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
+        getJSON("/care-continuity/current-care?limit_per_source=100"),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
@@ -714,6 +715,43 @@ export function HistoryDrawer() {
         nextRecords.push(...validEvents.map((event) => ({ ...event, source_kind: "care-event" as const })));
       } else {
         warnings.push("Daily care and care-event history could not be loaded.");
+      }
+
+      // The LCR projection reads the same persisted care-event source through
+      // its own authenticated route. Use it as a bounded fallback when the
+      // dedicated event-history route fails or returns no event rows.
+      if (nextRecords.filter((record) => record.source_kind === "care-event").length === 0) {
+        const projectionResult = results[8];
+        const projection = projectionResult.status === "fulfilled" && projectionResult.value &&
+          typeof projectionResult.value === "object"
+          ? projectionResult.value as { items?: unknown }
+          : null;
+        const projectionItems = projection && Array.isArray(projection.items)
+          ? projection.items as Array<Record<string, unknown>>
+          : [];
+        const fallbackEvents = projectionItems.filter((item) =>
+          item.source_collection === "events" &&
+          typeof item.id === "string" &&
+          typeof item.title === "string"
+        );
+        for (const item of fallbackEvents) {
+          nextRecords.push({
+            id: item.id as string,
+            person_id: session.person.id,
+            event_type: typeof item.source_type === "string" ? item.source_type : "daily_care",
+            status: typeof item.status === "string" ? item.status : "recorded",
+            occurred_at: typeof item.occurred_at === "string" ? item.occurred_at : null,
+            recorded_at: typeof item.recorded_at === "string" ? item.recorded_at : null,
+            title: item.title as string,
+            description: typeof item.description === "string" ? item.description : null,
+            evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.filter((id): id is string => typeof id === "string") : [],
+            source_kind: "care-event",
+            tags: ["daily-care", "lcr-projection-fallback"],
+          });
+        }
+        if (projectionResult.status === "rejected" && eventResult.status === "rejected") {
+          warnings.push("The Living Care Record fallback was also unavailable.");
+        }
       }
 
       const evidenceResult = results[1];
