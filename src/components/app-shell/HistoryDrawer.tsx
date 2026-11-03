@@ -695,9 +695,19 @@ export function HistoryDrawer() {
       let availableSources = 0;
 
       const eventResult = results[0];
-      if (eventResult.status === "fulfilled" && Array.isArray(eventResult.value)) {
+      const eventPayload = eventResult.status === "fulfilled" ? eventResult.value : null;
+      const eventItems = Array.isArray(eventPayload)
+        ? eventPayload
+        : eventPayload && typeof eventPayload === "object" && Array.isArray((eventPayload as { items?: unknown }).items)
+          ? (eventPayload as { items: unknown[] }).items
+          : eventPayload && typeof eventPayload === "object" && Array.isArray((eventPayload as { events?: unknown }).events)
+            ? (eventPayload as { events: unknown[] }).events
+            : eventPayload && typeof eventPayload === "object" && Array.isArray((eventPayload as { data?: unknown }).data)
+              ? (eventPayload as { data: unknown[] }).data
+              : null;
+      if (eventResult.status === "fulfilled" && eventItems) {
         availableSources += 1;
-        const validEvents = (eventResult.value as CareEvent[]).filter((item) =>
+        const validEvents = (eventItems as CareEvent[]).filter((item) =>
           Boolean(item && typeof item.id === "string" && typeof item.person_id === "string" &&
             typeof item.event_type === "string" && typeof item.title === "string")
         );
@@ -1046,8 +1056,8 @@ export function HistoryDrawer() {
                   ) : visibleRecords.length === 0 ? (
                     <div className="history-empty">
                       <HistoryEmptyIcon />
-                      <strong>{records.length ? "No matching records" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
+                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not retrieve every source. This empty view is not evidence that no care was recorded. Refresh to try again." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
