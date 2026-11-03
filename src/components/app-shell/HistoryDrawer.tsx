@@ -720,7 +720,7 @@ export function HistoryDrawer() {
       // The LCR projection reads the same persisted care-event source through
       // its own authenticated route. Use it as a bounded fallback when the
       // dedicated event-history route fails or returns no event rows.
-      if (nextRecords.filter((record) => record.source_kind === "care-event").length === 0) {
+      {
         const projectionResult = results[8];
         const projection = projectionResult.status === "fulfilled" && projectionResult.value &&
           typeof projectionResult.value === "object"
@@ -734,7 +734,9 @@ export function HistoryDrawer() {
           typeof item.id === "string" &&
           typeof item.title === "string"
         );
+        const existingEventIds = new Set(nextRecords.filter((record) => record.source_kind === "care-event").map((record) => record.id));
         for (const item of fallbackEvents) {
+          if (existingEventIds.has(item.id as string)) continue;
           nextRecords.push({
             id: item.id as string,
             person_id: session.person.id,
