@@ -534,19 +534,42 @@ export function LCRCurrentUnderstanding() {
           : "Persisted pattern history is unavailable.");
       }
       try {
-        const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
-        if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
-          setAssessment(saved.assessment);
-          setSourceFreshness(saved.source_freshness ?? null);
-        } else {
-          setAssessment(null);
-          setSourceFreshness(null);
+        // Rebuild the assessment from the freshly retrieved, person-scoped
+        // persisted sources. The backend deduplicates semantically unchanged
+        // snapshots, so reopening the LCR does not create needless history.
+        const rebuilt = await postJSON("/care-continuity/situation-understanding/reassess", {}) as {
+          person_id?: string;
+          assessment?: SituationAssessment;
+          source_freshness?: SituationAssessmentResponse["source_freshness"];
+        };
+        if (rebuilt.person_id !== session.person.id || rebuilt.assessment?.person_id !== session.person.id) {
+          throw new Error("The rebuilt situation assessment did not match the active care-record session.");
         }
+        setAssessment(rebuilt.assessment);
+        setSourceFreshness(rebuilt.source_freshness ?? null);
         setAssessmentError(null);
       } catch (assessmentCause) {
-        setAssessment(null);
-        setSourceFreshness(null);
-        setAssessmentError(assessmentCause instanceof Error ? assessmentCause.message : "Situation assessment is unavailable.");
+        const reason = assessmentCause instanceof Error
+          ? assessmentCause.message
+          : "The situation assessment could not be rebuilt.";
+        // Preserve visibility of the last persisted snapshot, but label it
+        // explicitly as stale when a fresh evidence-derived rebuild fails.
+        try {
+          const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
+          if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
+            setAssessment(saved.assessment);
+            setSourceFreshness(saved.source_freshness ?? null);
+            setAssessmentError(`Reassessment failed; showing the last saved assessment. ${reason}`);
+          } else {
+            setAssessment(null);
+            setSourceFreshness(null);
+            setAssessmentError(reason);
+          }
+        } catch {
+          setAssessment(null);
+          setSourceFreshness(null);
+          setAssessmentError(reason);
+        }
       }
     } catch (cause) {
       setPersonId("");
