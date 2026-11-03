@@ -25,6 +25,8 @@ assert.match(checkIn, /value:\s*"uncertain", label:\s*"I’m not sure"/,
   "caregiver uncertainty remains explicit rather than being converted into a normal status");
 assert.match(checkIn, /value:\s*"same_as_usual", label:\s*"Same as usual"/,
   "same-as-usual is an explicit caregiver-selected update type");
+assert.match(checkIn, /if \(next === "same_as_usual"\) void saveUpdate\(next, \[\], "", crypto\.randomUUID\(\)\)/,
+  "Same as usual is saved in one tap as an overall impression with a fresh retry key");
 assert.match(checkIn, /selected_areas/);
 assert.match(checkIn, /scope:\s*selectedAreas\.length\s*>\s*0\s*\?\s*"selected_areas_only"\s*:\s*"overall_impression_only"/,
   "domain-specific updates are scoped to selected areas and overall impressions remain explicitly unscoped");
