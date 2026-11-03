@@ -10,7 +10,7 @@ const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 
 assert.match(drawer, /ensureAnonymousSession/);
 assert.match(drawer, /getJSON\("\/events\/"/);
-assert.match(drawer, /getJSON\("\/care-continuity\/current-care\?limit_per_source=100"\)/);
+assert.match(drawer, /getJSON\("\/care-continuity\/current-care\?limit_per_source=50"\)/);
 assert.match(drawer, /projectionResult = results\[8\]/,
   "the LCR projection is used when the dedicated event-history read is empty or unavailable");
 assert.match(drawer, /source_collection === "events"/,
