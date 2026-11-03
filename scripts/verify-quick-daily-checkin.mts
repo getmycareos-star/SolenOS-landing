@@ -26,8 +26,8 @@ assert.match(checkIn, /value:\s*"uncertain", label:\s*"I’m not sure"/,
 assert.match(checkIn, /value:\s*"same_as_usual", label:\s*"Same as usual"/,
   "same-as-usual is an explicit caregiver-selected update type");
 assert.match(checkIn, /selected_areas/);
-assert.match(checkIn, /scope:\s*"selected_areas_only"/,
-  "the update is limited to explicitly selected areas");
+assert.match(checkIn, /scope:\s*selectedAreas\.length\s*>\s*0\s*\?\s*"selected_areas_only"\s*:\s*"overall_impression_only"/,
+  "domain-specific updates are scoped to selected areas and overall impressions remain explicitly unscoped");
 assert.match(checkIn, /overall_impression_only/,
   "Same as usual can be saved without falsely marking every care domain as checked");
 assert.match(checkIn, /does not establish or change the person’s baseline/,
