@@ -43,6 +43,9 @@ type CurrentCareItem = {
     value_text?: string | null;
     normalized_value?: string | null;
     units?: string | null;
+    context?: string | null;
+    observer_label?: string | null;
+    observation_method?: string | null;
     observed_at?: string | null;
     recorded_at?: string | null;
     source_span_start?: number | null;
@@ -52,6 +55,7 @@ type CurrentCareItem = {
     hedge_marker?: string | null;
     ambiguity_note?: string | null;
     extraction_method?: string | null;
+    extraction_version?: string | null;
     correction_rationale?: string | null;
   }>;
   claim_count: number;
@@ -1353,6 +1357,9 @@ export function LCRCurrentUnderstanding() {
                             <li key={observation.id}>
                               <strong>{observation.attribute?.replaceAll("_", " ") || observation.observation_kind || "Recorded observation"}</strong>
                               {observation.subject_label && <small>Subject: {observation.subject_label}</small>}
+                              {observation.observer_label && <small>Reported by: {observation.observer_label}</small>}
+                              {observation.observation_method && <small>Observation method: {observation.observation_method}</small>}
+                              {observation.context && <p>Context: {observation.context}</p>}
                               {observation.value_text && <p>{observation.value_text}</p>}
                               <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
                               {observation.source_passage && (
@@ -1365,7 +1372,8 @@ export function LCRCurrentUnderstanding() {
                               {observation.hedge_marker && <small>Uncertainty wording: {observation.hedge_marker}</small>}
                               {observation.ambiguity_note && <small>Ambiguity: {observation.ambiguity_note}</small>}
                               {observation.correction_rationale && <small>Correction rationale: {observation.correction_rationale}</small>}
-                              <small>Extraction: {observation.extraction_method || "not recorded"} · Observation reference: {observation.id}</small>
+                              <small>Source span: {observation.source_span_start ?? "unknown"}–{observation.source_span_end ?? "unknown"}</small>
+                              <small>Extraction: {observation.extraction_method || "not recorded"} · Version: {observation.extraction_version || "not recorded"} · Observation reference: {observation.id}</small>
                             </li>
                           ))}
                         </ul>
