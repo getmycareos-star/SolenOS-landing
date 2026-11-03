@@ -34,6 +34,26 @@ type CurrentCareItem = {
   hedge_marker?: string | null;
   ambiguity_note?: string | null;
   extraction_method?: string | null;
+  derived_observations?: Array<{
+    id: string;
+    observation_kind?: string | null;
+    epistemic_status?: string | null;
+    subject_label?: string | null;
+    attribute?: string | null;
+    value_text?: string | null;
+    normalized_value?: string | null;
+    units?: string | null;
+    observed_at?: string | null;
+    recorded_at?: string | null;
+    source_span_start?: number | null;
+    source_span_end?: number | null;
+    source_passage?: string | null;
+    negated?: boolean | null;
+    hedge_marker?: string | null;
+    ambiguity_note?: string | null;
+    extraction_method?: string | null;
+    correction_rationale?: string | null;
+  }>;
   claim_count: number;
   evidence_assessment_coverage?: string;
   evidence_assessments?: Array<{
@@ -1301,6 +1321,33 @@ export function LCRCurrentUnderstanding() {
                     <small>Source: {item.source_label || "Not recorded"} · {item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {item.evidence_ids?.length > 0 && <small>Original caregiver report linked to this entry</small>}
                     {item.evidence_link_validation && <small>{item.evidence_link_validation === "valid" ? "Source record linked" : "Source record status: " + item.evidence_link_validation.replaceAll("_", " ")}</small>}
+                    {item.derived_observations && item.derived_observations.length > 0 && (
+                      <details className="lcr-entry-status">
+                        <summary>Structured observations extracted from this report ({item.derived_observations.length})</summary>
+                        <p>These are structured readings of the same source report, not independent corroborating reports.</p>
+                        <ul>
+                          {item.derived_observations.map((observation) => (
+                            <li key={observation.id}>
+                              <strong>{observation.attribute?.replaceAll("_", " ") || observation.observation_kind || "Recorded observation"}</strong>
+                              {observation.subject_label && <small>Subject: {observation.subject_label}</small>}
+                              {observation.value_text && <p>{observation.value_text}</p>}
+                              <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
+                              {observation.source_passage && (
+                                <details>
+                                  <summary>Inspect original source passage</summary>
+                                  <blockquote>{observation.source_passage}</blockquote>
+                                </details>
+                              )}
+                              {observation.negated != null && <small>Negated in source: {observation.negated ? "Yes" : "No"}</small>}
+                              {observation.hedge_marker && <small>Uncertainty wording: {observation.hedge_marker}</small>}
+                              {observation.ambiguity_note && <small>Ambiguity: {observation.ambiguity_note}</small>}
+                              {observation.correction_rationale && <small>Correction rationale: {observation.correction_rationale}</small>}
+                              <small>Extraction: {observation.extraction_method || "not recorded"} · Observation reference: {observation.id}</small>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                     {item.source_collection === "evidence_observations" && (
                       <div className="lcr-entry-status">
                         <small>
