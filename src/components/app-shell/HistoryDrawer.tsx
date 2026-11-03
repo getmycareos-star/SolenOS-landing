@@ -264,7 +264,29 @@ function parseDescription(description?: string | null): string {
     const parsed: unknown = JSON.parse(description);
     if (typeof parsed === "string") return parsed;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return Object.entries(parsed as Record<string, unknown>)
+      const record = parsed as Record<string, unknown>;
+      const quick = record.quick_check_in;
+      if (quick && typeof quick === "object" && !Array.isArray(quick)) {
+        const checkIn = quick as Record<string, unknown>;
+        const labels: Record<string, string> = {
+          same_as_usual: "Same as usual",
+          change: "Something changed",
+          concern: "A concern was reported",
+          care_completed: "Care was completed",
+          uncertain: "The caregiver was unsure",
+        };
+        const areas = Array.isArray(checkIn.selected_areas)
+          ? checkIn.selected_areas.filter((area): area is string => typeof area === "string")
+              .map((area) => area.replaceAll("_", " "))
+          : [];
+        const lines = [
+          typeof record.notes === "string" ? record.notes : "",
+          "Update: " + (labels[String(checkIn.kind)] || "Caregiver check-in"),
+          areas.length ? "Areas selected: " + areas.join(", ") : "No individual care areas were assessed.",
+        ];
+        return lines.filter(Boolean).join("\n");
+      }
+      return Object.entries(record)
         .filter(([, value]) => value !== null && value !== undefined && value !== "")
         .map(([key, value]) => {
           const label = key.replaceAll("_", " ");
