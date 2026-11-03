@@ -1294,7 +1294,7 @@ export function LCRCurrentUnderstanding() {
                   <li key={item.source_collection + ":" + item.id} className="lcr-current-fact">
                     <div className="lcr-entry-heading">
                       <strong>{item.title || item.kind || "Care record item"}</strong>
-                      <span>{item.epistemic_status || "Status not recorded"}</span>
+                      <span>{item.epistemic_status === "caregiver_reported" ? "Caregiver-reported" : item.epistemic_status === "inferred" ? "Possible interpretation" : item.epistemic_status === "unknown" ? "Not yet known" : item.epistemic_status || "Status not recorded"}</span>
                     </div>
                     <p>{displayDescription(item.description)}</p>
                     <p className="lcr-entry-status">{item.kind} · {item.status === "recorded" ? "Saved" : (item.status || "Status not recorded").replaceAll("_", " ")}</p>
@@ -1360,15 +1360,19 @@ export function LCRCurrentUnderstanding() {
               {projection.has_more && <p>Showing the first {projection.item_count} prioritized items. More items exist in the record.</p>}
             </div>
           )}
-          <p className="lcr-footer-note">View as of {formatWhen(projection.as_of)} · Coverage: {projection.history_coverage.replaceAll("_", " ")}.</p>
+          <p className="lcr-footer-note">Information shown as of {formatWhen(projection.as_of)}. This view reflects the records currently available to SolenOS.</p>
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <EvidenceReviewPanel personId={personId} />
-      <ClaimAssessmentPanel />
-      <ConflictResolutionPanel personId={personId} />
-      <ClarificationWorkflowPanel personId={personId} />
-      <CareContinuityIntegrityPanel personId={personId} />
+      <details className="lcr-advanced-integrity">
+        <summary>Evidence, corrections and record integrity</summary>
+        <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
+        <EvidenceReviewPanel personId={personId} />
+        <ClaimAssessmentPanel />
+        <ConflictResolutionPanel personId={personId} />
+        <ClarificationWorkflowPanel personId={personId} />
+        <CareContinuityIntegrityPanel personId={personId} />
+      </details>
     </section>
   );
 }
