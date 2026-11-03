@@ -112,7 +112,7 @@ export default function CareContinuityIntegrityPanel({
   const [source, setSource] = useState('Caregiver report')
   const [sourceText, setSourceText] = useState('')
   const [subjectType, setSubjectType] = useState('care_record')
-  const [subjectId, setSubjectId] = useState(personId)
+  const [subjectId, setSubjectId] = useState("care_record")
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({})
   const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({})
   const [kind, setKind] = useState<'current_state' | 'time_bound_observation'>('current_state')
@@ -403,7 +403,7 @@ export default function CareContinuityIntegrityPanel({
           {evidenceItems.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{evidenceLoadError ? "Evidence list unavailable; no empty-list conclusion is assumed." : "No evidence records are available to link."}</p>}
           {evidenceItems.map(item => <label key={item.id} style={{ display: 'flex', gap: 7, alignItems: 'center', fontSize: 12, padding: '3px 0' }}>
             <input type="checkbox" checked={observationEvidenceIds.includes(item.id)} onChange={event => setObservationEvidenceIds(current => event.target.checked ? [...new Set([...current, item.id])] : current.filter(id => id !== item.id))} />
-            {item.type} · {item.id}
+            {item.type === "note" ? "Caregiver report" : item.type.replaceAll("_", " ")}
           </label>)}
         </fieldset>}
         <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving observation…' : 'Save structured observation'}</button>
@@ -418,8 +418,8 @@ export default function CareContinuityIntegrityPanel({
           <label style={{ fontSize: 12 }}>Subject type
             <input style={fieldStyle} value={subjectType} onChange={(e) => setSubjectType(e.target.value)} placeholder="e.g. medication" required />
           </label>
-          <label style={{ fontSize: 12 }}>Subject identifier
-            <input style={fieldStyle} value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="Use a stable identifier" required />
+          <label style={{ fontSize: 12 }}>Record reference
+            <input style={fieldStyle} value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="e.g. medication, sleep, or care routine" required />
           </label>
           <label style={{ fontSize: 12 }}>Field
             <input style={fieldStyle} value={field} onChange={(e) => setField(e.target.value)} placeholder="e.g. medication dose" required />
