@@ -116,8 +116,12 @@ assert(!/reply\s*:\s*["'`]/.test(lcrInterpretation), "LCR interpretation must no
 assert(!lcrInterpretation.includes("workflow: rawInput"), "Caregiver input must not select the internal workflow.");
 requireText("src/app/workspace/settings/page.tsx", [
   "function AccountCard()",
-  'postJSON("/accounts"',
+  "createAccount(email, password)",
   'deleteJSON("/accounts/me"',
+]);
+requireText("src/api/client.ts", [
+  "export async function createAccount(email: string, password: string)",
+  'return await postJSON("/accounts", { email, password })',
 ]);
 const accountSettings = read("src/app/workspace/settings/page.tsx");
 const accountCard = accountSettings.slice(

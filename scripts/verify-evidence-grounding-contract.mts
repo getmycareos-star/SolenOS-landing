@@ -140,7 +140,7 @@ assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional c
 assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
 assert(clarificationPanel.includes("A failed request is not an empty history"), "failed answer-history reads must not be shown as empty history");
 assert(lcr.includes("import ClarificationWorkflowPanel from \"@/components/ClarificationWorkflowPanel\""), "LCR must import the clarification workflow");
-assert(lcr.includes("<ClarificationWorkflowPanel personId={personId} />"), "clarification workflow must be mounted in the actual LCR");
+assert(lcr.includes("<ClarificationWorkflowPanel personId={personId}"), "clarification workflow must be mounted in the actual LCR");
 console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
 
 for (const field of ["reported_at", "collection_method", "origin_device_ref", "transfer_source", "transfer_reference"]) {
