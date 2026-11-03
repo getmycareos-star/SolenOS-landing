@@ -740,7 +740,7 @@ export function HistoryDrawer() {
           nextRecords.push({
             id: item.id as string,
             person_id: session.person.id,
-            event_type: typeof item.source_type === "string" ? item.source_type : "daily_care",
+            event_type: typeof item.source_event_type === "string" ? item.source_event_type : "daily_care",
             status: typeof item.status === "string" ? item.status : "recorded",
             occurred_at: typeof item.occurred_at === "string" ? item.occurred_at : null,
             recorded_at: typeof item.recorded_at === "string" ? item.recorded_at : null,
