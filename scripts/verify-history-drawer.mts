@@ -10,6 +10,15 @@ const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 
 assert.match(drawer, /ensureAnonymousSession/);
 assert.match(drawer, /getJSON\("\/events\/"/);
+assert.match(drawer, /getJSON\("\/care-continuity\/current-care\?limit_per_source=100"\)/);
+assert.match(drawer, /projectionResult = results\[8\]/,
+  "the LCR projection is used when the dedicated event-history read is empty or unavailable");
+assert.match(drawer, /source_collection === "events"/,
+  "only actual care-event rows are recovered from the LCR fallback");
+assert.match(drawer, /existingEventIds/,
+  "the fallback does not duplicate event IDs already returned by the event-history endpoint");
+assert.match(drawer, /source_event_type/,
+  "fallback records preserve the original care-event type rather than the evidence source type");
 assert.match(drawer, /getJSON\("\/evidence\/"/);
 assert.match(drawer, /getJSON\("\/appointment-workspaces"/);
 assert.match(drawer, /getJSON\("\/handoffs\/inbox"/);
