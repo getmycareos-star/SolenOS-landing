@@ -28,7 +28,7 @@ assert.match(checkIn, /value:\s*"same_as_usual", label:\s*"Same as usual"/,
 assert.match(checkIn, /if \(next === "same_as_usual"\) void saveUpdate\(next, \[\], "", crypto\.randomUUID\(\)\)/,
   "Same as usual is saved in one tap as an overall impression with a fresh retry key");
 assert.match(checkIn, /selected_areas/);
-assert.match(checkIn, /scope:\s*selectedAreas\.length\s*>\s*0\s*\?\s*"selected_areas_only"\s*:\s*"overall_impression_only"/,
+assert.match(checkIn, /scope:\s*areas\.length\s*>\s*0\s*\?\s*"selected_areas_only"\s*:\s*"overall_impression_only"/,
   "domain-specific updates are scoped to selected areas and overall impressions remain explicitly unscoped");
 assert.match(checkIn, /overall_impression_only/,
   "Same as usual can be saved without falsely marking every care domain as checked");
@@ -46,10 +46,10 @@ assert.match(lcr, /Caregiver reported:/,
   "the LCR distinguishes caregiver report time from server-recorded time");
 assert.match(checkIn, /response\?\.success !== true/,
   "the interface requires a backend success receipt");
-assert.match(checkIn, /Check your care record before trying again/,
-  "uncertain network outcomes do not invite duplicate submissions");
-assert.match(checkIn, /selectedAreas\.length === 0/,
-  "the caregiver must select at least one area before saving");
+assert.match(checkIn, /Your update may already be recorded\. Retry this same update/,
+  "uncertain network outcomes warn about possible persistence and preserve safe retry behavior");
+assert.match(checkIn, /updateKind !== "same_as_usual" && areas\.length === 0/,
+  "only domain-specific updates require a selected area; overall-impression check-ins remain one tap");
 assert.doesNotMatch(checkIn, /registered_action|createReminder|approveAction/i,
   "a quick check-in never creates a registered action");
 
