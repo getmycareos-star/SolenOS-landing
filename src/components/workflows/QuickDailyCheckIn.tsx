@@ -153,7 +153,7 @@ export default function QuickDailyCheckIn() {
       const safeReason = reason && reason.length <= 180 && !/sql|traceback|stack|select .* from/i.test(reason)
         ? ` Server response: ${reason}`
         : "";
-      setError(`We couldn’t confirm whether this update was saved.${safeReason} Do not submit a different update until the record has been checked. Keep this update unchanged so its request reference can be used for a safe retry once duplicate protection is confirmed.`);
+      setError(`We couldn’t confirm whether this update was saved.${safeReason} Your update may already be recorded. Retry this same update only after the record has been checked and duplicate protection is confirmed. Do not submit a different update while this outcome is unresolved.`);
     } finally {
       setSaving(false);
     }
