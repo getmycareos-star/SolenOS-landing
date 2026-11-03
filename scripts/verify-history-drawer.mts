@@ -21,6 +21,8 @@ assert.match(drawer, /source_event_type/,
   "fallback records preserve the original care-event type rather than the evidence source type");
 assert.match(drawer, /source_coverage\?\.events/,
   "a zero count is trusted only when the LCR confirms the event source is available and empty");
+assert.match(drawer, /"available", "empty", "complete"/,
+  "the backend's explicit empty status is recognized as a verified empty source");
 assert.match(drawer, /A zero count is not confirmation that the care record is empty/,
   "an unavailable event source is not silently represented as an empty history");
 assert.match(drawer, /getJSON\("\/evidence\/"/);
