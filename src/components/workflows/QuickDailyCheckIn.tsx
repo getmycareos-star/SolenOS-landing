@@ -54,10 +54,6 @@ export default function QuickDailyCheckIn() {
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
 
   const choices = kind === "care_completed" ? COMPLETED_CARE : CARE_AREAS;
-  const selectedLabels = choices
-    .filter((area) => selectedAreas.includes(area.value))
-    .map((area) => area.label);
-
   function chooseKind(next: QuickUpdateKind) {
     setKind(next);
     setSelectedAreas([]);
@@ -65,6 +61,9 @@ export default function QuickDailyCheckIn() {
     setError("");
     setReceipt(null);
     setIdempotencyKey(null);
+    // The ordinary-day path is deliberately one tap: save an overall
+    // caregiver impression without claiming any individual domain was checked.
+    if (next === "same_as_usual") void saveUpdate(next, [], "");
   }
 
   function toggleArea(value: string) {
@@ -76,8 +75,12 @@ export default function QuickDailyCheckIn() {
     setIdempotencyKey(null);
   }
 
-  async function saveUpdate() {
-    if (!kind || (kind !== "same_as_usual" && selectedAreas.length === 0) || saving) return;
+  async function saveUpdate(
+    updateKind: QuickUpdateKind | null = kind,
+    areas: string[] = selectedAreas,
+    noteValue: string = note,
+  ) {
+    if (!updateKind || (updateKind !== "same_as_usual" && areas.length === 0) || saving) return;
 
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
@@ -94,18 +97,19 @@ export default function QuickDailyCheckIn() {
     setReceipt(null);
 
     const reportedAt = new Date().toISOString();
-    const labels = selectedLabels.join(", ");
-    const noteText = note.trim();
+    const areaChoices = updateKind === "care_completed" ? COMPLETED_CARE : CARE_AREAS;
+    const labels = areaChoices.filter((area) => areas.includes(area.value)).map((area) => area.label).join(", ");
+    const noteText = noteValue.trim();
     const lead =
-      kind === "same_as_usual"
+      updateKind === "same_as_usual"
         ? (labels
           ? `Caregiver reports no significant change from usual in: ${labels}. Other areas were not assessed by this check-in.`
           : "Caregiver reports no significant change in their overall impression of care. No individual care areas were assessed by this check-in.")
-        : kind === "change"
+        : updateKind === "change"
           ? `Caregiver reports a change relating to: ${labels}.`
-          : kind === "concern"
+          : updateKind === "concern"
             ? `Caregiver reports a concern relating to: ${labels}.`
-            : kind === "uncertain"
+            : updateKind === "uncertain"
               ? `Caregiver is unsure about: ${labels}. No status is inferred for these areas.`
               : `Caregiver reports completing care relating to: ${labels}.`;
     const summary = noteText ? `${lead} Caregiver note: ${noteText}` : lead;
@@ -120,9 +124,9 @@ export default function QuickDailyCheckIn() {
         notes: summary,
         quick_check_in: {
           schema_version: 1,
-          kind,
-          selected_areas: selectedAreas,
-          scope: selectedAreas.length > 0 ? "selected_areas_only" : "overall_impression_only",
+          kind: updateKind,
+          selected_areas: areas,
+          scope: areas.length > 0 ? "selected_areas_only" : "overall_impression_only",
           caregiver_reported_at: reportedAt,
           epistemic_status: "caregiver_reported",
           idempotency_key: requestId,
