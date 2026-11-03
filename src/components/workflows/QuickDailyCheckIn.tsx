@@ -261,7 +261,7 @@ export default function QuickDailyCheckIn() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
             <button
               type="button"
-              onClick={saveUpdate}
+              onClick={() => void saveUpdate()}
               disabled={saving || (kind !== "same_as_usual" && selectedAreas.length === 0)}
               className="workspace-primary"
               style={{ minHeight: 46, padding: "10px 16px", borderRadius: 9, fontWeight: 700 }}
