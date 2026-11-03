@@ -696,6 +696,7 @@ export function HistoryDrawer() {
       let availableSources = 0;
 
       const eventResult = results[0];
+      let eventReadProblem = eventResult.status === "rejected";
       const eventPayload = eventResult.status === "fulfilled" ? eventResult.value : null;
       const eventItems = Array.isArray(eventPayload)
         ? eventPayload
@@ -714,7 +715,10 @@ export function HistoryDrawer() {
         );
         nextRecords.push(...validEvents.map((event) => ({ ...event, source_kind: "care-event" as const })));
       } else {
-        warnings.push("Daily care and care-event history could not be loaded.");
+        eventReadProblem = true;
+      }
+      if (eventItems && eventItems.length > 0 && nextRecords.filter((record) => record.source_kind === "care-event").length === 0) {
+        eventReadProblem = true;
       }
 
       // The LCR projection reads the same persisted care-event source through
@@ -724,7 +728,10 @@ export function HistoryDrawer() {
         const projectionResult = results[8];
         const projection = projectionResult.status === "fulfilled" && projectionResult.value &&
           typeof projectionResult.value === "object"
-          ? projectionResult.value as { items?: unknown }
+          ? projectionResult.value as {
+            items?: unknown;
+            source_coverage?: Record<string, { status?: string; returned_count?: number }>;
+          }
           : null;
         const projectionItems = projection && Array.isArray(projection.items)
           ? projection.items as Array<Record<string, unknown>>
@@ -751,8 +758,20 @@ export function HistoryDrawer() {
             tags: ["daily-care", "lcr-projection-fallback"],
           });
         }
-        if (projectionResult.status === "rejected" && eventResult.status === "rejected") {
-          warnings.push("The Living Care Record fallback was also unavailable.");
+        const eventCoverage = projection?.source_coverage?.events;
+        const eventCoverageStatus = String(eventCoverage?.status || "").toLowerCase();
+        const eventSourceVerifiedEmpty = (
+          ["available", "complete"].includes(eventCoverageStatus) &&
+          Number(eventCoverage?.returned_count ?? -1) === 0
+        );
+        if (eventReadProblem && fallbackEvents.length > 0) {
+          warnings.push("The dedicated history read was unavailable; care events were recovered from the LCR projection.");
+        } else if (
+          fallbackEvents.length === 0 &&
+          !eventSourceVerifiedEmpty &&
+          (eventReadProblem || eventItems?.length === 0 || projectionResult.status === "rejected")
+        ) {
+          warnings.push("Event history could not be verified from either read path. A zero count is not confirmation that the care record is empty.");
         }
       }
 
