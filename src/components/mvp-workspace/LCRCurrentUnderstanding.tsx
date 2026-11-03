@@ -1148,8 +1148,8 @@ export function LCRCurrentUnderstanding() {
                     <li key={action.id} className="lcr-current-fact">
                       <strong>{action.normalized_action}</strong>
                       <p className="lcr-entry-status">Registered action · {action.status.replaceAll("_", " ")} · Version {action.version}</p>
-                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id ?? "Not assigned"} · Created by: {action.created_by_caregiver_id}</small>
-                      <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).join(", ")}</small>
+                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"} · Created by: {action.created_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}</small>
+                      <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} linked record(s)</small>
                       {action.deadline && <small>Recorded due date: {formatWhen(action.deadline)}</small>}
                       {action.linked_reminder_status && <small>Linked reminder: {action.linked_reminder_status} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
                       {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
@@ -1189,9 +1189,9 @@ export function LCRCurrentUnderstanding() {
                         <ol>
                           {actionHistory[action.id].map((event) => (
                             <li key={event.id}>
-                              {event.previous_status ?? "not registered"} → {event.new_status.replaceAll("_", " ")} · {formatWhen(event.created_at)} · Actor: {event.actor_caregiver_id}
+                              {event.previous_status ?? "not registered"} → {event.new_status.replaceAll("_", " ")} · {formatWhen(event.created_at)} · Actor: {event.actor_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}
                               {event.reason && <p>{event.reason}</p>}
-                              <small>Evidence: {event.evidence_ids.join(", ") || "No evidence references returned"}</small>
+                              <small>Evidence: {event.evidence_ids.length} linked record(s)</small>
                             </li>
                           ))}
                         </ol>
