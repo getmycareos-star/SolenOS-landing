@@ -187,7 +187,8 @@ console.log("\nAll input-entry-contract checks passed.");
 
 const settingsPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "settings", "page.tsx"), "utf8");
 assert(settingsPage.includes('putJSON("/notifications/preferences"'));
-assert(!settingsPage.includes("revokeAnonymousSession"));
+assert(settingsPage.includes("revokeAnonymousSession"), "Account settings must expose secure sign-out backed by server-side session revocation.");
+assert(settingsPage.includes("await revokeAnonymousSession()"), "Sign-out must revoke the server session before the browser clears its credentials.");
 assert(!settingsPage.includes("SecurityCard"));
 assert(settingsPage.includes('getJSON("/notifications?limit=100&offset=0")'));
 assert(settingsPage.includes('getJSON("/notifications/unread-count")'));

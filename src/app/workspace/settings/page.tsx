@@ -19,7 +19,7 @@ import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, putJSON, signInToAccount } from "@/api/client";
+import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
@@ -263,6 +263,7 @@ function AccountCard() {
   const [account, setAccount] = useState<{ id: string; email: string; created_at: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
   const [mode, setMode] = useState<"idle" | "create" | "login" | "delete">("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -311,6 +312,7 @@ function AccountCard() {
       } else if (mode === "login") {
         const result = await signInToAccount(email, password);
         setAccount(result.account);
+        setSignedOut(false);
         setMessage("Signed in. Your existing care record is available in this session.");
         setMode("idle");
         setPassword("");
@@ -324,7 +326,35 @@ function AccountCard() {
         show("Account deleted. Care history was retained.", "success");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn’t complete that account action. Please check your details and try again.");
+      const detail = e instanceof Error ? e.message : "";
+      if (mode === "create" && (e instanceof TypeError || /network|fetch|timed out|timeout/i.test(detail))) {
+        setError("We couldn’t confirm whether account creation completed. Your care record remains intact. Try signing in with the same email and password before attempting registration again.");
+      } else {
+        setError(detail || "We couldn’t complete that account action. Please check your details and try again.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const signOut = async () => {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      // Revoke on the server before removing the browser's bearer capability.
+      // If the network call fails, revokeAnonymousSession leaves credentials intact.
+      await revokeAnonymousSession();
+      setAccount(null);
+      setSignedOut(true);
+      setMode("idle");
+      setEmail("");
+      setPassword("");
+      setMessage("Signed out securely. Your care record remains on SolenOS. Sign in again to restore access on this browser.");
+      show("Signed out securely.", "success");
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : "";
+      setError(detail || "We couldn’t complete sign-out. Your current session is still available; check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -336,21 +366,27 @@ function AccountCard() {
       {!loaded && <p className="mobile-settings-hint" role="status">Loading account options…</p>}
       {loaded && account && mode === "idle" && (
         <div className="mobile-settings-buttons">
-          <Button variant="destructive" onClick={() => { setMode("delete"); setPassword(""); setError(""); setMessage(""); }}>
+          <Button variant="secondary" onClick={() => void signOut()} loading={busy} disabled={busy}>
+            Sign out
+          </Button>
+          <Button variant="destructive" onClick={() => { setMode("delete"); setPassword(""); setError(""); setMessage(""); }} disabled={busy}>
             <Trash2 size={16} aria-hidden /> Delete account
           </Button>
         </div>
       )}
       {loaded && !account && mode === "idle" && (
         <div className="mobile-settings-buttons">
-          <Button variant="primary" onClick={() => { setMode("create"); setError(""); setMessage(""); }}>
+          {!signedOut && <Button variant="primary" onClick={() => { setMode("create"); setError(""); setMessage(""); }}>
             <UserPlus size={16} aria-hidden /> Create account
-          </Button>
+          </Button>}
           <Button variant="secondary" onClick={() => { setMode("login"); setError(""); setMessage(""); }}>
             Sign in to an existing account
           </Button>
           {loadFailed && <Button variant="secondary" onClick={() => void refreshAccount()} disabled={busy}>Retry account status</Button>}
         </div>
+      )}
+      {signedOut && !account && mode === "idle" && (
+        <p className="mobile-settings-hint">Your previous care record is protected. Sign in with the same account to access it again; creating a new account here would not recover that record.</p>
       )}
       {mode !== "idle" && (
         <form onSubmit={(event) => void submit(event)} style={{ display: "grid", gap: "0.8rem", marginTop: "0.8rem" }}>
