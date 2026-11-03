@@ -1000,7 +1000,7 @@ export function LCRCurrentUnderstanding() {
                       <article key={item.id} className="lcr-current-fact">
                         <strong>{item.title}</strong>
                         <p>{item.description || "No source description was recorded."}</p>
-                        <small>{item.event_type.replaceAll("_", " ")} · {item.status}</small>
+                        <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : item.event_type.replaceAll("_", " ")} · {item.status === "recorded" ? "Saved" : item.status.replaceAll("_", " ")}</small>
                         <small>Observed: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
                         <small>Recorded: {formatWhen(item.recorded_at)}</small>
                         <small>Time provenance: {item.time_provenance || "Not recorded"}</small>
@@ -1297,10 +1297,10 @@ export function LCRCurrentUnderstanding() {
                       <span>{item.epistemic_status || "Status not recorded"}</span>
                     </div>
                     <p>{displayDescription(item.description)}</p>
-                    <p className="lcr-entry-status">{item.kind} · {item.status || "Status not recorded"}</p>
+                    <p className="lcr-entry-status">{item.kind} · {item.status === "recorded" ? "Saved" : (item.status || "Status not recorded").replaceAll("_", " ")}</p>
                     <small>Source: {item.source_label || "Not recorded"} · {item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
-                    {item.evidence_ids?.length > 0 && <small>Linked evidence: {item.evidence_ids.join(", ")}</small>}
-                    {item.evidence_link_validation && <small>Evidence linkage: {item.evidence_link_validation.replaceAll("_", " ")}</small>}
+                    {item.evidence_ids?.length > 0 && <small>Original caregiver report linked to this entry</small>}
+                    {item.evidence_link_validation && <small>{item.evidence_link_validation === "valid" ? "Source record linked" : "Source record status: " + item.evidence_link_validation.replaceAll("_", " ")}</small>}
                     {item.source_collection === "evidence_observations" && (
                       <div className="lcr-entry-status">
                         <small>
