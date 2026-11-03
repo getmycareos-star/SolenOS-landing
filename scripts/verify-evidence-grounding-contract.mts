@@ -128,20 +128,20 @@ assert(conflictPanel.includes("not automatically resolve a conflict"), "conflict
 assert(lcr.includes("import ConflictResolutionPanel from \"@/components/ConflictResolutionPanel\""), "LCR must import the conflict resolution workflow");
 assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
-const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
-assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
-assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
-assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
-assert(clarificationPanel.includes("Legacy question without a normalized claim link"), "legacy questions without normalized links must be labelled honestly");
-assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
-assert(clarificationPanel.includes("does not automatically verify or resolve the underlying claim"), "answer capture must not automatically resolve its linked claim");
-assert(clarificationPanel.includes("intended_answerer_role"), "clarification must record who is best placed to answer when known");
-assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
-assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
-assert(clarificationPanel.includes("A failed request is not an empty history"), "failed answer-history reads must not be shown as empty history");
-assert(lcr.includes("import ClarificationWorkflowPanel from \"@/components/ClarificationWorkflowPanel\""), "LCR must import the clarification workflow");
-assert(lcr.includes("<ClarificationWorkflowPanel personId={personId} />"), "clarification workflow must be mounted in the actual LCR");
-console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
+const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/mvp-workspace/LCRWhatWeStillNeedToUnderstand.tsx"), "utf8");
+for (const endpoint of ["/uncertainty/questions/", "/answer-history", "/review-history", "/care-continuity/evidence"]) {
+  assert(clarificationPanel.includes(endpoint), `LCR clarification workflow must read persisted ${endpoint} records`);
+}
+for (const field of ["answer_provenance", "necessity_rationale", "answer_version", "reviewer_caregiver_id"]) {
+  assert(clarificationPanel.includes(field), `LCR clarification workflow must preserve ${field}`);
+}
+assert(clarificationPanel.includes("What We Still Need to Understand"), "LCR must present the caregiver-facing clarification section");
+assert(clarificationPanel.includes("It is not treated as verified care information"), "submitted answers must remain unverified until review");
+assert(clarificationPanel.includes("The caregiver report was admitted to the LCR as an attributed, unverified assertion"), "accepted clarification must be described as unverified");
+assert(clarificationPanel.includes("temporarily unavailable"), "failed persisted reads must not be represented as empty data");
+assert(lcr.includes("import LCRWhatWeStillNeedToUnderstand from \"@/components/mvp-workspace/LCRWhatWeStillNeedToUnderstand\""), "LCR must import the new clarification-understanding section");
+assert(lcr.includes("<LCRWhatWeStillNeedToUnderstand key={personId} personId={personId} />"), "clarification state must remount when the active care record changes");
+console.log("PASS: LCR clarification questions, immutable answer history, and explicit review decisions are connected to persisted backend records.");
 
 for (const field of ["reported_at", "collection_method", "origin_device_ref", "transfer_source", "transfer_reference"]) {
   assert(panel.includes(field), `evidence review UI must expose acquisition provenance field ${field}`);
