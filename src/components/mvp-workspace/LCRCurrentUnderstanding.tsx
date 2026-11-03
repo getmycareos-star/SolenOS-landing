@@ -43,7 +43,7 @@ type CurrentCareItem = {
     value_text?: string | null;
     normalized_value?: string | null;
     units?: string | null;
-    context?: string | null;
+    context?: unknown;
     observer_label?: string | null;
     observation_method?: string | null;
     observed_at?: string | null;
@@ -1359,7 +1359,7 @@ export function LCRCurrentUnderstanding() {
                               {observation.subject_label && <small>Subject: {observation.subject_label}</small>}
                               {observation.observer_label && <small>Reported by: {observation.observer_label}</small>}
                               {observation.observation_method && <small>Observation method: {observation.observation_method}</small>}
-                              {observation.context && <p>Context: {observation.context}</p>}
+                              {observation.context != null && <p>Context: {typeof observation.context === "string" ? observation.context : JSON.stringify(observation.context)}</p>}
                               {observation.value_text && <p>{observation.value_text}</p>}
                               <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
                               {observation.source_passage && (
