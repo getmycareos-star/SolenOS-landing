@@ -688,7 +688,7 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
-        getJSON("/care-continuity/current-care?limit_per_source=100"),
+        getJSON("/care-continuity/current-care?limit_per_source=50"),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
