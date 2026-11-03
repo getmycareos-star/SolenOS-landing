@@ -765,7 +765,7 @@ export function HistoryDrawer() {
         const eventCoverage = projection?.source_coverage?.events;
         const eventCoverageStatus = String(eventCoverage?.status || "").toLowerCase();
         const eventSourceVerifiedEmpty = (
-          ["available", "complete"].includes(eventCoverageStatus) &&
+          ["available", "empty", "complete"].includes(eventCoverageStatus) &&
           Number(eventCoverage?.returned_count ?? -1) === 0
         );
         if (eventReadProblem && fallbackEvents.length > 0) {
