@@ -63,7 +63,7 @@ export default function QuickDailyCheckIn() {
     setIdempotencyKey(null);
     // The ordinary-day path is deliberately one tap: save an overall
     // caregiver impression without claiming any individual domain was checked.
-    if (next === "same_as_usual") void saveUpdate(next, [], "");
+    if (next === "same_as_usual") void saveUpdate(next, [], "", crypto.randomUUID());
   }
 
   function toggleArea(value: string) {
@@ -79,6 +79,7 @@ export default function QuickDailyCheckIn() {
     updateKind: QuickUpdateKind | null = kind,
     areas: string[] = selectedAreas,
     noteValue: string = note,
+    requestKey?: string,
   ) {
     if (!updateKind || (updateKind !== "same_as_usual" && areas.length === 0) || saving) return;
 
@@ -89,7 +90,7 @@ export default function QuickDailyCheckIn() {
       return;
     }
 
-    const requestId = idempotencyKey ?? crypto.randomUUID();
+    const requestId = requestKey ?? idempotencyKey ?? crypto.randomUUID();
     if (!idempotencyKey) setIdempotencyKey(requestId);
 
     setSaving(true);
