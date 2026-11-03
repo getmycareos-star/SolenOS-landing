@@ -2,13 +2,46 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
 import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
 import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
 import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
 import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
 import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
+
+
+type RegisteredAction = {
+  id: string;
+  person_id: string;
+  suggestion_id: string;
+  source_evidence_id: string;
+  source_evidence_ids?: string[] | null;
+  responsible_caregiver_id?: string | null;
+  created_by_caregiver_id?: string | null;
+  normalized_action: string;
+  original_text: string;
+  action_type: string;
+  status: "approved" | "in_progress" | "completed" | "cancelled" | "deferred" | "needs_clarification" | string;
+  deadline?: string | null;
+  approved_at?: string | null;
+  completed_at?: string | null;
+  deferred_until?: string | null;
+  linked_reminder_due_at?: string | null;
+  linked_reminder_status?: string | null;
+  created_at?: string | null;
+  version: number;
+};
+
+type RegisteredActionAudit = {
+  id: string;
+  actor_caregiver_id: string;
+  previous_status?: string | null;
+  new_status: string;
+  reason?: string | null;
+  evidence_ids: string[];
+  created_at: string;
+};
 
 type CurrentCareItem = {
   id: string;
@@ -436,6 +469,22 @@ function formatWhen(value?: string | null): string {
 
 export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
+  const [currentCaregiverId, setCurrentCaregiverId] = useState("");
+  const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
+  const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
+  const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
+  const [clarificationPrefill, setClarificationPrefill] = useState<{ question: string; evidenceIds: string[] } | null>(null);
+  const [actionApprovalLoadingId, setActionApprovalLoadingId] = useState<string | null>(null);
+  const [actionApprovalError, setActionApprovalError] = useState<string | null>(null);
+  const [suggestionDispositionReasons, setSuggestionDispositionReasons] = useState<Record<string, string>>({});
+  const [createReminderForSuggestion, setCreateReminderForSuggestion] = useState(false);
+  const [reminderDueInput, setReminderDueInput] = useState("");
+  const [actionTransitionReasons, setActionTransitionReasons] = useState<Record<string, string>>({});
+  const [actionDeferredUntil, setActionDeferredUntil] = useState<Record<string, string>>({});
+  const [actionTransitionLoadingId, setActionTransitionLoadingId] = useState<string | null>(null);
+  const [actionTransitionErrors, setActionTransitionErrors] = useState<Record<string, string>>({});
+  const [actionHistory, setActionHistory] = useState<Record<string, RegisteredActionAudit[]>>({});
+  const [actionHistoryErrors, setActionHistoryErrors] = useState<Record<string, string>>({});
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -476,6 +525,8 @@ export function LCRCurrentUnderstanding() {
   }, []);
 
   const load = useCallback(async (manual = false) => {
+    setRegisteredActions([]);
+    setRegisteredActionsError(null);
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -489,6 +540,18 @@ export function LCRCurrentUnderstanding() {
         throw new Error("A valid care-record session is required to read the longitudinal record.");
       }
       setPersonId(session.person.id);
+      setCurrentCaregiverId(session.caregiver.id);
+      try {
+        const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(session.person.id)}`);
+        if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== session.person.id)) {
+          throw new Error("Registered actions did not match the active care-record session.");
+        }
+        setRegisteredActions(savedActions as RegisteredAction[]);
+        setRegisteredActionsError(null);
+      } catch (actionCause) {
+        setRegisteredActions([]);
+        setRegisteredActionsError(actionCause instanceof Error ? actionCause.message : "Registered actions could not be loaded.");
+      }
       const result = await getJSON("/care-continuity/current-care?limit_per_source=12");
       if (!result || result.read_only !== true || !Array.isArray(result.items) ||
           typeof result.schema_status !== "string" || typeof result.projection_type !== "string" ||
@@ -577,7 +640,10 @@ export function LCRCurrentUnderstanding() {
       }
     } catch (cause) {
       setPersonId("");
+      setCurrentCaregiverId("");
       setProjection(null);
+      setRegisteredActions([]);
+      setRegisteredActionsError("Registered actions are unavailable because the caregiver session could not be established.");
       setError(cause instanceof Error ? cause.message : "The longitudinal care record could not be loaded.");
     } finally {
       setLoading(false);
@@ -701,6 +767,144 @@ export function LCRCurrentUnderstanding() {
     projection?.items.find((item) =>
       item.id === loop.id && item.source_collection === loop.source
     );
+  const suggestionReference = (item: (typeof openLoopItems)[number]) => `${item.source}:${item.id}`;
+  const actionForSuggestion = (item: (typeof openLoopItems)[number]) =>
+    registeredActions.find((action) => action.suggestion_id === suggestionReference(item));
+
+  const approveFollowUp = async (item: (typeof openLoopItems)[number]) => {
+    const suggestionId = suggestionReference(item);
+    setActionApprovalLoadingId(suggestionId);
+    setActionApprovalError(null);
+    try {
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || session.person.id !== personId) {
+        throw new Error("The suggestion does not belong to the active care-record session.");
+      }
+      if (!item.request_text?.trim() || item.evidence_ids.length === 0) {
+        throw new Error("This candidate cannot be registered safely: an explicit follow-up request and linked evidence are both required.");
+      }
+      if (createReminderForSuggestion && !reminderDueInput) {
+        throw new Error("Choose a reminder date and time, or leave reminder creation disabled.");
+      }
+      const idempotencyKey = `lcr-approval-${suggestionId}`.replace(/[^a-zA-Z0-9:_-]/g, "-").slice(0, 128);
+      const saved = await postJSON(
+        `/registered-actions/${encodeURIComponent(session.person.id)}/approve`,
+        {
+          explicit_approval: true,
+          idempotency_key: idempotencyKey,
+          suggestion_id: suggestionId.slice(0, 160),
+          title: item.request_text.trim(),
+          action_type: "follow_up",
+          rationale: (item.priority_reasons ?? []).join("; ") || item.description || "A persisted LCR follow-up request is recorded.",
+          limitations: `Information status: ${item.epistemic_status}. Registration does not resolve uncertainty or establish clinical urgency.`,
+          evidence_ids: item.evidence_ids,
+          responsible_caregiver_id: session.caregiver.id,
+          create_reminder: createReminderForSuggestion,
+          ...(createReminderForSuggestion ? { reminder_due_at: new Date(reminderDueInput).toISOString() } : {}),
+        },
+      ) as RegisteredAction;
+      if (!saved?.id || saved.person_id !== session.person.id || saved.suggestion_id !== suggestionId.slice(0, 160)) {
+        throw new Error("The backend response did not confirm the expected registered action. Refresh before retrying.");
+      }
+      setRegisteredActions((current) => current.some((action) => action.id === saved.id)
+        ? current.map((action) => action.id === saved.id ? saved : action)
+        : [saved, ...current]);
+      setReviewingSuggestionId(null);
+      setCreateReminderForSuggestion(false);
+      setReminderDueInput("");
+    } catch (cause) {
+      setActionApprovalError(cause instanceof Error ? cause.message : "The action could not be registered.");
+    } finally {
+      setActionApprovalLoadingId(null);
+    }
+  };
+
+  const deferSuggestion = async (item: (typeof openLoopItems)[number]) => {
+    if (item.source !== "open_loop_records") {
+      setActionApprovalError("This item is not a directly editable Open Loop record. It remains informational; no deferral was written.");
+      return;
+    }
+    const reason = (suggestionDispositionReasons[suggestionReference(item)] || "").trim();
+    if (!reason) {
+      setActionApprovalError("Enter a reason before deferring this suggestion.");
+      return;
+    }
+    setActionApprovalLoadingId(suggestionReference(item));
+    setActionApprovalError(null);
+    try {
+      const session = await ensureAnonymousSession();
+      if (session.person?.id !== personId) {
+        throw new Error("The selected follow-up does not belong to the active care-record session.");
+      }
+      const updatedLoop = await patchJSON(`/open-loops/${encodeURIComponent(item.id)}`, {
+        status: "deferred",
+        deferred_reason: reason,
+        reason,
+        idempotency_key: `lcr-defer-${item.id}-${reason}`.slice(0, 160),
+      });
+      if (!updatedLoop || updatedLoop.id !== item.id || updatedLoop.status !== "deferred") {
+        throw new Error("The backend did not confirm the requested deferral. The suggestion remains unchanged.");
+      }
+      setReviewingSuggestionId(null);
+      await load(true);
+    } catch (cause) {
+      setActionApprovalError(cause instanceof Error ? cause.message : "The suggestion could not be deferred.");
+    } finally {
+      setActionApprovalLoadingId(null);
+    }
+  };
+
+  const transitionRegisteredAction = async (
+    action: RegisteredAction,
+    status: "approved" | "in_progress" | "completed" | "cancelled" | "deferred" | "needs_clarification",
+  ) => {
+    const reason = (actionTransitionReasons[action.id] || "").trim();
+    if (["cancelled", "deferred", "needs_clarification"].includes(status) && !reason) {
+      setActionTransitionErrors((current) => ({ ...current, [action.id]: "Enter a reason before this status change." }));
+      return;
+    }
+    setActionTransitionLoadingId(action.id);
+    setActionTransitionErrors((current) => ({ ...current, [action.id]: "" }));
+    try {
+      const updated = await patchJSON(
+        `/registered-actions/${encodeURIComponent(action.id)}/status`,
+        {
+          status,
+          expected_version: action.version,
+          explicit_completion_confirmation: status === "completed",
+          reason: reason || undefined,
+          ...(status === "deferred" && actionDeferredUntil[action.id] ? { deferred_until: new Date(actionDeferredUntil[action.id]).toISOString() } : {}),
+        },
+      ) as RegisteredAction;
+      if (!updated?.id || updated.id !== action.id || updated.person_id !== personId) {
+        throw new Error("The backend did not confirm the expected action update. Refresh before retrying.");
+      }
+      setRegisteredActions((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (cause) {
+      setActionTransitionErrors((current) => ({
+        ...current,
+        [action.id]: cause instanceof Error ? cause.message : "The action status could not be updated.",
+      }));
+    } finally {
+      setActionTransitionLoadingId(null);
+    }
+  };
+
+  const loadActionHistory = async (action: RegisteredAction) => {
+    setActionHistoryErrors((current) => ({ ...current, [action.id]: "" }));
+    try {
+      const history = await getJSON(`/registered-actions/${encodeURIComponent(action.id)}/history`);
+      if (!Array.isArray(history) || history.some((entry) => !entry?.id || !entry?.actor_caregiver_id)) {
+        throw new Error("The action history response was incomplete.");
+      }
+      setActionHistory((current) => ({ ...current, [action.id]: history as RegisteredActionAudit[] }));
+    } catch (cause) {
+      setActionHistoryErrors((current) => ({
+        ...current,
+        [action.id]: cause instanceof Error ? cause.message : "Action history could not be loaded.",
+      }));
+    }
+  };
 
   return (
     <section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">
@@ -768,6 +972,78 @@ export function LCRCurrentUnderstanding() {
                         {source?.source_label && <small>Source label: {source.source_label}</small>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         {source && source.claim_count > 0 && <small>Competing claims linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
+                        {actionForSuggestion(item) ? (
+                          <p className="lcr-entry-status">Registered action: {actionForSuggestion(item)?.status.replaceAll("_", " ")}. This suggestion has already been explicitly registered.</p>
+                        ) : item.request_text?.trim() && item.evidence_ids.length > 0 ? (
+                          <div>
+                            <button type="button" className="lcr-text-action" onClick={() => {
+                              setReviewingSuggestionId(reviewingSuggestionId === suggestionReference(item) ? null : suggestionReference(item));
+                              setActionApprovalError(null);
+                              setCreateReminderForSuggestion(false);
+                              setReminderDueInput("");
+                            }}>Review suggested follow-up for approval</button>
+                            {reviewingSuggestionId === suggestionReference(item) && (
+                              <div className="lcr-current-fact" aria-label="Review suggested action before approval">
+                                <strong>Suggested follow-up — not a registered action</strong>
+                                <p>Proposed action: {item.request_text}</p>
+                                <p>Why suggested: {(item.priority_reasons ?? []).join("; ") || item.description || "The persisted open-loop record contains a follow-up request."}</p>
+                                <p>Supporting evidence: {item.evidence_ids.join(", ")}</p>
+                                <p>Limitations: Information is marked {item.epistemic_status.replaceAll("_", " ")}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
+                                <p>Responsible caregiver: the caregiver authenticated in this session. No other caregiver will be assigned.</p>
+                                <p>Due date: {item.due_at ? `The source record contains ${formatWhen(item.due_at)}; no reminder will be created unless you explicitly choose one below.` : "No supported due date is recorded."}</p>
+                                <p>Timing context: recorded priority {item.priority || "not recorded"} · recorded consequence of delay {item.consequence_of_delay || "not recorded"} · deadline source {item.deadline_source || "not recorded"}. No deadline is invented.</p>
+                                <p>Optional vs time-sensitive classification: not recorded as a separate field for this candidate. Review the recorded priority and consequence rather than assuming urgency or obligation.</p>
+                                <label>
+                                  <input type="checkbox" checked={createReminderForSuggestion} onChange={(event) => setCreateReminderForSuggestion(event.target.checked)} />
+                                  Create a reminder using the existing reminder system
+                                </label>
+                                {createReminderForSuggestion && (
+                                  <label>
+                                    Reminder due date and time
+                                    <input type="datetime-local" value={reminderDueInput} onChange={(event) => setReminderDueInput(event.target.value)} />
+                                  </label>
+                                )}
+                                {item.source === "open_loop_records" && (
+                                  <label>
+                                    Reason for deferring consideration
+                                    <input
+                                      type="text"
+                                      value={suggestionDispositionReasons[suggestionReference(item)] ?? ""}
+                                      onChange={(event) => setSuggestionDispositionReasons((current) => ({ ...current, [suggestionReference(item)]: event.target.value }))}
+                                      maxLength={2000}
+                                    />
+                                  </label>
+                                )}
+                                {actionApprovalError && <p role="alert">{actionApprovalError}</p>}
+                                <button type="button" onClick={() => void approveFollowUp(item)} disabled={actionApprovalLoadingId === suggestionReference(item)}>
+                                  {actionApprovalLoadingId === suggestionReference(item) ? "Saving…" : "Approve and register"}
+                                </button>
+                                {item.source === "open_loop_records" && (
+                                  <button type="button" onClick={() => void deferSuggestion(item)} disabled={actionApprovalLoadingId === suggestionReference(item)}>
+                                    Defer consideration
+                                  </button>
+                                )}
+                                <button type="button" className="lcr-text-action" onClick={() => {
+                                  setClarificationPrefill({
+                                    question: item.request_text?.trim() || item.description || item.title,
+                                    evidenceIds: item.evidence_ids,
+                                  });
+                                  document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }}>
+                                  Request clarification
+                                </button>
+                                <button type="button" className="lcr-text-action" onClick={() => {
+                                  setReviewingSuggestionId(null);
+                                  setActionApprovalError(null);
+                                  setCreateReminderForSuggestion(false);
+                                  setReminderDueInput("");
+                                }}>Keep as suggestion</button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <small>Not eligible for registration: an explicit follow-up request and linked evidence are both required. Keep this as an informational LCR item.</small>
+                        )}
                       </li>
                     );
                   })}
@@ -932,6 +1208,70 @@ export function LCRCurrentUnderstanding() {
           </>
         )}
       </section>
+
+            <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
+              <h4 id="lcr-registered-actions-heading">Registered actions</h4>
+              {registeredActionsError && <p role="alert">Registered actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
+              {!registeredActionsError && registeredActions.length === 0 && <p>No caregiver-approved registered actions are recorded for this care recipient.</p>}
+              {registeredActions.length > 0 && (
+                <ul className="lcr-current-facts">
+                  {registeredActions.map((action) => (
+                    <li key={action.id} className="lcr-current-fact">
+                      <strong>{action.normalized_action}</strong>
+                      <p className="lcr-entry-status">Registered action · {action.status.replaceAll("_", " ")} · Version {action.version}</p>
+                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"} · Created by: {action.created_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}</small>
+                      <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} linked record(s)</small>
+                      {action.deadline && <small>Recorded due date: {formatWhen(action.deadline)}</small>}
+                      {action.linked_reminder_status && <small>Linked reminder: {action.linked_reminder_status} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
+                      {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
+                      {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
+                      {action.responsible_caregiver_id !== currentCaregiverId && <p role="status">Only the responsible caregiver can change this action. You can still review its status and audit history.</p>}
+                      <label>
+                        Reason for deferring, cancelling or requesting clarification
+                        <input
+                          type="text"
+                          value={actionTransitionReasons[action.id] ?? ""}
+                          onChange={(event) => setActionTransitionReasons((current) => ({ ...current, [action.id]: event.target.value }))}
+                          maxLength={2000}
+                          disabled={action.responsible_caregiver_id !== currentCaregiverId}
+                        />
+                      </label>
+                      {action.status !== "completed" && action.status !== "cancelled" && (
+                        <label>
+                          New reminder date when deferring {action.linked_reminder_status === "open" ? "(required for the linked open reminder)" : "(optional)"}
+                          <input
+                            type="datetime-local"
+                            disabled={action.responsible_caregiver_id !== currentCaregiverId}
+                            value={actionDeferredUntil[action.id] ?? ""}
+                            onChange={(event) => setActionDeferredUntil((current) => ({ ...current, [action.id]: event.target.value }))}
+                          />
+                        </label>
+                      )}
+                      {action.status === "approved" && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
+                      {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
+                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
+                      {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
+                      {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs clarification</button>}
+                      {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
+                      {actionTransitionErrors[action.id] && <p role="alert">{actionTransitionErrors[action.id]}</p>}
+                      <button type="button" className="lcr-text-action" onClick={() => void loadActionHistory(action)}>View audit history</button>
+                      {actionHistoryErrors[action.id] && <p role="alert">{actionHistoryErrors[action.id]}</p>}
+                      {actionHistory[action.id] && (
+                        <ol>
+                          {actionHistory[action.id].map((event) => (
+                            <li key={event.id}>
+                              {event.previous_status ?? "not registered"} → {event.new_status.replaceAll("_", " ")} · {formatWhen(event.created_at)} · Actor: {event.actor_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}
+                              {event.reason && <p>{event.reason}</p>}
+                              <small>Evidence: {event.evidence_ids.length} linked record(s)</small>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
@@ -1448,7 +1788,7 @@ export function LCRCurrentUnderstanding() {
         <EvidenceReviewPanel personId={personId} />
         <ClaimAssessmentPanel />
         <ConflictResolutionPanel personId={personId} />
-        <ClarificationWorkflowPanel personId={personId} />
+        <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
         <CareContinuityIntegrityPanel personId={personId} />
       </details>
     </section>

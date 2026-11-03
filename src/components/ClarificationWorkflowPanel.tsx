@@ -59,7 +59,7 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
   }
 }
 
-export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
+export default function ClarificationWorkflowPanel({ personId, prefillQuestion, prefillEvidenceIds }: { personId?: string; prefillQuestion?: string; prefillEvidenceIds?: string[] }) {
   const [scopePersonId, setScopePersonId] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
@@ -123,6 +123,13 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   }, [personId]);
 
   useEffect(() => { void loadAll(); }, [loadAll]);
+
+  useEffect(() => {
+    if (prefillQuestion) setQuestionText(prefillQuestion);
+    if (prefillEvidenceIds?.length) {
+      setEvidenceIds(prefillEvidenceIds);
+    }
+  }, [prefillQuestion, prefillEvidenceIds]);
 
   const loadHistory = useCallback(async () => {
     if (!selectedQuestionId || !scopePersonId) {

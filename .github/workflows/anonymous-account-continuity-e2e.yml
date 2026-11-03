@@ -1,0 +1,116 @@
+name: Anonymous account continuity browser E2E
+
+on:
+  pull_request:
+    paths:
+      - "src/api/client.ts"
+      - "src/app/workspace/settings/page.tsx"
+      - "e2e/anonymous-account-continuity.mjs"
+      - ".github/workflows/anonymous-account-continuity-e2e.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/api/client.ts"
+      - "src/app/workspace/settings/page.tsx"
+      - "e2e/anonymous-account-continuity.mjs"
+      - ".github/workflows/anonymous-account-continuity-e2e.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  browser-continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: solenos_account_continuity_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d solenos_account_continuity_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out frontend
+        uses: actions/checkout@v4
+
+      - name: Check out backend commit with PostgreSQL continuity coverage
+        uses: actions/checkout@v4
+        with:
+          repository: getmycareos-star/SolenOS_backend
+          ref: 3d75de33405270d55166b5333708178cf3c3432b
+          path: backend-service
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install frontend and browser dependencies
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+
+      - name: Install backend
+        working-directory: backend-service/backend
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+
+      - name: Apply the complete Alembic migration chain
+        working-directory: backend-service/backend
+        env:
+          APP_ENV: test
+          SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/solenos_account_continuity_e2e
+        run: python -m alembic upgrade head
+
+      - name: Start FastAPI against isolated PostgreSQL
+        working-directory: backend-service/backend
+        env:
+          APP_ENV: test
+          SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/solenos_account_continuity_e2e
+          CORS_ORIGINS: http://127.0.0.1:3000
+        run: |
+          nohup env APP_ENV=test SECRET_KEY=ci-only-secret-key-long-enough-for-test-runtime DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/solenos_account_continuity_e2e CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-account-continuity-backend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/solenos-account-continuity-backend.log
+          exit 1
+
+      - name: Build and start Next.js
+        run: |
+          npm run build
+          nohup npm run start -- --hostname 127.0.0.1 >/tmp/solenos-account-continuity-frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/workspace/settings >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/solenos-account-continuity-frontend.log
+          exit 1
+
+      - name: Run fresh-browser-context account continuity test
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+        run: node e2e/anonymous-account-continuity.mjs
+
+      - name: Print backend and frontend logs on failure
+        if: failure()
+        run: |
+          cat /tmp/solenos-account-continuity-backend.log || true
+          cat /tmp/solenos-account-continuity-frontend.log || true

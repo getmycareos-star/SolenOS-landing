@@ -119,6 +119,10 @@ requireText("src/app/workspace/settings/page.tsx", [
   "createAccount(email, password)",
   'deleteJSON("/accounts/me"',
 ]);
+requireText("src/api/client.ts", [
+  "export async function createAccount(email: string, password: string)",
+  'return await postJSON("/accounts", { email, password })',
+]);
 const accountSettings = read("src/app/workspace/settings/page.tsx");
 const accountCard = accountSettings.slice(
   accountSettings.indexOf("function AccountCard()"),
@@ -126,6 +130,11 @@ const accountCard = accountSettings.slice(
 );
 assert(accountCard.includes("Sign in to an existing account"), "Optional account sign-in must remain available.");
 assert(accountCard.includes("signInToAccount(email, password)"), "Account sign-in must use the authenticated backend client.");
+assert(accountCard.includes("await revokeAnonymousSession()"), "Caregiver sign-out must revoke the active server session before clearing browser credentials.");
+assert(accountCard.includes('setSignedOut(true)'), "After sign-out, account settings must require sign-in to restore the previous care record.");
+assert(accountCard.includes('!signedOut && <Button'), "A signed-out caregiver must not be offered account creation as a substitute for restoring the existing record.");
+assert(accountCard.includes('Sign out'), "Account settings must expose a caregiver-facing sign-out control.");
+assert(accountCard.includes("We couldn’t confirm whether account creation completed."), "Ambiguous registration failures must direct caregivers to sign in rather than blindly retrying signup.");
 assert(accountSettings.includes("An account is optional. Anonymous care access remains available."), "Account creation and sign-in must remain optional; anonymous care access must not be gated.");
 assert(accountCard.includes('if (!getAnonymousAccessToken())'), "Opening account settings must not create or require a new care record.");
 assert(!read("src/app/workspace/settings/page.tsx").includes("multi-factor authentication"), "Settings must not show technical account capability messaging.");
