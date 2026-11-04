@@ -67,6 +67,7 @@ type DocumentReview = {
   corrected_subject: string | null;
   corrected_observation: string | null;
   resulting_assertion_id: string | null;
+  superseded_assertion_id?: string | null;
   created_at: string;
   written_to_lcr: boolean;
 };
@@ -570,11 +571,13 @@ export default function DocumentsPage() {
           corrected_observation: decision === "correct" ? correction?.observation : undefined,
           idempotency_key: "doc-review-" + crypto.randomUUID(),
         },
-      ) as { written_to_lcr?: boolean; resulting_assertion_id?: string | null };
+      ) as { written_to_lcr?: boolean; resulting_assertion_id?: string | null; superseded_assertion_id?: string | null };
       const history = await getJSON("/documents/analyses/" + encodeURIComponent(selectedAnalysis.analysis_id) + "/reviews") as { reviews?: DocumentReview[] };
       setSelectedReviews(Array.isArray(history.reviews) ? history.reviews : []);
       setReviewNotice(result.written_to_lcr
-        ? "A caregiver-reviewed report was added to the Living Care Record with its original document quotation and source link. It is not a clinically verified fact."
+        ? result.superseded_assertion_id
+          ? "A correction was appended to the Living Care Record. The previous report remains in history and is marked superseded."
+          : "A caregiver-reviewed report was added to the Living Care Record with its original document quotation and source link. It is not a clinically verified fact."
         : "The review decision was saved. The Living Care Record was not changed.");
     } catch {
       setReviewError("The review could not be confirmed. Reload the document history before retrying.");
@@ -755,19 +758,21 @@ export default function DocumentsPage() {
                 return <article key={index} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 9 }}>
                   <p style={{ margin: "0 0 5px", fontSize: 12, color: "var(--text-secondary)" }}>Suggestion {index + 1}{latest ? " · Latest decision: " + latest.decision + " (v" + latest.decision_version + ")" : " · Pending caregiver review"}</p>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Suggested subject</label>
-                  <input value={correction.subject} disabled={locked} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, subject: event.target.value } }))} style={{ width: "100%", minHeight: 40, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} />
+                  <input value={correction.subject} disabled={reviewBusyCandidate !== null} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, subject: event.target.value } }))} style={{ width: "100%", minHeight: 40, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} />
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, margin: "8px 0 4px" }}>Suggested observation</label>
-                  <textarea value={correction.observation} disabled={locked} rows={3} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, observation: event.target.value } }))} style={{ width: "100%", padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} />
+                  <textarea value={correction.observation} disabled={reviewBusyCandidate !== null} rows={3} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, observation: event.target.value } }))} style={{ width: "100%", padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} />
                   <p style={{ margin: "9px 0 4px", fontSize: 12, fontWeight: 700 }}>Exact quotation from the original extraction</p>
                   <blockquote style={{ margin: 0, padding: 9, borderLeft: "3px solid var(--border)", background: "var(--bg)", fontSize: 13, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</blockquote>
                   {latest?.resulting_assertion_id ? <p style={{ margin: "9px 0 0", fontSize: 12 }}>Added as a reported LCR entry. Assertion ID: {latest.resulting_assertion_id}</p> : null}
-                  {!locked ? <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
-                    <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "accept")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept and add to LCR</button>
-                    <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Correct and add to LCR</button>
-                    <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "reject")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
-                    <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "clarify")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Needs clarification</button>
-                  </div> : null}
-                  {history.length > 0 ? <details style={{ marginTop: 9 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Review history ({history.length})</summary>{history.map((item) => <p key={item.review_id} style={{ fontSize: 12, color: "var(--text-secondary)" }}>Version {item.decision_version}: {item.decision} · {formatDate(item.created_at)}{item.resulting_assertion_id ? " · LCR assertion created" : ""}</p>)}</details> : null}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
+                    {!locked ? <>
+                      <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "accept")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept and add to LCR</button>
+                      <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Correct and add to LCR</button>
+                      <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "reject")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
+                      <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "clarify")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Needs clarification</button>
+                    </> : <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Append correction to LCR</button>}
+                  </div>
+                  {history.length > 0 ? <details style={{ marginTop: 9 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Review history ({history.length})</summary>{history.map((item) => <p key={item.review_id} style={{ fontSize: 12, color: "var(--text-secondary)" }}>Version {item.decision_version}: {item.decision} · {formatDate(item.created_at)}{item.resulting_assertion_id ? " · LCR assertion created" : ""}{item.superseded_assertion_id ? " · superseded prior assertion " + item.superseded_assertion_id : ""}</p>)}</details> : null}
                 </article>;
               })}</div> : <p>No candidate observations were generated. Extracted text remains available above and no LCR write has occurred.</p>}
               {selectedAnalysis.open_questions?.length ? <div style={{ marginTop: 12 }}><h4 style={{ margin: "0 0 6px", fontSize: 14 }}>Questions requiring clarification</h4><ul style={{ margin: 0, paddingLeft: 20 }}>{selectedAnalysis.open_questions.map((question, index) => <li key={index} style={{ fontSize: 13, marginBottom: 4 }}>{question}</li>)}</ul></div> : null}
