@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 
-import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
+import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
 
@@ -436,6 +436,8 @@ export default function DocumentsPage() {
     setUploading(true);
     setUploadMessage(null);
     let saved = 0;
+    let extracted = 0;
+    let extractionUnavailable = 0;
     try {
       const session = await ensureAnonymousSession();
       for (const page of reviewPages) {
@@ -452,11 +454,29 @@ export default function DocumentsPage() {
         const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
+
+        // Extraction is performed by the backend from the persisted upload bytes.
+        // Browser text is never treated as proof of what the original file contains.
+        try {
+          const analysis = await postJSON(
+            "/documents/" + encodeURIComponent(stored.evidence_id) + "/extract",
+            {},
+          ) as { extraction_status?: string; analysis_id?: string };
+          if (analysis.analysis_id && analysis.extraction_status === "available") extracted += 1;
+          else extractionUnavailable += 1;
+        } catch {
+          // Keep the successfully uploaded original even when this file type
+          // cannot currently be extracted (for example, a scanned image).
+          extractionUnavailable += 1;
+        }
       }
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages([]);
       setIntakeMode(null);
-      setUploadMessage({ kind: "success", text: `Saved ${saved} original file(s) with reviewed extracted text. Scanned statements remain source evidence, not verified LCR facts.` });
+      setUploadMessage({
+        kind: "success",
+        text: `Saved ${saved} original file(s). Server-side extraction is available for ${extracted} file(s); ${extractionUnavailable} file(s) remain stored without a usable extraction. Scanned-image OCR is not available yet. Extracted text remains source material for caregiver review, not verified LCR facts.`,
+      });
       await loadDocuments(true);
     } catch {
       setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });
