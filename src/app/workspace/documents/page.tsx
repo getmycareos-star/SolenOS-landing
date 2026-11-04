@@ -46,6 +46,30 @@ type CropInsets = { top: number; right: number; bottom: number; left: number };
 type ReviewPage = { file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
+type DocumentCandidate = { subject: string; observation: string; source_quote: string; source_span_start: number; source_span_end: number };
+type DocumentAnalysis = {
+  analysis_id: string;
+  extraction_status: string;
+  extraction_method: string | null;
+  extracted_text: string;
+  candidates: DocumentCandidate[];
+  open_questions: string[];
+  candidate_extraction_status: string;
+  document?: { pages?: Array<{ page_number: number | null; method: string; quality: string; mean_word_confidence?: number | null; word_boxes?: Array<{ text: string; left: number; top: number; width: number; height: number }> }> };
+};
+type DocumentReview = {
+  review_id: string;
+  analysis_id: string;
+  candidate_index: number;
+  decision_version: number;
+  decision: "accept" | "correct" | "reject" | "clarify";
+  source_quote: string;
+  corrected_subject: string | null;
+  corrected_observation: string | null;
+  resulting_assertion_id: string | null;
+  created_at: string;
+  written_to_lcr: boolean;
+};
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
@@ -283,6 +307,13 @@ export default function DocumentsPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<DocumentAnalysis | null>(null);
+  const [selectedReviews, setSelectedReviews] = useState<DocumentReview[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewBusyCandidate, setReviewBusyCandidate] = useState<number | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
+  const [candidateCorrections, setCandidateCorrections] = useState<Record<number, { subject: string; observation: string }>>({});
 
   const loadDocuments = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true);
@@ -475,7 +506,7 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Server-side extraction is available for ${extracted} file(s); ${extractionUnavailable} file(s) remain stored without a usable extraction. Scanned-image OCR is not available yet. Scanned statements remain source evidence, not verified LCR facts. Extracted text remains source material for caregiver review, not verified LCR facts.`,
+        text: `Saved ${saved} original file(s). Server-side extraction is available for ${extracted} file(s); ${extractionUnavailable} file(s) remain stored without a usable extraction. Server extraction uses the preserved original bytes. Extracted text and model suggestions remain unverified source material until a caregiver reviews them.`,
       });
       await loadDocuments(true);
     } catch {
@@ -488,6 +519,11 @@ export default function DocumentsPage() {
     setSelectedId(doc.id);
     setPreviewError(null);
     setPreviewLoading(true);
+    setReviewLoading(true);
+    setReviewError(null);
+    setReviewNotice(null);
+    setSelectedAnalysis(null);
+    setSelectedReviews([]);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     try {
@@ -496,13 +532,63 @@ export default function DocumentsPage() {
       setPreviewUrl(url);
     } catch {
       setPreviewError("The saved document record is available, but the original file could not be retrieved. Retry or refresh the list.");
+    }
+    try {
+      const extraction = await postJSON("/documents/" + encodeURIComponent(doc.id) + "/extract", {}) as { analysis_id?: string };
+      if (!extraction.analysis_id) throw new Error("No persisted extraction was returned.");
+      const analysis = await getJSON("/documents/analyses/" + encodeURIComponent(extraction.analysis_id)) as DocumentAnalysis;
+      setSelectedAnalysis(analysis);
+      const history = await getJSON("/documents/analyses/" + encodeURIComponent(extraction.analysis_id) + "/reviews") as { reviews?: DocumentReview[] };
+      setSelectedReviews(Array.isArray(history.reviews) ? history.reviews : []);
+      setCandidateCorrections(Object.fromEntries((analysis.candidates || []).map((candidate, index) => [
+        index, { subject: candidate.subject || "", observation: candidate.observation || "" },
+      ])));
+    } catch {
+      setReviewError("The original is saved, but its server-side extraction or review history could not be loaded. Retry.");
     } finally {
       setPreviewLoading(false);
+      setReviewLoading(false);
+    }
+  };
+
+  const reviewCandidate = async (
+    candidateIndex: number,
+    decision: "accept" | "correct" | "reject" | "clarify",
+  ) => {
+    if (!selectedAnalysis) return;
+    setReviewBusyCandidate(candidateIndex);
+    setReviewError(null);
+    setReviewNotice(null);
+    const correction = candidateCorrections[candidateIndex];
+    try {
+      const result = await postJSON(
+        "/documents/analyses/" + encodeURIComponent(selectedAnalysis.analysis_id) + "/candidates/review",
+        {
+          candidate_index: candidateIndex,
+          decision,
+          corrected_subject: decision === "correct" ? correction?.subject : undefined,
+          corrected_observation: decision === "correct" ? correction?.observation : undefined,
+          idempotency_key: "doc-review-" + crypto.randomUUID(),
+        },
+      ) as { written_to_lcr?: boolean; resulting_assertion_id?: string | null };
+      const history = await getJSON("/documents/analyses/" + encodeURIComponent(selectedAnalysis.analysis_id) + "/reviews") as { reviews?: DocumentReview[] };
+      setSelectedReviews(Array.isArray(history.reviews) ? history.reviews : []);
+      setReviewNotice(result.written_to_lcr
+        ? "A caregiver-reviewed report was added to the Living Care Record with its original document quotation and source link. It is not a clinically verified fact."
+        : "The review decision was saved. The Living Care Record was not changed.");
+    } catch {
+      setReviewError("The review could not be confirmed. Reload the document history before retrying.");
+    } finally {
+      setReviewBusyCandidate(null);
     }
   };
 
   const closePreview = () => {
     setSelectedId(null);
+    setSelectedAnalysis(null);
+    setSelectedReviews([]);
+    setReviewError(null);
+    setReviewNotice(null);
     setPreviewError(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
@@ -653,6 +739,40 @@ export default function DocumentsPage() {
           </header>
           <div style={{ padding: 14, overflow: "auto", minHeight: 180 }}>
             {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Retrieving original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: 13, color: "var(--text-secondary)" }}>The original file was retrieved successfully. Download it to open it in a compatible app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: 15 }}>Text saved with this document</h3><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 14, lineHeight: 1.6 }}>{selected.extractedText}</pre></>}</div> : <p>Original file preview is not available yet.</p>}
+            {reviewLoading ? <p role="status" style={{ marginTop: 18 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />Loading extraction and caregiver review history…</p> : reviewError ? <p role="alert" style={{ marginTop: 16, padding: 12, border: "1px solid var(--border)", borderRadius: 8 }}>{reviewError}<button type="button" onClick={() => void openOriginal(selected)} style={{ marginLeft: 8, minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry</button></p> : selectedAnalysis ? <section aria-label="Extracted document and caregiver review" style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+              <h3 style={{ margin: "0 0 6px", fontSize: 16 }}>Server-extracted text</h3>
+              <p style={{ margin: "0 0 10px", color: "var(--text-secondary)", fontSize: 12 }}>Method: {selectedAnalysis.extraction_method || "not reported"} · Status: {selectedAnalysis.extraction_status}. OCR confidence measures text recognition only, not clinical certainty.</p>
+              {selectedAnalysis.extracted_text ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: 260, overflow: "auto", padding: 12, border: "1px solid var(--border)", borderRadius: 8, fontSize: 13, lineHeight: 1.55 }}>{selectedAnalysis.extracted_text}</pre> : <p>No readable text was extracted. The original remains preserved; do not treat this as an empty care history.</p>}
+              {selectedAnalysis.document?.pages?.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "10px 0" }}>{selectedAnalysis.document.pages.map((page, index) => <span key={index} style={{ fontSize: 11, padding: "4px 7px", border: "1px solid var(--border)", borderRadius: 6 }}>Page {page.page_number ?? "—"} · {page.method} · {page.quality}{typeof page.mean_word_confidence === "number" ? " · OCR " + page.mean_word_confidence + "%" : ""}</span>)}</div> : null}
+              <h3 style={{ margin: "18px 0 6px", fontSize: 16 }}>Information to review</h3>
+              <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: 13 }}>These are extraction suggestions, not care facts. Accept or correct only when the quotation accurately supports the observation. Rejected suggestions never enter the LCR.</p>
+              {selectedAnalysis.candidate_extraction_status === "unavailable" ? <p role="status">Candidate interpretation is currently unavailable. The original and extracted text are saved, but no care assertion has been created.</p> : null}
+              {selectedAnalysis.candidates?.length ? <div style={{ display: "grid", gap: 12 }}>{selectedAnalysis.candidates.map((candidate, index) => {
+                const history = selectedReviews.filter((item) => item.candidate_index === index);
+                const latest = history[history.length - 1];
+                const correction = candidateCorrections[index] || { subject: candidate.subject, observation: candidate.observation };
+                const locked = latest?.decision === "accept" || latest?.decision === "correct";
+                return <article key={index} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 9 }}>
+                  <p style={{ margin: "0 0 5px", fontSize: 12, color: "var(--text-secondary)" }}>Suggestion {index + 1}{latest ? " · Latest decision: " + latest.decision + " (v" + latest.decision_version + ")" : " · Pending caregiver review"}</p>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Suggested subject</label>
+                  <input value={correction.subject} disabled={locked} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, subject: event.target.value } }))} style={{ width: "100%", minHeight: 40, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} />
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, margin: "8px 0 4px" }}>Suggested observation</label>
+                  <textarea value={correction.observation} disabled={locked} rows={3} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, observation: event.target.value } }))} style={{ width: "100%", padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} />
+                  <p style={{ margin: "9px 0 4px", fontSize: 12, fontWeight: 700 }}>Exact quotation from the original extraction</p>
+                  <blockquote style={{ margin: 0, padding: 9, borderLeft: "3px solid var(--border)", background: "var(--bg)", fontSize: 13, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</blockquote>
+                  {latest?.resulting_assertion_id ? <p style={{ margin: "9px 0 0", fontSize: 12 }}>Added as a reported LCR entry. Assertion ID: {latest.resulting_assertion_id}</p> : null}
+                  {!locked ? <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
+                    <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "accept")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept and add to LCR</button>
+                    <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Correct and add to LCR</button>
+                    <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "reject")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
+                    <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "clarify")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Needs clarification</button>
+                  </div> : null}
+                  {history.length > 0 ? <details style={{ marginTop: 9 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Review history ({history.length})</summary>{history.map((item) => <p key={item.review_id} style={{ fontSize: 12, color: "var(--text-secondary)" }}>Version {item.decision_version}: {item.decision} · {formatDate(item.created_at)}{item.resulting_assertion_id ? " · LCR assertion created" : ""}</p>)}</details> : null}
+                </article>;
+              })}</div> : <p>No candidate observations were generated. Extracted text remains available above and no LCR write has occurred.</p>}
+              {selectedAnalysis.open_questions?.length ? <div style={{ marginTop: 12 }}><h4 style={{ margin: "0 0 6px", fontSize: 14 }}>Questions requiring clarification</h4><ul style={{ margin: 0, paddingLeft: 20 }}>{selectedAnalysis.open_questions.map((question, index) => <li key={index} style={{ fontSize: 13, marginBottom: 4 }}>{question}</li>)}</ul></div> : null}
+              {reviewNotice ? <p role="status" style={{ marginTop: 12, padding: 10, border: "1px solid var(--border)", borderRadius: 8, fontSize: 13 }}>{reviewNotice}</p> : null}
+            </section> : null}
             {selected.sha256 && <p style={{ marginTop: 14, fontSize: 11, overflowWrap: "anywhere", color: "var(--text-secondary)" }}>Original file SHA-256: {selected.sha256}</p>}
           </div>
         </section>
