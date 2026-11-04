@@ -475,7 +475,7 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Server-side extraction is available for ${extracted} file(s); ${extractionUnavailable} file(s) remain stored without a usable extraction. Scanned-image OCR is not available yet. Extracted text remains source material for caregiver review, not verified LCR facts.`,
+        text: `Saved ${saved} original file(s). Server-side extraction is available for ${extracted} file(s); ${extractionUnavailable} file(s) remain stored without a usable extraction. Scanned-image OCR is not available yet. Scanned statements remain source evidence, not verified LCR facts. Extracted text remains source material for caregiver review, not verified LCR facts.`,
       });
       await loadDocuments(true);
     } catch {
