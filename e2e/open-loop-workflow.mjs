@@ -301,6 +301,9 @@ try {
     localStorage.setItem("solenos_care_recipient_display_name", "CI synthetic care recipient");
   });
   await page.goto(new URL("/workspace", frontend).toString(), { waitUntil: "domcontentloaded" });
+  const integrityDisclosure = page.locator("details.lcr-advanced-integrity > summary");
+  await integrityDisclosure.waitFor({ state: "visible", timeout: 15_000 });
+  await integrityDisclosure.click();
   const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
   await conflictPanel.getByRole("heading", { name: "Conflict comparison and resolution history" }).waitFor({ timeout: 20_000 });
   await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);
