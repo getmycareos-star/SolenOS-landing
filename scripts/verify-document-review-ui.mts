@@ -8,6 +8,8 @@ assert(source.includes("/documents/analyses/"), "the saved extraction must be re
 assert(source.includes("candidate.source_quote"), "every candidate must display its source quotation");
 assert(source.includes("source_span_start"), "candidate source offsets must be part of the client contract");
 assert(source.includes("Correct and add to LCR"), "caregivers must be able to correct candidate text before accepting it");
+assert(source.includes("Append correction to LCR"), "caregivers must be able to correct an already accepted report without erasing its history");
+assert(source.includes("superseded_assertion_id"), "correction lineage must be displayed");
 assert(source.includes("Needs clarification"), "caregivers must be able to defer uncertain candidates");
 assert(source.includes("Review history"), "append-only review versions must be visible");
 assert(source.includes("OCR confidence measures text recognition only, not clinical certainty"), "OCR confidence must not be presented as clinical certainty");
