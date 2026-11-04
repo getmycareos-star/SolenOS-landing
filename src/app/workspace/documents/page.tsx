@@ -55,7 +55,9 @@ type DocumentAnalysis = {
   candidates: DocumentCandidate[];
   open_questions: string[];
   candidate_extraction_status: string;
-  document?: { pages?: Array<{ page_number: number | null; method: string; quality: string; mean_word_confidence?: number | null; word_boxes?: Array<{ text: string; left: number; top: number; width: number; height: number }> }> };
+  candidate_extraction_source_chars?: number;
+  candidate_extraction_truncated?: boolean;
+  document?: { truncated?: boolean; pages?: Array<{ page_number: number | null; method: string; quality: string; mean_word_confidence?: number | null; word_boxes?: Array<{ text: string; left: number; top: number; width: number; height: number }> }> };
 };
 type DocumentReview = {
   review_id: string;
@@ -746,10 +748,12 @@ export default function DocumentsPage() {
               <h3 style={{ margin: "0 0 6px", fontSize: 16 }}>Server-extracted text</h3>
               <p style={{ margin: "0 0 10px", color: "var(--text-secondary)", fontSize: 12 }}>Method: {selectedAnalysis.extraction_method || "not reported"} · Status: {selectedAnalysis.extraction_status}. OCR confidence measures text recognition only, not clinical certainty.</p>
               {selectedAnalysis.extracted_text ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: 260, overflow: "auto", padding: 12, border: "1px solid var(--border)", borderRadius: 8, fontSize: 13, lineHeight: 1.55 }}>{selectedAnalysis.extracted_text}</pre> : <p>No readable text was extracted. The original remains preserved; do not treat this as an empty care history.</p>}
+              {selectedAnalysis.document?.truncated ? <p role="status" style={{ fontSize: 12, padding: 9, border: "1px solid var(--border)", borderRadius: 7 }}>The extracted text was truncated at the configured document limit. The original file remains available; review it before relying on extracted content.</p> : null}
               {selectedAnalysis.document?.pages?.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "10px 0" }}>{selectedAnalysis.document.pages.map((page, index) => <span key={index} style={{ fontSize: 11, padding: "4px 7px", border: "1px solid var(--border)", borderRadius: 6 }}>Page {page.page_number ?? "—"} · {page.method} · {page.quality}{typeof page.mean_word_confidence === "number" ? " · OCR " + page.mean_word_confidence + "%" : ""}</span>)}</div> : null}
               <h3 style={{ margin: "18px 0 6px", fontSize: 16 }}>Information to review</h3>
               <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: 13 }}>These are extraction suggestions, not care facts. Accept or correct only when the quotation accurately supports the observation. Rejected suggestions never enter the LCR.</p>
               {selectedAnalysis.candidate_extraction_status === "unavailable" ? <p role="status">Candidate interpretation is currently unavailable. The original and extracted text are saved, but no care assertion has been created.</p> : null}
+              {selectedAnalysis.candidate_extraction_truncated ? <p role="status" style={{ fontSize: 12, padding: 9, border: "1px solid var(--border)", borderRadius: 7 }}>Candidate suggestions were generated from the first {selectedAnalysis.candidate_extraction_source_chars?.toLocaleString() || "12,000"} characters only. Review the remaining extracted text manually; no claim is made that all pages were interpreted.</p> : null}
               {selectedAnalysis.candidates?.length ? <div style={{ display: "grid", gap: 12 }}>{selectedAnalysis.candidates.map((candidate, index) => {
                 const history = selectedReviews.filter((item) => item.candidate_index === index);
                 const latest = history[history.length - 1];
