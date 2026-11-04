@@ -54,6 +54,7 @@ type CurrentCareItem = {
   source_type: string;
   source_label: string;
   occurred_at?: string | null;
+  reported_at?: string | null;
   recorded_at?: string | null;
   evidence_ids: string[];
   evidence_link_validation?: string;
@@ -66,6 +67,30 @@ type CurrentCareItem = {
   hedge_marker?: string | null;
   ambiguity_note?: string | null;
   extraction_method?: string | null;
+  derived_observations?: Array<{
+    id: string;
+    observation_kind?: string | null;
+    epistemic_status?: string | null;
+    subject_label?: string | null;
+    attribute?: string | null;
+    value_text?: string | null;
+    normalized_value?: string | null;
+    units?: string | null;
+    context?: unknown;
+    observer_label?: string | null;
+    observation_method?: string | null;
+    observed_at?: string | null;
+    recorded_at?: string | null;
+    source_span_start?: number | null;
+    source_span_end?: number | null;
+    source_passage?: string | null;
+    negated?: boolean | null;
+    hedge_marker?: string | null;
+    ambiguity_note?: string | null;
+    extraction_method?: string | null;
+    extraction_version?: string | null;
+    correction_rationale?: string | null;
+  }>;
   claim_count: number;
   evidence_assessment_coverage?: string;
   evidence_assessments?: Array<{
@@ -396,7 +421,30 @@ function displayDescription(value?: string | null): string {
   try {
     const parsed: unknown = JSON.parse(value);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      const entries = Object.entries(parsed as Record<string, unknown>)
+      const parsedRecord = parsed as Record<string, unknown>;
+      const quickValue = parsedRecord.quick_check_in;
+      if (quickValue && typeof quickValue === "object" && !Array.isArray(quickValue)) {
+        const quick = quickValue as Record<string, unknown>;
+        const kindLabels: Record<string, string> = {
+          same_as_usual: "Same as usual",
+          change: "Something changed",
+          concern: "I have a concern",
+          care_completed: "Care was completed",
+          uncertain: "I’m not sure",
+        };
+        const areas = Array.isArray(quick.selected_areas)
+          ? quick.selected_areas.filter((item): item is string => typeof item === "string")
+              .map((item) => item.replaceAll("_", " "))
+          : [];
+        const summary = typeof parsedRecord.notes === "string" ? parsedRecord.notes : "";
+        return [
+          summary,
+          `Update type: ${kindLabels[String(quick.kind)] || "Caregiver check-in"}`,
+          areas.length ? `Areas selected: ${areas.join(", ")}` : "",
+          quick.scope === "selected_areas_only" ? "Scope: selected areas only" : "",
+        ].filter(Boolean).join("\n");
+      }
+      const entries = Object.entries(parsedRecord)
         .filter(([, item]) => item !== null && item !== undefined && item !== "");
       if (entries.length > 0) {
         return entries.map(([key, item]) =>
@@ -553,19 +601,42 @@ export function LCRCurrentUnderstanding() {
           : "Persisted pattern history is unavailable.");
       }
       try {
-        const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
-        if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
-          setAssessment(saved.assessment);
-          setSourceFreshness(saved.source_freshness ?? null);
-        } else {
-          setAssessment(null);
-          setSourceFreshness(null);
+        // Rebuild the assessment from the freshly retrieved, person-scoped
+        // persisted sources. The backend deduplicates semantically unchanged
+        // snapshots, so reopening the LCR does not create needless history.
+        const rebuilt = await postJSON("/care-continuity/situation-understanding/reassess", {}) as {
+          person_id?: string;
+          assessment?: SituationAssessment;
+          source_freshness?: SituationAssessmentResponse["source_freshness"];
+        };
+        if (rebuilt.person_id !== session.person.id || rebuilt.assessment?.person_id !== session.person.id) {
+          throw new Error("The rebuilt situation assessment did not match the active care-record session.");
         }
+        setAssessment(rebuilt.assessment);
+        setSourceFreshness(rebuilt.source_freshness ?? null);
         setAssessmentError(null);
       } catch (assessmentCause) {
-        setAssessment(null);
-        setSourceFreshness(null);
-        setAssessmentError(assessmentCause instanceof Error ? assessmentCause.message : "Situation assessment is unavailable.");
+        const reason = assessmentCause instanceof Error
+          ? assessmentCause.message
+          : "The situation assessment could not be rebuilt.";
+        // Preserve visibility of the last persisted snapshot, but label it
+        // explicitly as stale when a fresh evidence-derived rebuild fails.
+        try {
+          const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
+          if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
+            setAssessment(saved.assessment);
+            setSourceFreshness(saved.source_freshness ?? null);
+            setAssessmentError(`Reassessment failed; showing the last saved assessment. ${reason}`);
+          } else {
+            setAssessment(null);
+            setSourceFreshness(null);
+            setAssessmentError(reason);
+          }
+        } catch {
+          setAssessment(null);
+          setSourceFreshness(null);
+          setAssessmentError(reason);
+        }
       }
     } catch (cause) {
       setPersonId("");
@@ -1316,7 +1387,7 @@ export function LCRCurrentUnderstanding() {
                       <article key={item.id} className="lcr-current-fact">
                         <strong>{item.title}</strong>
                         <p>{item.description || "No source description was recorded."}</p>
-                        <small>{item.event_type.replaceAll("_", " ")} · {item.status}</small>
+                        <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : item.event_type.replaceAll("_", " ")} · {item.status === "recorded" ? "Saved" : item.status.replaceAll("_", " ")}</small>
                         <small>Observed: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
                         <small>Recorded: {formatWhen(item.recorded_at)}</small>
                         <small>Time provenance: {item.time_provenance || "Not recorded"}</small>
@@ -1610,13 +1681,44 @@ export function LCRCurrentUnderstanding() {
                   <li key={item.source_collection + ":" + item.id} className="lcr-current-fact">
                     <div className="lcr-entry-heading">
                       <strong>{item.title || item.kind || "Care record item"}</strong>
-                      <span>{item.epistemic_status || "Status not recorded"}</span>
+                      <span>{item.epistemic_status === "caregiver_reported" ? "Caregiver-reported" : item.epistemic_status === "inferred" ? "Possible interpretation" : item.epistemic_status === "unknown" ? "Not yet known" : item.epistemic_status || "Status not recorded"}</span>
                     </div>
                     <p>{displayDescription(item.description)}</p>
-                    <p className="lcr-entry-status">{item.kind} · {item.status || "Status not recorded"}</p>
-                    <small>Source: {item.source_label || "Not recorded"} · Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
-                    {item.evidence_ids?.length > 0 && <small>Linked evidence: {item.evidence_ids.join(", ")}</small>}
-                    {item.evidence_link_validation && <small>Evidence linkage: {item.evidence_link_validation.replaceAll("_", " ")}</small>}
+                    <p className="lcr-entry-status">{item.kind} · {item.status === "recorded" ? "Saved" : (item.status || "Status not recorded").replaceAll("_", " ")}</p>
+                    <small>Source: {item.source_label || "Not recorded"} · {item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    {item.evidence_ids?.length > 0 && <small>Original caregiver report linked to this entry</small>}
+                    {item.evidence_link_validation && <small>{item.evidence_link_validation === "valid" ? "Source record linked" : "Source record status: " + item.evidence_link_validation.replaceAll("_", " ")}</small>}
+                    {item.derived_observations && item.derived_observations.length > 0 && (
+                      <details className="lcr-entry-status">
+                        <summary>Structured observations extracted from this report ({item.derived_observations.length})</summary>
+                        <p>These are structured readings of the same source report, not independent corroborating reports.</p>
+                        <ul>
+                          {item.derived_observations.map((observation) => (
+                            <li key={observation.id}>
+                              <strong>{observation.attribute?.replaceAll("_", " ") || observation.observation_kind || "Recorded observation"}</strong>
+                              {observation.subject_label && <small>Subject: {observation.subject_label}</small>}
+                              {observation.observer_label && <small>Reported by: {observation.observer_label}</small>}
+                              {observation.observation_method && <small>Observation method: {observation.observation_method}</small>}
+                              {observation.context != null && <p>Context: {typeof observation.context === "string" ? observation.context : JSON.stringify(observation.context)}</p>}
+                              {observation.value_text && <p>{observation.value_text}</p>}
+                              <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
+                              {observation.source_passage && (
+                                <details>
+                                  <summary>Inspect original source passage</summary>
+                                  <blockquote>{observation.source_passage}</blockquote>
+                                </details>
+                              )}
+                              {observation.negated != null && <small>Negated in source: {observation.negated ? "Yes" : "No"}</small>}
+                              {observation.hedge_marker && <small>Uncertainty wording: {observation.hedge_marker}</small>}
+                              {observation.ambiguity_note && <small>Ambiguity: {observation.ambiguity_note}</small>}
+                              {observation.correction_rationale && <small>Correction rationale: {observation.correction_rationale}</small>}
+                              <small>Source span: {observation.source_span_start ?? "unknown"}–{observation.source_span_end ?? "unknown"}</small>
+                              <small>Extraction: {observation.extraction_method || "not recorded"} · Version: {observation.extraction_version || "not recorded"} · Observation reference: {observation.id}</small>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                     {item.source_collection === "evidence_observations" && (
                       <div className="lcr-entry-status">
                         <small>
@@ -1676,15 +1778,19 @@ export function LCRCurrentUnderstanding() {
               {projection.has_more && <p>Showing the first {projection.item_count} prioritized items. More items exist in the record.</p>}
             </div>
           )}
-          <p className="lcr-footer-note">View as of {formatWhen(projection.as_of)} · Coverage: {projection.history_coverage.replaceAll("_", " ")}.</p>
+          <p className="lcr-footer-note">Information shown as of {formatWhen(projection.as_of)}. This view reflects the records currently available to SolenOS.</p>
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <EvidenceReviewPanel personId={personId} />
-      <ClaimAssessmentPanel />
-      <ConflictResolutionPanel personId={personId} />
-      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
-      <CareContinuityIntegrityPanel personId={personId} />
+      <details className="lcr-advanced-integrity">
+        <summary>Evidence, corrections and record integrity</summary>
+        <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
+        <EvidenceReviewPanel personId={personId} />
+        <ClaimAssessmentPanel />
+        <ConflictResolutionPanel personId={personId} />
+        <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+        <CareContinuityIntegrityPanel personId={personId} />
+      </details>
     </section>
   );
 }

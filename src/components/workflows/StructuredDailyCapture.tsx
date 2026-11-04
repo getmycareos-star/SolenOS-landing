@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { postJSON, postFormData, getPersonId, getCaregiverId } from '@/api/client';
 import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
@@ -78,7 +78,10 @@ export default function StructuredDailyCapture() {
     }>,
     notes: '',
   });
-  
+  // Retain the request key across an uncertain network outcome. A changed
+  // form snapshot receives a new key; an unchanged retry reuses the old one.
+  const captureSubmissionRef = useRef<{ fingerprint: string; key: string } | null>(null);
+
   // Medication form state
   const [medicationForm, setMedicationForm] = useState<{
     medication_name: string;
@@ -503,12 +506,14 @@ export default function StructuredDailyCapture() {
         note: string | null;
       }>;
       notes: string;
+      captureIdempotencyKey: string;
     }
   >({
-    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes }) => 
+    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes, captureIdempotencyKey }) => 
       postJSON('/daily/log', {
         person_id: personId,
         caregiver_id: caregiverId,
+        capture_idempotency_key: captureIdempotencyKey,
         medications: medications.map(med => ({
           ...med,
           scheduled_for: med.scheduled_for ? new Date(med.scheduled_for).toISOString() : null,
@@ -535,6 +540,7 @@ export default function StructuredDailyCapture() {
       };
     },
     onSuccess: async (data, variables, context) => {
+      captureSubmissionRef.current = null;
       setChangeIntelligenceStatus(
         data?.change_intelligence_status === 'available' || data?.change_intelligence_status === 'unavailable'
           ? data.change_intelligence_status
@@ -646,13 +652,24 @@ export default function StructuredDailyCapture() {
       return;
     }
 
-    await submitDailyLog({
+    const submission = {
       personId,
       caregiverId,
       medications: form.medications,
       vitals: form.vitals,
       scales: form.scales,
-      notes: form.notes
+      notes: form.notes,
+    };
+    const fingerprint = JSON.stringify(submission);
+    if (!captureSubmissionRef.current || captureSubmissionRef.current.fingerprint !== fingerprint) {
+      captureSubmissionRef.current = {
+        fingerprint,
+        key: crypto.randomUUID(),
+      };
+    }
+    await submitDailyLog({
+      ...submission,
+      captureIdempotencyKey: captureSubmissionRef.current.key,
     });
   };
 

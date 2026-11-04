@@ -264,7 +264,29 @@ function parseDescription(description?: string | null): string {
     const parsed: unknown = JSON.parse(description);
     if (typeof parsed === "string") return parsed;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return Object.entries(parsed as Record<string, unknown>)
+      const record = parsed as Record<string, unknown>;
+      const quick = record.quick_check_in;
+      if (quick && typeof quick === "object" && !Array.isArray(quick)) {
+        const checkIn = quick as Record<string, unknown>;
+        const labels: Record<string, string> = {
+          same_as_usual: "Same as usual",
+          change: "Something changed",
+          concern: "A concern was reported",
+          care_completed: "Care was completed",
+          uncertain: "The caregiver was unsure",
+        };
+        const areas = Array.isArray(checkIn.selected_areas)
+          ? checkIn.selected_areas.filter((area): area is string => typeof area === "string")
+              .map((area) => area.replaceAll("_", " "))
+          : [];
+        const lines = [
+          typeof record.notes === "string" ? record.notes : "",
+          "Update: " + (labels[String(checkIn.kind)] || "Caregiver check-in"),
+          areas.length ? "Areas selected: " + areas.join(", ") : "No individual care areas were assessed.",
+        ];
+        return lines.filter(Boolean).join("\n");
+      }
+      return Object.entries(record)
         .filter(([, value]) => value !== null && value !== undefined && value !== "")
         .map(([key, value]) => {
           const label = key.replaceAll("_", " ");
@@ -666,6 +688,7 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
+        getJSON("/care-continuity/current-care?limit_per_source=50"),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
@@ -673,15 +696,87 @@ export function HistoryDrawer() {
       let availableSources = 0;
 
       const eventResult = results[0];
-      if (eventResult.status === "fulfilled" && Array.isArray(eventResult.value)) {
+      let eventReadProblem = eventResult.status === "rejected";
+      const eventPayload = eventResult.status === "fulfilled" ? eventResult.value : null;
+      const eventItems = Array.isArray(eventPayload)
+        ? eventPayload
+        : eventPayload && typeof eventPayload === "object" && Array.isArray((eventPayload as { items?: unknown }).items)
+          ? (eventPayload as { items: unknown[] }).items
+          : eventPayload && typeof eventPayload === "object" && Array.isArray((eventPayload as { events?: unknown }).events)
+            ? (eventPayload as { events: unknown[] }).events
+            : eventPayload && typeof eventPayload === "object" && Array.isArray((eventPayload as { data?: unknown }).data)
+              ? (eventPayload as { data: unknown[] }).data
+              : null;
+      if (eventResult.status === "fulfilled" && eventItems) {
         availableSources += 1;
-        const validEvents = (eventResult.value as CareEvent[]).filter((item) =>
+        const validEvents = (eventItems as CareEvent[]).filter((item) =>
           Boolean(item && typeof item.id === "string" && typeof item.person_id === "string" &&
             typeof item.event_type === "string" && typeof item.title === "string")
         );
         nextRecords.push(...validEvents.map((event) => ({ ...event, source_kind: "care-event" as const })));
       } else {
-        warnings.push("Daily care and care-event history could not be loaded.");
+        eventReadProblem = true;
+      }
+      if (eventItems && eventItems.length > 0 && nextRecords.filter((record) => record.source_kind === "care-event").length === 0) {
+        eventReadProblem = true;
+      }
+
+      // The LCR projection reads the same persisted care-event source through
+      // its own authenticated route. Use it as a bounded fallback when the
+      // dedicated event-history route fails or returns no event rows.
+      {
+        const projectionResult = results[8];
+        const projection = projectionResult.status === "fulfilled" && projectionResult.value &&
+          typeof projectionResult.value === "object"
+          ? projectionResult.value as {
+            items?: unknown;
+            source_coverage?: Record<string, { status?: string; returned_count?: number }>;
+          }
+          : null;
+        const projectionItems = projection && Array.isArray(projection.items)
+          ? projection.items as Array<Record<string, unknown>>
+          : [];
+        const fallbackEvents = projectionItems.filter((item) =>
+          item.source_collection === "events" &&
+          typeof item.id === "string" &&
+          typeof item.title === "string"
+        );
+        const existingEventIds = new Set(nextRecords.filter((record) => record.source_kind === "care-event").map((record) => record.id));
+        for (const item of fallbackEvents) {
+          if (existingEventIds.has(item.id as string)) continue;
+          nextRecords.push({
+            id: item.id as string,
+            person_id: session.person.id,
+            event_type: typeof item.source_event_type === "string" ? item.source_event_type : "daily_care",
+            status: typeof item.status === "string" ? item.status : "recorded",
+            occurred_at: typeof item.occurred_at === "string" ? item.occurred_at : null,
+            recorded_at: typeof item.recorded_at === "string" ? item.recorded_at : null,
+            title: item.title as string,
+            description: typeof item.description === "string" ? item.description : null,
+            evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.filter((id): id is string => typeof id === "string") : [],
+            source_kind: "care-event",
+            tags: ["daily-care", "lcr-projection-fallback"],
+          });
+          existingEventIds.add(item.id as string);
+        }
+        if (fallbackEvents.length > 0 && !(eventResult.status === "fulfilled" && eventItems)) {
+          availableSources += 1;
+        }
+        const eventCoverage = projection?.source_coverage?.events;
+        const eventCoverageStatus = String(eventCoverage?.status || "").toLowerCase();
+        const eventSourceVerifiedEmpty = (
+          ["available", "empty", "complete"].includes(eventCoverageStatus) &&
+          Number(eventCoverage?.returned_count ?? -1) === 0
+        );
+        if (eventReadProblem && fallbackEvents.length > 0) {
+          warnings.push("The dedicated history read was unavailable; care events were recovered from the LCR projection.");
+        } else if (
+          fallbackEvents.length === 0 &&
+          !eventSourceVerifiedEmpty &&
+          (eventReadProblem || eventItems?.length === 0 || projectionResult.status === "rejected")
+        ) {
+          warnings.push("Event history could not be verified from either read path. A zero count is not confirmation that the care record is empty.");
+        }
       }
 
       const evidenceResult = results[1];
@@ -1024,8 +1119,8 @@ export function HistoryDrawer() {
                   ) : visibleRecords.length === 0 ? (
                     <div className="history-empty">
                       <HistoryEmptyIcon />
-                      <strong>{records.length ? "No matching records" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
+                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not retrieve every source. This empty view is not evidence that no care was recorded. Refresh to try again." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
