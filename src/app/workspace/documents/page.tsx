@@ -593,7 +593,11 @@ export default function DocumentsPage() {
           : "A caregiver-reviewed report was added to the Living Care Record with its original document quotation and source link. It is not a clinically verified fact."
         : result.resulting_question_id
           ? "A person-scoped clarification question was saved with the original document evidence. The Living Care Record was not changed."
-          : "The review decision was saved. The Living Care Record was not changed.");
+          : decision === "correct"
+            ? "The correction was saved as a proposal. The Living Care Record was not changed; accept the corrected version separately to add it."
+            : decision === "reject"
+              ? "The candidate was rejected. No Living Care Record assertion was created."
+              : "The review decision was saved. The Living Care Record was not changed.");
     } catch {
       setReviewError("The review could not be confirmed. Reload the document history before retrying.");
     } finally {
