@@ -441,6 +441,7 @@ export default function DocumentsPage() {
     let extracted = 0;
     let understood = 0;
     let extractionUnavailable = 0;
+    let understandingUnavailable = 0;
     try {
       const session = await ensureAnonymousSession();
       for (const page of reviewPages) {
@@ -473,6 +474,7 @@ export default function DocumentsPage() {
             } catch {
               // The original and persisted extraction remain available. The Documents review panel
               // will show no interpretation until the caregiver retries when Qwen is available.
+              understandingUnavailable += 1;
             }
           } else extractionUnavailable += 1;
         } catch {
@@ -486,7 +488,7 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Server extraction is available for ${extracted}; document understanding is available for ${understood}; ${extractionUnavailable} file(s) remain stored without usable extraction. Interpretation remains review-only until you accept a statement.`,
+        text: `Saved ${saved} original file(s). Server extraction is available for ${extracted}; document understanding is available for ${understood}; ${understandingUnavailable} extracted file(s) still need document understanding; ${extractionUnavailable} file(s) have no usable server extraction. Interpretation remains review-only until you accept a statement.`,
       });
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
