@@ -17,6 +17,7 @@ type Analysis = {
   observations: Candidate[];
   open_questions?: string[];
   review_required: boolean;
+  extractedText?: string;
 };
 type ListResponse = { items?: Analysis[] };
 
@@ -33,7 +34,14 @@ export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refre
     try {
       await ensureAnonymousSession();
       const result = await getJSON("/documents/intelligence") as ListResponse;
-      setItems(Array.isArray(result.items) ? result.items : []);
+      const summaries = Array.isArray(result.items) ? result.items : [];
+      const hydrated = await Promise.all(summaries.map(async (item) => {
+        try {
+          const detail = await getJSON("/documents/analyses/" + encodeURIComponent(item.analysis_id)) as { extracted_text?: string };
+          return { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "" };
+        } catch { return { ...item, extractedText: "" }; }
+      }));
+      setItems(hydrated);
     } catch {
       setError("Saved document reviews could not be loaded. Retry without re-uploading the original.");
     } finally {
@@ -79,6 +87,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refre
       {!items.length ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a text-based document and run server extraction to begin review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
+          {analysis.extractedText && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}><summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre></details>}
           {analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No care statements were extracted. No LCR facts were created.</p>}
           {analysis.observations.map((candidate, index) => {
             const key = analysis.analysis_id + ":" + index;
