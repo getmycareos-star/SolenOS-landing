@@ -1,0 +1,109 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+
+type Candidate = {
+  subject: string;
+  observation: string;
+  source_quote: string;
+  review_status: string;
+  review_decision?: string;
+};
+type Analysis = {
+  analysis_id: string;
+  source_evidence_id: string;
+  document_name: string;
+  observations: Candidate[];
+  open_questions?: string[];
+  review_required: boolean;
+};
+type ListResponse = { items?: Analysis[] };
+
+export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refreshToken?: number }) {
+  const [items, setItems] = useState<Analysis[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [corrections, setCorrections] = useState<Record<string, { subject: string; observation: string }>>({});
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await ensureAnonymousSession();
+      const result = await getJSON("/documents/intelligence") as ListResponse;
+      setItems(Array.isArray(result.items) ? result.items : []);
+    } catch {
+      setError("Saved document reviews could not be loaded. Retry without re-uploading the original.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load, refreshToken]);
+
+  const decide = async (analysis: Analysis, index: number, decision: "accept" | "reject" | "correct") => {
+    const key = analysis.analysis_id + ":" + index;
+    setBusy(key);
+    setError(null);
+    try {
+      const correction = corrections[key];
+      await postJSON("/documents/intelligence/" + encodeURIComponent(analysis.analysis_id) + "/review", {
+        candidate_index: index,
+        decision,
+        ...(decision === "correct" ? {
+          corrected_subject: correction?.subject ?? analysis.observations[index].subject,
+          corrected_observation: correction?.observation ?? analysis.observations[index].observation,
+        } : {}),
+      });
+      await load();
+    } catch {
+      setError("The review decision was not saved. Check the connection and retry; the original document remains unchanged.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (loading && items.length === 0) {
+    return <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}><p role="status">Loading saved document understanding…</p></section>;
+  }
+
+  return (
+    <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+        <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Review each extracted statement before it enters the Living Care Record.</p></div>
+        <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
+      </div>
+      {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
+      {!items.length ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a text-based document and run server extraction to begin review.</p> : items.map((analysis) => (
+        <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
+          {analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No care statements were extracted. No LCR facts were created.</p>}
+          {analysis.observations.map((candidate, index) => {
+            const key = analysis.analysis_id + ":" + index;
+            const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
+            const correction = corrections[key] || { subject: candidate.subject, observation: candidate.observation };
+            return <div key={key} style={{ display: "grid", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 14 }}>{candidate.subject}</strong><span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{candidate.review_status.replaceAll("_", " ")}</span></div>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{candidate.observation}</p>
+              <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>EXACT SOURCE QUOTATION</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</p></div>
+              {pending && <>
+                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected subject<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
+                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected interpretation<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept into LCR</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Save correction for approval</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
+                </div>
+              </>}
+              {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A source-linked, attributed assertion was saved to the LCR; it is not independently verified clinical fact.</p>}
+              {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>}
+            </div>;
+          })}
+          {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: 12 }}>Questions that remain open</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: 13 }}>{analysis.open_questions?.map((question, i) => <li key={i}>{question}</li>)}</ul></div>}
+        </article>
+      ))}
+    </section>
+  );
+}
