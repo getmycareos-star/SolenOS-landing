@@ -488,7 +488,7 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Server extraction is available for ${extracted}; document understanding is available for ${understood}; ${understandingUnavailable} extracted file(s) still need document understanding; ${extractionUnavailable} file(s) have no usable server extraction. Interpretation remains review-only until you accept a statement.`,
+        text: `Saved ${saved} original file(s). Server extraction is available for ${extracted}; document understanding is available for ${understood}; ${understandingUnavailable} extracted file(s) still need document understanding; ${extractionUnavailable} file(s) have no usable server extraction. Interpretation remains review-only until you accept a statement. Scanned statements remain source evidence, not verified LCR facts.`,
       });
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
