@@ -584,14 +584,16 @@ export default function DocumentsPage() {
           corrected_observation: decision === "correct" ? correction?.observation : undefined,
           idempotency_key: "doc-review-" + crypto.randomUUID(),
         },
-      ) as { written_to_lcr?: boolean; resulting_assertion_id?: string | null; superseded_assertion_id?: string | null };
+      ) as { written_to_lcr?: boolean; resulting_assertion_id?: string | null; superseded_assertion_id?: string | null; resulting_question_id?: string | null };
       const history = await getJSON("/documents/analyses/" + encodeURIComponent(selectedAnalysis.analysis_id) + "/reviews") as { reviews?: DocumentReview[] };
       setSelectedReviews(Array.isArray(history.reviews) ? history.reviews : []);
       setReviewNotice(result.written_to_lcr
         ? result.superseded_assertion_id
-          ? "A correction was appended to the Living Care Record. The previous report remains in history and is marked superseded."
+          ? "The caregiver accepted the correction. A new reported LCR entry was saved; the previous report remains in history and is marked superseded."
           : "A caregiver-reviewed report was added to the Living Care Record with its original document quotation and source link. It is not a clinically verified fact."
-        : "The review decision was saved. The Living Care Record was not changed.");
+        : result.resulting_question_id
+          ? "A person-scoped clarification question was saved with the original document evidence. The Living Care Record was not changed."
+          : "The review decision was saved. The Living Care Record was not changed.");
     } catch {
       setReviewError("The review could not be confirmed. Reload the document history before retrying.");
     } finally {
@@ -802,7 +804,7 @@ export default function DocumentsPage() {
                       <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "clarify")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Needs clarification</button>
                     </>}
                   </div>
-                  {history.length > 0 ? <details style={{ marginTop: 9 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Review history ({history.length})</summary>{history.map((item) => <p key={item.review_id} style={{ fontSize: 12, color: "var(--text-secondary)" }}>Version {item.decision_version}: {item.decision} · {formatDate(item.created_at)}{item.corrected_subject || item.corrected_observation ? " · corrected to: " + [item.corrected_subject, item.corrected_observation].filter(Boolean).join(" — ") : ""}{item.resulting_assertion_id ? " · LCR assertion created" : ""}{item.superseded_assertion_id ? " · superseded prior assertion " + item.superseded_assertion_id : ""}</p>)}</details> : null}
+                  {history.length > 0 ? <details style={{ marginTop: 9 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Review history ({history.length})</summary>{history.map((item) => <p key={item.review_id} style={{ fontSize: 12, color: "var(--text-secondary)" }}>Version {item.decision_version}: {item.decision} · {formatDate(item.created_at)}{item.corrected_subject || item.corrected_observation ? " · corrected to: " + [item.corrected_subject, item.corrected_observation].filter(Boolean).join(" — ") : ""}{item.resulting_assertion_id ? " · LCR assertion created" : ""}{item.superseded_assertion_id ? " · superseded prior assertion " + item.superseded_assertion_id : ""}{item.resulting_question_id ? " · clarification question saved" : ""}</p>)}</details> : null}
                 </article>;
               })}</div> : <p>No candidate observations were generated. Extracted text remains available above and no LCR write has occurred.</p>}
               {selectedAnalysis.open_questions?.length ? <div style={{ marginTop: 12 }}><h4 style={{ margin: "0 0 6px", fontSize: 14 }}>Questions requiring clarification</h4><ul style={{ margin: 0, paddingLeft: 20 }}>{selectedAnalysis.open_questions.map((question, index) => <li key={index} style={{ fontSize: 13, marginBottom: 4 }}>{question}</li>)}</ul></div> : null}
