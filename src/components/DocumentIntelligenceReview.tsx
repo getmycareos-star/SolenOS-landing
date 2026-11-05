@@ -21,8 +21,9 @@ type Analysis = {
   extractedText?: string;
 };
 type ListResponse = { items?: Analysis[] };
+type LibraryDocument = { id: string; title: string };
 
-export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refreshToken?: number }) {
+export default function DocumentIntelligenceReview({ refreshToken = 0, documents = [] }: { refreshToken?: number; documents?: LibraryDocument[] }) {
   const [items, setItems] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -52,6 +53,25 @@ export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refre
 
   useEffect(() => { void load(); }, [load, refreshToken]);
 
+
+  const extractAndAnalyze = async (document: LibraryDocument) => {
+    const key = "extract:" + document.id;
+    setBusy(key);
+    setError(null);
+    try {
+      await postJSON("/documents/" + encodeURIComponent(document.id) + "/extract", {});
+      try {
+        await postJSON("/documents/" + encodeURIComponent(document.id) + "/intelligence", {});
+      } catch {
+        setError("The original and server extraction are saved, but document understanding did not finish. Retry it from the review list.");
+      }
+      await load();
+    } catch {
+      setError("Server extraction could not be completed for this saved document. The original remains preserved.");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const analyze = async (analysis: Analysis) => {
     const key = "analyze:" + analysis.analysis_id;
@@ -100,7 +120,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refre
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
       </div>
       {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
-      {!items.length ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a text-based document and run server extraction to begin review.</p> : items.map((analysis) => (
+      {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: 13 }}>Saved documents awaiting server extraction</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => <div key={document.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", padding: 9, border: "1px solid var(--border)", borderRadius: 8 }}><span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span><button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Extract and understand</button></div>)}</div>}
+      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a text-based document and run server extraction to begin review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
           {analysis.extractedText && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}><summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre></details>}
