@@ -7,8 +7,9 @@ assert(source.includes("/reviews"), "document review history must be restored fr
 assert(source.includes("/documents/analyses/"), "the saved extraction must be retrieved from the backend");
 assert(source.includes("candidate.source_quote"), "every candidate must display its source quotation");
 assert(source.includes("source_span_start"), "candidate source offsets must be part of the client contract");
-assert(source.includes("Correct and add to LCR"), "caregivers must be able to correct candidate text before accepting it");
-assert(source.includes("Append correction to LCR"), "caregivers must be able to correct an already accepted report without erasing its history");
+assert(source.includes("Save correction for approval"), "corrections must remain pending until separately accepted");
+assert(source.includes("Propose a correction (requires separate acceptance)"), "corrections to accepted reports must not immediately overwrite LCR state");
+assert(source.includes("Accept corrected version into LCR"), "a proposed correction must require a distinct acceptance action");
 assert(source.includes("superseded_assertion_id"), "correction lineage must be displayed");
 assert(source.includes("Needs clarification"), "caregivers must be able to defer uncertain candidates");
 assert(source.includes("Review history"), "append-only review versions must be visible");
