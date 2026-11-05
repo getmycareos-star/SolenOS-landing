@@ -60,12 +60,16 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     setError(null);
     try {
       await postJSON("/documents/" + encodeURIComponent(document.id) + "/extract", {});
+      let interpretationFailed = false;
       try {
         await postJSON("/documents/" + encodeURIComponent(document.id) + "/intelligence", {});
       } catch {
-        setError("The original and server extraction are saved, but document understanding did not finish. Retry it from the review list.");
+        interpretationFailed = true;
       }
       await load();
+      if (interpretationFailed) {
+        setError("The original and server extraction are saved, but document understanding did not finish. Retry it from the review list.");
+      }
     } catch {
       setError("Server extraction could not be completed for this saved document. The original remains preserved.");
     } finally {
