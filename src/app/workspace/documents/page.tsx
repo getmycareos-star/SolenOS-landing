@@ -46,7 +46,7 @@ type CropInsets = { top: number; right: number; bottom: number; left: number };
 type ReviewPage = { file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
-type DocumentCandidate = { subject: string; observation: string; source_quote: string; source_span_start: number; source_span_end: number };
+type DocumentCandidate = { subject: string; observation: string; source_quote: string; source_span_start: number; source_span_end: number; source_page_number?: number };
 type DocumentAnalysis = {
   analysis_id: string;
   extraction_status: string;
@@ -824,7 +824,7 @@ export default function DocumentsPage() {
                   <input value={correction.subject} disabled={reviewBusyCandidate !== null} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, subject: event.target.value } }))} style={{ width: "100%", minHeight: 40, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} />
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, margin: "8px 0 4px" }}>Suggested observation</label>
                   <textarea value={correction.observation} disabled={reviewBusyCandidate !== null} rows={3} onChange={(event) => setCandidateCorrections((current) => ({ ...current, [index]: { ...correction, observation: event.target.value } }))} style={{ width: "100%", padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} />
-                  <p style={{ margin: "9px 0 4px", fontSize: 12, fontWeight: 700 }}>Exact quotation from the original extraction</p>
+                  <p style={{ margin: "9px 0 4px", fontSize: 12, fontWeight: 700 }}>Exact quotation from the original extraction{candidate.source_page_number ? " · Page " + candidate.source_page_number : ""}</p>
                   <blockquote style={{ margin: 0, padding: 9, borderLeft: "3px solid var(--border)", background: "var(--bg)", fontSize: 13, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</blockquote>
                   {latest?.resulting_assertion_id ? <p style={{ margin: "9px 0 0", fontSize: 12 }}>Added as a reported LCR entry. Assertion ID: {latest.resulting_assertion_id}</p> : null}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
