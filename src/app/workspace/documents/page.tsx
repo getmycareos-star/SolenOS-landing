@@ -539,7 +539,7 @@ export default function DocumentsPage() {
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
 
-      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} />
+      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
 
       <section aria-label="Document library" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
