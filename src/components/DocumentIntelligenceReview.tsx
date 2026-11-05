@@ -17,6 +17,7 @@ type Analysis = {
   observations: Candidate[];
   open_questions?: string[];
   review_required: boolean;
+  intelligence_status?: string;
   extractedText?: string;
 };
 type ListResponse = { items?: Analysis[] };
@@ -50,6 +51,21 @@ export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refre
   }, []);
 
   useEffect(() => { void load(); }, [load, refreshToken]);
+
+
+  const analyze = async (analysis: Analysis) => {
+    const key = "analyze:" + analysis.analysis_id;
+    setBusy(key);
+    setError(null);
+    try {
+      await postJSON("/documents/" + encodeURIComponent(analysis.source_evidence_id) + "/intelligence", {});
+      await load();
+    } catch {
+      setError("Document understanding is not available yet. The original and extracted text remain saved; retry when document analysis is available.");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const decide = async (analysis: Analysis, index: number, decision: "accept" | "reject" | "correct") => {
     const key = analysis.analysis_id + ":" + index;
@@ -88,7 +104,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0 }: { refre
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
           {analysis.extractedText && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}><summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre></details>}
-          {analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No care statements were extracted. No LCR facts were created.</p>}
+          {analysis.intelligence_status !== "available" && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and server-extracted text remain saved; no LCR facts were created.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Run / retry document understanding</button></div>}
+          {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
           {analysis.observations.map((candidate, index) => {
             const key = analysis.analysis_id + ":" + index;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
