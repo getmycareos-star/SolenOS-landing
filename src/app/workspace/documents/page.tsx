@@ -70,6 +70,7 @@ type DocumentReview = {
   corrected_observation: string | null;
   resulting_assertion_id: string | null;
   superseded_assertion_id?: string | null;
+  resulting_question_id?: string | null;
   created_at: string;
   written_to_lcr: boolean;
 };
@@ -542,10 +543,20 @@ export default function DocumentsPage() {
       const analysis = await getJSON("/documents/analyses/" + encodeURIComponent(extraction.analysis_id)) as DocumentAnalysis;
       setSelectedAnalysis(analysis);
       const history = await getJSON("/documents/analyses/" + encodeURIComponent(extraction.analysis_id) + "/reviews") as { reviews?: DocumentReview[] };
-      setSelectedReviews(Array.isArray(history.reviews) ? history.reviews : []);
-      setCandidateCorrections(Object.fromEntries((analysis.candidates || []).map((candidate, index) => [
-        index, { subject: candidate.subject || "", observation: candidate.observation || "" },
-      ])));
+      const savedReviews = Array.isArray(history.reviews) ? history.reviews : [];
+      setSelectedReviews(savedReviews);
+      const latestByCandidate = new Map<number, DocumentReview>();
+      for (const item of savedReviews) {
+        const previous = latestByCandidate.get(item.candidate_index);
+        if (!previous || item.decision_version > previous.decision_version) latestByCandidate.set(item.candidate_index, item);
+      }
+      setCandidateCorrections(Object.fromEntries((analysis.candidates || []).map((candidate, index) => {
+        const latest = latestByCandidate.get(index);
+        return [index, {
+          subject: latest?.corrected_subject || candidate.subject || "",
+          observation: latest?.corrected_observation || candidate.observation || "",
+        }];
+      })));
     } catch {
       setReviewError("The original is saved, but its server-side extraction or review history could not be loaded. Retry.");
     } finally {
@@ -756,9 +767,16 @@ export default function DocumentsPage() {
               {selectedAnalysis.candidate_extraction_truncated ? <p role="status" style={{ fontSize: 12, padding: 9, border: "1px solid var(--border)", borderRadius: 7 }}>Candidate suggestions were generated from the first {selectedAnalysis.candidate_extraction_source_chars?.toLocaleString() || "12,000"} characters only. Review the remaining extracted text manually; no claim is made that all pages were interpreted.</p> : null}
               {selectedAnalysis.candidates?.length ? <div style={{ display: "grid", gap: 12 }}>{selectedAnalysis.candidates.map((candidate, index) => {
                 const history = selectedReviews.filter((item) => item.candidate_index === index);
-                const latest = history[history.length - 1];
-                const correction = candidateCorrections[index] || { subject: candidate.subject, observation: candidate.observation };
-                const locked = latest?.decision === "accept" || latest?.decision === "correct";
+                const latest = history.reduce<DocumentReview | undefined>((current, item) => (
+                  !current || item.decision_version > current.decision_version ? item : current
+                ), undefined);
+                const correction = candidateCorrections[index] || {
+                  subject: latest?.corrected_subject || candidate.subject,
+                  observation: latest?.corrected_observation || candidate.observation,
+                };
+                const accepted = latest?.decision === "accept";
+                const rejected = latest?.decision === "reject";
+                const correctionPending = latest?.decision === "correct";
                 return <article key={index} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 9 }}>
                   <p style={{ margin: "0 0 5px", fontSize: 12, color: "var(--text-secondary)" }}>Suggestion {index + 1}{latest ? " · Latest decision: " + latest.decision + " (v" + latest.decision_version + ")" : " · Pending caregiver review"}</p>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Suggested subject</label>
@@ -769,12 +787,20 @@ export default function DocumentsPage() {
                   <blockquote style={{ margin: 0, padding: 9, borderLeft: "3px solid var(--border)", background: "var(--bg)", fontSize: 13, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</blockquote>
                   {latest?.resulting_assertion_id ? <p style={{ margin: "9px 0 0", fontSize: 12 }}>Added as a reported LCR entry. Assertion ID: {latest.resulting_assertion_id}</p> : null}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
-                    {!locked ? <>
+                    {correctionPending ? <>
+                      <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "accept")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept corrected version into LCR</button>
+                      <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Update proposed correction</button>
+                      <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "reject")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Reject candidate</button>
+                    </> : accepted ? (
+                      <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Propose a correction (requires separate acceptance)</button>
+                    ) : rejected ? (
+                      <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>
+                    ) : <>
                       <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "accept")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept and add to LCR</button>
-                      <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Correct and add to LCR</button>
+                      <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Save correction for approval</button>
                       <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "reject")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
                       <button type="button" disabled={reviewBusyCandidate !== null} onClick={() => void reviewCandidate(index, "clarify")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Needs clarification</button>
-                    </> : <button type="button" disabled={reviewBusyCandidate !== null || !correction.observation.trim()} onClick={() => void reviewCandidate(index, "correct")} style={{ minHeight: 40, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Append correction to LCR</button>}
+                    </>}
                   </div>
                   {history.length > 0 ? <details style={{ marginTop: 9 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Review history ({history.length})</summary>{history.map((item) => <p key={item.review_id} style={{ fontSize: 12, color: "var(--text-secondary)" }}>Version {item.decision_version}: {item.decision} · {formatDate(item.created_at)}{item.corrected_subject || item.corrected_observation ? " · corrected to: " + [item.corrected_subject, item.corrected_observation].filter(Boolean).join(" — ") : ""}{item.resulting_assertion_id ? " · LCR assertion created" : ""}{item.superseded_assertion_id ? " · superseded prior assertion " + item.superseded_assertion_id : ""}</p>)}</details> : null}
                 </article>;
