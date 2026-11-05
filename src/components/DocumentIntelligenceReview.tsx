@@ -134,9 +134,16 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           {analysis.observations.map((candidate, index) => {
             const key = analysis.analysis_id + ":" + index;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
+            const statusPresentation = pending
+              ? { label: candidate.review_status === "corrected_pending_approval" ? "CORRECTION AWAITING APPROVAL" : "PENDING CAREGIVER REVIEW", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
+              : candidate.review_status === "accepted_by_caregiver"
+                ? { label: "ACCEPTED INTO LCR", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
+                : candidate.review_status === "rejected_by_caregiver"
+                  ? { label: "REJECTED — NOT ADDED", border: "#999999", background: "#eeeeee", color: "#444444" }
+                  : { label: candidate.review_status.replaceAll("_", " ").toUpperCase(), border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
             const correction = corrections[key] || { subject: candidate.subject, observation: candidate.observation };
             return <div key={key} style={{ display: "grid", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 14 }}>{candidate.subject}</strong><span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{candidate.review_status.replaceAll("_", " ")}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 14 }}>{candidate.subject}</strong><span aria-label={statusPresentation.label} style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.02em", padding: "4px 8px", borderRadius: 999, border: "1px solid " + statusPresentation.border, background: statusPresentation.background, color: statusPresentation.color }}>{statusPresentation.label}</span></div>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{candidate.observation}</p>
               <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>EXACT SOURCE QUOTATION</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</p></div>
               {pending && <>
