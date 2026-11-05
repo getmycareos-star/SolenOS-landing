@@ -15,6 +15,7 @@ type Analysis = {
   source_evidence_id: string;
   document_name: string;
   observations: Candidate[];
+  intelligence_status?: string;
   open_questions?: string[];
   review_required: boolean;
   intelligence_status?: string;
@@ -86,6 +87,20 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       await load();
     } catch {
       setError("Document understanding is not available yet. The original and extracted text remain saved; retry when document analysis is available.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const analyze = async (analysis: Analysis) => {
+    const key = analysis.analysis_id + ":analyze";
+    setBusy(key);
+    setError(null);
+    try {
+      await postJSON("/documents/" + encodeURIComponent(analysis.source_evidence_id) + "/intelligence", {});
+      await load();
+    } catch {
+      setError("Document understanding could not run. The original and saved extraction are unchanged; retry when the analysis service is available.");
     } finally {
       setBusy(null);
     }
