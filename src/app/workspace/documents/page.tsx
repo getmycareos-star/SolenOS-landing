@@ -601,6 +601,38 @@ export default function DocumentsPage() {
     }
   };
 
+  const retryDocumentInterpretation = async () => {
+    if (!selectedAnalysis) return;
+    setReviewLoading(true);
+    setReviewError(null);
+    setReviewNotice(null);
+    try {
+      await postJSON("/documents/analyses/" + encodeURIComponent(selectedAnalysis.analysis_id) + "/interpret", {});
+      const analysis = await getJSON("/documents/analyses/" + encodeURIComponent(selectedAnalysis.analysis_id)) as DocumentAnalysis;
+      const history = await getJSON("/documents/analyses/" + encodeURIComponent(selectedAnalysis.analysis_id) + "/reviews") as { reviews?: DocumentReview[] };
+      const savedReviews = Array.isArray(history.reviews) ? history.reviews : [];
+      setSelectedAnalysis(analysis);
+      setSelectedReviews(savedReviews);
+      const latestByCandidate = new Map<number, DocumentReview>();
+      for (const item of savedReviews) {
+        const previous = latestByCandidate.get(item.candidate_index);
+        if (!previous || item.decision_version > previous.decision_version) latestByCandidate.set(item.candidate_index, item);
+      }
+      setCandidateCorrections(Object.fromEntries((analysis.candidates || []).map((candidate, index) => {
+        const latest = latestByCandidate.get(index);
+        return [index, {
+          subject: latest?.corrected_subject || candidate.subject || "",
+          observation: latest?.corrected_observation || candidate.observation || "",
+        }];
+      })));
+      setReviewNotice("Document understanding was retried. New candidates remain pending caregiver review.");
+    } catch {
+      setReviewError("Document understanding is still unavailable. The original file and server-extracted text remain saved; no LCR fact was created.");
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
   const closePreview = () => {
     setSelectedId(null);
     setSelectedAnalysis(null);
@@ -765,7 +797,10 @@ export default function DocumentsPage() {
               {selectedAnalysis.document?.pages?.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "10px 0" }}>{selectedAnalysis.document.pages.map((page, index) => <span key={index} style={{ fontSize: 11, padding: "4px 7px", border: "1px solid var(--border)", borderRadius: 6 }}>Page {page.page_number ?? "—"} · {page.method} · {page.quality}{typeof page.mean_word_confidence === "number" ? " · OCR " + page.mean_word_confidence + "%" : ""}</span>)}</div> : null}
               <h3 style={{ margin: "18px 0 6px", fontSize: 16 }}>Information to review</h3>
               <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: 13 }}>These are extraction suggestions, not care facts. Accept or correct only when the quotation accurately supports the observation. Rejected suggestions never enter the LCR.</p>
-              {selectedAnalysis.candidate_extraction_status === "unavailable" ? <p role="status">Candidate interpretation is currently unavailable. The original and extracted text are saved, but no care assertion has been created.</p> : null}
+              {selectedAnalysis.candidate_extraction_status === "unavailable" ? <div style={{ display: "grid", gap: 8, margin: "8px 0" }}>
+                <p role="status" style={{ margin: 0 }}>Candidate interpretation is currently unavailable. The original and extracted text are saved, but no care assertion has been created.</p>
+                <button type="button" onClick={() => void retryDocumentInterpretation()} disabled={reviewLoading || reviewBusyCandidate !== null} style={{ justifySelf: "start", minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry document understanding</button>
+              </div> : null}
               {selectedAnalysis.candidate_extraction_truncated ? <p role="status" style={{ fontSize: 12, padding: 9, border: "1px solid var(--border)", borderRadius: 7 }}>Candidate suggestions were generated from the first {selectedAnalysis.candidate_extraction_source_chars?.toLocaleString() || "12,000"} characters only. Review the remaining extracted text manually; no claim is made that all pages were interpreted.</p> : null}
               {selectedAnalysis.candidates?.length ? <div style={{ display: "grid", gap: 12 }}>{selectedAnalysis.candidates.map((candidate, index) => {
                 const history = selectedReviews.filter((item) => item.candidate_index === index);
