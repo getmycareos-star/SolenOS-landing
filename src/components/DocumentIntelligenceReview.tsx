@@ -44,6 +44,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const [corrections, setCorrections] = useState<Record<string, { subject: string; observation: string }>>({});
   const [textLoading, setTextLoading] = useState<Record<string, boolean>>({});
   const [textErrors, setTextErrors] = useState<Record<string, string>>({});
+  const [historyLoading, setHistoryLoading] = useState<Record<string, boolean>>({});
+  const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,23 +54,31 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       await ensureAnonymousSession();
       const result = await getJSON("/documents/intelligence") as ListResponse;
       const summaries = Array.isArray(result.items) ? result.items : [];
-      const hydrated = await Promise.all(summaries.map(async (item) => {
-        const history = await getJSON("/documents/intelligence/" + encodeURIComponent(item.analysis_id) + "/review-history")
-          .then((value) => value as { items?: ReviewEvent[] })
-          .catch(() => null);
-        return {
-          ...item,
-          reviewEvents: Array.isArray(history?.items) ? history.items : [],
-          reviewHistoryUnavailable: history === null,
-        };
-      }));
-      setItems(hydrated);
+      setItems(summaries);
     } catch {
       setError("Saved document reviews could not be loaded. Retry without re-uploading the original.");
     } finally {
       setLoading(false);
     }
   }, []);
+
+
+  const loadReviewHistory = useCallback(async (analysisId: string) => {
+    const existing = items.find((item) => item.analysis_id === analysisId);
+    if (existing?.reviewEvents !== undefined || historyLoading[analysisId]) return;
+    setHistoryLoading((current) => ({ ...current, [analysisId]: true }));
+    setHistoryErrors((current) => ({ ...current, [analysisId]: "" }));
+    try {
+      const history = await getJSON("/documents/intelligence/" + encodeURIComponent(analysisId) + "/review-history") as { items?: ReviewEvent[] };
+      setItems((current) => current.map((item) => item.analysis_id === analysisId
+        ? { ...item, reviewEvents: Array.isArray(history.items) ? history.items : [], reviewHistoryUnavailable: false }
+        : item));
+    } catch {
+      setHistoryErrors((current) => ({ ...current, [analysisId]: "The immutable decision history could not be retrieved. Do not interpret a missing history as no earlier decision." }));
+    } finally {
+      setHistoryLoading((current) => ({ ...current, [analysisId]: false }));
+    }
+  }, [items, historyLoading]);
 
   const documentKey = documents.map((document) => document.id).join("|");
 
@@ -205,24 +215,27 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>}
             </div>;
           })}
-          {analysis.reviewHistoryUnavailable && <p role="status" style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>The saved decision history could not be retrieved. Do not assume a missing history means no earlier decision was made.</p>}
-          {(analysis.reviewEvents || []).length > 0 && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
-            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Review history · {analysis.reviewEvents?.length} immutable decision event(s)</summary>
-            <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
-              {analysis.reviewEvents?.map((event) => {
-                const after = event.after || {};
-                const subject = typeof after.subject === "string" ? after.subject : "Candidate";
-                const observation = typeof after.observation === "string" ? after.observation : "";
-                return <li key={event.id} style={{ fontSize: 12, lineHeight: 1.5 }}>
-                  <strong>Candidate {event.candidate_index + 1} · version {event.decision_version} · {event.decision}</strong>
-                  {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
-                  {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
-                  {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {event.rationale}</p> : null}
-                  {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision created a source-linked LCR report.</p> : null}
-                </li>;
-              })}
-            </ol>
-          </details>}
+          <details onToggle={(event) => { if (event.currentTarget.open) void loadReviewHistory(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Caregiver review history{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " immutable event(s)" : ""}</summary>
+            {historyLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving saved review events…</p>
+              : historyErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{historyErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadReviewHistory(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry history</button></div>
+                : analysis.reviewEvents === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the append-only caregiver decision history.</p>
+                  : analysis.reviewEvents.length === 0 ? <p style={{ fontSize: 12 }}>No caregiver review decisions are recorded for this analysis.</p>
+                    : <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
+                      {analysis.reviewEvents.map((event) => {
+                        const after = event.after || {};
+                        const subject = typeof after.subject === "string" ? after.subject : "Candidate";
+                        const observation = typeof after.observation === "string" ? after.observation : "";
+                        return <li key={event.id} style={{ fontSize: 12, lineHeight: 1.5 }}>
+                          <strong>Candidate {event.candidate_index + 1} · version {event.decision_version} · {event.decision}</strong>
+                          {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
+                          {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
+                          {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {event.rationale}</p> : null}
+                          {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision created a source-linked LCR report.</p> : null}
+                        </li>;
+                      })}
+                    </ol>}
+          </details>
           {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: 12 }}>Questions that remain open</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: 13 }}>{analysis.open_questions?.map((question, i) => <li key={i}>{question}</li>)}</ul></div>}
         </article>
       ))}
