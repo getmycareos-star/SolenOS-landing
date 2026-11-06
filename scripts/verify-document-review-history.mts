@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { strict as assert } from "node:assert";
 
+const lcr = readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const continuity = readFileSync("src/components/CareContinuityIntegrityPanel.tsx", "utf8");
+
 const source = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
 
 assert(
@@ -20,4 +23,9 @@ assert(
 );
 
 console.log("✓ persisted document review history is loaded and displayed");
+assert(source.includes('new Event("careRecordUpdated")'), "acceptance must notify the active LCR view after the backend confirms the write");
+assert(lcr.includes('addEventListener("careRecordUpdated"') && lcr.includes('removeEventListener("careRecordUpdated"'), "the LCR projection must reload after a document assertion is accepted");
+assert(continuity.includes('addEventListener("careRecordUpdated"') && continuity.includes('removeEventListener("careRecordUpdated"'), "the care-continuity assertion panel must reload after a document assertion is accepted");
+
 console.log("✓ decision versions, pending corrections and source-quotation boundaries are explicit");
+console.log("✓ accepting a document observation refreshes the LCR and care-continuity panels");
