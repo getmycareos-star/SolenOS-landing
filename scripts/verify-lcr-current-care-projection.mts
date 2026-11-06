@@ -15,7 +15,9 @@ assert.match(component, /missing_required_sources/, "required source gaps must n
 assert.match(component, /epistemic_status/, "epistemic status must remain visible");
 assert.match(component, /source_label/, "source attribution must remain visible");
 assert.match(component, /evidence_ids/, "linked evidence references must remain visible");
-assert.match(component, /The timeline is not being used as a substitute/, "failed LCR reads must not silently fall back to the timeline");
+assert.match(component, /We couldn’t load this care information\. Check your connection and try again/, "failed LCR reads must use caregiver-readable recovery guidance");
+assert.match(component, /How this care picture was put together/, "technical assessment diagnostics must be collapsed by default");
+assert.doesNotMatch(component, /LONGITUDINAL RECORD|No current-care items were returned|Record coverage is incomplete/, "caregiver-facing LCR copy must not expose internal terminology");
 assert.match(timeline, /\/events\//, "chronological timeline continues to read care events independently");
 assert.doesNotMatch(component, /sample|demo|placeholder|fake care/i, "LCR projection must not fabricate sample care information");
 
