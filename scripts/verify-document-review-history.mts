@@ -9,8 +9,8 @@ assert(
 );
 assert(source.includes("reviewEvents"), "review history events must be retained in component state");
 assert(source.includes("decision_version"), "each displayed decision must retain its per-candidate version");
-assert(source.includes("reviewHistoryUnavailable"), "failed history retrieval must not be presented as an empty history");
-assert(source.includes("immutable decision event"), "caregivers must be able to open the review history");
+assert(source.includes("historyErrors") && source.includes("Do not interpret a missing history as no earlier decision"), "failed history retrieval must not be presented as an empty history");
+assert(source.includes("immutable event(s)") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
 assert(source.includes("corrected_pending_approval"), "corrections must remain pending until explicitly accepted");
 assert(source.includes("EXACT SOURCE QUOTATION"), "each candidate must show its exact source quotation");
 assert(source.includes("No LCR facts were created"), "empty interpretation must not imply a care fact");
