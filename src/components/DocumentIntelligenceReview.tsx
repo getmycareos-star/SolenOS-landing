@@ -42,6 +42,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [corrections, setCorrections] = useState<Record<string, { subject: string; observation: string }>>({});
+  const [textLoading, setTextLoading] = useState<Record<string, boolean>>({});
+  const [textErrors, setTextErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,17 +53,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       const result = await getJSON("/documents/intelligence") as ListResponse;
       const summaries = Array.isArray(result.items) ? result.items : [];
       const hydrated = await Promise.all(summaries.map(async (item) => {
-        const [detail, history] = await Promise.all([
-          getJSON("/documents/analyses/" + encodeURIComponent(item.analysis_id))
-            .then((value) => value as { extracted_text?: string })
-            .catch(() => null),
-          getJSON("/documents/intelligence/" + encodeURIComponent(item.analysis_id) + "/review-history")
-            .then((value) => value as { items?: ReviewEvent[] })
-            .catch(() => null),
-        ]);
+        const history = await getJSON("/documents/intelligence/" + encodeURIComponent(item.analysis_id) + "/review-history")
+          .then((value) => value as { items?: ReviewEvent[] })
+          .catch(() => null);
         return {
           ...item,
-          extractedText: typeof detail?.extracted_text === "string" ? detail.extracted_text : "",
           reviewEvents: Array.isArray(history?.items) ? history.items : [],
           reviewHistoryUnavailable: history === null,
         };
@@ -77,6 +73,24 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const documentKey = documents.map((document) => document.id).join("|");
 
   useEffect(() => { void load(); }, [load, refreshToken, documentKey]);
+
+  const loadExtractedText = useCallback(async (analysisId: string) => {
+    const existing = items.find((item) => item.analysis_id === analysisId);
+    if (existing?.extractedText !== undefined || textLoading[analysisId]) return;
+    setTextLoading((current) => ({ ...current, [analysisId]: true }));
+    setTextErrors((current) => ({ ...current, [analysisId]: "" }));
+    try {
+      const detail = await getJSON("/documents/analyses/" + encodeURIComponent(analysisId)) as { extracted_text?: string };
+      setItems((current) => current.map((item) => item.analysis_id === analysisId
+        ? { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "" }
+        : item));
+    } catch {
+      setTextErrors((current) => ({ ...current, [analysisId]: "The persisted source text could not be retrieved. Retry without re-uploading the original." }));
+    } finally {
+      setTextLoading((current) => ({ ...current, [analysisId]: false }));
+    }
+  }, [items, textLoading]);
+
 
 
   const extractAndAnalyze = async (document: LibraryDocument) => {
@@ -153,7 +167,14 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
-          {analysis.extractedText && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}><summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre></details>}
+          <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary>
+            {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving and verifying the saved extraction…</p>
+              : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry source text</button></div>
+              : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the persisted text from the server.</p>
+                : analysis.extractedText ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre>
+                  : <p style={{ fontSize: 12 }}>No readable server-extracted text is stored for this document.</p>}
+          </details>
           {analysis.intelligence_status !== "available" && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and server-extracted text remain saved; no LCR facts were created.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Run / retry document understanding</button></div>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
           {analysis.observations.map((candidate, index) => {
