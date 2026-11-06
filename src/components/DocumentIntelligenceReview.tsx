@@ -30,6 +30,7 @@ type Analysis = {
   open_questions?: string[];
   review_required: boolean;
   extractedText?: string;
+  extractionMethod?: string;
   reviewEvents?: ReviewEvent[];
   reviewHistoryUnavailable?: boolean;
 };
@@ -90,9 +91,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     setTextLoading((current) => ({ ...current, [analysisId]: true }));
     setTextErrors((current) => ({ ...current, [analysisId]: "" }));
     try {
-      const detail = await getJSON("/documents/analyses/" + encodeURIComponent(analysisId)) as { extracted_text?: string };
+      const detail = await getJSON("/documents/analyses/" + encodeURIComponent(analysisId)) as { extracted_text?: string; extraction_method?: string };
       setItems((current) => current.map((item) => item.analysis_id === analysisId
-        ? { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "" }
+        ? { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "", extractionMethod: typeof detail.extraction_method === "string" ? detail.extraction_method : undefined }
         : item));
     } catch {
       setTextErrors((current) => ({ ...current, [analysisId]: "The persisted source text could not be retrieved. Retry without re-uploading the original." }));
@@ -179,6 +180,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
           <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary>
+            {analysis.extractionMethod && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Extraction provenance: {analysis.extractionMethod.replaceAll("_", " ")}</p>}
+            {analysis.extractionMethod?.includes("tesseract") && <p style={{ fontSize: 12 }}>OCR can misread names, dates and numbers. Compare each candidate quotation with the original document before accepting it.</p>}
             {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving and verifying the saved extraction…</p>
               : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry source text</button></div>
               : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the persisted text from the server.</p>
