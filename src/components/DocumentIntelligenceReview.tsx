@@ -19,6 +19,8 @@ type Analysis = {
   open_questions?: string[];
   review_required: boolean;
   extractedText?: string;
+  reviewEvents?: ReviewEvent[];
+  reviewHistoryUnavailable?: boolean;
 };
 type ListResponse = { items?: Analysis[] };
 type LibraryDocument = { id: string; title: string };
@@ -38,10 +40,20 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       const result = await getJSON("/documents/intelligence") as ListResponse;
       const summaries = Array.isArray(result.items) ? result.items : [];
       const hydrated = await Promise.all(summaries.map(async (item) => {
-        try {
-          const detail = await getJSON("/documents/analyses/" + encodeURIComponent(item.analysis_id)) as { extracted_text?: string };
-          return { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "" };
-        } catch { return { ...item, extractedText: "" }; }
+        const [detail, history] = await Promise.all([
+          getJSON("/documents/analyses/" + encodeURIComponent(item.analysis_id))
+            .then((value) => value as { extracted_text?: string })
+            .catch(() => null),
+          getJSON("/documents/intelligence/" + encodeURIComponent(item.analysis_id) + "/review-history")
+            .then((value) => value as { items?: ReviewEvent[] })
+            .catch(() => null),
+        ]);
+        return {
+          ...item,
+          extractedText: typeof detail?.extracted_text === "string" ? detail.extracted_text : "",
+          reviewEvents: Array.isArray(history?.items) ? history.items : [],
+          reviewHistoryUnavailable: history === null,
+        };
       }));
       setItems(hydrated);
     } catch {
@@ -125,7 +137,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       </div>
       {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
       {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: 13 }}>Saved documents awaiting server extraction</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => <div key={document.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", padding: 9, border: "1px solid var(--border)", borderRadius: 8 }}><span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span><button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Extract and understand</button></div>)}</div>}
-      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a text-based document and run server extraction to begin review.</p> : items.map((analysis) => (
+      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
           {analysis.extractedText && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}><summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre></details>}
@@ -159,6 +171,24 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>}
             </div>;
           })}
+          {analysis.reviewHistoryUnavailable && <p role="status" style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>The saved decision history could not be retrieved. Do not assume a missing history means no earlier decision was made.</p>}
+          {(analysis.reviewEvents || []).length > 0 && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Review history · {analysis.reviewEvents?.length} immutable decision event(s)</summary>
+            <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
+              {analysis.reviewEvents?.map((event) => {
+                const after = event.after || {};
+                const subject = typeof after.subject === "string" ? after.subject : "Candidate";
+                const observation = typeof after.observation === "string" ? after.observation : "";
+                return <li key={event.id} style={{ fontSize: 12, lineHeight: 1.5 }}>
+                  <strong>Candidate {event.candidate_index + 1} · version {event.decision_version} · {event.decision}</strong>
+                  {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
+                  {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
+                  {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {event.rationale}</p> : null}
+                  {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision created a source-linked LCR report.</p> : null}
+                </li>;
+              })}
+            </ol>
+          </details>}
           {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: 12 }}>Questions that remain open</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: 13 }}>{analysis.open_questions?.map((question, i) => <li key={i}>{question}</li>)}</ul></div>}
         </article>
       ))}
