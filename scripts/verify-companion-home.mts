@@ -23,6 +23,11 @@ assert.match(home, /<Companion home initialPrompt=\{prompt\} \/>/, "record-edit 
 const companion = read("src/components/workflows/AICompanion.tsx");
 const documents = read("src/app/workspace/documents/page.tsx");
 assert.match(companion, /companion-shell.*is-home/);
+assert.match(companion, /SOURCE_REFERENCE_LABELS/, "Companion provenance must use explicit source-reference labels");
+assert.match(companion, /document_extractions/, "persisted document extraction references must be presented");
+assert.match(companion, /Extracted document text.*not yet an LCR assertion/, "document text must not be presented as an accepted LCR fact");
+assert.match(companion, /Prior Companion message.*conversation context only/, "prior conversation references must be distinguished from care evidence");
+assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
 assert.doesNotMatch(companion, /Add to care story/);
 assert.match(companion, /companion-add-menu/);
 assert.match(companion, /Upload document/);
@@ -141,4 +146,4 @@ assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.match(lcrHome, /LCRCurrentUnderstanding/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
-console.log("Companion home contract passed: caregiver-first home, restored upload/photo/scan menu and intake, plain-language record details, caregiver update route, device-session actions, export flow, and browseable history.");
+console.log("Companion home contract passed: caregiver-first home, document/photo/scan intake, typed LCR/document/conversation provenance, plain-language record details, caregiver update route, device-session actions, export flow, and browseable history.");
