@@ -147,15 +147,18 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     setError(null);
     try {
       const correction = corrections[key];
-      await postJSON("/documents/intelligence/" + encodeURIComponent(analysis.analysis_id) + "/review", {
+      const reviewResult = await postJSON("/documents/intelligence/" + encodeURIComponent(analysis.analysis_id) + "/review", {
         candidate_index: index,
         decision,
         ...(decision === "correct" ? {
           corrected_subject: correction?.subject ?? analysis.observations[index].subject,
           corrected_observation: correction?.observation ?? analysis.observations[index].observation,
         } : {}),
-      });
+      }) as { written_to_lcr?: boolean; source_record_ref?: { record_id?: string } | null };
       if (decision === "accept") {
+        if (reviewResult.written_to_lcr !== true || !reviewResult.source_record_ref?.record_id) {
+          throw new Error("The backend did not confirm a persistent Living Care Record assertion.");
+        }
         window.dispatchEvent(new Event("careRecordUpdated"));
       }
       await load();
