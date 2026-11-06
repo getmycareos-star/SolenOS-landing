@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
+import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
@@ -411,8 +411,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS AI Companion">
       <header className="companion-topbar">
         <div className="companion-brand">
-          <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h2>Your care companion</h2></div>
+          <div className="companion-mark" aria-hidden="true"><ShieldCheck size={19} strokeWidth={1.8} /></div>
+          <div><div className="companion-eyebrow">CARE CONTINUITY · FAMILY CARE</div><h2>Care companion</h2></div>
         </div>
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
@@ -593,7 +593,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Tell me one small thing about today. A few words are enough. We can take it one step at a time.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>Start with what has changed.</h3><p>Describe what happened, what you noticed, or what remains unclear. SolenOS will help organise the information without treating assumptions as facts.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
@@ -614,7 +614,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 const contextCount = (msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0) + (msg.source_assertion_ids?.length ?? 0) + (msg.source_lcr_context_ids?.length ?? 0)
                 const freshnessCount = msg.source_freshness_assessment_ids?.length ?? 0
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
-                  {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
+                  {!isUser && <div className="companion-avatar" aria-hidden="true"><ShieldCheck size={15} /></div>}
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
@@ -630,7 +630,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   </div>
                 </article>
               })}
-              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>SolenOS Companion</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="Companion is responding"><i /><i /><i /></div></div></div>}
+              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><ShieldCheck size={15} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>SolenOS Companion</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="Companion is responding"><i /><i /><i /></div></div></div>}
               <div ref={bottomRef} />
             </div>
           )}

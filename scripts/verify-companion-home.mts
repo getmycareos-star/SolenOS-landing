@@ -109,7 +109,7 @@ assert.match(shell, /does NOT delete care information already stored on SolenOS 
 assert.match(shell, /getAnonymousAccessToken/);
 assert.match(shell, /revokeAnonymousSession/);
 assert.doesNotMatch(home, /startInUpdateMode|CognitiveWorkspace/);
-assert.match(companion, /You don’t have to figure it all out right now/);
+assert.match(companion, /Start with what has changed/);
 assert.match(companion, /I need to talk it through/);
 assert.match(companion, /A few words are enough/);
 assert.match(companion, /companion-starter-copy strong \{[^}]*font-size:14px/);

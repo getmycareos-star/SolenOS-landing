@@ -1,0 +1,226 @@
+/* SolenOS workspace design system — restrained, editorial, operational. */
+.solenos-chat-app {
+  --ui-ink: #182622;
+  --ui-muted: #65736d;
+  --ui-line: #dce3de;
+  --ui-canvas: #f4f6f3;
+  --ui-paper: #ffffff;
+  --ui-accent: #315d4b;
+  --ui-accent-soft: #e8eee9;
+  min-height: 100dvh;
+  color: var(--ui-ink);
+  background: var(--ui-canvas);
+  font-family: var(--font-solenos-sans), Arial, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Permanent desktop navigation; drawer behaviour is retained on mobile. */
+@media (min-width: 761px) {
+  .solenos-chat-sidebar-host {
+    flex: 0 0 252px;
+    width: 252px;
+    overflow: visible;
+    border-right: 1px solid var(--ui-line);
+  }
+  .solenos-chat-sidebar-host.is-sidebar-open { flex-basis: 252px; width: 252px; }
+  .solenos-chat-sidebar { padding: 24px 16px 16px; background: #fbfcfa; border: 0; }
+  .solenos-chat-sidebar-top { min-height: 54px; padding: 0 8px 22px; }
+  .solenos-chat-sidebar-top .solenos-sidebar-icon-button { display: none; }
+  .solenos-chat-brand { gap: 11px; }
+  .solenos-chat-brand .solenos-wordmark { font-size: 1.13rem; letter-spacing: -0.045em; }
+  .solenos-chat-brand-mark {
+    width: 34px; height: 34px; flex-basis: 34px; border-radius: 7px;
+    background: #244a3a; color: #fff; font-size: 16px; font-weight: 650;
+  }
+  .solenos-chat-primary-nav { gap: 4px; padding: 10px 0 18px; }
+  .solenos-chat-nav-item {
+    min-height: 43px; padding: 10px 12px; gap: 12px; border-radius: 6px;
+    color: #4c5b54; font-size: 13px; font-weight: 520;
+    transition: background .15s ease, color .15s ease;
+  }
+  .solenos-chat-nav-item:hover { background: #eef2ee; color: var(--ui-ink); }
+  .solenos-chat-nav-item.is-active {
+    background: #e7eee8; color: #214a37; font-weight: 680;
+    box-shadow: inset 2px 0 0 #315d4b;
+  }
+  .solenos-chat-nav-icon { color: #63736a; }
+  .solenos-chat-nav-item.is-active .solenos-chat-nav-icon { color: #315d4b; }
+  .solenos-chat-history-section { border-top: 1px solid var(--ui-line); padding-top: 17px; }
+  .solenos-chat-history-heading { padding: 0 10px 11px; color: #7b8981; font-size: 10px; letter-spacing: .13em; }
+  .solenos-chat-sidebar-bottom { padding-top: 14px; border-top: 1px solid var(--ui-line); }
+  .solenos-chat-topbar { min-height: 64px; padding: 10px 34px; border-bottom: 1px solid var(--ui-line); background: rgba(255,255,255,.92); }
+  .solenos-chat-topbar .solenos-sidebar-toggle { display: none; }
+  .solenos-chat-topbar-context { color: var(--ui-muted); font-size: 12px; }
+  .solenos-chat-workspace { background: var(--ui-canvas); }
+  .solenos-chat-main { padding: 0 0 36px; }
+}
+
+.solenos-chat-sidebar .history-search-wrap {
+  min-height: 40px; border: 1px solid #e0e6e1; border-radius: 6px; background: #fff;
+}
+.solenos-chat-sidebar .history-filter-chip { border-radius: 4px; }
+.solenos-chat-sidebar .history-event-card { border-radius: 5px; }
+.solenos-chat-sidebar .history-event-open { border-radius: 4px; }
+
+/* Companion home: clear information hierarchy, no decorative/pastel UI. */
+.solenos-companion-home {
+  min-height: calc(100dvh - 64px) !important;
+  height: calc(100dvh - 64px) !important;
+  padding: 26px clamp(18px, 4vw, 56px) 28px !important;
+  background: var(--ui-canvas);
+}
+.solenos-companion-home .companion-shell {
+  max-width: 1120px !important;
+  gap: 0 !important;
+  padding: 0 0 4px !important;
+}
+.solenos-companion-home .companion-topbar {
+  padding: 0 0 20px !important;
+  border-bottom: 1px solid var(--ui-line) !important;
+}
+.solenos-companion-home .companion-mark {
+  width: 38px !important; height: 38px !important; flex-basis: 38px !important;
+  border: 1px solid #d6e0d8 !important; border-radius: 7px !important;
+  background: #e8eee9 !important; color: #315d4b !important;
+}
+.solenos-companion-home .companion-eyebrow {
+  color: #718078 !important; font-size: 9px !important; font-weight: 700 !important;
+  letter-spacing: .15em !important;
+}
+.solenos-companion-home .companion-brand h2 {
+  margin-top: 3px !important; color: #1d2d26 !important;
+  font-size: 19px !important; font-weight: 650 !important; letter-spacing: -.035em !important;
+}
+.solenos-companion-home .companion-new {
+  min-height: 38px !important; padding: 8px 12px !important;
+  border: 1px solid #cfd9d1 !important; border-radius: 5px !important;
+  background: #fff !important; color: #344d40 !important; font-size: 12px !important; font-weight: 650 !important;
+}
+.solenos-companion-home .companion-workspace { max-width: 100% !important; }
+.solenos-companion-home .companion-empty {
+  max-width: 920px !important; padding: clamp(30px, 6vh, 68px) 12px 28px !important;
+}
+.solenos-companion-home .companion-empty-icon {
+  width: 38px !important; height: 38px !important; border: 1px solid #d7e0d9 !important;
+  border-radius: 7px !important; background: #e8eee9 !important; color: #315d4b !important;
+}
+.solenos-companion-home .companion-empty-heading { margin-top: 23px !important; }
+.solenos-companion-home .companion-empty-heading > span {
+  color: #718078 !important; font-size: 9px !important; font-weight: 750 !important; letter-spacing: .16em !important;
+}
+.solenos-companion-home .companion-empty-heading h3 {
+  max-width: 740px !important; margin-top: 10px !important; color: #1c2b25 !important;
+  font-size: clamp(30px, 3.5vw, 42px) !important; font-weight: 560 !important;
+  letter-spacing: -.055em !important; line-height: 1.12 !important;
+}
+.solenos-companion-home .companion-empty-heading p {
+  max-width: 680px !important; margin-top: 13px !important; color: #65736c !important;
+  font-size: 15px !important; line-height: 1.75 !important;
+}
+.solenos-companion-home .companion-starters {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important; margin-top: 30px !important;
+}
+.solenos-companion-home .companion-starter {
+  min-height: 118px !important; padding: 17px !important; gap: 13px !important;
+  border: 1px solid #dce3de !important; border-radius: 6px !important;
+  background: #fff !important; box-shadow: none !important; transform: none !important;
+}
+.solenos-companion-home .companion-starter:hover {
+  border-color: #9aafa0 !important; background: #fbfcfa !important; transform: translateY(-1px) !important;
+}
+.solenos-companion-home .companion-starter-icon {
+  width: 30px !important; height: 30px !important; flex-basis: 30px !important;
+  border-radius: 5px !important; background: #edf1ed !important; color: #466452 !important;
+}
+.solenos-companion-home .companion-starter-copy strong {
+  color: #24362d !important; font-size: 13px !important; font-weight: 680 !important; line-height: 1.45 !important;
+}
+.solenos-companion-home .companion-starter-copy > span {
+  margin-top: 6px !important; color: #6c7972 !important; font-size: 12px !important; line-height: 1.55 !important;
+}
+.solenos-companion-home .companion-starter-arrow { color: #718078 !important; }
+.solenos-companion-home .companion-empty-footnote {
+  margin-top: 24px !important; color: #758179 !important; font-size: 11px !important;
+}
+.solenos-companion-home .companion-empty-footnote svg { color: #526f5b !important; }
+.solenos-companion-home .companion-message-list { max-width: 860px !important; }
+.solenos-companion-home .companion-message.is-user .companion-bubble {
+  border: 1px solid #dce3de !important; border-radius: 5px !important; background: #edf1ed !important;
+}
+.solenos-companion-home .companion-avatar {
+  border: 1px solid #d6e0d8 !important; border-radius: 5px !important;
+  background: #e8eee9 !important; color: #315d4b !important;
+}
+.solenos-companion-home .companion-composer-wrap {
+  max-width: 900px !important; padding: 0 4px !important;
+}
+.solenos-companion-home .companion-composer {
+  padding: 12px 14px 10px 17px !important; border: 1px solid #cbd6ce !important;
+  border-radius: 7px !important; background: #fff !important; box-shadow: 0 3px 12px rgba(24,38,30,.035) !important;
+}
+.solenos-companion-home .companion-composer:focus-within {
+  border-color: #789482 !important; box-shadow: 0 0 0 3px rgba(72,111,87,.10) !important;
+}
+.solenos-companion-home .companion-composer textarea { color: #1e3027 !important; font-size: 15px !important; }
+.solenos-companion-home .companion-composer textarea::placeholder { color: #89948d !important; }
+.solenos-companion-home .companion-composer-footer { border-top: 1px solid #edf0ed !important; padding-top: 8px !important; }
+.solenos-companion-home .companion-add-button {
+  width: 34px !important; height: 34px !important; border: 1px solid #d7dfd9 !important;
+  border-radius: 5px !important; background: #fff !important; color: #405e4c !important;
+}
+.solenos-companion-home .companion-send {
+  width: auto !important; min-width: 82px !important; height: 36px !important; min-height: 36px !important;
+  padding: 0 13px !important; border: 1px solid #315d4b !important; border-radius: 5px !important;
+  background: #315d4b !important; color: #fff !important;
+}
+.solenos-companion-home .companion-send span:last-child { display: inline !important; }
+.solenos-companion-home .companion-send:disabled {
+  border-color: #d8dfda !important; background: #edf0ed !important; color: #87928b !important;
+}
+.solenos-companion-home .companion-input-hint { color: #89948d !important; font-size: 10px !important; }
+.solenos-companion-home .companion-footer-note {
+  margin-top: 10px !important; color: #7b8780 !important; text-align: left !important; font-size: 10px !important;
+}
+
+/* Shared surfaces: remove toy-like radii and soft green fills across workspace. */
+.solenos-chat-app .workspace-entry-action,
+.solenos-chat-app .workspace-secondary-tools button,
+.solenos-chat-app .panel,
+.solenos-chat-app .card,
+.solenos-chat-app .workspace-more-menu-dropdown,
+.solenos-chat-app .solenos-record-details-dialog {
+  border-radius: 6px;
+}
+.solenos-chat-app button:focus-visible,
+.solenos-chat-app a:focus-visible,
+.solenos-chat-app input:focus-visible,
+.solenos-chat-app textarea:focus-visible,
+.solenos-chat-app select:focus-visible {
+  outline: 2px solid #527a62;
+  outline-offset: 2px;
+}
+.solenos-chat-app .workspace-primary,
+.solenos-chat-app .companion-handoff-primary {
+  border-radius: 5px; background: #315d4b; border-color: #315d4b; color: #fff;
+}
+.solenos-chat-app .workspace-primary:hover:not(:disabled),
+.solenos-chat-app .companion-handoff-primary:hover {
+  background: #244b3a; border-color: #244b3a; color: #fff;
+}
+
+@media (max-width: 760px) {
+  .solenos-companion-home {
+    height: calc(100dvh - 54px) !important; min-height: 420px !important;
+    padding: 14px 12px 16px !important;
+  }
+  .solenos-companion-home .companion-topbar { padding-bottom: 13px !important; }
+  .solenos-companion-home .companion-empty { padding: 30px 4px 18px !important; }
+  .solenos-companion-home .companion-empty-heading h3 { font-size: clamp(27px, 7vw, 34px) !important; }
+  .solenos-companion-home .companion-empty-heading p { font-size: 14px !important; }
+  .solenos-companion-home .companion-starters { grid-template-columns: 1fr !important; gap: 8px !important; margin-top: 20px !important; }
+  .solenos-companion-home .companion-starter { min-height: 76px !important; padding: 13px !important; }
+  .solenos-companion-home .companion-composer-wrap { padding: 0 !important; }
+  .solenos-companion-home .companion-composer { border-radius: 6px !important; }
+  .solenos-companion-home .companion-footer-note { font-size: 9px !important; }
+}
