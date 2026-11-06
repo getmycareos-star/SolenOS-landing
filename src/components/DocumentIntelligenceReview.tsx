@@ -10,6 +10,17 @@ type Candidate = {
   review_status: string;
   review_decision?: string;
 };
+type ReviewEvent = {
+  id: string;
+  candidate_index: number;
+  decision_version: number;
+  decision: "accept" | "correct" | "reject";
+  rationale?: string | null;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+  resulting_assertion_id?: string | null;
+  created_at?: string | null;
+};
 type Analysis = {
   analysis_id: string;
   source_evidence_id: string;
