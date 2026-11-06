@@ -18,7 +18,6 @@ type Analysis = {
   intelligence_status?: string;
   open_questions?: string[];
   review_required: boolean;
-  intelligence_status?: string;
   extractedText?: string;
 };
 type ListResponse = { items?: Analysis[] };
@@ -73,20 +72,6 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       }
     } catch {
       setError("Server extraction could not be completed for this saved document. The original remains preserved.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const analyze = async (analysis: Analysis) => {
-    const key = "analyze:" + analysis.analysis_id;
-    setBusy(key);
-    setError(null);
-    try {
-      await postJSON("/documents/" + encodeURIComponent(analysis.source_evidence_id) + "/intelligence", {});
-      await load();
-    } catch {
-      setError("Document understanding is not available yet. The original and extracted text remain saved; retry when document analysis is available.");
     } finally {
       setBusy(null);
     }
