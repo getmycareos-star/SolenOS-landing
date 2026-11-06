@@ -23,6 +23,7 @@ assert(
 );
 
 console.log("✓ persisted document review history is loaded and displayed");
+assert(source.includes('reviewResult.written_to_lcr !== true') && source.includes('reviewResult.source_record_ref?.record_id'), "acceptance must require a persisted assertion receipt before notifying the LCR");
 assert(source.includes('new Event("careRecordUpdated")'), "acceptance must notify the active LCR view after the backend confirms the write");
 assert(lcr.includes('addEventListener("careRecordUpdated"') && lcr.includes('removeEventListener("careRecordUpdated"'), "the LCR projection must reload after a document assertion is accepted");
 assert(continuity.includes('addEventListener("careRecordUpdated"') && continuity.includes('removeEventListener("careRecordUpdated"'), "the care-continuity assertion panel must reload after a document assertion is accepted");
