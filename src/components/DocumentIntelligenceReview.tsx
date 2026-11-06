@@ -63,7 +63,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load, refreshToken]);
+  const documentKey = documents.map((document) => document.id).join("|");
+
+  useEffect(() => { void load(); }, [load, refreshToken, documentKey]);
 
 
   const extractAndAnalyze = async (document: LibraryDocument) => {
