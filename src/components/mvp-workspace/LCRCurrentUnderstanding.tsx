@@ -910,9 +910,9 @@ export function LCRCurrentUnderstanding() {
     <section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">
       <div className="lcr-section-heading">
         <div>
-          <p className="lcr-eyebrow">LONGITUDINAL RECORD</p>
-          <h2 id="lcr-current-understanding-heading">Current care understanding</h2>
-          <p>What is recorded, what needs attention, and what remains uncertain—kept distinct from the chronological timeline.</p>
+          <p className="lcr-eyebrow">YOUR CARE RECORD</p>
+          <h2 id="lcr-current-understanding-heading">What we know about care right now</h2>
+          <p>A clear picture of what has been shared, what may need attention, and what is still uncertain.</p>
         </div>
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh current care understanding">
           <RefreshCw size={16} aria-hidden="true" /> Refresh
@@ -922,21 +922,21 @@ export function LCRCurrentUnderstanding() {
       <section className="lcr-situation-assessment" aria-labelledby="lcr-attention-now-heading">
         <div className="lcr-entry-heading">
           <div>
-            <h3 id="lcr-attention-now-heading">What Needs Attention Now?</h3>
-            <p>Items below come from saved care-record assessments. A candidate or pattern is not, by itself, proof of a clinical risk.</p>
+            <h3 id="lcr-attention-now-heading">Needs attention</h3>
+            <p>These are concerns or follow-ups found in the information saved so far. A flagged item is not a diagnosis.</p>
           </div>
         </div>
         {sourceFreshness?.reassessment_recommended && (
-          <p role="status">This saved assessment may be out of date ({sourceFreshness.status.replaceAll("_", " ")}). Refresh the assessment before relying on it as the latest view.</p>
+          <p role="status">Some information may have changed since this picture was last reviewed. Refresh to check for updates.</p>
         )}
         {assessmentError && (
-          <p role="status">Priorities cannot be determined because the saved situation assessment could not be loaded. {assessmentError}</p>
+          <p role="status">We couldn’t check which items may need attention. Try refreshing. The information shown may be incomplete.</p>
         )}
         {!assessmentError && !assessment && !loading && !assessmentLoading && (
-          <p role="status">No persisted situation assessment is available. Reassess from the record before treating this section as complete.</p>
+          <p role="status">We don’t yet have enough information to identify priorities. This does not mean there are no care needs.</p>
         )}
         {assessment && !assessment.open_loops && (
-          <p role="status">The saved assessment does not include open-loop priority details. No priority category is inferred.</p>
+          <p role="status">Some follow-up details are not available yet. No priority has been assumed.</p>
         )}
         {assessment?.open_loops && (
           <>
@@ -945,7 +945,7 @@ export function LCRCurrentUnderstanding() {
               {needsAttentionNow.length === 0 ? (
                 <p>{assessment.open_loops.has_more
                   ? "No explicit immediate-priority item appears in the returned records. Additional unresolved items exist beyond this bounded view."
-                  : "No immediate priorities identified from the available record."}</p>
+                  : "No immediate concerns were identified in the information currently available. This does not rule out other concerns."}</p>
               ) : (
                 <ul className="lcr-current-facts">
                   {needsAttentionNow.map((item) => {
@@ -1052,7 +1052,7 @@ export function LCRCurrentUnderstanding() {
             </div>
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
-              <h4 id="lcr-attention-wait-heading">Can wait</h4>
+              <h4 id="lcr-attention-wait-heading">Things that can wait</h4>
               {canWaitItems.length === 0 ? (
                 <p>No explicitly deferred items with a recorded reason were returned. The record does not establish that other unresolved items are safe to postpone.</p>
               ) : (
@@ -1080,13 +1080,13 @@ export function LCRCurrentUnderstanding() {
             </div>
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
-              <h4 id="lcr-attention-watch-heading">Watch for changes</h4>
-              {changesError && <p role="status">Persisted change candidates could not be loaded: {changesError}. No absence of change is inferred.</p>}
-              {patternsError && <p role="status">Persisted pattern history could not be loaded: {patternsError}. No absence of a pattern is inferred.</p>}
+              <h4 id="lcr-attention-watch-heading">Changes to keep an eye on</h4>
+              {changesError && <p role="status">We couldn’t check the saved change history. This does not mean nothing has changed.</p>}
+              {patternsError && <p role="status">We couldn’t check for patterns in the care history. This does not mean no patterns exist.</p>}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
                 <p>{changesError || patternsError
-                  ? "Some change or pattern sources are unavailable. Their absence cannot be established."
-                  : "No active persisted change candidates or patterns were returned. This does not establish that the situation has not changed."}</p>
+                  ? "Some care history could not be checked. Changes may be missing from this view."
+                  : "There isn’t enough available history to describe changes with confidence."}</p>
               ) : (
                 <ul className="lcr-current-facts">
                   {baselineItems.map((item) => (
@@ -1210,9 +1210,9 @@ export function LCRCurrentUnderstanding() {
       </section>
 
             <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
-              <h4 id="lcr-registered-actions-heading">Registered actions</h4>
+              <h4 id="lcr-registered-actions-heading">Agreed actions</h4>
               {registeredActionsError && <p role="alert">Registered actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
-              {!registeredActionsError && registeredActions.length === 0 && <p>No caregiver-approved registered actions are recorded for this care recipient.</p>}
+              {!registeredActionsError && registeredActions.length === 0 && <p>No agreed actions have been added yet.</p>}
               {registeredActions.length > 0 && (
                 <ul className="lcr-current-facts">
                   {registeredActions.map((action) => (
@@ -1275,12 +1275,12 @@ export function LCRCurrentUnderstanding() {
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
-          <h3 id="lcr-pattern-history-heading">Longitudinal patterns</h3>
+          <h3 id="lcr-pattern-history-heading">Patterns over time</h3>
           <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} active patterns in loaded history</span>
         </div>
         {patternsError && <p role="status">Persisted pattern history could not be loaded: {patternsError}</p>}
         {!patternsError && patterns.length === 0 && (
-          <p>No persisted longitudinal patterns are available. A pattern is not inferred from missing history.</p>
+          <p>There is not enough recorded history to identify a pattern yet.</p>
         )}
         {patterns.length > 0 && (
           <ul className="lcr-current-facts">
@@ -1312,7 +1312,7 @@ export function LCRCurrentUnderstanding() {
 
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
-          <h3 id="lcr-change-history-heading">Recorded changes</h3>
+          <h3 id="lcr-change-history-heading">Changes over time</h3>
           <span>{changes.length} persisted assessments</span>
         </div>
         {changesError && <p role="status">Saved change history could not be loaded: {changesError}</p>}
@@ -1439,11 +1439,11 @@ export function LCRCurrentUnderstanding() {
         )}
       </div>
 
-      <div className="lcr-situation-assessment" aria-labelledby="lcr-situation-assessment-heading">
+      <details className="lcr-situation-assessment lcr-assessment-details"><summary>How this care picture was put together</summary><div aria-labelledby="lcr-situation-assessment-heading">
         <div className="lcr-entry-heading">
-          <h3 id="lcr-situation-assessment-heading">Situation understanding</h3>
+          <h3 id="lcr-situation-assessment-heading">Care picture review</h3>
           <button type="button" className="lcr-text-action" onClick={() => void reassess()} disabled={assessmentLoading || loading}>
-            {assessmentLoading ? "Assessing persisted record…" : "Reassess from record"}
+            {assessmentLoading ? "Reviewing care information…" : "Refresh care picture"}
           </button>
         </div>
         {assessmentError && <p role="status">Assessment status: {assessmentError}</p>}
@@ -1642,15 +1642,16 @@ export function LCRCurrentUnderstanding() {
           </>
         )}
       </div>
+      </details>
 
       {loading ? (
         <p role="status">Loading persisted care information…</p>
       ) : error ? (
         <div role="alert" className="lcr-empty-state">
           <AlertCircle size={20} aria-hidden="true" />
-          <h3>Current care understanding is unavailable</h3>
-          <p>{error}</p>
-          <p>The timeline is not being used as a substitute for this view.</p>
+          <h3>Your care information isn’t available right now</h3>
+          <p>We couldn’t load this care information. Check your connection and try again. Your saved records have not been changed.</p>
+          
           <button type="button" className="lcr-text-action" onClick={() => void load(true)}>Try again</button>
         </div>
       ) : projection ? (
@@ -1658,21 +1659,21 @@ export function LCRCurrentUnderstanding() {
           {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
             <div role="status" className="lcr-empty-state">
               <AlertCircle size={20} aria-hidden="true" />
-              <h3>Record coverage is incomplete</h3>
-              <p>Some data sources are unavailable or incomplete. This view may not cover the full care record.</p>
+              <h3>Some care information is unavailable</h3>
+              <p>We couldn’t load all of the available care information. The picture shown may be incomplete. Try refreshing later.</p>
               {projection.missing_required_sources.length > 0 && (
-                <p>Unavailable required sources: {projection.missing_required_sources.join(", ")}</p>
+                
               )}
               {projection.missing_optional_sources.length > 0 && (
-                <p>Unavailable optional sources: {projection.missing_optional_sources.join(", ")}</p>
+                
               )}
             </div>
           )}
 
           {projection.items.length === 0 ? (
             <div className="lcr-empty-state">
-              <h3>No current-care items were returned</h3>
-              <p>This is not evidence that no care needs, questions, or risks exist. Add or review information through the record workflows.</p>
+              <h3>No care information is available to show yet</h3>
+              <p>This does not mean everything is fine or that nothing has happened. Add a care note or review existing information to build a clearer picture.</p>
             </div>
           ) : (
             <div className="lcr-current-facts">
@@ -1690,7 +1691,7 @@ export function LCRCurrentUnderstanding() {
                     {item.evidence_link_validation && <small>{item.evidence_link_validation === "valid" ? "Source record linked" : "Source record status: " + item.evidence_link_validation.replaceAll("_", " ")}</small>}
                     {item.derived_observations && item.derived_observations.length > 0 && (
                       <details className="lcr-entry-status">
-                        <summary>Structured observations extracted from this report ({item.derived_observations.length})</summary>
+                        <summary>What was taken from this note ({item.derived_observations.length})</summary>
                         <p>These are structured readings of the same source report, not independent corroborating reports.</p>
                         <ul>
                           {item.derived_observations.map((observation) => (
@@ -1704,7 +1705,7 @@ export function LCRCurrentUnderstanding() {
                               <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
                               {observation.source_passage && (
                                 <details>
-                                  <summary>Inspect original source passage</summary>
+                                  <summary>Read the original note</summary>
                                   <blockquote>{observation.source_passage}</blockquote>
                                 </details>
                               )}
@@ -1728,7 +1729,7 @@ export function LCRCurrentUnderstanding() {
                         </small>
                         {item.source_passage && (
                           <details>
-                            <summary>Inspect original source passage</summary>
+                            <summary>Read the original note</summary>
                             <blockquote>{item.source_passage}</blockquote>
                           </details>
                         )}
@@ -1749,7 +1750,7 @@ export function LCRCurrentUnderstanding() {
                     {item.source_collection === "facts" && (
                       <div className="lcr-evidence-integrity">
                         <button type="button" onClick={() => void loadEvidenceIntegrity(item.id)} disabled={evidenceIntegrityLoadingId === item.id}>
-                          {evidenceIntegrityLoadingId === item.id ? "Checking linked evidence…" : "Inspect linked evidence"}
+                          {evidenceIntegrityLoadingId === item.id ? "Checking linked evidence…" : "View supporting information"}
                         </button>
                         {evidenceIntegrityErrors[item.id] && <p role="alert">{evidenceIntegrityErrors[item.id]}</p>}
                         {evidenceIntegrityByFact[item.id] && (
@@ -1783,7 +1784,7 @@ export function LCRCurrentUnderstanding() {
         </>
       ) : null}
       <details className="lcr-advanced-integrity">
-        <summary>Evidence, corrections and record integrity</summary>
+        <summary>Where this information came from</summary>
         <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
         <EvidenceReviewPanel personId={personId} />
         <ClaimAssessmentPanel />
