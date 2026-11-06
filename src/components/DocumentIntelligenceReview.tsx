@@ -155,6 +155,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           corrected_observation: correction?.observation ?? analysis.observations[index].observation,
         } : {}),
       });
+      if (decision === "accept") {
+        window.dispatchEvent(new Event("careRecordUpdated"));
+      }
       await load();
     } catch {
       setError("The review decision was not saved. Check the connection and retry; the original document remains unchanged.");
