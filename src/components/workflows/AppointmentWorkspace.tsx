@@ -996,8 +996,8 @@ function GuidedStageContent({
   </div>
 }
 
-export default function AppointmentWorkspace() {
-  const [open, setOpen] = useState(false)
+export default function AppointmentWorkspace({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  const [open, setOpen] = useState(initiallyOpen)
   const [stage, setStage] = useState<Stage>('prepare')
   const [brief, setBrief] = useState<GuidedBrief | null>(null)
   const [record, setRecord] = useState<GuidedWorkspace | null>(null)
