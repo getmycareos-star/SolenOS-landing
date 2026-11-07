@@ -12,6 +12,20 @@ type PreparationBrief = {
   events: Array<{ source_id: string; title: string; description?: string | null; occurred_at?: string | null; status: string }>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
   limitations: string[]
+  evidence_lineage: {
+    status: string
+    groups: Array<{
+      lineage_id: string
+      evidence_ids: string[]
+      source_independence_status: string
+      basis: string
+      interpretation_limit: string
+    }>
+    interpretation_limit: string
+    scope_truncated: boolean
+    lineage_nodes_examined?: number
+    relationship_records_examined?: number
+  }
 }
 type WorkspaceRecord = {
   id: string
@@ -297,6 +311,12 @@ export default function AppointmentWorkspace() {
               <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.fact_type.replaceAll('_', ' ')}</strong><p>{item.value || 'No detail recorded'}</p><small>{item.epistemic_status.replaceAll('_', ' ')}</small></li>)}</ul> : <p className="guided-muted">No care facts were returned for this brief.</p>}</section>
             </div>
             <section className="guided-appointments"><h5>Appointments in the care record</h5>{brief.appointments.length ? <ul>{brief.appointments.slice(0, 5).map(item => <li key={item.source_id}><strong>{item.title}</strong><span>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {item.status}</span></li>)}</ul> : <p className="guided-muted">No appointment was returned. This does not establish that no appointment exists.</p>}</section>
+            <section className="guided-lineage" aria-label="Evidence source lineage">
+              <h5>Evidence source lineage</h5>
+              {brief.evidence_lineage.groups.length ? <ul>{brief.evidence_lineage.groups.map(group => <li key={group.lineage_id}><strong>{group.source_independence_status.replaceAll('_', ' ')}</strong><p>{group.evidence_ids.length} linked source record(s)</p><small>{group.interpretation_limit}</small></li>)}</ul> : <p className="guided-muted">No persisted source-lineage groups were returned. This does not establish that the sources are independent.</p>}
+              <p className="guided-footnote">{brief.evidence_lineage.interpretation_limit}</p>
+              {brief.evidence_lineage.scope_truncated && <p className="guided-muted">Source-lineage retrieval reached its safety limit. Unreturned lineage is unknown, not absent.</p>}
+            </section>
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknowns remain separate.</p>
           </>}
         </div>}
