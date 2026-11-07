@@ -149,6 +149,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [expiryDays, setExpiryDays] = useState("7");
   const [summaryText, setSummaryText] = useState("");
   const [caregiverNote, setCaregiverNote] = useState("");
+  const [revisionHistory, setRevisionHistory] = useState<Array<{ revision_number: number; change_type: string; created_at: string | null }>>([]);
+  const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<Snapshot | null>(null);
@@ -211,6 +213,59 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     setCaregiverNote("");
     setReviewConfirmed(false);
   }, [draft, audience, purpose]);
+
+  useEffect(() => {
+    if (!draft?.draft_id) {
+      setRevisionHistory([]);
+      setSourceFreshness(null);
+      return;
+    }
+    let active = true;
+    void getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id)).then((saved) => {
+      if (!active) return;
+      const record = saved as {
+        revision_history?: Array<{ revision_number: number; change_type: string; created_at: string | null }>;
+        source_freshness?: { status: string; stale_source_count?: number; unknown_source_count?: number };
+        caregiver_notes?: Array<{ text: string; attribution: string }>;
+      };
+      setRevisionHistory(record.revision_history ?? []);
+      setSourceFreshness(record.source_freshness ?? null);
+      const note = record.caregiver_notes?.find(item => item.attribution === "caregiver_authored_unverified")?.text;
+      if (note) setCaregiverNote(note);
+    }).catch(() => {
+      if (active) setSourceFreshness({ status: "unknown" });
+    });
+    return () => { active = false; };
+  }, [draft?.draft_id]);
+
+  async function saveDraftRevision() {
+    if (!draft?.draft_id) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const content = {
+        template_sections: draft.template_sections ?? [],
+        sections: draft.sections,
+        generation: draft.generation,
+        caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
+      };
+      await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
+      const saved = await getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id)) as {
+        revision_history?: Array<{ revision_number: number; change_type: string; created_at: string | null }>;
+        source_freshness?: { status: string; stale_source_count?: number; unknown_source_count?: number };
+      };
+      setRevisionHistory(saved.revision_history ?? []);
+      setSourceFreshness(saved.source_freshness ?? null);
+      setReviewConfirmed(false);
+      setNotice("Draft revision saved. It has not been approved or shared.");
+      await load();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "The draft revision could not be saved.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function shareReviewedFamilyHandoff() {
     if (!draft || audience !== "family") {
@@ -399,13 +454,16 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
           <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
           <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview uses the backend-validated Qwen quotations, source references, evidence status, and separate event/recording times.</p>
+          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved revision: {revisionHistory.length ? Math.max(...revisionHistory.map(item => item.revision_number)) : draft.revision_number ?? 1} · Source freshness: {sourceFreshness?.status ?? "checking"} · {revisionHistory.length} revision record(s)</p>
+          {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>This draft is {sourceFreshness.status}. Prepare a fresh draft before approval or sharing.</p>}
           <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Additional caregiver note (optional)</label>
           <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+          <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale"} onClick={() => void saveDraftRevision()}>Save draft revision</button>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
           </label>
-          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || !reviewConfirmed || selectedRecipients.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
+          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || selectedRecipients.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed snapshot…" : "Share reviewed family handoff"}
           </button>
         </section>
