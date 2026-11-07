@@ -179,6 +179,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     if (lines.join("\\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
+  const includedSourceKeys = new Set(scopes.flatMap(scope => Array.from(sourceKeysForScope(scope))));
   for (const limitation of draft.limitations) {
     if (!includedSourceKeys.has(limitation.source)) continue;
     const line = "- " + limitation.source + ": " + limitation.status + (limitation.reason ? " (" + limitation.reason + ")" : "");
