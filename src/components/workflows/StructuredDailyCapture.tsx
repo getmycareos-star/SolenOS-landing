@@ -939,6 +939,14 @@ export default function StructuredDailyCapture() {
                     <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
                       {reviewStatus === 'pending_review' ? 'Awaiting caregiver review' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Corrected — awaiting explicit approval' : reviewStatus === 'accepted_by_caregiver' ? 'Accepted — added to the Living Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Rejected — not included in the Living Care Record' : 'Review status unavailable'}
                     </p>
+                    <div style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      <div><strong>Original suggestion:</strong> {candidate.subject ? `${candidate.subject}: ` : ''}{candidate.observation || 'No generated observation text.'}</div>
+                      {candidate.corrected_observation !== undefined && (
+                        <div style={{ marginTop: '4px' }}>
+                          <strong>Caregiver correction:</strong> {candidate.corrected_subject ? `${candidate.corrected_subject}: ` : ''}{candidate.corrected_observation}
+                        </div>
+                      )}
+                    </div>
                     <label style={{ display: 'block', marginBottom: '8px' }}>
                       What is this about?
                       <input
