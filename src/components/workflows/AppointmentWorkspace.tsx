@@ -26,6 +26,27 @@ type PreparationBrief = {
     lineage_nodes_examined?: number
     relationship_records_examined?: number
   }
+  freshness_assessments: Array<{
+    assessment_id: string
+    evidence_id: string
+    domain_key: string
+    policy_version: string
+    freshness_status: string
+    source_time: string | null
+    source_time_kind: string
+    assessed_at: string | null
+    age_days: number | null
+    rationale: string
+    interpretation_limit: string
+  }>
+  freshness_assessment_scope: {
+    status: string
+    bounded: boolean
+    limit: number
+    history_complete: boolean
+    interpretation_limit: string
+  }
+  source_coverage: { evidence_freshness_assessments: string }
 }
 type WorkspaceRecord = {
   id: string
@@ -316,6 +337,17 @@ export default function AppointmentWorkspace() {
               {brief.evidence_lineage.groups.length ? <ul>{brief.evidence_lineage.groups.map(group => <li key={group.lineage_id}><strong>{group.source_independence_status.replaceAll('_', ' ')}</strong><p>{group.evidence_ids.length} linked source record(s)</p><small>{group.interpretation_limit}</small></li>)}</ul> : <p className="guided-muted">No persisted source-lineage groups were returned. This does not establish that the sources are independent.</p>}
               <p className="guided-footnote">{brief.evidence_lineage.interpretation_limit}</p>
               {brief.evidence_lineage.scope_truncated && <p className="guided-muted">Source-lineage retrieval reached its safety limit. Unreturned lineage is unknown, not absent.</p>}
+            </section>
+            <section className="guided-freshness" aria-label="Evidence freshness assessments">
+              <h5>Evidence freshness assessments</h5>
+              {brief.source_coverage.evidence_freshness_assessments === 'unavailable' && <p className="guided-muted">Freshness assessment storage is unavailable in this database schema.</p>}
+              {brief.freshness_assessments.length ? <ul>{brief.freshness_assessments.slice(0, 8).map(item => <li key={item.assessment_id}>
+                <strong>{item.domain_key.replaceAll('_', ' ')} · {item.freshness_status.replaceAll('_', ' ')}</strong>
+                <p>{item.rationale}</p>
+                <small>Source time: {item.source_time ? new Date(item.source_time).toLocaleString() : 'Not recorded'} · source_time_kind: {item.source_time_kind} · assessed {item.assessed_at ? new Date(item.assessed_at).toLocaleString() : 'at an unknown time'} · age {item.age_days ?? 'unknown'} days</small>
+                <small>{item.interpretation_limit}</small>
+              </li>)}</ul> : brief.source_coverage.evidence_freshness_assessments !== 'unavailable' && <p className="guided-muted">No freshness assessment was returned for linked evidence. This is not proof that evidence is current.</p>}
+              <p className="guided-footnote">{brief.freshness_assessment_scope.interpretation_limit}</p>
             </section>
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknowns remain separate.</p>
           </>}
