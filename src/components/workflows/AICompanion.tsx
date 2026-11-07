@@ -17,7 +17,7 @@ interface HandoffDraftItem {
   event_at?: string | null
   recorded_at: string | null
   due_at?: string | null
-  details?: Record<string, string>
+  details?: Record<string, unknown>
   epistemic_status: string
   record_status?: string
   text: string
@@ -40,6 +40,12 @@ interface HandoffDraftItem {
 interface HandoffDraft {
   draft_id: string
   purpose: string
+  generation_status?: string
+  validation_status?: string
+  review_status?: string
+  revision_number?: number
+  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null }> }
+  caregiver_notes?: Array<{ text: string; attribution: string }>
   audience?: 'family' | 'professional'
   template_sections?: Array<{ key: string; title: string; required_fields: string[]; source_tables: string[]; coverage_status: string; coverage_note: string }>
   prepared_at: string
@@ -50,7 +56,7 @@ interface HandoffDraft {
   updates_lcr: boolean
   source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>
   sections: Array<{ title: string; items: HandoffDraftItem[] }>
-  source_references: Array<{ source_type: string; source_table: string; source_id: string; event_at?: string | null; recorded_at: string | null; due_at?: string | null; details?: Record<string, string>; epistemic_status: string; record_status?: string; stale_warning: boolean }>
+  source_references: Array<{ source_type: string; source_table: string; source_id: string; source_fingerprint?: string; source_revision?: string | null; source_revision_status?: string; event_at?: string | null; recorded_at: string | null; due_at?: string | null; details?: Record<string, unknown>; epistemic_status: string; record_status?: string; stale_warning: boolean }>
   evidence_lineage?: {
     status: string
     evidence_ids_considered: string[]
