@@ -49,6 +49,15 @@ async function main() {
   }) as typeof fetch;
   await assert.rejects(postJSON("/daily/log", { note: "write once" }), /temporary unavailable/);
   assert.equal(writes, 1, "mutations must never be retried automatically");
-  console.log("API reliability checks passed: timeout signal, one safe GET retry, no mutation replay.");
+
+  let idempotencyHeader = "";
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const headers = new Headers(init?.headers);
+    idempotencyHeader = headers.get("X-Request-ID") ?? "";
+    return response({ id: "handoff-1" }, 201);
+  }) as typeof fetch;
+  await postJSON("/handoffs", { draft_id: "draft-1" }, { "X-Request-ID": "stable-handoff-request-1" });
+  assert.equal(idempotencyHeader, "stable-handoff-request-1", "mutations must preserve caller-supplied idempotency keys");
+  console.log("API reliability checks passed: timeout signal, safe GET retry, no mutation replay, idempotency header forwarding.");
 }
 void main();
