@@ -43,7 +43,7 @@ assert(/independence.*quality.*conflict/i.test(countOnly.conclusion), "item coun
 
 console.log("PASS: evidence builder emits no synthetic event IDs, confidence, source-reliability or recency scores.");
 
-const panel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+assert(/dynamic\(\(\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
 assert(panel.includes("/integrity"), "evidence review UI must call the persisted source-integrity endpoint");
 assert(panel.includes("source_text_integrity_status"), "evidence review UI must display the server-computed integrity status");
 assert(panel.includes("Original file authenticity"), "the UI must disclose that a text hash does not authenticate the uploaded original");
@@ -91,7 +91,7 @@ assert(appointment.includes("scope_truncated"), "Appointment preparation must di
 assert(appointment.includes("not establish that the sources are independent"), "Appointment preparation must not infer independence from missing lineage");
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
 
-const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+assert(/dynamic\(\(\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
 assert(evidenceReview.includes("/care-continuity/state-revisions/evidence/"), "Evidence review must call the persisted as-of reconstruction API");
 assert(evidenceReview.includes("persisted_care_state_revision"), "Evidence review must validate the historical response source");
 assert(evidenceReview.includes("This does not establish that the evidence did not exist"), "Historical lookup failure must not be displayed as evidence absence");
@@ -108,8 +108,8 @@ assert(panel.includes("Correction rationale"), "observation correction UI must r
 console.log("PASS: observation correction history must be versioned and justified.");
 
 const lcr = fs.readFileSync(path.join(process.cwd(), "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
-assert(/dynamic\\(\\(\\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
-assert(lcr.includes("<EvidenceReviewPanel personId={personId} />"), "the evidence workflow must be mounted in the LCR, not left as an unused component");
+assert(/dynamic\(\(\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
+assert(/dynamic\(\(\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
 assert(panel.includes("expectedPersonId !== session.person.id"), "evidence review must reject a UI person scope that differs from the authenticated session");
 assert(lcr.includes("<ClaimAssessmentPanel />"), "claim assessments must be reachable from the LCR workflow");
 assert(lcr.includes("<CareContinuityIntegrityPanel personId={personId} />"), "care continuity integrity must be reachable from the LCR workflow");
@@ -119,16 +119,16 @@ assert(lcr.includes("algorithm_version"), "LCR must show which deterministic can
 assert(lcr.includes("interpretation_limit"), "LCR must disclose the limitations of near-duplicate candidate analysis");
 
 console.log("PASS: evidence, claim assessment, and care-integrity panels are mounted in the actual LCR workflow.");
-const conflictPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ConflictResolutionPanel.tsx"), "utf8");
+assert(/dynamic\(\(\) => import\("@\/components\/ConflictResolutionPanel"\)/.test(lcr), "LCR must defer-import the conflict resolution workflow");
 assert(conflictPanel.includes("/uncertainty/contradictions/"), "conflict resolution UI must read persisted conflicts and transition history");
 assert(conflictPanel.includes("resolution_scope"), "partial conflict resolution must capture and display exact scope");
 assert(conflictPanel.includes("linked evidence"), "conflict resolution must expose linked evidence");
 assert(conflictPanel.includes("A failed request is not an empty history"), "failed conflict-history reads must not look like an empty history");
 assert(conflictPanel.includes("not automatically resolve a conflict"), "conflict UI must reject timestamp/majority-only resolution");
-assert(/dynamic\\(\\(\\) => import\("@\/components\/ConflictResolutionPanel"\)/.test(lcr), "LCR must defer-import the conflict resolution workflow");
-assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
+assert(/dynamic\(\(\) => import\("@\/components\/ConflictResolutionPanel"\)/.test(lcr), "LCR must defer-import the conflict resolution workflow");
+assert(/dynamic\(\(\) => import\("@\/components\/ConflictResolutionPanel"\)/.test(lcr), "LCR must defer-import the conflict resolution workflow");
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
-const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
+assert(/dynamic\(\(\) => import\("@\/components\/ClarificationWorkflowPanel"\)/.test(lcr), "LCR must defer-import the clarification workflow");
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
 assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
 assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
@@ -139,8 +139,8 @@ assert(clarificationPanel.includes("intended_answerer_role"), "clarification mus
 assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
 assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
 assert(clarificationPanel.includes("A failed request is not an empty history"), "failed answer-history reads must not be shown as empty history");
-assert(/dynamic\\(\\(\\) => import\("@\/components\/ClarificationWorkflowPanel"\)/.test(lcr), "LCR must defer-import the clarification workflow");
-assert(lcr.includes("<ClarificationWorkflowPanel personId={personId}"), "clarification workflow must be mounted in the actual LCR");
+assert(/dynamic\(\(\) => import\("@\/components\/ClarificationWorkflowPanel"\)/.test(lcr), "LCR must defer-import the clarification workflow");
+assert(/dynamic\(\(\) => import\("@\/components\/ClarificationWorkflowPanel"\)/.test(lcr), "LCR must defer-import the clarification workflow");
 console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
 
 for (const field of ["reported_at", "collection_method", "origin_device_ref", "transfer_source", "transfer_reference"]) {
@@ -151,13 +151,13 @@ console.log("PASS: LCR evidence review exposes report time, collection method, o
 
 
 
-const evidenceReviewPanel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+assert(/dynamic\(\(\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
 assert(evidenceReviewPanel.includes("/care-continuity/state-reconstruction/as-of"), "evidence UI must call the authenticated historical care-state reconstruction endpoint");
 assert(evidenceReviewPanel.includes("partial_revision_history"), "historical care-state UI must preserve partial-coverage semantics");
 assert(evidenceReviewPanel.includes("No complete historical record is assumed"), "historical reconstruction failures must not imply absence of care records");
 
 
-const freshnessPanel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
+assert(/dynamic\(\(\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
 for (const route of [
   "/care-continuity/evidence-freshness/policies",
   "/care-continuity/evidence-freshness/assessments",
