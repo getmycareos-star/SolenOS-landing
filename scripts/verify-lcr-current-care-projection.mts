@@ -9,7 +9,11 @@ assert.match(legacyRoute, /redirect\("\/workspace"\)/, "legacy LCR screen must n
 assert.doesNotMatch(legacyRoute, /<LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/, "legacy route must not expose the old LCR interface");
 assert.match(component, /\/care-continuity\/current-care\?limit_per_source=12/, "LCR data projection remains implemented");
 assert.match(component, /read_only !== true/, "projection contract must identify itself as read-only");
-assert.match(component, /result\.person_id !== session\.person\.id/, "projection identity must match the active session");
+assert.match(component, /currentCare\.person_id !== scopedPersonId/, "projection identity must match the active session");
+const initialLoad = component.slice(component.indexOf("const load = useCallback"), component.indexOf("const transitionConfirmation"));
+assert.ok(!initialLoad.includes("postJSON(`/change/changes/reassess"), "opening the LCR must not write/reassess change history automatically");
+assert.ok(!initialLoad.includes('postJSON("/care-continuity/situation-understanding/reassess"'), "opening the LCR must not regenerate a situation assessment automatically");
+assert.ok(initialLoad.includes('getJSON("/care-continuity/situation-understanding")'), "opening the LCR must reuse the persisted assessment");
 assert.match(component, /schema_status !== "complete"/, "incomplete source coverage must be visible");
 assert.match(component, /missing_required_sources/, "required source gaps must not be hidden");
 assert.match(component, /epistemic_status/, "epistemic status must remain visible");

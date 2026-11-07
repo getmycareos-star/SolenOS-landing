@@ -11,7 +11,8 @@ assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
 for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
   assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
 }
-assert.ok(companionPage.includes("<AppointmentWorkspace />"), "appointments must retain their separate workflow");
+assert.match(companionPage, /const AppointmentWorkspace = dynamic/, "appointments must remain a separate, deferred workflow");
+assert.ok(companionPage.includes("<AppointmentWorkspace initiallyOpen />"), "the caregiver must open the deferred appointment workflow with one action");
 assert.ok(companionPage.includes("handoffPurpose === 'appointment'"), "doctor appointment must be a supported handoff purpose");
 assert.match(companionPage, /handoffPurpose === 'appointment' \? 'professional_appointment'/, "doctor appointment must map to the backend-supported purpose");
 assert.match(companionPage, /handoffAudience === 'professional' && \(/, "doctor appointment must only be offered for professional handoffs");

@@ -3,11 +3,12 @@
 
 import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getJSON, getAnonymousAccessToken, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
-import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
+const AppointmentWorkspace = dynamic(() => import('@/components/workflows/AppointmentWorkspace'), { ssr: false, loading: () => <p role="status">Loading appointment support…</p> })
 import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
 
 const CASUAL_GREETING = /^(?:hi|hello|hey|hiya|howdy|how are you(?: doing| today)?|how'?s it going|what'?s up|good morning|good afternoon|good evening|good night|thanks|thank you(?: so much)?|bye|goodbye|see you)[.!?,;:]*$/i
@@ -148,6 +149,7 @@ const STARTER_PROMPTS = [
 export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
   const router = useRouter()
   const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const [showAppointmentWorkspace, setShowAppointmentWorkspace] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const captureInputRef = useRef<HTMLInputElement>(null)
   const cameraVideoRef = useRef<HTMLVideoElement>(null)
@@ -383,7 +385,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         text: submittedText,
         session_id: sessionId,
         client_turn_id: clientTurnId,
-      }) as any
+      }, {}, { timeoutMs: 210_000 }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
@@ -544,7 +546,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </section>
 
       )}
-      {!home && <AppointmentWorkspace />}
+      {!home && (
+        showAppointmentWorkspace
+          ? <AppointmentWorkspace initiallyOpen />
+          : <section className="companion-appointment-launch" aria-label="Appointment support">
+              <button type="button" className="companion-handoff-primary" onClick={() => setShowAppointmentWorkspace(true)}>
+                Open appointment support
+              </button>
+            </section>
+      )}
 
       {!home && (
       <section className="companion-handoff" aria-labelledby="companion-handoff-title">
