@@ -100,6 +100,18 @@ function formatDate(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? "Not recorded" : date.toLocaleString();
 }
 
+function handoffPurposeLabel(value: string): string {
+  if (value === "family_transition" || value === "return_to_care") return "Taking over today";
+  if (value === "professional_appointment") return "Doctor’s appointment";
+  if (value === "period_summary") return "Full care overview";
+  if (value === "hospital_discharge") return "Hospital discharge";
+  return value.replaceAll("_", " ");
+}
+
+function readableStatus(value: string): string {
+  return value.replaceAll("_", " ").replace(/^./, character => character.toUpperCase());
+}
+
 function scopeForSourceType(sourceType: string): string {
   if (sourceType.startsWith("document_") || sourceType === "uploaded_document") return "documents";
   if (sourceType === "appointment") return "appointments";
@@ -457,7 +469,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {savedDrafts.map(saved => (
             <div key={saved.draft_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
               <div>
-                <strong>{saved.purpose.replaceAll("_", " ")}</strong>
+                <strong>{handoffPurposeLabel(saved.purpose)}</strong>
                 <div style={{ fontSize: 11, color: "#667267" }}>{saved.review_status ?? "pending review"} · revision {saved.revision_number ?? 1} · {formatDate(saved.updated_at ?? saved.prepared_at)}</div>
               </div>
               <button type="button" style={quietButton} disabled={busy || !onResumeDraft} onClick={async () => {
@@ -491,15 +503,13 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {consentRequired && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
             Incoming handoffs and recipient sharing are unavailable until the required privacy and multi-caregiver acknowledgements are saved for this care record. Review them in <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Settings → Privacy</Link>, then refresh this panel. Your care record remains available.
           </p>}
-          {draft.evidence_lineage && <section style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="Handoff evidence lineage">
-            <strong style={{ fontSize: 12 }}>Evidence source lineage · {draft.evidence_lineage.status.replaceAll("_", " ")}</strong>
-            {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map(group => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: 11 }}>
-              <b>{group.source_independence_status.replaceAll("_", " ")}</b>
-              <p style={{ margin: "3px 0" }}>Evidence IDs: {group.evidence_ids.join(", ")}</p>
-              {group.origin_group_keys.length > 0 && <p style={{ margin: "3px 0" }}>Origin groups: {group.origin_group_keys.join(", ")}</p>}
+          {draft.evidence_lineage && <section style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="How information was sourced">
+            <strong style={{ fontSize: 12 }}>How the information was sourced</strong>
+            {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map((group, index) => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: 12 }}>
+              <b>Source group {index + 1}: {readableStatus(group.source_independence_status)}</b>
               <p style={{ margin: "3px 0", color: "#667267" }}>{group.interpretation_limit}</p>
-            </div>) : <p style={{ fontSize: 11, marginBottom: 0 }}>No explicit shared-source group was returned for the retrieved evidence. This does not establish that sources are independent.</p>}
-            <p style={{ fontSize: 11, marginBottom: 0, color: "#667267" }}>{draft.evidence_lineage.interpretation_limit}</p>
+            </div>) : <p style={{ fontSize: 12, marginBottom: 0 }}>The available records do not establish whether some information came from the same original source. Do not treat similar accounts as independent confirmation.</p>}
+            <p style={{ fontSize: 12, marginBottom: 0, color: "#667267" }}>{draft.evidence_lineage.interpretation_limit}</p>
           </section>}
           {directoryError && <p role="alert">The recipient list could not be verified. Refresh before sharing.</p>}
           {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No linked caregiver is currently eligible to receive this handoff. SolenOS will not send it to an unlinked recipient.</p>}
@@ -622,7 +632,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 {activeSnapshot.purpose && <p style={{ fontSize: 11 }}>Purpose: {activeSnapshot.purpose.replaceAll("_", " ")} · Audience: {activeSnapshot.audience ?? "not recorded"} · Window: {activeSnapshot.window?.days ?? "unknown"} days</p>}
                 {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Source coverage</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || key}: {value.status}{value.reason ? " (" + value.reason + ")" : ""} · {value.count} record(s)</p>)}</section>}
                 {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Limitation — {item.source}: {item.status}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
-                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {item.source_ref} · {item.epistemic_status} · {item.record_status} · event {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}{item.original_source_reference ? " · document " + item.original_source_reference : ""}{Array.isArray(item.page_references) ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
+                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · occurred {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}{item.original_source_reference ? " · document " + item.original_source_reference : ""}{Array.isArray(item.page_references) ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
                 <p style={{ fontSize: 11 }}>Source IDs: {activeSnapshot.source_id_validation === "server_verified_person_scope_and_record_existence" ? "verified as records belonging to this care recipient" : "not server-verified"}. This does not independently establish clinical accuracy or semantic entailment.</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
