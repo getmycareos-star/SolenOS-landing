@@ -125,5 +125,11 @@ assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "
 assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
 assert.ok(/expected_version:\s*(?:savedVersion|recordVersion)/.test(appointmentWorkspace), "appointment saves must use optimistic concurrency with the current persisted version");
 assert.ok(appointmentWorkspace.includes("lcr_reconciliation: 'not_performed'"), "appointment notes must not silently promote themselves into LCR facts");
+assert.match(appointmentWorkspace, /postJSON\\('\\/appointment-workspaces\\/' \\+ encodeURIComponent\\(record\\.id\\) \\+ '\\/outcome-proposals'/, "appointment outcome candidates must be created by the backend");
+assert.match(appointmentWorkspace, /outcome-proposals\\/' \\+ encodeURIComponent\\(proposal\\.id\\) \\+ '\\/review/, "appointment candidates must use backend review decisions");
+assert.match(appointmentWorkspace, /Accept as caregiver report/, "caregiver acceptance must be explicit");
+assert.match(appointmentWorkspace, /Save correction/, "caregiver corrections must remain a separate decision");
+assert.match(appointmentWorkspace, /Reject/, "caregiver rejection must be available");
+assert.match(appointmentWorkspace, /not independently verified/, "appointment assertions must not be presented as clinically verified");
 
 console.log("PASS: handoff preparation, saved-draft retrieval, revision, approval, source freshness, existing sharing, acknowledgement, and revocation use the backend as the sole source of truth.");
