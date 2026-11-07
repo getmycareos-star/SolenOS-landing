@@ -4,6 +4,7 @@ import fs from "node:fs";
 const workspace = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 const page = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const shell = fs.readFileSync("src/components/app-shell/AppShell.tsx", "utf8");
+const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
 
 const initialLoad = workspace.slice(workspace.indexOf("const load = useCallback"), workspace.indexOf("const transitionConfirmation"));
 assert.match(initialLoad, /\/care-continuity\/current-care\?limit_per_source=12/, "the current-care projection must be the primary LCR request");
@@ -14,6 +15,8 @@ assert.match(initialLoad, /getJSON\("\/care-continuity\/situation-understanding"
 assert.match(workspace, /const CareContinuityIntegrityPanel = dynamic/, "advanced integrity tools must be deferred");
 assert.match(workspace, /const EvidenceReviewPanel = dynamic/, "evidence review must be deferred");
 assert.match(workspace, /advancedPanelsOpen && \(/, "advanced review components must mount only after explicit expansion");
+assert.match(companion, /const AppointmentWorkspace = dynamic/, "appointment workflow must be split from the Companion bundle");
+assert.match(companion, /showAppointmentWorkspace\s*\?\s*<AppointmentWorkspace initiallyOpen/, "appointment workflow must load only after explicit caregiver action");
 assert.match(shell, /href=\{href\}\s+prefetch=\{false\}/, "secondary routes must not prefetch on initial workspace load");
 assert.match(shell, /href="\/workspace\/settings"\s+prefetch=\{false\}/, "settings must not prefetch on initial workspace load");
 assert.match(page, /<LCRCurrentUnderstanding \/>/, "the canonical workspace route must continue to render the LCR");
