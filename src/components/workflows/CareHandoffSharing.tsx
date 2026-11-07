@@ -78,7 +78,7 @@ type Snapshot = {
   sections?: Record<string, string>;
   source_coverage?: Record<string, { status: string; reason?: string; label?: string; count: number }>;
   limitations?: Array<{ source: string; status: string; reason?: string }>;
-  source_references?: Array<{ source_ref: string; epistemic_status: string; record_status: string; event_at?: string | null; recorded_at?: string | null; stale_warning: boolean }>;
+  source_references?: Array<{ source_ref: string; epistemic_status: string; record_status: string; event_at?: string | null; recorded_at?: string | null; stale_warning: boolean; document_id?: string | null; original_source_reference?: string | null; page_references?: unknown }>;
   content_sha256?: string;
   source_id_validation?: string;
 };
@@ -135,7 +135,12 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
   ];
   let truncated = false;
   const sourceTypes = new Map<string, string>();
-  for (const group of draft.sections) for (const source of group.items) sourceTypes.set(source.source_table + ":" + source.source_id, source.source_type);
+  const sourceDetails = new Map<string, Record<string, unknown>>();
+  for (const group of draft.sections) for (const source of group.items) {
+    const ref = source.source_table + ":" + source.source_id;
+    sourceTypes.set(ref, source.source_type);
+    sourceDetails.set(ref, source.details ?? {});
+  }
   const generated = draft.generation?.sections ?? [];
   for (const item of generated) {
     if (!scopes.includes(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact"))) continue;
@@ -150,6 +155,8 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
       "Recorded time: " + formatDate(item.recorded_at),
       "Historical status: " + (item.stale_warning ? "historical or stale; re-check before relying on it" : "not flagged stale"),
       "Source reference: " + item.source_ref,
+      "Original document reference: " + String(sourceDetails.get(item.source_ref)?.original_source_reference ?? "not applicable or not recorded"),
+      "Page references: " + (Array.isArray(sourceDetails.get(item.source_ref)?.page_references) ? (sourceDetails.get(item.source_ref)?.page_references as unknown[]).map(value => String(value)).join(", ") : "not recorded"),
     ].join("\\n");
     if (lines.join("\\n").length + itemText.length > 16500) { truncated = true; break; }
     lines.push(itemText);
@@ -585,7 +592,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 {activeSnapshot.purpose && <p style={{ fontSize: 11 }}>Purpose: {activeSnapshot.purpose.replaceAll("_", " ")} · Audience: {activeSnapshot.audience ?? "not recorded"} · Window: {activeSnapshot.window?.days ?? "unknown"} days</p>}
                 {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Source coverage</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || key}: {value.status}{value.reason ? " (" + value.reason + ")" : ""} · {value.count} record(s)</p>)}</section>}
                 {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Limitation — {item.source}: {item.status}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
-                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {item.source_ref} · {item.epistemic_status} · {item.record_status} · event {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}</p>)}
+                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {item.source_ref} · {item.epistemic_status} · {item.record_status} · event {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}{item.original_source_reference ? " · document " + item.original_source_reference : ""}{Array.isArray(item.page_references) ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
                 <p style={{ fontSize: 11 }}>Source IDs: {activeSnapshot.source_id_validation === "server_verified_person_scope_and_record_existence" ? "verified as records belonging to this care recipient" : "not server-verified"}. This does not independently establish clinical accuracy or semantic entailment.</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
