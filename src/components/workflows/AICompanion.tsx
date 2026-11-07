@@ -711,7 +711,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       const value = candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''
                       const pending = candidate.status === 'pending_authorization'
                       return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
-                        <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>{pending ? 'Pending review' : candidate.status.replaceAll('_', ' ')}</span></div>
+                        <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>{pending ? 'Pending review' : candidate.status.replace(/_/g, ' ')}</span></div>
                         <p>{value}</p>
                         <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Qwen proposal'}</p>
                         {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
@@ -724,7 +724,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           </label>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
-                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Saved as a caregiver-attributed report in the Living Care Record.' : candidate.status === 'rejected' ? 'Rejected. No LCR assertion was created.' : candidate.status === 'corrected' ? 'Original proposal retained. A corrected version requires separate acceptance.' : candidate.status.replaceAll('_', ' ')}</p>}
+                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Saved as a caregiver-attributed report in the Living Care Record.' : candidate.status === 'rejected' ? 'Rejected. No LCR assertion was created.' : candidate.status === 'corrected' ? 'Original proposal retained. A corrected version requires separate acceptance.' : candidate.status.replace(/_/g, ' ')}</p>}
                         {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
                       </section>
                     })}
