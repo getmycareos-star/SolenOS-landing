@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ShieldCheck } from 'lucide-react'
 import DetailedAppointmentWorkspace from './DetailedAppointmentWorkspace'
@@ -12,6 +12,7 @@ type PreparationBrief = {
   events: Array<{ source_id: string; title: string; description?: string | null; occurred_at?: string | null; status: string }>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
   limitations: string[]
+  source_coverage: Record<string, string>
 }
 type WorkspaceRecord = {
   id: string
@@ -47,6 +48,7 @@ export default function AppointmentWorkspace() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const pendingSaveRef = useRef<{ fingerprint: string; key: string; recordedAt: string } | null>(null)
   const [showDetailed, setShowDetailed] = useState(false)
 
   useEffect(() => {
@@ -114,24 +116,43 @@ export default function AppointmentWorkspace() {
     setMessage('')
     try {
       await ensureAnonymousSession()
-      const payload = {
-        ...(record?.payload || {}),
-        caregiverReport: note.trim(),
-        captureStage: stage,
-        caregiverReportAt: new Date().toISOString(),
-      }
       const nextStatus = record
         ? record.status === 'preparation' && stage !== 'prepare'
           ? stage === 'during' ? 'during_visit' : 'outcome_pending'
           : record.status === 'during_visit' && stage === 'after' ? 'outcome_pending' : record.status
         : stageStatus[stage]
+      const fingerprint = JSON.stringify({
+        recordId: record?.id ?? null,
+        appointmentId: appointmentId || null,
+        expectedVersion: record?.version_number ?? null,
+        stage,
+        nextStatus,
+        note: note.trim(),
+      })
+      if (!pendingSaveRef.current || pendingSaveRef.current.fingerprint !== fingerprint) {
+        pendingSaveRef.current = {
+          fingerprint,
+          key: `appointment-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2)}`,
+          recordedAt: new Date().toISOString(),
+        }
+      }
+      const pendingSave = pendingSaveRef.current
+      const payload = {
+        ...(record?.payload || {}),
+        caregiverReport: note.trim(),
+        captureStage: stage,
+        caregiverReportAt: pendingSave.recordedAt,
+        lcr_reconciliation: 'not_performed',
+      }
+      const recordVersion = record?.version_number ?? 0
       let saved: WorkspaceRecord
       if (record) {
         saved = await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), {
-          expected_version: record.version_number,
+          expected_version: recordVersion,
           status: nextStatus,
           payload,
           change_reason: 'Caregiver saved an optional appointment note',
+          idempotency_key: pendingSave.key,
         }) as WorkspaceRecord
       } else {
         saved = await postJSON('/appointment-workspaces', {
@@ -139,11 +160,19 @@ export default function AppointmentWorkspace() {
           status: nextStatus,
           payload,
           change_reason: 'Caregiver saved an optional appointment note',
+          idempotency_key: pendingSave.key,
         }) as WorkspaceRecord
       }
+      pendingSaveRef.current = null
       setRecord(saved)
       setMessage('Your note is saved as a caregiver report.')
-      if (stage === 'after') await refreshOutcome(saved.id)
+      if (stage === 'after') {
+        try {
+          await refreshOutcome(saved.id)
+        } catch {
+          setError('Your note was saved. The outcome view could not refresh; reopen appointment support to retry.')
+        }
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Your note could not be saved. Please try again.')
     } finally {
@@ -180,10 +209,15 @@ export default function AppointmentWorkspace() {
           {!brief && <p className="guided-muted">Your care history could not be loaded. Missing information is not treated as proof that it does not exist.</p>}
           {brief && <>
             <div className="guided-columns">
-              <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.title}</strong>{item.description && <p>{item.description}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {item.status}</small></li>)}</ul> : <p className="guided-muted">No recent care events were returned for this brief.</p>}</section>
-              <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.fact_type.replaceAll('_', ' ')}</strong><p>{item.value || 'No detail recorded'}</p><small>{item.epistemic_status.replaceAll('_', ' ')}</small></li>)}</ul> : <p className="guided-muted">No care facts were returned for this brief.</p>}</section>
+              <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.title}</strong>{item.description && <p>{item.description}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {item.status}</small><small>Source reference: {item.source_id}</small></li>)}</ul> : <p className="guided-muted">No recent care events were returned for this brief.</p>}</section>
+              <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.fact_type.replaceAll('_', ' ')}</strong><p>{item.value || 'No detail recorded'}</p><small>{item.epistemic_status.replaceAll('_', ' ')}</small><small>Source reference: {item.source_id}</small></li>)}</ul> : <p className="guided-muted">No care facts were returned for this brief.</p>}</section>
             </div>
-            <section className="guided-appointments"><h5>Appointments in the care record</h5>{brief.appointments.length ? <ul>{brief.appointments.slice(0, 5).map(item => <li key={item.source_id}><strong>{item.title}</strong><span>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {item.status}</span></li>)}</ul> : <p className="guided-muted">No appointment was returned. This does not establish that no appointment exists.</p>}</section>
+            <section className="guided-appointments"><h5>Appointments in the care record</h5>{brief.appointments.length ? <ul>{brief.appointments.slice(0, 5).map(item => <li key={item.source_id}><strong>{item.title}</strong><span>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {item.status}</span><small>Source reference: {item.source_id}</small></li>)}</ul> : <p className="guided-muted">No appointment was returned. This does not establish that no appointment exists.</p>}</section>
+            <section className="guided-coverage" aria-label="Source availability">
+              <h5>Source availability</h5>
+              <p className="guided-muted">Unavailable or excluded sources are shown explicitly. Missing data is not evidence that a care event did not occur.</p>
+              <ul>{Object.entries(brief.source_coverage).map(([source, status]) => <li key={source}><span>{source.replaceAll('_', ' ')}</span><strong>{status.replaceAll('_', ' ')}</strong></li>)}</ul>
+            </section>
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknowns remain separate.</p>
           </>}
         </div>}
@@ -239,6 +273,10 @@ export default function AppointmentWorkspace() {
         .guided-columns li p { margin:3px 0; }
         .guided-columns li small,.guided-appointments li span { display:block; color:#7a867c; font-size:10px; }
         .guided-appointments { margin-top:12px; }
+        .guided-coverage { margin-top:12px; padding:12px; border:1px solid #e5ebe2; border-radius:11px; background:#fff; }
+        .guided-coverage ul { display:grid; gap:7px; margin:0; padding:0; list-style:none; }
+        .guided-coverage li { display:flex; justify-content:space-between; gap:10px; color:#536653; font-size:11px; }
+        .guided-coverage strong { color:#334b38; font-weight:700; text-align:right; }
         .guided-appointments li { display:flex; justify-content:space-between; gap:10px; margin:7px 0; font-size:12px; }
         .guided-footnote { margin:12px 0 0; color:#7b877d; font-size:10px; line-height:1.55; }
         .guided-capture-label { display:flex; flex-direction:column; gap:7px; margin-top:14px; color:#405343; font-size:12px; font-weight:750; }
