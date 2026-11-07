@@ -210,8 +210,12 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
       setError("Professional sharing is unavailable until SolenOS can verify professional identity and role authorization.");
       return;
     }
+    if (draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed") {
+      setError("This draft has no validated Qwen-generated document. It cannot be shared.");
+      return;
+    }
     if (!reviewConfirmed || !summaryText.trim() || selectedRecipients.length === 0) {
-      setError("Review the entire summary and select at least one eligible linked caregiver before sharing.");
+      setError("Review the complete generated handoff and select at least one eligible linked caregiver before sharing.");
       return;
     }
     setBusy(true);
@@ -220,32 +224,30 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
     try {
       const session = await ensureAnonymousSession();
       const expiresAt = new Date(Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000).toISOString();
+      const content = {
+        template_sections: draft.template_sections ?? [],
+        sections: draft.sections,
+        generation: draft.generation,
+        caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
+      };
+      await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
+      await postJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/approve", {
+        recipient_caregiver_ids: selectedRecipients,
+        scope: ["lcr_summary"],
+        expires_at: expiresAt,
+      });
       const created = await postJSON("/handoffs", {
         person_id: session.person.id,
+        draft_id: draft.draft_id,
         recipient_caregiver_ids: selectedRecipients,
         scope: ["lcr_summary"],
         expires_at: expiresAt,
       }) as { id: string };
-      if (!created?.id) throw new Error("The backend did not confirm a handoff ID. No summary was attached.");
-      try {
-        await putJSON("/handoffs/" + encodeURIComponent(created.id) + "/summary", {
-          sections: { lcr_summary: summaryText.trim() },
-          source_record_ids: summaryText.trim() === originalSummaryText.trim() ? sourceIds : [],
-          caregiver_reviewed: true,
-          prepared_at: new Date().toISOString(),
-        });
-      } catch {
-        try {
-          await postJSON("/handoffs/" + encodeURIComponent(created.id) + "/revoke", {});
-          throw new Error("The summary could not be attached. SolenOS revoked the empty handoff; refresh the list to confirm.");
-        } catch (revokeError) {
-          if (revokeError instanceof Error && revokeError.message.startsWith("The summary could not be attached")) throw revokeError;
-          throw new Error("The summary could not be attached and automatic revocation could not be confirmed. Refresh the outgoing list and revoke the empty handoff manually.");
-        }
-      }
-      setNotice("Family handoff shared with the selected linked caregiver(s). Access expires " + formatDate(expiresAt) + ". Sharing did not change the Living Care Record.");
+      if (!created?.id) throw new Error("The backend did not confirm a handoff ID. No successful share is assumed.");
+      setNotice("The approved, persisted handoff was shared with the selected linked caregiver(s). Access expires " + formatDate(expiresAt) + ". Sharing did not change the Living Care Record.");
       setReviewConfirmed(false);
       setSelectedRecipients([]);
+      setCaregiverNote("");
       await load();
     } catch (shareError) {
       setError(shareError instanceof Error ? shareError.message : "The handoff could not be shared. No success is assumed.");
@@ -354,13 +356,15 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
             <option value="1">24 hours</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option>
           </select>
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
-          <textarea id="companion-handoff-share-text" value={summaryText} onChange={event => { setSummaryText(event.target.value); setReviewConfirmed(false); }} rows={12} maxLength={18000} style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>{summaryText.trim() === originalSummaryText.trim() ? sourceIds.length + " source IDs will be attached as provenance metadata." : "The summary was edited. Source IDs will be omitted so edits are not falsely attributed to the original records."} Review all content. The source IDs do not independently prove every statement.</p>
+          <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
+          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview uses the backend-validated Qwen quotations, source references, evidence status, and separate event/recording times.</p>
+          <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Additional caregiver note (optional)</label>
+          <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
           </label>
-          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || !reviewConfirmed || selectedRecipients.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
+          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || !reviewConfirmed || selectedRecipients.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed snapshot…" : "Share reviewed family handoff"}
           </button>
         </section>
