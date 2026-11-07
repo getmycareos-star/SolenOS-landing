@@ -299,7 +299,8 @@ export default function AppointmentWorkspace() {
               {outcomeProposals.filter(item => item.proposed_change.source_record_version === record?.version_number).map(item => <article key={item.id} className="guided-proposal">
                 <strong>{item.proposed_change.label || item.proposed_change.field.replaceAll('_', ' ')}</strong>
                 <p>{item.proposed_change.asserted_value}</p>
-                <small>{item.status.replaceAll('_', ' ')} · caregiver reported · not independently verified</small>
+                {item.proposed_change.asserted_value !== item.proposed_change.source_quote && <p><small>Original saved wording: {item.proposed_change.source_quote}</small></p>}
+                <small>Appointment record revision {item.proposed_change.source_record_version} · {item.status.replaceAll('_', ' ')} · caregiver reported · not independently verified</small>
                 {item.status === 'pending_authorization' && <>
                   <label className="guided-capture-label">Correction, if needed
                     <textarea rows={2} value={correctionDrafts[item.id] || ''} onChange={event => setCorrectionDrafts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Enter the corrected statement." />
