@@ -66,7 +66,7 @@ assert.ok(component.includes("let baseWorkspaceSaved = false"), "the save flow m
 assert.ok(component.includes("Your appointment notes were saved, but some follow-up updates could not be confirmed."), "partial completion must not be presented as a total save failure.");
 assert.ok(component.includes("Appointment notes and available follow-up updates have been saved."), "full success must be reported only after linked follow-up and review work finishes.");
 assert.ok(!component.includes("setSaveMessage('Your appointment notes have been saved.')"), "the UI must not announce full success immediately after the first workspace write.");
-assert.ok(handoff.includes('scope: ["lcr_summary", "open_loops"]'), "care handoffs must explicitly include open-loop responsibility scope.");
+assert.ok(handoff.includes('scope: [...selectedScope].sort()') && handoff.includes('"open_loops"'), "care handoffs must pass the caregiver-selected scope and include source-grounded open-loop responsibility when applicable.");
 assert.ok(!component.includes("Evidence freshness assessments"), "Internal evidence diagnostics must not appear in the caregiver interface.");
 assert.ok(!component.includes("source snapshot"), "Internal source terminology must not appear in the caregiver interface.");
 
