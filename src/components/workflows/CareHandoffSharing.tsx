@@ -222,7 +222,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       return;
     }
     let active = true;
-    void getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id)).then((saved) => {
+    void ensureAnonymousSession().then(() => getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id))).then((saved) => {
       if (!active) return;
       const record = saved as {
         revision_history?: Array<{ revision_number: number; change_type: string; created_at: string | null }>;
