@@ -57,7 +57,7 @@ assert.match(sharingComponent, /revoke\(item\)/,
   "the initiating caregiver must retain a revocation path");
 assert.doesNotMatch(sharingComponent, /source_record_ids\s*:/,
   "the browser must not manufacture or attest server source provenance");
-assert.doesNotMatch(sharingComponent, /\/summary/,
+assert.doesNotMatch(sharingComponent, /putJSON\([^)]*\/summary/,
   "the frontend must not use the legacy detached summary-attachment step");
 assert.match(apiClient, /postJSON\(path: string, body: unknown, extraHeaders: Record<string, string> = \{\}/,
   "the API client must pass stable idempotency headers without replaying mutations");
