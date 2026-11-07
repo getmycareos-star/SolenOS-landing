@@ -12,7 +12,7 @@ type DraftItem = {
   event_at?: string | null;
   recorded_at: string | null;
   due_at?: string | null;
-  details?: Record<string, string>;
+  details?: Record<string, unknown>;
   epistemic_status: string;
   record_status?: string;
   text: string;
@@ -28,6 +28,12 @@ type DraftItem = {
 type DraftPayload = {
   draft_id: string;
   purpose: string;
+  generation_status?: string;
+  validation_status?: string;
+  review_status?: string;
+  revision_number?: number;
+  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null }> };
+  caregiver_notes?: Array<{ text: string; attribution: string }>;
   audience?: "family" | "professional";
   prepared_at: string;
   window: { days: number; from: string; to: string };
@@ -84,72 +90,45 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "Prepared at: " + formatDate(draft.prepared_at),
     "Source window: " + draft.window.days + " days (" + draft.window.from + " to " + draft.window.to + ")",
     "",
-    "IMPORTANT: This is a caregiver-reviewed draft, not independent clinical verification. Missing information is not a negative finding.",
+    "IMPORTANT: Caregiver-reported, unreviewed, rejected, and historical information retains its status. This is not a clinical judgment.",
     draft.warning,
     "",
   ];
-  const sourceIds: string[] = [];
   let truncated = false;
-  for (const section of draft.sections) {
-    const sectionHeader = "\n## " + section.title;
-    if (lines.join("\n").length + sectionHeader.length > 16500) { truncated = true; break; }
+  const generated = draft.generation?.sections ?? [];
+  for (const item of generated) {
+    const sectionHeader = "\\n## " + item.section;
+    if (lines.join("\\n").length + sectionHeader.length > 16500) { truncated = true; break; }
     lines.push(sectionHeader);
-    for (const item of section.items) {
-      const itemText = [
-        "- " + item.text,
-        "  Event/effective time: " + formatDate(item.event_at),
-        "  Record entered/updated: " + formatDate(item.recorded_at),
-        item.due_at ? "  Due: " + formatDate(item.due_at) : "",
-        ...Object.entries(item.details ?? {}).map(([key, value]) => "  " + key.replaceAll("_", " ") + ": " + value),
-        "  Evidence status: " + (item.epistemic_status || "not_recorded"),
-        "  Record status: " + (item.record_status || "not_recorded"),
-        "  Source: " + item.source_table + "#" + item.source_id,
-        item.evidence_ids?.length ? "  Linked evidence IDs: " + item.evidence_ids.join(", ") : "  Linked evidence: none recorded",
-        "  Evidence-source lookup: " + (item.evidence_reference_status || "not_assessed"),
-        ...(item.evidence_sources ?? []).map(source => "  Evidence provenance: " + source.evidence_id + " · " + source.epistemic_status + " · author " + (source.original_author || "not recorded") + " · reporter " + (source.reported_by_label || "not recorded") + " · " + (source.original_source_reference || "original source reference not recorded")),
-        item.stale_warning ? "  Freshness: older information; re-check before relying on it" : "",
-      ].filter(Boolean).join("\n");
-      if (lines.join("\n").length + itemText.length > 16500) { truncated = true; break; }
-      lines.push(itemText);
-      if (item.source_id && sourceIds.length < 100) sourceIds.push(item.source_id);
-    }
-    if (truncated) break;
+    const itemText = [
+      "- " + item.text,
+      "Evidence status: " + (item.epistemic_status || "not_recorded"),
+      "Record status: " + (item.record_status || "not_recorded"),
+      "Event time: " + formatDate(item.event_at),
+      "Recorded time: " + formatDate(item.recorded_at),
+      "Source reference: " + item.source_ref,
+    ].join("\\n");
+    if (lines.join("\\n").length + itemText.length > 16500) { truncated = true; break; }
+    lines.push(itemText);
   }
-  lines.push("\n## Required handoff sections and coverage");
-  const fallbackSections = audience === "family"
-    ? ["What matters most right now", "How the person is doing", "How to care for them", "Health and medication information", "What needs to happen next", "Safety and when to seek help", "Family coordination", "Handoff acceptance"]
-    : ["Executive summary and current situation", "Relevant history and baseline", "Evidence and provenance register", "Medication reconciliation", "Current clinical and functional assessment", "Active problems, risks, and uncertainty", "Treatment and care plan", "Action register and accountability", "Person-centred and family context", "Transition-specific information", "Contingency planning", "Document and record integrity", "Handoff receipt and acceptance"];
-  const templateSections = draft.template_sections ?? fallbackSections.map(title => ({ title, coverage_status: "not_assessed", required_fields: [], coverage_note: "This backend response does not include verified field-level coverage. Review manually; no value has been inferred." }));
-  for (const section of templateSections) {
-    const line = "- " + section.title + ": " + section.coverage_status.replaceAll("_", " ") + (section.required_fields.length ? ". Required fields: " + section.required_fields.join(", ") : "") + ". " + section.coverage_note;
-    if (lines.join("\n").length + line.length > 16500) { truncated = true; break; }
+  for (const note of draft.caregiver_notes ?? []) {
+    const line = "\\nCaregiver-added note (not independently verified): " + note.text;
+    if (lines.join("\\n").length + line.length > 16500) { truncated = true; break; }
     lines.push(line);
   }
-  lines.push("\n## Evidence source lineage");
-  if (draft.evidence_lineage) {
-    lines.push("- Assessment: " + draft.evidence_lineage.status);
-    for (const group of draft.evidence_lineage.groups) {
-      lines.push("- " + group.source_independence_status + ": evidence " + group.evidence_ids.join(", ")
-        + (group.origin_group_keys.length ? " · origin groups " + group.origin_group_keys.join(", ") : "")
-        + ". " + group.interpretation_limit);
-    }
-    lines.push("- Interpretation limit: " + draft.evidence_lineage.interpretation_limit);
-  } else {
-    lines.push("- Source lineage was not returned by the backend. Independence is not established.");
-  }
-  lines.push("\n## Coverage and limitations");
+  lines.push("\\n## Source coverage");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
-    const line = "- " + (value.label || name) + ": " + value.status + (value.reason ? " (" + value.reason + ")" : "") + "; " + value.count + " record(s) returned";
-    if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
+    const line = "- " + (value.label || name) + ": " + value.status + (value.reason ? " (" + value.reason + ")" : "") + "; " + value.count + " record(s)";
+    if (lines.join("\\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
   for (const limitation of draft.limitations) {
     const line = "- " + limitation.source + ": " + limitation.status + (limitation.reason ? " (" + limitation.reason + ")" : "");
-    if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
+    if (lines.join("\\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
-  if (truncated) lines.push("\nThis summary is truncated to fit the sharing limit. Review the complete draft in AI Companion before relying on it.");
-  return { text: lines.join("\n").slice(0, 18000), sourceIds: [...new Set(sourceIds)] };
+  if (truncated) lines.push("\\nPreview truncated. The persisted draft retains the complete validated source snapshot.");
+  return { text: lines.join("\\n").slice(0, 18000) };
 }
 
 export function CareHandoffSharing({ draft, audience, purpose }: Props) {
@@ -167,8 +146,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [expiryDays, setExpiryDays] = useState("7");
   const [summaryText, setSummaryText] = useState("");
-  const [originalSummaryText, setOriginalSummaryText] = useState("");
-  const [sourceIds, setSourceIds] = useState<string[]>([]);
+  const [caregiverNote, setCaregiverNote] = useState("");
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<Snapshot | null>(null);
@@ -217,15 +195,13 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
   useEffect(() => {
     if (!draft || !audience || !purpose) {
       setSummaryText("");
-      setOriginalSummaryText("");
-      setSourceIds([]);
+      setCaregiverNote("");
       setReviewConfirmed(false);
       return;
     }
     const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview");
     setSummaryText(prepared.text);
-    setOriginalSummaryText(prepared.text);
-    setSourceIds(prepared.sourceIds);
+    setCaregiverNote("");
     setReviewConfirmed(false);
   }, [draft, audience, purpose]);
 
