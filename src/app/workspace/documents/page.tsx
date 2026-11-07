@@ -121,7 +121,7 @@ async function extractText(file: File): Promise<{ text: string; note: string | n
     form.append("file", file);
     const session = await ensureAnonymousSession();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 40_000);
+    const timer = setTimeout(() => controller.abort(), 120_000);
     let response: Response;
     try {
       response = await fetch(apiUrl("/api/extract"), {
@@ -455,7 +455,7 @@ export default function DocumentsPage() {
         form.append("scan_rotation_degrees", String(page.rotation));
         form.append("scan_crop_json", JSON.stringify(page.crop));
         form.append("scan_text_prepared", String(page.file.type.startsWith("image/") && page.prepared));
-        const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
+        const stored = await postFormData("/upload", form, { timeoutMs: 120_000 }) as { evidence_id?: string; persisted?: boolean };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
 
@@ -465,6 +465,8 @@ export default function DocumentsPage() {
           const analysis = await postJSON(
             "/documents/" + encodeURIComponent(stored.evidence_id) + "/extract",
             {},
+            {},
+            { timeoutMs: 180_000 },
           ) as { extraction_status?: string; analysis_id?: string };
           if (analysis.analysis_id && analysis.extraction_status === "available") {
             extracted += 1;
