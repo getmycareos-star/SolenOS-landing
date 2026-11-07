@@ -70,6 +70,7 @@ type Props = {
   draft: DraftPayload | null;
   audience: "family" | "professional" | null;
   purpose: "today" | "appointment" | "overview" | null;
+  onResumeDraft?: (draft: DraftPayload) => void;
 };
 
 const panel: CSSProperties = { marginTop: 12, padding: 14, border: "1px solid #dce7dc", borderRadius: 12, background: "#fff" };
@@ -131,13 +132,14 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
   return { text: lines.join("\\n").slice(0, 18000) };
 }
 
-export function CareHandoffSharing({ draft, audience, purpose }: Props) {
+export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: Props) {
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [directory, setDirectory] = useState<Recipient[]>([]);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
+  const [savedDrafts, setSavedDrafts] = useState<Array<DraftPayload & { updated_at?: string }>>([]);
   const [directoryError, setDirectoryError] = useState(false);
   const [consentRequired, setConsentRequired] = useState(false);
   const [historyError, setHistoryError] = useState(false);
@@ -169,7 +171,7 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
       const consent = await getJSON("/consent") as { verified?: boolean; required?: boolean };
       const canUseHandoffs = consent.verified === true && consent.required === false;
       setConsentRequired(!canUseHandoffs);
-      const [directoryResult, inboxResult, outboxResult] = await Promise.allSettled([
+      const [directoryResult, inboxResult, outboxResult, draftsResult] = await Promise.allSettled([
         canUseHandoffs
           ? getJSON("/handoffs/directory/recipients") as Promise<{ items?: Recipient[] }>
           : Promise.resolve({ items: [] as Recipient[] }),
@@ -177,12 +179,15 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
           ? getJSON("/handoffs/inbox") as Promise<{ items?: InboxItem[] }>
           : Promise.resolve({ items: [] as InboxItem[] }),
         getJSON("/handoffs/outbox") as Promise<{ items?: OutboxItem[] }>,
+        getJSON("/handoff-drafts?limit=10") as Promise<{ items?: Array<DraftPayload & { updated_at?: string }> }>,
       ]);
       if (directoryResult.status === "fulfilled") setDirectory(directoryResult.value.items ?? []);
       else setDirectoryError(true);
       if (inboxResult.status === "fulfilled") setInbox(inboxResult.value.items ?? []);
       else setHistoryError(true);
       if (outboxResult.status === "fulfilled") setOutbox(outboxResult.value.items ?? []);
+      else setHistoryError(true);
+      if (draftsResult.status === "fulfilled") setSavedDrafts(draftsResult.value.items ?? []);
       else setHistoryError(true);
     } catch {
       setDirectoryError(true);
@@ -322,6 +327,33 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
 
   return (
     <div className="companion-handoff-sharing" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+      {savedDrafts.length > 0 && (
+        <section style={{ ...panel, marginTop: 0 }} aria-label="Saved handoff drafts">
+          <h4 style={{ marginTop: 0 }}>Saved handoff drafts</h4>
+          <p style={{ fontSize: 12, color: "#667267" }}>Only drafts created by this caregiver for this care record are listed.</p>
+          {savedDrafts.map(saved => (
+            <div key={saved.draft_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
+              <div>
+                <strong>{saved.purpose.replaceAll("_", " ")}</strong>
+                <div style={{ fontSize: 11, color: "#667267" }}>{saved.review_status ?? "pending review"} · revision {saved.revision_number ?? 1} · {formatDate(saved.updated_at ?? saved.prepared_at)}</div>
+              </div>
+              <button type="button" style={quietButton} disabled={busy || !onResumeDraft} onClick={async () => {
+                setBusy(true);
+                setError("");
+                try {
+                  const full = await getJSON("/handoff-drafts/" + encodeURIComponent(saved.draft_id)) as DraftPayload;
+                  onResumeDraft?.(full);
+                } catch (resumeError) {
+                  setError(resumeError instanceof Error ? resumeError.message : "Saved draft could not be retrieved.");
+                } finally {
+                  setBusy(false);
+                }
+              }}>Resume draft</button>
+            </div>
+          ))}
+        </section>
+      )}
+
       {draft && audience === "professional" && (
         <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
           <strong>Professional handoff — private review only</strong>
