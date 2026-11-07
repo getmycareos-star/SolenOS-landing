@@ -126,6 +126,27 @@ export default function AppointmentWorkspace() {
     setOutcome(draft)
   }
 
+  const refreshSavedWorkspace = async () => {
+    try {
+      await ensureAnonymousSession()
+      const result = await getJSON('/appointment-workspaces') as { items?: WorkspaceRecord[] }
+      const latest = result.items?.[0] || null
+      setRecord(latest)
+      if (!latest) {
+        setOutcome(null)
+        setOutcomeProposals([])
+        return
+      }
+      setAppointmentId(latest.appointment_id || '')
+      setNote(typeof latest.payload?.caregiverReport === 'string' ? latest.payload.caregiverReport : '')
+      await refreshOutcome(latest.id)
+      const proposals = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-proposals') as { items?: OutcomeProposal[] }
+      setOutcomeProposals(proposals.items || [])
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The saved appointment workspace could not be refreshed.')
+    }
+  }
+
   const prepareOutcomeReview = async () => {
     if (!record) return
     setProposalBusy(true)
@@ -322,7 +343,7 @@ export default function AppointmentWorkspace() {
         </div>}
 
         <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error}</span>}</div>
-        <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => setShowDetailed(value => !value)}>{showDetailed ? 'Close detailed appointment controls' : 'Open detailed appointment and follow-up controls (optional)'}</button>
+        <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => { if (showDetailed) void refreshSavedWorkspace(); setShowDetailed(value => !value) }}>{showDetailed ? 'Close detailed appointment controls' : 'Open detailed appointment and follow-up controls (optional)'}</button>
         {showDetailed && <div className="guided-detailed"><p>Use these additional controls only when you need to review individual sections or manage follow-up actions. The guided appointment stages above remain the normal path.</p><DetailedAppointmentWorkspace /></div>}
       </>}
       <style jsx>{`
