@@ -160,6 +160,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null)
   const [handoffDraftLoading, setHandoffDraftLoading] = useState(false)
   const [handoffDraftError, setHandoffDraftError] = useState<string | null>(null)
+  const handoffPrepareRequestId = useRef<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -286,15 +287,18 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       await ensureAnonymousSession()
       const purpose = handoffPurpose === 'today' ? 'family_transition' : 'period_summary'
       const windowDays = handoffPurpose === 'today' ? 7 : 90
+      const requestId = handoffPrepareRequestId.current ?? (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'handoff-draft-' + Date.now())
+      handoffPrepareRequestId.current = requestId
       const draft = await postJSON('/handoff-drafts/prepare', {
         purpose,
         audience: handoffAudience,
         window_days: windowDays,
-      }) as HandoffDraft
+      }, { 'X-Request-ID': requestId }) as HandoffDraft
       if (!draft || !Array.isArray(draft.sections) || !draft.source_statuses) {
         throw new Error('The care record returned an incomplete handoff draft.')
       }
       setHandoffDraft(draft)
+      handoffPrepareRequestId.current = null
     } catch (error) {
       setHandoffDraftError('The handoff could not be prepared from the saved care record. Check your connection and try again. No handoff was shared.')
     } finally {
@@ -303,6 +307,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   const resetHandoffDraft = () => {
+    handoffPrepareRequestId.current = null
     setHandoffDraft(null)
     setHandoffDraftError(null)
   }
@@ -569,12 +574,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               <button className="companion-handoff-back" type="button" onClick={() => { setHandoffStep('audience'); setHandoffPurpose(null); resetHandoffDraft() }}>Change recipient</button>
             </div>
             <div className="companion-handoff-purpose-options">
-              <button className={'companion-handoff-purpose' + (handoffPurpose === 'today' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'today'} onClick={() => setHandoffPurpose('today')}>
+              <button className={'companion-handoff-purpose' + (handoffPurpose === 'today' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'today'} onClick={() => { setHandoffPurpose('today'); handoffPrepareRequestId.current = null; }}>
                 <span className="companion-handoff-purpose-icon"><Clock3 size={19} aria-hidden="true" /></span>
                 <strong>Taking over today</strong>
                 <small>What the next caregiver needs to know for the day or shift.</small>
               </button>
-              <button className={'companion-handoff-purpose' + (handoffPurpose === 'overview' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'overview'} onClick={() => setHandoffPurpose('overview')}>
+              <button className={'companion-handoff-purpose' + (handoffPurpose === 'overview' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'overview'} onClick={() => { setHandoffPurpose('overview'); handoffPrepareRequestId.current = null; }}>
                 <span className="companion-handoff-purpose-icon"><FileText size={19} aria-hidden="true" /></span>
                 <strong>Full care overview</strong>
                 <small>Give someone a broader understanding of the care situation.</small>
