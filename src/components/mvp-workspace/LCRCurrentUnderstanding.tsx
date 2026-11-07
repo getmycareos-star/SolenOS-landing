@@ -4,11 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
-import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
-import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
-import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
-import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
-import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
+import dynamic from "next/dynamic";
+
+// Advanced review tools are split from the initial care view and load only
+// when the caregiver explicitly opens the source-review section.
+const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care-integrity tools…</p> });
+const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <p role="status">Loading evidence review…</p> });
+const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <p role="status">Loading claim review…</p> });
+const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
+const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading clarification workflow…</p> });
 
 
 type RegisteredAction = {
@@ -506,6 +510,7 @@ export function LCRCurrentUnderstanding() {
   const [evidenceIntegrityByFact, setEvidenceIntegrityByFact] = useState<Record<string, EvidenceIntegrity>>({});
   const [evidenceIntegrityLoadingId, setEvidenceIntegrityLoadingId] = useState<string | null>(null);
   const [evidenceIntegrityErrors, setEvidenceIntegrityErrors] = useState<Record<string, string>>({});
+  const [advancedPanelsOpen, setAdvancedPanelsOpen] = useState(false);
 
   const loadEvidenceIntegrity = useCallback(async (factId: string) => {
     setEvidenceIntegrityLoadingId(factId);
@@ -525,119 +530,131 @@ export function LCRCurrentUnderstanding() {
   }, []);
 
   const load = useCallback(async (manual = false) => {
-    setRegisteredActions([]);
-    setRegisteredActionsError(null);
     if (manual) setRefreshing(true);
-    else setLoading(true);
+    else {
+      setLoading(true);
+      setRegisteredActions([]);
+      setProjection(null);
+      setChanges([]);
+      setPatterns([]);
+      setAssessment(null);
+      setSourceFreshness(null);
+    }
     setError(null);
-    setChanges([]);
-    setChangesError(null);
-    setPatterns([]);
-    setPatternsError(null);
+    setRegisteredActionsError(null);
+    let backgroundStarted = false;
+
     try {
       const session = await ensureAnonymousSession();
       if (!session.access_token || !session.person?.id) {
         throw new Error("A valid care-record session is required to read the longitudinal record.");
       }
-      setPersonId(session.person.id);
+      const scopedPersonId = session.person.id;
+      setPersonId(scopedPersonId);
       setCurrentCaregiverId(session.caregiver.id);
-      try {
-        const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(session.person.id)}`);
-        if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== session.person.id)) {
-          throw new Error("Registered actions did not match the active care-record session.");
-        }
-        setRegisteredActions(savedActions as RegisteredAction[]);
-        setRegisteredActionsError(null);
-      } catch (actionCause) {
-        setRegisteredActions([]);
-        setRegisteredActionsError(actionCause instanceof Error ? actionCause.message : "Registered actions could not be loaded.");
-      }
-      const result = await getJSON("/care-continuity/current-care?limit_per_source=12");
-      if (!result || result.read_only !== true || !Array.isArray(result.items) ||
-          typeof result.schema_status !== "string" || typeof result.projection_type !== "string" ||
-          result.person_id !== session.person.id) {
+
+      // The current-care projection is the critical first-screen dependency.
+      // Do not make the caregiver wait for secondary history and review panels.
+      const currentCare = await getJSON("/care-continuity/current-care?limit_per_source=12");
+      if (!currentCare || currentCare.read_only !== true || !Array.isArray(currentCare.items) ||
+          typeof currentCare.schema_status !== "string" || typeof currentCare.projection_type !== "string" ||
+          currentCare.person_id !== scopedPersonId) {
         throw new Error("The current-care response did not match this session's record contract. No care state has been assumed.");
       }
-      setProjection(result as CurrentCareProjection);
-      try {
-        const changePath = `/change/changes/${encodeURIComponent(session.person.id)}`;
-        const validateChanges = (value: unknown): PersistedChange[] => {
-          if (!Array.isArray(value) || value.some((item) => item?.person_id !== session.person.id)) {
-            throw new Error("The persisted change history did not match the active care-record session.");
-          }
-          return value as PersistedChange[];
-        };
+      setProjection(currentCare as CurrentCareProjection);
+      setLoading(false);
+      backgroundStarted = true;
 
-        // Load the durable history first so a failed reassessment never hides saved results.
-        setChanges(validateChanges(await getJSON(changePath)));
-        try {
-          await postJSON(`/change/changes/reassess?person_id=${encodeURIComponent(session.person.id)}`, {});
-          setChanges(validateChanges(await getJSON(changePath)));
-          setChangesError(null);
-        } catch (reassessmentCause) {
-          setChangesError(
-            reassessmentCause instanceof Error
-              ? `Reassessment failed; previously saved change assessments remain visible. ${reassessmentCause.message}`
-              : "Reassessment failed; previously saved change assessments remain visible."
-          );
-        }
-      } catch (changeCause) {
-        setChanges([]);
-        setChangesError(changeCause instanceof Error ? changeCause.message : "Persisted change history is unavailable.");
-      }
-      try {
-        const patternPath = `/change/patterns/${encodeURIComponent(session.person.id)}`;
-        const persistedPatterns = await getJSON(patternPath);
-        if (!Array.isArray(persistedPatterns) || persistedPatterns.some(
-          (item) => item?.person_id !== session.person.id
-        )) {
-          throw new Error("The persisted pattern history did not match the active care-record session.");
-        }
-        setPatterns(persistedPatterns as PersistedPattern[]);
-      } catch (patternCause) {
-        setPatterns([]);
-        setPatternsError(patternCause instanceof Error
-          ? patternCause.message
-          : "Persisted pattern history is unavailable.");
-      }
-      try {
-        // Rebuild the assessment from the freshly retrieved, person-scoped
-        // persisted sources. The backend deduplicates semantically unchanged
-        // snapshots, so reopening the LCR does not create needless history.
-        const rebuilt = await postJSON("/care-continuity/situation-understanding/reassess", {}) as {
-          person_id?: string;
-          assessment?: SituationAssessment;
-          source_freshness?: SituationAssessmentResponse["source_freshness"];
-        };
-        if (rebuilt.person_id !== session.person.id || rebuilt.assessment?.person_id !== session.person.id) {
-          throw new Error("The rebuilt situation assessment did not match the active care-record session.");
-        }
-        setAssessment(rebuilt.assessment);
-        setSourceFreshness(rebuilt.source_freshness ?? null);
-        setAssessmentError(null);
-      } catch (assessmentCause) {
-        const reason = assessmentCause instanceof Error
-          ? assessmentCause.message
-          : "The situation assessment could not be rebuilt.";
-        // Preserve visibility of the last persisted snapshot, but label it
-        // explicitly as stale when a fresh evidence-derived rebuild fails.
-        try {
-          const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
-          if (saved.status === "available" && saved.assessment?.person_id === session.person.id) {
-            setAssessment(saved.assessment);
-            setSourceFreshness(saved.source_freshness ?? null);
-            setAssessmentError(`Reassessment failed; showing the last saved assessment. ${reason}`);
-          } else {
-            setAssessment(null);
-            setSourceFreshness(null);
-            setAssessmentError(reason);
+      // These reads/reassessments are independent of the first-screen projection.
+      // Run them concurrently and keep their failures local to their own sections.
+      const changePath = `/change/changes/${encodeURIComponent(scopedPersonId)}`;
+      const backgroundTasks = [
+        (async () => {
+          try {
+            const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
+            if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== scopedPersonId)) {
+              throw new Error("Registered actions did not match the active care-record session.");
+            }
+            setRegisteredActions(savedActions as RegisteredAction[]);
+            setRegisteredActionsError(null);
+          } catch (cause) {
+            setRegisteredActions([]);
+            setRegisteredActionsError(cause instanceof Error ? cause.message : "Registered actions could not be loaded.");
           }
-        } catch {
-          setAssessment(null);
-          setSourceFreshness(null);
-          setAssessmentError(reason);
-        }
-      }
+        })(),
+        (async () => {
+          const validateChanges = (value: unknown): PersistedChange[] => {
+            if (!Array.isArray(value) || value.some((item) => item?.person_id !== scopedPersonId)) {
+              throw new Error("The persisted change history did not match the active care-record session.");
+            }
+            return value as PersistedChange[];
+          };
+          try {
+            // Show the last durable history immediately; reassessment is secondary.
+            setChanges(validateChanges(await getJSON(changePath)));
+            try {
+              await postJSON(`/change/changes/reassess?person_id=${encodeURIComponent(scopedPersonId)}`, {});
+              setChanges(validateChanges(await getJSON(changePath)));
+              setChangesError(null);
+            } catch (cause) {
+              setChangesError(cause instanceof Error
+                ? `Reassessment failed; previously saved change assessments remain visible. ${cause.message}`
+                : "Reassessment failed; previously saved change assessments remain visible.");
+            }
+          } catch (cause) {
+            setChanges([]);
+            setChangesError(cause instanceof Error ? cause.message : "Persisted change history is unavailable.");
+          }
+        })(),
+        (async () => {
+          try {
+            const persistedPatterns = await getJSON(`/change/patterns/${encodeURIComponent(scopedPersonId)}`);
+            if (!Array.isArray(persistedPatterns) || persistedPatterns.some((item) => item?.person_id !== scopedPersonId)) {
+              throw new Error("The persisted pattern history did not match the active care-record session.");
+            }
+            setPatterns(persistedPatterns as PersistedPattern[]);
+            setPatternsError(null);
+          } catch (cause) {
+            setPatterns([]);
+            setPatternsError(cause instanceof Error ? cause.message : "Persisted pattern history is unavailable.");
+          }
+        })(),
+        (async () => {
+          try {
+            // Rebuild only after the first-screen projection has rendered.
+            const rebuilt = await postJSON("/care-continuity/situation-understanding/reassess", {}) as {
+              person_id?: string;
+              assessment?: SituationAssessment;
+              source_freshness?: SituationAssessmentResponse["source_freshness"];
+            };
+            if (rebuilt.person_id !== scopedPersonId || rebuilt.assessment?.person_id !== scopedPersonId) {
+              throw new Error("The rebuilt situation assessment did not match the active care-record session.");
+            }
+            setAssessment(rebuilt.assessment);
+            setSourceFreshness(rebuilt.source_freshness ?? null);
+            setAssessmentError(null);
+          } catch (cause) {
+            const reason = cause instanceof Error ? cause.message : "The situation assessment could not be rebuilt.";
+            try {
+              const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
+              if (saved.status === "available" && saved.assessment?.person_id === scopedPersonId) {
+                setAssessment(saved.assessment);
+                setSourceFreshness(saved.source_freshness ?? null);
+                setAssessmentError(`Reassessment failed; showing the last saved assessment. ${reason}`);
+              } else {
+                setAssessment(null);
+                setSourceFreshness(null);
+                setAssessmentError(reason);
+              }
+            } catch {
+              setAssessment(null);
+              setSourceFreshness(null);
+              setAssessmentError(reason);
+            }
+          }
+        })(),
+      ];
+      void Promise.allSettled(backgroundTasks).finally(() => setRefreshing(false));
     } catch (cause) {
       setPersonId("");
       setCurrentCaregiverId("");
@@ -647,7 +664,7 @@ export function LCRCurrentUnderstanding() {
       setError(cause instanceof Error ? cause.message : "The longitudinal care record could not be loaded.");
     } finally {
       setLoading(false);
-      setRefreshing(false);
+      if (!backgroundStarted) setRefreshing(false);
     }
   }, []);
 
@@ -1273,7 +1290,6 @@ export function LCRCurrentUnderstanding() {
               )}
             </div>
 
-      <details className="lcr-history-details"><summary>See patterns in the care history</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-pattern-history-heading">Patterns over time</h3>
@@ -1311,8 +1327,6 @@ export function LCRCurrentUnderstanding() {
         )}
       </div>
 
-      </details>
-      <details className="lcr-history-details"><summary>Review changes over time</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-change-history-heading">Changes over time</h3>
@@ -1442,8 +1456,7 @@ export function LCRCurrentUnderstanding() {
         )}
       </div>
 
-      </details>
-      <details className="lcr-situation-assessment lcr-assessment-details"><summary>Record details — how this care picture was put together</summary><div aria-labelledby="lcr-situation-assessment-heading">
+      <details className="lcr-situation-assessment lcr-assessment-details"><summary>How this care picture was put together</summary><div aria-labelledby="lcr-situation-assessment-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-situation-assessment-heading">Care picture review</h3>
           <button type="button" className="lcr-text-action" onClick={() => void reassess()} disabled={assessmentLoading || loading}>
@@ -1666,10 +1679,10 @@ export function LCRCurrentUnderstanding() {
               <h3>Some care information is unavailable</h3>
               <p>We couldn’t load all of the available care information. The picture shown may be incomplete. Try refreshing later.</p>
               {projection.missing_required_sources.length > 0 && (
-                <p>Some important care information may be missing from this view.</p>
+                <p>Some important care information may be missing from this view. Add what you know in Daily Care when you can.</p>
               )}
               {projection.missing_optional_sources.length > 0 && (
-                <p>Some additional care information may not be available right now.</p>
+                <p>Some additional care information may not be available right now. The care picture may become clearer as more information is recorded.</p>
               )}
             </div>
           )}
@@ -1787,14 +1800,18 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <details className="lcr-advanced-integrity">
+      <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
-        <EvidenceReviewPanel personId={personId} />
-        <ClaimAssessmentPanel />
-        <ConflictResolutionPanel personId={personId} />
-        <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
-        <CareContinuityIntegrityPanel personId={personId} />
+        {advancedPanelsOpen && (
+          <>
+            <EvidenceReviewPanel personId={personId} />
+            <ClaimAssessmentPanel />
+            <ConflictResolutionPanel personId={personId} />
+            <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+            <CareContinuityIntegrityPanel personId={personId} />
+          </>
+        )}
       </details>
     </section>
   );
