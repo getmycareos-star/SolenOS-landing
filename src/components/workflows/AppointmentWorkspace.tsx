@@ -943,7 +943,7 @@ const guidedStageStatus: Record<Stage, string> = {
 }
 
 function GuidedStageContent({
-  stage, brief, outcome, quickCapture, setQuickCapture, saving, saveError, saveMessage,
+  stage, brief, outcome, quickCapture, setQuickCapture, saving,
   onSave, onRefreshOutcome,
 }: {
   stage: Stage
@@ -1035,7 +1035,7 @@ export default function AppointmentWorkspace() {
           if (latest) {
             const savedNote = String(latest.payload?.caregiverReport || '')
             setQuickCapture(savedNote)
-            setAppointmentId(latest.appointment_id || '')
+            if (latest.appointment_id) setAppointmentId(latest.appointment_id)
             try {
               const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as GuidedOutcome
               if (!cancelled) setOutcome(draft)
