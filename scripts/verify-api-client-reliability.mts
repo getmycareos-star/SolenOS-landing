@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getJSON, postJSON } from "../src/api/client";
+import { getBlob, getJSON, postFormData, postJSON } from "../src/api/client";
 
 const values = new Map<string, string>([
   ["solenos_anonymous_access_token", "server-issued-token"],
@@ -49,6 +49,50 @@ async function main() {
   }) as typeof fetch;
   await assert.rejects(postJSON("/daily/log", { note: "write once" }), /temporary unavailable/);
   assert.equal(writes, 1, "mutations must never be retried automatically");
-  console.log("API reliability checks passed: timeout signal, one safe GET retry, no mutation replay.");
+
+  const originalSetTimeout = globalThis.setTimeout;
+  const observedTimeouts: number[] = [];
+  globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+    observedTimeouts.push(Number(timeout));
+    return originalSetTimeout(handler, timeout, ...args);
+  }) as typeof setTimeout;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(init?.method, "POST");
+    assert.ok(init?.signal instanceof AbortSignal);
+    return response({ reply: "A grounded response." });
+  }) as typeof fetch;
+  await postJSON("/conversation/message", {
+    person_id: "person-server-1",
+    text: "What changed?",
+    client_turn_id: "stable-turn-identifier",
+  }, { timeoutMs: 210_000 });
+  assert.ok(observedTimeouts.includes(210_000), "Companion deadline must exceed the backend's 180-second inference ceiling");
+
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(init?.method, "POST");
+    assert.ok(init?.body instanceof FormData);
+    return response({ evidence_id: "evidence-1", persisted: true });
+  }) as typeof fetch;
+  await postFormData("/upload", new FormData());
+  assert.ok(observedTimeouts.includes(120_000), "original document uploads must use the extended upload deadline");
+
+  globalThis.fetch = (async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(["original document"]),
+  }) as unknown as Response) as typeof fetch;
+  await getBlob("/upload/evidence-1");
+  assert.ok(observedTimeouts.filter(value => value === 120_000).length >= 2, "original document downloads must use the extended file-transfer deadline");
+
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(init?.method, "POST");
+    assert.ok(init?.signal instanceof AbortSignal);
+    return response({ analysis_id: "analysis-1", extraction_status: "available" }, 201);
+  }) as typeof fetch;
+  await postJSON("/documents/evidence-1/extract", {}, {}, { timeoutMs: 180_000 });
+  assert.ok(observedTimeouts.includes(180_000), "persisted document extraction must be allowed its bounded OCR/extraction window");
+  globalThis.setTimeout = originalSetTimeout;
+
+  console.log("API reliability checks passed: safe GET retry, no mutation replay, extended Companion and document transfer deadlines.");
 }
 void main();

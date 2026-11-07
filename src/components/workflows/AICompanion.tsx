@@ -368,12 +368,16 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
     try {
       const session = await ensureAnonymousSession()
+      // Companion performs bounded care-history retrieval and CPU inference.
+      // Its deadline exceeds the backend's 180-second maximum inference timeout
+      // so the browser receives the backend's structured timeout result.
+      // The turn ID remains stable after ambiguous failures for safe replay.
       const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
         session_id: sessionId,
         client_turn_id: clientTurnId,
-      }) as any
+      }, {}, { timeoutMs: 210_000 }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
