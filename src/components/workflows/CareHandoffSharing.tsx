@@ -353,6 +353,8 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
               <input type="checkbox" checked={selectedRecipients.includes(recipient.caregiver_id)} disabled={busy} onChange={event => {
                 setSelectedRecipients(current => event.target.checked ? [...current, recipient.caregiver_id] : current.filter(id => id !== recipient.caregiver_id));
                 setReviewConfirmed(false);
+                shareRequestId.current = null;
+                shareExpiry.current = null;
               }} />
               <span><strong>{recipient.name}</strong><br /><small>{recipient.relationship || "Linked caregiver"} · eligible for handoff</small></span>
             </label>
