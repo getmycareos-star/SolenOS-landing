@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, postJSON, getJSON, getAnonymousAccessToken, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import CareDeltaPanel from '@/components/CareDeltaPanel'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
@@ -152,6 +152,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [candidateCorrectionContexts, setCandidateCorrectionContexts] = useState<Record<string, string>>({})
   const [candidateErrors, setCandidateErrors] = useState<Record<string, string>>({})
   const [candidateBusy, setCandidateBusy] = useState<Record<string, boolean>>({})
+  const [pendingCareUpdates, setPendingCareUpdates] = useState<CareUpdateProposal[]>([])
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
   const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'overview' | null>(null)
@@ -305,6 +306,22 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setHandoffDraftError(null)
   }
 
+
+  useEffect(() => {
+    // Reopen pending reviews only when this browser already has a scoped session.
+    // Do not bootstrap a new care record merely by opening Companion.
+    if (!getAnonymousAccessToken()) return
+    let active = true
+    void getJSON('/companion/care-updates')
+      .then((result: any) => {
+        if (active && Array.isArray(result?.items)) setPendingCareUpdates(result.items)
+      })
+      .catch(() => {
+        // A failed background refresh must not block ordinary conversation.
+      })
+    return () => { active = false }
+  }, [])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
@@ -363,6 +380,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
+      if (Array.isArray(response.care_update_candidates)) {
+        setPendingCareUpdates(previous => {
+          const merged = new Map(previous.map(item => [item.id, item]))
+          for (const item of response.care_update_candidates as CareUpdateProposal[]) merged.set(item.id, item)
+          return Array.from(merged.values())
+        })
+      }
 
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
@@ -388,6 +412,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         corrected_text: decision === 'correct' ? correctedText : undefined,
         correction_context: decision === 'correct' ? (candidateCorrectionContexts[proposal.id] ?? '').trim() || undefined : undefined,
       }) as any
+      setPendingCareUpdates(previous => previous.flatMap(item => {
+        if (item.id !== proposal.id) return [item]
+        return result?.corrected_proposal ? [result.corrected_proposal as CareUpdateProposal] : []
+      }))
       setMessages(previous => previous.map(message => {
         if (!message.care_update_candidates?.some(item => item.id === proposal.id)) return message
         const updated = message.care_update_candidates.map(item =>
@@ -652,6 +680,24 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           ) : (
             <div className="companion-message-list">
               <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
+              {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
+                <h3>Care updates awaiting your review</h3>
+                {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
+                  <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>Pending review</span></div>
+                  <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
+                  <p className="companion-care-update-source">Source quotation from original Companion message</p>
+                  <div className="companion-care-update-actions">
+                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
+                    <label><span className="sr-only">Correct proposed wording</span>
+                      <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Corrected statement" maxLength={4000} />
+                      <input value={candidateCorrectionContexts[candidate.id] ?? ''} onChange={event => setCandidateCorrectionContexts(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Additional source context (if needed)" maxLength={4000} />
+                    </label>
+                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
+                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
+                  </div>
+                  {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
+                </div>)}
+              </section>}
               {messages.map((msg, index) => {
                 const isUser = msg.role === 'user'
                 const contextCount = (msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0) + (msg.source_assertion_ids?.length ?? 0) + (msg.source_lcr_context_ids?.length ?? 0)
