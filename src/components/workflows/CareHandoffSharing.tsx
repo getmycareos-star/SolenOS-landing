@@ -289,6 +289,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     setError("");
     setNotice("");
     try {
+      await ensureAnonymousSession();
       const content = {
         template_sections: draft.template_sections ?? [],
         sections: draft.sections,
