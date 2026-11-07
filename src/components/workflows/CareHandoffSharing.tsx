@@ -155,8 +155,10 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
       "Recorded time: " + formatDate(item.recorded_at),
       "Historical status: " + (item.stale_warning ? "historical or stale; re-check before relying on it" : "not flagged stale"),
       "Source reference: " + item.source_ref,
-      "Original document reference: " + String(sourceDetails.get(item.source_ref)?.original_source_reference ?? "not applicable or not recorded"),
-      "Page references: " + (Array.isArray(sourceDetails.get(item.source_ref)?.page_references) ? (sourceDetails.get(item.source_ref)?.page_references as unknown[]).map(value => String(value)).join(", ") : "not recorded"),
+      ...(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact") === "documents" ? [
+        "Original document reference: " + String(sourceDetails.get(item.source_ref)?.original_source_reference ?? "not recorded"),
+        "Page references: " + (Array.isArray(sourceDetails.get(item.source_ref)?.page_references) ? (sourceDetails.get(item.source_ref)?.page_references as unknown[]).map(value => String(value)).join(", ") : "not recorded"),
+      ] : []),
     ].join("\\n");
     if (lines.join("\\n").length + itemText.length > 16500) { truncated = true; break; }
     lines.push(itemText);
