@@ -119,11 +119,17 @@ assert.match(apiClient, /postJSON\(path: string, body: unknown, extraHeaders: Re
 const appointmentWorkspace = await readFile(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
 assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-brief?window_days=90"), "appointment preparation must request a bounded source-linked LCR brief");
 assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
-assert.ok(appointmentWorkspace.includes("Source availability") && appointmentWorkspace.includes("Object.entries(lcrBrief.source_coverage)"), "appointment preparation must expose unavailable and excluded sources");
+assert.ok(appointmentWorkspace.includes("No recent care events were returned") && appointmentWorkspace.includes("This does not establish that no appointment exists"), "appointment preparation must distinguish empty results from confirmed absence");
 assert.ok(appointmentWorkspace.includes("getJSON('/appointment-workspaces')"), "appointment workspace must hydrate durable backend records");
 assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
 assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
-assert.ok(appointmentWorkspace.includes("expected_version: recordVersion"), "appointment saves must use optimistic concurrency");
+assert.ok(/expected_version:\s*(?:savedVersion|recordVersion)/.test(appointmentWorkspace), "appointment saves must use optimistic concurrency with the current persisted version");
 assert.ok(appointmentWorkspace.includes("lcr_reconciliation: 'not_performed'"), "appointment notes must not silently promote themselves into LCR facts");
+assert.match(appointmentWorkspace, /postJSON\('\/appointment-workspaces\/' \+ encodeURIComponent\(record\.id\) \+ '\/outcome-proposals'/, "appointment outcome candidates must be created by the backend");
+assert.match(appointmentWorkspace, /outcome-proposals\/' \+ encodeURIComponent\(proposal\.id\) \+ '\/review/, "appointment candidates must use backend review decisions");
+assert.match(appointmentWorkspace, /Accept as caregiver report/, "caregiver acceptance must be explicit");
+assert.match(appointmentWorkspace, /Save correction/, "caregiver corrections must remain a separate decision");
+assert.match(appointmentWorkspace, /Reject/, "caregiver rejection must be available");
+assert.match(appointmentWorkspace, /not independently verified/, "appointment assertions must not be presented as clinically verified");
 
 console.log("PASS: handoff preparation, saved-draft retrieval, revision, approval, source freshness, existing sharing, acknowledgement, and revocation use the backend as the sole source of truth.");
