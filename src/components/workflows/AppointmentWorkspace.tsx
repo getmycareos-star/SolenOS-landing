@@ -28,6 +28,8 @@ type OutcomeDraft = {
   missing_information: string[]
   limitations: string[]
 }
+type AppointmentSaveRetry = { signature: string; key: string }
+const newAppointmentSaveKey = () => `appointment-save-${typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
 type OutcomeProposal = {
   id: string
   status: string
@@ -66,6 +68,7 @@ export default function AppointmentWorkspace() {
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [showDetailed, setShowDetailed] = useState(false)
@@ -222,23 +225,37 @@ export default function AppointmentWorkspace() {
           ? stage === 'during' ? 'during_visit' : 'outcome_pending'
           : record.status === 'during_visit' && stage === 'after' ? 'outcome_pending' : record.status
         : stageStatus[stage]
+      const changeReason = 'Caregiver saved an optional appointment note'
+      const saveSignature = JSON.stringify({
+        recordId: record?.id || null,
+        expectedVersion: record?.version_number || null,
+        appointmentId: appointmentId || null,
+        status: nextStatus,
+        payload,
+        changeReason,
+      })
+      const requestKey = saveRetry?.signature === saveSignature ? saveRetry.key : newAppointmentSaveKey()
+      setSaveRetry({ signature: saveSignature, key: requestKey })
       let saved: WorkspaceRecord
       if (record) {
         saved = await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), {
           expected_version: record.version_number,
           status: nextStatus,
           payload,
-          change_reason: 'Caregiver saved an optional appointment note',
+          change_reason: changeReason,
+          idempotency_key: requestKey,
         }) as WorkspaceRecord
       } else {
         saved = await postJSON('/appointment-workspaces', {
           appointment_id: appointmentId || undefined,
           status: nextStatus,
           payload,
-          change_reason: 'Caregiver saved an optional appointment note',
+          change_reason: changeReason,
+          idempotency_key: requestKey,
         }) as WorkspaceRecord
       }
       setRecord(saved)
+      setSaveRetry(null)
       setMessage('Your note is saved as a caregiver report.')
       if (stage === 'after') await refreshOutcome(saved.id)
     } catch (cause) {
