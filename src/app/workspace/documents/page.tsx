@@ -17,6 +17,7 @@ import {
 import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
+import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 
 type EvidenceRecord = {
   id: string;
@@ -283,6 +284,7 @@ export default function DocumentsPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [documentIntelligenceRefresh, setDocumentIntelligenceRefresh] = useState(0);
 
   const loadDocuments = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true);
@@ -437,7 +439,9 @@ export default function DocumentsPage() {
     setUploadMessage(null);
     let saved = 0;
     let extracted = 0;
+    let understood = 0;
     let extractionUnavailable = 0;
+    let understandingUnavailable = 0;
     try {
       const session = await ensureAnonymousSession();
       for (const page of reviewPages) {
@@ -462,8 +466,17 @@ export default function DocumentsPage() {
             "/documents/" + encodeURIComponent(stored.evidence_id) + "/extract",
             {},
           ) as { extraction_status?: string; analysis_id?: string };
-          if (analysis.analysis_id && analysis.extraction_status === "available") extracted += 1;
-          else extractionUnavailable += 1;
+          if (analysis.analysis_id && analysis.extraction_status === "available") {
+            extracted += 1;
+            try {
+              await postJSON("/documents/" + encodeURIComponent(stored.evidence_id) + "/intelligence", {});
+              understood += 1;
+            } catch {
+              // The original and persisted extraction remain available. The Documents review panel
+              // will show no interpretation until the caregiver retries when Qwen is available.
+              understandingUnavailable += 1;
+            }
+          } else extractionUnavailable += 1;
         } catch {
           // Keep the successfully uploaded original even when this file type
           // cannot currently be extracted (for example, a scanned image).
@@ -475,9 +488,10 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Server-side extraction is available for ${extracted} file(s); ${extractionUnavailable} file(s) remain stored without a usable extraction. Scanned-image OCR is not available yet. Scanned statements remain source evidence, not verified LCR facts. Extracted text remains source material for caregiver review, not verified LCR facts.`,
+        text: `Saved ${saved} original file(s). Server extraction is available for ${extracted}; document understanding is available for ${understood}; ${understandingUnavailable} extracted file(s) still need document understanding; ${extractionUnavailable} file(s) have no usable server extraction. Interpretation remains review-only until you accept a statement. Scanned statements remain source evidence, not verified LCR facts.`,
       });
       await loadDocuments(true);
+      setDocumentIntelligenceRefresh((value) => value + 1);
     } catch {
       setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });
       await loadDocuments(true);
@@ -525,6 +539,8 @@ export default function DocumentsPage() {
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
 
+      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
+
       <section aria-label="Document library" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
@@ -542,6 +558,7 @@ export default function DocumentsPage() {
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Check each captured page, add more pages if needed, then review the text before saving the document." : "Check the selected file or photo. You can add more pages, correct extracted text and review everything before saving."} Original files are preserved.</p>
           <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine reviewed image pages into one PDF</button>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
+          <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}><strong>Scanned-document limitation:</strong> Text extracted from scanned pages is an assistive draft only. Check it against every original page. The complete scanned-document OCR, extraction and caregiver-review path has not yet been validated.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
             <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.text.trim() ? "Text extracted — review required" : "No readable text extracted"}</p>
             {page.file.type === "application/pdf" && page.previewUrl && <iframe title={page.file.name + " preview"} src={page.previewUrl} style={{ width: "100%", height: 320, border: "1px solid var(--border)", borderRadius: 8 }} />}

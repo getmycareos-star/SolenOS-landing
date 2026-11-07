@@ -181,7 +181,14 @@ export default function CareContinuityIntegrityPanel({
     }
   }, [personId])
 
-  useEffect(() => { setSubjectId(personId); void load(); void loadEvidence() }, [load, loadEvidence, personId])
+  useEffect(() => {
+    setSubjectId(personId);
+    void load();
+    void loadEvidence();
+    const refreshAfterCareRecordWrite = () => { void load(); void loadEvidence(); };
+    window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+    return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+  }, [load, loadEvidence, personId])
 
   const freshnessById = useMemo(
     () => new Map(data.freshness.map((item) => [item.assertion_id, item])),
