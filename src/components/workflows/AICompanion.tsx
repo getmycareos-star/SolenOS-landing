@@ -383,7 +383,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         text: submittedText,
         session_id: sessionId,
         client_turn_id: clientTurnId,
-      }) as any
+      }, {}, { timeoutMs: 210_000 }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
 
       setInput('')
