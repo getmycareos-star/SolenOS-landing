@@ -108,7 +108,7 @@ assert(panel.includes("Correction rationale"), "observation correction UI must r
 console.log("PASS: observation correction history must be versioned and justified.");
 
 const lcr = fs.readFileSync(path.join(process.cwd(), "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
-assert(lcr.includes("import EvidenceReviewPanel from \"@/components/EvidenceReviewPanel\""), "the real LCR route must import the evidence workflow");
+assert(/dynamic\(\) => import\("@\/components\/EvidenceReviewPanel"\)/.test(lcr), "the real LCR route must defer-import the evidence workflow");
 assert(lcr.includes("<EvidenceReviewPanel personId={personId} />"), "the evidence workflow must be mounted in the LCR, not left as an unused component");
 assert(panel.includes("expectedPersonId !== session.person.id"), "evidence review must reject a UI person scope that differs from the authenticated session");
 assert(lcr.includes("<ClaimAssessmentPanel />"), "claim assessments must be reachable from the LCR workflow");
@@ -125,7 +125,7 @@ assert(conflictPanel.includes("resolution_scope"), "partial conflict resolution 
 assert(conflictPanel.includes("linked evidence"), "conflict resolution must expose linked evidence");
 assert(conflictPanel.includes("A failed request is not an empty history"), "failed conflict-history reads must not look like an empty history");
 assert(conflictPanel.includes("not automatically resolve a conflict"), "conflict UI must reject timestamp/majority-only resolution");
-assert(lcr.includes("import ConflictResolutionPanel from \"@/components/ConflictResolutionPanel\""), "LCR must import the conflict resolution workflow");
+assert(/dynamic\(\) => import\("@\/components\/ConflictResolutionPanel"\)/.test(lcr), "LCR must defer-import the conflict resolution workflow");
 assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
 const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
@@ -139,7 +139,7 @@ assert(clarificationPanel.includes("intended_answerer_role"), "clarification mus
 assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
 assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
 assert(clarificationPanel.includes("A failed request is not an empty history"), "failed answer-history reads must not be shown as empty history");
-assert(lcr.includes("import ClarificationWorkflowPanel from \"@/components/ClarificationWorkflowPanel\""), "LCR must import the clarification workflow");
+assert(/dynamic\(\) => import\("@\/components\/ClarificationWorkflowPanel"\)/.test(lcr), "LCR must defer-import the clarification workflow");
 assert(lcr.includes("<ClarificationWorkflowPanel personId={personId}"), "clarification workflow must be mounted in the actual LCR");
 console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
 
