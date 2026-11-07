@@ -5707,3 +5707,24 @@ input[type="file"] { width: 100%; white-space: normal; }
   .companion-care-update-actions button { flex: 1 1 calc(50% - 8px); }
   .companion-care-update-actions label { flex-basis: 100%; }
 }
+
+.companion-pending-care-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.companion-pending-care-heading h3 { margin: 0; }
+.companion-pending-care-heading button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #d4e0d4;
+  border-radius: 8px;
+  background: #fff;
+  color: #344c38;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.companion-pending-care-heading button:focus-visible { outline: 2px solid #789b7b; outline-offset: 2px; }
