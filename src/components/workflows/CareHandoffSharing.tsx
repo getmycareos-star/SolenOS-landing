@@ -61,6 +61,16 @@ type OutboxItem = {
   expires_at: string | null; has_summary: boolean; is_expired?: boolean;
   recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
 };
+type DraftRevision = {
+  revision_number: number;
+  change_type: string;
+  created_at: string | null;
+  content?: {
+    generation?: { sections?: Array<{ section: string; text: string; source_ref: string }> };
+    caregiver_notes?: Array<{ text: string; attribution: string }>;
+  };
+  source_snapshot?: { source_records?: unknown[] };
+};
 type Snapshot = {
   purpose?: string;
   audience?: string;
@@ -68,7 +78,7 @@ type Snapshot = {
   sections?: Record<string, string>;
   source_coverage?: Record<string, { status: string; reason?: string; label?: string; count: number }>;
   limitations?: Array<{ source: string; status: string; reason?: string }>;
-  source_references?: Array<{ source_ref: string; epistemic_status: string; record_status: string; event_at?: string | null; recorded_at?: string | null; stale_warning: boolean }>;
+  source_references?: Array<{ source_ref: string; epistemic_status: string; record_status: string; event_at?: string | null; recorded_at?: string | null; stale_warning: boolean; document_id?: string | null; original_source_reference?: string | null; page_references?: unknown }>;
   content_sha256?: string;
   source_id_validation?: string;
 };
@@ -97,22 +107,22 @@ function scopeForSourceType(sourceType: string): string {
   return "lcr_summary";
 }
 
-function requiredHandoffScopes(draft: DraftPayload): string[] {
+function requiredHandoffScopes(draft: DraftPayload, generationSections = draft.generation?.sections ?? []): string[] {
   const sourceTypes = new Map<string, string>();
   for (const section of draft.sections) {
     for (const item of section.items) sourceTypes.set(item.source_table + ":" + item.source_id, item.source_type);
   }
-  return [...new Set((draft.generation?.sections ?? []).map(item => scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact")))];
+  return [...new Set(generationSections.map(item => scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact")))];
 }
 
 function sourceKeysForScope(scope: string): Set<string> {
   if (scope === "documents") return new Set(["documents"]);
   if (scope === "appointments") return new Set(["appointments"]);
-  if (scope === "open_loops") return new Set(["actions", "care_action_outcomes", "open_questions", "information_gaps"]);
+  if (scope === "open_loops") return new Set(["actions", "care_action_outcomes", "open_questions", "information_gaps", "uncertainty_assessments"]);
   return new Set(["care_facts", "care_assertions", "care_events", "care_decisions", "decision_outcomes", "care_transitions", "care_timeline_entries", "daily_care"]);
 }
 
-function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "") {
+function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "", generationSections = draft.generation?.sections ?? []) {
   const lines = [
     audience === "family" ? "SolenOS Family Care Handoff — Living Care Record · Family Edition" : "SolenOS Professional Care Handoff — Living Care Record · Professional Edition",
     "Purpose: " + purpose,
@@ -124,9 +134,15 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "",
   ];
   let truncated = false;
+  const includedSourceKeys = new Set(scopes.flatMap(scope => [...sourceKeysForScope(scope)]));
   const sourceTypes = new Map<string, string>();
-  for (const group of draft.sections) for (const source of group.items) sourceTypes.set(source.source_table + ":" + source.source_id, source.source_type);
-  const generated = draft.generation?.sections ?? [];
+  const sourceDetails = new Map<string, Record<string, unknown>>();
+  for (const group of draft.sections) for (const source of group.items) {
+    const ref = source.source_table + ":" + source.source_id;
+    sourceTypes.set(ref, source.source_type);
+    sourceDetails.set(ref, source.details ?? {});
+  }
+  const generated = generationSections;
   for (const item of generated) {
     if (!scopes.includes(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact"))) continue;
     const sectionHeader = "\\n## " + item.section;
@@ -140,6 +156,10 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
       "Recorded time: " + formatDate(item.recorded_at),
       "Historical status: " + (item.stale_warning ? "historical or stale; re-check before relying on it" : "not flagged stale"),
       "Source reference: " + item.source_ref,
+      ...(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact") === "documents" ? [
+        "Original document reference: " + String(sourceDetails.get(item.source_ref)?.original_source_reference ?? "not recorded"),
+        "Page references: " + (Array.isArray(sourceDetails.get(item.source_ref)?.page_references) ? (sourceDetails.get(item.source_ref)?.page_references as unknown[]).map(value => String(value)).join(", ") : "not recorded"),
+      ] : []),
     ].join("\\n");
     if (lines.join("\\n").length + itemText.length > 16500) { truncated = true; break; }
     lines.push(itemText);
@@ -188,7 +208,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [summaryText, setSummaryText] = useState("");
   const [caregiverNote, setCaregiverNote] = useState("");
   const [selectedScope, setSelectedScope] = useState<string[]>([]);
-  const [revisionHistory, setRevisionHistory] = useState<Array<{ revision_number: number; change_type: string; created_at: string | null }>>([]);
+  const [editedSections, setEditedSections] = useState<NonNullable<DraftPayload["generation"]>["sections"]>([]);
+  const [revisionHistory, setRevisionHistory] = useState<DraftRevision[]>([]);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
@@ -246,6 +267,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
   useEffect(() => {
     setCaregiverNote("");
+    setEditedSections(draft?.generation?.sections ?? []);
   }, [draft?.draft_id]);
 
   useEffect(() => {
@@ -254,10 +276,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setReviewConfirmed(false);
       return;
     }
-    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope, caregiverNote);
+    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope, caregiverNote, editedSections);
     setSummaryText(prepared.text);
     setReviewConfirmed(false);
-  }, [draft, audience, purpose, selectedScope, caregiverNote]);
+  }, [draft, audience, purpose, selectedScope, caregiverNote, editedSections]);
 
   useEffect(() => {
     if (!draft?.draft_id) {
@@ -269,7 +291,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     void ensureAnonymousSession().then(() => getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id))).then((saved) => {
       if (!active) return;
       const record = saved as {
-        revision_history?: Array<{ revision_number: number; change_type: string; created_at: string | null }>;
+        revision_history?: DraftRevision[];
         source_freshness?: { status: string; stale_source_count?: number; unknown_source_count?: number };
         caregiver_notes?: Array<{ text: string; attribution: string }>;
       };
@@ -293,7 +315,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       const content = {
         template_sections: draft.template_sections ?? [],
         sections: draft.sections,
-        generation: draft.generation,
+        generation: draft.generation ? { ...draft.generation, sections: editedSections } : draft.generation,
         caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
       };
       await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
@@ -322,7 +344,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setError("This draft has no validated Qwen-generated document. It cannot be shared.");
       return;
     }
-    if (!reviewConfirmed || !summaryText.trim() || selectedRecipients.length === 0 || selectedScope.length === 0) {
+    if (!reviewConfirmed || !summaryText.trim() || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0) {
       setError("Review the complete generated handoff and select at least one eligible linked caregiver before sharing.");
       return;
     }
@@ -338,7 +360,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       const content = {
         template_sections: draft.template_sections ?? [],
         sections: draft.sections,
-        generation: draft.generation,
+        generation: draft.generation ? { ...draft.generation, sections: editedSections } : draft.generation,
         caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
       };
       await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
@@ -498,15 +520,47 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <option value="1">24 hours</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option>
           </select>
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
+          <div style={{ margin: "12px 0" }}>
+            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Edit grounded sections</strong>
+            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Edits must remain exact quotations from the cited persisted source. The backend rejects unsupported wording, changed source references, and unapproved section labels.</p>
+            {editedSections.map((item, index) => (
+              <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
+                <strong style={{ display: "block", fontSize: 12 }}>{item.section}</strong>
+                <small style={{ display: "block", color: "#667267", margin: "3px 0 6px", overflowWrap: "anywhere" }}>{item.source_ref} · {item.epistemic_status ?? "not recorded"} · {item.record_status ?? "not recorded"}</small>
+                <textarea value={item.text} onChange={event => {
+                  setEditedSections(current => current.map((section, sectionIndex) => sectionIndex === index ? { ...section, text: event.target.value } : section));
+                  setReviewConfirmed(false);
+                  shareRequestId.current = null;
+                  shareExpiry.current = null;
+                }} rows={3} maxLength={1200} style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+                <button type="button" style={quietButton} onClick={() => {
+                  const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
+                  setEditedSections(remaining);
+                  const remainingScopes = requiredHandoffScopes(draft, remaining);
+                  setSelectedScope(scopes => scopes.filter(scope => remainingScopes.includes(scope)));
+                  setReviewConfirmed(false);
+                  shareRequestId.current = null;
+                  shareExpiry.current = null;
+                }}>Remove section from this draft</button>
+              </div>
+            ))}
+          </div>
           <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
           <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview uses the backend-validated Qwen quotations, source references, evidence status, and separate event/recording times.</p>
           <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved revision: {revisionHistory.length ? Math.max(...revisionHistory.map(item => item.revision_number)) : draft.revision_number ?? 1} · Source freshness: {sourceFreshness?.status ?? "checking"} · {revisionHistory.length} revision record(s)</p>
-          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => <p key={item.revision_number} style={{ fontSize: 11, margin: "6px 0", color: "#667267" }}>Revision {item.revision_number} · {item.change_type.replaceAll("_", " ")} · {formatDate(item.created_at)}</p>)}</details>}
+          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => (
+              <details key={item.revision_number} style={{ margin: "6px 0" }}>
+                <summary style={{ cursor: "pointer", fontSize: 11 }}>Revision {item.revision_number} · {item.change_type.replaceAll("_", " ")} · {formatDate(item.created_at)}</summary>
+                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{section.section}:</strong> {section.text} <small>({section.source_ref})</small></p>)}
+                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note ({note.attribution}): {note.text}</p>)}
+                <p style={{ fontSize: 10, color: "#667267" }}>Source records in this immutable snapshot: {item.source_snapshot?.source_records?.length ?? "not reported"}</p>
+              </details>
+            ))}</details>}
           {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>This draft is {sourceFreshness.status}. Prepare a fresh draft before approval or sharing.</p>}
           <div style={{ margin: "12px 0" }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Sharing scope</strong>
             <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Choose which source categories the recipient can receive. Unselected categories remain in the saved draft and are not attached to this handoff.</p>
-            {requiredHandoffScopes(draft).map(scope => (
+            {requiredHandoffScopes(draft, editedSections).map(scope => (
               <label key={scope} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, margin: "6px 0" }}>
                 <input type="checkbox" checked={selectedScope.includes(scope)} onChange={event => {
                   setSelectedScope(current => event.target.checked ? [...current, scope] : current.filter(value => value !== scope));
@@ -520,12 +574,12 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </div>
           <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Additional caregiver note (optional)</label>
           <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
-          <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale"} onClick={() => void saveDraftRevision()}>Save draft revision</button>
+          <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale" || editedSections.length === 0} onClick={() => void saveDraftRevision()}>Save draft revision</button>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
           </label>
-          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
+          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed snapshot…" : "Share reviewed family handoff"}
           </button>
         </section>
@@ -568,7 +622,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 {activeSnapshot.purpose && <p style={{ fontSize: 11 }}>Purpose: {activeSnapshot.purpose.replaceAll("_", " ")} · Audience: {activeSnapshot.audience ?? "not recorded"} · Window: {activeSnapshot.window?.days ?? "unknown"} days</p>}
                 {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Source coverage</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || key}: {value.status}{value.reason ? " (" + value.reason + ")" : ""} · {value.count} record(s)</p>)}</section>}
                 {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Limitation — {item.source}: {item.status}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
-                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {item.source_ref} · {item.epistemic_status} · {item.record_status} · event {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}</p>)}
+                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {item.source_ref} · {item.epistemic_status} · {item.record_status} · event {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}{item.original_source_reference ? " · document " + item.original_source_reference : ""}{Array.isArray(item.page_references) ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
                 <p style={{ fontSize: 11 }}>Source IDs: {activeSnapshot.source_id_validation === "server_verified_person_scope_and_record_existence" ? "verified as records belonging to this care recipient" : "not server-verified"}. This does not independently establish clinical accuracy or semantic entailment.</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
