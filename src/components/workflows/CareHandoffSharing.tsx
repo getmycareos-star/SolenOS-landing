@@ -649,7 +649,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Information included and availability</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || readableScope(key)}: {readableStatus(value.status)}{value.reason ? " — " + value.reason : ""} · {value.count} record(s)</p>)}</section>}
                 {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableScope(item.source)}: {readableStatus(item.status)}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
                 {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · occurred {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}{item.original_source_reference ? " · document " + item.original_source_reference : ""}{Array.isArray(item.page_references) ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
-                <p style={{ fontSize: 11 }}>Source IDs: The source records were checked against this care recipient’s record before sharing. This does not independently verify clinical accuracy.</p>
+                <p style={{ fontSize: 11 }}>Record check: The shared records belong to this care recipient. This does not independently verify clinical accuracy.</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
                   <span>I reviewed this summary. This does not mean every statement is verified or every action is complete.</span>
@@ -662,7 +662,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             {outbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong>{item.recipients?.map(recipient => recipient.name || "Caregiver").join(", ") || "Caregiver handoff"}</strong>
-                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {item.status}{item.is_expired ? " · expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
+                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {readableStatus(item.status)}{item.is_expired ? " · expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
                 <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
                 {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: 11, color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status ? readableStatus(recipient.status) : "Receipt status unavailable"}</p>)}
                 {item.status !== "revoked" && !item.is_expired && <button type="button" style={quietButton} disabled={busy} onClick={() => void revoke(item)}>Revoke access</button>}
