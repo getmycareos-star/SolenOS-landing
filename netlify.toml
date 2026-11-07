@@ -5,7 +5,7 @@
 # publish must be distinct from base (repo root) or the plugin errors out.
 
 [build]
-  command = "npm run build"
+  command = "npm test && npm run build"
   publish = ".next"
 
 [build.environment]
