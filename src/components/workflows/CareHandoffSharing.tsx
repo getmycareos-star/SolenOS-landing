@@ -107,12 +107,12 @@ function scopeForSourceType(sourceType: string): string {
   return "lcr_summary";
 }
 
-function requiredHandoffScopes(draft: DraftPayload): string[] {
+function requiredHandoffScopes(draft: DraftPayload, generationSections = draft.generation?.sections ?? []): string[] {
   const sourceTypes = new Map<string, string>();
   for (const section of draft.sections) {
     for (const item of section.items) sourceTypes.set(item.source_table + ":" + item.source_id, item.source_type);
   }
-  return [...new Set((draft.generation?.sections ?? []).map(item => scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact")))];
+  return [...new Set(generationSections.map(item => scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact")))];
 }
 
 function sourceKeysForScope(scope: string): Set<string> {
@@ -533,7 +533,12 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                   shareExpiry.current = null;
                 }} rows={3} maxLength={1200} style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
                 <button type="button" style={quietButton} onClick={() => {
-                  setEditedSections(current => current.filter((_, sectionIndex) => sectionIndex !== index));
+                  setEditedSections(current => {
+                    const remaining = current.filter((_, sectionIndex) => sectionIndex !== index);
+                    const remainingScopes = requiredHandoffScopes(draft, remaining);
+                    setSelectedScope(scopes => scopes.filter(scope => remainingScopes.includes(scope)));
+                    return remaining;
+                  });
                   setReviewConfirmed(false);
                   shareRequestId.current = null;
                   shareExpiry.current = null;
@@ -556,7 +561,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <div style={{ margin: "12px 0" }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Sharing scope</strong>
             <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Choose which source categories the recipient can receive. Unselected categories remain in the saved draft and are not attached to this handoff.</p>
-            {requiredHandoffScopes(draft).map(scope => (
+            {requiredHandoffScopes(draft, editedSections).map(scope => (
               <label key={scope} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, margin: "6px 0" }}>
                 <input type="checkbox" checked={selectedScope.includes(scope)} onChange={event => {
                   setSelectedScope(current => event.target.checked ? [...current, scope] : current.filter(value => value !== scope));
