@@ -121,7 +121,7 @@ async function extractText(file: File): Promise<{ text: string; note: string | n
     form.append("file", file);
     const session = await ensureAnonymousSession();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 40_000);
+    const timer = setTimeout(() => controller.abort(), 120_000);
     let response: Response;
     try {
       response = await fetch(apiUrl("/api/extract"), {
@@ -465,6 +465,8 @@ export default function DocumentsPage() {
           const analysis = await postJSON(
             "/documents/" + encodeURIComponent(stored.evidence_id) + "/extract",
             {},
+            {},
+            { timeoutMs: 180_000 },
           ) as { extraction_status?: string; analysis_id?: string };
           if (analysis.analysis_id && analysis.extraction_status === "available") {
             extracted += 1;
