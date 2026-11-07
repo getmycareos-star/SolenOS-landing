@@ -338,14 +338,14 @@ async function handleResponse(res: Response) {
 
 export async function getJSON(path: string) {
   const headers = await requestAuthorizationHeaders(path);
-  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers }, 120_000)
+  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers })
   return handleResponse(res)
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
   const headers = await requestAuthorizationHeaders(path);
-  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers })
+  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers }, 120_000)
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
