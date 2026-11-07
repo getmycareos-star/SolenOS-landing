@@ -117,6 +117,7 @@ assert.match(apiClient, /postJSON\(path: string, body: unknown, extraHeaders: Re
   "the API client must pass stable idempotency headers without replaying mutations");
 
 const appointmentWorkspace = await readFile(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
+const detailedAppointmentWorkspace = await readFile(new URL("../src/components/workflows/DetailedAppointmentWorkspace.tsx", import.meta.url), "utf8");
 assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-brief?window_days=90"), "appointment preparation must request a bounded source-linked LCR brief");
 assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
 assert.ok(appointmentWorkspace.includes("No recent care events were returned") && appointmentWorkspace.includes("This does not establish that no appointment exists"), "appointment preparation must distinguish empty results from confirmed absence");
@@ -131,5 +132,13 @@ assert.match(appointmentWorkspace, /Accept as caregiver report/, "caregiver acce
 assert.match(appointmentWorkspace, /Save correction/, "caregiver corrections must remain a separate decision");
 assert.match(appointmentWorkspace, /Reject/, "caregiver rejection must be available");
 assert.match(appointmentWorkspace, /not independently verified/, "appointment assertions must not be presented as clinically verified");
+
+
+assert.match(detailedAppointmentWorkspace, /postJSON\('\/open-loops'/, "appointment follow-up actions must persist through the shared Open Loops API");
+assert.match(detailedAppointmentWorkspace, /patchJSON\('\/open-loops\//, "appointment follow-up edits must update their persisted Open Loop");
+assert.match(detailedAppointmentWorkspace, /source_type: 'appointment_workspace'/, "follow-up actions must retain their appointment workspace origin");
+assert.match(detailedAppointmentWorkspace, /appointment-follow-up:/, "follow-up creation must use a stable idempotency key");
+assert.match(detailedAppointmentWorkspace, /\/outcomes/, "marking a follow-up done must record an attributed outcome event");
+assert.match(detailedAppointmentWorkspace, /caregiver-reported outcome, not independently verified/, "caregiver-reported completion must not be treated as verified closure");
 
 console.log("PASS: handoff preparation, saved-draft retrieval, revision, approval, source freshness, existing sharing, acknowledgement, and revocation use the backend as the sole source of truth.");
