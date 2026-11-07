@@ -685,25 +685,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
       <div className="companion-workspace">
         <main className="companion-conversation" aria-label="Conversation">
-          {messages.length === 0 ? (
-            <div className="companion-empty">
-              <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Tell me one small thing about today. A few words are enough. We can take it one step at a time.</p></div>
-              <div className="companion-starters">
-                {STARTER_PROMPTS.map(item => {
-                  const Icon = item.icon
-                  return <button className="companion-starter" type="button" key={item.title} onClick={() => { void sendMessage(item.prompt) }}>
-                    <span className="companion-starter-icon"><Icon size={18} aria-hidden="true" /></span>
-                    <span className="companion-starter-copy"><strong>{item.title}</strong><span>{item.description}</span></span>
-                    <span className="companion-starter-arrow" aria-hidden="true">↗</span>
-                  </button>
-                })}
-              </div>
-              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
-            </div>
-          ) : (
-            <div className="companion-message-list">
-              <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
               {pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
               {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
                 <div className="companion-pending-care-heading">
@@ -727,6 +708,26 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
                 </div>)}
               </section>}
+          {messages.length === 0 ? (
+            <div className="companion-empty">
+              <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Tell me one small thing about today. A few words are enough. We can take it one step at a time.</p></div>
+              <div className="companion-starters">
+                {STARTER_PROMPTS.map(item => {
+                  const Icon = item.icon
+                  return <button className="companion-starter" type="button" key={item.title} onClick={() => { void sendMessage(item.prompt) }}>
+                    <span className="companion-starter-icon"><Icon size={18} aria-hidden="true" /></span>
+                    <span className="companion-starter-copy"><strong>{item.title}</strong><span>{item.description}</span></span>
+                    <span className="companion-starter-arrow" aria-hidden="true">↗</span>
+                  </button>
+                })}
+              </div>
+              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
+            </div>
+          ) : (
+            <div className="companion-message-list">
+              <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
+
               {messages.map((msg, index) => {
                 const isUser = msg.role === 'user'
                 const contextCount = (msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0) + (msg.source_assertion_ids?.length ?? 0) + (msg.source_lcr_context_ids?.length ?? 0)
