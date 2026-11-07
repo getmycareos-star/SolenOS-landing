@@ -561,13 +561,13 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             ))}
           </div>
           <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview uses the backend-validated Qwen quotations, source references, evidence status, and separate event/recording times.</p>
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved revision: {revisionHistory.length ? Math.max(...revisionHistory.map(item => item.revision_number)) : draft.revision_number ?? 1} · Source freshness: {sourceFreshness?.status ?? "checking"} · {revisionHistory.length} revision record(s)</p>
+          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview keeps each statement tied to its saved source, shows its information status, and separates when it happened from when it was recorded.</p>
+          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved revision: {revisionHistory.length ? Math.max(...revisionHistory.map(item => item.revision_number)) : draft.revision_number ?? 1} · Source freshness: {sourceFreshness ? readableStatus(sourceFreshness.status) : "Checking"} · {revisionHistory.length} revision record(s)</p>
           {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => (
               <details key={item.revision_number} style={{ margin: "6px 0" }}>
-                <summary style={{ cursor: "pointer", fontSize: 11 }}>Revision {item.revision_number} · {item.change_type.replaceAll("_", " ")} · {formatDate(item.created_at)}</summary>
+                <summary style={{ cursor: "pointer", fontSize: 11 }}>Revision {item.revision_number} · {readableStatus(item.change_type)} · {formatDate(item.created_at)}</summary>
                 {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{section.section}:</strong> {section.text} <small>(Source {index + 1})</small></p>)}
-                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note ({note.attribution}): {note.text}</p>)}
+                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note: {note.text}</p>)}
                 <p style={{ fontSize: 10, color: "#667267" }}>Source records in this immutable snapshot: {item.source_snapshot?.source_records?.length ?? "not reported"}</p>
               </details>
             ))}</details>}
