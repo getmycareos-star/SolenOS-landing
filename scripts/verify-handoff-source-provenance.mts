@@ -8,11 +8,15 @@ const apiClient = await readFile(new URL("../src/api/client.ts", import.meta.url
 
 assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
   "standalone handoff page must route caregivers into AI Companion");
-for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Full care overview"]) {
+for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
   assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
 }
 assert.ok(companionPage.includes("<AppointmentWorkspace />"), "appointments must retain their separate workflow");
-assert.ok(!companionPage.includes("handoffPurpose === 'appointment'"), "appointment workspace must not become a handoff purpose");
+assert.ok(companionPage.includes("handoffPurpose === 'appointment'"), "doctor appointment must be a supported handoff purpose");
+assert.match(companionPage, /purpose === 'professional_appointment'/, "doctor appointment must map to the backend-supported purpose");
+assert.match(companionPage, /handoffAudience === 'professional' && \(/, "doctor appointment must only be offered for professional handoffs");
+assert.match(companionPage, /Professional handoffs can be prepared for your private review only/, "professional sharing limitation must be disclosed before draft preparation");
+assert.match(companionPage, /savedDraft\.purpose === "professional_appointment" \? "appointment"/, "resumed appointment drafts must restore their original purpose");
 
 assert.match(companionPage, /postJSON\('\/handoff-drafts\/prepare'/,
   "handoff preparation must be performed by the backend");
