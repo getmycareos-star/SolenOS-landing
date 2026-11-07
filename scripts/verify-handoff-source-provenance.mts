@@ -49,6 +49,10 @@ assert.match(sharingComponent, /sourceFreshness\?\.status !== "current"/,
   "stale or unverifiable source snapshots must block sharing");
 assert.match(sharingComponent, /revisionHistory\.map/,
   "caregivers must be able to inspect persisted revision history");
+assert.match(sharingComponent, /setEditedSections/,
+  "caregivers must be able to edit or remove source-grounded sections");
+assert.match(sharingComponent, /exact quotations from the cited persisted source/,
+  "the UI must explain that edits are backend-validated against source text");
 assert.match(sharingComponent, /caregiver_authored_unverified|caregiverNote/,
   "caregiver-added context must remain explicitly attributed and unverified");
 assert.match(sharingComponent, /Share reviewed family handoff/,
