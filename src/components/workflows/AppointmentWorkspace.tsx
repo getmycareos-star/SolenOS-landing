@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ShieldCheck } from 'lucide-react'
 
@@ -46,6 +46,7 @@ export default function AppointmentWorkspace() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const pendingSaveRef = useRef<{ fingerprint: string; key: string; recordedAt: string } | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -112,17 +113,33 @@ export default function AppointmentWorkspace() {
     setMessage('')
     try {
       await ensureAnonymousSession()
-      const payload = {
-        ...(record?.payload || {}),
-        caregiverReport: note.trim(),
-        captureStage: stage,
-        caregiverReportAt: new Date().toISOString(),
-      }
       const nextStatus = record
         ? record.status === 'preparation' && stage !== 'prepare'
           ? stage === 'during' ? 'during_visit' : 'outcome_pending'
           : record.status === 'during_visit' && stage === 'after' ? 'outcome_pending' : record.status
         : stageStatus[stage]
+      const fingerprint = JSON.stringify({
+        recordId: record?.id ?? null,
+        appointmentId: appointmentId || null,
+        expectedVersion: record?.version_number ?? null,
+        stage,
+        nextStatus,
+        note: note.trim(),
+      })
+      if (!pendingSaveRef.current || pendingSaveRef.current.fingerprint !== fingerprint) {
+        pendingSaveRef.current = {
+          fingerprint,
+          key: `appointment-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2)}`,
+          recordedAt: new Date().toISOString(),
+        }
+      }
+      const pendingSave = pendingSaveRef.current
+      const payload = {
+        ...(record?.payload || {}),
+        caregiverReport: note.trim(),
+        captureStage: stage,
+        caregiverReportAt: pendingSave.recordedAt,
+      }
       let saved: WorkspaceRecord
       if (record) {
         saved = await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), {
@@ -130,6 +147,7 @@ export default function AppointmentWorkspace() {
           status: nextStatus,
           payload,
           change_reason: 'Caregiver saved an optional appointment note',
+          idempotency_key: pendingSave.key,
         }) as WorkspaceRecord
       } else {
         saved = await postJSON('/appointment-workspaces', {
@@ -137,11 +155,19 @@ export default function AppointmentWorkspace() {
           status: nextStatus,
           payload,
           change_reason: 'Caregiver saved an optional appointment note',
+          idempotency_key: pendingSave.key,
         }) as WorkspaceRecord
       }
+      pendingSaveRef.current = null
       setRecord(saved)
       setMessage('Your note is saved as a caregiver report.')
-      if (stage === 'after') await refreshOutcome(saved.id)
+      if (stage === 'after') {
+        try {
+          await refreshOutcome(saved.id)
+        } catch {
+          setError('Your note was saved. The outcome view could not refresh; reopen appointment support to retry.')
+        }
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Your note could not be saved. Please try again.')
     } finally {
