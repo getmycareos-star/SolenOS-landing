@@ -28,6 +28,11 @@ assert.match(companion, /document_extractions/, "persisted document extraction r
 assert.match(companion, /Extracted document text.*not yet an LCR assertion/, "document text must not be presented as an accepted LCR fact");
 assert.match(companion, /Prior Companion message.*conversation context only/, "prior conversation references must be distinguished from care evidence");
 assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
+assert.match(companion, /care_events: 'Care entry'/, "plural retrieval event types must render as care entries");
+assert.match(companion, /care_assertions: 'LCR assertion/, "plural assertion types must remain caregiver-attributed");
+assert.match(companion, /appointments: 'Appointment record'/, "plural appointment types must render as appointment records");
+assert.match(companion, /companion_conversations: 'Prior Companion message.*conversation context only/, "plural conversation types must never look like care evidence");
+assert.match(companion, /key=\{ref\.record_type \+ ':' \+ ref\.record_id\}/, "each rendered provenance item must be keyed by its exact backend record type and ID");
 assert.doesNotMatch(companion, /Add to care story/);
 assert.match(companion, /companion-add-menu/);
 assert.match(companion, /Upload document/);
