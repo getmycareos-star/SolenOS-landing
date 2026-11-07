@@ -163,51 +163,53 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     sourceDetails.set(ref, source.details ?? {});
   }
   const generated = generationSections;
+  let displayedSourceNumber = 0;
   for (const item of generated) {
     if (!scopes.includes(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact"))) continue;
-    const sectionHeader = "\\n## " + item.section;
-    if (lines.join("\\n").length + sectionHeader.length > 16500) { truncated = true; break; }
+    displayedSourceNumber += 1;
+    const sectionHeader = "\n## " + item.section;
+    if (lines.join("\n").length + sectionHeader.length > 16500) { truncated = true; break; }
     lines.push(sectionHeader);
     const itemText = [
       "- " + item.text,
-      "Evidence status: " + (item.epistemic_status || "not_recorded"),
-      "Record status: " + (item.record_status || "not_recorded"),
+      "Information status: " + readableStatus(item.epistemic_status || "not_recorded"),
+      "Record status: " + readableStatus(item.record_status || "not_recorded"),
       "Event time: " + formatDate(item.event_at),
       "Recorded time: " + formatDate(item.recorded_at),
       "Historical status: " + (item.stale_warning ? "historical or stale; re-check before relying on it" : "not flagged stale"),
-      "Source reference: " + item.source_ref,
+      "Source: record " + displayedSourceNumber,
       ...(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact") === "documents" ? [
         "Original document reference: " + String(sourceDetails.get(item.source_ref)?.original_source_reference ?? "not recorded"),
         "Page references: " + (Array.isArray(sourceDetails.get(item.source_ref)?.page_references) ? (sourceDetails.get(item.source_ref)?.page_references as unknown[]).map(value => String(value)).join(", ") : "not recorded"),
       ] : []),
-    ].join("\\n");
-    if (lines.join("\\n").length + itemText.length > 16500) { truncated = true; break; }
+    ].join("\n");
+    if (lines.join("\n").length + itemText.length > 16500) { truncated = true; break; }
     lines.push(itemText);
   }
   for (const note of draft.caregiver_notes ?? []) {
-    const line = "\\nCaregiver-added note (not independently verified): " + note.text;
-    if (lines.join("\\n").length + line.length > 16500) { truncated = true; break; }
+    const line = "\nCaregiver-added note (not independently verified): " + note.text;
+    if (lines.join("\n").length + line.length > 16500) { truncated = true; break; }
     lines.push(line);
   }
   if (caregiverNote.trim()) {
-    const line = "\\nCaregiver-added note (not independently verified): " + caregiverNote.trim();
-    if (lines.join("\\n").length + line.length > 16500) truncated = true;
+    const line = "\nCaregiver-added note (not independently verified): " + caregiverNote.trim();
+    if (lines.join("\n").length + line.length > 16500) truncated = true;
     else lines.push(line);
   }
-  lines.push("\\n## Source coverage");
+  lines.push("\n## Source coverage");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
-    const line = "- " + (value.label || name) + ": " + value.status + (value.reason ? " (" + value.reason + ")" : "") + "; " + value.count + " record(s)";
-    if (lines.join("\\n").length + line.length > 17500) { truncated = true; break; }
+    const line = "- " + (value.label || readableStatus(name)) + ": " + readableStatus(value.status) + (value.reason ? " (" + value.reason + ")" : "") + "; " + value.count + " record(s)";
+    if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
   for (const limitation of draft.limitations) {
     if (!includedSourceKeys.has(limitation.source)) continue;
-    const line = "- " + limitation.source + ": " + limitation.status + (limitation.reason ? " (" + limitation.reason + ")" : "");
-    if (lines.join("\\n").length + line.length > 17500) { truncated = true; break; }
+    const line = "- " + readableStatus(limitation.source) + ": " + readableStatus(limitation.status) + (limitation.reason ? " (" + limitation.reason + ")" : "");
+    if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
-  if (truncated) lines.push("\\nPreview truncated. The persisted draft retains the complete validated source snapshot.");
-  return { text: lines.join("\\n").slice(0, 18000) };
+  if (truncated) lines.push("\nPreview truncated. The persisted draft retains the complete validated source snapshot.");
+  return { text: lines.join("\n").slice(0, 18000) };
 }
 
 export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: Props) {
