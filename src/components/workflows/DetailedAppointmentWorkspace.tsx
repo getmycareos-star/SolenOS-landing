@@ -54,6 +54,9 @@ type PreparationBrief = {
 }
 type FollowUp = { id: string; action: string; owner: string; due: string; status: 'Open' | 'In progress' | 'Done' | 'Needs clarification'; open_loop_id?: string; reported_done_at?: string }
 
+type AppointmentSaveRetry = { signature: string; key: string }
+const newAppointmentSaveKey = () => `appointment-save-${typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
+
 const newFollowUpId = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `follow-up-${Date.now()}-${Math.random().toString(36).slice(2)}`
 const emptyFollowUp = (): FollowUp => ({ id: newFollowUpId(), action: '', owner: '', due: '', status: 'Open' })
 
@@ -63,6 +66,7 @@ export default function DetailedAppointmentWorkspace() {
   const [recordVersion, setRecordVersion] = useState(0)
   const [loadingRecord, setLoadingRecord] = useState(false)
   const [savingRecord, setSavingRecord] = useState(false)
+  const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
   const [saveMessage, setSaveMessage] = useState('')
   const [saveError, setSaveError] = useState('')
   const [lcrBrief, setLcrBrief] = useState<PreparationBrief | null>(null)
@@ -176,6 +180,11 @@ export default function DetailedAppointmentWorkspace() {
         lcr_reconciliation: 'not_performed',
       },
     }
+    const saveStatus = ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus]
+    const saveReason = recordId ? 'Caregiver saved appointment workspace' : 'Initial caregiver appointment workspace save'
+    const saveSignature = JSON.stringify({ recordId, expectedVersion: recordVersion, status: saveStatus, payload, changeReason: saveReason })
+    const requestKey = saveRetry?.signature === saveSignature ? saveRetry.key : newAppointmentSaveKey()
+    setSaveRetry({ signature: saveSignature, key: requestKey })
     try {
       await ensureAnonymousSession()
       let savedRecordId = recordId
@@ -183,13 +192,13 @@ export default function DetailedAppointmentWorkspace() {
       if (savedRecordId) {
         const updated = await patchJSON('/appointment-workspaces/' + encodeURIComponent(savedRecordId), {
           expected_version: savedVersion,
-          status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
-          payload, change_reason: 'Caregiver saved appointment workspace',
+          status: saveStatus,
+          payload, change_reason: saveReason, idempotency_key: requestKey,
         }) as { version_number: number }
         savedVersion = updated.version_number
       } else {
         const created = await postJSON('/appointment-workspaces', {
-          status: 'preparation', payload, change_reason: 'Initial caregiver appointment workspace save',
+          status: 'preparation', payload, change_reason: saveReason, idempotency_key: requestKey,
         }) as { id: string; version_number: number }
         savedRecordId = created.id
         savedVersion = created.version_number
@@ -197,6 +206,7 @@ export default function DetailedAppointmentWorkspace() {
       if (!savedRecordId) throw new Error('The appointment workspace was not assigned a persisted record ID.')
       setRecordId(savedRecordId)
       setRecordVersion(savedVersion)
+      setSaveRetry(null)
       setSaveMessage('Appointment notes saved · syncing follow-up actions…')
 
       // Persist follow-ups in the shared Open Loops service. "Done" is a
@@ -261,6 +271,7 @@ export default function DetailedAppointmentWorkspace() {
           status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
           payload: syncedPayload,
           change_reason: 'Persisted Open Loop references for appointment follow-up actions',
+          idempotency_key: requestKey + ':followups',
         }) as { version_number: number }
         savedVersion = persisted.version_number
         setRecordVersion(savedVersion)
