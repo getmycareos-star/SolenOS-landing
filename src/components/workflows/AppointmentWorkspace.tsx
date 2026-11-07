@@ -52,9 +52,10 @@ type PreparationBrief = {
   }
   limitations: string[]
 }
-type FollowUp = { action: string; owner: string; due: string; status: 'Open' | 'In progress' | 'Done' | 'Needs clarification' }
+type FollowUp = { id: string; action: string; owner: string; due: string; status: 'Open' | 'In progress' | 'Done' | 'Needs clarification'; open_loop_id?: string; reported_done_at?: string }
 
-const emptyFollowUp = (): FollowUp => ({ action: '', owner: '', due: '', status: 'Open' })
+const newFollowUpId = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `follow-up-${Date.now()}-${Math.random().toString(36).slice(2)}`
+const emptyFollowUp = (): FollowUp => ({ id: newFollowUpId(), action: '', owner: '', due: '', status: 'Open' })
 
 export default function AppointmentWorkspace() {
   const [open, setOpen] = useState(false)
@@ -146,7 +147,7 @@ export default function AppointmentWorkspace() {
         setMedicationReconciliation(String(p.medicationReconciliation || ''))
         setPendingResults(String(p.pendingResults || ''))
         setFamilySummary(String(p.familySummary || ''))
-        setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => ({ ...emptyFollowUp(), ...(item as Partial<FollowUp>) })) : [emptyFollowUp()])
+        setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => { const saved = item as Partial<FollowUp>; return { ...emptyFollowUp(), ...saved, id: saved.id || newFollowUpId() } }) : [emptyFollowUp()])
         const validStatuses = ['Awaiting documentation', 'Follow-up pending', 'Ready for review', 'Closed with documented outstanding items'] as const
         setReviewStatus(validStatuses.includes(p.reviewStatus as typeof validStatuses[number]) ? p.reviewStatus as typeof validStatuses[number] : 'Awaiting documentation')
         setSaveMessage('Loaded saved appointment workspace · version ' + record.version_number)
@@ -177,21 +178,97 @@ export default function AppointmentWorkspace() {
     }
     try {
       await ensureAnonymousSession()
-      if (recordId) {
-        const updated = await patchJSON('/appointment-workspaces/' + encodeURIComponent(recordId), {
-          expected_version: recordVersion,
+      let savedRecordId = recordId
+      let savedVersion = recordVersion
+      if (savedRecordId) {
+        const updated = await patchJSON('/appointment-workspaces/' + encodeURIComponent(savedRecordId), {
+          expected_version: savedVersion,
           status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
           payload, change_reason: 'Caregiver saved appointment workspace',
         }) as { version_number: number }
-        setRecordVersion(updated.version_number)
-        setSaveMessage('Saved securely · version ' + updated.version_number + '. Not yet reconciled into LCR facts.')
+        savedVersion = updated.version_number
       } else {
         const created = await postJSON('/appointment-workspaces', {
           status: 'preparation', payload, change_reason: 'Initial caregiver appointment workspace save',
         }) as { id: string; version_number: number }
-        setRecordId(created.id)
-        setRecordVersion(created.version_number)
-        setSaveMessage('Saved securely · version ' + created.version_number + '. Not yet reconciled into LCR facts.')
+        savedRecordId = created.id
+        savedVersion = created.version_number
+      }
+      if (!savedRecordId) throw new Error('The appointment workspace was not assigned a persisted record ID.')
+      setRecordId(savedRecordId)
+      setRecordVersion(savedVersion)
+      setSaveMessage('Appointment notes saved · syncing follow-up actions…')
+
+      // Persist follow-ups in the shared Open Loops service. "Done" is a
+      // caregiver-reported outcome only; it is not independently verified.
+      const synced = [...followUps]
+      let followUpSyncError = ''
+      for (let index = 0; index < synced.length; index += 1) {
+        const item = synced[index]
+        if (!item.action.trim()) continue
+        try {
+          let loopId = item.open_loop_id
+          if (!loopId) {
+            const created = await postJSON('/open-loops', {
+              loop_type: 'follow_up',
+              title: item.action.trim().slice(0, 240),
+              description: item.action.trim(),
+              source_type: 'appointment_workspace',
+              source_id: savedRecordId + ':' + item.id,
+              owner_role: 'caregiver',
+              owner_label: item.owner.trim() || undefined,
+              deadline_at: item.due ? new Date(item.due + 'T12:00:00').toISOString() : undefined,
+              deadline_source: item.due ? 'explicit_user' : undefined,
+              idempotency_key: 'appointment-follow-up:' + savedRecordId + ':' + item.id,
+            }) as { id: string }
+            loopId = created.id
+          } else {
+            await patchJSON('/open-loops/' + encodeURIComponent(loopId), {
+              title: item.action.trim().slice(0, 240),
+              description: item.action.trim(),
+              owner_role: 'caregiver',
+              owner_label: item.owner.trim() || undefined,
+              deadline_at: item.due ? new Date(item.due + 'T12:00:00').toISOString() : null,
+              deadline_source: item.due ? 'explicit_user' : null,
+              reason: 'Updated from the caregiver appointment workspace',
+              idempotency_key: 'appointment-follow-up-update:' + savedRecordId + ':' + item.id + ':' + savedVersion,
+            })
+          }
+          synced[index] = { ...item, open_loop_id: loopId }
+          if (item.status === 'Done' && !item.reported_done_at) {
+            await postJSON('/open-loops/' + encodeURIComponent(loopId) + '/outcomes', {
+              text: 'Caregiver marked this appointment follow-up as done in the appointment workspace. This is a caregiver-reported outcome, not independently verified.',
+              evidence: [],
+              idempotency_key: 'appointment-follow-up-done:' + savedRecordId + ':' + item.id,
+            })
+            synced[index] = { ...synced[index], reported_done_at: new Date().toISOString() }
+          }
+        } catch (error) {
+          followUpSyncError = error instanceof Error ? error.message : 'A follow-up action could not be synced.'
+          break
+        }
+      }
+      const followUpsChanged = synced.some((item, index) =>
+        item.open_loop_id !== followUps[index]?.open_loop_id ||
+        item.reported_done_at !== followUps[index]?.reported_done_at
+      )
+      if (followUpsChanged) {
+        const syncedPayload = { ...payload, followUps: synced }
+        const persisted = await patchJSON('/appointment-workspaces/' + encodeURIComponent(savedRecordId), {
+          expected_version: savedVersion,
+          status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
+          payload: syncedPayload,
+          change_reason: 'Persisted Open Loop references for appointment follow-up actions',
+        }) as { version_number: number }
+        savedVersion = persisted.version_number
+        setRecordVersion(savedVersion)
+        setFollowUps(synced)
+      }
+      if (followUpSyncError) {
+        setSaveError('Appointment notes were saved, but a follow-up action did not sync: ' + followUpSyncError + '. Save again to retry.')
+        setSaveMessage('Appointment workspace saved · follow-up sync incomplete.')
+      } else {
+        setSaveMessage('Appointment workspace and follow-up actions saved · version ' + savedVersion + '. Caregiver-reported completion is not independent verification.')
       }
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Save failed. Your unsaved edits remain on this screen.')
@@ -326,13 +403,13 @@ export default function AppointmentWorkspace() {
           </div>
           <div className="appointment-followups-heading"><h5>Follow-up actions</h5><button type="button" className="appointment-secondary" onClick={addFollowUp}><ListChecks size={15} /> Add action</button></div>
           {followUps.map((item, index) => <div className="appointment-followup" key={index}>
-            <label>Action<input value={item.action} onChange={event => updateFollowUp(index, 'action', event.target.value)} placeholder="Book follow-up, complete test, obtain result…" /></label>
+            <label>Action<input maxLength={240} value={item.action} onChange={event => updateFollowUp(index, 'action', event.target.value)} placeholder="Book follow-up, complete test, obtain result…" /></label>
             <label>Owner<input value={item.owner} onChange={event => updateFollowUp(index, 'owner', event.target.value)} placeholder="Named person or service" /></label>
             <label>Due date<input type="date" value={item.due} onChange={event => updateFollowUp(index, 'due', event.target.value)} /></label>
             <label>Status<select value={item.status} onChange={event => updateFollowUp(index, 'status', event.target.value)}><option>Open</option><option>In progress</option><option>Done</option><option>Needs clarification</option></select></label>
           </div>)}
           <label className="appointment-review-status">Closure status<select value={reviewStatus} onChange={event => setReviewStatus(event.target.value as typeof reviewStatus)}><option>Awaiting documentation</option><option>Follow-up pending</option><option>Ready for review</option><option>Closed with documented outstanding items</option></select></label>
-          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Working draft only — appointment notes, decisions, and follow-up actions are not yet persisted to the LCR. Do not rely on this screen as the durable follow-up record.</p>
+          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Appointment notes remain separate from accepted LCR facts. Follow-up actions are saved to the shared care follow-up record; marking one done records a caregiver report and does not verify or close it without source evidence.</p>
         </div>}
 
         <div className="appointment-save-controls">
