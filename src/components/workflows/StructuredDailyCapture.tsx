@@ -421,8 +421,8 @@ export default function StructuredDailyCapture() {
       return;
     }
     const draft = reviewDrafts[index] || {
-      subject: candidate.subject || '',
-      observation: candidate.observation || '',
+      subject: candidate.corrected_subject ?? candidate.subject ?? '',
+      observation: candidate.corrected_observation ?? candidate.observation ?? '',
     };
     if (decision === 'correct' && !(draft.subject.trim() || draft.observation.trim())) {
       setReviewFeedback('Enter a corrected subject or observation before saving a correction.');
@@ -928,8 +928,8 @@ export default function StructuredDailyCapture() {
             <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
               {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => {
                 const draft = reviewDrafts[index] || {
-                  subject: candidate.subject || '',
-                  observation: candidate.observation || '',
+                  subject: candidate.corrected_subject ?? candidate.subject ?? '',
+                  observation: candidate.corrected_observation ?? candidate.observation ?? '',
                 };
                 const reviewStatus = String(candidate.review_status || 'pending_review');
                 const alreadyReviewed = ['accepted_by_caregiver', 'rejected_by_caregiver'].includes(reviewStatus);
