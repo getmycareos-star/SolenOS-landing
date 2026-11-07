@@ -542,17 +542,12 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
           <div style={{ margin: "12px 0" }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Edit grounded sections</strong>
-            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Edits must remain exact quotations from the cited persisted source. The backend rejects unsupported wording, changed source references, and unapproved section labels.</p>
+            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Sourced wording stays tied to the saved care record. Remove anything that should not be shared. If a statement is outdated or needs correcting, explain that in the caregiver note below; it will be clearly labelled as your report, not independently verified. Update the original care record separately when needed.</p>
             {editedSections.map((item, index) => (
               <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
                 <strong style={{ display: "block", fontSize: 12 }}>{item.section}</strong>
-                <small style={{ display: "block", color: "#667267", margin: "3px 0 6px", overflowWrap: "anywhere" }}>{item.source_ref} · {item.epistemic_status ?? "not recorded"} · {item.record_status ?? "not recorded"}</small>
-                <textarea value={item.text} onChange={event => {
-                  setEditedSections(current => current.map((section, sectionIndex) => sectionIndex === index ? { ...section, text: event.target.value } : section));
-                  setReviewConfirmed(false);
-                  shareRequestId.current = null;
-                  shareExpiry.current = null;
-                }} rows={3} maxLength={1200} style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+                <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Source {index + 1} · {readableStatus(item.epistemic_status ?? "not recorded")} · {readableStatus(item.record_status ?? "not recorded")} · occurred {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}</small>
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{item.text}</p>
                 <button type="button" style={quietButton} onClick={() => {
                   const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
                   setEditedSections(remaining);
@@ -571,7 +566,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => (
               <details key={item.revision_number} style={{ margin: "6px 0" }}>
                 <summary style={{ cursor: "pointer", fontSize: 11 }}>Revision {item.revision_number} · {item.change_type.replaceAll("_", " ")} · {formatDate(item.created_at)}</summary>
-                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{section.section}:</strong> {section.text} <small>({section.source_ref})</small></p>)}
+                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{section.section}:</strong> {section.text} <small>(Source {index + 1})</small></p>)}
                 {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note ({note.attribution}): {note.text}</p>)}
                 <p style={{ fontSize: 10, color: "#667267" }}>Source records in this immutable snapshot: {item.source_snapshot?.source_records?.length ?? "not reported"}</p>
               </details>
