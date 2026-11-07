@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getJSON, postJSON } from "../src/api/client";
+import { getBlob, getJSON, postFormData, postJSON } from "../src/api/client";
 
 const values = new Map<string, string>([
   ["solenos_anonymous_access_token", "server-issued-token"],
@@ -28,6 +28,14 @@ function response(payload: unknown, status = 200): Response {
 }
 
 async function main() {
+  const observedTimeouts: number[] = [];
+  const originalSetTimeout = globalThis.setTimeout;
+  const originalClearTimeout = globalThis.clearTimeout;
+  globalThis.setTimeout = ((callback: TimerHandler, timeout?: number) => {
+    observedTimeouts.push(Number(timeout ?? 0));
+    return 1 as unknown as ReturnType<typeof setTimeout>;
+  }) as typeof setTimeout;
+  globalThis.clearTimeout = (() => undefined) as typeof clearTimeout;
   let reads = 0;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     reads += 1;
@@ -58,6 +66,33 @@ async function main() {
   }) as typeof fetch;
   await postJSON("/handoffs", { draft_id: "draft-1" }, { "X-Request-ID": "stable-handoff-request-1" });
   assert.equal(idempotencyHeader, "stable-handoff-request-1", "mutations must preserve caller-supplied idempotency keys");
-  console.log("API reliability checks passed: timeout signal, safe GET retry, no mutation replay, idempotency header forwarding.");
+
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(init?.method, "POST");
+    assert.ok(init?.body instanceof FormData);
+    return response({ evidence_id: "evidence-1", persisted: true }, 201);
+  }) as typeof fetch;
+  await postFormData("/upload", new FormData());
+  assert.ok(observedTimeouts.includes(120_000), "document multipart uploads must have a 120-second deadline");
+
+  globalThis.fetch = (async () => ({
+    ok: true, status: 200, blob: async () => new Blob(["original"]),
+  }) as unknown as Response) as typeof fetch;
+  await getBlob("/upload/evidence-1");
+  assert.ok(observedTimeouts.filter(value => value === 120_000).length >= 2, "original document downloads must have a 120-second deadline");
+
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(init?.method, "POST");
+    return response({ analysis_id: "analysis-1" }, 201);
+  }) as typeof fetch;
+  await postJSON("/documents/evidence-1/extract", {}, {}, { timeoutMs: 180_000 });
+  assert.ok(observedTimeouts.includes(180_000), "server-side document extraction must have a 180-second deadline");
+
+  await postJSON("/conversation/message", { text: "synthetic prompt" }, {}, { timeoutMs: 210_000 });
+  assert.ok(observedTimeouts.includes(210_000), "Companion must not be cancelled by the former 15-second browser deadline");
+
+  globalThis.setTimeout = originalSetTimeout;
+  globalThis.clearTimeout = originalClearTimeout;
+  console.log("API reliability checks passed: safe GET retry, no mutation replay, explicit Companion and document deadlines, idempotency header forwarding.");
 }
 void main();
