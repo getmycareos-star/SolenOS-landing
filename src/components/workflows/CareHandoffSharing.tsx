@@ -122,7 +122,7 @@ function sourceKeysForScope(scope: string): Set<string> {
   return new Set(["care_facts", "care_assertions", "care_events", "care_decisions", "decision_outcomes", "care_transitions", "care_timeline_entries", "daily_care"]);
 }
 
-function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "") {
+function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "", generationSections = draft.generation?.sections ?? []) {
   const lines = [
     audience === "family" ? "SolenOS Family Care Handoff — Living Care Record · Family Edition" : "SolenOS Professional Care Handoff — Living Care Record · Professional Edition",
     "Purpose: " + purpose,
@@ -141,7 +141,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     sourceTypes.set(ref, source.source_type);
     sourceDetails.set(ref, source.details ?? {});
   }
-  const generated = draft.generation?.sections ?? [];
+  const generated = generationSections;
   for (const item of generated) {
     if (!scopes.includes(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact"))) continue;
     const sectionHeader = "\\n## " + item.section;
@@ -207,6 +207,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [summaryText, setSummaryText] = useState("");
   const [caregiverNote, setCaregiverNote] = useState("");
   const [selectedScope, setSelectedScope] = useState<string[]>([]);
+  const [editedSections, setEditedSections] = useState<NonNullable<DraftPayload["generation"]>["sections"]>([]);
   const [revisionHistory, setRevisionHistory] = useState<DraftRevision[]>([]);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
@@ -265,6 +266,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
   useEffect(() => {
     setCaregiverNote("");
+    setEditedSections(draft?.generation?.sections ?? []);
   }, [draft?.draft_id]);
 
   useEffect(() => {
@@ -273,10 +275,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setReviewConfirmed(false);
       return;
     }
-    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope, caregiverNote);
+    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope, caregiverNote, editedSections);
     setSummaryText(prepared.text);
     setReviewConfirmed(false);
-  }, [draft, audience, purpose, selectedScope, caregiverNote]);
+  }, [draft, audience, purpose, selectedScope, caregiverNote, editedSections]);
 
   useEffect(() => {
     if (!draft?.draft_id) {
