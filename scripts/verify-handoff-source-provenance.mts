@@ -69,6 +69,14 @@ assert.match(sharingComponent, /activeSnapshot\.source_coverage/,
   "recipients must see source coverage for the approved sharing scope");
 assert.match(sharingComponent, /activeSnapshot\.source_references/,
   "recipients must see source references, epistemic status, and event/recording times");
+assert.match(sharingComponent, /How the information was sourced/,
+  "caregivers must receive a plain-language explanation of source relationships");
+assert.match(sharingComponent, /handoffPurposeLabel\(saved\.purpose\)/,
+  "saved draft purposes must use caregiver-readable labels");
+assert.doesNotMatch(sharingComponent, /Evidence IDs:/,
+  "caregiver review must not expose internal evidence identifiers");
+assert.doesNotMatch(sharingComponent, /Origin groups:/,
+  "caregiver review must not expose internal lineage keys");
 assert.match(sharingComponent, /revoke\(item\)/,
   "the initiating caregiver must retain a revocation path");
 assert.doesNotMatch(sharingComponent, /source_record_ids\s*:/,
