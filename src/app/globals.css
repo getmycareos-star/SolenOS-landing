@@ -5885,3 +5885,63 @@ input[type="file"] { width: 100%; white-space: normal; }
   .lcr-record-section .lcr-entry-heading { flex-wrap: wrap; }
   .lcr-record-section .lcr-history-details > .lcr-situation-assessment { padding: 12px; }
 }
+
+
+/* Reduce visual noise in the caregiver's first reading of the record. */
+.lcr-record-section .lcr-situation-assessment > .lcr-entry-heading {
+  margin-bottom: 14px;
+}
+.lcr-record-section .lcr-situation-assessment > .lcr-entry-heading > span {
+  color: #718074;
+  font-size: 12px;
+  font-weight: 550;
+}
+.lcr-record-section .lcr-situation-assessment p,
+.lcr-record-section .lcr-situation-assessment li {
+  line-height: 1.6;
+}
+.lcr-record-section .lcr-situation-assessment details {
+  margin-top: 10px;
+}
+.lcr-record-section .lcr-situation-assessment details > summary {
+  color: #536c58;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.lcr-record-section .lcr-situation-assessment blockquote {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-left: 3px solid #c8d9c9;
+  border-radius: 0 9px 9px 0;
+  background: #f7faf7;
+  color: #526055;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.lcr-record-section .lcr-situation-assessment small {
+  display: block;
+  margin-top: 7px;
+  color: #718074;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.lcr-record-section .lcr-history-details > summary::marker,
+.lcr-record-section .lcr-assessment-details > summary::marker {
+  color: #77917a;
+}
+.lcr-record-section button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lcr-record-section .lcr-history-details > summary,
+  .lcr-record-section .lcr-assessment-details > summary {
+    transition: background-color .15s ease;
+  }
+  .lcr-record-section .lcr-history-details > summary:hover,
+  .lcr-record-section .lcr-assessment-details > summary:hover {
+    background: #f6faf6;
+  }
+}
