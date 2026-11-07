@@ -1446,7 +1446,7 @@ export function LCRCurrentUnderstanding() {
       </div>
 
       </details>
-      <details className="lcr-situation-assessment lcr-assessment-details"><summary>Record details — how this care picture was put together</summary><div aria-labelledby="lcr-situation-assessment-heading">
+      <details className="lcr-situation-assessment lcr-assessment-details"><summary>Record details — How this care picture was put together</summary><div aria-labelledby="lcr-situation-assessment-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-situation-assessment-heading">Care picture review</h3>
           <button type="button" className="lcr-text-action" onClick={() => void reassess()} disabled={assessmentLoading || loading}>
