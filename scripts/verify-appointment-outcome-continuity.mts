@@ -81,7 +81,7 @@ assert(homeSummary.includes("Overdue") && homeSummary.includes("Received"), "hom
 assert(!homeSummary.toLowerCase().includes("sample appointment") && !homeSummary.toLowerCase().includes("demo appointment"), "home summary must not use fabricated appointment examples");
 console.log("PASS: appointment outcomes, evidence review, follow-up continuity and caregiver-facing language are wired.");
 
-assert.ok(component.includes("function DetailedAppointmentWorkspace()"), "the existing detailed continuity and approval workflow must remain available as an optional review path");
+assert.ok(component.includes("function DetailedAppointmentWorkspace({ initiallyOpen = false }"), "the existing detailed continuity and approval workflow must remain available as an optional review path");
 assert.ok(component.includes("export default function AppointmentWorkspace()"), "the default appointment experience must be the low-burden guided workflow");
 assert.ok(component.includes("You can leave this empty"), "during-visit capture must be explicitly optional");
 assert.ok(component.includes("getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft')"), "the caregiver view must load the backend-organized outcome draft");
