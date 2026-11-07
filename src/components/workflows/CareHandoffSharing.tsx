@@ -134,6 +134,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "",
   ];
   let truncated = false;
+  const includedSourceKeys = new Set(scopes.flatMap(sourceKeysForScope));
   const sourceTypes = new Map<string, string>();
   const sourceDetails = new Map<string, Record<string, unknown>>();
   for (const group of draft.sections) for (const source of group.items) {
@@ -359,7 +360,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       const content = {
         template_sections: draft.template_sections ?? [],
         sections: draft.sections,
-        generation: draft.generation,
+        generation: draft.generation ? { ...draft.generation, sections: editedSections } : draft.generation,
         caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
       };
       await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
