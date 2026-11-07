@@ -152,6 +152,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [candidateErrors, setCandidateErrors] = useState<Record<string, string>>({})
   const [candidateBusy, setCandidateBusy] = useState<Record<string, boolean>>({})
   const [pendingCareUpdates, setPendingCareUpdates] = useState<CareUpdateProposal[]>([])
+  const [pendingCareUpdatesError, setPendingCareUpdatesError] = useState<string | null>(null)
+  const [pendingCareUpdatesRefreshing, setPendingCareUpdatesRefreshing] = useState(false)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
   const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'overview' | null>(null)
@@ -306,14 +308,20 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   const refreshPendingCareUpdates = async (conversationId?: string | null): Promise<CareUpdateProposal[]> => {
+    setPendingCareUpdatesRefreshing(true)
     try {
       const suffix = conversationId ? '?session_id=' + encodeURIComponent(conversationId) : ''
       const result = await getJSON('/companion/care-updates' + suffix) as any
-      const items = Array.isArray(result?.items) ? result.items as CareUpdateProposal[] : []
+      if (!Array.isArray(result?.items)) throw new Error('Incomplete care-update response')
+      const items = result.items as CareUpdateProposal[]
       setPendingCareUpdates(items)
+      setPendingCareUpdatesError(null)
       return items
     } catch {
+      setPendingCareUpdatesError('Pending care updates could not be loaded. Your conversation is still saved. Check your connection and refresh again.')
       return []
+    } finally {
+      setPendingCareUpdatesRefreshing(false)
     }
   }
 
@@ -699,8 +707,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
                 <div className="companion-pending-care-heading">
                   <h3>Care updates awaiting your review</h3>
-                  <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates">Refresh</button>
+                  <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates" disabled={pendingCareUpdatesRefreshing}>{pendingCareUpdatesRefreshing ? 'Refreshing…' : 'Refresh'}</button>
                 </div>
+                {pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
                 {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
                   <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>Pending review</span></div>
                   <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
@@ -733,7 +742,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
                         <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>{pending ? 'Pending review' : candidate.status.replace(/_/g, ' ')}</span></div>
                         <p>{value}</p>
-                        <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Qwen proposal'}</p>
+                        <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Original proposal'}</p>
                         {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
                         {pending ? <div className="companion-care-update-actions">
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
