@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/brand";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
+import AppointmentContinuitySummary from "@/components/mvp-workspace/AppointmentContinuitySummary";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -25,6 +26,7 @@ function WorkspaceHomeInner() {
 
   return (
     <main className="mobile-screen feature-page solenos-lcr-home">
+      <AppointmentContinuitySummary />
       <LCRCurrentUnderstanding />
     </main>
   );
