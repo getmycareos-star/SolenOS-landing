@@ -149,6 +149,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [candidateCorrections, setCandidateCorrections] = useState<Record<string, string>>({})
+  const [candidateCorrectionContexts, setCandidateCorrectionContexts] = useState<Record<string, string>>({})
   const [candidateErrors, setCandidateErrors] = useState<Record<string, string>>({})
   const [candidateBusy, setCandidateBusy] = useState<Record<string, boolean>>({})
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
@@ -385,7 +386,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const result = await postJSON('/companion/care-updates/' + encodeURIComponent(proposal.id) + '/review', {
         decision,
         corrected_text: decision === 'correct' ? correctedText : undefined,
-        correction_context: decision === 'correct' ? correctedText : undefined,
+        correction_context: decision === 'correct' ? (candidateCorrectionContexts[proposal.id] ?? '').trim() || undefined : undefined,
       }) as any
       setMessages(previous => previous.map(message => {
         if (!message.care_update_candidates?.some(item => item.id === proposal.id)) return message
@@ -671,7 +672,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
                           <label>
                             <span className="sr-only">Correct proposed wording</span>
-                            <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Enter a correction" maxLength={4000} />
+                            <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Corrected statement" maxLength={4000} />
+                            <input value={candidateCorrectionContexts[candidate.id] ?? ''} onChange={event => setCandidateCorrectionContexts(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Additional source context (if needed)" maxLength={4000} />
                           </label>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
