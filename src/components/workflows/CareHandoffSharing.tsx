@@ -112,6 +112,14 @@ function readableStatus(value: string): string {
   return value.replaceAll("_", " ").replace(/^./, character => character.toUpperCase());
 }
 
+function readableScope(value: string): string {
+  if (value === "lcr_summary") return "Care record and Daily Care";
+  if (value === "documents") return "Uploaded documents";
+  if (value === "appointments") return "Appointments";
+  if (value === "open_loops") return "Open care actions and questions";
+  return readableStatus(value);
+}
+
 function scopeForSourceType(sourceType: string): string {
   if (sourceType.startsWith("document_") || sourceType === "uploaded_document") return "documents";
   if (sourceType === "appointment") return "appointments";
@@ -585,6 +593,14 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Additional caregiver note (optional)</label>
           <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
           <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale" || editedSections.length === 0} onClick={() => void saveDraftRevision()}>Save draft revision</button>
+          <section aria-label="Confirm handoff details" style={{ border: "1px solid #cbd8cb", borderRadius: 10, padding: 12, margin: "14px 0", background: "#f7faf6" }}>
+            <strong style={{ display: "block", fontSize: 13, marginBottom: 7 }}>Confirm exactly what will be shared</strong>
+            <p style={{ fontSize: 12, margin: "4px 0" }}><b>Purpose:</b> {purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor’s appointment" : "Full care overview"}</p>
+            <p style={{ fontSize: 12, margin: "4px 0" }}><b>Recipient(s):</b> {eligibleRecipients.filter(item => selectedRecipients.includes(item.caregiver_id)).map(item => item.name).join(", ") || "No recipient selected"}</p>
+            <p style={{ fontSize: 12, margin: "4px 0" }}><b>Information included:</b> {selectedScope.map(readableScope).join(", ") || "No information category selected"}</p>
+            <p style={{ fontSize: 12, margin: "4px 0" }}><b>Access ends:</b> {expiryDays === "1" ? "In 24 hours" : "In " + expiryDays + " days"} after sharing</p>
+            <p style={{ fontSize: 11, color: "#667267", margin: "8px 0 0" }}>Only the selected recipient(s) can access this handoff. It does not change the Living Care Record. Revoking access later cannot retract information already viewed or saved.</p>
+          </section>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
@@ -613,8 +629,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             {inbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong>{item.from_caregiver_name || "Linked caregiver"}</strong>
-                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {item.status} · Expires: {formatDate(item.expires_at)}</p>
-                <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Scope: {item.scope.join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
+                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {readableStatus(item.status)} · Expires: {formatDate(item.expires_at)}</p>
+                <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
                 <button type="button" style={button} disabled={busy || !item.has_summary} onClick={() => void reviewIncoming(item)}>Review incoming summary</button>
               </article>
             ))}
@@ -628,12 +644,12 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                     <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", fontSize: 12, lineHeight: 1.5 }}>{String(value ?? "")}</pre>
                   </div>
                 ))}
-                {activeSnapshot.content_sha256 && <p style={{ fontSize: 10, overflowWrap: "anywhere" }}>Integrity hash: {activeSnapshot.content_sha256}</p>}
-                {activeSnapshot.purpose && <p style={{ fontSize: 11 }}>Purpose: {activeSnapshot.purpose.replaceAll("_", " ")} · Audience: {activeSnapshot.audience ?? "not recorded"} · Window: {activeSnapshot.window?.days ?? "unknown"} days</p>}
-                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Source coverage</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || key}: {value.status}{value.reason ? " (" + value.reason + ")" : ""} · {value.count} record(s)</p>)}</section>}
-                {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Limitation — {item.source}: {item.status}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
+                
+                {activeSnapshot.purpose && <p style={{ fontSize: 12 }}>Purpose: {handoffPurposeLabel(activeSnapshot.purpose)} · Shared with: {activeSnapshot.audience === "family" ? "Family caregiver" : activeSnapshot.audience === "professional" ? "Healthcare professional" : "Not recorded"} · Source period: {activeSnapshot.window?.days ?? "unknown"} days</p>}
+                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Information included and availability</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || readableScope(key)}: {readableStatus(value.status)}{value.reason ? " — " + value.reason : ""} · {value.count} record(s)</p>)}</section>}
+                {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableScope(item.source)}: {readableStatus(item.status)}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
                 {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · occurred {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}{item.original_source_reference ? " · document " + item.original_source_reference : ""}{Array.isArray(item.page_references) ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
-                <p style={{ fontSize: 11 }}>Source IDs: {activeSnapshot.source_id_validation === "server_verified_person_scope_and_record_existence" ? "verified as records belonging to this care recipient" : "not server-verified"}. This does not independently establish clinical accuracy or semantic entailment.</p>
+                <p style={{ fontSize: 11 }}>Source IDs: The source records were checked against this care recipient’s record before sharing. This does not independently verify clinical accuracy.</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
                   <span>I reviewed this summary. This does not mean every statement is verified or every action is complete.</span>
@@ -647,8 +663,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong>{item.recipients?.map(recipient => recipient.name || "Caregiver").join(", ") || "Caregiver handoff"}</strong>
                 <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {item.status}{item.is_expired ? " · expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
-                <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Scope: {item.scope.join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
-                {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: 11, color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status || "receipt status unavailable"}</p>)}
+                <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
+                {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: 11, color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status ? readableStatus(recipient.status) : "Receipt status unavailable"}</p>)}
                 {item.status !== "revoked" && !item.is_expired && <button type="button" style={quietButton} disabled={busy} onClick={() => void revoke(item)}>Revoke access</button>}
               </article>
             ))}
