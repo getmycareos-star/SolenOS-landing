@@ -83,7 +83,7 @@ async function textFingerprint(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export default function AppointmentWorkspace() {
+function DetailedAppointmentWorkspace() {
   const [open, setOpen] = useState(false)
   const [recordId, setRecordId] = useState<string | null>(null)
   const [recordVersion, setRecordVersion] = useState(0)
@@ -902,4 +902,278 @@ export default function AppointmentWorkspace() {
       `}</style>
     </section>
   )
+}
+
+
+type GuidedAppointment = {
+  source_id: string
+  title: string
+  scheduled_at?: string | null
+  provider?: string | null
+  location?: string | null
+  status: string
+}
+type GuidedBrief = {
+  snapshot_at: string
+  facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null }>
+  events: Array<{ source_id: string; title: string; description?: string | null; occurred_at?: string | null; status: string }>
+  appointments: GuidedAppointment[]
+  limitations: string[]
+}
+type GuidedWorkspace = {
+  id: string
+  appointment_id?: string | null
+  status: string
+  version_number: number
+  payload: Record<string, unknown>
+}
+type GuidedOutcome = {
+  status: string
+  read_only: boolean
+  updates_lcr: boolean
+  sections: Record<string, Array<{ label?: string; text: string; epistemic_status?: string; source_type?: string }>>
+  missing_information: string[]
+  limitations: string[]
+}
+
+const guidedStageStatus: Record<Stage, string> = {
+  prepare: 'preparation',
+  during: 'during_visit',
+  after: 'outcome_pending',
+}
+
+function GuidedStageContent({
+  stage, brief, outcome, quickCapture, setQuickCapture, saving, saveError, saveMessage,
+  onSave, onRefreshOutcome,
+}: {
+  stage: Stage
+  brief: GuidedBrief | null
+  outcome: GuidedOutcome | null
+  quickCapture: string
+  setQuickCapture: (value: string) => void
+  saving: boolean
+  saveError: string
+  saveMessage: string
+  onSave: () => void
+  onRefreshOutcome: () => void
+}) {
+  if (stage === 'prepare') {
+    return <div className="guided-panel">
+      <div className="guided-panel-heading"><div><h4>Your appointment brief</h4><p>Prepared from information already in the Living Care Record. Nothing to fill in.</p></div><span className="guided-state">Read-only</span></div>
+      {!brief && <p className="guided-muted">Your care history could not be loaded. SolenOS will not treat missing information as proof that it does not exist.</p>}
+      {brief && <>
+        <div className="guided-columns">
+          <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0,6).map(item => <li key={item.source_id}><strong>{item.title}</strong>{item.description && <p>{item.description}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {item.status}</small></li>)}</ul> : <p className="guided-muted">No recent care events were returned for this brief.</p>}</section>
+          <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0,6).map(item => <li key={item.source_id}><strong>{item.fact_type.replaceAll('_',' ')}</strong><p>{item.value || 'No detail recorded'}</p><small>{item.epistemic_status.replaceAll('_',' ')}</small></li>)}</ul> : <p className="guided-muted">No care facts were returned for this brief.</p>}</section>
+        </div>
+        <section className="guided-appointments"><h5>Appointments in the care record</h5>{brief.appointments.length ? <ul>{brief.appointments.slice(0,5).map(item => <li key={item.source_id}><strong>{item.title}</strong><span>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {item.status}</span></li>)}</ul> : <p className="guided-muted">No appointment was returned. This does not establish that no appointment exists.</p>}</section>
+        <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. The brief keeps recorded reports, dates and unknowns separate.</p>
+      </>}
+    </div>
+  }
+  if (stage === 'during') {
+    return <div className="guided-panel">
+      <div className="guided-panel-heading"><div><h4>Stay with the appointment</h4><p>You do not need to document while speaking with the professional.</p></div><span className="guided-state">Optional</span></div>
+      <p className="guided-muted">If it helps, leave yourself one short note. You can also leave this empty and return later.</p>
+      <label className="guided-capture-label">Anything you want to remember?
+        <textarea value={quickCapture} onChange={event => setQuickCapture(event.target.value)} rows={4} placeholder="Optional note. Your own words are enough." />
+      </label>
+      <button className="guided-primary" type="button" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save note and continue'}</button>
+      <p className="guided-footnote">A note saved here is attributed to the caregiver. It does not become a verified professional statement or change the Living Care Record.</p>
+    </div>
+  }
+  return <div className="guided-panel">
+    <div className="guided-panel-heading"><div><h4>What happened at the appointment?</h4><p>SolenOS will organise only information that has actually been recorded.</p></div><span className="guided-state">Review first</span></div>
+    <label className="guided-capture-label">Add anything you remember, if you want to
+      <textarea value={quickCapture} onChange={event => setQuickCapture(event.target.value)} rows={4} placeholder="You can add a brief note, paste text, or leave this empty." />
+    </label>
+    <div className="guided-actions"><button className="guided-primary" type="button" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save what I remember'}</button><button className="guided-secondary" type="button" onClick={onRefreshOutcome}>Refresh outcome</button></div>
+    {outcome?.status === 'ready_for_review' && <div className="guided-outcome" aria-live="polite">
+      <h5>Appointment information gathered</h5>
+      {Object.entries(outcome.sections).filter(([,items]) => items.length).map(([key,items]) => <section key={key}><h6>{key.replaceAll('_',' ')}</h6>{items.map((item,index) => <p key={key+index}>{item.text}<small>{item.epistemic_status?.replaceAll('_',' ') || 'Recorded information'} · {item.source_type?.replaceAll('_',' ') || 'Caregiver record'}</small></p>)}</section>)}
+      {outcome.missing_information.length > 0 && <p className="guided-muted">Not recorded: {outcome.missing_information.join(', ')}.</p>}
+      <p className="guided-footnote">This is a review draft, not a clinical conclusion. The Living Care Record has not been changed.</p>
+    </div>}
+    {(!outcome || outcome.status === 'no_outcome_information') && <p className="guided-muted">No appointment outcome has been recorded yet. You can return later; SolenOS will not invent what happened.</p>}
+  </div>
+}
+
+export default function AppointmentWorkspace() {
+  const [open, setOpen] = useState(false)
+  const [stage, setStage] = useState<Stage>('prepare')
+  const [brief, setBrief] = useState<GuidedBrief | null>(null)
+  const [record, setRecord] = useState<GuidedWorkspace | null>(null)
+  const [outcome, setOutcome] = useState<GuidedOutcome | null>(null)
+  const [quickCapture, setQuickCapture] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [saveMessage, setSaveMessage] = useState('')
+  const [showDetailed, setShowDetailed] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setLoading(true)
+    setSaveError('')
+    void (async () => {
+      try {
+        await ensureAnonymousSession()
+        const [briefResult, workspaceResult] = await Promise.allSettled([
+          getJSON('/appointment-workspaces/preparation-brief?window_days=90') as Promise<GuidedBrief>,
+          getJSON('/appointment-workspaces') as Promise<{ items?: GuidedWorkspace[] }>,
+        ])
+        if (cancelled) return
+        if (briefResult.status === 'fulfilled') setBrief(briefResult.value)
+        else setSaveError('Your appointment brief could not be loaded. Existing care information has not been changed.')
+        if (workspaceResult.status === 'fulfilled') {
+          const latest = workspaceResult.value.items?.[0] || null
+          setRecord(latest)
+          if (latest) {
+            const savedNote = String(latest.payload?.caregiverReport || '')
+            setQuickCapture(savedNote)
+            try {
+              const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as GuidedOutcome
+              if (!cancelled) setOutcome(draft)
+            } catch {
+              if (!cancelled) setOutcome(null)
+            }
+          }
+        } else {
+          setSaveError('Saved appointment notes could not be loaded. Your care history has not been changed.')
+        }
+      } catch (error) {
+        if (!cancelled) setSaveError(error instanceof Error ? error.message : 'The appointment workspace could not be opened.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [open])
+
+  const refreshOutcome = async () => {
+    if (!record) return
+    try {
+      const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-draft') as GuidedOutcome
+      setOutcome(draft)
+      setSaveError('')
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'The appointment outcome could not be refreshed.')
+    }
+  }
+
+  const saveCapture = async () => {
+    if (!quickCapture.trim()) {
+      setSaveMessage('Nothing to save. You can continue without adding notes.')
+      if (stage === 'after') await refreshOutcome()
+      return
+    }
+    setSaving(true)
+    setSaveError('')
+    setSaveMessage('')
+    try {
+      await ensureAnonymousSession()
+      const payload = {
+        ...(record?.payload || {}),
+        caregiverReport: quickCapture.trim(),
+        captureStage: stage,
+        caregiverReportAt: new Date().toISOString(),
+      }
+      const nextStatus = record
+        ? (record.status === 'preparation' && stage === 'after' ? 'outcome_pending'
+          : record.status === 'preparation' && stage === 'during' ? 'during_visit'
+          : record.status === 'during_visit' && stage === 'after' ? 'outcome_pending'
+          : record.status)
+        : guidedStageStatus[stage]
+      let saved: GuidedWorkspace
+      if (record) {
+        saved = await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), {
+          expected_version: record.version_number,
+          status: nextStatus,
+          payload,
+          change_reason: 'Caregiver saved an optional appointment note',
+          idempotency_key: 'guided-appointment:' + record.id + ':' + (record.version_number + 1) + ':' + stage,
+        }) as GuidedWorkspace
+      } else {
+        saved = await postJSON('/appointment-workspaces', {
+          status: nextStatus,
+          payload,
+          change_reason: 'Caregiver saved an optional appointment note',
+          idempotency_key: 'guided-appointment:' + crypto.randomUUID(),
+        }) as GuidedWorkspace
+      }
+      setRecord(saved)
+      setSaveMessage('Your note is saved. It remains a caregiver report.')
+      if (stage === 'after') {
+        const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(saved.id) + '/outcome-draft') as GuidedOutcome
+        setOutcome(draft)
+      }
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Your note could not be saved. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return <section className="appointment-workspace guided-appointment" aria-labelledby="appointment-workspace-title">
+    <div className="appointment-heading">
+      <div className="appointment-heading-icon" aria-hidden="true"><CalendarDays size={21} /></div>
+      <div className="appointment-heading-copy">
+        <span className="appointment-kicker">APPOINTMENTS</span>
+        <h3 id="appointment-workspace-title">Your appointment, supported by SolenOS</h3>
+        <p>SolenOS prepares and organises the information. You only add what it cannot know.</p>
+      </div>
+      <button type="button" className="appointment-primary" onClick={() => setOpen(value => !value)} aria-expanded={open}>{open ? 'Close' : 'Open appointment support'}</button>
+    </div>
+    {open && <>
+      <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>You are not expected to complete forms before, during or after a visit. Notes are optional. Caregiver reports remain attributed to the caregiver, and nothing here silently changes the Living Care Record.</span></div>
+      <nav className="guided-stages" aria-label="Appointment stages">
+        {([['prepare','Before'],['during','During'],['after','After']] as const).map(([key,label]) => <button key={key} type="button" className={stage === key ? 'is-active' : ''} aria-pressed={stage === key} onClick={() => setStage(key)}>{label}</button>)}
+      </nav>
+      {loading && <p className="guided-muted" role="status">Preparing your appointment view…</p>}
+      <GuidedStageContent stage={stage} brief={brief} outcome={outcome} quickCapture={quickCapture} setQuickCapture={setQuickCapture} saving={saving} saveError={saveError} saveMessage={saveMessage} onSave={() => void saveCapture()} onRefreshOutcome={() => void refreshOutcome()} />
+      <div className="guided-status" role="status" aria-live="polite">{saveMessage}{saveError && <span>{saveError}</span>}</div>
+      <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => setShowDetailed(value => !value)}>{showDetailed ? 'Close detailed review and follow-up controls' : 'Open detailed review and follow-up controls'}</button>
+      {showDetailed && <div className="guided-detailed"><p>For caregivers who need to correct individual sections, review evidence or manage follow-up responsibilities. This is optional.</p><DetailedAppointmentWorkspace /></div>}
+    </>}
+    <style jsx>{`
+      .guided-appointment { color:#26392c; }
+      .guided-stages { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 0; }
+      .guided-stages button { min-height:44px; border:1px solid #dfe8df; border-radius:11px; background:#fff; color:#536653; font:inherit; font-size:13px; font-weight:750; cursor:pointer; }
+      .guided-stages button.is-active { border-color:#a7c3a4; background:#edf5eb; color:#294b31; }
+      .guided-panel { margin-top:16px; padding:16px; border:1px solid #e2eae0; border-radius:14px; background:#fbfcfa; }
+      .guided-panel-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+      .guided-panel h4 { margin:0; color:#26392c; font-size:17px; }
+      .guided-panel-heading p,.guided-muted { margin:5px 0 0; color:#68776b; font-size:12px; line-height:1.6; }
+      .guided-state { padding:5px 8px; border:1px solid #dce7d9; border-radius:99px; color:#526b54; font-size:10px; white-space:nowrap; }
+      .guided-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:15px; }
+      .guided-columns section,.guided-appointments { min-width:0; padding:12px; border:1px solid #e5ebe2; border-radius:11px; background:#fff; }
+      .guided-panel h5 { margin:0 0 9px; color:#3b5140; font-size:12px; }
+      .guided-columns ul,.guided-appointments ul { margin:0; padding-left:17px; }
+      .guided-columns li { margin:0 0 11px; color:#425447; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+      .guided-columns li p { margin:3px 0; }
+      .guided-columns li small,.guided-appointments li span { display:block; color:#7a867c; font-size:10px; }
+      .guided-appointments { margin-top:12px; }
+      .guided-appointments li { display:flex; justify-content:space-between; gap:10px; margin:7px 0; font-size:12px; }
+      .guided-footnote { margin:12px 0 0; color:#7b877d; font-size:10px; line-height:1.55; }
+      .guided-capture-label { display:flex; flex-direction:column; gap:7px; margin-top:14px; color:#405343; font-size:12px; font-weight:750; }
+      .guided-capture-label textarea { width:100%; box-sizing:border-box; min-height:100px; padding:12px; border:1px solid #dce6da; border-radius:10px; background:#fff; color:#26392c; font:inherit; font-size:14px; line-height:1.55; resize:vertical; }
+      .guided-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+      .guided-primary,.guided-secondary { min-height:42px; padding:10px 14px; border:1px solid #cbdcc9; border-radius:11px; background:#e7f0e5; color:#203b27; font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
+      .guided-secondary { background:#fff; }
+      .guided-primary:disabled { opacity:.6; cursor:not-allowed; }
+      .guided-outcome { margin-top:16px; padding:14px; border:1px solid #dfe8df; border-radius:12px; background:#fff; }
+      .guided-outcome h5 { margin:0 0 12px; }
+      .guided-outcome section { padding:10px 0; border-top:1px solid #edf1eb; }
+      .guided-outcome h6 { margin:0 0 5px; color:#526653; font-size:11px; text-transform:capitalize; }
+      .guided-outcome p { margin:0; color:#34493a; font-size:12px; line-height:1.55; white-space:pre-wrap; }
+      .guided-outcome small { display:block; margin-top:4px; color:#7a867c; font-size:10px; }
+      .guided-status { margin-top:10px; color:#59705c; font-size:11px; }
+      .guided-status span { display:block; color:#9a5c43; margin-top:4px; }
+      .guided-details-toggle { margin-top:16px; padding:9px 0; border:0; background:transparent; color:#46654b; font:inherit; font-size:12px; font-weight:750; text-decoration:underline; cursor:pointer; }
+      .guided-detailed { margin-top:12px; padding-top:12px; border-top:1px solid #e5ebe2; }
+      .guided-detailed > p { color:#718073; font-size:11px; line-height:1.5; }
+      @media(max-width:640px) { .guided-columns { grid-template-columns:minmax(0,1fr); } .guided-appointments li { display:block; } .guided-actions button,.guided-primary { width:100%; } .guided-panel { padding:13px; } }
+    `}</style>
+  </section>
 }
