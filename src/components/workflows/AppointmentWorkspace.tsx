@@ -83,8 +83,8 @@ async function textFingerprint(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-function DetailedAppointmentWorkspace() {
-  const [open, setOpen] = useState(false)
+function DetailedAppointmentWorkspace({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  const [open, setOpen] = useState(initiallyOpen)
   const [recordId, setRecordId] = useState<string | null>(null)
   const [recordVersion, setRecordVersion] = useState(0)
   const [savedWorkspaces, setSavedWorkspaces] = useState<SavedWorkspace[]>([])
@@ -1139,7 +1139,7 @@ export default function AppointmentWorkspace() {
       <GuidedStageContent stage={stage} brief={brief} outcome={outcome} quickCapture={quickCapture} setQuickCapture={setQuickCapture} saving={saving} onSave={() => void saveCapture()} onRefreshOutcome={() => void refreshOutcome()} />
       <div className="guided-status" role="status" aria-live="polite">{saveMessage}{saveError && <span>{saveError}</span>}</div>
       <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => setShowDetailed(value => !value)}>{showDetailed ? 'Close detailed review and follow-up controls' : 'Open detailed review and follow-up controls'}</button>
-      {showDetailed && <div className="guided-detailed"><p>For caregivers who need to correct individual sections, review evidence or manage follow-up responsibilities. This is optional.</p><DetailedAppointmentWorkspace /></div>}
+      {showDetailed && <div className="guided-detailed"><p>For caregivers who need to correct individual sections, review evidence or manage follow-up responsibilities. This is optional.</p><DetailedAppointmentWorkspace initiallyOpen /></div>}
     </>}
     <style jsx>{`
       .guided-appointment { color:#26392c; }
