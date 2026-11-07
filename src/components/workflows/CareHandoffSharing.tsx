@@ -134,7 +134,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "",
   ];
   let truncated = false;
-  const includedSourceKeys = new Set(scopes.flatMap(sourceKeysForScope));
+  const includedSourceKeys = new Set(scopes.flatMap(scope => [...sourceKeysForScope(scope)]));
   const sourceTypes = new Map<string, string>();
   const sourceDetails = new Map<string, Record<string, unknown>>();
   for (const group of draft.sections) for (const source of group.items) {

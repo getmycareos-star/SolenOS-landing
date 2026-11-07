@@ -169,7 +169,7 @@ assert(!companionSource.includes("CARE_REVIEW_SIGNAL"), "Care-update identificat
 assert(!companionSource.includes("automatic background review"), "Frontend must not create a parallel care-review workflow");
 
 assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
-assert(companionSource.includes("setDeltaAutoInput({"), "Companion must enqueue the review through the existing Delta panel");
+assert(companionSource.includes("refreshPendingCareUpdates") && companionSource.includes("/companion/care-updates"), "Companion must refresh persisted caregiver-review proposals through the existing review API");
 // Provenance status is displayed only when returned by the backend; no write is inferred.
 const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
 assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
