@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
@@ -151,6 +151,8 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<Snapshot | null>(null);
   const [incomingReviewConfirmed, setIncomingReviewConfirmed] = useState(false);
+  const shareRequestId = useRef<string | null>(null);
+  const shareExpiry = useRef<string | null>(null);
 
   const eligibleRecipients = useMemo(() => directory.filter(item => item.can_receive_handoff), [directory]);
   const ineligibleRecipients = useMemo(() => directory.filter(item => !item.can_receive_handoff), [directory]);
@@ -223,7 +225,10 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
     setNotice("");
     try {
       const session = await ensureAnonymousSession();
-      const expiresAt = new Date(Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000).toISOString();
+      const requestId = shareRequestId.current ?? (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : "handoff-" + Date.now());
+      shareRequestId.current = requestId;
+      const expiresAt = shareExpiry.current ?? new Date(Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000).toISOString();
+      shareExpiry.current = expiresAt;
       const content = {
         template_sections: draft.template_sections ?? [],
         sections: draft.sections,
@@ -242,12 +247,14 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
         recipient_caregiver_ids: selectedRecipients,
         scope: ["lcr_summary"],
         expires_at: expiresAt,
-      }) as { id: string };
+      }, { "X-Request-ID": requestId }) as { id: string };
       if (!created?.id) throw new Error("The backend did not confirm a handoff ID. No successful share is assumed.");
       setNotice("The approved, persisted handoff was shared with the selected linked caregiver(s). Access expires " + formatDate(expiresAt) + ". Sharing did not change the Living Care Record.");
       setReviewConfirmed(false);
       setSelectedRecipients([]);
       setCaregiverNote("");
+      shareRequestId.current = null;
+      shareExpiry.current = null;
       await load();
     } catch (shareError) {
       setError(shareError instanceof Error ? shareError.message : "The handoff could not be shared. No success is assumed.");
@@ -352,14 +359,14 @@ export function CareHandoffSharing({ draft, audience, purpose }: Props) {
           ))}
           {ineligibleRecipients.map(recipient => <p key={recipient.caregiver_id} style={{ fontSize: 12, color: "#6b746c" }}>{recipient.name} — not eligible until required consent is active.</p>)}
           <label htmlFor="companion-handoff-expiry" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Access expiry</label>
-          <select id="companion-handoff-expiry" value={expiryDays} onChange={event => { setExpiryDays(event.target.value); setReviewConfirmed(false); }} style={{ ...field, maxWidth: 240 }}>
+          <select id="companion-handoff-expiry" value={expiryDays} onChange={event => { setExpiryDays(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} style={{ ...field, maxWidth: 240 }}>
             <option value="1">24 hours</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option>
           </select>
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
           <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
           <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview uses the backend-validated Qwen quotations, source references, evidence status, and separate event/recording times.</p>
           <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Additional caregiver note (optional)</label>
-          <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+          <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
