@@ -10,6 +10,15 @@ import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 import AppointmentWorkspace from '@/components/workflows/AppointmentWorkspace'
 import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
 
+const CASUAL_GREETING = /^(?:hi|hello|hey|hiya|howdy|how are you(?: doing| today)?|how'?s it going|what'?s up|good morning|good afternoon|good evening|good night|thanks|thank you(?: so much)?|bye|goodbye|see you)[.!?,;:]*$/i
+
+function formatHandoffDetail(value: unknown): string {
+  if (typeof value === 'string') return value.replaceAll('_', ' ')
+  if (value === null || value === undefined) return 'Not recorded'
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try { return JSON.stringify(value) ?? String(value) } catch { return String(value) }
+}
+
 interface HandoffDraftItem {
   source_type: string
   source_table: string
@@ -354,6 +363,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
+    const shouldIdentifyCareUpdates = !CASUAL_GREETING.test(submittedText)
     if (!submittedText || loading) return
     setRequestError(null)
     setLoading(true)
@@ -402,11 +412,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
-        care_update_candidates: Array.isArray(response.care_update_candidates) ? response.care_update_candidates : [],
+        care_update_candidates: shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) ? response.care_update_candidates : [],
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-      if (Array.isArray(response.care_update_candidates) && response.care_update_candidates.length > 0) {
+      if (shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) && response.care_update_candidates.length > 0) {
         setPendingCareUpdates(previous => {
           const merged = new Map(previous.map(item => [item.id, item]))
           for (const item of response.care_update_candidates as CareUpdateProposal[]) merged.set(item.id, item)
@@ -421,7 +431,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           window.setTimeout(() => void refreshAfterResponse(attempt + 1), 2500)
         }
       }
-      window.setTimeout(() => void refreshAfterResponse(), 1200)
+      if (shouldIdentifyCareUpdates) window.setTimeout(() => void refreshAfterResponse(), 1200)
 
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
@@ -662,7 +672,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           {item.due_at && <span>Due: {new Date(item.due_at).toLocaleString()}</span>}
                           <span>Evidence status: {item.epistemic_status.replaceAll('_', ' ')}</span>
                           {item.record_status && item.record_status !== 'not_recorded' && <span>Record status: {item.record_status.replaceAll('_', ' ')}</span>}
-                          {item.details && Object.entries(item.details).map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')}: {value.replaceAll('_', ' ')}</span>)}
+                          {item.details && Object.entries(item.details).map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')}: {formatHandoffDetail(value)}</span>)}
                           <span>Source: {item.source_table} · {item.source_id}</span>
                           {item.stale_warning && <strong>Older information — re-check before relying on it</strong>}
                         </div>
@@ -705,7 +715,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           onResumeDraft={(savedDraft) => {
             setHandoffDraft(savedDraft as HandoffDraft)
             setHandoffAudience(savedDraft.audience ?? (savedDraft.purpose === "professional_appointment" ? "professional" : "family"))
-            setHandoffPurpose(savedDraft.purpose === "professional_appointment" ? "appointment" : savedDraft.purpose === "return_to_care" ? "today" : "overview")
+            setHandoffPurpose(savedDraft.purpose === "return_to_care" ? "today" : "overview")
             setHandoffStep("purpose")
           }}
         />
