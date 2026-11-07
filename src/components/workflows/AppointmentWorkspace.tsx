@@ -13,6 +13,30 @@ type PreparationBrief = {
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
   limitations: string[]
   source_coverage: Record<string, string>
+  freshness_assessments?: Array<{
+    assessment_id: string
+    evidence_id: string
+    policy_id: string
+    domain_key: string
+    policy_version: string
+    freshness_status: string
+    source_time?: string | null
+    source_time_kind?: string | null
+    assessed_at: string
+    age_days?: number | null
+    rationale: string
+    interpretation_limit: string
+  }>
+  freshness_assessment_scope?: { status: string; bounded: boolean; limit: number; history_complete: boolean; interpretation_limit: string }
+  evidence_lineage?: {
+    status: string
+    evidence_ids_considered: string[]
+    groups: Array<{ lineage_id: string; evidence_ids: string[]; origin_group_keys: string[]; source_independence_status: string; interpretation_limit: string; basis?: string }>
+    interpretation_limit: string
+    scope_truncated?: boolean
+    lineage_nodes_examined?: number
+    relationship_records_examined?: number
+  }
 }
 type WorkspaceRecord = {
   id: string
@@ -218,6 +242,27 @@ export default function AppointmentWorkspace() {
               <p className="guided-muted">Unavailable or excluded sources are shown explicitly. Missing data is not evidence that a care event did not occur.</p>
               <ul>{Object.entries(brief.source_coverage).map(([source, status]) => <li key={source}><span>{source.replaceAll('_', ' ')}</span><strong>{status.replaceAll('_', ' ')}</strong></li>)}</ul>
             </section>
+            <section className="guided-coverage" aria-label="Evidence freshness assessments">
+              <h5>Evidence freshness assessments ({brief.freshness_assessments?.length ?? 0})</h5>
+              <p className="guided-muted">These assessments apply explicit domain policies. They are not proof that a source is true or clinically current.</p>
+              {brief.freshness_assessments?.length ? brief.freshness_assessments.map(item => <div key={item.assessment_id} className="guided-coverage-item">
+                <strong>{item.domain_key.replaceAll('_', ' ')} · {item.freshness_status.replaceAll('_', ' ')}</strong>
+                <small>Evidence {item.evidence_id} · source time {item.source_time ? new Date(item.source_time).toLocaleString() : 'unknown'} ({(item.source_time_kind || 'time kind unknown').replaceAll('_', ' ')}) · age {item.age_days == null ? 'unknown' : item.age_days + ' days'}</small>
+                <small>{item.rationale} {item.interpretation_limit}</small>
+              </div>) : brief.freshness_assessment_scope?.status === 'unavailable_schema'
+                ? <p role="status">Freshness assessment storage is unavailable in this database schema. Currentness is unknown.</p>
+                : <p>No freshness assessment was returned for evidence linked to this preparation snapshot. This is not proof that evidence is current.</p>}
+            </section>
+            {brief.evidence_lineage && <section className="guided-coverage" aria-label="Evidence source lineage">
+              <h5>Evidence source lineage · {brief.evidence_lineage.status.replaceAll('_', ' ')}</h5>
+              {brief.evidence_lineage.scope_truncated && <p role="status">Lineage retrieval reached a safety bound. Unreturned source relationships are unknown, not absent; independent corroboration is not established.</p>}
+              {brief.evidence_lineage.groups.length ? brief.evidence_lineage.groups.map(group => <div key={group.lineage_id} className="guided-coverage-item">
+                <strong>{group.source_independence_status.replaceAll('_', ' ')}</strong>
+                <small>Evidence IDs: {group.evidence_ids.join(', ')}{group.origin_group_keys.length ? ' · Origin: ' + group.origin_group_keys.join(', ') : ''}</small>
+                <small>{group.interpretation_limit}</small>
+              </div>) : <p>No explicit shared-source group was returned for the retrieved evidence. This does not establish that the sources are independent.</p>}
+              <p className="guided-footnote">{brief.evidence_lineage.interpretation_limit}</p>
+            </section>}
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknowns remain separate.</p>
           </>}
         </div>}
