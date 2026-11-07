@@ -171,7 +171,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [pendingCareUpdatesRefreshing, setPendingCareUpdatesRefreshing] = useState(false)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
-  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'overview' | null>(null)
+  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
   const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null)
   const [handoffDraftLoading, setHandoffDraftLoading] = useState(false)
   const [handoffDraftError, setHandoffDraftError] = useState<string | null>(null)
@@ -300,8 +300,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setHandoffDraft(null)
     try {
       await ensureAnonymousSession()
-      const purpose = handoffPurpose === 'today' ? 'family_transition' : 'period_summary'
-      const windowDays = handoffPurpose === 'today' ? 7 : 90
+      const purpose = handoffPurpose === 'today' ? 'family_transition' : handoffPurpose === 'appointment' ? 'professional_appointment' : 'period_summary'
+      const windowDays = handoffPurpose === 'today' ? 7 : handoffPurpose === 'appointment' ? 30 : 90
       const requestId = handoffPrepareRequestId.current ?? (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'handoff-draft-' + Date.now())
       handoffPrepareRequestId.current = requestId
       const draft = await postJSON('/handoff-drafts/prepare', {
@@ -589,11 +589,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               <div><span className="companion-handoff-recipient">{handoffAudience === 'family' ? 'FOR A FAMILY CAREGIVER' : 'FOR A PROFESSIONAL'}</span><h4>What do you need?</h4><p>Describe the handoff you want to prepare.</p></div>
               <button className="companion-handoff-back" type="button" onClick={() => { setHandoffStep('audience'); setHandoffPurpose(null); resetHandoffDraft() }}>Change recipient</button>
             </div>
+            {handoffAudience === 'professional' && (
+              <p className="companion-handoff-selection" role="note">Professional handoffs can be prepared for your private review only. Sharing with a professional is not available until their identity and role can be verified.</p>
+            )}
             <div className="companion-handoff-purpose-options">
               <button className={'companion-handoff-purpose' + (handoffPurpose === 'today' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'today'} onClick={() => { setHandoffPurpose('today'); handoffPrepareRequestId.current = null; }}>
                 <span className="companion-handoff-purpose-icon"><Clock3 size={19} aria-hidden="true" /></span>
                 <strong>Taking over today</strong>
                 <small>What the next caregiver needs to know for the day or shift.</small>
+              </button>
+              <button className={'companion-handoff-purpose' + (handoffPurpose === 'appointment' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'appointment'} onClick={() => { setHandoffPurpose('appointment'); handoffPrepareRequestId.current = null; }}>
+                <span className="companion-handoff-purpose-icon"><Stethoscope size={19} aria-hidden="true" /></span>
+                <strong>Doctor’s appointment</strong>
+                <small>Prepare relevant history, recent changes and questions for a visit.</small>
               </button>
               <button className={'companion-handoff-purpose' + (handoffPurpose === 'overview' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'overview'} onClick={() => { setHandoffPurpose('overview'); handoffPrepareRequestId.current = null; }}>
                 <span className="companion-handoff-purpose-icon"><FileText size={19} aria-hidden="true" /></span>
@@ -603,7 +611,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             </div>
             {handoffPurpose && !handoffDraft && (
               <div className="companion-handoff-prepare">
-                <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : 'Full care overview'}. SolenOS will prepare a reviewable draft from saved, authorised care records only.</p>
+                <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : handoffPurpose === 'appointment' ? 'Doctor’s appointment' : 'Full care overview'}. SolenOS will prepare a reviewable draft from saved, authorised care records only.</p>
                 <button className="companion-handoff-primary" type="button" onClick={() => void prepareHandoffDraft()} disabled={handoffDraftLoading}>
                   {handoffDraftLoading ? 'Preparing from saved records…' : 'Prepare handoff draft'}
                 </button>
@@ -715,7 +723,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           onResumeDraft={(savedDraft) => {
             setHandoffDraft(savedDraft as HandoffDraft)
             setHandoffAudience(savedDraft.audience ?? (savedDraft.purpose === "professional_appointment" ? "professional" : "family"))
-            setHandoffPurpose(savedDraft.purpose === "return_to_care" ? "today" : "overview")
+            setHandoffPurpose(["family_transition", "return_to_care"].includes(savedDraft.purpose) ? "today" : savedDraft.purpose === "professional_appointment" ? "appointment" : "overview")
             setHandoffStep("purpose")
           }}
         />
