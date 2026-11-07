@@ -137,6 +137,7 @@ assert.match(appointmentWorkspace, /not independently verified/, "appointment as
 assert.match(detailedAppointmentWorkspace, /postJSON\('\/open-loops'/, "appointment follow-up actions must persist through the shared Open Loops API");
 assert.match(detailedAppointmentWorkspace, /patchJSON\('\/open-loops\//, "appointment follow-up edits must update their persisted Open Loop");
 assert.match(detailedAppointmentWorkspace, /source_type: 'appointment_workspace'/, "follow-up actions must retain their appointment workspace origin");
+assert.match(detailedAppointmentWorkspace, /deadline_timezone: item\.due \? Intl\.DateTimeFormat\(\)\.resolvedOptions\(\)\.timeZone/, "appointment follow-up deadlines must retain the caregiver local timezone");
 assert.match(detailedAppointmentWorkspace, /appointment-follow-up:/, "follow-up creation must use a stable idempotency key");
 assert.match(detailedAppointmentWorkspace, /\/outcomes/, "marking a follow-up done must record an attributed outcome event");
 assert.match(detailedAppointmentWorkspace, /caregiver-reported outcome, not independently verified/, "caregiver-reported completion must not be treated as verified closure");
