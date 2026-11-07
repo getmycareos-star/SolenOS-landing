@@ -1093,7 +1093,6 @@ export default function AppointmentWorkspace() {
       if (record) {
         saved = await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), {
           expected_version: record.version_number,
-          appointment_id: appointmentId || undefined,
           status: nextStatus,
           payload,
           change_reason: 'Caregiver saved an optional appointment note',
@@ -1101,6 +1100,7 @@ export default function AppointmentWorkspace() {
         }) as GuidedWorkspace
       } else {
         saved = await postJSON('/appointment-workspaces', {
+          appointment_id: appointmentId || undefined,
           status: nextStatus,
           payload,
           change_reason: 'Caregiver saved an optional appointment note',
