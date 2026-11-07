@@ -86,9 +86,9 @@ assert(companion.includes("not proof") || companion.includes("not proof that sou
 console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
 
 const appointment = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert(appointment.includes("Evidence source lineage"), "Appointment preparation must render source lineage");
-assert(appointment.includes("scope_truncated"), "Appointment preparation must disclose bounded lineage retrieval");
-assert(appointment.includes("not establish that the sources are independent"), "Appointment preparation must not infer independence from missing lineage");
+assert(appointment.includes("Where this information came from"), "Appointment preparation must explain source connections in caregiver-facing language");
+assert(appointment.includes("data-source-scope-truncated") && appointment.includes("We could only check part of the available source history"), "Appointment preparation must disclose when only part of the source history could be checked");
+assert(appointment.includes("This does not establish that the sources are independent"), "Appointment preparation must not infer independence from missing lineage");
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
 
 const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
@@ -179,8 +179,8 @@ assert(companionPanel.includes("source_record_refs"), "Companion must carry type
 assert(companionPanel.includes("Inspect source record references"), "Companion must let caregivers inspect source record references");
 assert(companionPanel.includes("freshness assessments"), "Companion must distinguish freshness assessments from evidence truth");
 const appointmentWorkspace = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert(appointmentWorkspace.includes("Evidence freshness assessments"), "Appointment preparation must show freshness assessments");
-assert(appointmentWorkspace.includes("This is not proof that evidence is current"), "Appointment preparation must not treat absent freshness assessment as currentness");
-assert(appointmentWorkspace.includes("Freshness assessment storage is unavailable in this database schema"), "Appointment preparation must distinguish unavailable freshness schema from an empty result");
+assert(appointmentWorkspace.includes("When information was last reviewed"), "Appointment preparation must show review dates in caregiver-facing language");
+assert(appointmentWorkspace.includes("This does not mean the information is up to date"), "Appointment preparation must not treat missing review dates as proof of current information");
+assert(appointmentWorkspace.includes("Review dates are not available for some care information yet"), "Appointment preparation must explain when review dates cannot be checked");
 assert(companionPanel.includes("Freshness assessment storage is unavailable in this schema"), "Companion must expose freshness schema unavailability explicitly");
 
