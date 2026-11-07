@@ -598,11 +598,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 <strong>Taking over today</strong>
                 <small>What the next caregiver needs to know for the day or shift.</small>
               </button>
+              {handoffAudience === 'professional' && (
               <button className={'companion-handoff-purpose' + (handoffPurpose === 'appointment' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'appointment'} onClick={() => { setHandoffPurpose('appointment'); handoffPrepareRequestId.current = null; }}>
                 <span className="companion-handoff-purpose-icon"><Stethoscope size={19} aria-hidden="true" /></span>
                 <strong>Doctor’s appointment</strong>
                 <small>Prepare relevant history, recent changes and questions for a visit.</small>
               </button>
+              )}
               <button className={'companion-handoff-purpose' + (handoffPurpose === 'overview' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'overview'} onClick={() => { setHandoffPurpose('overview'); handoffPrepareRequestId.current = null; }}>
                 <span className="companion-handoff-purpose-icon"><FileText size={19} aria-hidden="true" /></span>
                 <strong>Full care overview</strong>
