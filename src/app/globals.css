@@ -5609,3 +5609,101 @@ input[type="file"] { width: 100%; white-space: normal; }
   .solenos-record-details-header { padding: 14px 14px 12px; }
   .solenos-record-details-content { padding: 14px 12px 24px; }
 }
+
+
+/* Companion care-update review: pending proposals remain distinct from saved LCR assertions. */
+.companion-pending-care-updates,
+.companion-care-update {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #dce7dc;
+  border-radius: 12px;
+  background: #fbfdfb;
+  color: #29392d;
+}
+.companion-pending-care-updates h3 {
+  margin: 0 0 2px;
+  color: #314b37;
+  font-size: 14px;
+  font-weight: 700;
+}
+.companion-care-update-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #344c38;
+  font-size: 13px;
+}
+.companion-care-update-heading span {
+  flex: 0 0 auto;
+  color: #6c786d;
+  font-size: 11px;
+}
+.companion-care-update > p {
+  margin: 0;
+  color: #26362b;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.companion-care-update .companion-care-update-source {
+  color: #69786c;
+  font-size: 11px;
+}
+.companion-care-update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.companion-care-update-actions label {
+  display: flex;
+  flex: 1 1 220px;
+  min-width: min(100%, 220px);
+  flex-direction: column;
+  gap: 6px;
+}
+.companion-care-update-actions input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #d7e0d7;
+  border-radius: 8px;
+  background: #fff;
+  color: #26362b;
+  font: inherit;
+  font-size: 13px;
+}
+.companion-care-update-actions button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #d4e0d4;
+  border-radius: 8px;
+  background: #edf4ed;
+  color: #26392b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.companion-care-update-actions button:hover:not(:disabled) { background: #e1eee1; }
+.companion-care-update-actions button:disabled { opacity: .55; cursor: wait; }
+.companion-care-update-actions button:focus-visible,
+.companion-care-update-actions input:focus-visible {
+  outline: 2px solid #789b7b;
+  outline-offset: 2px;
+}
+.companion-care-update-error {
+  margin: 0;
+  color: #9a3933;
+  font-size: 12px;
+}
+@media (max-width: 560px) {
+  .companion-care-update-actions { align-items: stretch; }
+  .companion-care-update-actions button { flex: 1 1 calc(50% - 8px); }
+  .companion-care-update-actions label { flex-basis: 100%; }
+}
