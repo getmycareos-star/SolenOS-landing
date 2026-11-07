@@ -611,10 +611,21 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <button className="companion-handoff-back" type="button" onClick={resetHandoffDraft}>Discard draft</button>
                 </div>
                 <p className="companion-handoff-draft-warning">{handoffDraft.warning}</p>
-                <p className="companion-handoff-draft-warning"><strong>Review preview only.</strong> This is not yet a complete, recipient-ready handoff. Several template areas have no verified source adapter. Do not treat missing sections as negative findings or share this preview as a complete care transfer.</p>
+                <p className="companion-handoff-draft-warning"><strong>Caregiver review required.</strong> Qwen may organise only exact quotations from retrieved records. Check each source status, event time, recording time, and uncertainty before sharing. Missing information is not a negative finding.</p>
+                <section className="companion-handoff-source-section" aria-label="Qwen handoff draft generation">
+                  <h5>Generated handoff document</h5>
+                  <p>Generation: {handoffDraft.generation_status ?? handoffDraft.generation?.status ?? "not available"} · Validation: {handoffDraft.validation_status ?? "not assessed"} · Model: {handoffDraft.generation?.model ?? "not reported"}</p>
+                  {handoffDraft.generation?.sections?.length ? handoffDraft.generation.sections.map((item, index) => (
+                    <article className="companion-handoff-source-item" key={item.source_ref + "-" + index}>
+                      <strong>{item.section}</strong>
+                      <p>{item.text}</p>
+                      <small>{item.epistemic_status ?? "not recorded"} · {item.record_status ?? "not recorded"} · Source {item.source_ref}</small>
+                    </article>
+                  )) : <p>Qwen drafting is unavailable or no eligible source quotations were returned. The structured source preparation remains available for review; this draft cannot be shared.</p>}
+                </section>
                 <div className="companion-handoff-draft-boundary">
                   <ShieldCheck size={16} aria-hidden="true" />
-                  <span>Read-only draft · {handoffDraft.source_references.length} source references · not shared · Living Care Record unchanged</span>
+                  <span>Saved draft · {handoffDraft.source_references.length} source references · not shared · Living Care Record unchanged</span>
                 </div>
                 {handoffDraft.evidence_lineage && (
                   <section className="companion-handoff-source-section" aria-label="Evidence source lineage">
