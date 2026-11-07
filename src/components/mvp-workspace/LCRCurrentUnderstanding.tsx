@@ -745,6 +745,9 @@ export function LCRCurrentUnderstanding() {
 
   useEffect(() => {
     void load();
+    const refreshAfterCareRecordWrite = () => { void load(); };
+    window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+    return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
   }, [load]);
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
