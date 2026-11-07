@@ -42,7 +42,8 @@ export default function StructuredDailyCapture() {
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
   const [reviewingCandidate, setReviewingCandidate] = useState<number | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
-  const [deltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
+  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
+  const [deltaToken, setDeltaToken] = useState(0);
   const [vitalError, setVitalError] = useState<string | null>(null);
   const [vitalFeedback, setVitalFeedback] = useState<string | null>(null);
   const [scaleError, setScaleError] = useState<string | null>(null);
