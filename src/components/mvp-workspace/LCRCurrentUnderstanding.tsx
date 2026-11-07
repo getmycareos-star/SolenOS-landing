@@ -745,6 +745,9 @@ export function LCRCurrentUnderstanding() {
 
   useEffect(() => {
     void load();
+    const refreshAfterCareRecordWrite = () => { void load(); };
+    window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+    return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
   }, [load]);
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
@@ -1443,7 +1446,7 @@ export function LCRCurrentUnderstanding() {
       </div>
 
       </details>
-      <details className="lcr-situation-assessment lcr-assessment-details"><summary>Record details and how this picture was prepared</summary><div aria-labelledby="lcr-situation-assessment-heading">
+      <details className="lcr-situation-assessment lcr-assessment-details"><summary>Record details — how this care picture was put together</summary><div aria-labelledby="lcr-situation-assessment-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-situation-assessment-heading">Care picture review</h3>
           <button type="button" className="lcr-text-action" onClick={() => void reassess()} disabled={assessmentLoading || loading}>
