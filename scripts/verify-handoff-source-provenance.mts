@@ -133,6 +133,8 @@ assert.match(appointmentWorkspace, /Save correction/, "caregiver corrections mus
 assert.match(appointmentWorkspace, /Reject/, "caregiver rejection must be available");
 assert.match(appointmentWorkspace, /not independently verified/, "appointment assertions must not be presented as clinically verified");
 assert.match(appointmentWorkspace, /refreshSavedWorkspace\(\)/, "guided appointment state must reload records saved through detailed controls");
+assert.match(appointmentWorkspace, /idempotency_key: requestKey/, "guided appointment notes must retry with a stable idempotency key");
+assert.match(detailedAppointmentWorkspace, /idempotency_key: requestKey/, "detailed appointment workspace writes must retry with a stable idempotency key");
 
 
 assert.match(detailedAppointmentWorkspace, /postJSON\('\/open-loops'/, "appointment follow-up actions must persist through the shared Open Loops API");
