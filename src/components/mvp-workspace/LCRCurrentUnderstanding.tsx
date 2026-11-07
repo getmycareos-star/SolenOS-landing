@@ -1666,10 +1666,10 @@ export function LCRCurrentUnderstanding() {
               <h3>Some care information is unavailable</h3>
               <p>We couldn’t load all of the available care information. The picture shown may be incomplete. Try refreshing later.</p>
               {projection.missing_required_sources.length > 0 && (
-                <p>Some important care information may be missing from this view.</p>
+                <p>Some important details are not available yet. Add what you know in Daily Care when you can.</p>
               )}
               {projection.missing_optional_sources.length > 0 && (
-                <p>Some additional care information may not be available right now.</p>
+                <p>Some additional details are not available yet. The care picture may become clearer as more information is recorded.</p>
               )}
             </div>
           )}

@@ -5,6 +5,8 @@ import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/clie
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
 
 type Stage = 'prepare' | 'during' | 'after'
+type AttendanceStatus = 'not_recorded' | 'attended' | 'cancelled' | 'rescheduled' | 'missed'
+type FollowUpStatus = 'Not started' | 'In progress' | 'Waiting for result' | 'Received' | 'Needs review' | 'Completed' | 'Cancelled'
 type EvidenceSource = {
   evidence_id: string
   type: string
@@ -52,14 +54,53 @@ type PreparationBrief = {
   }
   limitations: string[]
 }
-type FollowUp = { action: string; owner: string; due: string; status: 'Open' | 'In progress' | 'Done' | 'Needs clarification' }
+type SavedWorkspace = { id: string; appointment_id?: string | null; status: string; version_number: number; payload: Record<string, unknown>; updated_at?: string }
+type AppointmentConflict = { id: string; field: string; description: string; resolution_status: string; subject_type: string; subject_id: string }
+type AppointmentAssertion = { id: string; field: string; subject_id: string; asserted_value: string; source_label?: string | null; assertion_status: string }
+type HandoffAssignmentOption = { handoff_id: string; caregiver_id: string; name: string; expires_at?: string | null }
+type FollowUpOutcomeEvent = { id: string; action_id: string; outcome_status: string; related_outcome_id?: string | null; review_decision?: string | null; notes?: string | null; created_by_caregiver_id?: string | null; created_at?: string | null; received_at?: string | null; received_by_caregiver_id?: string | null; reviewed_at?: string | null; reviewed_by_caregiver_id?: string | null }
+type RegisteredActionSnapshot = { id: string; status: string; version: number; responsible_caregiver_id?: string | null; suggestion_id: string }
+type FollowUp = { action: string; owner: string; due: string; status: FollowUpStatus; resultStatus: 'Not expected' | 'Waiting' | 'Received' | 'Reviewed'; notes: string; register: boolean; assignedCaregiverId?: string; assignmentHandoffId?: string; registeredActionId?: string; resultText?: string; reviewNotes?: string; reviewDecision?: 'acknowledged' | 'follow_up_required' | 'disputed' | 'needs_clinician_review' | 'not_relevant'; resultReceivedEventId?: string; resultReviewedEventId?: string; resultReceivedAt?: string; resultReceivedByCaregiverId?: string; resultReviewedAt?: string; resultReviewedByCaregiverId?: string }
 
-const emptyFollowUp = (): FollowUp => ({ action: '', owner: '', due: '', status: 'Open' })
+const emptyFollowUp = (): FollowUp => ({ action: '', owner: '', due: '', status: 'Not started', resultStatus: 'Not expected', notes: '', register: false })
+
+const appointmentFieldLabel = (field: string) => ({
+  caregiverReport: 'What the caregiver reported',
+  clinicianFindings: 'What the professional said',
+  decisions: 'Decisions made',
+  instructions: 'Instructions given',
+  unanswered: 'Questions still unanswered',
+  medicationReconciliation: 'Medication information and questions',
+  testsReferrals: 'Tests and referrals',
+  pendingResults: 'Results still expected',
+  familySummary: 'What the family needs to know',
+} as Record<string, string>)[field] || field.replace(/([A-Z])/g, ' $1').replaceAll('_', ' ').trim()
+
+
+async function textFingerprint(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')
+}
 
 export default function AppointmentWorkspace() {
   const [open, setOpen] = useState(false)
   const [recordId, setRecordId] = useState<string | null>(null)
   const [recordVersion, setRecordVersion] = useState(0)
+  const [savedWorkspaces, setSavedWorkspaces] = useState<SavedWorkspace[]>([])
+  const [acceptedHandoffRecipients, setAcceptedHandoffRecipients] = useState<HandoffAssignmentOption[]>([])
+  const [followUpOutcomeEvents, setFollowUpOutcomeEvents] = useState<FollowUpOutcomeEvent[]>([])
+  const [registeredActionSnapshots, setRegisteredActionSnapshots] = useState<RegisteredActionSnapshot[]>([])
+  const [currentCaregiverId, setCurrentCaregiverId] = useState('')
+  const [appointmentConflicts, setAppointmentConflicts] = useState<AppointmentConflict[]>([])
+  const [appointmentAssertions, setAppointmentAssertions] = useState<AppointmentAssertion[]>([])
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
+  const [draftKey, setDraftKey] = useState('')
+  const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>('not_recorded')
+  const [actualVisitDate, setActualVisitDate] = useState('')
+  const [rescheduledDate, setRescheduledDate] = useState('')
+  const [testsReferrals, setTestsReferrals] = useState('')
+  const [approvedEvidenceFields, setApprovedEvidenceFields] = useState<string[]>([])
   const [loadingRecord, setLoadingRecord] = useState(false)
   const [savingRecord, setSavingRecord] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
@@ -92,38 +133,36 @@ export default function AppointmentWorkspace() {
   const [reviewStatus, setReviewStatus] = useState<'Awaiting documentation' | 'Follow-up pending' | 'Ready for review' | 'Closed with documented outstanding items'>('Awaiting documentation')
 
   const updateConcern = (index: number, value: string) => setTopConcerns(current => current.map((item, i) => i === index ? value : item))
-  const updateFollowUp = (index: number, key: keyof FollowUp, value: string) =>
+  const updateFollowUp = (index: number, key: keyof FollowUp, value: string | boolean) => {
     setFollowUps(current => current.map((item, i) => i === index ? { ...item, [key]: value } as FollowUp : item))
+    const invalidatesResultApproval =
+      key === 'resultText' ||
+      (key === 'resultStatus' && !['Received', 'Reviewed'].includes(String(value))) ||
+      (key === 'reviewDecision' && value === 'not_relevant') ||
+      (key === 'register' && value === false)
+    if (invalidatesResultApproval) {
+      setApprovedEvidenceFields(current => current.filter(field => field !== 'followUpResult:' + index))
+    }
+  }
   const addFollowUp = () => setFollowUps(current => [...current, emptyFollowUp()])
+  const updateFollowUpAssignment = (index: number, value: string) => {
+    const [handoffId, caregiverId] = value ? value.split('::') : ['', '']
+    setFollowUps(current => current.map((item, i) => i === index
+      ? { ...item, assignedCaregiverId: caregiverId || undefined, assignmentHandoffId: handoffId || undefined }
+      : item))
+  }
 
 
-  useEffect(() => {
-    if (!open) return
-    let cancelled = false
-    setLoadingRecord(true)
-    setSaveError('')
-    void (async () => {
-      try {
-        await ensureAnonymousSession()
-        try {
-          const brief = await getJSON('/appointment-workspaces/preparation-brief?window_days=90') as PreparationBrief
-          if (!cancelled) setLcrBrief(brief)
-          if (!cancelled) setBriefError('')
-        } catch (error) {
-          if (!cancelled) {
-            setLcrBrief(null)
-            setBriefError(error instanceof Error ? error.message : 'LCR preparation sources are unavailable.')
-          }
-        }
-        const response = await getJSON('/appointment-workspaces') as { items?: Array<{ id: string }> }
-        const first = response.items?.[0]
-        if (!first || cancelled) return
-        const record = await getJSON('/appointment-workspaces/' + encodeURIComponent(first.id)) as {
-          id: string; version_number: number; status: string; payload: Record<string, unknown>
-        }
-        if (cancelled) return
+  const applySavedWorkspace = (record: SavedWorkspace, outcomeEvents: FollowUpOutcomeEvent[] = followUpOutcomeEvents, actionSnapshots: RegisteredActionSnapshot[] = registeredActionSnapshots) => {
         const p = record.payload || {}
         setRecordId(record.id)
+        setSelectedAppointmentId(record.appointment_id || String(p.appointmentId || ''))
+        setDraftKey(String(p.draftKey || record.id))
+        setAttendanceStatus((['not_recorded', 'attended', 'cancelled', 'rescheduled', 'missed'].includes(String(p.attendanceStatus)) ? String(p.attendanceStatus) : 'not_recorded') as AttendanceStatus)
+        setActualVisitDate(String(p.actualVisitDate || ''))
+        setRescheduledDate(String(p.rescheduledDate || ''))
+        setTestsReferrals(String(p.testsReferrals || ''))
+        setApprovedEvidenceFields(Array.isArray(p.approvedEvidenceFields) ? p.approvedEvidenceFields.map(String) : [])
         setRecordVersion(record.version_number)
         setVisitPurpose(String(p.visitPurpose || ''))
         setClinician(String(p.clinician || ''))
@@ -146,12 +185,104 @@ export default function AppointmentWorkspace() {
         setMedicationReconciliation(String(p.medicationReconciliation || ''))
         setPendingResults(String(p.pendingResults || ''))
         setFamilySummary(String(p.familySummary || ''))
-        setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => ({ ...emptyFollowUp(), ...(item as Partial<FollowUp>) })) : [emptyFollowUp()])
+        setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => {
+          const saved = item as Partial<FollowUp>
+          const oldStatus = String(saved.status || '')
+          const status = (['Not started', 'In progress', 'Waiting for result', 'Received', 'Needs review', 'Completed', 'Cancelled'].includes(oldStatus) ? oldStatus : oldStatus === 'Done' ? 'Completed' : oldStatus === 'Open' ? 'Not started' : 'Needs review') as FollowUpStatus
+          const linkedEvents = outcomeEvents.filter(event => event.action_id === saved.registeredActionId)
+          const action = actionSnapshots.find(candidate => candidate.id === saved.registeredActionId)
+          const received = linkedEvents.filter(event => event.outcome_status === 'result_received').sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0]
+          const reviewed = linkedEvents.filter(event => event.outcome_status === 'result_reviewed').sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0]
+          const currentStatus = action ? ({
+            approved: 'Not started', in_progress: 'In progress', completed: 'Completed',
+            cancelled: 'Cancelled', deferred: 'Waiting for result', needs_clarification: 'Needs review',
+          } as Record<string, FollowUpStatus>)[action.status] || status : status
+          return {
+            ...emptyFollowUp(), ...saved, status: currentStatus,
+            assignedCaregiverId: action?.responsible_caregiver_id || saved.assignedCaregiverId,
+            resultStatus: reviewed ? 'Reviewed' : received ? 'Received' : saved.resultStatus || 'Not expected',
+            resultReceivedEventId: received?.id || saved.resultReceivedEventId,
+            resultReviewedEventId: reviewed?.id || saved.resultReviewedEventId,
+            resultReceivedAt: received?.received_at || saved.resultReceivedAt,
+            resultReceivedByCaregiverId: received?.received_by_caregiver_id || saved.resultReceivedByCaregiverId,
+            resultReviewedAt: reviewed?.reviewed_at || saved.resultReviewedAt,
+            resultReviewedByCaregiverId: reviewed?.reviewed_by_caregiver_id || saved.resultReviewedByCaregiverId,
+            reviewDecision: (reviewed?.review_decision as FollowUp['reviewDecision']) || saved.reviewDecision,
+          }
+        }) : [emptyFollowUp()])
         const validStatuses = ['Awaiting documentation', 'Follow-up pending', 'Ready for review', 'Closed with documented outstanding items'] as const
         setReviewStatus(validStatuses.includes(p.reviewStatus as typeof validStatuses[number]) ? p.reviewStatus as typeof validStatuses[number] : 'Awaiting documentation')
-        setSaveMessage('Loaded saved appointment workspace · version ' + record.version_number)
+        setSaveMessage('Your saved appointment notes are open.')
+    void ensureAnonymousSession().then(async session => {
+      const [conflicts, assertions] = await Promise.all([
+        getJSON('/care-continuity/contradictions/' + encodeURIComponent(session.person.id) + '?limit=100') as Promise<AppointmentConflict[]>,
+        getJSON('/care-continuity/assertions/' + encodeURIComponent(session.person.id) + '?limit=100') as Promise<AppointmentAssertion[]>,
+      ])
+      setAppointmentConflicts(conflicts.filter(item => item.subject_type === 'appointment' && item.subject_id === record.id && item.resolution_status === 'unresolved'))
+      setAppointmentAssertions(assertions.filter(item => item.subject_id === record.id))
+    }).catch(() => { setAppointmentConflicts([]); setAppointmentAssertions([]) })
+  }
+
+  const startAnotherAppointment = () => {
+    setRecordId(null); setRecordVersion(0); setSelectedAppointmentId(''); setDraftKey(crypto.randomUUID())
+    setAttendanceStatus('not_recorded'); setActualVisitDate(''); setRescheduledDate(''); setTestsReferrals(''); setApprovedEvidenceFields([]); setAppointmentConflicts([]); setAppointmentAssertions([])
+    setVisitPurpose(''); setClinician(''); setSpecialty(''); setVisitDate(''); setLocation(''); setAttendees('')
+    setTopConcerns(['', '', '']); setChanges(''); setSymptoms(''); setMedicationQuestions(''); setHistoryQuestions(''); setPracticalNotes('')
+    setConcernsDiscussed(''); setCaregiverReport(''); setClinicianFindings(''); setDecisions(''); setInstructions(''); setUnanswered('')
+    setMedicationReconciliation(''); setPendingResults(''); setFamilySummary(''); setFollowUps([emptyFollowUp()]); setReviewStatus('Awaiting documentation')
+    setStage('prepare'); setSaveMessage('A new appointment is ready to record.'); setSaveError('')
+  }
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setLoadingRecord(true)
+    setSaveError('')
+    void (async () => {
+      try {
+        const session = await ensureAnonymousSession()
+        setCurrentCaregiverId(session.caregiver.id)
+        if (!draftKey && typeof crypto !== 'undefined' && crypto.randomUUID) setDraftKey(crypto.randomUUID())
+        try {
+          const brief = await getJSON('/appointment-workspaces/preparation-brief?window_days=90') as PreparationBrief
+          if (!cancelled) setLcrBrief(brief)
+          if (!cancelled) setBriefError('')
+        } catch (error) {
+          if (!cancelled) {
+            setLcrBrief(null)
+            setBriefError('Your care history could not be loaded. You can still record this visit.')
+          }
+        }
+        const [response, handoffResponse, outcomeResponse, actionResponse] = await Promise.all([
+          getJSON('/appointment-workspaces') as Promise<{ items?: SavedWorkspace[] }>,
+          (getJSON('/handoffs/outbox') as Promise<{ items?: Array<{ id: string; scope?: string[]; expires_at?: string | null; is_expired?: boolean; recipients?: Array<{ caregiver_id: string; name?: string; status?: string }> }> }>).catch(() => ({ items: [] })),
+          (getJSON('/care-continuity/outcomes/' + encodeURIComponent(session.person.id)) as Promise<FollowUpOutcomeEvent[]>).catch(() => []),
+          (getJSON('/registered-actions/' + encodeURIComponent(session.person.id)) as Promise<RegisteredActionSnapshot[]>).catch(() => []),
+        ])
+        const items = response.items || []
+        const outcomeEvents = Array.isArray(outcomeResponse) ? outcomeResponse : []
+        const actionSnapshots = Array.isArray(actionResponse) ? actionResponse : []
+        if (!cancelled) {
+          setFollowUpOutcomeEvents(outcomeEvents)
+          setRegisteredActionSnapshots(actionSnapshots)
+        }
+        const assignmentOptions = (handoffResponse.items || []).flatMap(handoff =>
+          !handoff.is_expired && (handoff.scope || []).includes('open_loops')
+            ? (handoff.recipients || []).filter(recipient => recipient.status === 'accepted').map(recipient => ({
+                handoff_id: handoff.id,
+                caregiver_id: recipient.caregiver_id,
+                name: recipient.name || 'Linked caregiver',
+                expires_at: handoff.expires_at,
+              }))
+            : []
+        )
+        if (!cancelled) setAcceptedHandoffRecipients(assignmentOptions)
+        if (cancelled) return
+        setSavedWorkspaces(items)
+        const first = items[0]
+        if (!first) return
+        applySavedWorkspace(first, outcomeEvents, actionSnapshots)
       } catch (error) {
-        if (!cancelled) setSaveError(error instanceof Error ? error.message : 'Could not load saved appointment workspace.')
+        if (!cancelled) setSaveError('We could not open these saved appointment notes. Try again.')
       } finally {
         if (!cancelled) setLoadingRecord(false)
       }
@@ -160,11 +291,32 @@ export default function AppointmentWorkspace() {
   }, [open])
 
   const saveWorkspace = async () => {
+    if (attendanceStatus === 'rescheduled' && !rescheduledDate) {
+      setSaveError('Add the new appointment date before saving a rescheduled visit.')
+      return
+    }
+    for (const item of followUps) {
+      if (['Received', 'Reviewed'].includes(item.resultStatus) && (!item.register || !item.action.trim())) {
+        setSaveError('Register the follow-up action before recording a result against it.')
+        return
+      }
+      if (['Received', 'Reviewed'].includes(item.resultStatus) && !item.resultText?.trim()) {
+        setSaveError('Describe the result that was received before saving its status.')
+        return
+      }
+      if (item.resultStatus === 'Reviewed' && (!item.reviewDecision || !item.reviewNotes?.trim())) {
+        setSaveError('Choose a review decision and record what was concluded after reviewing the result.')
+        return
+      }
+    }
+    const activeDraftKey = draftKey || crypto.randomUUID()
+    setDraftKey(activeDraftKey)
     setSavingRecord(true)
     setSaveError('')
     setSaveMessage('')
+    let baseWorkspaceSaved = false
     const payload = {
-      visitPurpose, clinician, specialty, visitDate, location, attendees, topConcerns,
+      draftKey: activeDraftKey, appointmentId: selectedAppointmentId || null, attendanceStatus, actualVisitDate, actualVisitAt: actualVisitDate ? new Date(actualVisitDate).toISOString() : undefined, rescheduledDate, rescheduledAt: rescheduledDate ? new Date(rescheduledDate).toISOString() : undefined, testsReferrals, approvedEvidenceFields, visitPurpose, clinician, specialty, visitDate, location, attendees, topConcerns,
       changes, symptoms, medicationQuestions, historyQuestions, practicalNotes,
       concernsDiscussed, caregiverReport, clinicianFindings, decisions, instructions,
       unanswered, medicationReconciliation, pendingResults, familySummary, followUps, reviewStatus,
@@ -176,25 +328,317 @@ export default function AppointmentWorkspace() {
       },
     }
     try {
-      await ensureAnonymousSession()
+      const session = await ensureAnonymousSession()
+      const sourceFields: Array<[string, string, string]> = [
+        ['caregiverReport', 'What the person or caregiver reported', caregiverReport],
+        ['clinicianFindings', 'What the professional said', clinicianFindings],
+        ['decisions', 'Decisions made', decisions],
+        ['instructions', 'Instructions given', instructions],
+        ['unanswered', 'Questions still unanswered', unanswered],
+        ['medicationReconciliation', 'Medication information and questions', medicationReconciliation],
+        ['testsReferrals', 'Tests and referrals', testsReferrals],
+        ['pendingResults', 'Results still expected', pendingResults],
+        ['familySummary', 'What the family needs to know', familySummary],
+      ]
+      const evidenceByField: Record<string, string> = {}
+      for (const [field, label, sourceText] of sourceFields) {
+        if (!sourceText.trim()) continue
+        const fingerprint = await textFingerprint(sourceText)
+        const evidence = await postJSON('/evidence', {
+          person_id: session.person.id,
+          type: 'appointment_note',
+          evidence_kind: 'caregiver_report',
+          epistemic_status: 'caregiver_reported',
+          source_text: sourceText,
+          source_type: field === 'clinicianFindings' ? 'caregiver_report_of_professional_statement' : 'caregiver_report',
+          reported_by_label: session.caregiver.name || 'Caregiver',
+          reported_by_caregiver_id: session.caregiver.id,
+          uploaded_by_caregiver_id: session.caregiver.id,
+          occurred_at: actualVisitDate ? new Date(actualVisitDate).toISOString() : undefined,
+          collection_method: 'manual',
+          extra_metadata: { appointment_draft_key: activeDraftKey, field, label },
+          ingestion_key: 'appt-' + activeDraftKey + '-' + field + '-' + fingerprint.slice(0, 24),
+        }) as { id: string }
+        evidenceByField[field] = evidence.id
+      }
+      const followUpEvidence: Record<number, string> = {}
+      const resultEvidenceByIndex: Record<number, string> = {}
+      for (let index = 0; index < followUps.length; index += 1) {
+        const item = followUps[index]
+        if (!item.register || !item.action.trim()) continue
+        const sourceText = [item.action, item.owner ? 'Responsible person: ' + item.owner : '', item.due ? 'Due: ' + item.due : '', item.notes].filter(Boolean).join('\\n')
+        const fingerprint = await textFingerprint(sourceText)
+        const evidence = await postJSON('/evidence', {
+          person_id: session.person.id,
+          type: 'appointment_follow_up',
+          evidence_kind: 'caregiver_report',
+          epistemic_status: 'caregiver_reported',
+          source_text: sourceText,
+          source_type: 'caregiver_recorded_follow_up',
+          reported_by_label: session.caregiver.name || 'Caregiver',
+          reported_by_caregiver_id: session.caregiver.id,
+          uploaded_by_caregiver_id: session.caregiver.id,
+          occurred_at: actualVisitDate ? new Date(actualVisitDate).toISOString() : undefined,
+          collection_method: 'manual',
+          extra_metadata: { appointment_draft_key: activeDraftKey, follow_up_index: index },
+          ingestion_key: 'appt-' + activeDraftKey + '-followup-' + index + '-' + fingerprint.slice(0, 20),
+        }) as { id: string }
+        followUpEvidence[index] = evidence.id
+      }
+      for (let index = 0; index < followUps.length; index += 1) {
+        const item = followUps[index]
+        if (!item.register || !['Received', 'Reviewed'].includes(item.resultStatus)) continue
+        if (!item.resultText?.trim()) throw new Error('Add the received result before saving its receipt.')
+        const resultFingerprint = await textFingerprint(item.resultText.trim())
+        const evidence = await postJSON('/evidence', {
+          person_id: session.person.id,
+          type: 'appointment_result',
+          evidence_kind: 'caregiver_report',
+          epistemic_status: 'caregiver_reported',
+          source_text: item.resultText.trim(),
+          source_type: 'caregiver_recorded_received_result',
+          reported_by_label: session.caregiver.name || 'Caregiver',
+          reported_by_caregiver_id: session.caregiver.id,
+          uploaded_by_caregiver_id: session.caregiver.id,
+          collection_method: 'manual',
+          extra_metadata: { appointment_draft_key: activeDraftKey, follow_up_index: index, result_received: true },
+          ingestion_key: 'appt-' + activeDraftKey + '-result-' + index + '-' + resultFingerprint.slice(0, 24),
+        }) as { id: string }
+        resultEvidenceByIndex[index] = evidence.id
+      }
+      const durablePayload = { ...payload, evidenceByField, followUpEvidence, resultEvidenceByIndex, evidence_ids: [...Object.values(evidenceByField), ...Object.values(followUpEvidence), ...Object.values(resultEvidenceByIndex)] }
+      let savedRecordId: string
+      let savedRecordVersion = recordVersion
+      const linkedFollowUps = followUps.map(item => ({ ...item }))
+      const createdOutcomeEvents: FollowUpOutcomeEvent[] = []
       if (recordId) {
+        savedRecordId = recordId
         const updated = await patchJSON('/appointment-workspaces/' + encodeURIComponent(recordId), {
           expected_version: recordVersion,
+          idempotency_key: activeDraftKey + '-v' + String(recordVersion + 1),
           status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
-          payload, change_reason: 'Caregiver saved appointment workspace',
+          payload: durablePayload, change_reason: 'Caregiver saved appointment workspace',
         }) as { version_number: number }
         setRecordVersion(updated.version_number)
-        setSaveMessage('Saved securely · version ' + updated.version_number + '. Not yet reconciled into LCR facts.')
+        savedRecordVersion = updated.version_number
+        baseWorkspaceSaved = true
       } else {
         const created = await postJSON('/appointment-workspaces', {
-          status: 'preparation', payload, change_reason: 'Initial caregiver appointment workspace save',
+          appointment_id: selectedAppointmentId || null, status: 'outcome_pending', payload: durablePayload, change_reason: 'Initial caregiver appointment workspace save', idempotency_key: activeDraftKey,
         }) as { id: string; version_number: number }
         setRecordId(created.id)
+        savedRecordId = created.id
         setRecordVersion(created.version_number)
-        setSaveMessage('Saved securely · version ' + created.version_number + '. Not yet reconciled into LCR facts.')
+        savedRecordVersion = created.version_number
+        baseWorkspaceSaved = true
       }
+      try {
+        const refreshedWorkspaces = await getJSON('/appointment-workspaces') as { items?: SavedWorkspace[] }
+        setSavedWorkspaces(refreshedWorkspaces.items || [])
+      } catch { /* The saved appointment remains available on the next refresh. */ }
+      const savedActions = await getJSON('/registered-actions/' + encodeURIComponent(session.person.id)) as RegisteredActionSnapshot[]
+      const updatedActionSnapshots = [...savedActions]
+      const upsertActionSnapshot = (snapshot: RegisteredActionSnapshot) => {
+        const existingIndex = updatedActionSnapshots.findIndex(action => action.id === snapshot.id)
+        if (existingIndex >= 0) updatedActionSnapshots[existingIndex] = snapshot
+        else updatedActionSnapshots.push(snapshot)
+      }
+      for (let index = 0; index < followUps.length; index += 1) {
+        const item = followUps[index]
+        const evidenceId = followUpEvidence[index]
+        if (!item.register || !item.action.trim() || !evidenceId) continue
+        const sourceText = [item.action, item.owner ? 'Responsible person: ' + item.owner : '', item.due ? 'Due: ' + item.due : '', item.notes].filter(Boolean).join('\\n')
+        const sourceFingerprint = await textFingerprint(sourceText)
+        const suggestionPrefix = 'appointment-' + activeDraftKey + '-followup-' + index + '-'
+        const suggestionId = suggestionPrefix + sourceFingerprint.slice(0, 20)
+        const targetStatus = item.status === 'Completed' ? 'completed' : item.status === 'Cancelled' ? 'cancelled' : item.status === 'Not started' ? 'approved' : 'in_progress'
+        let registered = savedActions.find(action => action.suggestion_id === suggestionId)
+        if (!registered) {
+          registered = await postJSON('/registered-actions/' + encodeURIComponent(session.person.id) + '/approve', {
+            explicit_approval: true,
+            idempotency_key: 'appointment-' + activeDraftKey + '-action-' + index + '-' + sourceFingerprint.slice(0, 20),
+            suggestion_id: suggestionId,
+            title: item.action,
+            action_type: 'follow_up',
+            rationale: 'Caregiver-approved next step. ' + (item.owner ? 'Responsible person noted: ' + item.owner + '. ' : '') + (item.due ? 'Due: ' + item.due + '. ' : '') + item.notes,
+            limitations: 'A name here is only a note; SolenOS does not notify that person.',
+            evidence_ids: [evidenceId],
+            create_reminder: Boolean(item.due),
+            reminder_due_at: item.due ? new Date(item.due + 'T09:00:00').toISOString() : undefined,
+          }) as { id: string; suggestion_id: string; status: string; version: number; responsible_caregiver_id?: string | null }
+        }
+        for (const prior of savedActions.filter(action => action.suggestion_id.startsWith(suggestionPrefix) && action.suggestion_id !== suggestionId && ['approved', 'in_progress'].includes(action.status))) {
+          if (prior.responsible_caregiver_id && prior.responsible_caregiver_id !== session.caregiver.id) {
+            throw new Error('A follow-up already assigned to another caregiver must be updated by that caregiver. The existing responsibility was not changed.')
+          }
+          const cancelled = await patchJSON('/registered-actions/' + encodeURIComponent(prior.id) + '/status', {
+            status: 'cancelled',
+            expected_version: prior.version,
+            reason: 'This follow-up was replaced by an updated caregiver entry.',
+          }) as RegisteredActionSnapshot
+          upsertActionSnapshot(cancelled)
+        }
+        if (registered.status !== targetStatus) {
+          registered = await patchJSON('/registered-actions/' + encodeURIComponent(registered.id) + '/status', {
+            status: targetStatus,
+            expected_version: registered.version,
+            explicit_completion_confirmation: targetStatus === 'completed',
+            reason: 'Caregiver updated this appointment follow-up. Result status: ' + item.resultStatus,
+          }) as typeof registered
+        }
+        if (!['completed', 'cancelled'].includes(targetStatus) && item.assignedCaregiverId && item.assignmentHandoffId && registered.responsible_caregiver_id !== item.assignedCaregiverId) {
+          if (registered.responsible_caregiver_id && registered.responsible_caregiver_id !== session.caregiver.id) {
+            throw new Error('Only the currently responsible caregiver can transfer this follow-up again.')
+          }
+          const assignmentFingerprint = await textFingerprint(registered.id + '|' + item.assignedCaregiverId + '|' + item.assignmentHandoffId)
+          registered = await patchJSON('/registered-actions/' + encodeURIComponent(registered.id) + '/assignee', {
+            target_caregiver_id: item.assignedCaregiverId,
+            handoff_id: item.assignmentHandoffId,
+            expected_version: registered.version,
+            idempotency_key: 'appointment-' + activeDraftKey + '-assign-' + index + '-' + assignmentFingerprint.slice(0, 20),
+            reason: 'The receiving caregiver accepted the appointment follow-up handoff.',
+          }) as typeof registered
+        }
+        upsertActionSnapshot(registered)
+        linkedFollowUps[index] = { ...item, registeredActionId: registered.id }
+        if (['Received', 'Reviewed'].includes(item.resultStatus)) {
+          const resultEvidenceId = resultEvidenceByIndex[index]
+          if (!resultEvidenceId) throw new Error('The received result has no saved source evidence.')
+          const resultFingerprint = await textFingerprint(item.resultText!.trim())
+          const received = await postJSON('/care-continuity/action-outcomes', {
+            action_id: registered.id,
+            action_type: 'follow_up_result',
+            outcome_status: 'result_received',
+            notes: item.resultText!.trim(),
+            evidence_ids: [resultEvidenceId],
+            idempotency_key: 'appt-' + activeDraftKey + '-result-received-' + index + '-' + resultFingerprint.slice(0, 16),
+          }) as FollowUpOutcomeEvent
+          createdOutcomeEvents.push(received)
+          linkedFollowUps[index] = {
+            ...linkedFollowUps[index], resultReceivedEventId: received.id, resultStatus: 'Received',
+            resultReceivedAt: received.received_at ?? received.created_at ?? undefined,
+            resultReceivedByCaregiverId: received.received_by_caregiver_id ?? received.created_by_caregiver_id ?? undefined,
+          }
+          if (item.resultStatus === 'Reviewed') {
+            const reviewFingerprint = await textFingerprint((item.reviewNotes || '').trim())
+            const reviewed = await postJSON('/care-continuity/action-outcomes', {
+              action_id: registered.id,
+              action_type: 'follow_up_result',
+              outcome_status: 'result_reviewed',
+              related_outcome_id: received.id,
+              review_decision: item.reviewDecision,
+              notes: item.reviewNotes!.trim(),
+              evidence_ids: [resultEvidenceId],
+              idempotency_key: 'appt-' + activeDraftKey + '-result-reviewed-' + index + '-' + item.reviewDecision + '-' + resultFingerprint.slice(0, 10) + '-' + reviewFingerprint.slice(0, 10),
+            }) as FollowUpOutcomeEvent
+            createdOutcomeEvents.push(reviewed)
+            linkedFollowUps[index] = {
+              ...linkedFollowUps[index], resultReviewedEventId: reviewed.id, resultStatus: 'Reviewed',
+              resultReviewedAt: reviewed.reviewed_at ?? reviewed.created_at ?? undefined,
+              resultReviewedByCaregiverId: reviewed.reviewed_by_caregiver_id ?? reviewed.created_by_caregiver_id ?? undefined,
+              reviewDecision: item.reviewDecision,
+            }
+          }
+        }
+      }
+      if (linkedFollowUps.some(item => item.registeredActionId || item.resultReceivedEventId || item.resultReviewedEventId)) {
+        const linked = await patchJSON('/appointment-workspaces/' + encodeURIComponent(savedRecordId), {
+          expected_version: savedRecordVersion,
+          idempotency_key: activeDraftKey + '-links-v' + String(savedRecordVersion + 1),
+          status: ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus],
+          payload: { ...durablePayload, followUps: linkedFollowUps },
+          change_reason: 'Saved links to registered follow-ups and result history.',
+        }) as { version_number: number }
+        savedRecordVersion = linked.version_number
+        setRecordVersion(linked.version_number)
+      }
+      setFollowUps(linkedFollowUps)
+      setRegisteredActionSnapshots(updatedActionSnapshots)
+      if (createdOutcomeEvents.length) setFollowUpOutcomeEvents(current => [...current, ...createdOutcomeEvents.filter(event => !current.some(existing => existing.id === event.id))])
+      if (actualVisitDate && attendanceStatus === 'attended' && approvedEvidenceFields.length) {
+        const assertions = await getJSON('/care-continuity/assertions/' + encodeURIComponent(session.person.id) + '?limit=200') as Array<{ id: string; subject_type: string; subject_id: string; field: string; asserted_value: string; evidence_ids: string[]; assertion_status: string }>
+        for (const field of approvedEvidenceFields) {
+          const source = sourceFields.find(entry => entry[0] === field)
+          const evidenceId = evidenceByField[field]
+          if (!source || !evidenceId || !source[2].trim()) continue
+          const existing = assertions.find(item => item.subject_type === 'appointment' && item.subject_id === savedRecordId && item.field === field && item.asserted_value === source[2] && item.evidence_ids?.includes(evidenceId))
+          let assertionId = existing?.id
+          if (!existing) {
+            const created = await postJSON('/care-continuity/assertions', {
+              subject_type: 'appointment',
+              subject_id: savedRecordId,
+              field,
+              assertion_kind: 'time_bound_observation',
+              asserted_value: source[2],
+              source_label: field === 'clinicianFindings' ? 'Caregiver-reported professional statement' : 'Caregiver report',
+              source_text: source[2],
+              evidence_ids: [evidenceId],
+              observed_at: new Date(actualVisitDate).toISOString(),
+            }) as { id: string; subject_type: string; subject_id: string; field: string; asserted_value: string; evidence_ids: string[]; assertion_status: string }
+            assertionId = created.id
+            assertions.push(created)
+          }
+          if (assertionId && existing?.assertion_status !== 'accepted') {
+            await patchJSON('/care-continuity/assertions/' + encodeURIComponent(assertionId) + '/status', { assertion_status: 'accepted' })
+          }
+        }
+      }
+      const approvedFollowUpResultFields = approvedEvidenceFields.filter(field => field.startsWith('followUpResult:'))
+      if (approvedFollowUpResultFields.length) {
+        const resultAssertions = await getJSON('/care-continuity/assertions/' + encodeURIComponent(session.person.id) + '?limit=200') as Array<{ id: string; subject_type: string; subject_id: string; field: string; asserted_value: string; evidence_ids: string[]; assertion_status: string }>
+        for (const approvalField of approvedFollowUpResultFields) {
+          const index = Number(approvalField.split(':')[1])
+          const item = followUps[index]
+          const evidenceId = resultEvidenceByIndex[index]
+          if (!item || !evidenceId || !item.resultText?.trim()) continue
+          const assertionField = 'followUpResult_' + index
+          const receivedEventId = linkedFollowUps[index]?.resultReceivedEventId || item.resultReceivedEventId
+          const receivedEvent = createdOutcomeEvents.find(event => event.id === receivedEventId) || followUpOutcomeEvents.find(event => event.id === receivedEventId)
+          const observedAt = receivedEvent?.received_at || receivedEvent?.created_at || new Date().toISOString()
+          const existing = resultAssertions.find(assertion => assertion.subject_type === 'appointment' && assertion.subject_id === savedRecordId && assertion.field === assertionField && assertion.asserted_value === item.resultText!.trim() && assertion.evidence_ids?.includes(evidenceId))
+          let assertionId = existing?.id
+          if (!existing) {
+            const created = await postJSON('/care-continuity/assertions', {
+              subject_type: 'appointment',
+              subject_id: savedRecordId,
+              field: assertionField,
+              assertion_kind: 'time_bound_observation',
+              asserted_value: item.resultText.trim(),
+              source_label: 'Caregiver-reported follow-up result',
+              source_text: item.resultText.trim(),
+              evidence_ids: [evidenceId],
+              observed_at: observedAt,
+            }) as { id: string; assertion_status: string }
+            assertionId = created.id
+            resultAssertions.push({
+              id: created.id, subject_type: 'appointment', subject_id: savedRecordId,
+              field: assertionField, asserted_value: item.resultText.trim(),
+              evidence_ids: [evidenceId], assertion_status: created.assertion_status,
+            })
+          }
+          const requiresFurtherReview = ['disputed', 'needs_clinician_review', 'not_relevant'].includes(item.reviewDecision || '')
+          if (assertionId && !requiresFurtherReview && existing?.assertion_status !== 'accepted') {
+            await patchJSON('/care-continuity/assertions/' + encodeURIComponent(assertionId) + '/status', { assertion_status: 'accepted' })
+          }
+        }
+      }
+      const [latestConflicts, latestAssertions] = await Promise.all([
+        getJSON('/care-continuity/contradictions/' + encodeURIComponent(session.person.id) + '?limit=100') as Promise<AppointmentConflict[]>,
+        getJSON('/care-continuity/assertions/' + encodeURIComponent(session.person.id) + '?limit=100') as Promise<AppointmentAssertion[]>,
+      ])
+      setAppointmentConflicts(latestConflicts.filter(item => item.subject_type === 'appointment' && item.subject_id === savedRecordId && item.resolution_status === 'unresolved'))
+      setAppointmentAssertions(latestAssertions.filter(item => item.subject_id === savedRecordId))
+      setSaveMessage('Appointment notes and available follow-up updates have been saved.')
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Save failed. Your unsaved edits remain on this screen.')
+      if (baseWorkspaceSaved) {
+        const detail = error instanceof Error ? error.message : ''
+        const responsibilityConflict = /assigned to another caregiver|currently responsible caregiver/i.test(detail)
+        setSaveError(responsibilityConflict
+          ? detail
+          : 'Your appointment notes were saved, but some follow-up updates could not be confirmed. Keep this screen open and retry; saved steps are protected against duplicate creation.')
+      } else {
+        setSaveError('We could not save these appointment notes. Your entries are still on this screen. Try again.')
+      }
     } finally {
       setSavingRecord(false)
     }
@@ -215,7 +659,11 @@ export default function AppointmentWorkspace() {
       </div>
 
       {open && <>
-        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from LCR facts. Caregiver reports, caregiver-recorded clinician statements, and AI suggestions remain distinct; saving does not verify clinical statements or silently change the LCR.</span></div>
+        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>Your notes stay connected to the person’s care history. What you report, what a professional said, and what a document records are kept distinct.</span></div>
+        {savedWorkspaces.length > 0 && <section className="appointment-saved-list" aria-label="Saved appointment notes">
+          <div className="appointment-saved-list-heading"><h4>Previous appointment notes</h4><button type="button" className="appointment-secondary" onClick={startAnotherAppointment}>Start another appointment</button></div>
+          <div className="appointment-saved-list-items">{savedWorkspaces.map(item => { const linked = lcrBrief?.appointments.find(appointment => appointment.source_id === item.appointment_id); return <button key={item.id} type="button" className="appointment-saved-item" aria-pressed={recordId === item.id} onClick={() => applySavedWorkspace(item)}><strong>{linked?.title || 'Appointment notes'}</strong><span>{item.updated_at ? 'Updated ' + new Date(item.updated_at).toLocaleDateString() : 'Saved appointment'}</span></button> })}</div>
+        </section>}
         <nav className="appointment-stages" aria-label="Appointment stages">
           {([
             ['prepare', '1. Before the visit'],
@@ -231,53 +679,76 @@ export default function AppointmentWorkspace() {
             <div className="appointment-lcr-brief-heading">
               <div>
                 <h5 id="appointment-lcr-brief-title">Relevant information from the Living Care Record</h5>
-                <p>{lcrBrief ? 'Read-only source snapshot · ' + new Date(lcrBrief.snapshot_at).toLocaleString() : 'This section requires the authenticated appointment preparation API.'}</p>
+                <p>{lcrBrief ? 'Care history updated · ' + new Date(lcrBrief.snapshot_at).toLocaleString() : 'Your care history could not be loaded.'}</p>
               </div>
-              <span className="appointment-source-pill">{lcrBrief ? 'Source-linked' : 'Not loaded'}</span>
+              <span className="appointment-source-pill">{lcrBrief ? 'From your care record' : 'Not available'}</span>
             </div>
-            {briefError && <p className="appointment-brief-warning" role="status">LCR sources could not be loaded: {briefError}. This is not evidence that no care history exists.</p>}
+            {briefError && <p className="appointment-brief-warning" role="status">Care history could not be loaded: {briefError}. This is not evidence that no care history exists.</p>}
             {lcrBrief && <>
               <div className="appointment-brief-grid">
                 <div><strong>Recorded facts ({lcrBrief.facts.length})</strong>
-                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>{item.fact_type} · {item.epistemic_status} · Source {item.source_id}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
+                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id} data-record-reference={item.source_id} data-epistemic-status={item.epistemic_status}><span>{item.value || 'No value recorded'}</span><small>{item.fact_type.replaceAll('_', ' ')}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{source.reported_by_label || source.original_author || 'Source not identified'} · {source.epistemic_status === 'caregiver_reported' ? 'Reported by a caregiver' : source.epistemic_status === 'professional_recorded' ? 'Recorded by a professional' : source.epistemic_status === 'document_extracted' ? 'Taken from a document' : 'Source status not confirmed'}{source.occurred_at ? ' · ' + new Date(source.occurred_at).toLocaleDateString() : ''}</small>)}</li>)}</ul> : <p>No recorded information is available in this section yet.</p>}
                 </div>
-                <div><strong>Recent care events ({lcrBrief.events.length})</strong>
-                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {item.status} · Source {item.source_id}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
+                <div><strong>Recent updates ({lcrBrief.events.length})</strong>
+                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id} data-record-reference={item.source_id}><span>{item.title}</span><small>{item.occurred_at ? new Date(item.occurred_at).toLocaleString() : 'Time not recorded'}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>{source.reported_by_label || source.original_author || 'Source not identified'} · {source.epistemic_status === 'caregiver_reported' ? 'Reported by a caregiver' : source.epistemic_status === 'professional_recorded' ? 'Recorded by a professional' : source.epistemic_status === 'document_extracted' ? 'Taken from a document' : 'Source status not confirmed'}</small>)}</li>)}</ul> : <p>No recent updates are recorded yet.</p>}
                 </div>
-                <div><strong>Appointment history ({lcrBrief.appointments.length})</strong>
-                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {item.status} · Source {item.source_id}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No appointment records were returned.</p>}
+                <div><strong>Previous appointments ({lcrBrief.appointments.length})</strong>
+                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id} data-record-reference={item.source_id}><span>{item.title}</span><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {item.status.replaceAll('_', ' ')}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{source.reported_by_label || source.original_author || 'Source not identified'} · {source.epistemic_status === 'caregiver_reported' ? 'Reported by a caregiver' : source.epistemic_status === 'professional_recorded' ? 'Recorded by a professional' : source.epistemic_status === 'document_extracted' ? 'Taken from a document' : 'Source status not confirmed'}</small>)}</li>)}</ul> : <p>No previous appointments are recorded yet.</p>}
                 </div>
               </div>
-              <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{source.replaceAll('_', ' ')}</b><small>{status.replaceAll('_', ' ')}</small></span>)}</div></div>
-              <section className="appointment-source-coverage" aria-label="Evidence freshness assessments">
-                <strong>Evidence freshness assessments ({lcrBrief.freshness_assessments?.length ?? 0})</strong>
-                <p>These are results of explicit domain policies, not proof that a source is true or clinically current. This view shows only the latest result per policy and linked evidence.</p>
-                {lcrBrief.freshness_assessment_scope && <small>{lcrBrief.freshness_assessment_scope.interpretation_limit}</small>}
-                {(lcrBrief.freshness_assessments?.length ?? 0) > 0
-                  ? <ul>{lcrBrief.freshness_assessments?.map(item => <li key={item.assessment_id}>
-                    <span>{item.freshness_status.replaceAll('_', ' ')} · {item.domain_key} · policy {item.policy_version}</span>
-                    <small>Evidence {item.evidence_id} · source time {item.source_time ? new Date(item.source_time).toLocaleString() : 'unknown'} ({(item.source_time_kind || 'time kind unknown').replaceAll('_', ' ')}) · age {item.age_days == null ? 'unknown' : item.age_days + ' days'}</small>
-                    <small>{item.rationale}</small>
-                    <small>Assessment {item.assessment_id}</small>
-                  </li>)}</ul>
-                  : lcrBrief.freshness_assessment_scope?.status === 'unavailable_schema'
-                    ? <p role="status">Freshness assessment storage is unavailable in this database schema. Currentness is unknown.</p>
-                    : <p>No freshness assessment was returned for evidence linked to this preparation snapshot. This is not proof that evidence is current.</p>}
+              <section className="appointment-source-coverage" aria-label="Source availability">
+                <strong>Information availability</strong>
+                <div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => {
+                  const sourceLabels: Record<string, string> = { care_facts: 'Care history', care_events: 'Recent updates', appointments: 'Appointments', evidence_freshness_assessments: 'Evidence review', medications_and_allergies: 'Medication and allergy details', documents: 'Documents', community: 'Community posts' }
+                  const statusLabels: Record<string, string> = { available: 'Available', no_records_returned: 'No entries found in this period', unavailable: 'Could not be checked', unavailable_schema: 'Not available yet', not_authorized: 'Not included in this view', not_applicable_no_linked_evidence: 'No linked information to review' }
+                  return <span key={source} className="appointment-coverage-item"><b>{sourceLabels[source] || 'Other information'}</b><small>{statusLabels[status] || 'Availability not confirmed'}</small></span>
+                })}</div>
               </section>
-              {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="Evidence source lineage">
-                <strong>Evidence source lineage · {lcrBrief.evidence_lineage.status.replaceAll('_', ' ')}</strong>
-                {lcrBrief.evidence_lineage.scope_truncated && <p role="status">Lineage retrieval reached a safety bound. Unreturned source relationships are unknown, not absent; independent corroboration is not established.</p>}
+              
+              {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="Where this information came from" data-source-scope-truncated={String(Boolean(lcrBrief.evidence_lineage.scope_truncated))}>
+                <strong>Where this information came from</strong>
+                {lcrBrief.evidence_lineage.scope_truncated && <p role="status">We could only check part of the available source history. Other links may exist.</p>}
                 {lcrBrief.evidence_lineage.groups.length ? lcrBrief.evidence_lineage.groups.map(group => <div key={group.lineage_id} className="appointment-coverage-item">
-                  <b>{group.source_independence_status.replaceAll('_', ' ')}</b>
-                  <small>Evidence IDs: {group.evidence_ids.join(', ')}{group.origin_group_keys.length ? ' · Origin: ' + group.origin_group_keys.join(', ') : ''}</small>
-                  <small>{group.interpretation_limit}</small>
-                </div>) : <p>No explicit shared-source group was returned for the retrieved evidence. This does not establish that the sources are independent.</p>}
-                <p className="appointment-brief-limitations">{lcrBrief.evidence_lineage.interpretation_limit}</p>
+                  <b>{group.source_independence_status === 'independent' ? 'Separate sources were recorded' : group.source_independence_status === 'shared_origin' ? 'These entries share an original source' : 'The relationship between these sources is not confirmed'}</b>
+                  <small>{group.evidence_ids.length} linked source records</small>
+                </div>) : <p>Source connections are not recorded for these entries. This does not establish that the sources are independent.</p>}
               </section>}
-              <p className="appointment-brief-limitations">{lcrBrief.limitations.join(' ')}</p>
+              
+              <section className="appointment-source-coverage" aria-label="When information was last reviewed">
+                <strong>When information was last reviewed</strong>
+                {lcrBrief.freshness_assessment_scope?.status === 'unavailable_schema'
+                  ? <p>Review dates are not available for some care information yet. This does not mean those details are up to date.</p>
+                  : lcrBrief.freshness_assessments?.length
+                    ? lcrBrief.freshness_assessments.map(item => {
+                      const reviewLabels: Record<string, string> = {
+                        fresh: 'Checked within its review period',
+                        current: 'Checked within its review period',
+                        aging: 'A fresh check may be due soon',
+                        stale: 'A fresh check may be needed',
+                        overdue: 'A fresh check may be needed',
+                        unknown: 'Review status is not known',
+                      }
+                      const domainLabels: Record<string, string> = {
+                        medication: 'Medication information',
+                        medications: 'Medication information',
+                        allergy: 'Allergy information',
+                        allergies: 'Allergy information',
+                        care_plan: 'Care plan information',
+                      }
+                      return <div key={item.assessment_id} className="appointment-coverage-item">
+                        <b>{domainLabels[item.domain_key] || 'Care information'}</b>
+                        <small>{reviewLabels[item.freshness_status] || 'Review status is not confirmed'}</small>
+                        <small>{item.assessed_at ? 'Last checked ' + new Date(item.assessed_at).toLocaleDateString() : 'Review date not recorded'}</small>
+                      </div>
+                    })
+                    : <p>No review dates have been recorded for the linked information yet. This does not mean the information is up to date.</p>}
+              </section>
+              
+              <p className="appointment-brief-limitations">Only information already recorded in your care history appears here. Missing information is not assumed to be absent.</p>
             </>}
           </section>
           <div className="appointment-fields appointment-fields-two">
+            <label>Which appointment is this for?<select value={selectedAppointmentId} disabled={Boolean(recordId)} onChange={event => setSelectedAppointmentId(event.target.value)}><option value="">Choose an appointment</option>{lcrBrief?.appointments.map(item => <option key={item.source_id} value={item.source_id}>{item.title} · {item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString() : 'Date not recorded'}{item.provider ? ' · ' + item.provider : ''}</option>)}</select></label>
             <label>Visit purpose<textarea value={visitPurpose} onChange={event => setVisitPurpose(event.target.value)} rows={2} placeholder="What does the family want help understanding?" /></label>
             <label>Clinician name<input value={clinician} onChange={event => setClinician(event.target.value)} placeholder="Name, if known" /></label>
             <label>Specialty<input value={specialty} onChange={event => setSpecialty(event.target.value)} placeholder="Specialty, if known" /></label>
@@ -285,7 +756,7 @@ export default function AppointmentWorkspace() {
             <label>Location<input value={location} onChange={event => setLocation(event.target.value)} placeholder="Clinic or appointment location" /></label>
             <label>Who is attending?<input value={attendees} onChange={event => setAttendees(event.target.value)} placeholder="Person receiving care and support people" /></label>
           </div>
-          <h5>The three most important things to discuss</h5>
+          <h5>The most important things to discuss</h5>
           <div className="appointment-fields">{topConcerns.map((value, index) => <label key={index}>Priority {index + 1}<input value={value} onChange={event => updateConcern(index, event.target.value)} placeholder={index === 0 ? 'Most important concern' : 'Additional concern'} /></label>)}</div>
           <div className="appointment-fields appointment-fields-two">
             <label>What has changed since the last visit?<textarea value={changes} onChange={event => setChanges(event.target.value)} rows={4} placeholder="What changed, when first noticed, frequency, context, daily-life impact, and who observed it." /></label>
@@ -320,28 +791,55 @@ export default function AppointmentWorkspace() {
           <h4>Outcome and continuity</h4>
           <p className="appointment-stage-intro">A visit can be finished while clinical follow-up remains open. Mark work done only when completion is supported.</p>
           <div className="appointment-fields appointment-fields-two">
+            <label>How did the appointment end?<select value={attendanceStatus} onChange={event => setAttendanceStatus(event.target.value as AttendanceStatus)}><option value="not_recorded">Not recorded yet</option><option value="attended">Attended</option><option value="cancelled">Cancelled</option><option value="rescheduled">Rescheduled</option><option value="missed">Missed</option></select></label>
+            {attendanceStatus === 'attended' && <label>When did the visit take place?<input type="datetime-local" value={actualVisitDate} onChange={event => setActualVisitDate(event.target.value)} /></label>}
+            {attendanceStatus === 'rescheduled' && <label>New appointment date and time<input type="datetime-local" value={rescheduledDate} onChange={event => setRescheduledDate(event.target.value)} /></label>}
+            <label>Tests and referrals<textarea value={testsReferrals} onChange={event => setTestsReferrals(event.target.value)} rows={4} placeholder="Tests requested, referrals made, expected results, or details still unknown." /></label>
             <label>Medication reconciliation / discrepancies<textarea value={medicationReconciliation} onChange={event => setMedicationReconciliation(event.target.value)} rows={4} placeholder="Record the exact clinician instruction, source, effective date, verification status, and unresolved discrepancy. Never infer start/stop/change." /></label>
-            <label>Pending tests, results, or referrals<textarea value={pendingResults} onChange={event => setPendingResults(event.target.value)} rows={4} placeholder="What was ordered/referred, expected timing if stated, who will obtain/review results, and documented escalation route." /></label>
+            <label>Results still expected<textarea value={pendingResults} onChange={event => setPendingResults(event.target.value)} rows={4} placeholder="What was ordered/referred, expected timing if stated, who will obtain/review results, and documented escalation route." /></label>
             <label>What the family needs to know<textarea value={familySummary} onChange={event => setFamilySummary(event.target.value)} rows={4} placeholder="What changes in everyday care, what remains the same, what to monitor, when to contact whom, and what remains uncertain." /></label>
           </div>
           <div className="appointment-followups-heading"><h5>Follow-up actions</h5><button type="button" className="appointment-secondary" onClick={addFollowUp}><ListChecks size={15} /> Add action</button></div>
           {followUps.map((item, index) => <div className="appointment-followup" key={index}>
-            <label>Action<input value={item.action} onChange={event => updateFollowUp(index, 'action', event.target.value)} placeholder="Book follow-up, complete test, obtain result…" /></label>
-            <label>Owner<input value={item.owner} onChange={event => updateFollowUp(index, 'owner', event.target.value)} placeholder="Named person or service" /></label>
-            <label>Due date<input type="date" value={item.due} onChange={event => updateFollowUp(index, 'due', event.target.value)} /></label>
-            <label>Status<select value={item.status} onChange={event => updateFollowUp(index, 'status', event.target.value)}><option>Open</option><option>In progress</option><option>Done</option><option>Needs clarification</option></select></label>
+            <label>Action<input value={item.action} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'action', event.target.value)} placeholder="Book follow-up, complete test, obtain result…" /></label>
+            <label>Person or service mentioned<input value={item.owner} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'owner', event.target.value)} placeholder="Optional note; this does not assign responsibility" /></label>
+            <label>Assign responsibility<select value={item.assignedCaregiverId && item.assignmentHandoffId ? item.assignmentHandoffId + '::' + item.assignedCaregiverId : ''} onChange={event => updateFollowUpAssignment(index, event.target.value)} disabled={!item.register || acceptedHandoffRecipients.length === 0 || ['Completed', 'Cancelled'].includes(item.status) || Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)}>
+              <option value="">Keep with current caregiver</option>
+              {item.assignedCaregiverId && item.assignmentHandoffId && !acceptedHandoffRecipients.some(option => option.handoff_id === item.assignmentHandoffId && option.caregiver_id === item.assignedCaregiverId) && <option value={item.assignmentHandoffId + '::' + item.assignedCaregiverId}>{item.assignedCaregiverId === currentCaregiverId ? 'Assigned to you' : 'Assigned to another caregiver'}</option>}
+              {acceptedHandoffRecipients.map(option => <option key={option.handoff_id + '::' + option.caregiver_id} value={option.handoff_id + '::' + option.caregiver_id}>{option.name} · accepted handoff</option>)}
+            </select></label>
+            {item.assignedCaregiverId && <p className="appointment-assignment-help">{item.assignedCaregiverId === currentCaregiverId ? 'You are responsible for this follow-up.' : 'This follow-up has been assigned to another caregiver. That caregiver manages its status and any further transfer.'}</p>}
+            {item.register && !item.assignedCaregiverId && acceptedHandoffRecipients.length === 0 && <p className="appointment-assignment-help">To assign this to another caregiver, share an open-loop handoff in Care Handoff and wait for that caregiver to accept it.</p>}
+            <label>Due date<input type="date" value={item.due} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'due', event.target.value)} /></label>
+            <label>Status<select value={item.status} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId) || ['Completed', 'Cancelled'].includes(item.status)} onChange={event => updateFollowUp(index, 'status', event.target.value)}><option>Not started</option><option>In progress</option><option>Waiting for result</option><option>Received</option><option>Needs review</option><option>Completed</option><option>Cancelled</option></select></label>
+            <label>Result status<select value={item.resultStatus} disabled={!item.register || Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'resultStatus', event.target.value)}><option>Not expected</option><option>Waiting</option><option>Received</option><option>Reviewed</option></select></label>
+            <label>Notes<textarea value={item.notes} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'notes', event.target.value)} rows={2} placeholder="What happened, or what is still needed?" /></label>
+            {['Received', 'Reviewed'].includes(item.resultStatus) && <label>What result was received?<textarea value={item.resultText || ''} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'resultText', event.target.value)} rows={3} placeholder="Record what arrived and its source. Keep the original document or evidence linked where available." /></label>}
+            {item.resultStatus === 'Reviewed' && <>
+              <label>Review decision<select value={item.reviewDecision || ''} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'reviewDecision', event.target.value)}><option value="">Choose a review decision</option><option value="acknowledged">Understood; no further action recorded</option><option value="follow_up_required">Further follow-up is required</option><option value="disputed">The result or interpretation is disputed</option><option value="needs_clinician_review">A clinician needs to review this</option><option value="not_relevant">Not relevant to this follow-up</option></select></label>
+              <label>What did the caregiver decide after reviewing?<textarea value={item.reviewNotes || ''} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'reviewNotes', event.target.value)} rows={3} placeholder="Record the review and any remaining uncertainty." /></label>
+            </>}
+            {item.resultReceivedEventId && <small>Result received {item.resultReceivedAt ? new Date(item.resultReceivedAt).toLocaleString() : 'and saved'} · {item.resultReceivedByCaregiverId === currentCaregiverId ? 'by you' : 'by a linked caregiver'}.</small>}
+            {item.resultReviewedEventId && <small>Reviewed {item.resultReviewedAt ? new Date(item.resultReviewedAt).toLocaleString() : 'and saved'} · {item.resultReviewedByCaregiverId === currentCaregiverId ? 'by you' : 'by a linked caregiver'}.</small>}
+            {item.resultText?.trim() && ['Received', 'Reviewed'].includes(item.resultStatus) && <label className="appointment-review-status"><input type="checkbox" checked={approvedEvidenceFields.includes('followUpResult:' + index)} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => setApprovedEvidenceFields(current => event.target.checked ? [...current, 'followUpResult:' + index] : current.filter(value => value !== 'followUpResult:' + index))} /> Include this caregiver-reported result in the Living Care Record</label>}
+            {item.resultStatus === 'Reviewed' && ['disputed', 'needs_clinician_review'].includes(item.reviewDecision || '') && <small>This result remains a caregiver report requiring further review; it will not be marked as accepted care information.</small>}
+            <label className="appointment-review-status"><input type="checkbox" checked={item.register} disabled={Boolean(item.assignedCaregiverId && item.assignedCaregiverId !== currentCaregiverId)} onChange={event => updateFollowUp(index, 'register', event.target.checked)} /> Add this to my follow-up responsibilities</label>
           </div>)}
+          <section className="appointment-review-status"><h5>Add notes to the care history</h5>{appointmentConflicts.length > 0 && <div className="appointment-conflicts"><h6>Different accounts need a closer look</h6><p>These notes do not agree. Neither has been chosen as correct. Both accounts remain available for review.</p>{appointmentConflicts.map(conflict => {
+            const related = appointmentAssertions.filter(assertion => assertion.field === conflict.field && assertion.subject_id === conflict.subject_id)
+            return <article key={conflict.id}><strong>{appointmentFieldLabel(conflict.field)}</strong>{related.length ? related.map(assertion => <div key={assertion.id}><small>{assertion.source_label || 'Caregiver report'} · {assertion.assertion_status === 'accepted' ? 'Included in your care history' : assertion.assertion_status === 'rejected' ? 'Not included' : 'Waiting for your review'}</small><p>{assertion.asserted_value}</p></div>) : <p>{conflict.description}</p>}</article>
+          })}</div>}<p>Choose the notes you have checked and want included in the care history. A note about what a professional said remains a caregiver report unless supported by the original professional record. These notes are not added until you choose them here.</p>{[['caregiverReport','What the person or caregiver reported'],['clinicianFindings','What the professional said'],['decisions','Decisions made'],['instructions','Instructions given'],['unanswered','Questions still unanswered'],['medicationReconciliation','Medication information and questions'],['testsReferrals','Tests and referrals'],['pendingResults','Results still expected'],['familySummary','What the family needs to know']].map(([field,label]) => <label key={field}><input type="checkbox" checked={approvedEvidenceFields.includes(field)} disabled={!actualVisitDate || attendanceStatus !== 'attended' || !(field === 'caregiverReport' ? caregiverReport : field === 'clinicianFindings' ? clinicianFindings : field === 'decisions' ? decisions : field === 'instructions' ? instructions : field === 'unanswered' ? unanswered : field === 'medicationReconciliation' ? medicationReconciliation : field === 'testsReferrals' ? testsReferrals : field === 'pendingResults' ? pendingResults : familySummary).trim()} onChange={event => setApprovedEvidenceFields(current => event.target.checked ? [...current, field] : current.filter(value => value !== field))} /> {label}</label>)}</section>
           <label className="appointment-review-status">Closure status<select value={reviewStatus} onChange={event => setReviewStatus(event.target.value as typeof reviewStatus)}><option>Awaiting documentation</option><option>Follow-up pending</option><option>Ready for review</option><option>Closed with documented outstanding items</option></select></label>
-          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Working draft only — appointment notes, decisions, and follow-up actions are not yet persisted to the LCR. Do not rely on this screen as the durable follow-up record.</p>
+          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Save your notes before leaving this page. Your saved appointment and follow-up details will be here when you return.</p>
         </div>}
 
         <div className="appointment-save-controls">
           <div className="appointment-save-status" role="status" aria-live="polite">
-            {loadingRecord ? 'Loading saved appointment workspace…' : saveMessage}
+            {loadingRecord ? 'Opening your saved appointment notes…' : saveMessage}
             {saveError && <span className="appointment-error">{saveError}</span>}
           </div>
           <button type="button" className="appointment-primary" onClick={() => void saveWorkspace()} disabled={savingRecord || loadingRecord}>
-            {savingRecord ? 'Saving…' : recordId ? 'Save appointment changes' : 'Save appointment workspace'}
+            {savingRecord ? 'Saving…' : recordId ? 'Save appointment changes' : 'Save appointment'}
           </button>
         </div>
       </>}
