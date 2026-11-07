@@ -68,7 +68,7 @@ interface CareUpdateProposal {
   id: string
   status: string
   proposal_type: string
-  proposed_change: { asserted_value?: string; source_quote?: string; information_status?: string }
+  proposed_change: { asserted_value?: string; source_quote?: string; event_time_text?: string | null; information_status?: string }
   source_message_id: string
   source_conversation_id: string
   candidate_index: number
@@ -685,6 +685,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>Pending review</span></div>
                   <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
                   <p className="companion-care-update-source">Source quotation from original Companion message</p>
+                  {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
                   <div className="companion-care-update-actions">
                     <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
                     <label><span className="sr-only">Correct proposed wording</span>
@@ -713,6 +714,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>{pending ? 'Pending review' : candidate.status.replaceAll('_', ' ')}</span></div>
                         <p>{value}</p>
                         <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Qwen proposal'}</p>
+                        {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
                         {pending ? <div className="companion-care-update-actions">
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
                           <label>
