@@ -219,6 +219,7 @@ export default function DetailedAppointmentWorkspace() {
               owner_label: item.owner.trim() || undefined,
               deadline_at: item.due ? new Date(item.due + 'T12:00:00').toISOString() : undefined,
               deadline_source: item.due ? 'explicit_user' : undefined,
+              deadline_timezone: item.due ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined,
               idempotency_key: 'appointment-follow-up:' + savedRecordId + ':' + item.id,
             }) as { id: string }
             loopId = created.id
@@ -230,6 +231,7 @@ export default function DetailedAppointmentWorkspace() {
               owner_label: item.owner.trim() || undefined,
               deadline_at: item.due ? new Date(item.due + 'T12:00:00').toISOString() : null,
               deadline_source: item.due ? 'explicit_user' : null,
+              deadline_timezone: item.due ? Intl.DateTimeFormat().resolvedOptions().timeZone : null,
               reason: 'Updated from the caregiver appointment workspace',
               idempotency_key: 'appointment-follow-up-update:' + savedRecordId + ':' + item.id + ':' + savedVersion,
             })
