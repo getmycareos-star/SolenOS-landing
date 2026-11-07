@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ShieldCheck } from 'lucide-react'
+import DetailedAppointmentWorkspace from './DetailedAppointmentWorkspace'
 
 type Stage = 'prepare' | 'during' | 'after'
 type PreparationBrief = {
@@ -48,6 +49,7 @@ export default function AppointmentWorkspace() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const pendingSaveRef = useRef<{ fingerprint: string; key: string; recordedAt: string } | null>(null)
+  const [showDetailed, setShowDetailed] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -250,6 +252,8 @@ export default function AppointmentWorkspace() {
         </div>}
 
         <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error}</span>}</div>
+        <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => setShowDetailed(value => !value)}>{showDetailed ? 'Close detailed appointment controls' : 'Open detailed appointment and follow-up controls (optional)'}</button>
+        {showDetailed && <div className="guided-detailed"><p>Use these additional controls only when you need to review individual sections or manage follow-up actions. The guided appointment stages above remain the normal path.</p><DetailedAppointmentWorkspace /></div>}
       </>}
       <style jsx>{`
         .guided-appointment { color:#26392c; }
@@ -289,6 +293,9 @@ export default function AppointmentWorkspace() {
         .guided-outcome small { display:block; margin-top:4px; color:#7a867c; font-size:10px; }
         .guided-status { margin-top:10px; color:#59705c; font-size:11px; }
         .guided-status span { display:block; color:#9a5c43; margin-top:4px; }
+        .guided-details-toggle { margin-top:16px; padding:9px 0; border:0; background:transparent; color:#46654b; font:inherit; font-size:12px; font-weight:750; text-decoration:underline; cursor:pointer; }
+        .guided-detailed { margin-top:12px; padding-top:12px; border-top:1px solid #e5ebe2; }
+        .guided-detailed > p { color:#718073; font-size:11px; line-height:1.5; }
         @media(max-width:640px) { .guided-columns { grid-template-columns:minmax(0,1fr); } .guided-appointments li { display:block; } .guided-actions button,.guided-primary { width:100%; } .guided-panel { padding:13px; } }
       `}</style>
     </section>
