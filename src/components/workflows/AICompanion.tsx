@@ -662,7 +662,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           {item.due_at && <span>Due: {new Date(item.due_at).toLocaleString()}</span>}
                           <span>Evidence status: {item.epistemic_status.replaceAll('_', ' ')}</span>
                           {item.record_status && item.record_status !== 'not_recorded' && <span>Record status: {item.record_status.replaceAll('_', ' ')}</span>}
-                          {item.details && Object.entries(item.details).map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')}: {value.replaceAll('_', ' ')}</span>)}
+                          {item.details && Object.entries(item.details).map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')}: {typeof value === 'string' ? value.replaceAll('_', ' ') : JSON.stringify(value)}</span>)}
                           <span>Source: {item.source_table} · {item.source_id}</span>
                           {item.stale_warning && <strong>Older information — re-check before relying on it</strong>}
                         </div>
@@ -705,7 +705,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           onResumeDraft={(savedDraft) => {
             setHandoffDraft(savedDraft as HandoffDraft)
             setHandoffAudience(savedDraft.audience ?? (savedDraft.purpose === "professional_appointment" ? "professional" : "family"))
-            setHandoffPurpose(savedDraft.purpose === "professional_appointment" ? "appointment" : savedDraft.purpose === "return_to_care" ? "today" : "overview")
+            setHandoffPurpose(savedDraft.purpose === "return_to_care" ? "today" : "overview")
             setHandoffStep("purpose")
           }}
         />
