@@ -171,7 +171,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [pendingCareUpdatesRefreshing, setPendingCareUpdatesRefreshing] = useState(false)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
-  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'overview' | null>(null)
+  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'overview' | 'appointment' | null>(null)
   const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null)
   const [handoffDraftLoading, setHandoffDraftLoading] = useState(false)
   const [handoffDraftError, setHandoffDraftError] = useState<string | null>(null)
@@ -300,8 +300,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setHandoffDraft(null)
     try {
       await ensureAnonymousSession()
-      const purpose = handoffPurpose === 'today' ? 'family_transition' : 'period_summary'
-      const windowDays = handoffPurpose === 'today' ? 7 : 90
+      const purpose = handoffPurpose === 'today' ? 'family_transition' : handoffPurpose === 'appointment' ? 'professional_appointment' : 'period_summary'
+      const windowDays = handoffPurpose === 'today' ? 7 : handoffPurpose === 'appointment' ? 30 : 90
       const requestId = handoffPrepareRequestId.current ?? (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'handoff-draft-' + Date.now())
       handoffPrepareRequestId.current = requestId
       const draft = await postJSON('/handoff-drafts/prepare', {
