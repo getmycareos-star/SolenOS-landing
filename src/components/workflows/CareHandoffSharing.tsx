@@ -299,14 +299,14 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
       await postJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/approve", {
         recipient_caregiver_ids: selectedRecipients,
-        scope: ["lcr_summary"],
+        scope: ["lcr_summary", "open_loops"],
         expires_at: expiresAt,
       });
       const created = await postJSON("/handoffs", {
         person_id: session.person.id,
         draft_id: draft.draft_id,
         recipient_caregiver_ids: selectedRecipients,
-        scope: ["lcr_summary"],
+        scope: ["lcr_summary", "open_loops"],
         expires_at: expiresAt,
       }, { "X-Request-ID": requestId }) as { id: string };
       if (!created?.id) throw new Error("The backend did not confirm a handoff ID. No successful share is assumed.");
