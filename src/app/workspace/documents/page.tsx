@@ -461,6 +461,7 @@ export default function DocumentsPage() {
           const analysis = await postJSON(
             "/documents/" + encodeURIComponent(stored.evidence_id) + "/extract",
             {},
+            {},
             { timeoutMs: 180_000 },
           ) as { extraction_status?: string; analysis_id?: string };
           if (analysis.analysis_id && analysis.extraction_status === "available") extracted += 1;
