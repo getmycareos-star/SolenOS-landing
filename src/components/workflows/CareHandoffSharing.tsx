@@ -363,7 +363,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       return;
     }
     if (draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed") {
-      setError("This draft has no validated Qwen-generated document. It cannot be shared.");
+      setError("This draft has no validated care summary. It cannot be shared.");
       return;
     }
     if (!reviewConfirmed || !summaryText.trim() || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0) {
