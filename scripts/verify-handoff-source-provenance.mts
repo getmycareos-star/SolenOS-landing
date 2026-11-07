@@ -99,6 +99,14 @@ assert.match(sharingComponent, /item\.scope\.map\(readableScope\)/,
   "incoming and outgoing scope must use caregiver-readable labels");
 assert.doesNotMatch(sharingComponent, /Integrity hash:/,
   "incoming caregiver review must not expose raw integrity hashes");
+assert.doesNotMatch(sharingComponent, /item\.original_source_reference \? " · document " \+ item\.original_source_reference/,
+  "recipient review must not expose internal document paths or references");
+assert.match(sharingComponent, /saved\.review_status \? readableStatus/,
+  "saved draft review states must use caregiver-readable labels");
+assert.match(sharingComponent, /Source: record /,
+  "shared summaries must label sources without exposing database identifiers");
+assert.doesNotMatch(sharingComponent, /Qwen/,
+  "the caregiver-facing handoff component must not expose model names");
 assert.match(sharingComponent, /revoke\(item\)/,
   "the initiating caregiver must retain a revocation path");
 assert.doesNotMatch(sharingComponent, /source_record_ids\s*:/,
