@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { postJSON, postFormData, getPersonId, getCaregiverId } from '@/api/client';
+import { postJSON, postFormData, getJSON, getPersonId, getCaregiverId } from '@/api/client';
 import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
@@ -452,13 +452,24 @@ export default function StructuredDailyCapture() {
         observations[index] = result.candidate;
         return { ...current, candidates: { ...current.candidates, observations } };
       });
-      setReviewFeedback(result.message || (
-        decision === 'accept'
-          ? 'Accepted observation added to the Living Care Record.'
-          : decision === 'correct'
+      if (decision === 'accept' && result.assertion_id) {
+        try {
+          const projection = await getJSON('/care-continuity/current-care?limit_per_source=50') as { items?: Array<{ id?: string }> };
+          const visibleInLcr = Array.isArray(projection?.items) &&
+            projection.items.some(item => item.id === result.assertion_id);
+          setReviewFeedback(visibleInLcr
+            ? 'Accepted observation is now available in the Living Care Record.'
+            : 'Acceptance was saved. The LCR projection did not return the assertion yet; refresh the Living Care Record before relying on its display.');
+        } catch {
+          setReviewFeedback('Acceptance was saved. The LCR could not be refreshed just now; reopen the Living Care Record to verify the accepted entry.');
+        }
+      } else {
+        setReviewFeedback(result.message || (
+          decision === 'correct'
             ? 'Correction saved. It remains pending approval and is not an LCR fact.'
             : 'Suggestion rejected. No LCR assertion was created.'
-      ));
+        ));
+      }
     } catch (reason) {
       setReviewFeedback('We couldn’t save that review. Please try again.');
     } finally {
