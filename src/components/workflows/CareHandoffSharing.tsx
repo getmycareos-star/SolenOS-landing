@@ -471,7 +471,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   }
 
   return (
-    <div className="companion-handoff-sharing" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+    <div className="companion-handoff-sharing" style={{ marginTop: 14, display: "grid", gap: 12, minWidth: 0, width: "100%" }}>
       {savedDrafts.length > 0 && (
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved handoff drafts">
           <h4 style={{ marginTop: 0 }}>Saved handoff drafts</h4>
@@ -513,14 +513,14 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {consentRequired && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
             Incoming handoffs and recipient sharing are unavailable until the required privacy and multi-caregiver acknowledgements are saved for this care record. Review them in <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Settings → Privacy</Link>, then refresh this panel. Your care record remains available.
           </p>}
-          {draft.evidence_lineage && <section style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="How information was sourced">
-            <strong style={{ fontSize: 12 }}>How the information was sourced</strong>
+          {draft.evidence_lineage && <details style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="How information was sourced">
+            <summary style={{ fontSize: 12, fontWeight: 650, cursor: "pointer" }}>How the information was sourced</summary>
             {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map((group, index) => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: 12 }}>
               <b>Source group {index + 1}: {readableStatus(group.source_independence_status)}</b>
               <p style={{ margin: "3px 0", color: "#667267" }}>{group.interpretation_limit}</p>
             </div>) : <p style={{ fontSize: 12, marginBottom: 0 }}>The available records do not establish whether some information came from the same original source. Do not treat similar accounts as independent confirmation.</p>}
             <p style={{ fontSize: 12, marginBottom: 0, color: "#667267" }}>{draft.evidence_lineage.interpretation_limit}</p>
-          </section>}
+          </details>}
           {directoryError && <p role="alert">The recipient list could not be verified. Refresh before sharing.</p>}
           {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No linked caregiver is currently eligible to receive this handoff. SolenOS will not send it to an unlinked recipient.</p>}
           {eligibleRecipients.map(recipient => (
@@ -541,7 +541,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </select>
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
           <div style={{ margin: "12px 0" }}>
-            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Edit grounded sections</strong>
+            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Review sourced statements</strong>
             <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Sourced wording stays tied to the saved care record. Remove anything that should not be shared. If a statement is outdated or needs correcting, explain that in the caregiver note below; it will be clearly labelled as your report, not independently verified. Update the original care record separately when needed.</p>
             {editedSections.map((item, index) => (
               <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
