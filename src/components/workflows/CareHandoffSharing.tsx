@@ -533,12 +533,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                   shareExpiry.current = null;
                 }} rows={3} maxLength={1200} style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
                 <button type="button" style={quietButton} onClick={() => {
-                  setEditedSections(current => {
-                    const remaining = current.filter((_, sectionIndex) => sectionIndex !== index);
-                    const remainingScopes = requiredHandoffScopes(draft, remaining);
-                    setSelectedScope(scopes => scopes.filter(scope => remainingScopes.includes(scope)));
-                    return remaining;
-                  });
+                  const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
+                  setEditedSections(remaining);
+                  const remainingScopes = requiredHandoffScopes(draft, remaining);
+                  setSelectedScope(scopes => scopes.filter(scope => remainingScopes.includes(scope)));
                   setReviewConfirmed(false);
                   shareRequestId.current = null;
                   shareExpiry.current = null;
