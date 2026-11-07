@@ -305,19 +305,27 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setHandoffDraftError(null)
   }
 
+  const refreshPendingCareUpdates = async (conversationId?: string | null): Promise<CareUpdateProposal[]> => {
+    try {
+      const suffix = conversationId ? '?session_id=' + encodeURIComponent(conversationId) : ''
+      const result = await getJSON('/companion/care-updates' + suffix) as any
+      const items = Array.isArray(result?.items) ? result.items as CareUpdateProposal[] : []
+      setPendingCareUpdates(items)
+      return items
+    } catch {
+      return []
+    }
+  }
 
   useEffect(() => {
     // Reopen pending reviews only when this browser already has a scoped session.
     // Do not bootstrap a new care record merely by opening Companion.
     if (!getAnonymousAccessToken()) return
     let active = true
-    void getJSON('/companion/care-updates')
-      .then((result: any) => {
-        if (active && Array.isArray(result?.items)) setPendingCareUpdates(result.items)
-      })
-      .catch(() => {
-        // A failed background refresh must not block ordinary conversation.
-      })
+    void refreshPendingCareUpdates().then(items => {
+      if (!active) return
+      setPendingCareUpdates(items)
+    })
     return () => { active = false }
   }, [])
 
@@ -379,13 +387,22 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-      if (Array.isArray(response.care_update_candidates)) {
+      if (Array.isArray(response.care_update_candidates) && response.care_update_candidates.length > 0) {
         setPendingCareUpdates(previous => {
           const merged = new Map(previous.map(item => [item.id, item]))
           for (const item of response.care_update_candidates as CareUpdateProposal[]) merged.set(item.id, item)
           return Array.from(merged.values())
         })
       }
+      // Candidate inference runs after the conversation response. Refresh without
+      // holding the chat request open; the panel remains manually refreshable.
+      const refreshAfterResponse = async (attempt = 0) => {
+        const items = await refreshPendingCareUpdates(response.session_id)
+        if (!items.length && attempt < 3) {
+          window.setTimeout(() => void refreshAfterResponse(attempt + 1), 2500)
+        }
+      }
+      window.setTimeout(() => void refreshAfterResponse(), 1200)
 
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
@@ -680,7 +697,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             <div className="companion-message-list">
               <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
               {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
-                <h3>Care updates awaiting your review</h3>
+                <div className="companion-pending-care-heading">
+                  <h3>Care updates awaiting your review</h3>
+                  <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates">Refresh</button>
+                </div>
                 {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
                   <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>Pending review</span></div>
                   <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
