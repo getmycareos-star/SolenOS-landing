@@ -245,15 +245,17 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   }, [draft?.draft_id]);
 
   useEffect(() => {
+    setCaregiverNote("");
+  }, [draft?.draft_id]);
+
+  useEffect(() => {
     if (!draft || !audience || !purpose) {
       setSummaryText("");
-      setCaregiverNote("");
       setReviewConfirmed(false);
       return;
     }
     const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope, caregiverNote);
     setSummaryText(prepared.text);
-    setCaregiverNote("");
     setReviewConfirmed(false);
   }, [draft, audience, purpose, selectedScope, caregiverNote]);
 
