@@ -44,7 +44,7 @@ interface HandoffDraft {
   validation_status?: string
   review_status?: string
   revision_number?: number
-  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null }> }
+  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> }
   caregiver_notes?: Array<{ text: string; attribution: string }>
   audience?: 'family' | 'professional'
   template_sections?: Array<{ key: string; title: string; required_fields: string[]; source_tables: string[]; coverage_status: string; coverage_note: string }>
