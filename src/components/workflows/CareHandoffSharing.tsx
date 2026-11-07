@@ -108,8 +108,8 @@ function requiredHandoffScopes(draft: DraftPayload): string[] {
 function sourceKeysForScope(scope: string): Set<string> {
   if (scope === "documents") return new Set(["documents"]);
   if (scope === "appointments") return new Set(["appointments"]);
-  if (scope === "open_loops") return new Set(["actions", "open_questions", "information_gaps"]);
-  return new Set(["care_facts", "care_assertions", "care_events", "care_decisions", "decision_outcomes", "care_action_outcomes", "care_transitions", "care_timeline_entries", "daily_care"]);
+  if (scope === "open_loops") return new Set(["actions", "care_action_outcomes", "open_questions", "information_gaps"]);
+  return new Set(["care_facts", "care_assertions", "care_events", "care_decisions", "decision_outcomes", "care_transitions", "care_timeline_entries", "daily_care"]);
 }
 
 function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "") {
