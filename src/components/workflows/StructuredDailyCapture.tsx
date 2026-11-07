@@ -441,9 +441,10 @@ export default function StructuredDailyCapture() {
         message?: string;
         source_event_id?: string | null;
         written_to_lcr?: boolean;
+        assertion_id?: string | null;
       };
-      if (!result?.candidate || result.written_to_lcr !== false) {
-        throw new Error('The backend did not confirm a review-only decision. No reconciliation was started.');
+      if (!result?.candidate || result.written_to_lcr !== (decision === 'accept')) {
+        throw new Error('The backend did not confirm the requested review outcome. Your saved observation remains unchanged.');
       }
       setQwenAnalysis(current => {
         if (!current || !Array.isArray(current.candidates?.observations)) return current;
@@ -451,24 +452,13 @@ export default function StructuredDailyCapture() {
         observations[index] = result.candidate;
         return { ...current, candidates: { ...current.candidates, observations } };
       });
-      setReviewFeedback(result.message || 'Review decision saved. The Living Care Record was not changed.');
-      if (decision !== 'reject' && personId && typeof result.source_event_id === 'string') {
-        const reviewedText = [
-          result.candidate.subject ? `Subject: ${result.candidate.subject}` : '',
-          result.candidate.observation ? `Caregiver-reviewed observation: ${result.candidate.observation}` : '',
-          result.candidate.source_quote ? `Original source quote: ${result.candidate.source_quote}` : '',
-        ].filter(Boolean).join('\n');
-        const nextToken = deltaToken + 1;
-        setDeltaToken(nextToken);
-        setDeltaAutoInput({
-          personId,
-          content: reviewedText,
-          source: 'Caregiver-reviewed Daily Capture candidate',
-          eventDate: qwenAnalysis.recordedAt || new Date().toISOString(),
-          token: nextToken,
-          sourceEventId: result.source_event_id,
-        });
-      }
+      setReviewFeedback(result.message || (
+        decision === 'accept'
+          ? 'Accepted observation added to the Living Care Record.'
+          : decision === 'correct'
+            ? 'Correction saved. It remains pending approval and is not an LCR fact.'
+            : 'Suggestion rejected. No LCR assertion was created.'
+      ));
     } catch (reason) {
       setReviewFeedback('We couldn’t save that review. Please try again.');
     } finally {
@@ -942,12 +932,12 @@ export default function StructuredDailyCapture() {
                   observation: candidate.observation || '',
                 };
                 const reviewStatus = String(candidate.review_status || 'pending_review');
-                const alreadyReviewed = reviewStatus !== 'pending_review';
+                const alreadyReviewed = ['accepted_by_caregiver', 'rejected_by_caregiver'].includes(reviewStatus);
                 return (
                   <li key={index} style={{ fontSize: '12px', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
                     <strong>Suggested detail {index + 1}</strong>
                     <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
-                      {reviewStatus === 'pending_review' ? 'Please check this detail' : reviewStatus === 'accepted' ? 'Marked for comparison' : reviewStatus === 'corrected' ? 'Correction saved' : reviewStatus === 'rejected' ? 'Dismissed' : 'Reviewed'}
+                      {reviewStatus === 'pending_review' ? 'Awaiting caregiver review' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Corrected — awaiting explicit approval' : reviewStatus === 'accepted_by_caregiver' ? 'Accepted — added to the Living Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Rejected — not included in the Living Care Record' : 'Review status unavailable'}
                     </p>
                     <label style={{ display: 'block', marginBottom: '8px' }}>
                       What is this about?
@@ -979,7 +969,7 @@ export default function StructuredDailyCapture() {
                     )}
                     {!alreadyReviewed && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Use for care comparison</button>
+                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Accept and add to LCR</button>
                         <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
                         <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Dismiss suggestion</button>
                       </div>
