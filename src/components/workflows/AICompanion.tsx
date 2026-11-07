@@ -149,6 +149,7 @@ const STARTER_PROMPTS = [
 export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
   const router = useRouter()
   const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const [showAppointmentWorkspace, setShowAppointmentWorkspace] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const captureInputRef = useRef<HTMLInputElement>(null)
   const cameraVideoRef = useRef<HTMLVideoElement>(null)
@@ -545,7 +546,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </section>
 
       )}
-      {!home && <AppointmentWorkspace />}
+      {!home && (
+        showAppointmentWorkspace
+          ? <AppointmentWorkspace initiallyOpen />
+          : <section className="companion-appointment-launch" aria-label="Appointment support">
+              <button type="button" className="companion-handoff-primary" onClick={() => setShowAppointmentWorkspace(true)}>
+                Open appointment support
+              </button>
+            </section>
+      )}
 
       {!home && (
       <section className="companion-handoff" aria-labelledby="companion-handoff-title">
