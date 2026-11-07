@@ -62,7 +62,13 @@ type OutboxItem = {
   recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
 };
 type Snapshot = {
+  purpose?: string;
+  audience?: string;
+  window?: { days: number; from: string; to: string };
   sections?: Record<string, string>;
+  source_coverage?: Record<string, { status: string; reason?: string; label?: string; count: number }>;
+  limitations?: Array<{ source: string; status: string; reason?: string }>;
+  source_references?: Array<{ source_ref: string; epistemic_status: string; record_status: string; event_at?: string | null; recorded_at?: string | null; stale_warning: boolean }>;
   content_sha256?: string;
   source_id_validation?: string;
 };
@@ -551,6 +557,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                   </div>
                 ))}
                 {activeSnapshot.content_sha256 && <p style={{ fontSize: 10, overflowWrap: "anywhere" }}>Integrity hash: {activeSnapshot.content_sha256}</p>}
+                {activeSnapshot.purpose && <p style={{ fontSize: 11 }}>Purpose: {activeSnapshot.purpose.replaceAll("_", " ")} · Audience: {activeSnapshot.audience ?? "not recorded"} · Window: {activeSnapshot.window?.days ?? "unknown"} days</p>}
+                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Source coverage</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || key}: {value.status}{value.reason ? " (" + value.reason + ")" : ""} · {value.count} record(s)</p>)}</section>}
+                {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Limitation — {item.source}: {item.status}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
+                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {item.source_ref} · {item.epistemic_status} · {item.record_status} · event {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}</p>)}
                 <p style={{ fontSize: 11 }}>Source IDs: {activeSnapshot.source_id_validation === "not_supplied" ? "not supplied" : "not independently verified by SolenOS"}.</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
