@@ -34,7 +34,8 @@ assert.doesNotMatch(companion, /Replies may be unavailable sometimes/);
 assert.doesNotMatch(companion, /The safety engine flagged this exchange/);
 assert.match(companion, /A few words are enough/);
 assert.match(companion, /You don’t have to figure it all out right now/);
-assert.match(companion, /showPanel=\{false\}/);
+assert.match(companion, /refreshPendingCareUpdates/);
+assert.match(companion, /pendingCareUpdates/);
 assert.match(deltaPanel, /if \(!showPanel\) return null/);
 assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);
 
