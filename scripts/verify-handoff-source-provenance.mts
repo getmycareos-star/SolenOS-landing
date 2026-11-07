@@ -57,6 +57,10 @@ assert.match(sharingComponent, /Professional sharing is unavailable until SolenO
   "professional sharing must fail closed until recipient identity and role are verified");
 assert.match(sharingComponent, /Accept and record receipt/,
   "receiving caregivers must explicitly accept and acknowledge");
+assert.match(sharingComponent, /activeSnapshot\.source_coverage/,
+  "recipients must see source coverage for the approved sharing scope");
+assert.match(sharingComponent, /activeSnapshot\.source_references/,
+  "recipients must see source references, epistemic status, and event/recording times");
 assert.match(sharingComponent, /revoke\(item\)/,
   "the initiating caregiver must retain a revocation path");
 assert.doesNotMatch(sharingComponent, /source_record_ids\s*:/,
