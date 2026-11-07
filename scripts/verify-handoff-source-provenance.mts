@@ -124,7 +124,7 @@ assert.ok(appointmentWorkspace.includes("No recent care events were returned") &
 assert.ok(appointmentWorkspace.includes("getJSON('/appointment-workspaces')"), "appointment workspace must hydrate durable backend records");
 assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
 assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
-assert.ok(/expected_version:\s*(?:savedVersion|recordVersion)/.test(appointmentWorkspace), "appointment saves must use optimistic concurrency with the current persisted version");
+assert.match(appointmentWorkspace, /expected_version:\s*record\.version_number/, "appointment saves must use the current persisted record version for optimistic concurrency");
 assert.ok(appointmentWorkspace.includes("lcr_reconciliation: 'not_performed'"), "appointment notes must not silently promote themselves into LCR facts");
 assert.match(appointmentWorkspace, /postJSON\('\/appointment-workspaces\/' \+ encodeURIComponent\(record\.id\) \+ '\/outcome-proposals'/, "appointment outcome candidates must be created by the backend");
 assert.match(appointmentWorkspace, /outcome-proposals\/' \+ encodeURIComponent\(proposal\.id\) \+ '\/review/, "appointment candidates must use backend review decisions");
