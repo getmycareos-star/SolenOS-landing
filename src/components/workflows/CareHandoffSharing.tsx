@@ -112,7 +112,7 @@ function sourceKeysForScope(scope: string): Set<string> {
   return new Set(["care_facts", "care_assertions", "care_events", "care_decisions", "decision_outcomes", "care_action_outcomes", "care_transitions", "care_timeline_entries", "daily_care"]);
 }
 
-function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft)) {
+function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "") {
   const lines = [
     audience === "family" ? "SolenOS Family Care Handoff — Living Care Record · Family Edition" : "SolenOS Professional Care Handoff — Living Care Record · Professional Edition",
     "Purpose: " + purpose,
@@ -148,6 +148,11 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     const line = "\\nCaregiver-added note (not independently verified): " + note.text;
     if (lines.join("\\n").length + line.length > 16500) { truncated = true; break; }
     lines.push(line);
+  }
+  if (caregiverNote.trim()) {
+    const line = "\\nCaregiver-added note (not independently verified): " + caregiverNote.trim();
+    if (lines.join("\\n").length + line.length > 16500) truncated = true;
+    else lines.push(line);
   }
   lines.push("\\n## Source coverage");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
@@ -246,11 +251,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setReviewConfirmed(false);
       return;
     }
-    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope);
+    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope, caregiverNote);
     setSummaryText(prepared.text);
     setCaregiverNote("");
     setReviewConfirmed(false);
-  }, [draft, audience, purpose, selectedScope]);
+  }, [draft, audience, purpose, selectedScope, caregiverNote]);
 
   useEffect(() => {
     if (!draft?.draft_id) {
