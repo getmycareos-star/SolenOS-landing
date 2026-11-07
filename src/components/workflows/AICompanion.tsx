@@ -65,6 +65,18 @@ interface HandoffDraft {
   warning: string
 }
 
+interface CareUpdateProposal {
+  id: string
+  status: string
+  proposal_type: string
+  proposed_change: { asserted_value?: string; source_quote?: string; information_status?: string }
+  source_message_id: string
+  source_conversation_id: string
+  candidate_index: number
+  proposal_version: number
+  created_at?: string | null
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -83,10 +95,10 @@ interface Message {
   ai_generated?: boolean
   written_to_lcr?: boolean
   persistence?: string
+  care_update_candidates?: CareUpdateProposal[]
   timestamp: Date
 }
 
-const CARE_REVIEW_SIGNAL = /\b(sleep|slept|awake|wandering|wandered|sundowning|medication|medicine|dose|pill|missed|refused|pain|fall|fell|confused|agitated|agitation|behavio[u]?r|eating|drinking|hydration|appetite|appointment|doctor|nurse|hospital|toilet|continence|breathing|fever|symptom|memory|dementia|caregiver|mood|blood pressure|blood sugar|mobility|injury|rash|swelling|constipation|diarrh?ea|bowel|urine|infection|safety|unsafe|hurt|hit|shout|distress|anxiety|anxious|depressed|depression|weight|temperature)\b/i
 const HANDOFF_TEMPLATE_FALLBACK = {
   family: [
     'What matters most right now', 'How the person is doing', 'How to care for them',
@@ -103,7 +115,6 @@ const HANDOFF_TEMPLATE_FALLBACK = {
   ],
 } as const
 
-const CASUAL_GREETING = /^(hi|hello|hey|good morning|good afternoon|good evening|how are you|thanks|thank you|ok|okay|bye|goodbye)[.!?\s]*$/i
 const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   care_event: 'Care entry',
   care_evidence: 'Source evidence',
@@ -137,14 +148,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [candidateCorrections, setCandidateCorrections] = useState<Record<string, string>>({})
+  const [candidateErrors, setCandidateErrors] = useState<Record<string, string>>({})
+  const [candidateBusy, setCandidateBusy] = useState<Record<string, boolean>>({})
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
   const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'overview' | null>(null)
   const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null)
   const [handoffDraftLoading, setHandoffDraftLoading] = useState(false)
   const [handoffDraftError, setHandoffDraftError] = useState<string | null>(null)
-  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number } | null>(null)
-  const [deltaToken, setDeltaToken] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -346,27 +358,48 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
+        care_update_candidates: Array.isArray(response.care_update_candidates) ? response.care_update_candidates : [],
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
 
-      if (!isEmergency && !CASUAL_GREETING.test(submittedText) && CARE_REVIEW_SIGNAL.test(submittedText)) {
-        const nextToken = deltaToken + 1
-        setDeltaToken(nextToken)
-        setDeltaAutoInput({
-          personId: session.person.id,
-          content: submittedText,
-          source: 'AI Companion caregiver message (automatic background review)',
-          eventDate: new Date().toISOString(),
-          token: nextToken,
-        })
-      }
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
       setInput(submittedText)
       setRequestError('Your message could not be sent. It remains in the box below. Check your connection and try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+
+  const reviewCareUpdate = async (proposal: CareUpdateProposal, decision: 'accept' | 'correct' | 'reject') => {
+    const correctedText = (candidateCorrections[proposal.id] ?? '').trim()
+    if (decision === 'correct' && !correctedText) {
+      setCandidateErrors(prev => ({ ...prev, [proposal.id]: 'Enter the corrected wording first.' }))
+      return
+    }
+    setCandidateBusy(prev => ({ ...prev, [proposal.id]: true }))
+    setCandidateErrors(prev => ({ ...prev, [proposal.id]: '' }))
+    try {
+      const result = await postJSON('/companion/care-updates/' + encodeURIComponent(proposal.id) + '/review', {
+        decision,
+        corrected_text: decision === 'correct' ? correctedText : undefined,
+        correction_context: decision === 'correct' ? correctedText : undefined,
+      }) as any
+      setMessages(previous => previous.map(message => {
+        if (!message.care_update_candidates?.some(item => item.id === proposal.id)) return message
+        const updated = message.care_update_candidates.map(item =>
+          item.id === proposal.id ? { ...item, status: result?.proposal?.status ?? (decision === 'correct' ? 'corrected' : decision === 'accept' ? 'accepted' : 'rejected') } : item
+        )
+        if (result?.corrected_proposal) updated.push(result.corrected_proposal as CareUpdateProposal)
+        return { ...message, care_update_candidates: updated }
+      }))
+      setCandidateCorrections(prev => ({ ...prev, [proposal.id]: '' }))
+    } catch {
+      setCandidateErrors(prev => ({ ...prev, [proposal.id]: 'The review could not be saved. The proposal remains unchanged. Retry when connected.' }))
+    } finally {
+      setCandidateBusy(prev => ({ ...prev, [proposal.id]: false }))
     }
   }
 
@@ -627,6 +660,25 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
+                    {!isUser && msg.care_update_candidates?.map(candidate => {
+                      const value = candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''
+                      const pending = candidate.status === 'pending_authorization'
+                      return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
+                        <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>{pending ? 'Pending review' : candidate.status.replaceAll('_', ' ')}</span></div>
+                        <p>{value}</p>
+                        <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Qwen proposal'}</p>
+                        {pending ? <div className="companion-care-update-actions">
+                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
+                          <label>
+                            <span className="sr-only">Correct proposed wording</span>
+                            <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Enter a correction" maxLength={4000} />
+                          </label>
+                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
+                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
+                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Saved as a caregiver-attributed report in the Living Care Record.' : candidate.status === 'rejected' ? 'Rejected. No LCR assertion was created.' : candidate.status === 'corrected' ? 'Original proposal retained. A corrected version requires separate acceptance.' : candidate.status.replaceAll('_', ' ')}</p>}
+                        {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
+                      </section>
+                    })}
                     {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount + (msg.source_record_refs?.length ?? 0) > 0
                       ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, ' + (msg.source_assertion_ids?.length ?? 0) + ' caregiver-reviewed assertions, ' + (msg.source_lcr_context_ids?.length ?? 0) + ' additional record references, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
                       : 'No matching care context was returned for this response.'} Conversation only; not added to the Living Care Record.</span></div>}

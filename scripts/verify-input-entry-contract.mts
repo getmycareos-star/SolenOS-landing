@@ -161,10 +161,12 @@ assert(!workspace.includes("/workspace/companion?draft="), "LCR must not redirec
 console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
 console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");
 const companionSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "AICompanion.tsx"), "utf8");
-assert(companionSource.includes("CARE_REVIEW_SIGNAL.test(submittedText)"), "Companion care-related messages must trigger automatic background review");
-assert(companionSource.includes("automatic background review"), "Companion background review must not require a caregiver to select a workflow");
-assert(!companionSource.includes("Compare this report with the Living Care Record"), "Companion must not require manual selection to start care review");
-assert(!companionSource.includes("compareMessageWithRecord"), "Manual-only Companion review trigger must be removed");
+assert(companionSource.includes("response.care_update_candidates"), "Companion review UI must consume backend-validated proposals");
+assert(companionSource.includes("reviewCareUpdate(candidate, 'accept')"), "Companion must expose explicit acceptance");
+assert(companionSource.includes("reviewCareUpdate(candidate, 'correct')"), "Companion must expose explicit correction");
+assert(companionSource.includes("reviewCareUpdate(candidate, 'reject')"), "Companion must expose explicit rejection");
+assert(!companionSource.includes("CARE_REVIEW_SIGNAL"), "Care-update identification must not rely on frontend keyword matching");
+assert(!companionSource.includes("automatic background review"), "Frontend must not create a parallel care-review workflow");
 
 assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
 assert(companionSource.includes("setDeltaAutoInput({"), "Companion must enqueue the review through the existing Delta panel");
