@@ -218,7 +218,6 @@ export default function AppointmentWorkspace() {
         ...(record?.payload || {}),
         caregiverReport: note.trim(),
         captureStage: stage,
-        caregiverReportAt: new Date().toISOString(),
       }
       const nextStatus = record
         ? record.status === 'preparation' && stage !== 'prepare'
