@@ -996,6 +996,7 @@ function GuidedStageContent({
   </div>
 }
 
+// Dynamically mounted only after the caregiver opens appointment support.
 export default function AppointmentWorkspace({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
   const [open, setOpen] = useState(initiallyOpen)
   const [stage, setStage] = useState<Stage>('prepare')
