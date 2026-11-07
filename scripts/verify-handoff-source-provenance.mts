@@ -77,6 +77,20 @@ assert.doesNotMatch(sharingComponent, /Evidence IDs:/,
   "caregiver review must not expose internal evidence identifiers");
 assert.doesNotMatch(sharingComponent, /Origin groups:/,
   "caregiver review must not expose internal lineage keys");
+assert.match(sharingComponent, /Confirm exactly what will be shared/,
+  "final approval must restate the full sharing decision");
+assert.match(sharingComponent, /Recipient\(s\):/,
+  "final approval must identify selected recipients");
+assert.match(sharingComponent, /Information included:/,
+  "final approval must identify selected information scope");
+assert.match(sharingComponent, /Access ends:/,
+  "final approval must restate the expiry");
+assert.match(sharingComponent, /activeSnapshot\.purpose && <p style=\{\{ fontSize: 12 \}\}>Purpose: \{handoffPurposeLabel/,
+  "incoming handoff must show a caregiver-readable purpose");
+assert.match(sharingComponent, /item\.scope\.map\(readableScope\)/,
+  "incoming and outgoing scope must use caregiver-readable labels");
+assert.doesNotMatch(sharingComponent, /Integrity hash:/,
+  "incoming caregiver review must not expose raw integrity hashes");
 assert.match(sharingComponent, /revoke\(item\)/,
   "the initiating caregiver must retain a revocation path");
 assert.doesNotMatch(sharingComponent, /source_record_ids\s*:/,
