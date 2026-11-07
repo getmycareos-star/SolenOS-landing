@@ -704,12 +704,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           ) : (
             <div className="companion-message-list">
               <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
+              {pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
               {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
                 <div className="companion-pending-care-heading">
                   <h3>Care updates awaiting your review</h3>
                   <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates" disabled={pendingCareUpdatesRefreshing}>{pendingCareUpdatesRefreshing ? 'Refreshing…' : 'Refresh'}</button>
                 </div>
-                {pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
                 {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
                   <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>Pending review</span></div>
                   <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
