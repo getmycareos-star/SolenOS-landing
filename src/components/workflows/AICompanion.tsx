@@ -698,7 +698,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             )}
           </div>
         )}
-        <CareHandoffSharing draft={handoffDraft} audience={handoffAudience} purpose={handoffPurpose} />
+        <CareHandoffSharing
+          draft={handoffDraft}
+          audience={handoffAudience}
+          purpose={handoffPurpose}
+          onResumeDraft={(savedDraft) => {
+            setHandoffDraft(savedDraft as HandoffDraft)
+            setHandoffAudience(savedDraft.audience ?? (savedDraft.purpose === "professional_appointment" ? "professional" : "family"))
+            setHandoffPurpose(savedDraft.purpose === "professional_appointment" ? "appointment" : savedDraft.purpose === "return_to_care" ? "today" : "overview")
+            setHandoffStep("purpose")
+          }}
+        />
       </section>
 
       )}
