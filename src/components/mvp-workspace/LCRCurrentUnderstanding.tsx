@@ -911,8 +911,8 @@ export function LCRCurrentUnderstanding() {
       <div className="lcr-section-heading">
         <div>
           <p className="lcr-eyebrow">YOUR CARE RECORD</p>
-          <h2 id="lcr-current-understanding-heading">What we know about care right now</h2>
-          <p>A clear picture of what has been shared, what may need attention, and what is still uncertain.</p>
+          <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
+          <p>What has been shared, what may need attention, and what is still unclear.</p>
         </div>
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh current care understanding">
           <RefreshCw size={16} aria-hidden="true" /> Refresh
@@ -923,7 +923,7 @@ export function LCRCurrentUnderstanding() {
         <div className="lcr-entry-heading">
           <div>
             <h3 id="lcr-attention-now-heading">Needs attention</h3>
-            <p>These are concerns or follow-ups found in the information saved so far. A flagged item is not a diagnosis.</p>
+            <p>Follow-ups and changes mentioned in the care record. A flag is not a diagnosis or a medical judgement.</p>
           </div>
         </div>
         {sourceFreshness?.reassessment_recommended && (
@@ -1273,6 +1273,7 @@ export function LCRCurrentUnderstanding() {
               )}
             </div>
 
+      <details className="lcr-history-details"><summary>See patterns in the care history</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-pattern-history-heading">Patterns over time</h3>
@@ -1310,6 +1311,8 @@ export function LCRCurrentUnderstanding() {
         )}
       </div>
 
+      </details>
+      <details className="lcr-history-details"><summary>Review changes over time</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-change-history-heading">Changes over time</h3>
@@ -1439,7 +1442,8 @@ export function LCRCurrentUnderstanding() {
         )}
       </div>
 
-      <details className="lcr-situation-assessment lcr-assessment-details"><summary>How this care picture was put together</summary><div aria-labelledby="lcr-situation-assessment-heading">
+      </details>
+      <details className="lcr-situation-assessment lcr-assessment-details"><summary>Record details and how this picture was prepared</summary><div aria-labelledby="lcr-situation-assessment-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-situation-assessment-heading">Care picture review</h3>
           <button type="button" className="lcr-text-action" onClick={() => void reassess()} disabled={assessmentLoading || loading}>
