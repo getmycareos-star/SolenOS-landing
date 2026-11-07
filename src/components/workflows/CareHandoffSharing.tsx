@@ -84,7 +84,29 @@ function formatDate(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? "Not recorded" : date.toLocaleString();
 }
 
-function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string) {
+function scopeForSourceType(sourceType: string): string {
+  if (sourceType.startsWith("document_") || sourceType === "uploaded_document") return "documents";
+  if (sourceType === "appointment") return "appointments";
+  if (["care_action", "care_action_outcome", "open_question", "information_gap"].includes(sourceType)) return "open_loops";
+  return "lcr_summary";
+}
+
+function requiredHandoffScopes(draft: DraftPayload): string[] {
+  const sourceTypes = new Map<string, string>();
+  for (const section of draft.sections) {
+    for (const item of section.items) sourceTypes.set(item.source_table + ":" + item.source_id, item.source_type);
+  }
+  return [...new Set((draft.generation?.sections ?? []).map(item => scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact")))];
+}
+
+function sourceKeysForScope(scope: string): Set<string> {
+  if (scope === "documents") return new Set(["documents"]);
+  if (scope === "appointments") return new Set(["appointments"]);
+  if (scope === "open_loops") return new Set(["actions", "open_questions", "information_gaps"]);
+  return new Set(["care_facts", "care_assertions", "care_events", "care_decisions", "decision_outcomes", "care_action_outcomes", "care_transitions", "care_timeline_entries", "daily_care"]);
+}
+
+function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft)) {
   const lines = [
     audience === "family" ? "SolenOS Family Care Handoff — Living Care Record · Family Edition" : "SolenOS Professional Care Handoff — Living Care Record · Professional Edition",
     "Purpose: " + purpose,
@@ -96,8 +118,11 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "",
   ];
   let truncated = false;
+  const sourceTypes = new Map<string, string>();
+  for (const group of draft.sections) for (const source of group.items) sourceTypes.set(source.source_table + ":" + source.source_id, source.source_type);
   const generated = draft.generation?.sections ?? [];
   for (const item of generated) {
+    if (!scopes.includes(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact"))) continue;
     const sectionHeader = "\\n## " + item.section;
     if (lines.join("\\n").length + sectionHeader.length > 16500) { truncated = true; break; }
     lines.push(sectionHeader);
@@ -125,6 +150,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     lines.push(line);
   }
   for (const limitation of draft.limitations) {
+    if (!includedSourceKeys.has(limitation.source)) continue;
     const line = "- " + limitation.source + ": " + limitation.status + (limitation.reason ? " (" + limitation.reason + ")" : "");
     if (lines.join("\\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
@@ -150,6 +176,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [expiryDays, setExpiryDays] = useState("7");
   const [summaryText, setSummaryText] = useState("");
   const [caregiverNote, setCaregiverNote] = useState("");
+  const [selectedScope, setSelectedScope] = useState<string[]>([]);
   const [revisionHistory, setRevisionHistory] = useState<Array<{ revision_number: number; change_type: string; created_at: string | null }>>([]);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
@@ -203,17 +230,21 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   useEffect(() => { void load(); }, [load]);
 
   useEffect(() => {
+    setSelectedScope(draft ? requiredHandoffScopes(draft) : []);
+  }, [draft?.draft_id]);
+
+  useEffect(() => {
     if (!draft || !audience || !purpose) {
       setSummaryText("");
       setCaregiverNote("");
       setReviewConfirmed(false);
       return;
     }
-    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview");
+    const prepared = buildShareText(draft, audience, purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor's appointment" : "Full care overview", selectedScope);
     setSummaryText(prepared.text);
     setCaregiverNote("");
     setReviewConfirmed(false);
-  }, [draft, audience, purpose]);
+  }, [draft, audience, purpose, selectedScope]);
 
   useEffect(() => {
     if (!draft?.draft_id) {
@@ -277,7 +308,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setError("This draft has no validated Qwen-generated document. It cannot be shared.");
       return;
     }
-    if (!reviewConfirmed || !summaryText.trim() || selectedRecipients.length === 0) {
+    if (!reviewConfirmed || !summaryText.trim() || selectedRecipients.length === 0 || selectedScope.length === 0) {
       setError("Review the complete generated handoff and select at least one eligible linked caregiver before sharing.");
       return;
     }
@@ -299,14 +330,14 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
       await postJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/approve", {
         recipient_caregiver_ids: selectedRecipients,
-        scope: ["lcr_summary"],
+        scope: [...selectedScope].sort(),
         expires_at: expiresAt,
       });
       const created = await postJSON("/handoffs", {
         person_id: session.person.id,
         draft_id: draft.draft_id,
         recipient_caregiver_ids: selectedRecipients,
-        scope: ["lcr_summary"],
+        scope: [...selectedScope].sort(),
         expires_at: expiresAt,
       }, { "X-Request-ID": requestId }) as { id: string };
       if (!created?.id) throw new Error("The backend did not confirm a handoff ID. No successful share is assumed.");
@@ -458,6 +489,21 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved revision: {revisionHistory.length ? Math.max(...revisionHistory.map(item => item.revision_number)) : draft.revision_number ?? 1} · Source freshness: {sourceFreshness?.status ?? "checking"} · {revisionHistory.length} revision record(s)</p>
           {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => <p key={item.revision_number} style={{ fontSize: 11, margin: "6px 0", color: "#667267" }}>Revision {item.revision_number} · {item.change_type.replaceAll("_", " ")} · {formatDate(item.created_at)}</p>)}</details>}
           {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>This draft is {sourceFreshness.status}. Prepare a fresh draft before approval or sharing.</p>}
+          <div style={{ margin: "12px 0" }}>
+            <strong style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Sharing scope</strong>
+            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Choose which source categories the recipient can receive. Unselected categories remain in the saved draft and are not attached to this handoff.</p>
+            {requiredHandoffScopes(draft).map(scope => (
+              <label key={scope} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, margin: "6px 0" }}>
+                <input type="checkbox" checked={selectedScope.includes(scope)} onChange={event => {
+                  setSelectedScope(current => event.target.checked ? [...current, scope] : current.filter(value => value !== scope));
+                  setReviewConfirmed(false);
+                  shareRequestId.current = null;
+                  shareExpiry.current = null;
+                }} />
+                {scope === "lcr_summary" ? "Care record and Daily Care" : scope === "documents" ? "Uploaded documents" : scope === "appointments" ? "Appointments" : "Open care actions and questions"}
+              </label>
+            ))}
+          </div>
           <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Additional caregiver note (optional)</label>
           <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
           <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale"} onClick={() => void saveDraftRevision()}>Save draft revision</button>
@@ -465,7 +511,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
           </label>
-          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || selectedRecipients.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
+          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed snapshot…" : "Share reviewed family handoff"}
           </button>
         </section>
