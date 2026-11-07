@@ -28,6 +28,23 @@ type OutcomeDraft = {
   missing_information: string[]
   limitations: string[]
 }
+type OutcomeProposal = {
+  id: string
+  status: string
+  candidate_index: number
+  proposal_version: number
+  proposed_change: {
+    asserted_value: string
+    source_quote: string
+    label: string
+    field: string
+    source_record_version: number
+    epistemic_status: string
+    independently_verified: boolean
+    correction_context?: string
+    supersedes_proposal_id?: string
+  }
+}
 
 const stageStatus: Record<Stage, string> = {
   prepare: 'preparation',
@@ -42,6 +59,10 @@ export default function AppointmentWorkspace() {
   const [record, setRecord] = useState<WorkspaceRecord | null>(null)
   const [appointmentId, setAppointmentId] = useState('')
   const [outcome, setOutcome] = useState<OutcomeDraft | null>(null)
+  const [outcomeProposals, setOutcomeProposals] = useState<OutcomeProposal[]>([])
+  const [proposalBusy, setProposalBusy] = useState(false)
+  const [correctionDrafts, setCorrectionDrafts] = useState<Record<string, string>>({})
+  const [correctionContexts, setCorrectionContexts] = useState<Record<string, string>>({})
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -78,6 +99,12 @@ export default function AppointmentWorkspace() {
             try {
               const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as OutcomeDraft
               if (!cancelled) setOutcome(draft)
+              try {
+                const proposals = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-proposals') as { items?: OutcomeProposal[] }
+                if (!cancelled) setOutcomeProposals(proposals.items || [])
+              } catch {
+                if (!cancelled) setOutcomeProposals([])
+              }
             } catch {
               if (!cancelled) setOutcome(null)
             }
@@ -97,6 +124,55 @@ export default function AppointmentWorkspace() {
   const refreshOutcome = async (recordId: string) => {
     const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft') as OutcomeDraft
     setOutcome(draft)
+  }
+
+  const prepareOutcomeReview = async () => {
+    if (!record) return
+    setProposalBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const result = await postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number; written_to_lcr?: boolean }
+      setOutcomeProposals(result.items || [])
+      setMessage((result.count || 0) + ' outcome candidate(s) prepared. Nothing has been added to the Living Care Record yet.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Outcome candidates could not be prepared.')
+    } finally {
+      setProposalBusy(false)
+    }
+  }
+
+  const reviewOutcomeProposal = async (proposal: OutcomeProposal, decision: 'accept' | 'correct' | 'reject') => {
+    if (!record) return
+    setProposalBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const body: Record<string, string> = { decision }
+      if (decision === 'correct') {
+        body.corrected_text = correctionDrafts[proposal.id] || ''
+        body.correction_context = correctionContexts[proposal.id] || ''
+      }
+      const result = await postJSON(
+        '/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals/' + encodeURIComponent(proposal.id) + '/review',
+        body,
+      ) as { proposal: OutcomeProposal; corrected_proposal?: OutcomeProposal | null; written_to_lcr?: boolean }
+      setOutcomeProposals(current => {
+        const updated = current.map(item => item.id === proposal.id ? result.proposal : item)
+        return result.corrected_proposal && !updated.some(item => item.id === result.corrected_proposal?.id)
+          ? [...updated, result.corrected_proposal]
+          : updated
+      })
+      setMessage(decision === 'accept'
+        ? (result.written_to_lcr ? 'Accepted as a caregiver-reviewed LCR assertion. It is not clinically verified.' : 'No LCR assertion was created.')
+        : decision === 'correct'
+          ? 'Correction saved as a separate pending proposal. Review and accept it separately.'
+          : 'Candidate rejected. No LCR assertion was created.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The review decision could not be saved.')
+    } finally {
+      setProposalBusy(false)
+    }
   }
 
   const saveNote = async () => {
@@ -212,6 +288,33 @@ export default function AppointmentWorkspace() {
             {Object.entries(outcome.sections).filter(([, items]) => items.length).map(([key, items]) => <section key={key}><h6>{key.replaceAll('_', ' ')}</h6>{items.map((item, index) => <p key={key + index}>{item.text}<small>{item.epistemic_status?.replaceAll('_', ' ') || 'Recorded information'} · {item.source_type?.replaceAll('_', ' ') || 'Caregiver record'}</small></p>)}</section>)}
             {outcome.missing_information.length > 0 && <p className="guided-muted">Not recorded: {outcome.missing_information.join(', ')}.</p>}
             <p className="guided-footnote">This is a review draft, not a clinical conclusion. The Living Care Record has not been changed.</p>
+            <div className="guided-actions">
+              <button className="guided-primary" type="button" onClick={() => void prepareOutcomeReview()} disabled={!record || proposalBusy}>
+                {proposalBusy ? 'Preparing…' : 'Prepare LCR review'}
+              </button>
+            </div>
+            {outcomeProposals.length > 0 && <div className="guided-proposals">
+              <h5>Caregiver review required</h5>
+              <p className="guided-muted">Each candidate is tied to the saved appointment revision. Accepting records a caregiver-reviewed assertion, not a clinically verified fact.</p>
+              {outcomeProposals.filter(item => item.proposed_change.source_record_version === record?.version_number).map(item => <article key={item.id} className="guided-proposal">
+                <strong>{item.proposed_change.label || item.proposed_change.field.replaceAll('_', ' ')}</strong>
+                <p>{item.proposed_change.asserted_value}</p>
+                <small>{item.status.replaceAll('_', ' ')} · caregiver reported · not independently verified</small>
+                {item.status === 'pending_authorization' && <>
+                  <label className="guided-capture-label">Correction, if needed
+                    <textarea rows={2} value={correctionDrafts[item.id] || ''} onChange={event => setCorrectionDrafts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Enter the corrected statement." />
+                  </label>
+                  <label className="guided-capture-label">Why this correction is needed
+                    <textarea rows={2} value={correctionContexts[item.id] || ''} onChange={event => setCorrectionContexts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Record the caregiver's correction context. The corrected statement must appear here." />
+                  </label>
+                  <div className="guided-actions">
+                    <button className="guided-primary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'accept')}>Accept as caregiver report</button>
+                    <button className="guided-secondary" type="button" disabled={proposalBusy || !(correctionDrafts[item.id] || '').trim() || !(correctionContexts[item.id] || '').includes((correctionDrafts[item.id] || '').trim())} onClick={() => void reviewOutcomeProposal(item, 'correct')}>Save correction</button>
+                    <button className="guided-secondary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'reject')}>Reject</button>
+                  </div>
+                </>}
+              </article>)}
+            </div>}
           </div>}
           {(!outcome || outcome.status === 'no_outcome_information') && <p className="guided-muted">No appointment outcome has been recorded yet. You can return later; SolenOS will not invent what happened.</p>}
           {outcome?.limitations?.map((item, index) => <p className="guided-footnote" key={index}>{item}</p>)}
@@ -253,6 +356,11 @@ export default function AppointmentWorkspace() {
         .guided-outcome h6 { margin:0 0 5px; color:#526653; font-size:11px; text-transform:capitalize; }
         .guided-outcome p { margin:0; color:#34493a; font-size:12px; line-height:1.55; white-space:pre-wrap; }
         .guided-outcome small { display:block; margin-top:4px; color:#7a867c; font-size:10px; }
+        .guided-proposals { margin-top:16px; padding-top:12px; border-top:1px solid #edf1eb; }
+        .guided-proposal { margin-top:10px; padding:12px; border:1px solid #e2eae0; border-radius:10px; background:#fbfcfa; }
+        .guided-proposal strong { color:#34493a; font-size:12px; }
+        .guided-proposal p { margin:7px 0; color:#34493a; font-size:12px; line-height:1.55; white-space:pre-wrap; }
+        .guided-proposal small { color:#7a867c; font-size:10px; }
         .guided-status { margin-top:10px; color:#59705c; font-size:11px; }
         .guided-status span { display:block; color:#9a5c43; margin-top:4px; }
         .guided-details-toggle { margin-top:16px; padding:9px 0; border:0; background:transparent; color:#46654b; font:inherit; font-size:12px; font-weight:750; text-decoration:underline; cursor:pointer; }
