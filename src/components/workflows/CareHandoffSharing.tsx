@@ -61,6 +61,16 @@ type OutboxItem = {
   expires_at: string | null; has_summary: boolean; is_expired?: boolean;
   recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
 };
+type DraftRevision = {
+  revision_number: number;
+  change_type: string;
+  created_at: string | null;
+  content?: {
+    generation?: { sections?: Array<{ section: string; text: string; source_ref: string }> };
+    caregiver_notes?: Array<{ text: string; attribution: string }>;
+  };
+  source_snapshot?: { source_records?: unknown[] };
+};
 type Snapshot = {
   purpose?: string;
   audience?: string;
@@ -188,7 +198,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [summaryText, setSummaryText] = useState("");
   const [caregiverNote, setCaregiverNote] = useState("");
   const [selectedScope, setSelectedScope] = useState<string[]>([]);
-  const [revisionHistory, setRevisionHistory] = useState<Array<{ revision_number: number; change_type: string; created_at: string | null }>>([]);
+  const [revisionHistory, setRevisionHistory] = useState<DraftRevision[]>([]);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
@@ -269,7 +279,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     void ensureAnonymousSession().then(() => getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id))).then((saved) => {
       if (!active) return;
       const record = saved as {
-        revision_history?: Array<{ revision_number: number; change_type: string; created_at: string | null }>;
+        revision_history?: DraftRevision[];
         source_freshness?: { status: string; stale_source_count?: number; unknown_source_count?: number };
         caregiver_notes?: Array<{ text: string; attribution: string }>;
       };
@@ -501,7 +511,14 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
           <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview uses the backend-validated Qwen quotations, source references, evidence status, and separate event/recording times.</p>
           <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved revision: {revisionHistory.length ? Math.max(...revisionHistory.map(item => item.revision_number)) : draft.revision_number ?? 1} · Source freshness: {sourceFreshness?.status ?? "checking"} · {revisionHistory.length} revision record(s)</p>
-          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => <p key={item.revision_number} style={{ fontSize: 11, margin: "6px 0", color: "#667267" }}>Revision {item.revision_number} · {item.change_type.replaceAll("_", " ")} · {formatDate(item.created_at)}</p>)}</details>}
+          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => (
+              <details key={item.revision_number} style={{ margin: "6px 0" }}>
+                <summary style={{ cursor: "pointer", fontSize: 11 }}>Revision {item.revision_number} · {item.change_type.replaceAll("_", " ")} · {formatDate(item.created_at)}</summary>
+                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{section.section}:</strong> {section.text} <small>({section.source_ref})</small></p>)}
+                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note ({note.attribution}): {note.text}</p>)}
+                <p style={{ fontSize: 10, color: "#667267" }}>Source records in this immutable snapshot: {item.source_snapshot?.source_records?.length ?? "not reported"}</p>
+              </details>
+            ))}</details>}
           {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>This draft is {sourceFreshness.status}. Prepare a fresh draft before approval or sharing.</p>}
           <div style={{ margin: "12px 0" }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Sharing scope</strong>
