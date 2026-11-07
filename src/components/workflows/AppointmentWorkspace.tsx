@@ -952,8 +952,6 @@ function GuidedStageContent({
   quickCapture: string
   setQuickCapture: (value: string) => void
   saving: boolean
-  saveError: string
-  saveMessage: string
   onSave: () => void
   onRefreshOutcome: () => void
 }) {
@@ -1003,6 +1001,7 @@ export default function AppointmentWorkspace() {
   const [stage, setStage] = useState<Stage>('prepare')
   const [brief, setBrief] = useState<GuidedBrief | null>(null)
   const [record, setRecord] = useState<GuidedWorkspace | null>(null)
+  const [appointmentId, setAppointmentId] = useState('')
   const [outcome, setOutcome] = useState<GuidedOutcome | null>(null)
   const [quickCapture, setQuickCapture] = useState('')
   const [loading, setLoading] = useState(false)
@@ -1024,7 +1023,11 @@ export default function AppointmentWorkspace() {
           getJSON('/appointment-workspaces') as Promise<{ items?: GuidedWorkspace[] }>,
         ])
         if (cancelled) return
-        if (briefResult.status === 'fulfilled') setBrief(briefResult.value)
+        if (briefResult.status === 'fulfilled') {
+          setBrief(briefResult.value)
+          const nextAppointment = briefResult.value.appointments.find(item => item.status === 'scheduled')
+          if (nextAppointment) setAppointmentId(nextAppointment.source_id)
+        }
         else setSaveError('Your appointment brief could not be loaded. Existing care information has not been changed.')
         if (workspaceResult.status === 'fulfilled') {
           const latest = workspaceResult.value.items?.[0] || null
@@ -1032,6 +1035,7 @@ export default function AppointmentWorkspace() {
           if (latest) {
             const savedNote = String(latest.payload?.caregiverReport || '')
             setQuickCapture(savedNote)
+            setAppointmentId(latest.appointment_id || '')
             try {
               const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as GuidedOutcome
               if (!cancelled) setOutcome(draft)
@@ -1089,6 +1093,7 @@ export default function AppointmentWorkspace() {
       if (record) {
         saved = await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), {
           expected_version: record.version_number,
+          appointment_id: appointmentId || undefined,
           status: nextStatus,
           payload,
           change_reason: 'Caregiver saved an optional appointment note',
@@ -1126,12 +1131,12 @@ export default function AppointmentWorkspace() {
       <button type="button" className="appointment-primary" onClick={() => setOpen(value => !value)} aria-expanded={open}>{open ? 'Close' : 'Open appointment support'}</button>
     </div>
     {open && <>
-      <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>You are not expected to complete forms before, during or after a visit. Notes are optional. Caregiver reports remain attributed to the caregiver, and nothing here silently changes the Living Care Record.</span></div>
+      <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>You are not expected to complete forms before, during or after a visit. Notes are optional. Caregiver notes remain caregiver reports, and nothing here silently changes the Living Care Record.</span></div>
       <nav className="guided-stages" aria-label="Appointment stages">
         {([['prepare','Before'],['during','During'],['after','After']] as const).map(([key,label]) => <button key={key} type="button" className={stage === key ? 'is-active' : ''} aria-pressed={stage === key} onClick={() => setStage(key)}>{label}</button>)}
       </nav>
       {loading && <p className="guided-muted" role="status">Preparing your appointment view…</p>}
-      <GuidedStageContent stage={stage} brief={brief} outcome={outcome} quickCapture={quickCapture} setQuickCapture={setQuickCapture} saving={saving} saveError={saveError} saveMessage={saveMessage} onSave={() => void saveCapture()} onRefreshOutcome={() => void refreshOutcome()} />
+      <GuidedStageContent stage={stage} brief={brief} outcome={outcome} quickCapture={quickCapture} setQuickCapture={setQuickCapture} saving={saving} onSave={() => void saveCapture()} onRefreshOutcome={() => void refreshOutcome()} />
       <div className="guided-status" role="status" aria-live="polite">{saveMessage}{saveError && <span>{saveError}</span>}</div>
       <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => setShowDetailed(value => !value)}>{showDetailed ? 'Close detailed review and follow-up controls' : 'Open detailed review and follow-up controls'}</button>
       {showDetailed && <div className="guided-detailed"><p>For caregivers who need to correct individual sections, review evidence or manage follow-up responsibilities. This is optional.</p><DetailedAppointmentWorkspace /></div>}
