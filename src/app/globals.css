@@ -5728,3 +5728,160 @@ input[type="file"] { width: 100%; white-space: normal; }
   cursor: pointer;
 }
 .companion-pending-care-heading button:focus-visible { outline: 2px solid #789b7b; outline-offset: 2px; }
+
+
+/* Living Care Record: calm, caregiver-first reading hierarchy. */
+.lcr-record-section {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  color: #26372b;
+}
+.lcr-record-section > .lcr-section-heading {
+  align-items: flex-start;
+  gap: 18px;
+  margin: 0 0 22px;
+  padding: 22px 24px;
+  border: 1px solid #e1e9e1;
+  border-radius: 18px;
+  background: #fbfdfb;
+}
+.lcr-record-section .lcr-eyebrow {
+  margin: 0 0 8px;
+  color: #637b66;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.lcr-record-section .lcr-section-heading h2 {
+  margin: 0;
+  color: #25392b;
+  font-size: clamp(23px, 3vw, 30px);
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+.lcr-record-section .lcr-section-heading > div > p:last-child {
+  max-width: 620px;
+  margin: 9px 0 0;
+  color: #657468;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.lcr-record-section > .lcr-situation-assessment {
+  margin: 0 0 16px;
+  padding: 20px;
+  border: 1px solid #e2e9e2;
+  border-radius: 16px;
+  background: #fff;
+}
+.lcr-record-section .lcr-entry-heading {
+  align-items: flex-start;
+  gap: 12px;
+}
+.lcr-record-section .lcr-entry-heading h3,
+.lcr-record-section .lcr-current-fact h4 {
+  margin: 0;
+  color: #2c4432;
+  font-size: 16px;
+  line-height: 1.35;
+}
+.lcr-record-section .lcr-entry-heading p {
+  max-width: 680px;
+  margin: 6px 0 0;
+  color: #69776b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.lcr-record-section .lcr-current-facts {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lcr-record-section .lcr-current-fact {
+  min-width: 0;
+  padding: 14px 15px;
+  border: 1px solid #e7ece7;
+  border-radius: 12px;
+  background: #fbfdfb;
+  overflow-wrap: anywhere;
+}
+.lcr-record-section .lcr-current-fact > strong {
+  color: #2c4031;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.lcr-record-section .lcr-current-fact > p {
+  margin: 6px 0 0;
+  color: #4e5e51;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.lcr-record-section .lcr-current-fact .lcr-entry-status,
+.lcr-record-section .lcr-current-fact > small {
+  color: #778278;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.lcr-record-section .lcr-text-action {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid #dce6dc;
+  border-radius: 9px;
+  background: #f2f7f2;
+  color: #2d4934;
+  font-size: 12px;
+  font-weight: 650;
+}
+.lcr-record-section .lcr-text-action:focus-visible,
+.lcr-record-section button:focus-visible,
+.lcr-record-section summary:focus-visible {
+  outline: 2px solid #789b7b;
+  outline-offset: 3px;
+}
+.lcr-record-section .lcr-history-details {
+  margin: 12px 0;
+  border: 1px solid #e1e9e1;
+  border-radius: 13px;
+  background: #fff;
+}
+.lcr-record-section .lcr-history-details > summary,
+.lcr-record-section .lcr-assessment-details > summary {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  padding: 12px 16px;
+  color: #344d39;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.lcr-record-section .lcr-history-details[open] > summary,
+.lcr-record-section .lcr-assessment-details[open] > summary {
+  border-bottom: 1px solid #e8eee8;
+}
+.lcr-record-section .lcr-history-details > .lcr-situation-assessment {
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  border-radius: 0 0 13px 13px;
+  background: #fff;
+}
+.lcr-record-section .lcr-assessment-details {
+  margin: 12px 0;
+  border: 1px solid #e1e9e1;
+  border-radius: 13px;
+  background: #fbfdfb;
+}
+.lcr-record-section .lcr-assessment-details > div {
+  padding: 16px;
+}
+@media (max-width: 640px) {
+  .lcr-record-section > .lcr-section-heading { padding: 18px 16px; }
+  .lcr-record-section > .lcr-situation-assessment { padding: 15px; }
+  .lcr-record-section .lcr-current-fact { padding: 12px; }
+  .lcr-record-section .lcr-entry-heading { flex-wrap: wrap; }
+  .lcr-record-section .lcr-history-details > .lcr-situation-assessment { padding: 12px; }
+}
