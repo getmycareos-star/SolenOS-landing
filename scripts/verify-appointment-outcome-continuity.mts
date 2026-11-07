@@ -80,3 +80,12 @@ assert(homeSummary.includes("Follow-ups still open") && homeSummary.includes("Re
 assert(homeSummary.includes("Overdue") && homeSummary.includes("Received"), "home summary must surface overdue actions and results awaiting review");
 assert(!homeSummary.toLowerCase().includes("sample appointment") && !homeSummary.toLowerCase().includes("demo appointment"), "home summary must not use fabricated appointment examples");
 console.log("PASS: appointment outcomes, evidence review, follow-up continuity and caregiver-facing language are wired.");
+
+assert.ok(component.includes("function DetailedAppointmentWorkspace()"), "the existing detailed continuity and approval workflow must remain available as an optional review path");
+assert.ok(component.includes("export default function AppointmentWorkspace()"), "the default appointment experience must be the low-burden guided workflow");
+assert.ok(component.includes("You can leave this empty"), "during-visit capture must be explicitly optional");
+assert.ok(component.includes("getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft')"), "the caregiver view must load the backend-organized outcome draft");
+assert.ok(component.includes("No appointment outcome has been recorded yet"), "an empty after-visit state must be honest and must not fabricate an outcome");
+assert.ok(component.includes("The Living Care Record has not been changed"), "generating an outcome draft must remain read-only until explicit review");
+assert.ok(component.includes("Open detailed review and follow-up controls"), "the existing detailed evidence approval and follow-up controls must remain accessible but optional");
+assert.ok(component.includes("Caregiver notes remain caregiver reports"), "the guided workflow must preserve source attribution");
