@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { getJSON, postJSON, patchJSON, getCaregiverId } from '../api/client'
+import { getJSON, patchJSON, getCaregiverId } from '../api/client'
 
 type Assertion = {
   id: string
@@ -22,18 +22,6 @@ type Freshness = {
   review_after_days?: number | null
   explanation: string
 }
-type Question = {
-  question: string
-  subject_type: string
-  subject_id: string
-  priority: string
-  reason: string
-  evidence_ids: string[]
-  source_kind: string
-  source_id: string
-  source_ids: string[]
-  persisted_question_id?: string | null
-}
 type Revision = {
   id: string
   target_type: string
@@ -44,20 +32,6 @@ type Revision = {
   after_state?: Record<string, unknown> | null
   changed_at: string
   evidence_ids: string[]
-}
-type Contradiction = {
-  id: string
-  field: string
-  description: string
-  resolution_status: string
-  resolution_notes?: string | null
-  evidence_ids: string[]
-  source_assertion_ids?: string[] | null
-  matching_candidate_ids?: string[] | null
-  event_id?: string | null
-  context_key?: string | null
-  effective_from?: string | null
-  effective_to?: string | null
 }
 type Outcome = {
   id: string
@@ -70,13 +44,11 @@ type Outcome = {
 type PanelData = {
   assertions: Assertion[]
   freshness: Freshness[]
-  questions: Question[]
   revisions: Revision[]
   outcomes: Outcome[]
-  contradictions: Contradiction[]
 }
 
-const emptyData: PanelData = { assertions: [], freshness: [], questions: [], revisions: [], outcomes: [], contradictions: [] }
+const emptyData: PanelData = { assertions: [], freshness: [], revisions: [], outcomes: [] }
 const cardStyle: CSSProperties = {
   border: '1px solid var(--border)', borderRadius: 10, padding: 14,
   background: 'var(--surface)', marginTop: 12,
@@ -99,12 +71,7 @@ export default function CareContinuityIntegrityPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({})
   const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({})
-  const [corrections, setCorrections] = useState<Record<string, string>>({})
-  const [resolutionHistoryById, setResolutionHistoryById] = useState<Record<string, Array<{ id: string; previous_status: string; new_status: string; rationale: string; evidence_ids: string[]; actor_caregiver_id?: string | null; created_at: string }>>>({})
-  const [resolutionHistoryLoadingId, setResolutionHistoryLoadingId] = useState<string | null>(null)
-  const [resolutionHistoryErrors, setResolutionHistoryErrors] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     if (!personId) {
@@ -115,18 +82,16 @@ export default function CareContinuityIntegrityPanel({
     setLoading(true)
     setError('')
     try {
-      const [assertions, freshness, revisions, outcomes, questions, contradictions] = await Promise.all([
+      const [assertions, freshness, revisions, outcomes] = await Promise.all([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(personId)}`),
         getJSON(`/care-continuity/freshness/${encodeURIComponent(personId)}`),
         getJSON(`/care-continuity/revisions/${encodeURIComponent(personId)}`),
         getJSON(`/care-continuity/outcomes/${encodeURIComponent(personId)}`),
-        postJSON(`/care-continuity/next-questions/${encodeURIComponent(personId)}`, {}),
-        getJSON(`/care-continuity/contradictions/${encodeURIComponent(personId)}`),
       ])
-      if (![assertions, freshness, revisions, outcomes, questions, contradictions].every(Array.isArray)) {
+      if (![assertions, freshness, revisions, outcomes].every(Array.isArray)) {
         throw new Error('The care-continuity API returned an incomplete response.')
       }
-      setData({ assertions, freshness, revisions, outcomes, questions, contradictions })
+      setData({ assertions, freshness, revisions, outcomes })
     } catch (reason) {
       setError('We couldn’t load the care history. Check your connection and try again.')
     } finally {
@@ -145,40 +110,6 @@ export default function CareContinuityIntegrityPanel({
     () => new Map(data.freshness.map((item) => [item.assertion_id, item])),
     [data.freshness],
   )
-
-  async function loadResolutionHistory(item: Contradiction) {
-    setResolutionHistoryLoadingId(item.id)
-    setResolutionHistoryErrors(current => ({ ...current, [item.id]: '' }))
-    try {
-      const result = await getJSON(`/uncertainty/contradictions/${encodeURIComponent(item.id)}/history`)
-      if (!Array.isArray(result)) throw new Error('Invalid conflict history response')
-      setResolutionHistoryById(current => ({ ...current, [item.id]: result }))
-    } catch {
-      setResolutionHistoryErrors(current => ({ ...current, [item.id]: 'Resolution history could not be loaded. Retry when the connection is available.' }))
-    } finally {
-      setResolutionHistoryLoadingId(current => current === item.id ? null : current)
-    }
-  }
-
-  async function resolveContradiction(item: Contradiction, status: 'resolved' | 'partially_resolved' | 'superseded' | 'reopened') {
-    const notes = (resolutionNotes[item.id] || '').trim()
-    if (notes.length < 3) {
-      setError('Add a short note explaining how this conflict was reviewed before resolving it.')
-      return
-    }
-    setError('')
-    setNotice('')
-    try {
-      await patchJSON(`/uncertainty/contradictions/${encodeURIComponent(item.id)}`, {
-        resolution_status: status,
-        resolution_notes: notes,
-      })
-      setNotice('Contradiction review saved. The original reports remain preserved.')
-      await load()
-    } catch (reason) {
-      setError('We couldn’t save this review. Please try again.')
-    }
-  }
 
   async function markReviewed(assertion: Assertion) {
     const reviewWindow = (reviewWindows[assertion.id] ?? String(assertion.review_after_days ?? '')).trim()
@@ -277,73 +208,6 @@ export default function CareContinuityIntegrityPanel({
         })}
       </div>
 
-
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>When information differs</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>SolenOS preserves competing reports and does not pick a winner. Resolution requires a human explanation; resolving the conflict does not delete the source reports.</p>
-        {data.contradictions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>There are no conflicting reports available in this record yet.</p> : data.contradictions.map((item) =>
-          <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <strong>{item.field}</strong><span style={{ fontSize: 12 }}>{item.resolution_status.replace(/_/g, ' ')}</span>
-            </div>
-            <p style={{ fontSize: 13 }}>{item.description}</p>
-            {(item.event_id || item.context_key || item.effective_from || item.effective_to) && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-              Review scope: effective {item.effective_from || 'start unknown'} to {item.effective_to || 'end unknown'}
-            </p>}
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-              Related reports: {(item.source_assertion_ids || []).length} · Supporting sources: {(item.evidence_ids || []).length}
-            </p>
-            {(item.matching_candidate_ids || []).length > 0 && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Potentially related conflicts: {(item.matching_candidate_ids || []).length}. These are match candidates only; records remain separate until reviewed.</p>}
-            {item.resolution_notes && <p style={{ fontSize: 12 }}>Latest review note: {item.resolution_notes}</p>}
-            <button type="button" style={buttonStyle} onClick={() => void loadResolutionHistory(item)} disabled={resolutionHistoryLoadingId === item.id}>
-              {resolutionHistoryLoadingId === item.id ? 'Loading resolution history…' : 'View resolution history'}
-            </button>
-            {resolutionHistoryErrors[item.id] && <p role="alert" style={{ fontSize: 12 }}>{resolutionHistoryErrors[item.id]}</p>}
-            {resolutionHistoryById[item.id] && (
-              <ol style={{ paddingLeft: 20 }}>
-                {resolutionHistoryById[item.id].map(event => <li key={event.id} style={{ fontSize: 12, marginTop: 6 }}>
-                  {event.previous_status.replace(/_/g, ' ')} → {event.new_status.replace(/_/g, ' ')} · {event.created_at ? new Date(event.created_at).toLocaleString() : 'Time not recorded'}
-                  <p>{event.rationale}</p>
-                  <small>Supporting sources: {event.evidence_ids.length} · Reviewer: {event.actor_caregiver_id ? 'Caregiver' : 'Not recorded'}</small>
-                </li>)}
-              </ol>
-            )}
-            <label style={{ display: 'block', fontSize: 12 }}>Review rationale
-              <textarea style={{ ...fieldStyle, minHeight: 54 }} value={resolutionNotes[item.id] || ''} onChange={(e) => setResolutionNotes((current) => ({ ...current, [item.id]: e.target.value }))} />
-            </label>
-            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
-              {item.resolution_status === 'unresolved' || item.resolution_status === 'reopened' ? <>
-                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'resolved')}>Resolve with rationale</button>
-                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'partially_resolved')}>Partially resolve / retain uncertainty</button>
-                <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'superseded')}>Superseded by new evidence</button>
-              </> : <button type="button" style={buttonStyle} onClick={() => void resolveContradiction(item, 'reopened')}>Reopen conflict</button>}
-            </div>
-          </article>
-        )}
-      </div>
-
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Next questions</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Questions are linked to recorded uncertainty, unresolved reports, or missing information. They do not diagnose or resolve a conflict.</p>
-        {data.questions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>There are no recorded questions to review yet.</p> : data.questions.map((item, index) => {
-          const actionId = item.persisted_question_id || item.source_id
-          return <article key={item.persisted_question_id || item.source_id || index} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
-            <strong style={{ fontSize: 14 }}>{item.question}</strong>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Priority: {item.priority} · Reason: {item.reason} · Supporting sources: {item.evidence_ids.length} · Linked records: {item.source_ids?.length || 1}</p>
-            <p style={{ fontSize: 12 }}>{item.reason}</p>
-            <label style={{ display: 'block', fontSize: 12 }}>Correction (required only if recording “Corrected”)
-              <textarea style={{ ...fieldStyle, minHeight: 50 }} value={corrections[actionId] || ''} onChange={(e) => setCorrections((current) => ({ ...current, [actionId]: e.target.value }))} />
-            </label>
-            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
-              <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'useful')}>Useful</button>
-              <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'completed')}>Completed</button>
-              <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'unresolved')}>Still unresolved</button>
-              <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'not_useful')}>Not useful</button>
-              <button type="button" style={buttonStyle} onClick={() => void recordOutcome(item, 'corrected')}>Record correction</button>
-            </div>
-          </article>
-        })}
-      </div>
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record history</h3>
