@@ -576,6 +576,7 @@ export function LCRCurrentUnderstanding() {
       setLoading(false);
       setRefreshing(false);
 
+      const loadSecondarySections = () => {
       void (async () => {
         try {
           const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(activePersonId)}`);
@@ -662,6 +663,14 @@ export function LCRCurrentUnderstanding() {
           }
         }
       })();
+      };
+      // Let React commit and the browser paint the primary care view before
+      // secondary API traffic competes for the mobile connection.
+      if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(() => window.setTimeout(loadSecondarySections, 0));
+      } else {
+        setTimeout(loadSecondarySections, 0);
+      }
     } catch (cause) {
       if (typeof performance !== "undefined" && typeof performance.clearMarks === "function") {
         performance.clearMarks(timingStart);
