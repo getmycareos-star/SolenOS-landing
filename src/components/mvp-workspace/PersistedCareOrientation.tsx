@@ -118,20 +118,18 @@ export function PersistedCareOrientation() {
 
   if (state === "loading") {
     return (
-      <section className="persisted-care-orientation" aria-busy="true" aria-label="Your care record">
-        <p className="persisted-care-orientation-eyebrow">Your care record</p>
-        <h2>Loading your care information…</h2>
+      <section className="persisted-care-orientation" aria-busy="true" aria-label="Saved care information">
+                <h2>Loading your care information…</h2>
       </section>
     );
   }
 
   if (state === "unavailable" || !snapshot) {
     return (
-      <section className="persisted-care-orientation" aria-label="Your care record">
+      <section className="persisted-care-orientation" aria-label="Saved care information">
         <div className="persisted-care-orientation-header">
           <div>
-            <p className="persisted-care-orientation-eyebrow">Your care record</p>
-            <h2>We couldn't load your care information</h2>
+                        <h2>We couldn't load your care information</h2>
           </div>
         </div>
         <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
@@ -150,11 +148,10 @@ export function PersistedCareOrientation() {
   const hasServerEntries = (snapshot.total_events ?? 0) > 0 || events.length > 0 || situations.length > 0 || observations.length > 0 || Boolean(understanding.trim()) || Boolean(snapshot.active_care_situation?.summary || snapshot.active_care_situation?.current_situation);
 
   return (
-    <section className="persisted-care-orientation" aria-label="Your care record">
+    <section className="persisted-care-orientation" aria-label="Saved care information">
       <div className="persisted-care-orientation-header">
         <div>
-          <p className="persisted-care-orientation-eyebrow">Your care record</p>
-          <h2>{snapshot.care_recipient_display_name?.trim() ? `Care record for ${snapshot.care_recipient_display_name.trim()}` : "Saved care record"}</h2>
+                    <h2>{snapshot.care_recipient_display_name?.trim() ? `Care record for ${snapshot.care_recipient_display_name.trim()}` : "Saved care record"}</h2>
         </div>
       </div>
 
@@ -200,7 +197,9 @@ export function PersistedCareOrientation() {
           <strong>Situation understanding</strong>
           <p>
             {situationAssessment.assessment.coverage?.records_examined ?? 0} persisted record(s) examined.
-            {" "}Confidence: {situationAssessment.assessment.confidence_assessment?.overall || "not assessed"}.
+            {" "}{situationAssessment.assessment.confidence_assessment?.overall === "not_calibrated" || !situationAssessment.assessment.confidence_assessment?.overall
+              ? "There is not enough information for a reliable assessment."
+              : `Assessment status: ${situationAssessment.assessment.confidence_assessment.overall.replace(/_/g, " ")}.`}
           </p>
           {(situationAssessment.assessment.open_loops?.count ?? 0) > 0 && <p>Unresolved matters recorded: {situationAssessment.assessment.open_loops?.count}.</p>
           {(situationAssessment.assessment.open_loops?.items ?? []).slice(0, 5).map((loop) => (
@@ -218,7 +217,7 @@ export function PersistedCareOrientation() {
           ) : (
             <p>No observation coverage has been recorded yet. This does not indicate whether an event occurred.</p>
           )}
-          <p>Personal baseline: {situationAssessment.assessment.baseline_assessment?.status?.replace(/_/g, " ") || "not established"}.</p>
+          {(situationAssessment.assessment.baseline_assessment?.count ?? 0) > 0 && <p>A personal baseline is based on {situationAssessment.assessment.baseline_assessment?.count} recorded item(s).</p>}
           {situationAssessment.assessment.baseline_assessment?.limitation && <small>{situationAssessment.assessment.baseline_assessment.limitation}</small>}
           {(situationAssessment.assessment.situation_trajectory?.entries ?? []).slice(-5).reverse().map((entry) => (
             <div key={entry.source + ":" + entry.record_id} className="persisted-care-orientation-latest">
