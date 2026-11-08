@@ -1598,12 +1598,27 @@ export function LCRCurrentUnderstanding() {
       ) : null}
       <details className="lcr-advanced-integrity">
         <summary>Where this information came from</summary>
-        <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
-        <EvidenceReviewPanel personId={personId} />
-        <ClaimAssessmentPanel />
-        <ConflictResolutionPanel personId={personId} />
-        <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
-        <CareContinuityIntegrityPanel personId={personId} />
+        <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
+        <details className="lcr-history-details">
+          <summary>Evidence and sources</summary>
+          <EvidenceReviewPanel personId={personId} />
+        </details>
+        <details className="lcr-history-details">
+          <summary>Review information supporting a care detail</summary>
+          <ClaimAssessmentPanel />
+        </details>
+        <details className="lcr-history-details">
+          <summary>When information differs</summary>
+          <ConflictResolutionPanel personId={personId} />
+        </details>
+        <details className="lcr-history-details">
+          <summary>Questions and unresolved matters</summary>
+          <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+        </details>
+        <details className="lcr-history-details">
+          <summary>Reported information and record history</summary>
+          <CareContinuityIntegrityPanel personId={personId} />
+        </details>
       </details>
     </section>
   );
