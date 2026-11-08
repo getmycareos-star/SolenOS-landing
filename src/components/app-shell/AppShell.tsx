@@ -261,6 +261,9 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                 prefetch={false}
                 aria-current={active(href) ? "page" : undefined}
+                onMouseEnter={() => router.prefetch(href)}
+                onFocus={() => router.prefetch(href)}
+                onTouchStart={() => router.prefetch(href)}
                 onClick={() => setSidebarOpen(false)}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
@@ -279,6 +282,9 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               href="/workspace/settings"
               className={`solenos-chat-nav-item${active("/workspace/settings") ? " is-active" : ""}`}
               prefetch={false}
+              onMouseEnter={() => router.prefetch("/workspace/settings")}
+              onFocus={() => router.prefetch("/workspace/settings")}
+              onTouchStart={() => router.prefetch("/workspace/settings")}
               onClick={() => setSidebarOpen(false)}
             >
               <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
