@@ -146,6 +146,20 @@ export default function CareContinuityIntegrityPanel({
     [data.freshness],
   )
 
+  async function loadResolutionHistory(item: Contradiction) {
+    setResolutionHistoryLoadingId(item.id)
+    setResolutionHistoryErrors(current => ({ ...current, [item.id]: '' }))
+    try {
+      const result = await getJSON(`/uncertainty/contradictions/${encodeURIComponent(item.id)}/history`)
+      if (!Array.isArray(result)) throw new Error('Invalid conflict history response')
+      setResolutionHistoryById(current => ({ ...current, [item.id]: result }))
+    } catch {
+      setResolutionHistoryErrors(current => ({ ...current, [item.id]: 'Resolution history could not be loaded. Retry when the connection is available.' }))
+    } finally {
+      setResolutionHistoryLoadingId(current => current === item.id ? null : current)
+    }
+  }
+
   async function resolveContradiction(item: Contradiction, status: 'resolved' | 'partially_resolved' | 'superseded' | 'reopened') {
     const notes = (resolutionNotes[item.id] || '').trim()
     if (notes.length < 3) {
