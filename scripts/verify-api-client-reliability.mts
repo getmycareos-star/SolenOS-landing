@@ -58,6 +58,20 @@ async function main() {
   }) as typeof fetch;
   await postJSON("/handoffs", { draft_id: "draft-1" }, { "X-Request-ID": "stable-handoff-request-1" });
   assert.equal(idempotencyHeader, "stable-handoff-request-1", "mutations must preserve caller-supplied idempotency keys");
-  console.log("API reliability checks passed: timeout signal, safe GET retry, no mutation replay, idempotency header forwarding.");
+
+  const originalSetTimeout = globalThis.setTimeout;
+  let observedTimeoutMs = 0;
+  globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+    observedTimeoutMs = Number(timeout);
+    return originalSetTimeout(handler, timeout, ...args);
+  }) as typeof setTimeout;
+  try {
+    globalThis.fetch = (async () => response({ reply: "The record has no matching entry." })) as typeof fetch;
+    await postJSON("/conversation/message", { text: "What happened?" }, {}, 210_000);
+  } finally {
+    globalThis.setTimeout = originalSetTimeout;
+  }
+  assert.equal(observedTimeoutMs, 210_000, "Companion inference requests must use the extended timeout without changing the default API timeout");
+  console.log("API reliability checks passed: default timeout, Companion timeout override, safe GET retry, no mutation replay, idempotency header forwarding.");
 }
 void main();
