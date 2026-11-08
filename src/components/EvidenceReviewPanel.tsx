@@ -765,6 +765,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
           {allowObservationCapture ? (
+            <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 10 }}>
             <label>Observation kind
               <select style={field} value={observationKind} onChange={event => setObservationKind(event.target.value)}>
@@ -828,6 +829,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <textarea style={{ ...field, minHeight: 52 }} value={observationAmbiguity} onChange={event => setObservationAmbiguity(event.target.value)} maxLength={4000} />
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitObservation()} disabled={observationSaving || observationsLoading || !selected}>{observationSaving ? 'Saving…' : 'Save structured observation'}</button>
+            </>
           ) : null}
         </details>
 
