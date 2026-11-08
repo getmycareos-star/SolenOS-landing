@@ -917,16 +917,16 @@ export function LCRCurrentUnderstanding() {
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
           <p>What has been shared, what may need attention, and what is still unclear.</p>
         </div>
-        <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh current care understanding">
-          <RefreshCw size={16} aria-hidden="true" /> Refresh
+        <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh care summary">
+          <RefreshCw size={16} aria-hidden="true" /> Refresh care summary
         </button>
       </div>
 
       <section className="lcr-situation-assessment" aria-labelledby="lcr-attention-now-heading">
         <div className="lcr-entry-heading">
           <div>
-            <h3 id="lcr-attention-now-heading">Needs attention</h3>
-            <p>Follow-ups and changes mentioned in the care record. A flag is not a diagnosis or a medical judgement.</p>
+            <h3 id="lcr-attention-now-heading">Care priorities</h3>
+            <p>Follow-ups and changes recorded in the care history. A flag is not a diagnosis or a medical judgement.</p>
           </div>
         </div>
         {sourceFreshness?.reassessment_recommended && (
@@ -1060,7 +1060,7 @@ export function LCRCurrentUnderstanding() {
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
               <h4 id="lcr-attention-wait-heading">Things that can wait</h4>
               {canWaitItems.length === 0 ? (
-                <p>No care information is available to identify items that can safely wait. An empty record is not evidence that postponement is safe.</p>
+                <p>No items have been explicitly deferred in the information currently available. This does not mean unresolved items are safe to postpone.</p>
               ) : (
                 <ul className="lcr-current-facts">
                   {canWaitItems.map((item) => (
@@ -1309,7 +1309,7 @@ export function LCRCurrentUnderstanding() {
                   <p className="lcr-entry-status">Recorded rate: {pattern.rate_per_period.toFixed(2)} per 30-day period. This is a record rate, not an estimate of unobserved events.</p>
                 )}
                 {pattern.direction && <p className="lcr-entry-status">Direction: {pattern.direction.replaceAll("_", " ")}</p>}
-                {pattern.confidence == null && <p className="lcr-entry-status">Confidence is not calibrated; no numeric confidence is asserted.</p>}
+                {pattern.confidence == null && <p className="lcr-entry-status">There is not enough information to rate how reliable this pattern assessment is.</p>}
                 {pattern.alternative_interpretations?.map((item, index) => (
                   <p className="lcr-entry-status" key={index}>
                     {typeof item === "string" ? item : JSON.stringify(item)}
@@ -1331,7 +1331,7 @@ export function LCRCurrentUnderstanding() {
         </div>
         {changesError && <p role="status">Saved change history could not be loaded: {changesError}</p>}
         {!changesError && changes.length === 0 && (
-          <p>No persisted change assessments are available for this record. No change has been inferred from missing assessments.</p>
+          <p>There are not enough saved assessments to describe changes yet. Missing assessments do not mean no changes occurred.</p>
         )}
         {changes.length > 0 && (
           <ul className="lcr-current-facts">
