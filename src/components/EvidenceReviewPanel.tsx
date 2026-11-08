@@ -549,13 +549,13 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   if (!personId && !evidenceLoading && !evidenceError) return null
   return <section style={panel} aria-label="Persisted evidence assessments">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence quality and source review</h3>
+    <h3 style={{ fontSize: 15, marginTop: 0 }}>Sources and supporting information</h3>
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
     {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading persisted evidence…</p>}
     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Assessments are versioned records with a rationale. They do not assign numeric confidence or turn a caregiver report into independently verified evidence.</p>
-    <p style={{ fontSize: 12, margin: "8px 0 12px" }}><Link href="/workspace/evidence-completeness" style={{ color: "var(--text)", textDecoration: "underline" }}>Open purpose-specific evidence completeness policies and assessments</Link></p>
+    <p style={{ fontSize: 12, margin: "8px 0 12px" }}><Link href="/workspace/evidence-completeness" style={{ color: "var(--text)", textDecoration: "underline" }}>Review source completeness</Link></p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
-      <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Domain-specific freshness policies and assessment history</summary>
+      <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Review when information was last checked</summary>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Policies are explicit, caregiver-defined and immutable by version. No universal freshness threshold is applied. A freshness result does not establish truth or current clinical status.</p>
       {freshnessPolicyLoading && <p role="status">Loading saved policies…</p>}
       {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry policy list</button></p>}
@@ -625,11 +625,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>Parent evidence</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id || 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Source lineage and corroboration relationships ({relationships.length})</summary>
+          <summary>How this source relates to other information ({relationships.length})</summary>
           <p>Relationships are explicit, attributed assessments—not automatic proof that sources are independent or that a claim is true.</p>
           {relationshipsLoading && <p role="status">Loading source relationships…</p>}
           {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
-          {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No source relationships were returned for this evidence item.</p>}
+          {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No links to other sources are recorded for this item yet.</p>}
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{item.relationship_type.replaceAll('_', ' ')}</strong>
             <div>Evidence {item.source_evidence_id} → related evidence {item.related_evidence_id}</div>
@@ -676,12 +676,12 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <p>Each observation preserves an exact passage from the original source. A reported account remains reported; an inferred interpretation is not a directly observed fact.</p>
           {observationsLoading && <p role="status">Loading structured observations…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
-          {!observationsLoading && !observationsError && observations.length === 0 && <p>No structured observations were returned for this evidence.</p>}
+          {!observationsLoading && !observationsError && observations.length === 0 && <p>No extracted details are available for this source yet.</p>}
           {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{item.attribute.replaceAll('_', ' ')} · {item.epistemic_status.replaceAll('_', ' ')}</strong>
             <div>{item.observation_kind.replaceAll('_', ' ')} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
-            <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''} · exact source offsets {item.source_span_start}–{item.source_span_end}</div>
+            <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''} · source passage position {item.source_span_start}–{item.source_span_end}</div>
             {item.supersedes_observation_id && <div>Corrects observation {item.supersedes_observation_id}: {item.correction_rationale || 'No correction rationale recorded'}</div>}
             {item.negated !== null && item.negated !== undefined && <div>Negation recorded: {item.negated ? 'yes' : 'no'}</div>}
             {item.hedge_marker && <div>Hedging: {item.hedge_marker}</div>}
@@ -692,7 +692,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Reconstruct recorded care state at a past time</summary>
+          <summary>View what was recorded at an earlier date</summary>
           <p>Shows the latest saved revision per target at the selected instant. This is a partial revision-history projection, not a guarantee that every care-record change was captured.</p>
           <label style={{ display: 'block', marginTop: 8 }}>
             Historical date and time
@@ -725,7 +725,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Reconstruct historical evidence state</summary>
+          <summary>View source information from an earlier date</summary>
           <p>Choose an instant to retrieve the last persisted revision at or before that time. This is a historical database snapshot, not proof that the stored claim was true.</p>
           <label style={{ display: 'block', marginTop: 8 }}>Historical instant
             <input style={field} type="datetime-local" value={historyAsOf} onChange={event => { setHistoryAsOf(event.target.value); setReconstructedHistory(null); setHistoryReconstructionError('') }} />
@@ -742,7 +742,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </div>}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Stored source-text integrity check</summary>
+          <summary>Check whether saved source text has changed</summary>
           {sourceIntegrityLoading && <p role="status">Checking stored source text…</p>}
           {sourceIntegrityError && <p role="alert" style={{ color: 'var(--error)' }}>{sourceIntegrityError} <button type="button" style={button} onClick={() => void loadSourceIntegrity()} disabled={sourceIntegrityLoading}>Retry integrity check</button></p>}
           {!sourceIntegrityLoading && !sourceIntegrityError && sourceIntegrity && <>
