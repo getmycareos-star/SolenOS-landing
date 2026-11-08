@@ -29,7 +29,8 @@ assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligence
 assert.match(currentUnderstanding, /allowObservationCapture={false}/, "evidence review is read-only on Care Continuity");
 assert.match(currentUnderstanding, /allowRecordCreation={false}/, "care continuity integrity panel cannot create independent records");
 assert.match(evidenceReview, /props\?\.allowObservationCapture === true/, "structured observation editor is opt-in and disabled by default");
-assert.match(integrityPanel, /allowRecordCreation = false/, "independent observation and report forms are disabled by default");
+assert.doesNotMatch(integrityPanel, /Record a structured observation|Record a source-attributed report|Save structured observation|Save report|Record reference|observationCategory|submitAssertion|recordStructuredObservation/, "independent observation and report creation workflows are removed from Care Continuity");
+assert.doesNotMatch(integrityPanel, /<form\\b/, "Care Continuity integrity panel contains no record-creation forms");
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
 assert.doesNotMatch(integrityPanel, /No contradiction records returned|current engine inputs/i, "backend query terminology is not used in caregiver-facing empty states");
