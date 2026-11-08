@@ -10,10 +10,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations, openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { ensureAnonymousSession } from "@/api/client";
 import { apiUrl } from "@/lib/api-url";
-import { PersistedCareOrientation } from "@/components/mvp-workspace/PersistedCareOrientation";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
-import { ChangeIntelligencePanel } from "@/components/mvp-workspace/ChangeIntelligencePanel";
-import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -173,28 +170,31 @@ function WorkspacePageInner() {
         <header className="lcr-header">
           <div>
             <p className="lcr-eyebrow">SOLENOS · LIVING CARE RECORD</p>
-            <h1>{displayName || "Your care record"}</h1>
-            <p className="lcr-intro">The care journey, remembered. Keep the details together, one moment at a time.</p>
+            <h1>Your Living Care Record</h1>
+            <p className="lcr-intro">Review the care information shared with SolenOS, its sources and how it has changed over time.</p>
           </div>
           <div className="lcr-record-meta">
-            <span className="lcr-status-dot" aria-hidden="true" />
-            <span>{activeSituations.length > 0 ? (STATUS_LABELS[activeSituations[0].status] ?? "Current") : "Ready when you are"}</span>
-            <span className="lcr-meta-divider" aria-hidden="true">·</span>
             <span>Updated {formatLastUpdated(latestUpdated)}</span>
           </div>
         </header>
 
-        <PersistedCareOrientation />
+        <section className="lcr-companion-entry" aria-labelledby="lcr-companion-entry-heading">
+          <div>
+            <h2 id="lcr-companion-entry-heading">Share new information through AI Companion</h2>
+            <p>Tell Companion what has happened, or share a message, document or photo. You can review proposed care-record updates before they are saved.</p>
+          </div>
+          <button type="button" className="lcr-text-action" onClick={() => router.push("/workspace/companion")}>
+            Open AI Companion <span aria-hidden="true">→</span>
+          </button>
+        </section>
 
         <LCRCurrentUnderstanding />
-
-        <ChangeIntelligencePanel />
 
         <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
           <div className="lcr-section-heading">
             <div>
-              <p className="lcr-eyebrow">YOUR CARE HISTORY</p>
-              <h2 id="lcr-record-heading">Record timeline</h2>
+              <p className="lcr-eyebrow">CARE HISTORY</p>
+              <h2 id="lcr-record-heading">Care history</h2>
             </div>
             {hasAnyContent && <span className="lcr-count">{situations.length} {situations.length === 1 ? "entry" : "entries"}</span>}
           </div>
@@ -202,9 +202,8 @@ function WorkspacePageInner() {
           {!hasAnyContent ? (
             <div className="lcr-empty-state">
               <div className="lcr-empty-icon" aria-hidden="true"><FileText size={27} /></div>
-              <h3>Your record starts with what you know.</h3>
-              <p>No care information is available to display yet. Share new information through AI Companion; reviewed and approved care details will appear here.</p>
-              <button type="button" className="lcr-text-action" onClick={() => router.push("/workspace/companion")}>Open AI Companion <span aria-hidden="true">→</span></button>
+              <h3>No care information is available yet</h3>
+              <p>Information reviewed and approved through AI Companion will appear in this history. An empty record does not mean that nothing has happened or that there are no care concerns.</p>
             </div>
           ) : (
             <div className="lcr-timeline">
