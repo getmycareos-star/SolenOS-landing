@@ -259,14 +259,14 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   }
 
   return <section style={panel} aria-label="Evidence-grounded clarification workflow">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Evidence gaps and clarification questions</h3>
+    <h3 style={{ fontSize: 15, marginTop: 0 }}>Questions and missing information</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
       Each question is tied to a source-attributed claim and can include evidence references. Answers are attributed to the authenticated caregiver and retained as immutable versions. An answer does not automatically verify or resolve the underlying claim.
     </p>
     {loading && <p role="status">Loading persisted claims, questions, and evidence…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && <>
-      {claims.length === 0 && <p>No source-attributed claims were returned. A claim must exist before this workflow can create a claim-linked question.</p>}
+      {claims.length === 0 && <p>Questions can be recorded when a specific care detail needs clarification. No such detail is available to link yet.</p>}
       {claims.length > 0 && <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
         <legend style={{ fontSize: 12 }}>Create a targeted clarification</legend>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Claim
@@ -313,7 +313,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       </fieldset>}
       <div style={{ marginTop: 14 }}>
         <strong style={{ fontSize: 13 }}>Persisted questions</strong>
-        {questions.length === 0 && <p style={{ fontSize: 12 }}>No clarification questions were returned for this care record.</p>}
+        {questions.length === 0 && <p style={{ fontSize: 12 }}>No clarification questions are recorded yet.</p>}
         {questions.length > 0 && <>
           <label style={{ display: "block", fontSize: 12, margin: "8px 0" }}>Question
             <select
