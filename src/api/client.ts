@@ -245,14 +245,33 @@ function apiTimingLabel(input: RequestInfo | URL): string {
   }
 }
 
-async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+function apiRequestTimeoutMs(input: RequestInfo | URL, method: string): number {
+  try {
+    const raw = typeof input === "string"
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url;
+    const pathname = new URL(raw, "http://solenos.local").pathname;
+    if (pathname.endsWith("/conversation/message") && method === "POST") return 210_000;
+    if (pathname.includes("/documents/") && pathname.endsWith("/extract") && method === "POST") return 180_000;
+    if (pathname.endsWith("/upload") && method === "POST") return 120_000;
+    if (pathname.includes("/upload/") && method === "GET") return 120_000;
+  } catch {
+    // Use the conservative default when a URL cannot be classified.
+  }
+  return API_REQUEST_TIMEOUT_MS;
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs?: number): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  const method = (init.method || (typeof Request !== "undefined" && input instanceof Request ? input.method : "GET")).toUpperCase();
+  const effectiveTimeoutMs = timeoutMs ?? apiRequestTimeoutMs(input, method);
+  const timeout = setTimeout(() => controller.abort(), effectiveTimeoutMs);
   const timingEnabled = typeof performance !== "undefined" && typeof performance.mark === "function";
   const sequence = ++apiTimingSequence;
   const startMark = `solenos-api-start-${sequence}`;
   const endMark = `solenos-api-end-${sequence}`;
-  const method = (init.method || (typeof Request !== "undefined" && input instanceof Request ? input.method : "GET")).toUpperCase();
   let outcome = "network-error";
   if (timingEnabled) {
     try { performance.mark(startMark); } catch { /* Performance API is optional. */ }
@@ -287,10 +306,10 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
 }
 
 // Only idempotent reads are retried. Never replay writes after an ambiguous network failure.
-async function fetchGetWithRetry(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+async function fetchGetWithRetry(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs?: number): Promise<Response> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetchWithTimeout(input, { ...init, method: "GET" });
+      const response = await fetchWithTimeout(input, { ...init, method: "GET" }, timeoutMs);
       if (attempt === 0 && RETRYABLE_GET_STATUSES.has(response.status)) continue;
       return response;
     } catch (error) {
