@@ -1485,8 +1485,8 @@ export function LCRCurrentUnderstanding() {
 
           {projection.items.length === 0 ? (
             <div className="lcr-empty-state">
-              <h3>No care information is available yet</h3>
-              <p>This does not mean nothing has happened or that there are no care concerns. Share new information through AI Companion; reviewed and approved details will appear here.</p>
+              <h3>Your Living Care Record does not have any care information available yet.</h3>
+              <p>Share what you know through AI Companion. Information reviewed and approved there will appear in your care record.</p>
             </div>
           ) : (
             <div className="lcr-current-facts">
