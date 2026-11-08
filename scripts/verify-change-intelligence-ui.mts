@@ -30,7 +30,7 @@ for (const contract of [
   assert(contract[1].test(panel), `Missing UI contract: ${contract[0]}`);
 }
 
-assert(!/recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\\b/.test(panel), "observation coverage cannot be independently submitted from this panel");
+assert(!/recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\b/.test(panel), "observation coverage cannot be independently submitted from this panel");
 
 assert(
   /function requirePersonId\(\)[\s\S]*?getPersonId\(\)[\s\S]*?server-issued SolenOS care session is required/.test(api),
