@@ -121,8 +121,9 @@ const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
 
-export default function EvidenceReviewPanel(props?: { personId?: string; evidenceItems?: EvidenceItem[] }) {
+export default function EvidenceReviewPanel(props?: { personId?: string; evidenceItems?: EvidenceItem[]; allowObservationCapture?: boolean }) {
   const expectedPersonId = props?.personId?.trim() || ''
+  const allowObservationCapture = props?.allowObservationCapture === true
   const [personId, setPersonId] = useState('')
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([])
   const [evidenceLoading, setEvidenceLoading] = useState(true)
@@ -763,6 +764,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             {item.observer_label && <div>Observer: {item.observer_label}{item.observation_method ? ` · ${item.observation_method}` : ''}</div>}
             <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
+          {allowObservationCapture ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 10 }}>
             <label>Observation kind
               <select style={field} value={observationKind} onChange={event => setObservationKind(event.target.value)}>
@@ -826,6 +828,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <textarea style={{ ...field, minHeight: 52 }} value={observationAmbiguity} onChange={event => setObservationAmbiguity(event.target.value)} maxLength={4000} />
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitObservation()} disabled={observationSaving || observationsLoading || !selected}>{observationSaving ? 'Saving…' : 'Save structured observation'}</button>
+          ) : null}
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
