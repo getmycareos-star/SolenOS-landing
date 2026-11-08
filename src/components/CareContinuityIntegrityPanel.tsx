@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getJSON, postJSON, patchJSON, getCaregiverId } from '../api/client'
 
 type Assertion = {
@@ -90,45 +90,18 @@ const buttonStyle: React.CSSProperties = {
   background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer',
 }
 
-type EvidenceSource = { id: string; type: string; source_text: string; uploaded_at: string }
-
 export default function CareContinuityIntegrityPanel({
   personId,
-  evidenceItems: initialEvidenceItems = [],
-  allowRecordCreation = false,
 }: {
   personId: string
-  evidenceItems?: EvidenceSource[]
-  allowRecordCreation?: boolean
 }) {
   const [data, setData] = useState<PanelData>(emptyData)
-  const [evidenceItems, setEvidenceItems] = useState<EvidenceSource[]>(initialEvidenceItems)
-  const [evidenceLoadError, setEvidenceLoadError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [field, setField] = useState('')
-  const [value, setValue] = useState('')
-  const [source, setSource] = useState('Caregiver report')
-  const [sourceText, setSourceText] = useState('')
-  const [subjectType, setSubjectType] = useState('care_record')
-  const [subjectId, setSubjectId] = useState("care_record")
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({})
   const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({})
-  const [kind, setKind] = useState<'current_state' | 'time_bound_observation'>('current_state')
-  const [assertionObservedAt, setAssertionObservedAt] = useState('')
-  const [reviewDays, setReviewDays] = useState('')
-  const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([])
   const [corrections, setCorrections] = useState<Record<string, string>>({})
-  const [observationCategory, setObservationCategory] = useState('')
-  const [observationDescription, setObservationDescription] = useState('')
-  const [observationValue, setObservationValue] = useState('')
-  const [observationType, setObservationType] = useState<'direct' | 'indirect' | 'second_hand' | 'document_review'>('second_hand')
-  const [observationEpistemicStatus, setObservationEpistemicStatus] = useState<'reported' | 'inferred' | 'unverified' | 'unknown'>('reported')
-  const [observationAt, setObservationAt] = useState('')
-  const [observationSourceType, setObservationSourceType] = useState('caregiver_report')
-  const [observationEvidenceIds, setObservationEvidenceIds] = useState<string[]>([])
   const [resolutionHistoryById, setResolutionHistoryById] = useState<Record<string, Array<{ id: string; previous_status: string; new_status: string; rationale: string; evidence_ids: string[]; actor_caregiver_id?: string | null; created_at: string }>>>({})
   const [resolutionHistoryLoadingId, setResolutionHistoryLoadingId] = useState<string | null>(null)
   const [resolutionHistoryErrors, setResolutionHistoryErrors] = useState<Record<string, string>>({})
@@ -161,93 +134,17 @@ export default function CareContinuityIntegrityPanel({
     }
   }, [personId])
 
-  const loadEvidence = useCallback(async () => {
-    if (!personId) {
-      setEvidenceItems([])
-      setEvidenceLoadError("No authorized care record is selected.")
-      return
-    }
-    setEvidenceLoadError("")
-    try {
-      const result = await getJSON('/care-continuity/evidence?limit=100')
-      if (!Array.isArray(result) || result.some((item) =>
-        item?.person_id !== personId || typeof item?.id !== 'string' || typeof item?.source_text !== 'string'
-      )) {
-        throw new Error("The evidence list did not match the active care record.")
-      }
-      setEvidenceItems(result as EvidenceSource[])
-    } catch {
-      setEvidenceItems([])
-      setEvidenceLoadError("Evidence could not be loaded from the care record. Existing evidence cannot be linked until the connection is restored.")
-    }
-  }, [personId])
-
   useEffect(() => {
-    setSubjectId(personId);
     void load();
-    void loadEvidence();
-    const refreshAfterCareRecordWrite = () => { void load(); void loadEvidence(); };
+    const refreshAfterCareRecordWrite = () => { void load(); };
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
     return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
-  }, [load, loadEvidence, personId])
+  }, [load, personId])
 
   const freshnessById = useMemo(
     () => new Map(data.freshness.map((item) => [item.assertion_id, item])),
     [data.freshness],
   )
-
-  async function submitAssertion(event: FormEvent) {
-    event.preventDefault()
-    if (!field.trim() || !value.trim() || !source.trim() || !subjectType.trim() || !(subjectId.trim() || personId) || (kind === 'current_state' && !reviewDays) || (kind === 'time_bound_observation' && !assertionObservedAt)) {
-      setError(kind === 'time_bound_observation' && !assertionObservedAt ? 'Record when the observation actually occurred; save time is not a substitute for event time.' : 'Field, reported value, source, and review window are required.')
-      return
-    }
-    setSaving(true)
-    setError('')
-    setNotice('')
-    try {
-      await postJSON('/care-continuity/assertions', {
-        person_id: personId,
-        subject_type: subjectType.trim(),
-        subject_id: subjectId.trim() || personId,
-        field: field.trim(),
-        assertion_kind: kind,
-        asserted_value: value.trim(),
-        source_label: source.trim(),
-        source_text: sourceText.trim() || undefined,
-        evidence_ids: selectedEvidenceIds,
-        observed_at: kind === 'time_bound_observation' ? new Date(assertionObservedAt).toISOString() : undefined,
-        review_after_days: reviewDays ? Number(reviewDays) : undefined,
-        created_by_caregiver_id: getCaregiverId() || undefined,
-      })
-      setField('')
-      setValue('')
-      setSourceText('')
-      setAssertionObservedAt('')
-      setSelectedEvidenceIds([])
-      setNotice('Report saved. It remains unreviewed until explicitly confirmed.')
-      await load()
-    } catch (reason) {
-      setError('We couldn’t save this care review. Please try again.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-
-  async function loadResolutionHistory(item: Contradiction) {
-    setResolutionHistoryLoadingId(item.id)
-    setResolutionHistoryErrors(current => ({ ...current, [item.id]: '' }))
-    try {
-      const result = await getJSON(`/uncertainty/contradictions/${encodeURIComponent(item.id)}/history`)
-      if (!Array.isArray(result)) throw new Error('Invalid conflict history response')
-      setResolutionHistoryById(current => ({ ...current, [item.id]: result }))
-    } catch {
-      setResolutionHistoryErrors(current => ({ ...current, [item.id]: 'Resolution history could not be loaded. Retry when the connection is available.' }))
-    } finally {
-      setResolutionHistoryLoadingId(current => current === item.id ? null : current)
-    }
-  }
 
   async function resolveContradiction(item: Contradiction, status: 'resolved' | 'partially_resolved' | 'superseded' | 'reopened') {
     const notes = (resolutionNotes[item.id] || '').trim()
@@ -266,40 +163,6 @@ export default function CareContinuityIntegrityPanel({
       await load()
     } catch (reason) {
       setError('We couldn’t save this review. Please try again.')
-    }
-  }
-
-  async function recordStructuredObservation(event: FormEvent) {
-    event.preventDefault()
-    if (!observationCategory.trim() || !observationDescription.trim()) {
-      setError('Enter an observation category and the original report text before saving.')
-      return
-    }
-    setError('')
-    setNotice('')
-    setSaving(true)
-    try {
-      await postJSON('/care-continuity/caregiver-observations', {
-        observation_category: observationCategory.trim(),
-        description: observationDescription.trim(),
-        observed_value: observationValue.trim() || undefined,
-        observation_type: observationType,
-        epistemic_status: observationEpistemicStatus,
-        observed_at: observationAt ? new Date(observationAt).toISOString() : undefined,
-        source_type: observationSourceType,
-        evidence_ids: observationEvidenceIds,
-      })
-      setObservationCategory('')
-      setObservationDescription('')
-      setObservationValue('')
-      setObservationAt('')
-      setObservationEvidenceIds([])
-      setNotice('Structured observation saved to the care record. The original report and its attribution remain separate from verified fact or inference.')
-      await load()
-    } catch {
-      setError('The observation was not confirmed as saved. Check the connection and retry; no successful write is assumed.')
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -370,117 +233,6 @@ export default function CareContinuityIntegrityPanel({
 
       {error && <p role="status" aria-live="polite" style={{ color: 'var(--error)', fontSize: 13, marginTop: 10 }}>{error}</p>}
       {notice && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>{notice}</p>}
-
-      {allowRecordCreation ? (
-      <form onSubmit={recordStructuredObservation} style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Record a structured observation</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Record the source text and structured fields separately. A reported observation is not automatically promoted to a verified fact, diagnosis, or inference.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9 }}>
-          <label style={{ fontSize: 12 }}>Observation category
-            <input style={fieldStyle} value={observationCategory} onChange={event => setObservationCategory(event.target.value)} required maxLength={120} />
-          </label>
-          <label style={{ fontSize: 12 }}>Observation basis
-            <select style={fieldStyle} value={observationType} onChange={event => setObservationType(event.target.value as typeof observationType)}>
-              <option value="direct">Direct observation</option><option value="indirect">Indirect observation</option><option value="second_hand">Reported by another person</option><option value="document_review">Document review</option>
-            </select>
-          </label>
-          <label style={{ fontSize: 12 }}>Epistemic status
-            <select style={fieldStyle} value={observationEpistemicStatus} onChange={event => setObservationEpistemicStatus(event.target.value as typeof observationEpistemicStatus)}>
-              <option value="reported">Reported</option><option value="inferred">Inference</option><option value="unverified">Unverified</option><option value="unknown">Unknown</option>
-            </select>
-          </label>
-          <label style={{ fontSize: 12 }}>Source type
-            <select style={fieldStyle} value={observationSourceType} onChange={event => setObservationSourceType(event.target.value)}>
-              <option value="caregiver_report">Caregiver report</option><option value="professional_report">Professional report</option><option value="document">Document</option><option value="sensor">Sensor / device</option><option value="other">Other / unspecified</option>
-            </select>
-          </label>
-          <label style={{ fontSize: 12 }}>Observed/event time in your local timezone (optional)
-            <input style={fieldStyle} type="datetime-local" value={observationAt} onChange={event => setObservationAt(event.target.value)} />
-          </label>
-        </div>
-        <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Original report or source text
-          <textarea style={{ ...fieldStyle, minHeight: 70 }} value={observationDescription} onChange={event => setObservationDescription(event.target.value)} required maxLength={10000} />
-        </label>
-        <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Structured value (optional)
-          <input style={fieldStyle} value={observationValue} onChange={event => setObservationValue(event.target.value)} maxLength={2000} />
-        </label>
-        {evidenceItems.length > 0 && <fieldset style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginTop: 9 }}>
-          <legend style={{ fontSize: 12 }}>Link existing evidence records</legend>
-          {evidenceLoadError && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{evidenceLoadError}</p>}
-          {evidenceItems.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{evidenceLoadError ? "Evidence list unavailable; no empty-list conclusion is assumed." : "No evidence records are available to link."}</p>}
-          {evidenceItems.map(item => <label key={item.id} style={{ display: 'flex', gap: 7, alignItems: 'center', fontSize: 12, padding: '3px 0' }}>
-            <input type="checkbox" checked={observationEvidenceIds.includes(item.id)} onChange={event => setObservationEvidenceIds(current => event.target.checked ? [...new Set([...current, item.id])] : current.filter(id => id !== item.id))} />
-            {item.type === "note" ? "Caregiver report" : item.type.replaceAll("_", " ")}
-          </label>)}
-        </fieldset>}
-        <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving observation…' : 'Save structured observation'}</button>
-      </form>
-      ) : null}
-
-      {allowRecordCreation ? (
-      <form onSubmit={submitAssertion} style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Record a source-attributed report</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-          Use current state for information intended to describe what is true now (for example, a reported medication dose). Use time-bound observation for something observed at a particular time (for example, mood or appetite). Review window means “ask again after this many days,” not a clinical validity rule.
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
-          <label style={{ fontSize: 12 }}>Subject type
-            <input style={fieldStyle} value={subjectType} onChange={(e) => setSubjectType(e.target.value)} placeholder="e.g. medication" required />
-          </label>
-          <label style={{ fontSize: 12 }}>Record reference
-            <input style={fieldStyle} value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="e.g. medication, sleep, or care routine" required />
-          </label>
-          <label style={{ fontSize: 12 }}>Field
-            <input style={fieldStyle} value={field} onChange={(e) => setField(e.target.value)} placeholder="e.g. medication dose" required />
-          </label>
-          <label style={{ fontSize: 12 }}>Reported value
-            <input style={fieldStyle} value={value} onChange={(e) => setValue(e.target.value)} placeholder="What the source says" required />
-          </label>
-          <label style={{ fontSize: 12 }}>Source label
-            <input style={fieldStyle} value={source} onChange={(e) => setSource(e.target.value)} required />
-          </label>
-          <label style={{ fontSize: 12 }}>Report type
-            <select style={fieldStyle} value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
-              <option value="current_state">Current-state report</option>
-              <option value="time_bound_observation">Time-bound observation</option>
-            </select>
-          </label>
-          <label style={{ fontSize: 12 }}>Review after (days)
-            <input style={fieldStyle} type="number" min={1} max={3650} value={reviewDays} onChange={(e) => setReviewDays(e.target.value)} placeholder={kind === 'current_state' ? 'Required' : 'Optional for observations'} required={kind === 'current_state'} />
-          </label>
-          {kind === 'time_bound_observation' && <label style={{ fontSize: 12 }}>When did it occur?
-            <input style={fieldStyle} type="datetime-local" value={assertionObservedAt} onChange={(e) => setAssertionObservedAt(e.target.value)} required />
-            <small style={{ display: 'block', color: 'var(--text-secondary)' }}>This records event time, not the time you saved the report.</small>
-          </label>}
-        </div>
-        <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Source excerpt or context (optional)
-          <textarea style={{ ...fieldStyle, minHeight: 64, resize: 'vertical' }} value={sourceText} onChange={(e) => setSourceText(e.target.value)} placeholder="Keep the source wording faithful; do not enter an AI-generated conclusion as source evidence." />
-        </label>
-        <fieldset style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginTop: 10 }}>
-          <legend style={{ fontSize: 12 }}>Link existing evidence (optional)</legend>
-          {evidenceItems.length === 0
-            ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No existing evidence is available to link. You can still record the report with its source label and excerpt.</p>
-            : <div style={{ display: 'grid', gap: 7, maxHeight: 180, overflowY: 'auto' }}>
-                {evidenceItems.map((evidence) => (
-                  <label key={evidence.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12 }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedEvidenceIds.includes(evidence.id)}
-                      onChange={(event) => setSelectedEvidenceIds((current) =>
-                        event.target.checked
-                          ? [...current, evidence.id]
-                          : current.filter((id) => id !== evidence.id)
-                      )}
-                    />
-                    <span><strong>{evidence.type || 'Evidence'}</strong> · {evidence.source_text?.slice(0, 180) || 'No source text'} <span style={{ color: 'var(--text-secondary)' }}>({evidence.id})</span></span>
-                  </label>
-                ))}
-              </div>}
-          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 0 }}>SolenOS checks that the selected information belongs to this care record before saving.</p>
-        </fieldset>
-        <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving…' : 'Save report'}</button>
-      </form>
-      ) : null}
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Reported care information</h3>
