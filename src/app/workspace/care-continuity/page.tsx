@@ -187,7 +187,7 @@ function WorkspacePageInner() {
         <section className="lcr-record-section" aria-labelledby="lcr-record-heading">
           <div className="lcr-section-heading">
             <div>
-              <p className="lcr-eyebrow">CARE HISTORY</p>
+              <p className="lcr-eyebrow">TIMELINE</p>
               <h2 id="lcr-record-heading">Care history</h2>
             </div>
             {hasAnyContent && <span className="lcr-count">{situations.length} {situations.length === 1 ? "entry" : "entries"}</span>}
@@ -196,8 +196,8 @@ function WorkspacePageInner() {
           {!hasAnyContent ? (
             <div className="lcr-empty-state">
               <div className="lcr-empty-icon" aria-hidden="true"><FileText size={27} /></div>
-              <h3>No care information is available yet</h3>
-              <p>Information reviewed and approved through AI Companion will appear in this history. An empty record does not mean that nothing has happened or that there are no care concerns.</p>
+              <h3>No care events are available in this timeline yet</h3>
+              <p>This timeline shows saved care situations. Other persisted care information may still appear in the current-care summary and source review.</p>
             </div>
           ) : (
             <div className="lcr-timeline">
