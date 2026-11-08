@@ -26,9 +26,10 @@ assert.doesNotMatch(careContinuity, /Add an update|Add the first detail|Add upda
 assert.match(careContinuity, /Open AI Companion/, "empty record routes new capture through AI Companion");
 assert.match(careContinuity, /Share new information through AI Companion/, "AI Companion is the primary caregiver-facing capture route");
 assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligencePanel/, "duplicate overview and standalone observation-coverage editor are not mounted on Care Continuity");
-assert.match(currentUnderstanding, /allowObservationCapture={false}/, "evidence review is read-only on Care Continuity");
+assert.match(currentUnderstanding, /<EvidenceReviewPanel personId={personId} \/>/, "Care Continuity mounts the evidence panel in its review-only form");
 assert.match(currentUnderstanding, /allowRecordCreation={false}/, "care continuity integrity panel cannot create independent records");
-assert.match(evidenceReview, /props\?\.allowObservationCapture === true/, "structured observation editor is opt-in and disabled by default");
+assert.doesNotMatch(evidenceReview, /submitObservation|Save structured observation|Observation kind|Exact source passage/, "manual structured-observation creation is removed from evidence review");
+assert.doesNotMatch(evidenceReview, /<form\\b/, "evidence review contains no capture forms");
 assert.doesNotMatch(integrityPanel, /Record a structured observation|Record a source-attributed report|Save structured observation|Save report|Record reference|observationCategory|submitAssertion|recordStructuredObservation/, "independent observation and report creation workflows are removed from Care Continuity");
 assert.doesNotMatch(integrityPanel, /<form\\b/, "Care Continuity integrity panel contains no record-creation forms");
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
