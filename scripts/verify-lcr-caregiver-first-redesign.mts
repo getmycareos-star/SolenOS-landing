@@ -20,8 +20,8 @@ assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|Con
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
 assert.doesNotMatch(currentUnderstanding, /persisted records examined|Open loops \(|Situation trajectory \(|Observation coverage \(|Personal baseline|No coverage record means unknown|assessment quality/i, "technical assessment diagnostics are not exposed in the caregiver view");
-assert.match(careContinuity, /<strong>Add an update<\/strong><small>Write a note, paste a message, or attach a document or photo<\/small>/, "record entry action clearly explains what caregivers can do");
-assert.match(careContinuity, /Add an update/, "record composer uses plain caregiver language");
+assert.match(careContinuity, /No care information is available to display yet/, "an empty record is described without inventing care data");
+assert.match(careContinuity, /Share new information through AI Companion/, "the caregiver is directed to the supported record-entry path");
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
