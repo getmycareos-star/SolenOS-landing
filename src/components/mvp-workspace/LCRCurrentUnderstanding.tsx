@@ -1526,8 +1526,8 @@ export function LCRCurrentUnderstanding() {
                               {observation.hedge_marker && <small>Uncertainty wording: {observation.hedge_marker}</small>}
                               {observation.ambiguity_note && <small>Ambiguity: {observation.ambiguity_note}</small>}
                               {observation.correction_rationale && <small>Correction rationale: {observation.correction_rationale}</small>}
-                              <small>Source span: {observation.source_span_start ?? "unknown"}–{observation.source_span_end ?? "unknown"}</small>
-                              <small>Extraction: {observation.extraction_method || "not recorded"} · Version: {observation.extraction_version || "not recorded"} · Observation reference: {observation.id}</small>
+                              <small>The exact source passage is retained.</small>
+                              <small>Extraction method: {(observation.extraction_method || "not recorded").replaceAll("_", " ")} · Version: {observation.extraction_version || "not recorded"}</small>
                             </li>
                           ))}
                         </ul>
@@ -1536,7 +1536,7 @@ export function LCRCurrentUnderstanding() {
                     {item.source_collection === "evidence_observations" && (
                       <div className="lcr-entry-status">
                         <small>
-                          Source span: {item.source_span_start ?? "unknown"}–{item.source_span_end ?? "unknown"} ·
+                          Exact source wording is retained ·
                           {" "}Extraction: {item.extraction_method || "not recorded"} ·
                           {" "}Negated: {item.negated == null ? "not specified" : item.negated ? "yes" : "no"}
                         </small>
@@ -1546,7 +1546,7 @@ export function LCRCurrentUnderstanding() {
                             <blockquote>{item.source_passage}</blockquote>
                           </details>
                         )}
-                        {item.supersedes_observation_id && <small>Corrects prior observation: {item.supersedes_observation_id}</small>}
+                        {item.supersedes_observation_id && <small>This entry corrects an earlier observation.</small>}
                         {item.correction_rationale && <small>Correction rationale: {item.correction_rationale}</small>}
                         {item.hedge_marker && <small>Hedge / uncertainty marker: {item.hedge_marker}</small>}
                         {item.ambiguity_note && <small>Ambiguity: {item.ambiguity_note}</small>}
