@@ -27,7 +27,8 @@ assert.match(careContinuity, /Open AI Companion/, "empty record routes new captu
 assert.match(careContinuity, /Share new information through AI Companion/, "AI Companion is the primary caregiver-facing capture route");
 assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligencePanel/, "duplicate overview and standalone observation-coverage editor are not mounted on Care Continuity");
 assert.match(currentUnderstanding, /<EvidenceReviewPanel personId={personId} \/>/, "Care Continuity mounts the evidence panel in its review-only form");
-assert.match(currentUnderstanding, /allowRecordCreation={false}/, "care continuity integrity panel cannot create independent records");
+assert.match(currentUnderstanding, /<CareContinuityIntegrityPanel personId={personId} \/>/, "Care Continuity mounts the integrity panel for review");
+assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
 assert.doesNotMatch(evidenceReview, /submitObservation|Save structured observation|Observation kind|Exact source passage/, "manual structured-observation creation is removed from evidence review");
 assert.doesNotMatch(evidenceReview, /<form\\b/, "evidence review contains no capture forms");
 assert.doesNotMatch(integrityPanel, /Record a structured observation|Record a source-attributed report|Save structured observation|Save report|Record reference|observationCategory|submitAssertion|recordStructuredObservation/, "independent observation and report creation workflows are removed from Care Continuity");
