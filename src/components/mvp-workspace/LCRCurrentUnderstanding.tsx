@@ -1603,7 +1603,7 @@ export function LCRCurrentUnderstanding() {
         <ClaimAssessmentPanel />
         <ConflictResolutionPanel personId={personId} />
         <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
-        <CareContinuityIntegrityPanel personId={personId} allowRecordCreation={false} />
+        <CareContinuityIntegrityPanel personId={personId} />
       </details>
     </section>
   );
