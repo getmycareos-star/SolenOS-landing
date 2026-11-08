@@ -53,10 +53,6 @@ const cardStyle: CSSProperties = {
   border: '1px solid var(--border)', borderRadius: 10, padding: 14,
   background: 'var(--surface)', marginTop: 12,
 }
-const fieldStyle: React.CSSProperties = {
-  boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7,
-  border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
-}
 const buttonStyle: React.CSSProperties = {
   border: '1px solid var(--border)', borderRadius: 7, padding: '7px 10px',
   background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer',
@@ -71,7 +67,6 @@ export default function CareContinuityIntegrityPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [reviewWindows, setReviewWindows] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     if (!personId) {
@@ -112,11 +107,6 @@ export default function CareContinuityIntegrityPanel({
   )
 
   async function markReviewed(assertion: Assertion) {
-    const reviewWindow = (reviewWindows[assertion.id] ?? String(assertion.review_after_days ?? '')).trim()
-    if (assertion.assertion_kind === 'current_state' && (!reviewWindow || !Number.isInteger(Number(reviewWindow)) || Number(reviewWindow) < 1 || Number(reviewWindow) > 3650)) {
-      setError('Set a review window from 1 to 3650 days before accepting a current-state report.')
-      return
-    }
     setError('')
     setNotice('')
     try {
@@ -124,7 +114,7 @@ export default function CareContinuityIntegrityPanel({
         person_id: personId,
         assertion_status: 'accepted',
         updated_by_caregiver_id: getCaregiverId() || undefined,
-        review_after_days: reviewWindow ? Number(reviewWindow) : undefined,
+        review_after_days: assertion.review_after_days ?? undefined,
       })
       setNotice('Marked as caregiver-reviewed. This is not independent clinical verification.')
       await load()
@@ -165,18 +155,12 @@ export default function CareContinuityIntegrityPanel({
               Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status} · {item.source_event_id ? 'linked care event' : 'caregiver report'}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
-            <label style={{ display: 'block', fontSize: 12, margin: '7px 0' }}>
-              Review window in days {item.assertion_kind === 'current_state' ? '(required before acceptance)' : '(optional for observations)'}
-              <input
-                style={{ ...fieldStyle, maxWidth: 220 }}
-                type="number" min={1} max={3650}
-                value={reviewWindows[item.id] ?? String(item.review_after_days ?? '')}
-                onChange={(e) => setReviewWindows((current) => ({ ...current, [item.id]: e.target.value }))}
-              />
-            </label>
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
-            {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' &&
-              <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as caregiver-reviewed</button>}
+            {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
+              item.assertion_kind !== 'current_state' || item.review_after_days != null
+                ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as caregiver-reviewed</button>
+                : <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A review interval has not been recorded, so this current-state report cannot be marked as current here.</p>
+            )}
           </article>
         })}
       </div>
