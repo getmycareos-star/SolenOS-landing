@@ -304,6 +304,8 @@ try {
   const integrityDisclosure = page.locator("details.lcr-advanced-integrity > summary");
   await integrityDisclosure.waitFor({ state: "visible", timeout: 15_000 });
   await integrityDisclosure.click();
+  // The conflict editor is intentionally inside its own disclosure.
+  await page.locator("details.lcr-history-details > summary").filter({ hasText: "When information differs" }).click();
   const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
   await conflictPanel.getByRole("heading", { name: "Conflict comparison and resolution history" }).waitFor({ timeout: 20_000 });
   await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);
