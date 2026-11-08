@@ -26,6 +26,7 @@ for (const contract of [
   ["uncalibrated confidence is not presented as a percentage", /confidence == null \? "not calibrated"/],
   ["failed loads are exposed as an error state", /role="alert"/],
   ["empty state does not claim no changes occurred", /This does not mean that no changes occurred/],
+  ["observation coverage cannot be independently submitted from this panel", /recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\\b/.test(panel) === false],
 ] as const) {
   assert(contract[1].test(panel), `Missing UI contract: ${contract[0]}`);
 }
