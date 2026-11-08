@@ -180,8 +180,8 @@ function WorkspacePageInner() {
           </Button>
           <div>
             <p className="lcr-eyebrow">LIVING CARE RECORD</p>
-            <h1>{targetSituationId ? "Update this care thread" : "Add to the record"}</h1>
-            <p>{targetSituationId ? "This entry will be added to the selected care thread. Other concerns stay separate." : "Notes, messages, documents, or photos. Fragments are fine."}</p>
+            <h1>{targetSituationId ? "Update this care thread" : "Add an update"}</h1>
+            <p>{targetSituationId ? "This update will be saved with the selected care thread. Other concerns stay separate." : "Write a note, paste a message, or attach a document or photo. A few words are enough."}</p>
           </div>
         </div>
         <ErrorBoundary name="CognitiveWorkspace" fallback={
@@ -223,7 +223,7 @@ function WorkspacePageInner() {
         <section className="lcr-primary-actions" aria-label="Record actions">
           <button type="button" className="lcr-add-primary" onClick={openComposer}>
             <span className="lcr-action-icon" aria-hidden="true"><Plus size={22} /></span>
-            <span><strong>Add to record</strong><small>Write a note or add a message, document, or photo</small></span>
+            <span><strong>Add an update</strong><small>Write a note, paste a message, or attach a document or photo</small></span>
             <span className="lcr-action-arrow" aria-hidden="true">→</span>
           </button>
           <button type="button" className="lcr-daily-action" onClick={() => router.push("/workspace/daily-care")}>
