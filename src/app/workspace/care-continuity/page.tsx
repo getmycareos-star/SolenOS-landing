@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, MessageCircle, Users } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 import { BrandLoading } from "@/components/brand";
@@ -26,6 +26,14 @@ function formatLastUpdated(iso: string | null): string {
     return "Not yet updated";
   }
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  active: "Current",
+  blocked: "Needs attention",
+  waiting: "Waiting",
+  paused: "Paused",
+  resolved: "Resolved",
+};
 
 function WorkspacePageInner() {
   const router = useRouter();
@@ -344,26 +352,7 @@ function WorkspacePageInner() {
           )}
         </section>
 
-        <section className="lcr-support-section" aria-label="Other care tools">
-          <div>
-            <p className="lcr-eyebrow">WHEN YOU NEED IT</p>
-            <h2>More ways to work with your record</h2>
-          </div>
-          <button type="button" className="lcr-tool-link" onClick={() => router.push("/workspace/companion")}>
-            <span className="lcr-tool-icon" aria-hidden="true"><MessageCircle size={20} /></span>
-            <span><strong>AI Companion</strong><small>Think through care questions using the available context</small></span>
-            <span aria-hidden="true">→</span>
-          </button>
-          {FEATURE_FLAGS.community && FEATURE_FLAGS.professionalCommunity && (
-            <button type="button" className="lcr-tool-link" onClick={() => router.push("/workspace/community")}>
-              <span className="lcr-tool-icon" aria-hidden="true"><Users size={20} /></span>
-              <span><strong>Caregiver community</strong><small>Learn from other dementia-care experiences</small></span>
-              <span aria-hidden="true">→</span>
-            </button>
-          )}
-        </section>
 
-        <p className="lcr-footer-note">Your record brings together what has been shared over time. Suggestions and uncertain information should remain distinguishable from confirmed care details.</p>
       </div>
     </main>
   );
