@@ -288,7 +288,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               <span aria-hidden="true">{historyOpen ? "Hide" : "Open"}</span>
             </button>
             {historyMounted && (
-              <div hidden={!historyOpen}>
+              <div className="solenos-chat-history-content" hidden={!historyOpen}>
                 <HistoryDrawer />
               </div>
             )}
