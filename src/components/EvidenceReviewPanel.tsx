@@ -596,9 +596,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       </article>)}
     </details>
     {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No evidence records were returned for this care record.</p> : evidenceItems.length > 0 ? <>
-      <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Evidence record
+      <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Source material
         <select style={field} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
-          {evidenceItems.map(item => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}
+          {evidenceItems.map(item => <option key={item.id} value={item.id}>{item.type.replaceAll('_', ' ')} · {item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : 'Date not recorded'}</option>)}
         </select>
       </label>
       {selected && <>
@@ -606,23 +606,23 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Source category</dt><dd style={{ margin: 0 }}>{selected.type || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Evidence kind</dt><dd style={{ margin: 0 }}>{selected.evidence_kind?.replaceAll('_', ' ') || 'Not classified'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Epistemic status</dt><dd style={{ margin: 0 }}>{selected.epistemic_status?.replaceAll('_', ' ') || 'Not assessed'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Information status</dt><dd style={{ margin: 0 }}>{selected.epistemic_status?.replaceAll('_', ' ') || 'Not assessed'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Collected by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.collected_by_caregiver_id || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id ? 'Caregiver' : null].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Collected by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.collected_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Event time</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Collected at</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Reported at</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Collection method</dt><dd style={{ margin: 0 }}>{selected.collection_method || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Origin device label</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Transfer source</dt><dd style={{ margin: 0 }}>{selected.transfer_source || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Transfer reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Transfer reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded at</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Ingested at</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Origin channel</dt><dd style={{ margin: 0 }}>{selected.origin_channel || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original source reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Parent evidence</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id || 'None recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Parent evidence</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>How this source relates to other information ({relationships.length})</summary>
@@ -632,10 +632,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No links to other sources are recorded for this item yet.</p>}
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{item.relationship_type.replaceAll('_', ' ')}</strong>
-            <div>Evidence {item.source_evidence_id} → related evidence {item.related_evidence_id}</div>
-            <div>Independence: {item.source_independence_status.replaceAll('_', ' ')}{item.origin_group_key ? ` · origin group ${item.origin_group_key}` : ''}</div>
+            <div>This source is linked to another saved source.</div>
+            <div>Independence: {item.source_independence_status.replaceAll('_', ' ')}</div>
             <p>{item.rationale}</p>
-            <small>Reviewed by {item.reviewed_by_caregiver_id || 'identity unavailable'} · {new Date(item.created_at).toLocaleString()}</small>
+            <small>Reviewed by {item.reviewed_by_caregiver_id ? 'caregiver' : 'an unavailable identity'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
           <label style={{ display: 'block', marginTop: 9 }}>Related evidence
             <select style={field} value={relatedEvidenceId} onChange={event => setRelatedEvidenceId(event.target.value)}>
@@ -681,8 +681,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <strong>{item.attribute.replaceAll('_', ' ')} · {item.epistemic_status.replaceAll('_', ' ')}</strong>
             <div>{item.observation_kind.replaceAll('_', ' ')} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
-            <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''} · source passage position {item.source_span_start}–{item.source_span_end}</div>
-            {item.supersedes_observation_id && <div>Corrects observation {item.supersedes_observation_id}: {item.correction_rationale || 'No correction rationale recorded'}</div>}
+            <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
+            {item.supersedes_observation_id && <div>Corrects an earlier observation: {item.correction_rationale || 'No correction rationale recorded'}</div>}
             {item.negated !== null && item.negated !== undefined && <div>Negation recorded: {item.negated ? 'yes' : 'no'}</div>}
             {item.hedge_marker && <div>Hedging: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>Ambiguity: {item.ambiguity_note}</div>}
@@ -713,7 +713,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <ul>
               {((recordHistory.items as Array<Record<string, unknown>>) || []).map(item => (
                 <li key={String(item.target_type) + ':' + String(item.target_id)}>
-                  <strong>{String(item.target_type)} / {String(item.target_id)}</strong>
+                  <strong>{String(item.target_type).replaceAll('_', ' ')}</strong>
                   {' — '}revision {String(item.revision_number)} ({String(item.change_kind)})
                   <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.state, null, 2)}</pre>
                   <p>Evidence links: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0} authorized source reference(s)</p>
@@ -760,15 +760,15 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               <p role="alert">Original file bytes do not match their stored fingerprint or byte length.</p>
             )}
             <p><strong>Exact source-text duplicate candidates:</strong> {sourceIntegrity.exact_source_text_duplicate_candidate_ids.length
-              ? sourceIntegrity.exact_source_text_duplicate_candidate_ids.join(', ')
+              ? sourceIntegrity.exact_source_text_duplicate_candidate_ids.length + ' possible match(es)'
               : 'No exact fingerprint candidate found; semantic duplicates were not assessed.'}</p>
             <p><strong>Exact binary duplicate candidates:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
-              ? sourceIntegrity.exact_binary_duplicate_candidate_ids.join(', ')
+              ? sourceIntegrity.exact_binary_duplicate_candidate_ids.length + ' possible match(es)'
               : 'No exact binary fingerprint candidate found.'}</p>
             <p><strong>Near-duplicate comparison:</strong> {sourceIntegrity.near_duplicate_comparison_status.replaceAll('_', ' ')} · algorithm {sourceIntegrity.near_duplicate_algorithm_version}</p>
             {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
               <p key={group.evidence_ids.join(':') + index}>
-                Similarity candidate with evidence {group.evidence_ids.filter(id => id !== selectedId).join(', ')} · {group.interpretation}
+                Similarity candidate involving {group.evidence_ids.filter(id => id !== selectedId).length} other source record(s) · {group.interpretation}
               </p>
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
