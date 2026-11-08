@@ -245,6 +245,7 @@ function apiTimingLabel(input: RequestInfo | URL): string {
   }
 }
 
+// Companion passes its longer inference budget; ordinary API requests keep the 15-second default.
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
