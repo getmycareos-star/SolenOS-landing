@@ -344,13 +344,13 @@ export default function ClaimAssessmentPanel() {
   }
 
   return <section style={panel} aria-label="Evidence-grounded claim assessments">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Claim evidence and assessment history</h3>
+    <h3 style={{ fontSize: 15, marginTop: 0 }}>Review the information supporting a care detail</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
       Assess a specific claim against linked evidence. Support and contradiction passages must exactly match the saved source text. Assessments are append-only versions; they do not overwrite the original report or independently prove a clinical fact.
     </p>
     {loading && <p role="status">Loading persisted claims and evidence…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
-    {!loading && !error && claims.length === 0 && <p>No claims were returned for this care record.</p>}
+    {!loading && !error && claims.length === 0 && <p>There are no care details requiring this review yet.</p>}
     {!loading && !error && claims.length > 0 && <>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Claim
         <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
@@ -370,7 +370,7 @@ export default function ClaimAssessmentPanel() {
         {dependencyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{dependencyError}</p>}
         {dependencyNotice && <p role="status" style={{ fontSize: 12 }}>{dependencyNotice}</p>}
         {!dependencyLoading && !dependencyError && dependencies.length === 0 &&
-          <p style={{ fontSize: 12 }}>No dependency edges were returned for this claim.</p>}
+          <p style={{ fontSize: 12 }}>No related care details are linked to this one yet.</p>}
         {dependencies.length > 0 && <ul style={{ fontSize: 12, paddingLeft: 18 }}>
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "Depends on" : "Required by"}{" "}
@@ -441,7 +441,7 @@ export default function ClaimAssessmentPanel() {
       <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || historyLoading}>{saving ? "Saving…" : "Save claim assessment"}</button>
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <section aria-label="Assessment impact review" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
-        <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Evidence change and reassessment check</h4>
+        <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Check whether new information affects this review</h4>
         <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This deterministic check looks for changed evidence links, unavailable previously assessed evidence, changed declared prerequisites, and unresolved matching conflicts. It does not prove truth or completeness.</p>
         {impactLoading && <p role="status">Checking persisted assessment dependencies…</p>}
         {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
@@ -450,7 +450,7 @@ export default function ClaimAssessmentPanel() {
           <div style={{ fontSize: 12, marginTop: 5 }}>Status: {assessmentImpact.status.replaceAll("_", " ")}{assessmentImpact.assessment_version != null ? ` · assessment version ${assessmentImpact.assessment_version}` : ""}</div>
           {assessmentImpact.reasons.length > 0
             ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{reason.replaceAll("_", " ")}</li>)}</ul>
-            : <p style={{ fontSize: 12 }}>No review trigger was returned by this bounded check.</p>}
+            : <p style={{ fontSize: 12 }}>No specific reason to repeat this review was found in the information checked. This does not prove that the assessment is complete or correct.</p>}
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Unavailable evidence IDs: {assessmentImpact.missing_evidence_ids.join(", ")}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Claim evidence not included in the latest assessment: {assessmentImpact.unassessed_claim_evidence_ids.join(", ")}</p>}
           {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Changed prerequisite claims: {assessmentImpact.changed_prerequisite_claim_ids.join(", ")}</p>}
@@ -461,7 +461,7 @@ export default function ClaimAssessmentPanel() {
       <h4 style={{ fontSize: 13, marginBottom: 5 }}>Assessment history</h4>
       {historyLoading && <p role="status">Loading saved assessment versions…</p>}
       {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError} <button type="button" style={button} onClick={() => void loadHistory()} disabled={historyLoading}>Retry history</button></p>}
-      {!historyLoading && !historyError && history.length === 0 && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>No saved assessment versions were returned.</p>}
+      {!historyLoading && !historyError && history.length === 0 && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>No previous reviews are recorded for this detail.</p>}
       {history.map((item) => <article key={item.id} style={{ borderTop: "1px solid var(--border)", padding: "9px 0", fontSize: 12 }}>
         <strong>Version {item.claim_version}: {item.status.replaceAll("_", " ")}</strong>
         <div>{new Date(item.created_at).toLocaleString()} · {item.policy_version} · reviewer {item.reviewed_by_caregiver_id}</div>
