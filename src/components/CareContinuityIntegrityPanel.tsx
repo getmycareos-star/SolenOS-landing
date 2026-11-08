@@ -227,7 +227,7 @@ export default function CareContinuityIntegrityPanel({
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => void load()} disabled={loading}>
-          {loading ? 'Refreshing…' : 'Refresh'}
+          {loading ? 'Refreshing…' : 'Refresh record details'}
         </button>
       </div>
 
@@ -265,7 +265,7 @@ export default function CareContinuityIntegrityPanel({
 
 
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Competing reports</h3>
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>When information differs</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>SolenOS preserves competing reports and does not pick a winner. Resolution requires a human explanation; resolving the conflict does not delete the source reports.</p>
         {data.contradictions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>There are no conflicting reports available in this record yet.</p> : data.contradictions.map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
