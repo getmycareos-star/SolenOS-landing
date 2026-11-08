@@ -7,12 +7,10 @@ import { Button } from "@/components/ui/Button";
 
 import { BrandLoading } from "@/components/brand";
 import { useWorkspace } from "@/lib/workspace-context";
-import { listActiveSituations, openSituationsFromSituationApi } from "@/lib/ui-runtime";
+import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { ensureAnonymousSession } from "@/api/client";
 import { apiUrl } from "@/lib/api-url";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
-
-const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
 function formatLastUpdated(iso: string | null): string {
   if (!iso) return "Not yet updated";
@@ -29,18 +27,9 @@ function formatLastUpdated(iso: string | null): string {
   }
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  active: "Current",
-  blocked: "Needs attention",
-  waiting: "Waiting",
-  paused: "Paused",
-  resolved: "Resolved",
-};
-
 function WorkspacePageInner() {
   const router = useRouter();
   const { runtime, hydrated, entryReady, updateRuntime } = useWorkspace();
-  const [displayName, setDisplayName] = useState("");
   const [isArchived, setIsArchived] = useState(false);
   const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const [archiveRestoreError, setArchiveRestoreError] = useState("");
@@ -118,10 +107,8 @@ function WorkspacePageInner() {
 
   useEffect(() => {
     try {
-      setDisplayName(window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE)?.trim() ?? "");
       setIsArchived(window.localStorage.getItem("solenos_workspace_archived") === "1");
     } catch {
-      setDisplayName("");
       setIsArchived(false);
     } finally {
       setArchiveStateLoaded(true);
@@ -159,7 +146,6 @@ function WorkspacePageInner() {
     );
   }
 
-  const activeSituations = listActiveSituations(runtime.situations);
   const situations = [...runtime.situations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const latestUpdated = situations[0]?.updatedAt ?? null;
   const hasAnyContent = situations.length > 0;
