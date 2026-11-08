@@ -32,8 +32,14 @@ assert.match(currentUnderstanding, /<CareContinuityIntegrityPanel personId={pers
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
 assert.doesNotMatch(evidenceReview, /submitObservation|Save structured observation|Observation kind|Exact source passage/, "manual structured-observation creation is removed from evidence review");
 assert.doesNotMatch(evidenceReview, /<form\b/, "evidence review contains no capture forms");
+assert.doesNotMatch(evidenceReview, /submitRelationship|Save source relationship|relatedEvidenceId|relationshipRationale/, "evidence review cannot create standalone source links");
+assert.doesNotMatch(evidenceReview, /createFreshnessPolicy|Save new policy version|freshnessDomain|freshnessPolicyRationale/, "caregivers cannot author internal freshness policies from Care Continuity");
+assert.match(evidenceReview, /loadRelationships/, "existing source relationship history remains readable");
+assert.match(evidenceReview, /async function submit\(/, "evidence review capability remains available");
+assert.doesNotMatch(changeIntelligence, /recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\b/, "change intelligence has no standalone observation-coverage composer");
 assert.doesNotMatch(integrityPanel, /Record a structured observation|Record a source-attributed report|Save structured observation|Save report|Record reference|observationCategory|submitAssertion|recordStructuredObservation/, "independent observation and report creation workflows are removed from Care Continuity");
 assert.doesNotMatch(integrityPanel, /<form\b/, "Care Continuity integrity panel contains no record-creation forms");
+assert.doesNotMatch(integrityPanel, /Review window in days|reviewWindows|setReviewWindows/, "review-window values cannot be independently entered from Care Continuity");
 assert.doesNotMatch(integrityPanel, /When information differs|Next questions|recordOutcome|loadResolutionHistory/, "legacy duplicate conflict and question workflows are removed from the integrity panel");
 assert.match(currentUnderstanding, /<ConflictResolutionPanel personId={personId} \/>/, "conflict review remains available in its dedicated section");
 assert.match(currentUnderstanding, /<ClarificationWorkflowPanel personId={personId}/, "clarification remains available in its dedicated section");
