@@ -3,9 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, MessageCircle, Users } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 import { BrandLoading } from "@/components/brand";
-import { Button } from "@/components/ui/Button";
 import { useWorkspace } from "@/lib/workspace-context";
 import { listActiveSituations, openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { ensureAnonymousSession } from "@/api/client";
