@@ -3,6 +3,8 @@ import fs from "node:fs";
 
 const legacyRoute = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8");
 const capture = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
+const careContinuity = fs.readFileSync("src/app/workspace/care-continuity/page.tsx", "utf8");
+const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
@@ -17,6 +19,9 @@ assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "D
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
+assert.doesNotMatch(currentUnderstanding, /persisted records examined|Confidence:|Open loops \(|Situation trajectory \(|Observation coverage \(|Personal baseline|No coverage record means unknown|numeric confidence|assessment quality/i, "technical assessment diagnostics are not exposed in the caregiver view");
+assert.match(careContinuity, /<strong>Add an update<\/strong><small>Write a note, paste a message, or attach a document or photo<\/small>/, "record entry action clearly explains what caregivers can do");
+assert.match(careContinuity, /Add an update/, "record composer uses plain caregiver language");
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
