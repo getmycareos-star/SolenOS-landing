@@ -12,6 +12,8 @@ const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResol
 const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"));
 
 
+let workspaceLoadSequence = 0;
+
 type RegisteredAction = {
   id: string;
   person_id: string;
@@ -527,6 +529,12 @@ export function LCRCurrentUnderstanding() {
   }, []);
 
   const load = useCallback(async (manual = false) => {
+    const timingId = ++workspaceLoadSequence;
+    const timingStart = `solenos-workspace-start-${timingId}`;
+    const timingReady = `solenos-workspace-ready-${timingId}`;
+    if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+      performance.mark(timingStart);
+    }
     setRegisteredActions([]);
     setRegisteredActionsError(null);
     if (manual) setRefreshing(true);
@@ -555,6 +563,16 @@ export function LCRCurrentUnderstanding() {
         throw new Error("The current-care response did not match this session's record contract. No care state has been assumed.");
       }
       setProjection(result as CurrentCareProjection);
+      if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+        try {
+          performance.mark(timingReady);
+          performance.measure("solenos.workspace.first-care-ready", { start: timingStart, end: timingReady });
+          performance.clearMarks(timingStart);
+          performance.clearMarks(timingReady);
+        } catch {
+          // Local timing instrumentation must never affect care-record loading.
+        }
+      }
       setLoading(false);
       setRefreshing(false);
 
@@ -645,6 +663,10 @@ export function LCRCurrentUnderstanding() {
         }
       })();
     } catch (cause) {
+      if (typeof performance !== "undefined" && typeof performance.clearMarks === "function") {
+        performance.clearMarks(timingStart);
+        performance.clearMarks(timingReady);
+      }
       setPersonId("");
       setCurrentCaregiverId("");
       setProjection(null);
