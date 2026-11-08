@@ -201,7 +201,7 @@ export function PersistedCareOrientation() {
               ? "There is not enough information for a reliable assessment."
               : `Assessment status: ${situationAssessment.assessment.confidence_assessment.overall.replace(/_/g, " ")}.`}
           </p>
-          {(situationAssessment.assessment.open_loops?.count ?? 0) > 0 && <p>Unresolved matters recorded: {situationAssessment.assessment.open_loops?.count}.</p>
+          {(situationAssessment.assessment.open_loops?.count ?? 0) > 0 && <p>Unresolved matters recorded: {situationAssessment.assessment.open_loops?.count}.</p>}
           {(situationAssessment.assessment.open_loops?.items ?? []).slice(0, 5).map((loop) => (
             <div key={loop.id} className="persisted-care-orientation-latest">
               <strong>{loop.title || loop.loop_type.replace(/_/g, " ")}</strong>
