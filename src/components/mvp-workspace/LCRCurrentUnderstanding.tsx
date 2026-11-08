@@ -1221,7 +1221,7 @@ export function LCRCurrentUnderstanding() {
             <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
               <h4 id="lcr-registered-actions-heading">Agreed actions</h4>
               {registeredActionsError && <p role="alert">Registered actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
-              {!registeredActionsError && registeredActions.length === 0 && <p>No agreed actions have been added yet.</p>}
+              {!registeredActionsError && registeredActions.length === 0 && <p>No agreed actions are recorded in this care history.</p>}
               {registeredActions.length > 0 && (
                 <ul className="lcr-current-facts">
                   {registeredActions.map((action) => (
