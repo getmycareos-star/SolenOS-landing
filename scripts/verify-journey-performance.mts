@@ -16,6 +16,7 @@ const backgroundTasks = lcr.indexOf("void (async () => {", projectionRequest);
 assert.ok(projectionRequest >= 0, "the current-care projection remains the authoritative first-screen read");
 assert.ok(firstReady > projectionRequest, "the caregiver first screen is released after validating the current-care projection");
 assert.ok(backgroundTasks > firstReady, "secondary continuity work starts only after the first-care ready point");
+assert.ok(lcr.includes("window.requestAnimationFrame(() => window.setTimeout(loadSecondarySections, 0))"), "secondary API traffic waits until after the browser has had a frame to paint the primary care view");
 assert.ok(backgroundActions > firstReady, "registered actions no longer block the first caregiver screen");
 assert.ok(lcr.includes('performance.measure("solenos.workspace.first-care-ready"'), "first-care readiness has a local browser performance measurement");
 assert.ok(lcr.includes('dynamic(() => import("@/components/CareContinuityIntegrityPanel"))'), "advanced integrity code is split into an on-demand chunk");
