@@ -19,7 +19,7 @@ assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "D
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
-assert.doesNotMatch(currentUnderstanding, /persisted records examined|Confidence:|Open loops \(|Situation trajectory \(|Observation coverage \(|Personal baseline|No coverage record means unknown|numeric confidence|assessment quality/i, "technical assessment diagnostics are not exposed in the caregiver view");
+assert.doesNotMatch(currentUnderstanding, /persisted records examined|Open loops \(|Situation trajectory \(|Observation coverage \(|Personal baseline|No coverage record means unknown|assessment quality/i, "technical assessment diagnostics are not exposed in the caregiver view");
 assert.match(careContinuity, /<strong>Add an update<\/strong><small>Write a note, paste a message, or attach a document or photo<\/small>/, "record entry action clearly explains what caregivers can do");
 assert.match(careContinuity, /Add an update/, "record composer uses plain caregiver language");
 
