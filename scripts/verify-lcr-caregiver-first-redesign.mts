@@ -21,7 +21,7 @@ assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "D
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
-assert.doesNotMatch(currentUnderstanding, /persisted records examined|\\bConfidence:\\s*|Open loops \\(|Situation trajectory \\(|Observation coverage \\(|Personal baseline|No coverage record means unknown|numeric confidence\\b|assessment quality/i, "technical assessment diagnostics are not exposed in the caregiver view");
+assert.doesNotMatch(currentUnderstanding, /persisted records examined|\bConfidence:\s*|Open loops \(|Situation trajectory \(|Observation coverage \(|Personal baseline|No coverage record means unknown|numeric confidence\b|assessment quality/i, "technical assessment diagnostics are not exposed in the caregiver view");
 assert.doesNotMatch(careContinuity, /Add an update|Add the first detail|Add update to this thread|compose=1|CognitiveWorkspace|AddSituationPanel/, "Care Continuity must not expose a second capture interface");
 assert.match(careContinuity, /Open AI Companion/, "empty record routes new capture through AI Companion");
 assert.match(careContinuity, /Share new information through AI Companion/, "AI Companion is the primary caregiver-facing capture route");
