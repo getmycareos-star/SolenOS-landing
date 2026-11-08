@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { getJSON, postJSON, patchJSON, getCaregiverId } from '../api/client'
-import EvidenceReviewPanel from './EvidenceReviewPanel'
 
 type Assertion = {
   id: string
@@ -96,9 +95,11 @@ type EvidenceSource = { id: string; type: string; source_text: string; uploaded_
 export default function CareContinuityIntegrityPanel({
   personId,
   evidenceItems: initialEvidenceItems = [],
+  allowRecordCreation = false,
 }: {
   personId: string
   evidenceItems?: EvidenceSource[]
+  allowRecordCreation?: boolean
 }) {
   const [data, setData] = useState<PanelData>(emptyData)
   const [evidenceItems, setEvidenceItems] = useState<EvidenceSource[]>(initialEvidenceItems)
@@ -357,9 +358,9 @@ export default function CareContinuityIntegrityPanel({
     <section aria-label="Care continuity integrity" style={{ marginTop: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: 19, margin: 0 }}>Care continuity</h2>
+          <h2 style={{ fontSize: 19, margin: 0 }}>Record details</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 5 }}>
-            Reports, uncertainty, changes, questions, and outcomes. A report is not a confirmed fact.
+            Review reported information, unresolved questions, changes and recorded outcomes. A report is not automatically a confirmed fact.
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => void load()} disabled={loading}>
@@ -370,8 +371,7 @@ export default function CareContinuityIntegrityPanel({
       {error && <p role="status" aria-live="polite" style={{ color: 'var(--error)', fontSize: 13, marginTop: 10 }}>{error}</p>}
       {notice && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>{notice}</p>}
 
-      <EvidenceReviewPanel personId={personId} evidenceItems={evidenceItems} />
-
+      {allowRecordCreation ? (
       <form onSubmit={recordStructuredObservation} style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record a structured observation</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Record the source text and structured fields separately. A reported observation is not automatically promoted to a verified fact, diagnosis, or inference.</p>
@@ -415,7 +415,9 @@ export default function CareContinuityIntegrityPanel({
         </fieldset>}
         <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving observation…' : 'Save structured observation'}</button>
       </form>
+      ) : null}
 
+      {allowRecordCreation ? (
       <form onSubmit={submitAssertion} style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record a source-attributed report</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -478,10 +480,11 @@ export default function CareContinuityIntegrityPanel({
         </fieldset>
         <button type="submit" style={{ ...buttonStyle, marginTop: 10 }} disabled={saving}>{saving ? 'Saving…' : 'Save report'}</button>
       </form>
+      ) : null}
 
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Reported care information and freshness</h3>
-        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No source-attributed reports have been entered through this panel yet.</p> : data.assertions.map((item) => {
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>Reported care information</h3>
+        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No reported care details are available in this record yet.</p> : data.assertions.map((item) => {
           const fresh = freshnessById.get(item.id)
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -512,7 +515,7 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Competing reports</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>SolenOS preserves competing reports and does not pick a winner. Resolution requires a human explanation; resolving the conflict does not delete the source reports.</p>
-        {data.contradictions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No contradiction records returned.</p> : data.contradictions.map((item) =>
+        {data.contradictions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>There are no conflicting reports available in this record yet.</p> : data.contradictions.map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
               <strong>{item.field}</strong><span style={{ fontSize: 12 }}>{item.resolution_status.replace(/_/g, ' ')}</span>
@@ -556,7 +559,7 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Next questions</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Questions are linked to recorded uncertainty, unresolved reports, or missing information. They do not diagnose or resolve a conflict.</p>
-        {data.questions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No open question candidates from the current engine inputs.</p> : data.questions.map((item, index) => {
+        {data.questions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>There are no recorded questions to review yet.</p> : data.questions.map((item, index) => {
           const actionId = item.persisted_question_id || item.source_id
           return <article key={item.persisted_question_id || item.source_id || index} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <strong style={{ fontSize: 14 }}>{item.question}</strong>
@@ -579,10 +582,10 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Care-state history</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A history of how recorded care information has changed over time.</p>
-        {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No tracked revisions returned.</p> : data.revisions.slice(0, 20).map((item) =>
+        {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes to the saved care information are available yet.</p> : data.revisions.slice(0, 20).map((item) =>
           <details key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <summary style={{ cursor: 'pointer', fontSize: 13 }}>
-              {item.target_type} · {item.target_id} · v{item.revision_number} · {item.change_kind} · {new Date(item.changed_at).toLocaleString()}
+              {item.target_type.replace(/_/g, ' ')} · version {item.revision_number} · {item.change_kind.replace(/_/g, ' ')} · {new Date(item.changed_at).toLocaleString()}
             </summary>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8, marginTop: 8 }}>
               <div><strong style={{ fontSize: 12 }}>Before</strong><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.before_state, null, 2) || 'No prior state (creation)'}</pre></div>
