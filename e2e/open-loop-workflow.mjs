@@ -307,7 +307,7 @@ try {
   // The conflict editor is intentionally inside its own disclosure.
   await page.locator("details.lcr-history-details > summary").filter({ hasText: "When information differs" }).click();
   const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
-  await conflictPanel.getByRole("heading", { name: "Conflict comparison and resolution history" }).waitFor({ timeout: 20_000 });
+  await conflictPanel.getByRole("heading", { name: "When information differs" }).waitFor({ timeout: 20_000 });
   await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);
   await conflictPanel.getByLabel("Resolution transition").selectOption("partially_resolved");
   await conflictPanel.getByLabel("Resolution rationale").fill(
