@@ -18,8 +18,8 @@ import {
   X,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
-import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
-import { ShareCareSummaryPanel } from "@/components/mvp-workspace/share/ShareCareSummaryPanel";
+const HistoryDrawer = dynamic(() => import("@/components/app-shell/HistoryDrawer").then((module) => module.HistoryDrawer), { ssr: false });
+const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
 import { ensureAnonymousSession, getAnonymousAccessToken, revokeAnonymousSession } from "@/api/client";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
@@ -79,6 +79,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyMounted, setHistoryMounted] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -247,9 +249,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
           <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
             <button type="button" className="solenos-chat-nav-item" onClick={() => {
-              const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
-              input?.focus();
-              input?.scrollIntoView({ block: "nearest" });
+              setHistoryMounted(true);
+              setHistoryOpen(true);
             }}>
               <span className="solenos-chat-nav-icon"><Search size={19} strokeWidth={1.8} /></span>
               <span>Search history</span>
@@ -273,8 +274,24 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           </nav>
 
           <div className="solenos-chat-history-section">
-            <div className="solenos-chat-history-heading">Recent history</div>
-            <HistoryDrawer />
+            <button
+              type="button"
+              className="solenos-chat-history-heading solenos-chat-history-toggle"
+              aria-expanded={historyOpen}
+              aria-controls="solenos-history-drawer"
+              onClick={() => {
+                setHistoryMounted(true);
+                setHistoryOpen((value) => !value);
+              }}
+            >
+              <span>Recent history</span>
+              <span aria-hidden="true">{historyOpen ? "Hide" : "Open"}</span>
+            </button>
+            {historyMounted && (
+              <div hidden={!historyOpen}>
+                <HistoryDrawer />
+              </div>
+            )}
           </div>
 
           <div className="solenos-chat-sidebar-bottom">
