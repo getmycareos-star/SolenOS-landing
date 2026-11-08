@@ -35,6 +35,7 @@ assert.ok(shell.includes("onMouseEnter={() => router.prefetch(href)}"), "desktop
 assert.ok(workspace.includes("<LCRCurrentUnderstanding />"), "the default workspace route still opens the actual Living Care Record");
 
 assert.ok(landing.includes('fetchPriority="high"'), "the landing hero image is prioritized for initial rendering");
+assert.ok(landing.includes("srcSet=") && landing.includes("sizes="), "mobile devices can select a smaller landing hero asset");
 assert.ok(landing.includes("<LandingStartLink"), "landing CTAs use a client-side timing link without converting the landing page into a client component");
 assert.ok(fs.readFileSync("src/components/public/LandingStartLink.tsx", "utf8").includes('performance.mark("solenos.journey.landing-cta")'), "landing CTA click marks the start of the tap-to-care journey");
 assert.ok(lcr.includes('performance.measure("solenos.journey.landing-to-first-care"'), "the tap-to-first-care metric spans the landing CTA to the validated care projection");
