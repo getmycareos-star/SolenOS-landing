@@ -141,12 +141,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [relationships, setRelationships] = useState<SourceRelationship[]>([])
   const [relationshipsLoading, setRelationshipsLoading] = useState(false)
   const [relationshipsError, setRelationshipsError] = useState('')
-  const [relatedEvidenceId, setRelatedEvidenceId] = useState('')
-  const [relationshipType, setRelationshipType] = useState('forwarded_from')
-  const [independenceStatus, setIndependenceStatus] = useState('shared_origin')
-  const [originGroupKey, setOriginGroupKey] = useState('')
-  const [relationshipRationale, setRelationshipRationale] = useState('')
-  const [relationshipSaving, setRelationshipSaving] = useState(false)
   const [observations, setObservations] = useState<Observation[]>([])
   const [observationsLoading, setObservationsLoading] = useState(false)
   const [observationsError, setObservationsError] = useState('')
@@ -193,11 +187,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [notice, setNotice] = useState('')
   const [freshnessPolicies, setFreshnessPolicies] = useState<FreshnessPolicy[]>([])
   const [freshnessPolicyId, setFreshnessPolicyId] = useState('')
-  const [freshnessDomain, setFreshnessDomain] = useState('general_care')
-  const [freshnessVersion, setFreshnessVersion] = useState('v1')
-  const [freshnessMaxAge, setFreshnessMaxAge] = useState('')
-  const [freshnessHistoricalAfter, setFreshnessHistoricalAfter] = useState('')
-  const [freshnessPolicyRationale, setFreshnessPolicyRationale] = useState('')
   const [freshnessPolicyLoading, setFreshnessPolicyLoading] = useState(false)
   const [freshnessPolicySaving, setFreshnessPolicySaving] = useState(false)
   const [freshnessPolicyError, setFreshnessPolicyError] = useState('')
@@ -227,43 +216,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   }, [personId, freshnessPolicyId])
 
   useEffect(() => { void loadFreshnessPolicies() }, [loadFreshnessPolicies])
-
-  const createFreshnessPolicy = useCallback(async () => {
-    setFreshnessPolicySaving(true)
-    setFreshnessPolicyError('')
-    setFreshnessPolicyNotice('')
-    try {
-      const parseOptionalDays = (raw: string) => {
-        if (!raw.trim()) return null
-        const value = Number(raw)
-        if (!Number.isInteger(value) || value < 0) throw new Error('Freshness boundaries must be non-negative whole days.')
-        return value
-      }
-      const payload = {
-        domain_key: freshnessDomain.trim().toLowerCase(),
-        policy_version: freshnessVersion.trim(),
-        max_age_days: parseOptionalDays(freshnessMaxAge),
-        historical_after_days: parseOptionalDays(freshnessHistoricalAfter),
-        rationale: freshnessPolicyRationale.trim(),
-      }
-      if (!payload.max_age_days && payload.max_age_days !== 0 && payload.historical_after_days == null) {
-        throw new Error('Set a maximum age or a historical boundary; SolenOS will not invent a default.')
-      }
-      if (!payload.rationale) throw new Error('Explain why this domain-specific review boundary is appropriate.')
-      const saved = await postJSON('/care-continuity/evidence-freshness/policies', payload) as FreshnessPolicy
-      if (!saved?.id || saved.person_id !== personId || saved.policy_version !== payload.policy_version) {
-        throw new Error('The saved policy response did not match the authenticated care record.')
-      }
-      setFreshnessPolicyId(saved.id)
-      setFreshnessPolicyNotice('Domain-specific policy version saved. Previous versions remain in history.')
-      setFreshnessPolicyRationale('')
-      await loadFreshnessPolicies()
-    } catch (cause) {
-      setFreshnessPolicyError(cause instanceof Error ? cause.message : 'Freshness policy could not be saved. No save is assumed.')
-    } finally {
-      setFreshnessPolicySaving(false)
-    }
-  }, [freshnessDomain, freshnessVersion, freshnessMaxAge, freshnessHistoricalAfter, freshnessPolicyRationale, personId, loadFreshnessPolicies])
 
   const assessSelectedFreshness = useCallback(async () => {
     if (!selectedId || !freshnessPolicyId) {
@@ -485,31 +437,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   useEffect(() => { void loadObservations() }, [loadObservations])
 
-  async function submitRelationship() {
-    if (!selected || !relatedEvidenceId || relatedEvidenceId === selected.id || relationshipRationale.trim().length < 3) {
-      setRelationshipsError('Choose a different evidence item and provide a relationship rationale.')
-      return
-    }
-    setRelationshipSaving(true)
-    setRelationshipsError('')
-    try {
-      await postJSON(`/care-continuity/evidence/${encodeURIComponent(selected.id)}/relationships`, {
-        related_evidence_id: relatedEvidenceId,
-        relationship_type: relationshipType,
-        source_independence_status: independenceStatus,
-        origin_group_key: originGroupKey.trim() || null,
-        rationale: relationshipRationale.trim(),
-      })
-      setRelationshipRationale('')
-      setRelationshipsError('')
-      await loadRelationships()
-    } catch {
-      setRelationshipsError('The source relationship was not confirmed as saved. Check the connection and retry.')
-    } finally {
-      setRelationshipSaving(false)
-    }
-  }
-
   function changeReviewType(next: ReviewType) {
     setReviewType(next)
     setOutcome(outcomes[next][0])
@@ -559,24 +486,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Policies are explicit, caregiver-defined and immutable by version. No universal freshness threshold is applied. A freshness result does not establish truth or current clinical status.</p>
       {freshnessPolicyLoading && <p role="status">Loading saved policies…</p>}
       {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry policy list</button></p>}
-      <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Domain key
-        <input style={field} value={freshnessDomain} onChange={event => setFreshnessDomain(event.target.value)} placeholder="medication_history" />
-      </label>
-      <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Policy version
-        <input style={field} value={freshnessVersion} onChange={event => setFreshnessVersion(event.target.value)} placeholder="v1" />
-      </label>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginTop: 8 }}>
-        <label style={{ fontSize: 12 }}>Review after age (days)
-          <input style={field} inputMode="numeric" value={freshnessMaxAge} onChange={event => setFreshnessMaxAge(event.target.value)} placeholder="Leave blank if undefined" />
-        </label>
-        <label style={{ fontSize: 12 }}>Historical after age (days)
-          <input style={field} inputMode="numeric" value={freshnessHistoricalAfter} onChange={event => setFreshnessHistoricalAfter(event.target.value)} placeholder="Leave blank if undefined" />
-        </label>
-      </div>
-      <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Policy rationale
-        <textarea style={{ ...field, minHeight: 55 }} value={freshnessPolicyRationale} onChange={event => setFreshnessPolicyRationale(event.target.value)} placeholder="Why is this review interval appropriate for this care domain?" />
-      </label>
-      <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void createFreshnessPolicy()} disabled={freshnessPolicySaving || freshnessPolicyLoading}>{freshnessPolicySaving ? 'Saving…' : 'Save new policy version'}</button>
       <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Apply saved policy
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
           <option value="">Choose a saved domain policy</option>
@@ -637,39 +546,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p>{item.rationale}</p>
             <small>Reviewed by {item.reviewed_by_caregiver_id ? 'caregiver' : 'an unavailable identity'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
-          <label style={{ display: 'block', marginTop: 9 }}>Related evidence
-            <select style={field} value={relatedEvidenceId} onChange={event => setRelatedEvidenceId(event.target.value)}>
-              <option value="">Choose a separate evidence record</option>
-              {evidenceItems.filter(item => item.id !== selected.id).map(item => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}
-            </select>
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 8 }}>
-            <label>Relationship type
-              <select style={field} value={relationshipType} onChange={event => {
-                const next = event.target.value
-                setRelationshipType(next)
-                if (['copied_from', 'forwarded_from', 'derived_from', 'same_origin'].includes(next)) setIndependenceStatus('shared_origin')
-              }}>
-                <option value="same_origin">Same origin</option><option value="copied_from">Copied from</option>
-                <option value="forwarded_from">Forwarded from</option><option value="derived_from">Derived from</option>
-                <option value="corroborates">Corroborates this claim/detail</option><option value="corroboration_attempt_failed">Attempted, did not corroborate</option><option value="contradicts">Contradicts</option>
-                <option value="duplicates">Duplicate candidate</option><option value="related_to">Related to</option>
-              </select>
-            </label>
-            <label>Source independence
-              <select style={field} value={independenceStatus} onChange={event => setIndependenceStatus(event.target.value)}>
-                <option value="shared_origin">Shared origin / dependent</option><option value="independent">Independent (reviewed)</option>
-                <option value="unknown">Unknown</option><option value="not_assessed">Not assessed</option>
-              </select>
-            </label>
-          </div>
-          <label style={{ display: 'block', marginTop: 8 }}>Origin group key (optional)
-            <input style={field} value={originGroupKey} onChange={event => setOriginGroupKey(event.target.value)} maxLength={128} placeholder="Identifier shared by copied or forwarded material" />
-          </label>
-          <label style={{ display: 'block', marginTop: 8 }}>Why these items are related
-            <textarea style={{ ...field, minHeight: 58 }} value={relationshipRationale} onChange={event => setRelationshipRationale(event.target.value)} />
-          </label>
-          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitRelationship()} disabled={relationshipSaving || relationshipsLoading || !selected || !relatedEvidenceId}>{relationshipSaving ? 'Saving…' : 'Save source relationship'}</button>
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>Details extracted from this source ({observations.length})</summary>
