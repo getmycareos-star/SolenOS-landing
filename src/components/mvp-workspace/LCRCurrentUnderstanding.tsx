@@ -913,7 +913,7 @@ export function LCRCurrentUnderstanding() {
     <section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">
       <div className="lcr-section-heading">
         <div>
-          <p className="lcr-eyebrow">YOUR CARE RECORD</p>
+          <p className="lcr-eyebrow">CURRENT CARE SUMMARY</p>
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
           <p>What has been shared, what may need attention, and what is still unclear.</p>
         </div>
@@ -945,10 +945,12 @@ export function LCRCurrentUnderstanding() {
           <>
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-immediate-heading">
               <h4 id="lcr-attention-immediate-heading">Needs attention now</h4>
-              {needsAttentionNow.length === 0 ? (
+              {assessment.coverage.records_examined === 0 ? (
+                <p>There isn’t enough recorded care information to assess immediate priorities yet.</p>
+              ) : needsAttentionNow.length === 0 ? (
                 <p>{assessment.open_loops.has_more
                   ? "No explicit immediate-priority item appears in the returned records. Additional unresolved items exist beyond this bounded view."
-                  : "No immediate concerns were identified in the information currently available. This does not rule out other concerns."}</p>
+                  : "No immediate-priority items are recorded in the care information currently available."}</p>
               ) : (
                 <ul className="lcr-current-facts">
                   {needsAttentionNow.map((item) => {
@@ -1054,10 +1056,11 @@ export function LCRCurrentUnderstanding() {
               )}
             </div>
 
+            {assessment.coverage.records_examined > 0 && (
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
               <h4 id="lcr-attention-wait-heading">Things that can wait</h4>
               {canWaitItems.length === 0 ? (
-                <p>No explicitly deferred items with a recorded reason were returned. The record does not establish that other unresolved items are safe to postpone.</p>
+                <p>No care information is available to identify items that can safely wait. An empty record is not evidence that postponement is safe.</p>
               ) : (
                 <ul className="lcr-current-facts">
                   {canWaitItems.map((item) => (
@@ -1081,6 +1084,8 @@ export function LCRCurrentUnderstanding() {
                 </ul>
               )}
             </div>
+            )}
+
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Changes to keep an eye on</h4>
@@ -1212,6 +1217,7 @@ export function LCRCurrentUnderstanding() {
         )}
       </section>
 
+            {(registeredActions.length > 0 || Boolean(registeredActionsError) || (assessment?.coverage.records_examined ?? 0) > 0) && (
             <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
               <h4 id="lcr-registered-actions-heading">Agreed actions</h4>
               {registeredActionsError && <p role="alert">Registered actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
@@ -1275,6 +1281,8 @@ export function LCRCurrentUnderstanding() {
                 </ul>
               )}
             </div>
+            )}
+
 
       <details className="lcr-history-details"><summary>See patterns in the care history</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
@@ -1477,8 +1485,8 @@ export function LCRCurrentUnderstanding() {
 
           {projection.items.length === 0 ? (
             <div className="lcr-empty-state">
-              <h3>No care information is available to show yet</h3>
-              <p>This does not mean everything is fine or that nothing has happened. Add a care note or review existing information to build a clearer picture.</p>
+              <h3>No care information is available yet</h3>
+              <p>This does not mean nothing has happened or that there are no care concerns. Share new information through AI Companion; reviewed and approved details will appear here.</p>
             </div>
           ) : (
             <div className="lcr-current-facts">
@@ -1591,11 +1599,11 @@ export function LCRCurrentUnderstanding() {
       <details className="lcr-advanced-integrity">
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
-        <EvidenceReviewPanel personId={personId} />
+        <EvidenceReviewPanel personId={personId} allowObservationCapture={false} />
         <ClaimAssessmentPanel />
         <ConflictResolutionPanel personId={personId} />
         <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
-        <CareContinuityIntegrityPanel personId={personId} />
+        <CareContinuityIntegrityPanel personId={personId} allowRecordCreation={false} />
       </details>
     </section>
   );
