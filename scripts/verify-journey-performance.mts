@@ -24,7 +24,9 @@ assert.ok(lcr.includes('dynamic(() => import("@/components/EvidenceReviewPanel")
 assert.ok(lcr.includes("onToggle={(event) => setAdvancedIntegrityOpen(event.currentTarget.open)}"), "advanced integrity panels mount only after the caregiver opens the section");
 assert.ok(lcr.includes("{advancedIntegrityOpen && ("), "collapsed advanced panels do not mount and issue background API requests");
 
-assert.ok((shell.match(/prefetch={false}/g) || []).length >= 2, "secondary workspace navigation must not prefetch every route bundle");
+assert.ok((shell.match(/prefetch={false}/g) || []).length >= 2, "secondary workspace navigation must not prefetch every route bundle on initial load");
+assert.ok(shell.includes("onTouchStart={() => router.prefetch(href)}"), "mobile navigation intent starts route prefetch before navigation");
+assert.ok(shell.includes("onMouseEnter={() => router.prefetch(href)}"), "desktop navigation intent starts route prefetch before navigation");
 assert.ok(workspace.includes("<LCRCurrentUnderstanding />"), "the default workspace route still opens the actual Living Care Record");
 
 assert.ok(landing.includes('fetchPriority="high"'), "the landing hero image is prioritized for initial rendering");
