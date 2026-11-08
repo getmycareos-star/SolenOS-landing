@@ -121,9 +121,8 @@ const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
 
-export default function EvidenceReviewPanel(props?: { personId?: string; evidenceItems?: EvidenceItem[]; allowObservationCapture?: boolean }) {
+export default function EvidenceReviewPanel(props?: { personId?: string; evidenceItems?: EvidenceItem[] }) {
   const expectedPersonId = props?.personId?.trim() || ''
-  const allowObservationCapture = props?.allowObservationCapture === true
   const [personId, setPersonId] = useState('')
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([])
   const [evidenceLoading, setEvidenceLoading] = useState(true)
@@ -151,21 +150,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [observations, setObservations] = useState<Observation[]>([])
   const [observationsLoading, setObservationsLoading] = useState(false)
   const [observationsError, setObservationsError] = useState('')
-  const [observationKind, setObservationKind] = useState('caregiver_report')
-  const [observationStatus, setObservationStatus] = useState('reported')
-  const [observationSubject, setObservationSubject] = useState('')
-  const [observationAttribute, setObservationAttribute] = useState('')
-  const [observationValue, setObservationValue] = useState('')
-  const [observationPassage, setObservationPassage] = useState('')
-  const [observationUnits, setObservationUnits] = useState('')
-  const [observationNegated, setObservationNegated] = useState('unknown')
-  const [observationHedge, setObservationHedge] = useState('')
-  const [observationAmbiguity, setObservationAmbiguity] = useState('')
-  const [observationObserver, setObservationObserver] = useState('')
-  const [observationMethod, setObservationMethod] = useState('')
-  const [observationSaving, setObservationSaving] = useState(false)
-  const [observationSupersedesId, setObservationSupersedesId] = useState('')
-  const [observationCorrectionRationale, setObservationCorrectionRationale] = useState('')
 
   const loadEvidence = useCallback(async () => {
     setEvidenceLoading(true)
@@ -501,65 +485,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   useEffect(() => { void loadObservations() }, [loadObservations])
 
-  async function submitObservation() {
-    if (!selected || !observationSubject.trim() || !observationAttribute.trim() || !observationPassage) {
-      setObservationsError('Provide a subject, attribute, and exact passage copied from the original evidence.')
-      return
-    }
-    const sourceSpanStart = selected.source_text.indexOf(observationPassage)
-    if (sourceSpanStart < 0) {
-      setObservationsError('The passage is not an exact match in the selected source. Copy the original wording without paraphrasing.')
-      return
-    }
-    if (selected.source_text.indexOf(observationPassage, sourceSpanStart + 1) >= 0) {
-      setObservationsError('This passage occurs more than once. Include enough surrounding words to identify one exact source span.')
-      return
-    }
-    const sourceSpanEnd = sourceSpanStart + observationPassage.length
-    if (observationSupersedesId && observationCorrectionRationale.trim().length < 3) {
-      setObservationsError('A correction must state why the earlier observation is being superseded.')
-      return
-    }
-    if (!['unknown', 'missing'].includes(observationStatus) && !observationValue.trim()) {
-      setObservationsError('Provide a recorded value, or explicitly choose unknown/missing.')
-      return
-    }
-    setObservationSaving(true)
-    setObservationsError('')
-    try {
-      await postJSON(`/care-continuity/evidence/${encodeURIComponent(selected.id)}/observations`, {
-        observation_kind: observationKind,
-        epistemic_status: observationStatus,
-        subject_label: observationSubject.trim(),
-        attribute: observationAttribute.trim(),
-        value_text: ['unknown', 'missing'].includes(observationStatus) ? null : observationValue.trim(),
-        source_passage: observationPassage,
-        source_span_start: sourceSpanStart,
-        source_span_end: sourceSpanEnd,
-        units: observationUnits.trim() || null,
-        negated: observationNegated === 'unknown' ? null : observationNegated === 'yes',
-        hedge_marker: observationHedge.trim() || null,
-        ambiguity_note: observationAmbiguity.trim() || null,
-        observer_label: observationObserver.trim() || null,
-        observation_method: observationMethod.trim() || null,
-        extraction_method: 'human_entered',
-        extraction_version: 'manual-v1',
-        supersedes_observation_id: observationSupersedesId || null,
-        correction_rationale: observationCorrectionRationale.trim() || null,
-      })
-      setObservationValue('')
-      setObservationPassage('')
-      setObservationAmbiguity('')
-      setObservationSupersedesId('')
-      setObservationCorrectionRationale('')
-      await loadObservations()
-    } catch {
-      setObservationsError('The observation was not confirmed as saved. The API requires an exact source passage and valid epistemic classification.')
-    } finally {
-      setObservationSaving(false)
-    }
-  }
-
   async function submitRelationship() {
     if (!selected || !relatedEvidenceId || relatedEvidenceId === selected.id || relationshipRationale.trim().length < 3) {
       setRelationshipsError('Choose a different evidence item and provide a relationship rationale.')
@@ -747,7 +672,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitRelationship()} disabled={relationshipSaving || relationshipsLoading || !selected || !relatedEvidenceId}>{relationshipSaving ? 'Saving…' : 'Save source relationship'}</button>
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Structured source-grounded observations ({observations.length})</summary>
+          <summary>Details extracted from this source ({observations.length})</summary>
           <p>Each observation preserves an exact passage from the original source. A reported account remains reported; an inferred interpretation is not a directly observed fact.</p>
           {observationsLoading && <p role="status">Loading structured observations…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
@@ -764,73 +689,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             {item.observer_label && <div>Observer: {item.observer_label}{item.observation_method ? ` · ${item.observation_method}` : ''}</div>}
             <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
-          {allowObservationCapture ? (
-            <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 10 }}>
-            <label>Observation kind
-              <select style={field} value={observationKind} onChange={event => setObservationKind(event.target.value)}>
-                <option value="caregiver_report">Caregiver report</option><option value="direct_observation">Direct observation</option>
-                <option value="professional_observation">Professional observation</option><option value="persons_own_report">Person's own report</option>
-                <option value="documented_record">Documented record</option><option value="instrument_measurement">Instrument measurement</option>
-                <option value="photo_video">Photo/video</option><option value="audio_transcript">Audio/transcript</option>
-                <option value="imported_information">Imported information</option><option value="historical_recollection">Historical recollection</option>
-                <option value="derived_observation">Derived observation</option><option value="inference">Inference</option><option value="hypothesis">Hypothesis</option>
-              </select>
-            </label>
-            <label>Epistemic status
-              <select style={field} value={observationStatus} onChange={event => setObservationStatus(event.target.value)}>
-                <option value="reported">Reported</option><option value="observed">Observed</option><option value="inferred">Inferred</option>
-                <option value="hypothesis">Hypothesis</option><option value="unknown">Unknown</option><option value="missing">Missing</option>
-                <option value="disputed">Disputed</option><option value="unverified">Unverified</option><option value="superseded">Superseded</option>
-              </select>
-            </label>
-            <label>Subject label
-              <input style={field} value={observationSubject} onChange={event => setObservationSubject(event.target.value)} maxLength={160} placeholder="e.g. care recipient" />
-            </label>
-            <label>Attribute
-              <input style={field} value={observationAttribute} onChange={event => setObservationAttribute(event.target.value)} maxLength={160} placeholder="e.g. sleep_awakenings" />
-            </label>
-            <label>Value (leave blank only for unknown/missing)
-              <input style={field} value={observationValue} onChange={event => setObservationValue(event.target.value)} maxLength={8000} />
-            </label>
-            <label>Units (if applicable)
-              <input style={field} value={observationUnits} onChange={event => setObservationUnits(event.target.value)} maxLength={80} />
-            </label>
-          </div>
-          <label style={{ display: 'block', marginTop: 8 }}>Exact source passage
-            <textarea style={{ ...field, minHeight: 64 }} value={observationPassage} onChange={event => setObservationPassage(event.target.value)} placeholder="Copy the exact wording from the original evidence above." />
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 8 }}>
-            <label>Negation
-              <select style={field} value={observationNegated} onChange={event => setObservationNegated(event.target.value)}>
-                <option value="unknown">Not assessed</option><option value="yes">Negated</option><option value="no">Not negated</option>
-              </select>
-            </label>
-            <label>Hedging / uncertainty wording
-              <input style={field} value={observationHedge} onChange={event => setObservationHedge(event.target.value)} maxLength={120} placeholder="e.g. possibly, may have" />
-            </label>
-            <label>Observer (required for observed status)
-              <input style={field} value={observationObserver} onChange={event => setObservationObserver(event.target.value)} placeholder="Named observer" />
-            </label>
-            <label>Observation method (required for observed status)
-              <input style={field} value={observationMethod} onChange={event => setObservationMethod(event.target.value)} maxLength={120} placeholder="How it was observed/measured" />
-            </label>
-          </div>
-          <label style={{ display: 'block', marginTop: 8 }}>Correct an earlier observation (optional)
-            <select style={field} value={observationSupersedesId} onChange={event => setObservationSupersedesId(event.target.value)}>
-              <option value="">Create a new observation, not a correction</option>
-              {observations.filter(item => item.attribute === observationAttribute.trim()).map(item => <option key={item.id} value={item.id}>{item.attribute} · {item.epistemic_status} · {item.id}</option>)}
-            </select>
-          </label>
-          {observationSupersedesId && <label style={{ display: 'block', marginTop: 8 }}>Correction rationale (required)
-            <textarea style={{ ...field, minHeight: 52 }} value={observationCorrectionRationale} onChange={event => setObservationCorrectionRationale(event.target.value)} maxLength={4000} />
-          </label>}
-          <label style={{ display: 'block', marginTop: 8 }}>Ambiguity / extraction limitation
-            <textarea style={{ ...field, minHeight: 52 }} value={observationAmbiguity} onChange={event => setObservationAmbiguity(event.target.value)} maxLength={4000} />
-          </label>
-          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void submitObservation()} disabled={observationSaving || observationsLoading || !selected}>{observationSaving ? 'Saving…' : 'Save structured observation'}</button>
-            </>
-          ) : null}
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
