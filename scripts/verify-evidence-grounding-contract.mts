@@ -76,7 +76,9 @@ assert(panel.includes("/relationships"), "source-lineage UI must use the persist
 assert(panel.includes("source_independence_status"), "source-lineage UI must display explicit source-independence state");
 assert(panel.includes("item.source_independence_status.replaceAll('_', ' ')"), "source-lineage UI must render the persisted independence state without hard-coding only one possible value");
 assert(panel.includes("not automatic proof"), "source-lineage UI must not equate a relationship with verified truth");
-assert(panel.includes("The source relationship was not confirmed as saved"), "failed relationship writes must not be shown as successful");
+assert(panel.includes("getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/relationships`)"), "source relationships must be read from the persisted person-scoped API");
+assert(panel.includes("No links to other sources are recorded for this item yet."), "an empty relationship result must be stated explicitly");
+assert(!panel.includes("postJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/relationships`)"), "the source relationship panel must not claim to create relationships when it only supports persisted reads");
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
