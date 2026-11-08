@@ -972,7 +972,7 @@ export function LCRCurrentUnderstanding() {
                         {item.outcome_status && <small>Recorded outcome status: {item.outcome_status.replaceAll("_", " ")}</small>}
                         {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
                         {item.evidence_ids.length > 0
-                          ? <small>Supporting evidence: {item.evidence_ids.join(", ")}</small>
+                          ? <small>Supporting sources: {item.evidence_ids.length} linked record(s)</small>
                           : <small>This priority comes from a saved follow-up assessment; supporting source material is not linked here.</small>}
                         {source?.source_label && <small>Source label: {source.source_label}</small>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
@@ -992,7 +992,7 @@ export function LCRCurrentUnderstanding() {
                                 <strong>Suggested follow-up — not a registered action</strong>
                                 <p>Proposed action: {item.request_text}</p>
                                 <p>Why suggested: {(item.priority_reasons ?? []).join("; ") || item.description || "The persisted open-loop record contains a follow-up request."}</p>
-                                <p>Supporting evidence: {item.evidence_ids.join(", ")}</p>
+                                <p>Supporting sources: {item.evidence_ids.length} linked record(s)</p>
                                 <p>Limitations: Information is marked {item.epistemic_status.replaceAll("_", " ")}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
                                 <p>Responsible caregiver: the caregiver authenticated in this session. No other caregiver will be assigned.</p>
                                 <p>Due date: {item.due_at ? `The source record contains ${formatWhen(item.due_at)}; no reminder will be created unless you explicitly choose one below.` : "No supported due date is recorded."}</p>
@@ -1077,8 +1077,8 @@ export function LCRCurrentUnderstanding() {
                         ? <small>Recorded priority factors: {item.priority_reasons.join("; ")}</small>
                         : <small>No priority-change trigger was recorded; reassess if the underlying record changes.</small>}
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                      <small>Source record: {item.source.replaceAll("_", " ")} · {item.id}</small>
-                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      <small>Source type: {item.source.replaceAll("_", " ")}</small>
+                      <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
                     </li>
                   ))}
                 </ul>
@@ -1119,7 +1119,7 @@ export function LCRCurrentUnderstanding() {
                         {source?.description && <p>{source.description}</p>}
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                         <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
-                        <small>Source record: {item.id}</small>
+                        <small>Source type: {item.source.replaceAll("_", " ")}</small>
                       </li>
                     );
                   })}
@@ -1133,7 +1133,7 @@ export function LCRCurrentUnderstanding() {
                       {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                       <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
-                      <small>Source record: {item.source} · {item.id}</small>
+                      <small>Source type: {item.source.replaceAll("_", " ")}</small>
                     </li>
                   ))}
                   {watchMissingInformation.map((item) => (
@@ -1181,7 +1181,7 @@ export function LCRCurrentUnderstanding() {
                               : " This candidate has not been confirmed."}
                       </p>
                       <small>Comparison window: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
-                      <small>Supporting evidence references: {change.evidence_ids.length > 0 ? change.evidence_ids.join(", ") : "None linked"}</small>
+                      <small>Supporting sources: {change.evidence_ids.length} linked record(s)</small>
                       <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
                         {expandedChangeId === change.id ? "Hide supporting records" : "View supporting records"}
                       </button>
@@ -1207,7 +1207,7 @@ export function LCRCurrentUnderstanding() {
                           {pattern.alternative_interpretations.map((alternative, index) => <p key={index}>{typeof alternative === "string" ? alternative : JSON.stringify(alternative)}</p>)}
                         </div>
                       ) : <p>Alternative explanations were not returned with this pattern; no cause is inferred.</p>}
-                      <small>Source event references: {pattern.event_ids.length > 0 ? pattern.event_ids.join(", ") : "None linked"}</small>
+                      <small>Source events: {pattern.event_ids.length}</small>
                     </li>
                   ))}
                 </ul>
@@ -1315,7 +1315,7 @@ export function LCRCurrentUnderstanding() {
                     {typeof item === "string" ? item : JSON.stringify(item)}
                   </p>
                 ))}
-                <small>Source event references: {pattern.event_ids.length ? pattern.event_ids.join(", ") : "None linked"}</small>
+                <small>Source events: {pattern.event_ids.length}</small>
               </li>
             ))}
           </ul>
@@ -1378,7 +1378,7 @@ export function LCRCurrentUnderstanding() {
                   <small>This assessment has been superseded. It remains in the record for audit history.</small>
                 )}
                 <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
-                <small>Evidence references: {change.evidence_ids.length > 0 ? change.evidence_ids.join(", ") : "None linked"}</small>
+                <small>Supporting sources: {change.evidence_ids.length} linked record(s)</small>
                 <button
                   type="button"
                   className="lcr-text-action"
@@ -1433,8 +1433,8 @@ export function LCRCurrentUnderstanding() {
                             <li key={transition.id}>
                               <p>{transition.previous_status.replaceAll("_", " ")} → {transition.new_status.replaceAll("_", " ")}</p>
                               {transition.reason && <p>{transition.reason}</p>}
-                              <small>Recorded {formatWhen(transition.created_at)} · caregiver {transition.actor_caregiver_id}</small>
-                              {transition.evidence_ids.length > 0 && <small>Review evidence: {transition.evidence_ids.join(", ")}</small>}
+                              <small>Recorded {formatWhen(transition.created_at)} · reviewer: caregiver</small>
+                              {transition.evidence_ids.length > 0 && <small>Review evidence: {transition.evidence_ids.length} linked record(s)</small>}
                             </li>
                           ))}
                         </ul>
@@ -1570,13 +1570,13 @@ export function LCRCurrentUnderstanding() {
                           <div>
                             <small>Linked evidence records: {evidenceIntegrityByFact[item.id].linked_evidence_count} · Corroboration: {evidenceIntegrityByFact[item.id].independent_corroboration_status.replaceAll("_", " ")}</small>
                             {evidenceIntegrityByFact[item.id].duplicate_content_candidates.map(group => (
-                              <p key={group.fingerprint}><small>Exact normalized-text duplicate candidate: {group.evidence_ids.join(", ")}. {group.interpretation}</small></p>
+                              <p key={group.fingerprint}><small>Possible exact duplicate across {group.evidence_ids.length} source record(s). {group.interpretation}</small></p>
                             ))}
                             {evidenceIntegrityByFact[item.id].near_duplicate_analysis && (
                               <div>
                                 <small>Near-duplicate review ({evidenceIntegrityByFact[item.id].near_duplicate_analysis?.status?.replaceAll("_", " ") ?? "status unavailable"}; {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.records_considered ?? 0}/{evidenceIntegrityByFact[item.id].near_duplicate_analysis?.records_available ?? 0} records considered; {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.algorithm_version ?? "algorithm version unavailable"}).</small>
                                 {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.candidate_groups?.map(group => (
-                                  <p key={group.evidence_ids.join(":")}><small>Possible near-duplicate: {group.evidence_ids.join(", ")}. {group.interpretation}</small></p>
+                                  <p key={group.evidence_ids.join(":")}><small>Possible near-duplicate across {group.evidence_ids.length} source record(s). {group.interpretation}</small></p>
                                 ))}
                                 <small>{evidenceIntegrityByFact[item.id].near_duplicate_analysis?.interpretation_limit ?? "Near-duplicate interpretation limits were not returned by the server."}</small>
                               </div>
