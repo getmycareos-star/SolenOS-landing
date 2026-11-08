@@ -259,6 +259,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 key={href}
                 href={href}
                 className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
+                prefetch={false}
                 aria-current={active(href) ? "page" : undefined}
                 onClick={() => setSidebarOpen(false)}
               >
@@ -277,6 +278,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             <Link
               href="/workspace/settings"
               className={`solenos-chat-nav-item${active("/workspace/settings") ? " is-active" : ""}`}
+              prefetch={false}
               onClick={() => setSidebarOpen(false)}
             >
               <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
