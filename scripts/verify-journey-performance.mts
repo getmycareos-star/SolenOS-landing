@@ -7,6 +7,7 @@ const landing = fs.readFileSync("src/app/page.tsx", "utf8");
 const landingCss = fs.readFileSync("src/app/landing.css", "utf8");
 const lazyBackground = fs.readFileSync("src/components/public/LazyBackground.tsx", "utf8");
 const workspace = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const history = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 
 const projectionRequest = lcr.indexOf('await getJSON("/care-continuity/current-care?limit_per_source=12")');
 const firstReady = lcr.indexOf("setLoading(false)", projectionRequest);
@@ -27,6 +28,7 @@ assert.ok(lcr.includes("{advancedIntegrityOpen && ("), "collapsed advanced panel
 assert.ok((shell.match(/prefetch={false}/g) || []).length >= 2, "secondary workspace navigation must not prefetch every route bundle on initial load");
 assert.ok(shell.includes('dynamic(() => import("@/components/app-shell/HistoryDrawer")'), "the 52 KB history interface is not part of the initial workspace bundle");
 assert.ok(shell.includes("{historyMounted && ("), "history data requests do not start until the caregiver opens history or search");
+assert.ok(history.includes("if (eventReadProblem || !eventItems || eventItems.length === 0)"), "history does not repeat the expensive full LCR projection when the dedicated event read succeeds");
 assert.ok(shell.includes('dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel")'), "the share/export workflow is loaded only when requested");
 assert.ok(shell.includes("onTouchStart={() => router.prefetch(href)}"), "mobile navigation intent starts route prefetch before navigation");
 assert.ok(shell.includes("onMouseEnter={() => router.prefetch(href)}"), "desktop navigation intent starts route prefetch before navigation");
