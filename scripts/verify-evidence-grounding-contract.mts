@@ -98,13 +98,13 @@ assert(evidenceReview.includes("This does not establish that the evidence did no
 console.log("PASS: evidence review exposes persisted historical reconstruction with an explicit absence limitation.");
 
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
-assert(panel.includes("exact passage copied from the original evidence"), "observation UI must require source-grounded text");
+assert(panel.includes("Each observation preserves an exact passage from the original source"), "read-only observation history must retain the exact source passage");
 assert(panel.includes("A reported account remains reported"), "observation UI must preserve report versus observation distinctions");
-assert(panel.includes("unknown/missing"), "observation UI must not fabricate values for unknown or missing data");
+assert(panel.includes("item.epistemic_status.replaceAll"), "read-only observation history must retain the recorded information status");
 console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
 
 assert(panel.includes("supersedes_observation_id"), "observation corrections must link to the prior version");
-assert(panel.includes("Correction rationale"), "observation correction UI must require a rationale");
+assert(panel.includes("item.correction_rationale"), "observation correction history must retain its recorded rationale");
 console.log("PASS: observation correction history must be versioned and justified.");
 
 const lcr = fs.readFileSync(path.join(process.cwd(), "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
