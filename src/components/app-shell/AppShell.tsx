@@ -75,6 +75,8 @@ const LOCAL_WORKSPACE_KEYS = [
   "solenos_workspace_archived",
 ] as const;
 
+let workspaceNavigationTimingSequence = 0;
+
 export function AppShell({ children, careContext, brandHref = "/workspace" }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -92,6 +94,31 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (typeof performance === "undefined" || typeof performance.mark !== "function") return;
+    const startMark = `solenos.workspace.nav-start:${pathname}`;
+    if (performance.getEntriesByName(startMark, "mark").length === 0) return;
+    const readyMark = `solenos.workspace.nav-mounted:${++workspaceNavigationTimingSequence}`;
+    try {
+      performance.mark(readyMark);
+      performance.measure("solenos.workspace.route-mounted", { start: startMark, end: readyMark });
+      performance.clearMarks(startMark);
+      performance.clearMarks(readyMark);
+    } catch {
+      // Navigation timing must never block route transitions.
+    }
+  }, [pathname]);
+
+  const markNavigationStart = (href: string) => {
+    if (pathname === href || typeof performance === "undefined" || typeof performance.mark !== "function") return;
+    try {
+      performance.clearMarks(`solenos.workspace.nav-start:${href}`);
+      performance.mark(`solenos.workspace.nav-start:${href}`);
+    } catch {
+      // Navigation timing must never block route transitions.
+    }
+  };
 
   useEffect(() => {
     if (!recordDetailsOpen) return;
@@ -241,7 +268,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               type="button"
               className="solenos-sidebar-icon-button"
               aria-label="Close navigation"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => { markNavigationStart("/workspace/settings"); setSidebarOpen(false); }}
             >
               <PanelLeftClose size={19} />
             </button>
@@ -265,7 +292,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 onMouseEnter={() => router.prefetch(href)}
                 onFocus={() => router.prefetch(href)}
                 onTouchStart={() => router.prefetch(href)}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => { markNavigationStart(href); setSidebarOpen(false); }}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
                 <span>{label}</span>
