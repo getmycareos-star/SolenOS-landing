@@ -5474,6 +5474,10 @@ input[type="file"] { width: 100%; white-space: normal; }
 .solenos-chat-nav-icon{display:grid;place-items:center;flex:0 0 21px;width:21px;color:#52615a}
 .solenos-chat-history-section{display:flex;flex:1;flex-direction:column;min-height:0;border-top:1px solid #e3e8e5;padding-top:12px}
 .solenos-chat-history-heading{padding:0 10px 8px;color:#66736d;font-size:11px;font-weight:700;letter-spacing:.055em;text-transform:uppercase}
+.solenos-chat-history-toggle{display:flex;width:100%;align-items:center;justify-content:space-between;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer}
+.solenos-chat-history-toggle span:last-child{color:#7d8b75;font-size:10px;font-weight:700}
+.solenos-chat-history-content{display:flex;flex:1;min-height:0}
+.solenos-chat-history-content[hidden]{display:none}
 .solenos-chat-sidebar-bottom{display:grid;gap:3px;margin-top:auto;padding-top:10px;border-top:1px solid #e3e8e5}
 .solenos-chat-account{display:flex;align-items:center;gap:10px;min-height:42px;padding:6px 9px;border:0;border-radius:9px;background:transparent;color:#34434a;text-align:left;font:inherit;font-size:13px;cursor:pointer}
 .solenos-chat-account:hover{background:#ecefed}

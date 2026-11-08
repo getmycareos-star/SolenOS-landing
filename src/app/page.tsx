@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicShell } from "@/components/public/PublicShell";
+import { LazyBackground } from "@/components/public/LazyBackground";
+import { LandingStartLink } from "@/components/public/LandingStartLink";
 import "./landing.css";
 
 export const metadata: Metadata = {
@@ -27,9 +29,19 @@ export default function LandingPage() {
             <p className="el-kicker">A LIVING CARE RECORD FOR FAMILY CAREGIVERS</p>
             <h1>You know something happened.<br /><em>You just don’t remember it as one story.</em></h1>
             <p>Care happens in moments.<br />But you’re expected to remember the whole story.</p>
-            <Link href={start} className="el-button">Start your care record <span aria-hidden="true">↗</span></Link>
+            <LandingStartLink href={start} className="el-button">Start your care record <span aria-hidden="true">↗</span></LandingStartLink>
           </div>
-          <div className="el-hero-photo" role="img" aria-label="A daughter sharing a quiet, affectionate moment with her elderly mother">
+          <div className="el-hero-photo">
+            <img
+              className="el-hero-image"
+              src="https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=1200&q=75"
+              srcSet="https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=640&q=72 640w, https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=1200&q=75 1200w"
+              sizes="(max-width: 700px) 100vw, 55vw"
+              alt="A daughter sharing a quiet, affectionate moment with her elderly mother"
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
+            />
             <div className="el-photo-caption">Care is made of moments.</div>
           </div>
         </section>
@@ -45,11 +57,11 @@ export default function LandingPage() {
             </div>
             <p className="el-burden-close">You’re not simply carrying information.<br /><strong>You’re carrying context.</strong></p>
           </div>
-          <div className="el-burden-photo" role="img" aria-label="Family members sitting together and talking" />
+          <LazyBackground className="el-burden-photo" label="Family members sitting together and talking" image={'linear-gradient(90deg, #171a18, transparent 25%), url("https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=900&q=70") center/cover no-repeat'} />
         </section>
 
         <section className="el-reassurance">
-          <div className="el-reassurance-photo" role="img" aria-label="An adult child supporting an older parent" />
+          <LazyBackground className="el-reassurance-photo" label="An adult child supporting an older parent" image={'url("https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=900&q=70") center/cover no-repeat'} />
           <div className="el-reassurance-copy">
             <h2>You can care deeply<br />without having to<br />remember everything.</h2>
             <p className="el-italic">You love them.<br />That’s why you’re doing all of this.</p>
@@ -74,14 +86,14 @@ export default function LandingPage() {
         </section>
 
         <section className="el-appointments">
-          <div className="el-appointment-photo" role="img" aria-label="A caregiver preparing notes before an appointment" />
+          <LazyBackground className="el-appointment-photo" label="A caregiver preparing notes before an appointment" image={'url("https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=800&q=70") center/cover no-repeat'} />
           <div className="el-appointment-copy"><p className="el-kicker">APPOINTMENTS</p><h2>You know the story.<br />Now you need to tell it<br />clearly.</h2><ul>{["What changed since the last appointment?", "What happened afterward?", "What are you concerned about?", "What did the family notice?", "What did you want to ask?", "What did you forget to ask last time?", "What happened after the recommendation?"].map(x => <li key={x}>{x}</li>)}</ul><p className="el-green">SolenOS helps bring the relevant story and questions with you.</p><p>So you’re not walking into the room trying to remember the last three months on the way in.</p></div>
           <div className="el-dementia-copy"><h2>Dementia can change<br />the shape of a family.</h2><p>The person you love is still the person you love. But the roles can change. The questions change. The decisions become harder. The future becomes less certain.</p><p>And sometimes the person who once remembered things for everyone else becomes the person everyone is trying to remember things for.</p><p className="el-green">Care can become more continuous.<br />More complicated.<br />More dependent on context.</p></div>
           <div className="el-dementia-note"><p>That’s why SolenOS is starting with dementia care.</p><p>Not because dementia is the whole problem. Because dementia makes the need for continuity impossible to ignore.</p><p>But the need doesn’t stop there. Families caring for someone through a changing health journey deserve a way to keep the story together.</p></div>
         </section>
 
         <section className="el-trust">
-          <div className="el-trust-photo" role="img" aria-label="A caregiver and older family member looking at a phone together" />
+          <LazyBackground className="el-trust-photo" label="A caregiver and older family member looking at a phone together" image={'url("https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=700&q=70") center/cover no-repeat'} />
           <article><h2>What if you didn’t have to hold<br />it all in your head?</h2><p>Not because you care less.<br />Because you finally have somewhere for the story to live.</p></article>
           <article><h2>SolenOS won’t pretend to know<br />what you don’t know.</h2><p>Care is full of incomplete information. Something may be known. Something may be uncertain. Something may be missing. Something may need clarification.</p></article>
           <article><p>SolenOS keeps those distinctions visible.</p><p>Because the last thing a caregiver needs is a system that turns uncertainty into confidence.</p><p>If something isn’t clear, it should be clear that it isn’t clear.</p><p className="el-green">SolenOS is designed to organise and preserve understanding. It does not diagnose, prescribe, or replace healthcare professionals.</p></article>
@@ -89,7 +101,7 @@ export default function LandingPage() {
 
         <section className="el-final-cta">
           <div className="el-leaves el-leaves-left" aria-hidden="true">❧</div>
-          <div><h2>You already carry enough.</h2><p className="el-italic">You shouldn’t have to carry the whole care story in your head, too.</p><p>Give the story somewhere to live. Somewhere to return to. Somewhere the next person can understand.<br />Somewhere the past can help make sense of what is happening now.</p><Link href={start} className="el-button">Start care record <span aria-hidden="true">↗</span></Link><p className="el-tagline">The care journey, remembered.</p></div>
+          <div><h2>You already carry enough.</h2><p className="el-italic">You shouldn’t have to carry the whole care story in your head, too.</p><p>Give the story somewhere to live. Somewhere to return to. Somewhere the next person can understand.<br />Somewhere the past can help make sense of what is happening now.</p><LandingStartLink href={start} className="el-button">Start care record <span aria-hidden="true">↗</span></LandingStartLink><p className="el-tagline">The care journey, remembered.</p></div>
           <aside><strong>David Abuchi</strong><br />Founder &amp; CEO<br /><Link href="/our-story">Read our story →</Link><Link href="https://www.linkedin.com/in/david-abuchi-43a624407" target="_blank" rel="noopener noreferrer" aria-label="David Abuchi on LinkedIn" className="el-linkedin-link"><span className="el-linkedin-mark" aria-hidden="true">in</span><span>Connect on LinkedIn</span></Link></aside>
           <div className="el-leaves el-leaves-right" aria-hidden="true">❧</div>
         </section>

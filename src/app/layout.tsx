@@ -31,6 +31,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="solenos-font-fallbacks">
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://solenosbackend-production.up.railway.app" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//images.unsplash.com" />
+        <link rel="dns-prefetch" href="//solenosbackend-production.up.railway.app" />
+      </head>
       <body>{children}</body>
     </html>
   );

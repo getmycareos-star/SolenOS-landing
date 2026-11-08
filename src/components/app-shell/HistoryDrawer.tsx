@@ -688,7 +688,6 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
-        getJSON("/care-continuity/current-care?limit_per_source=50"),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
@@ -721,11 +720,21 @@ export function HistoryDrawer() {
         eventReadProblem = true;
       }
 
-      // The LCR projection reads the same persisted care-event source through
-      // its own authenticated route. Use it as a bounded fallback when the
-      // dedicated event-history route fails or returns no event rows.
+      // The LCR projection is an expensive fallback for the dedicated event
+      // history route. Request it only when the dedicated route fails or has
+      // no event rows; do not duplicate a successful history read on every open.
+      let projectionResult: PromiseSettledResult<unknown> = { status: "fulfilled", value: null };
+      if (eventReadProblem || !eventItems || eventItems.length === 0) {
+        try {
+          projectionResult = {
+            status: "fulfilled",
+            value: await getJSON("/care-continuity/current-care?limit_per_source=50"),
+          };
+        } catch (reason) {
+          projectionResult = { status: "rejected", reason };
+        }
+      }
       {
-        const projectionResult = results[8];
         const projection = projectionResult.status === "fulfilled" && projectionResult.value &&
           typeof projectionResult.value === "object"
           ? projectionResult.value as {

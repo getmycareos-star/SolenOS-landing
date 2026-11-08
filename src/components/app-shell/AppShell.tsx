@@ -18,8 +18,8 @@ import {
   X,
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
-import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
-import { ShareCareSummaryPanel } from "@/components/mvp-workspace/share/ShareCareSummaryPanel";
+const HistoryDrawer = dynamic(() => import("@/components/app-shell/HistoryDrawer").then((module) => module.HistoryDrawer), { ssr: false });
+const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
 import { ensureAnonymousSession, getAnonymousAccessToken, revokeAnonymousSession } from "@/api/client";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
@@ -75,10 +75,14 @@ const LOCAL_WORKSPACE_KEYS = [
   "solenos_workspace_archived",
 ] as const;
 
+let workspaceNavigationTimingSequence = 0;
+
 export function AppShell({ children, careContext, brandHref = "/workspace" }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyMounted, setHistoryMounted] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -90,6 +94,31 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (typeof performance === "undefined" || typeof performance.mark !== "function") return;
+    const startMark = `solenos.workspace.nav-start:${pathname}`;
+    if (performance.getEntriesByName(startMark, "mark").length === 0) return;
+    const readyMark = `solenos.workspace.nav-mounted:${++workspaceNavigationTimingSequence}`;
+    try {
+      performance.mark(readyMark);
+      performance.measure("solenos.workspace.route-mounted", { start: startMark, end: readyMark });
+      performance.clearMarks(startMark);
+      performance.clearMarks(readyMark);
+    } catch {
+      // Navigation timing must never block route transitions.
+    }
+  }, [pathname]);
+
+  const markNavigationStart = (href: string) => {
+    if (pathname === href || typeof performance === "undefined" || typeof performance.mark !== "function") return;
+    try {
+      performance.clearMarks(`solenos.workspace.nav-start:${href}`);
+      performance.mark(`solenos.workspace.nav-start:${href}`);
+    } catch {
+      // Navigation timing must never block route transitions.
+    }
+  };
 
   useEffect(() => {
     if (!recordDetailsOpen) return;
@@ -247,9 +276,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
           <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
             <button type="button" className="solenos-chat-nav-item" onClick={() => {
-              const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
-              input?.focus();
-              input?.scrollIntoView({ block: "nearest" });
+              setHistoryMounted(true);
+              setHistoryOpen(true);
             }}>
               <span className="solenos-chat-nav-icon"><Search size={19} strokeWidth={1.8} /></span>
               <span>Search history</span>
@@ -259,8 +287,12 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 key={href}
                 href={href}
                 className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
+                prefetch={false}
                 aria-current={active(href) ? "page" : undefined}
-                onClick={() => setSidebarOpen(false)}
+                onMouseEnter={() => router.prefetch(href)}
+                onFocus={() => router.prefetch(href)}
+                onTouchStart={() => router.prefetch(href)}
+                onClick={() => { markNavigationStart(href); setSidebarOpen(false); }}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
                 <span>{label}</span>
@@ -269,15 +301,35 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           </nav>
 
           <div className="solenos-chat-history-section">
-            <div className="solenos-chat-history-heading">Recent history</div>
-            <HistoryDrawer />
+            <button
+              type="button"
+              className="solenos-chat-history-heading solenos-chat-history-toggle"
+              aria-expanded={historyOpen}
+              aria-controls="solenos-history-drawer"
+              onClick={() => {
+                setHistoryMounted(true);
+                setHistoryOpen((value) => !value);
+              }}
+            >
+              <span>Recent history</span>
+              <span aria-hidden="true">{historyOpen ? "Hide" : "Open"}</span>
+            </button>
+            {historyMounted && (
+              <div className="solenos-chat-history-content" hidden={!historyOpen}>
+                <HistoryDrawer />
+              </div>
+            )}
           </div>
 
           <div className="solenos-chat-sidebar-bottom">
             <Link
               href="/workspace/settings"
               className={`solenos-chat-nav-item${active("/workspace/settings") ? " is-active" : ""}`}
-              onClick={() => setSidebarOpen(false)}
+              prefetch={false}
+              onMouseEnter={() => router.prefetch("/workspace/settings")}
+              onFocus={() => router.prefetch("/workspace/settings")}
+              onTouchStart={() => router.prefetch("/workspace/settings")}
+              onClick={() => { markNavigationStart("/workspace/settings"); setSidebarOpen(false); }}
             >
               <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
               <span>Settings</span>
