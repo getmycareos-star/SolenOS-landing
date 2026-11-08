@@ -1103,7 +1103,7 @@ export function LCRCurrentUnderstanding() {
                       <p>This record was explicitly marked as a baseline or usual state. It is not a population norm.</p>
                       <p className="lcr-entry-status">Source: {item.source.replaceAll("_", " ")} · Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
                       {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
                     </li>
                   ))}
@@ -1118,7 +1118,7 @@ export function LCRCurrentUnderstanding() {
                         <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
                         {source?.description && <p>{source.description}</p>}
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                        <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                        <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
                         <small>Source type: {item.source.replaceAll("_", " ")}</small>
                       </li>
                     );
@@ -1132,7 +1132,7 @@ export function LCRCurrentUnderstanding() {
                       {item.owner && <small>Recorded owner: {item.owner}</small>}
                       {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
+                      <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
                       <small>Source type: {item.source.replaceAll("_", " ")}</small>
                     </li>
                   ))}
@@ -1142,8 +1142,8 @@ export function LCRCurrentUnderstanding() {
                       <p>This gap remains in the persisted assessment. Its urgency is not established by the missing information alone.</p>
                       <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                      <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
-                      <small>Source record: {item.id}</small>
+                      <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
+                      <small>Source type: {item.source.replaceAll("_", " ")}</small>
                     </li>
                   ))}
                   {watchUncertainties.map((item) => {
@@ -1159,8 +1159,8 @@ export function LCRCurrentUnderstanding() {
                         {source?.description && <p>{source.description}</p>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                        <small>Supporting evidence: {item.evidence_ids.length > 0 ? item.evidence_ids.join(", ") : "No linked evidence returned"}</small>
-                        <small>Source record: {item.id}</small>
+                        <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
+                        <small>Source type: {item.source.replaceAll("_", " ")}</small>
                       </li>
                     );
                   })}
