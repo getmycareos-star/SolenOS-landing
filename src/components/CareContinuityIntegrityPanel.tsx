@@ -580,7 +580,7 @@ export default function CareContinuityIntegrityPanel({
       </div>
 
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Care-state history</h3>
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>Record history</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A history of how recorded care information has changed over time.</p>
         {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes to the saved care information are available yet.</p> : data.revisions.slice(0, 20).map((item) =>
           <details key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
@@ -598,7 +598,7 @@ export default function CareContinuityIntegrityPanel({
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Recorded outcomes and corrections</h3>
-        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No outcomes recorded yet.</p> : data.outcomes.slice(0, 20).map((item) =>
+        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No recorded outcomes are available yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
             <strong>{item.outcome_status.replace(/_/g, ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
             {item.notes && <p>{item.notes}</p>}{item.correction_text && <p><strong>Recorded correction:</strong> {item.correction_text}</p>}
