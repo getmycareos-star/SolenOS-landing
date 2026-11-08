@@ -25,6 +25,9 @@ assert.ok(lcr.includes("onToggle={(event) => setAdvancedIntegrityOpen(event.curr
 assert.ok(lcr.includes("{advancedIntegrityOpen && ("), "collapsed advanced panels do not mount and issue background API requests");
 
 assert.ok((shell.match(/prefetch={false}/g) || []).length >= 2, "secondary workspace navigation must not prefetch every route bundle on initial load");
+assert.ok(shell.includes('dynamic(() => import("@/components/app-shell/HistoryDrawer")'), "the 52 KB history interface is not part of the initial workspace bundle");
+assert.ok(shell.includes("{historyMounted && ("), "history data requests do not start until the caregiver opens history or search");
+assert.ok(shell.includes('dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel")'), "the share/export workflow is loaded only when requested");
 assert.ok(shell.includes("onTouchStart={() => router.prefetch(href)}"), "mobile navigation intent starts route prefetch before navigation");
 assert.ok(shell.includes("onMouseEnter={() => router.prefetch(href)}"), "desktop navigation intent starts route prefetch before navigation");
 assert.ok(workspace.includes("<LCRCurrentUnderstanding />"), "the default workspace route still opens the actual Living Care Record");
