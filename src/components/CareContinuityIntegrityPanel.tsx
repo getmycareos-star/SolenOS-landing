@@ -277,9 +277,9 @@ export default function CareContinuityIntegrityPanel({
               Match scope: event {item.event_id || 'not specified'} · context {item.context_key || 'not specified'} · effective {item.effective_from || 'start unknown'} to {item.effective_to || 'end unknown'}
             </p>}
             <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-              Source assertion IDs: {(item.source_assertion_ids || []).join(', ') || 'Not linked'} · Evidence IDs: {(item.evidence_ids || []).join(', ') || 'None attached'}
+              Related reports: {(item.source_assertion_ids || []).length} · Supporting sources: {(item.evidence_ids || []).length}
             </p>
-            {(item.matching_candidate_ids || []).length > 0 && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Potential related conflicts: {(item.matching_candidate_ids || []).join(', ')}. These are match candidates only; records remain separate until reviewed.</p>}
+            {(item.matching_candidate_ids || []).length > 0 && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Potentially related conflicts: {(item.matching_candidate_ids || []).length}. These are match candidates only; records remain separate until reviewed.</p>}
             {item.resolution_notes && <p style={{ fontSize: 12 }}>Latest review note: {item.resolution_notes}</p>}
             <button type="button" style={buttonStyle} onClick={() => void loadResolutionHistory(item)} disabled={resolutionHistoryLoadingId === item.id}>
               {resolutionHistoryLoadingId === item.id ? 'Loading resolution history…' : 'View resolution history'}
@@ -290,7 +290,7 @@ export default function CareContinuityIntegrityPanel({
                 {resolutionHistoryById[item.id].map(event => <li key={event.id} style={{ fontSize: 12, marginTop: 6 }}>
                   {event.previous_status.replace(/_/g, ' ')} → {event.new_status.replace(/_/g, ' ')} · {event.created_at ? new Date(event.created_at).toLocaleString() : 'Time not recorded'}
                   <p>{event.rationale}</p>
-                  <small>Evidence IDs: {event.evidence_ids.length ? event.evidence_ids.join(', ') : 'None attached'} · Reviewer: {event.actor_caregiver_id || 'Not recorded'}</small>
+                  <small>Supporting sources: {event.evidence_ids.length} · Reviewer: {event.actor_caregiver_id ? 'Caregiver' : 'Not recorded'}</small>
                 </li>)}
               </ol>
             )}
@@ -315,7 +315,7 @@ export default function CareContinuityIntegrityPanel({
           const actionId = item.persisted_question_id || item.source_id
           return <article key={item.persisted_question_id || item.source_id || index} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <strong style={{ fontSize: 14 }}>{item.question}</strong>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Priority: {item.priority} · Trigger: {item.source_kind} · Evidence: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'No evidence IDs attached'} · linked records: {item.source_ids?.join(', ') || item.source_id}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Priority: {item.priority} · Reason: {item.reason} · Supporting sources: {item.evidence_ids.length} · Linked records: {item.source_ids?.length || 1}</p>
             <p style={{ fontSize: 12 }}>{item.reason}</p>
             <label style={{ display: 'block', fontSize: 12 }}>Correction (required only if recording “Corrected”)
               <textarea style={{ ...fieldStyle, minHeight: 50 }} value={corrections[actionId] || ''} onChange={(e) => setCorrections((current) => ({ ...current, [actionId]: e.target.value }))} />
@@ -343,7 +343,7 @@ export default function CareContinuityIntegrityPanel({
               <div><strong style={{ fontSize: 12 }}>Before</strong><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.before_state, null, 2) || 'No prior state (creation)'}</pre></div>
               <div><strong style={{ fontSize: 12 }}>After</strong><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.after_state, null, 2) || 'No current state (deletion)'}</pre></div>
             </div>
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(', ') : 'None attached to this state record'}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Supporting sources: {item.evidence_ids.length} linked record(s)</p>
           </details>
         )}
       </div>
@@ -352,7 +352,7 @@ export default function CareContinuityIntegrityPanel({
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Recorded outcomes and corrections</h3>
         {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No recorded outcomes are available yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
-            <strong>{item.outcome_status.replace(/_/g, ' ')}</strong> · {item.action_id} · {new Date(item.created_at).toLocaleString()}
+            <strong>{item.outcome_status.replace(/_/g, ' ')}</strong> · {new Date(item.created_at).toLocaleString()}
             {item.notes && <p>{item.notes}</p>}{item.correction_text && <p><strong>Recorded correction:</strong> {item.correction_text}</p>}
           </div>
         )}
