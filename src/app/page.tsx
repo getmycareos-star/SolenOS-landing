@@ -35,8 +35,11 @@ export default function LandingPage() {
             <img
               className="el-hero-image"
               src="https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=1200&q=75"
+              srcSet="https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=640&q=72 640w, https://images.unsplash.com/photo-1576765608866-5b51046452b5?auto=format&fit=crop&w=1200&q=75 1200w"
+              sizes="(max-width: 700px) 100vw, 55vw"
               alt="A daughter sharing a quiet, affectionate moment with her elderly mother"
               fetchPriority="high"
+              loading="eager"
               decoding="async"
             />
             <div className="el-photo-caption">Care is made of moments.</div>
