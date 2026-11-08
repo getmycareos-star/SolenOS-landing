@@ -245,9 +245,9 @@ function apiTimingLabel(input: RequestInfo | URL): string {
   }
 }
 
-async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const timingEnabled = typeof performance !== "undefined" && typeof performance.mark === "function";
   const sequence = ++apiTimingSequence;
   const startMark = `solenos-api-start-${sequence}`;
@@ -352,13 +352,13 @@ export async function getBlob(path: string): Promise<Blob> {
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown, extraHeaders: Record<string, string> = {}) {
+export async function postJSON(path: string, body: unknown, extraHeaders: Record<string, string> = {}, timeoutMs = API_REQUEST_TIMEOUT_MS) {
   const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetchWithTimeout(resolveApiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders, ...extraHeaders },
     body: JSON.stringify(body),
-  })
+  }, timeoutMs)
   return handleResponse(res)
 }
 
