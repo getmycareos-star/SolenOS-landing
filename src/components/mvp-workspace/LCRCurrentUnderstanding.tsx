@@ -1599,7 +1599,7 @@ export function LCRCurrentUnderstanding() {
       <details className="lcr-advanced-integrity">
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
-        <EvidenceReviewPanel personId={personId} allowObservationCapture={false} />
+        <EvidenceReviewPanel personId={personId} />
         <ClaimAssessmentPanel />
         <ConflictResolutionPanel personId={personId} />
         <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
