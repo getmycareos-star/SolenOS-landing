@@ -32,6 +32,8 @@ assert.ok(history.includes("if (eventReadProblem || !eventItems || eventItems.le
 assert.ok(shell.includes('dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel")'), "the share/export workflow is loaded only when requested");
 assert.ok(shell.includes("onTouchStart={() => router.prefetch(href)}"), "mobile navigation intent starts route prefetch before navigation");
 assert.ok(shell.includes("onMouseEnter={() => router.prefetch(href)}"), "desktop navigation intent starts route prefetch before navigation");
+assert.ok(shell.includes('performance.measure("solenos.workspace.route-mounted"'), "workspace route navigation has a local click-to-mount timing measurement");
+assert.ok(shell.includes("markNavigationStart(href)"), "each primary workspace navigation click records its start time");
 assert.ok(workspace.includes("<LCRCurrentUnderstanding />"), "the default workspace route still opens the actual Living Care Record");
 
 assert.ok(landing.includes('fetchPriority="high"'), "the landing hero image is prioritized for initial rendering");
