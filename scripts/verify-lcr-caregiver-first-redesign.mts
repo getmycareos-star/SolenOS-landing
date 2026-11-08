@@ -33,6 +33,9 @@ assert.doesNotMatch(evidenceReview, /submitObservation|Save structured observati
 assert.doesNotMatch(evidenceReview, /<form\b/, "evidence review contains no capture forms");
 assert.doesNotMatch(integrityPanel, /Record a structured observation|Record a source-attributed report|Save structured observation|Save report|Record reference|observationCategory|submitAssertion|recordStructuredObservation/, "independent observation and report creation workflows are removed from Care Continuity");
 assert.doesNotMatch(integrityPanel, /<form\b/, "Care Continuity integrity panel contains no record-creation forms");
+assert.doesNotMatch(integrityPanel, /When information differs|Next questions|recordOutcome|loadResolutionHistory/, "legacy duplicate conflict and question workflows are removed from the integrity panel");
+assert.match(currentUnderstanding, /<ConflictResolutionPanel personId={personId} \/>/, "conflict review remains available in its dedicated section");
+assert.match(currentUnderstanding, /<ClarificationWorkflowPanel personId={personId}/, "clarification remains available in its dedicated section");
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
 assert.doesNotMatch(integrityPanel, /No contradiction records returned|current engine inputs/i, "backend query terminology is not used in caregiver-facing empty states");
