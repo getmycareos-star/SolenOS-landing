@@ -74,7 +74,7 @@ console.log("PASS: claim dependency graph is connected to the LCR with failure-s
 
 assert(panel.includes("/relationships"), "source-lineage UI must use the persisted relationship API");
 assert(panel.includes("source_independence_status"), "source-lineage UI must display explicit source-independence state");
-assert(panel.includes("shared_origin"), "source-lineage UI must preserve shared-origin/dependent-source state");
+assert(panel.includes("item.source_independence_status.replaceAll('_', ' ')"), "source-lineage UI must render the persisted independence state without hard-coding only one possible value");
 assert(panel.includes("not automatic proof"), "source-lineage UI must not equate a relationship with verified truth");
 assert(panel.includes("The source relationship was not confirmed as saved"), "failed relationship writes must not be shown as successful");
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
