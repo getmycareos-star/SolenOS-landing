@@ -28,6 +28,8 @@ assert.ok((shell.match(/prefetch={false}/g) || []).length >= 2, "secondary works
 assert.ok(workspace.includes("<LCRCurrentUnderstanding />"), "the default workspace route still opens the actual Living Care Record");
 
 assert.ok(landing.includes('fetchPriority="high"'), "the landing hero image is prioritized for initial rendering");
+assert.ok(landing.includes("onClick={markLandingJourneyStart}"), "both landing CTAs mark the start of the tap-to-care journey");
+assert.ok(lcr.includes('performance.measure("solenos.journey.landing-to-first-care"'), "the tap-to-first-care metric spans the landing CTA to the validated care projection");
 assert.ok(landing.includes("<LazyBackground"), "below-the-fold landing photography uses deferred backgrounds");
 assert.ok(lazyBackground.includes("IntersectionObserver"), "below-the-fold images load near the viewport, not at initial page load");
 assert.ok(lazyBackground.includes('rootMargin: "400px 0px"'), "lazy images begin loading shortly before entering view");
