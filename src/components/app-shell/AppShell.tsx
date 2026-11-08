@@ -268,7 +268,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               type="button"
               className="solenos-sidebar-icon-button"
               aria-label="Close navigation"
-              onClick={() => { markNavigationStart("/workspace/settings"); setSidebarOpen(false); }}
+              onClick={() => setSidebarOpen(false)}
             >
               <PanelLeftClose size={19} />
             </button>
@@ -329,7 +329,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               onMouseEnter={() => router.prefetch("/workspace/settings")}
               onFocus={() => router.prefetch("/workspace/settings")}
               onTouchStart={() => router.prefetch("/workspace/settings")}
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => { markNavigationStart("/workspace/settings"); setSidebarOpen(false); }}
             >
               <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
               <span>Settings</span>
