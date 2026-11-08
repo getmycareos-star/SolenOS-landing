@@ -17,24 +17,103 @@ on:
   pull_request:
     paths:
       - "src/**"
-name: Frontend checks
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
+      - "scripts/verify-care-situation-understanding.mts"
+      - "scripts/verify-lcr-caregiver-first-redesign.mts"
+      - "e2e/open-loop-workflow.mjs"
       - "package.json"
       - "package-lock.json"
       - "netlify.toml"
       - "tsconfig*.json"
-      - "scripts/verify-care-situation-understanding.mts"
-      - "scripts/verify-lcr-caregiver-first-redesign.mts"
-      - "e2e/open-loop-workflow.mjs"
-      - "scripts/verify-lcr-caregiver-first-redesign.mts"
-      - "e2e/open-loop-workflow.mjs"
       - ".github/workflows/frontend-checks.yml"
-      - ".github/workflows/netlify-production-deploy.yml"
-  pull_request:
-    paths:
-      - "src/**"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Type-check Next.js application
+        run: npm run typecheck
+
+      - name: Run continuity and production-safety checks
+        run: npm test
+
+      - name: Build production Next.js application
+        run: npm run build
+
+      - name: Verify Netlify targets Next.js
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          config = Path("netlify.toml").read_text(encoding="utf-8")
+          package = Path("package.json").read_text(encoding="utf-8")
+          required = [
+              'publish = ".next"',
+              'package = "@netlify/plugin-nextjs"',
+              'from = "/api/v1/*"',
+              'to = "https://solenosbackend-production.up.railway.app/api/v1/:splat"',
+              'from = "/api/situation"',
+              'to = "https://solenosbackend-production.up.railway.app/api/situation"',
+          ]
+          missing = [item for item in required if item not in config]
+          if missing:
+              raise SystemExit(f"Next.js Netlify configuration missing: {missing}")
+          if 'from = "/api/*"' in config:
+              raise SystemExit("Netlify must not force-proxy every /api/* path.")
+          if 'from = "/api/extract"' in config:
+              raise SystemExit("Document extraction must run through the Next.js /api/extract route handler.")
+          if not Path("src/app/api/extract/route.ts").is_file():
+              raise SystemExit("Next.js document extraction route is missing.")
+          if 'Access-Control-Allow-Origin = "*"' in config:
+              raise SystemExit("Same-origin proxy must not emit wildcard CORS headers.")
+          if '"build": "next build"' not in package or '"dev": "next dev"' not in package:
+              raise SystemExit("package.json is not configured for Next.js.")
+          forbidden = [
+              "vite.config.ts",
+              "vite.config.js",
+              "src/main.tsx",
+              "src/App.tsx",
+              "src/index.css",
+              "index.html",
+              "tsconfig.node.json",
+              "tsconfig.vite.json",
+              "src/pages",
+              "package.json.backup",
+          ]
+          remaining = [path for path in forbidden if Path(path).exists()]
+          if remaining:
+              raise SystemExit(f"Obsolete Vite application files remain active: {remaining}")
+          required_routes = [
+              "src/app/page.tsx",
+              "src/app/workspace/page.tsx",
+              "src/app/workspace/daily-care/page.tsx",
+              "src/app/workspace/community/page.tsx",
+              "src/app/workspace/companion/page.tsx",
+          ]
+          missing_routes = [path for path in required_routes if not Path(path).is_file()]
+          if missing_routes:
+              raise SystemExit(f"Required Next.js routes are missing: {missing_routes}")
+          required_workflows = [
+              "src/components/workflows/StructuredDailyCapture.tsx",
+              "src/components/workflows/Community.tsx",
+              "src/components/workflows/AICompanion.tsx",
+          ]
+          missing_workflows = [path for path in required_workflows if not Path(path).is_file()]
+          if missing_workflows:
+              raise SystemExit(f"Required Next.js workflow components are missing: {missing_workflows}")
+          print("PASS: Next.js routes, workflow components, Netlify plugin and Railway API proxy are configured.")
+          PY
