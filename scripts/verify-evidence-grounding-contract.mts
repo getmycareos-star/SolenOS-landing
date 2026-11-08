@@ -167,12 +167,12 @@ for (const route of [
 ]) {
   assert(freshnessPanel.includes(route), `LCR freshness UI must connect to persisted route ${route}`);
 }
-assert(freshnessPanel.includes("Save new policy version"), "freshness policy UI must create immutable policy versions");
+assert(freshnessPanel.includes("getJSON('/care-continuity/evidence-freshness/policies')"), "freshness UI must select persisted domain policies rather than create unreviewed policy versions");
 assert(freshnessPanel.includes("No universal freshness threshold is applied"), "freshness UI must reject an invented universal threshold");
 assert(freshnessPanel.toLowerCase().includes("a failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
 assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
 assert(freshnessPanel.includes("source_time_kind"), "freshness UI must show which timestamp dimension drove the assessment");
-console.log("PASS: domain-specific freshness policy creation, assessment, and history are connected to the LCR with explicit limits.");
+console.log("PASS: domain-specific freshness policy selection, assessment, and history are connected to the LCR with explicit limits.");
 
 
 const companionPanel = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
