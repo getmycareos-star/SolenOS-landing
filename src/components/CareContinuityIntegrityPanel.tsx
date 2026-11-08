@@ -258,7 +258,7 @@ export default function CareContinuityIntegrityPanel({
               <span style={{ fontSize: 12 }}>{fresh?.status?.replace(/_/g, ' ') || 'freshness unknown'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status} · event: {item.source_event_id || 'manual report'}
+              Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status} · {item.source_event_id ? 'linked care event' : 'caregiver report'}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             <label style={{ display: 'block', fontSize: 12, margin: '7px 0' }}>
@@ -288,7 +288,7 @@ export default function CareContinuityIntegrityPanel({
             </div>
             <p style={{ fontSize: 13 }}>{item.description}</p>
             {(item.event_id || item.context_key || item.effective_from || item.effective_to) && <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-              Match scope: event {item.event_id || 'not specified'} · context {item.context_key || 'not specified'} · effective {item.effective_from || 'start unknown'} to {item.effective_to || 'end unknown'}
+              Review scope: effective {item.effective_from || 'start unknown'} to {item.effective_to || 'end unknown'}
             </p>}
             <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
               Related reports: {(item.source_assertion_ids || []).length} · Supporting sources: {(item.evidence_ids || []).length}
