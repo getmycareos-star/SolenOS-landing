@@ -133,33 +133,6 @@ export default function CareContinuityIntegrityPanel({
     }
   }
 
-  async function recordOutcome(question: Question, status: 'useful' | 'completed' | 'unresolved' | 'not_useful' | 'corrected') {
-    const actionId = question.persisted_question_id || question.source_id
-    const correction = (corrections[actionId] || '').trim()
-    if (status === 'corrected' && !correction) {
-      setError('Enter the correction before recording a corrected result.')
-      return
-    }
-    setError('')
-    setNotice('')
-    try {
-      await postJSON('/care-continuity/outcomes', {
-        person_id: personId,
-        action_id: actionId,
-        action_type: 'next_best_question',
-        outcome_status: status,
-        notes: status === 'unresolved' ? 'Question remains unresolved.' : undefined,
-        correction_text: status === 'corrected' ? correction : undefined,
-        evidence_ids: question.evidence_ids || [],
-        created_by_caregiver_id: getCaregiverId() || undefined,
-      })
-      setNotice('Outcome recorded. SolenOS has not inferred that the underlying care issue is resolved.')
-      await load()
-    } catch (reason) {
-      setError('We couldn’t save the outcome. Please try again.')
-    }
-  }
-
   if (!personId) return <section style={cardStyle}><h2>Care continuity</h2><p>Select an authorized care record to view continuity details.</p></section>
 
   return (
