@@ -28,7 +28,8 @@ assert.deepEqual(selectWatchChanges(changes).map((item) => item.id), ["candidate
 
 const component = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 assert.match(component, /Needs attention now/);
-assert.match(component, /No immediate concerns were identified in the information currently available\./);
+assert.match(component, /There isn’t enough recorded care information to assess immediate priorities yet/);
+assert.doesNotMatch(component, /No immediate concerns were identified in the information currently available\./);
 assert.match(component, /formatWhen\(item\.occurred_at\).*formatWhen\(item\.recorded_at\)/s);
 assert.match(component, /Supporting evidence:/);
 assert.match(component, /Review state:/);
