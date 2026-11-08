@@ -41,7 +41,7 @@ export function LazyBackground({ className, image, label }: LazyBackgroundProps)
       className={className}
       role="img"
       aria-label={label}
-      style={shouldLoad ? { backgroundImage: image } : undefined}
+      style={shouldLoad ? { background: image } : undefined}
       data-background-loaded={shouldLoad ? "true" : "false"}
     />
   );
