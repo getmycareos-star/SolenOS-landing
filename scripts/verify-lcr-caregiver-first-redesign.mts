@@ -5,6 +5,8 @@ const legacyRoute = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8")
 const capture = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/app/workspace/care-continuity/page.tsx", "utf8");
 const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const integrityPanel = fs.readFileSync("src/components/CareContinuityIntegrityPanel.tsx", "utf8");
+const evidenceReview = fs.readFileSync("src/components/EvidenceReviewPanel.tsx", "utf8");
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
@@ -22,6 +24,15 @@ assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains expli
 assert.doesNotMatch(currentUnderstanding, /persisted records examined|Confidence:|Open loops \(|Situation trajectory \(|Observation coverage \(|Personal baseline|No coverage record means unknown|numeric confidence|assessment quality/i, "technical assessment diagnostics are not exposed in the caregiver view");
 assert.doesNotMatch(careContinuity, /Add an update|Add the first detail|Add update to this thread|compose=1|CognitiveWorkspace|AddSituationPanel/, "Care Continuity must not expose a second capture interface");
 assert.match(careContinuity, /Open AI Companion/, "empty record routes new capture through AI Companion");
+assert.match(careContinuity, /Share new information through AI Companion/, "AI Companion is the primary caregiver-facing capture route");
+assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligencePanel/, "duplicate overview and standalone observation-coverage editor are not mounted on Care Continuity");
+assert.match(currentUnderstanding, /allowObservationCapture={false}/, "evidence review is read-only on Care Continuity");
+assert.match(currentUnderstanding, /allowRecordCreation={false}/, "care continuity integrity panel cannot create independent records");
+assert.match(evidenceReview, /props\?\.allowObservationCapture === true/, "structured observation editor is opt-in and disabled by default");
+assert.match(integrityPanel, /allowRecordCreation = false/, "independent observation and report forms are disabled by default");
+assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
+assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
+assert.doesNotMatch(integrityPanel, /No contradiction records returned|current engine inputs/i, "backend query terminology is not used in caregiver-facing empty states");
 assert.doesNotMatch(careContinuity, /lcr-primary-actions|Capture how today is going/, "Care Continuity does not expose parallel capture shortcuts");
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
