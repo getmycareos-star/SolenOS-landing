@@ -165,13 +165,13 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
   }
 
   return <section style={panel} aria-label="Evidence-grounded conflict resolution">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Conflict comparison and resolution history</h3>
+    <h3 style={{ fontSize: 15, marginTop: 0 }}>When information differs</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
       A newer timestamp or majority of reports does not automatically resolve a conflict. Every resolved or partially resolved state needs linked evidence and a rationale; partial resolution must name the exact detail resolved.
     </p>
     {loading && <p role="status">Loading persisted conflicts…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
-    {!loading && !error && conflicts.length === 0 && <p>No conflict records were returned for this care record. This does not establish that no disagreement exists outside the available record.</p>}
+    {!loading && !error && conflicts.length === 0 && <p>No conflicting reports are currently recorded in this care record. This does not establish that no disagreement exists outside the information available to SolenOS.</p>}
     {!loading && !error && conflicts.length > 0 && <>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Conflict
         <select style={field} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
