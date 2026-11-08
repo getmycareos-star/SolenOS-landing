@@ -7,6 +7,7 @@ const careContinuity = fs.readFileSync("src/app/workspace/care-continuity/page.t
 const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 const integrityPanel = fs.readFileSync("src/components/CareContinuityIntegrityPanel.tsx", "utf8");
 const evidenceReview = fs.readFileSync("src/components/EvidenceReviewPanel.tsx", "utf8");
+const changeIntelligence = fs.readFileSync("src/components/mvp-workspace/ChangeIntelligencePanel.tsx", "utf8");
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
