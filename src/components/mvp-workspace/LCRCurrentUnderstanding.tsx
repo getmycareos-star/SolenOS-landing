@@ -567,6 +567,13 @@ export function LCRCurrentUnderstanding() {
         try {
           performance.mark(timingReady);
           performance.measure("solenos.workspace.first-care-ready", { start: timingStart, end: timingReady });
+          if (performance.getEntriesByName("solenos.journey.landing-cta", "mark").length > 0) {
+            performance.measure("solenos.journey.landing-to-first-care", {
+              start: "solenos.journey.landing-cta",
+              end: timingReady,
+            });
+            performance.clearMarks("solenos.journey.landing-cta");
+          }
           performance.clearMarks(timingStart);
           performance.clearMarks(timingReady);
         } catch {
