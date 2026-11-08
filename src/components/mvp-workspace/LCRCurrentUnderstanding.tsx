@@ -949,7 +949,7 @@ export function LCRCurrentUnderstanding() {
                 <p>There isn’t enough recorded care information to assess immediate priorities yet.</p>
               ) : needsAttentionNow.length === 0 ? (
                 <p>{assessment.open_loops.has_more
-                  ? "No explicit immediate-priority item appears in the returned records. Additional unresolved items exist beyond this bounded view."
+                  ? "No immediate-priority item appears in the information currently shown. Additional unresolved items exist beyond this view."
                   : "No immediate-priority items are recorded in the care information currently available."}</p>
               ) : (
                 <ul className="lcr-current-facts">
@@ -973,7 +973,7 @@ export function LCRCurrentUnderstanding() {
                         {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
                         {item.evidence_ids.length > 0
                           ? <small>Supporting evidence: {item.evidence_ids.join(", ")}</small>
-                          : <small>Supporting evidence: no linked evidence was returned. The priority reason is retained as a persisted open-loop assessment, not independently evidenced here.</small>}
+                          : <small>This priority comes from a saved follow-up assessment; supporting source material is not linked here.</small>}
                         {source?.source_label && <small>Source label: {source.source_label}</small>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         {source && source.claim_count > 0 && <small>Competing claims linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
@@ -1094,7 +1094,7 @@ export function LCRCurrentUnderstanding() {
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
                 <p>{changesError || patternsError
                   ? "Some care history could not be checked. Changes may be missing from this view."
-                  : "There isn’t enough available history to describe changes with confidence."}</p>
+                  : "There isn’t enough recorded history to describe changes reliably yet."}</p>
               ) : (
                 <ul className="lcr-current-facts">
                   {baselineItems.map((item) => (
@@ -1408,7 +1408,7 @@ export function LCRCurrentUnderstanding() {
                       </article>
                     ))}
                     {changeEvidence[change.id] && !changeEvidence[change.id].error && changeEvidence[change.id].evidence.length === 0 && (
-                      <p>No source observations were returned for the linked evidence references.</p>
+                      <p>No supporting source details are available for the linked information.</p>
                     )}
                     {changeEvidence[change.id]?.assertions.length > 0 && (
                       <div aria-label="Structured source assertions">
