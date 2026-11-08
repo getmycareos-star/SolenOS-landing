@@ -186,16 +186,11 @@ export default function CareContinuityIntegrityPanel({
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record history</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A history of how recorded care information has changed over time.</p>
         {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes to the saved care information are available yet.</p> : data.revisions.slice(0, 20).map((item) =>
-          <details key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
-            <summary style={{ cursor: 'pointer', fontSize: 13 }}>
-              {item.target_type.replace(/_/g, ' ')} · version {item.revision_number} · {item.change_kind.replace(/_/g, ' ')} · {new Date(item.changed_at).toLocaleString()}
-            </summary>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8, marginTop: 8 }}>
-              <div><strong style={{ fontSize: 12 }}>Before</strong><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.before_state, null, 2) || 'No prior state (creation)'}</pre></div>
-              <div><strong style={{ fontSize: 12 }}>After</strong><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.after_state, null, 2) || 'No current state (deletion)'}</pre></div>
-            </div>
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Supporting sources: {item.evidence_ids.length} linked record(s)</p>
-          </details>
+          <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
+            <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
+            <p style={{ fontSize: 12, margin: '5px 0' }}>Version {item.revision_number} · {item.change_kind.replace(/_/g, ' ')} · {new Date(item.changed_at).toLocaleString()}</p>
+            <small>Previous and updated details remain preserved in the record history. Supporting sources: {item.evidence_ids.length} linked record(s).</small>
+          </article>
         )}
       </div>
 
