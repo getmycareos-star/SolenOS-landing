@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, postJSON } from "@/api/client";
 
 type PersistedEvent = {
@@ -73,7 +72,6 @@ export function PersistedCareOrientation() {
   const [snapshot, setSnapshot] = useState<CareSnapshot | null>(null);
   const [situationAssessment, setSituationAssessment] = useState<SituationAssessment | null>(null);
   const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -116,7 +114,7 @@ export function PersistedCareOrientation() {
 
   useEffect(() => {
     void load();
-  }, [load, attempt]);
+  }, [load]);
 
   if (state === "loading") {
     return (
@@ -135,10 +133,6 @@ export function PersistedCareOrientation() {
             <p className="persisted-care-orientation-eyebrow">Your care record</p>
             <h2>We couldn't load your care information</h2>
           </div>
-          <button type="button" aria-label="Retry saved care record check" onClick={() => setAttempt((value) => value + 1)}>
-            <RefreshCw size={16} aria-hidden />
-            <span>Try again</span>
-          </button>
         </div>
         <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
       </section>
@@ -162,10 +156,6 @@ export function PersistedCareOrientation() {
           <p className="persisted-care-orientation-eyebrow">Your care record</p>
           <h2>{snapshot.care_recipient_display_name?.trim() ? `Care record for ${snapshot.care_recipient_display_name.trim()}` : "Saved care record"}</h2>
         </div>
-        <button type="button" aria-label="Refresh saved care context" onClick={() => setAttempt((value) => value + 1)}>
-          <RefreshCw size={16} aria-hidden />
-          <span>Refresh</span>
-        </button>
       </div>
 
       {hasServerEntries ? (
@@ -198,17 +188,21 @@ export function PersistedCareOrientation() {
           ) : null}
         </>
       ) : (
-        <p>Your care record is ready to build. Add a note, daily update, or document to keep important care information in one place.</p>
+        <div>
+          <p>Your Living Care Record does not have any care information available yet.</p>
+          <p>Share what you know through AI Companion. Information reviewed and approved there will appear in your care record.</p>
+          <Link href="/workspace/companion">Open AI Companion</Link>
+        </div>
       )}
 
-      {situationAssessment?.assessment ? (
+      {hasServerEntries && situationAssessment?.assessment ? (
         <div className="persisted-care-orientation-latest" aria-label="Evidence-grounded situation understanding">
           <strong>Situation understanding</strong>
           <p>
             {situationAssessment.assessment.coverage?.records_examined ?? 0} persisted record(s) examined.
             {" "}Confidence: {situationAssessment.assessment.confidence_assessment?.overall || "not assessed"}.
           </p>
-          <p>What remains unresolved: {situationAssessment.assessment.open_loops?.count ?? 0} open loop(s).</p>
+          {(situationAssessment.assessment.open_loops?.count ?? 0) > 0 && <p>Unresolved matters recorded: {situationAssessment.assessment.open_loops?.count}.</p>
           {(situationAssessment.assessment.open_loops?.items ?? []).slice(0, 5).map((loop) => (
             <div key={loop.id} className="persisted-care-orientation-latest">
               <strong>{loop.title || loop.loop_type.replace(/_/g, " ")}</strong>
@@ -219,8 +213,11 @@ export function PersistedCareOrientation() {
             </div>
           ))}
           {situationAssessment.assessment.open_loops?.has_more && <p>Additional unresolved items are available in the full LCR view.</p>}
-          <p>Observation coverage: {situationAssessment.assessment.observation_coverage?.count ?? 0} recorded interval(s); status: {situationAssessment.assessment.observation_coverage?.status || "unknown"}.</p>
-          <small>{situationAssessment.assessment.observation_coverage?.absence_rule || "No coverage record means unknown, not no events."}</small>
+          {(situationAssessment.assessment.observation_coverage?.count ?? 0) > 0 ? (
+            <p>Observation coverage has {situationAssessment.assessment.observation_coverage?.count} recorded interval(s). {situationAssessment.assessment.observation_coverage?.status ? `Coverage status: ${situationAssessment.assessment.observation_coverage.status.replace(/_/g, " ")}.` : ""}</p>
+          ) : (
+            <p>No observation coverage has been recorded yet. This does not indicate whether an event occurred.</p>
+          )}
           <p>Personal baseline: {situationAssessment.assessment.baseline_assessment?.status?.replace(/_/g, " ") || "not established"}.</p>
           {situationAssessment.assessment.baseline_assessment?.limitation && <small>{situationAssessment.assessment.baseline_assessment.limitation}</small>}
           {(situationAssessment.assessment.situation_trajectory?.entries ?? []).slice(-5).reverse().map((entry) => (
