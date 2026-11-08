@@ -172,7 +172,7 @@ function WorkspacePageInner() {
           </div>
         </header>
 
-        <section className="lcr-companion-entry" aria-labelledby="lcr-companion-entry-heading">
+        <section className="lcr-current-fact lcr-companion-entry" aria-labelledby="lcr-companion-entry-heading">
           <div>
             <h2 id="lcr-companion-entry-heading">Share new information through AI Companion</h2>
             <p>Tell Companion what has happened, or share a message, document or photo. You can review proposed care-record updates before they are saved.</p>
