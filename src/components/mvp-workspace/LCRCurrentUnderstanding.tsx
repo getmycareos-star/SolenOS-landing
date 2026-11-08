@@ -682,6 +682,7 @@ export function LCRCurrentUnderstanding() {
       if (typeof performance !== "undefined" && typeof performance.clearMarks === "function") {
         performance.clearMarks(timingStart);
         performance.clearMarks(timingReady);
+        performance.clearMarks("solenos.journey.landing-cta");
       }
       setPersonId("");
       setCurrentCaregiverId("");
