@@ -22,7 +22,8 @@ assert.doesNotMatch(initialLoad, /postJSON\(/, "opening the LCR must not trigger
 assert.match(initialLoad, /getJSON\("\/care-continuity\/situation-understanding"\)/, "the last saved assessment must be reused rather than recomputed during initial load");
 assert.match(workspace, /const CareContinuityIntegrityPanel = dynamic/, "advanced integrity tools must be code-split");
 assert.match(workspace, /const EvidenceReviewPanel = dynamic/, "evidence review must be code-split");
-assert.match(workspace, /advancedPanelsOpen && \(/, "advanced review components must mount only after explicit expansion");
+assert.match(workspace, /onToggle=\{\(event\) => setAdvancedPanelsOpen\(event\.currentTarget\.open\)\}/, "advanced review components must mount only after explicit expansion");
+assert.match(workspace, /advancedPanelsOpen \? <EvidenceReviewPanel/, "evidence review must not mount before the caregiver expands the source section");
 assert.match(workspace, /solenos\.workspace\.first-care-ready/, "first validated care readiness must be measurable");
 assert.match(workspace, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable");
 
