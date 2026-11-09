@@ -456,7 +456,7 @@ export async function postFormData(path: string, body: FormData, options: { time
     method: "POST",
     headers,
     body,
-  });
+  }, options.timeoutMs ?? 120_000);
   return handleResponse(res);
 }
 
