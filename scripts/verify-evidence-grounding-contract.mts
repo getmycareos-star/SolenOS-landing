@@ -74,9 +74,11 @@ console.log("PASS: claim dependency graph is connected to the LCR with failure-s
 
 assert(panel.includes("/relationships"), "source-lineage UI must use the persisted relationship API");
 assert(panel.includes("source_independence_status"), "source-lineage UI must display explicit source-independence state");
-assert(panel.includes("shared_origin"), "source-lineage UI must preserve shared-origin/dependent-source state");
+assert(panel.includes("item.source_independence_status.replaceAll('_', ' ')"), "source-lineage UI must render the persisted independence state without hard-coding only one possible value");
 assert(panel.includes("not automatic proof"), "source-lineage UI must not equate a relationship with verified truth");
-assert(panel.includes("Source lineage could not be loaded") && panel.includes("No relationship list is assumed"), "failed relationship reads must not be presented as an empty lineage history");
+assert(panel.includes("getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/relationships`)"), "source relationships must be read from the persisted person-scoped API");
+assert(panel.includes("No links to other sources are recorded for this item yet."), "an empty relationship result must be stated explicitly");
+assert(!panel.includes("postJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/relationships`)"), "the source relationship panel must not claim to create relationships when it only supports persisted reads");
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
@@ -165,12 +167,12 @@ for (const route of [
 ]) {
   assert(freshnessPanel.includes(route), `LCR freshness UI must connect to persisted route ${route}`);
 }
-assert(freshnessPanel.includes("Save new policy version"), "freshness policy UI must create immutable policy versions");
+assert(freshnessPanel.includes("getJSON('/care-continuity/evidence-freshness/policies')"), "freshness UI must select persisted domain policies rather than create unreviewed policy versions");
 assert(freshnessPanel.includes("No universal freshness threshold is applied"), "freshness UI must reject an invented universal threshold");
 assert(freshnessPanel.toLowerCase().includes("a failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
 assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
 assert(freshnessPanel.includes("source_time_kind"), "freshness UI must show which timestamp dimension drove the assessment");
-console.log("PASS: domain-specific freshness policy creation, assessment, and history are connected to the LCR with explicit limits.");
+console.log("PASS: domain-specific freshness policy selection, assessment, and history are connected to the LCR with explicit limits.");
 
 
 const companionPanel = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
