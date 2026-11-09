@@ -8,6 +8,12 @@ on:
       - "src/components/EvidenceReviewPanel.tsx"
       - "src/components/ConflictResolutionPanel.tsx"
       - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
+      - "src/components/app-shell/AppShell.tsx"
+      - "src/components/workflows/AICompanion.tsx"
+      - "src/components/public/LandingStartLink.tsx"
+      - "src/app/page.tsx"
+      - "src/app/workspace/documents/page.tsx"
+      - "e2e/workspace-first-screen-performance.mjs"
       - "src/api/client.ts"
       - "e2e/open-loop-workflow.mjs"
       - "scripts/verify-care-situation-understanding.mts"
@@ -15,6 +21,13 @@ on:
   pull_request:
     paths:
       - "src/app/workspace/open-loops/**"
+      - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
+      - "src/components/app-shell/AppShell.tsx"
+      - "src/components/workflows/AICompanion.tsx"
+      - "src/components/public/LandingStartLink.tsx"
+      - "src/app/page.tsx"
+      - "src/app/workspace/documents/page.tsx"
+      - "e2e/workspace-first-screen-performance.mjs"
       - "scripts/verify-care-situation-understanding.mts"
       - "src/api/client.ts"
       - "e2e/open-loop-workflow.mjs"
@@ -113,6 +126,12 @@ jobs:
           FRONTEND_URL: http://127.0.0.1:3000
           BACKEND_URL: http://127.0.0.1:8000
         run: node e2e/open-loop-workflow.mjs
+
+      - name: Measure authenticated mobile first-screen performance without care-record writes
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+        run: node e2e/workspace-first-screen-performance.mjs
 
       - name: Print backend logs on failure
         if: failure()
