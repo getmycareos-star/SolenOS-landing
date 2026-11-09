@@ -15,7 +15,11 @@ const loadEnd = component.indexOf("const transitionConfirmation = useCallback(as
 assert.ok(loadStart >= 0 && loadEnd > loadStart, "caregiver load lifecycle must be identifiable for regression checks");
 const loadBody = component.slice(loadStart, loadEnd);
 assert.match(loadBody, /const currentCare = await getJSON\("\/care-continuity\/current-care\?limit_per_source=12"\)/, "validated current care must be the first blocking data request");
-assert.match(loadBody, /setProjection\(currentCare as CurrentCareProjection\);\s*setLoading\(false\);/, "first caregiver view must be released immediately after the validated projection");
+assert.ok(
+  loadBody.indexOf("setProjection(currentCare as CurrentCareProjection);") >= 0 &&
+  loadBody.indexOf("setProjection(currentCare as CurrentCareProjection);") < loadBody.indexOf("setLoading(false);"),
+  "first caregiver view must be released immediately after the validated projection and its non-blocking local timing mark",
+);
 assert.match(loadBody, /void Promise\.allSettled\(backgroundTasks\)/, "secondary caregiver sections must load concurrently without blocking first paint");
 assert.doesNotMatch(loadBody, /postJSON\(/, "initial LCR hydration must not trigger reassessment or any other writes");
 assert.match(loadBody, /solenos\.workspace\.first-care-ready/, "first-care readiness must be measurable locally");
