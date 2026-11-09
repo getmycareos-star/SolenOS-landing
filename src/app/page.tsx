@@ -27,7 +27,7 @@ export default function LandingPage() {
             <p className="el-kicker">A LIVING CARE RECORD FOR FAMILY CAREGIVERS</p>
             <h1>You know something happened.<br /><em>You just don’t remember it as one story.</em></h1>
             <p>Care happens in moments.<br />But you’re expected to remember the whole story.</p>
-            <Link href={start} className="el-button">Start your care record <span aria-hidden="true">↗</span></Link>
+            <Link href={start} className="el-button" onClick={() => { try { window.performance.mark("solenos.journey.landing-cta"); } catch { /* Performance instrumentation is optional. */ } }}>Start your care record <span aria-hidden="true">↗</span></Link>
           </div>
           <div className="el-hero-photo" role="img" aria-label="A daughter sharing a quiet, affectionate moment with her elderly mother">
             <div className="el-photo-caption">Care is made of moments.</div>
@@ -89,7 +89,7 @@ export default function LandingPage() {
 
         <section className="el-final-cta">
           <div className="el-leaves el-leaves-left" aria-hidden="true">❧</div>
-          <div><h2>You already carry enough.</h2><p className="el-italic">You shouldn’t have to carry the whole care story in your head, too.</p><p>Give the story somewhere to live. Somewhere to return to. Somewhere the next person can understand.<br />Somewhere the past can help make sense of what is happening now.</p><Link href={start} className="el-button">Start care record <span aria-hidden="true">↗</span></Link><p className="el-tagline">The care journey, remembered.</p></div>
+          <div><h2>You already carry enough.</h2><p className="el-italic">You shouldn’t have to carry the whole care story in your head, too.</p><p>Give the story somewhere to live. Somewhere to return to. Somewhere the next person can understand.<br />Somewhere the past can help make sense of what is happening now.</p><Link href={start} className="el-button" onClick={() => { try { window.performance.mark("solenos.journey.landing-cta"); } catch { /* Performance instrumentation is optional. */ } }}>Start care record <span aria-hidden="true">↗</span></Link><p className="el-tagline">The care journey, remembered.</p></div>
           <aside><strong>David Abuchi</strong><br />Founder &amp; CEO<br /><Link href="/our-story">Read our story →</Link><Link href="https://www.linkedin.com/in/david-abuchi-43a624407" target="_blank" rel="noopener noreferrer" aria-label="David Abuchi on LinkedIn" className="el-linkedin-link"><span className="el-linkedin-mark" aria-hidden="true">in</span><span>Connect on LinkedIn</span></Link></aside>
           <div className="el-leaves el-leaves-right" aria-hidden="true">❧</div>
         </section>
