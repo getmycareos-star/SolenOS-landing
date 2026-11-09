@@ -89,8 +89,6 @@ async function main() {
   assert.ok(observedTimeouts.includes(180_000), "server-side document extraction must have a bounded OCR processing deadline");
   await postJSON("/documents/evidence-1/intelligence", {});
   assert.ok(observedTimeouts.includes(210_000), "document intelligence must have a bounded model-processing deadline");
-  await postJSON("/documents/evidence-1/intelligence", {});
-  assert.ok(observedTimeouts.includes(210_000), "document intelligence must have a bounded model-processing deadline");
 
   globalThis.fetch = (async () => ({
     ok: true,
