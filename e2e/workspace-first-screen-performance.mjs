@@ -12,6 +12,7 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const apiResponses: Array<{ method: string; path: string; status: number }> = [];
+const apiRequests: Array<{ method: string; path: string }> = [];
 const apiRequestStarts = new Map<string, number>();
 const currentCareDurations: number[] = [];
 
@@ -44,6 +45,7 @@ try {
     const url = new URL(request.url());
     if (url.pathname.includes("/api/v1/")) {
       apiRequestStarts.set(request.url(), Date.now());
+      apiRequests.push({ method: request.method(), path: url.pathname });
     }
   });
   page.on("response", (response) => {
@@ -113,7 +115,7 @@ try {
   assert.ok(mobileMenuOpenMs >= 0, "mobile menu interaction must be measured");
   assert.ok(navigationToDocumentsMs !== null && navigationToDocumentsMs >= 0, "navigation-to-route mount must be measured");
 
-  const forbiddenWrites = apiResponses.filter((item) =>
+  const forbiddenWrites = apiRequests.filter((item) =>
     item.method !== "GET" &&
     !item.path.endsWith("/sessions/anonymous") &&
     !item.path.endsWith("/sessions/refresh")
