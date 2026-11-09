@@ -3,6 +3,6 @@
  * caregiver-facing MVP. Keep implementation and data contracts intact.
  */
 export const FEATURE_FLAGS = {
-  community: false,
+  community: true,
   professionalCommunity: false,
 } as const;
