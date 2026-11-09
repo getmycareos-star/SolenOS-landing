@@ -490,6 +490,7 @@ export function LCRCurrentUnderstanding() {
   const [actionHistory, setActionHistory] = useState<Record<string, RegisteredActionAudit[]>>({});
   const [actionHistoryErrors, setActionHistoryErrors] = useState<Record<string, string>>({});
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
+  const [advancedPanelsOpen, setAdvancedPanelsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1613,28 +1614,28 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <details className="lcr-advanced-integrity">
+      <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
         <details className="lcr-history-details">
           <summary>Evidence and sources</summary>
-          <EvidenceReviewPanel personId={personId} />
+          {advancedPanelsOpen ? <EvidenceReviewPanel personId={personId} /> : null}
         </details>
         <details className="lcr-history-details">
           <summary>Review information supporting a care detail</summary>
-          <ClaimAssessmentPanel />
+          {advancedPanelsOpen ? <ClaimAssessmentPanel /> : null}
         </details>
         <details className="lcr-history-details">
           <summary>When information differs</summary>
-          <ConflictResolutionPanel personId={personId} />
+          {advancedPanelsOpen ? <ConflictResolutionPanel personId={personId} /> : null}
         </details>
         <details className="lcr-history-details">
           <summary>Questions and unresolved matters</summary>
-          <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+          {advancedPanelsOpen ? <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div> : null}
         </details>
         <details className="lcr-history-details">
           <summary>Reported information and record history</summary>
-          <CareContinuityIntegrityPanel personId={personId} />
+          {advancedPanelsOpen ? <CareContinuityIntegrityPanel personId={personId} /> : null}
         </details>
       </details>
     </section>
