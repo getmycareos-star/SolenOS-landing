@@ -89,6 +89,20 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
   useEffect(() => {
     setSidebarOpen(false);
+    if (typeof performance === "undefined" || typeof performance.mark !== "function") return;
+    try {
+      performance.mark("solenos.workspace.route-mounted");
+      if (performance.getEntriesByName("solenos.workspace.navigation-click", "mark").length > 0) {
+        performance.measure("solenos.workspace.navigation-to-route-mounted", {
+          start: "solenos.workspace.navigation-click",
+          end: "solenos.workspace.route-mounted",
+        });
+        performance.clearMarks("solenos.workspace.navigation-click");
+      }
+      performance.clearMarks("solenos.workspace.route-mounted");
+    } catch {
+      // Local timing instrumentation must never affect navigation.
+    }
   }, [pathname]);
 
   useEffect(() => {
@@ -225,7 +239,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           type="button"
           className="solenos-chat-mobile-scrim"
           aria-label="Close navigation"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
         />
       )}
       <div className={`solenos-chat-sidebar-host${sidebarOpen ? " is-sidebar-open" : ""}`}>
