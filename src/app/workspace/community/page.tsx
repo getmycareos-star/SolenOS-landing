@@ -3,7 +3,7 @@ import { FEATURE_FLAGS } from "@/lib/feature-flags";
 import CommunityClient from "./CommunityClient";
 
 export default function CommunityPage() {
-  if (!FEATURE_FLAGS.community || !FEATURE_FLAGS.professionalCommunity) {
+  if (!FEATURE_FLAGS.community) {
     redirect("/workspace");
   }
 
