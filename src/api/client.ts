@@ -403,7 +403,7 @@ async function authorizedRead(path: string): Promise<Response> {
   const headers = await requestAuthorizationHeaders(path);
   let response = await fetchGetWithRetry(resolveApiUrl(path), { headers });
   if (response.status === 401 && headers.Authorization) {
-    const previousToken = headers.Authorization.replace(/^Bearer\\s+/i, "");
+    const previousToken = headers.Authorization.replace(/^Bearer\s+/i, "");
     const nextToken = await refreshSessionAfterUnauthorized(previousToken);
     response = await fetchGetWithRetry(resolveApiUrl(path), {
       headers: { ...headers, Authorization: `Bearer ${nextToken}` },
