@@ -291,7 +291,13 @@ export default function AppointmentWorkspace() {
       setRecord(saved)
       setSaveRetry(null)
       setMessage('Your note is saved as a caregiver report.')
-      if (stage === 'after') await refreshOutcome(saved.id)
+      if (stage === 'after') {
+        try {
+          await refreshOutcome(saved.id)
+        } catch {
+          setError('Your note was saved. The outcome view could not refresh; use Refresh outcome to retry.')
+        }
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Your note could not be saved. Please try again.')
     } finally {
