@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
-import CareContinuityIntegrityPanel from "@/components/CareContinuityIntegrityPanel";
-import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";
-import ClaimAssessmentPanel from "@/components/ClaimAssessmentPanel";
-import ConflictResolutionPanel from "@/components/ConflictResolutionPanel";
-import ClarificationWorkflowPanel from "@/components/ClarificationWorkflowPanel";
+// Advanced source-review tools are code-split and mount only when requested.
+const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care-integrity tools…</p> });
+const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <p role="status">Loading evidence review…</p> });
+const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <p role="status">Loading claim review…</p> });
+const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
+const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading clarification workflow…</p> });
 
 
 type RegisteredAction = {
@@ -506,6 +508,7 @@ export function LCRCurrentUnderstanding() {
   const [evidenceIntegrityByFact, setEvidenceIntegrityByFact] = useState<Record<string, EvidenceIntegrity>>({});
   const [evidenceIntegrityLoadingId, setEvidenceIntegrityLoadingId] = useState<string | null>(null);
   const [evidenceIntegrityErrors, setEvidenceIntegrityErrors] = useState<Record<string, string>>({});
+  const [advancedPanelsOpen, setAdvancedPanelsOpen] = useState(false);
 
   const loadEvidenceIntegrity = useCallback(async (factId: string) => {
     setEvidenceIntegrityLoadingId(factId);
@@ -1586,29 +1589,18 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <details className="lcr-advanced-integrity">
+      <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
-        <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
-        <details className="lcr-history-details">
-          <summary>Evidence and sources</summary>
-          <EvidenceReviewPanel personId={personId} />
-        </details>
-        <details className="lcr-history-details">
-          <summary>Review information supporting a care detail</summary>
-          <ClaimAssessmentPanel />
-        </details>
-        <details className="lcr-history-details">
-          <summary>When information differs</summary>
-          <ConflictResolutionPanel personId={personId} />
-        </details>
-        <details className="lcr-history-details">
-          <summary>Questions and unresolved matters</summary>
-          <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
-        </details>
-        <details className="lcr-history-details">
-          <summary>Reported information and record history</summary>
-          <CareContinuityIntegrityPanel personId={personId} />
-        </details>
+        <p className="lcr-footer-note">These tools are for reviewing source material, unresolved claims and corrections. They do not turn a caregiver report into a verified fact.</p>
+        {advancedPanelsOpen && (
+          <>
+            <EvidenceReviewPanel personId={personId} />
+            <ClaimAssessmentPanel />
+            <ConflictResolutionPanel personId={personId} />
+            <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+            <CareContinuityIntegrityPanel personId={personId} />
+          </>
+        )}
       </details>
     </section>
   );
