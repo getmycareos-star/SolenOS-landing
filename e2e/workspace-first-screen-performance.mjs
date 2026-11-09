@@ -65,17 +65,21 @@ try {
     );
     return page.evaluate(() => {
       const entries = performance.getEntriesByName("solenos.workspace.first-care-ready", "measure");
-      return entries[entries.length - 1]?.duration ?? null;
+      const navigation = performance.getEntriesByType("navigation")[0];
+      return {
+        component_load_ms: entries[entries.length - 1]?.duration ?? null,
+        navigation_to_first_care_ms: navigation ? performance.now() - navigation.startTime : null,
+      };
     });
   };
 
   await page.goto(new URL("/workspace?enter=1", frontend).toString(), { waitUntil: "domcontentloaded" });
-  const coldFirstCareMs = await firstCareReady();
+  const coldMetrics = await firstCareReady();
 
   // Reload in the same browser context: this retains the server-issued session
   // and browser cache, giving a returning-session measurement.
   await page.reload({ waitUntil: "domcontentloaded" });
-  const returningFirstCareMs = await firstCareReady();
+  const returningMetrics = await firstCareReady();
 
   const menuButton = page.getByRole("button", { name: "Open navigation" });
   const menuStartedAt = Date.now();
@@ -99,8 +103,10 @@ try {
   });
 
   const currentCareReads = apiResponses.filter((item) => item.path.endsWith("/care-continuity/current-care"));
-  assert.ok(coldFirstCareMs !== null && coldFirstCareMs >= 0, "cold first-care readiness mark must be emitted");
-  assert.ok(returningFirstCareMs !== null && returningFirstCareMs >= 0, "returning first-care readiness mark must be emitted");
+  assert.ok(coldMetrics.component_load_ms !== null && coldMetrics.component_load_ms >= 0, "cold first-care readiness mark must be emitted");
+  assert.ok(coldMetrics.navigation_to_first_care_ms !== null && coldMetrics.navigation_to_first_care_ms >= 0, "cold navigation-to-care readiness must be measured");
+  assert.ok(returningMetrics.component_load_ms !== null && returningMetrics.component_load_ms >= 0, "returning first-care readiness mark must be emitted");
+  assert.ok(returningMetrics.navigation_to_first_care_ms !== null && returningMetrics.navigation_to_first_care_ms >= 0, "returning navigation-to-care readiness must be measured");
   assert.ok(currentCareReads.length >= 2, "cold and returning sessions must each retrieve the person-scoped current-care projection");
   assert.ok(currentCareReads.every((item) => item.status === 200), JSON.stringify(currentCareReads));
   assert.ok(currentCareDurations.length >= 2, "both current-care API request durations must be measured");
@@ -118,8 +124,10 @@ try {
     viewport: "390x844",
     network: "4G emulation, 150ms RTT, 1.6Mbps down, 750Kbps up",
     cpuThrottle: "4x",
-    cold_first_care_ready_ms: Math.round(coldFirstCareMs),
-    returning_first_care_ready_ms: Math.round(returningFirstCareMs),
+    cold_component_load_ms: Math.round(coldMetrics.component_load_ms),
+    cold_navigation_to_first_care_ms: Math.round(coldMetrics.navigation_to_first_care_ms),
+    returning_component_load_ms: Math.round(returningMetrics.component_load_ms),
+    returning_navigation_to_first_care_ms: Math.round(returningMetrics.navigation_to_first_care_ms),
     current_care_api_request_ms: currentCareDurations,
     mobile_menu_open_ms: mobileMenuOpenMs,
     navigation_to_documents_route_ms: Math.round(navigationToDocumentsMs),
