@@ -362,8 +362,11 @@ async function refreshSessionAfterUnauthorized(previousToken: string): Promise<s
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
   const currentToken = getAnonymousAccessToken();
-  if (!personId || !caregiverId) {
-    throw new Error("The care-record session identity is incomplete. No replacement record was created.");
+  const identityStillMatches = () =>
+    window.localStorage.getItem(ANONYMOUS_PERSON_KEY) === personId &&
+    window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY) === caregiverId;
+  if (!personId || !caregiverId || !identityStillMatches()) {
+    throw new Error("The care-record session identity is incomplete or changed. No replacement record was created.");
   }
   if (currentToken && currentToken !== previousToken) return currentToken;
 
@@ -380,6 +383,9 @@ async function refreshSessionAfterUnauthorized(previousToken: string): Promise<s
           !refreshed.access_token || !refreshed.expires_at) {
         throw new Error("Session refresh returned a different care-record identity. No identity was changed.");
       }
+      if (!identityStillMatches()) {
+        throw new Error("The active care-record identity changed during session refresh. The refreshed token was not applied.");
+      }
       window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
       window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
       setPersonId(refreshed.person_id);
@@ -391,8 +397,7 @@ async function refreshSessionAfterUnauthorized(previousToken: string): Promise<s
   } catch (error) {
     const latestToken = getAnonymousAccessToken();
     if (latestToken && latestToken !== previousToken &&
-        window.localStorage.getItem(ANONYMOUS_PERSON_KEY) === personId &&
-        window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY) === caregiverId) {
+        identityStillMatches()) {
       return latestToken;
     }
     throw error;
