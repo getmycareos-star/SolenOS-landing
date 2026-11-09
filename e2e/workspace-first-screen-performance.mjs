@@ -37,6 +37,7 @@ try {
     const target = new URL(requestUrl.pathname + requestUrl.search, backend);
     const headers = { ...request.headers() };
     delete headers.origin;
+    delete headers.host;
     const response = await route.fetch({ url: target.toString(), headers });
     await route.fulfill({ response });
   });
