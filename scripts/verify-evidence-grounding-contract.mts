@@ -165,7 +165,7 @@ for (const route of [
 ]) {
   assert(freshnessPanel.includes(route), `LCR freshness UI must connect to persisted route ${route}`);
 }
-assert(freshnessPanel.includes("Save new policy version"), "freshness policy UI must create immutable policy versions");
+assert(!freshnessPanel.includes("Save new policy version"), "freshness policies are selected from persisted immutable versions rather than authored in the LCR review panel");
 assert(freshnessPanel.includes("No universal freshness threshold is applied"), "freshness UI must reject an invented universal threshold");
 assert(freshnessPanel.toLowerCase().includes("a failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
 assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
