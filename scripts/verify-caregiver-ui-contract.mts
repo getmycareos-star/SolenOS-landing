@@ -40,7 +40,7 @@ assert.match(deltaPanel, /if \(!showPanel\) return null/);
 assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);
 
 // A successful empty response is a first-visit state, not a load error.
-assert.match(orientation, /Your care record is ready to build/);
+assert.match(orientation, /Your Living Care Record does not have any care information available yet\./);
 assert.match(orientation, /data\.ok === false/);
 assert.doesNotMatch(orientation, /!Array\.isArray\(data\.events\)/);
 assert.match(orientation, /Your care information isn't available right now\. Check your connection and try again\./);
