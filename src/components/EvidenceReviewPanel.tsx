@@ -88,7 +88,7 @@ type SourceRelationship = {
   reviewed_by_caregiver_id?: string | null
   created_at: string
 }
-type FreshnessPolicy = { id: string; person_id: string; domain_key: string; policy_version: string; max_age_days: number | null; historical_after_days: number | null; rationale: string; created_at: string | null }
+type FreshnessPolicy = { id: string; person_id: string; domain_key: string; policy_version: string; max_age_days: number | null; historical_after_days: number | null; rationale: string; created_at: string | null; immutable?: boolean }
 type FreshnessAssessment = { id: string; evidence_id: string; policy_id: string; policy_version: string; freshness_status: string; source_time: string | null; source_time_kind?: string | null; assessed_at: string; age_days: number | null; rationale: string }
 type Review = {
   id: string
@@ -187,6 +187,12 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [notice, setNotice] = useState('')
   const [freshnessPolicies, setFreshnessPolicies] = useState<FreshnessPolicy[]>([])
   const [freshnessPolicyId, setFreshnessPolicyId] = useState('')
+  const [freshnessPolicyDomain, setFreshnessPolicyDomain] = useState('')
+  const [freshnessPolicyVersion, setFreshnessPolicyVersion] = useState('v1')
+  const [freshnessPolicyMaxAge, setFreshnessPolicyMaxAge] = useState('')
+  const [freshnessPolicyHistoricalAfter, setFreshnessPolicyHistoricalAfter] = useState('')
+  const [freshnessPolicyRationale, setFreshnessPolicyRationale] = useState('')
+  const [freshnessPolicyCreating, setFreshnessPolicyCreating] = useState(false)
   const [freshnessPolicyLoading, setFreshnessPolicyLoading] = useState(false)
   const [freshnessPolicySaving, setFreshnessPolicySaving] = useState(false)
   const [freshnessPolicyError, setFreshnessPolicyError] = useState('')
@@ -214,6 +220,44 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setFreshnessPolicyLoading(false)
     }
   }, [personId, freshnessPolicyId])
+
+  const createFreshnessPolicy = useCallback(async () => {
+    const domainKey = freshnessPolicyDomain.trim().toLowerCase()
+    const policyVersion = freshnessPolicyVersion.trim()
+    const policyRationale = freshnessPolicyRationale.trim()
+    const maxAge = freshnessPolicyMaxAge.trim()
+    const historicalAfter = freshnessPolicyHistoricalAfter.trim()
+    const validDomain = /^[a-z][a-z0-9_]{1,79}$/.test(domainKey)
+    const validVersion = policyVersion.length > 0 && policyVersion.length <= 64
+    const validRationale = policyRationale.length > 0
+    const validBoundaries = [maxAge, historicalAfter].every(value => value === '' || (/^\\d+$/.test(value) && Number.isSafeInteger(Number(value))))
+    if (!validDomain || !validVersion || !validRationale || !validBoundaries || (maxAge === '' && historicalAfter === '')) {
+      setFreshnessPolicyError('Enter a valid domain, version, rationale, and at least one non-negative day boundary.')
+      return
+    }
+    setFreshnessPolicyCreating(true)
+    setFreshnessPolicyError('')
+    setFreshnessPolicyNotice('')
+    try {
+      const saved = await postJSON('/care-continuity/evidence-freshness/policies', {
+        domain_key: domainKey,
+        policy_version: policyVersion,
+        max_age_days: maxAge === '' ? null : Number(maxAge),
+        historical_after_days: historicalAfter === '' ? null : Number(historicalAfter),
+        rationale: policyRationale,
+      }) as FreshnessPolicy & { immutable?: boolean }
+      if (!saved?.id || saved.person_id !== personId || saved.domain_key !== domainKey || saved.policy_version !== policyVersion || saved.immutable !== true) {
+        throw new Error('The saved policy response could not be verified against this care record.')
+      }
+      setFreshnessPolicies(current => [...current.filter(item => item.id !== saved.id), saved])
+      setFreshnessPolicyId(saved.id)
+      setFreshnessPolicyNotice('Saved immutable policy version ' + saved.policy_version + '. Existing policy versions were not changed.')
+    } catch (cause) {
+      setFreshnessPolicyError(cause instanceof Error ? cause.message : 'The new freshness policy version could not be confirmed as saved.')
+    } finally {
+      setFreshnessPolicyCreating(false)
+    }
+  }, [freshnessPolicyDomain, freshnessPolicyVersion, freshnessPolicyMaxAge, freshnessPolicyHistoricalAfter, freshnessPolicyRationale, personId])
 
   useEffect(() => { void loadFreshnessPolicies() }, [loadFreshnessPolicies])
 
@@ -486,6 +530,28 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Policies are explicit, caregiver-defined and immutable by version. No universal freshness threshold is applied. A freshness result does not establish truth or current clinical status.</p>
       {freshnessPolicyLoading && <p role="status">Loading saved policies…</p>}
       {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry policy list</button></p>}
+      <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 10 }}>
+        <h4 style={{ fontSize: 12, margin: '0 0 6px' }}>Define a domain-specific policy</h4>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Set the review boundaries your care team has chosen. SolenOS does not supply a universal threshold. Each saved version is immutable; create a new version to change a policy.</p>
+        <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Care domain identifier
+          <input style={field} value={freshnessPolicyDomain} onChange={event => setFreshnessPolicyDomain(event.target.value)} placeholder="medication_history" maxLength={80} />
+        </label>
+        <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Policy version
+          <input style={field} value={freshnessPolicyVersion} onChange={event => setFreshnessPolicyVersion(event.target.value)} placeholder="v1" maxLength={64} />
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginTop: 8 }}>
+          <label style={{ display: 'block', fontSize: 12 }}>Review after (days)
+            <input style={field} type="number" min="0" step="1" value={freshnessPolicyMaxAge} onChange={event => setFreshnessPolicyMaxAge(event.target.value)} placeholder="Optional" />
+          </label>
+          <label style={{ display: 'block', fontSize: 12 }}>Historical after (days)
+            <input style={field} type="number" min="0" step="1" value={freshnessPolicyHistoricalAfter} onChange={event => setFreshnessPolicyHistoricalAfter(event.target.value)} placeholder="Optional" />
+          </label>
+        </div>
+        <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Why these boundaries apply
+          <textarea style={{ ...field, minHeight: 72, resize: 'vertical' }} value={freshnessPolicyRationale} onChange={event => setFreshnessPolicyRationale(event.target.value)} maxLength={2000} placeholder="Record the caregiver or care-team rationale for these review boundaries." />
+        </label>
+        <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void createFreshnessPolicy()} disabled={freshnessPolicyCreating}>{freshnessPolicyCreating ? 'Saving policy version…' : 'Save new policy version'}</button>
+      </div>
       <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Apply saved policy
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
           <option value="">Choose a saved domain policy</option>
