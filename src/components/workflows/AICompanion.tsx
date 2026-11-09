@@ -330,8 +330,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const refreshPendingCareUpdates = async (conversationId?: string | null): Promise<CareUpdateProposal[]> => {
     setPendingCareUpdatesRefreshing(true)
     try {
-      const suffix = conversationId ? '?session_id=' + encodeURIComponent(conversationId) : ''
-      const result = await getJSON('/companion/care-updates' + suffix) as any
+      // The API scope middleware requires an explicit person_id on collection reads.
+      // Obtain it from the server-issued session; never use a caller-selected local ID.
+      const session = await ensureAnonymousSession()
+      const params = new URLSearchParams({ person_id: session.person.id })
+      if (conversationId) params.set('session_id', conversationId)
+      const result = await getJSON('/companion/care-updates?' + params.toString()) as any
       if (!Array.isArray(result?.items)) throw new Error('Incomplete care-update response')
       const items = result.items as CareUpdateProposal[]
       setPendingCareUpdates(items)
