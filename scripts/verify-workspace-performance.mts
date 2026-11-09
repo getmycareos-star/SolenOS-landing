@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const workspace = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 const page = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const landingStartLink = fs.readFileSync("src/components/public/LandingStartLink.tsx", "utf8");
 const shell = fs.readFileSync("src/components/app-shell/AppShell.tsx", "utf8");
 const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
 const appointment = fs.readFileSync("src/components/workflows/AppointmentWorkspace.tsx", "utf8");
@@ -36,6 +37,7 @@ assert.match(shell, /onMouseEnter=\{\(\) => router\.prefetch\(href\)\}/, "naviga
 assert.match(shell, /const ShareCareSummaryPanel = dynamic\(/, "share/export UI must be deferred until opened");
 assert.match(shell, /solenos\.workspace\.navigation-to-route-mounted/, "navigation-to-route readiness must be measurable");
 assert.match(page, /<LCRCurrentUnderstanding \/>/, "the canonical workspace route must continue to render the LCR");
+assert.match(landingStartLink, /solenos\.journey\.landing-cta/, "landing CTA timing must be recorded from a client component");
 assert.doesNotMatch(workspace, /sample|demo|placeholder|fake care/i, "performance changes must not introduce fabricated care data");
 
 console.log("PASS: projection-first, read-only LCR hydration");
