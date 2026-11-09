@@ -12,6 +12,8 @@ const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentP
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
 const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading clarification workflow…</p> });
 
+let workspaceLoadSequence = 0;
+
 
 type RegisteredAction = {
   id: string;
@@ -527,6 +529,12 @@ export function LCRCurrentUnderstanding() {
   }, []);
 
   const load = useCallback(async (manual = false) => {
+    const timingId = ++workspaceLoadSequence;
+    const timingStart = `solenos-workspace-start-${timingId}`;
+    const timingReady = `solenos-workspace-ready-${timingId}`;
+    if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+      try { performance.mark(timingStart); } catch { /* Instrumentation is optional. */ }
+    }
     if (manual) setRefreshing(true);
     else {
       setLoading(true);
@@ -562,6 +570,23 @@ export function LCRCurrentUnderstanding() {
         throw new Error("The current-care response did not match this session's record contract. No care state has been assumed.");
       }
       setProjection(currentCare as CurrentCareProjection);
+      if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+        try {
+          performance.mark(timingReady);
+          performance.measure("solenos.workspace.first-care-ready", { start: timingStart, end: timingReady });
+          if (performance.getEntriesByName("solenos.journey.landing-cta", "mark").length > 0) {
+            performance.measure("solenos.journey.landing-to-first-care", {
+              start: "solenos.journey.landing-cta",
+              end: timingReady,
+            });
+            performance.clearMarks("solenos.journey.landing-cta");
+          }
+          performance.clearMarks(timingStart);
+          performance.clearMarks(timingReady);
+        } catch {
+          // Local timing instrumentation must never affect care-record loading.
+        }
+      }
       setLoading(false);
       backgroundStarted = true;
 
