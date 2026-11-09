@@ -128,6 +128,44 @@ async function main() {
     assert.equal(request?.init?.headers && (request.init.headers as Record<string, string>).Authorization, undefined);
   }
 
+  // A rejected read can recover from token rotation without changing record scope.
+  {
+    const store = makeStore();
+    installBrowser(store);
+    store.setItem("solenos_backend_person_id", "person-server-1");
+    store.setItem("solenos_backend_caregiver_id", "caregiver-server-1");
+    store.setItem("solenos_anonymous_access_token", "old-server-token");
+    store.setItem("solenos_anonymous_session_expires_at", new Date(Date.now() + 90 * 86400000).toISOString());
+    let refreshes = 0, reads = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/v1/sessions/refresh") {
+        refreshes++;
+        assert.equal((init?.headers as Record<string, string>)?.Authorization, "Bearer old-server-token");
+        return jsonResponse({
+          person_id: "person-server-1", caregiver_id: "caregiver-server-1",
+          access_token: "rotated-server-token", token_type: "Bearer",
+          expires_at: new Date(Date.now() + 365 * 86400000).toISOString(),
+          expires_in_seconds: 365 * 86400,
+        });
+      }
+      if (url === "/api/situation") {
+        reads++;
+        if (reads === 1) return jsonResponse({ detail: "Anonymous session is invalid or expired" }, 401);
+        assert.equal((init?.headers as Record<string, string>)?.Authorization, "Bearer rotated-server-token");
+        return jsonResponse({ situations: [] });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }) as typeof fetch;
+    const { getJSON } = await import("../src/api/client");
+    await getJSON("/situation");
+    assert.equal(refreshes, 1);
+    assert.equal(reads, 2);
+    assert.equal(store.getItem("solenos_backend_person_id"), "person-server-1");
+    assert.equal(store.getItem("solenos_backend_caregiver_id"), "caregiver-server-1");
+    assert.equal(store.getItem("solenos_anonymous_access_token"), "rotated-server-token");
+  }
+
   console.log("Anonymous session identity race checks passed.");
 }
 void main();
