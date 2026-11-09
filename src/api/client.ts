@@ -245,9 +245,9 @@ function apiTimingLabel(input: RequestInfo | URL): string {
   }
 }
 
-async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const timingEnabled = typeof performance !== "undefined" && typeof performance.mark === "function";
   const sequence = ++apiTimingSequence;
   const startMark = `solenos-api-start-${sequence}`;
@@ -287,10 +287,10 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
 }
 
 // Only idempotent reads are retried. Never replay writes after an ambiguous network failure.
-async function fetchGetWithRetry(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+async function fetchGetWithRetry(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS): Promise<Response> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetchWithTimeout(input, { ...init, method: "GET" });
+      const response = await fetchWithTimeout(input, { ...init, method: "GET" }, timeoutMs);
       if (attempt === 0 && RETRYABLE_GET_STATUSES.has(response.status)) continue;
       return response;
     } catch (error) {
@@ -345,20 +345,20 @@ export async function getJSON(path: string) {
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
   const headers = await requestAuthorizationHeaders(path);
-  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers })
+  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers }, 120_000)
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
   }
   return res.blob()
 }
 
-export async function postJSON(path: string, body: unknown, extraHeaders: Record<string, string> = {}) {
+export async function postJSON(path: string, body: unknown, extraHeaders: Record<string, string> = {}, options: { timeoutMs?: number } = {}) {
   const authHeaders = await requestAuthorizationHeaders(path);
   const res = await fetchWithTimeout(resolveApiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders, ...extraHeaders },
     body: JSON.stringify(body),
-  })
+  }, options.timeoutMs ?? API_REQUEST_TIMEOUT_MS)
   return handleResponse(res)
 }
 
@@ -446,7 +446,7 @@ export async function revokeAnonymousSession(): Promise<void> {
 
 // Multipart uploads go directly to Railway to avoid Netlify's proxy body-size
 // limits. Do not set Content-Type manually: the browser must add the boundary.
-export async function postFormData(path: string, body: FormData) {
+export async function postFormData(path: string, body: FormData, options: { timeoutMs?: number } = {}) {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const backendPath = normalized.startsWith("/api/v1/")
     ? normalized
