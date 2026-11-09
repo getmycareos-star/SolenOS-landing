@@ -230,7 +230,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     const validDomain = /^[a-z][a-z0-9_]{1,79}$/.test(domainKey)
     const validVersion = policyVersion.length > 0 && policyVersion.length <= 64
     const validRationale = policyRationale.length > 0
-    const validBoundaries = [maxAge, historicalAfter].every(value => value === '' || (/^\\d+$/.test(value) && Number.isSafeInteger(Number(value))))
+    const validBoundaries = [maxAge, historicalAfter].every(value => value === '' || (/^\d+$/.test(value) && Number.isSafeInteger(Number(value))))
     if (!validDomain || !validVersion || !validRationale || !validBoundaries || (maxAge === '' && historicalAfter === '')) {
       setFreshnessPolicyError('Enter a valid domain, version, rationale, and at least one non-negative day boundary.')
       return
