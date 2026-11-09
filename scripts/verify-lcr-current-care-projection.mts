@@ -9,7 +9,16 @@ assert.match(legacyRoute, /redirect\("\/workspace"\)/, "legacy LCR screen must n
 assert.doesNotMatch(legacyRoute, /<LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/, "legacy route must not expose the old LCR interface");
 assert.match(component, /\/care-continuity\/current-care\?limit_per_source=12/, "LCR data projection remains implemented");
 assert.match(component, /read_only !== true/, "projection contract must identify itself as read-only");
-assert.match(component, /result\.person_id !== session\.person\.id/, "projection identity must match the active session");
+assert.match(component, /currentCare\.person_id !== scopedPersonId/, "projection identity must match the active session");
+const loadStart = component.indexOf("const load = useCallback(async (manual = false) => {");
+const loadEnd = component.indexOf("const transitionConfirmation = useCallback(async (", loadStart);
+assert.ok(loadStart >= 0 && loadEnd > loadStart, "caregiver load lifecycle must be identifiable for regression checks");
+const loadBody = component.slice(loadStart, loadEnd);
+assert.match(loadBody, /const currentCare = await getJSON\("\/care-continuity\/current-care\?limit_per_source=12"\)/, "validated current care must be the first blocking data request");
+assert.match(loadBody, /setProjection\(currentCare as CurrentCareProjection\);\s*setLoading\(false\);/, "first caregiver view must be released immediately after the validated projection");
+assert.match(loadBody, /void Promise\.allSettled\(backgroundTasks\)/, "secondary caregiver sections must load concurrently without blocking first paint");
+assert.doesNotMatch(loadBody, /postJSON\(/, "initial LCR hydration must not trigger reassessment or any other writes");
+
 assert.match(component, /schema_status !== "complete"/, "incomplete source coverage must be visible");
 assert.match(component, /missing_required_sources/, "required source gaps must not be hidden");
 assert.match(component, /epistemic_status/, "epistemic status must remain visible");
