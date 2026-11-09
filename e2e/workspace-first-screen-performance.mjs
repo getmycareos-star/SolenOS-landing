@@ -109,7 +109,8 @@ try {
 
   const forbiddenWrites = apiResponses.filter((item) =>
     item.method !== "GET" &&
-    !item.path.endsWith("/sessions/anonymous") || item.path.endsWith("/sessions/refresh")
+    !item.path.endsWith("/sessions/anonymous") &&
+    !item.path.endsWith("/sessions/refresh")
   );
   assert.deepEqual(forbiddenWrites, [], "first-screen performance test must not write care records");
 
