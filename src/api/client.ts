@@ -355,19 +355,76 @@ async function handleResponse(res: Response) {
   }
 }
 
-export async function getJSON(path: string) {
+let anonymousSessionRefreshPromise: Promise<string> | null = null;
+
+/** Recover one rejected read without changing the care-record identity. */
+async function refreshSessionAfterUnauthorized(previousToken: string): Promise<string> {
+  const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
+  const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
+  const currentToken = getAnonymousAccessToken();
+  const identityStillMatches = () =>
+    window.localStorage.getItem(ANONYMOUS_PERSON_KEY) === personId &&
+    window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY) === caregiverId;
+  if (!personId || !caregiverId || !identityStillMatches()) {
+    throw new Error("The care-record session identity is incomplete or changed. No replacement record was created.");
+  }
+  if (currentToken && currentToken !== previousToken) return currentToken;
+
+  if (!anonymousSessionRefreshPromise) {
+    anonymousSessionRefreshPromise = (async () => {
+      const response = await fetchWithTimeout("/api/v1/sessions/refresh", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${currentToken || previousToken}` },
+      });
+      const refreshed = await handleResponse(response) as {
+        person_id: string; caregiver_id: string; access_token: string; expires_at: string;
+      };
+      if (refreshed.person_id !== personId || refreshed.caregiver_id !== caregiverId ||
+          !refreshed.access_token || !refreshed.expires_at) {
+        throw new Error("Session refresh returned a different care-record identity. No identity was changed.");
+      }
+      if (!identityStillMatches()) {
+        throw new Error("The active care-record identity changed during session refresh. The refreshed token was not applied.");
+      }
+      window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
+      window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
+      setPersonId(refreshed.person_id);
+      return refreshed.access_token;
+    })().finally(() => { anonymousSessionRefreshPromise = null; });
+  }
+  try {
+    return await anonymousSessionRefreshPromise;
+  } catch (error) {
+    const latestToken = getAnonymousAccessToken();
+    if (latestToken && latestToken !== previousToken &&
+        identityStillMatches()) {
+      return latestToken;
+    }
+    throw error;
+  }
+}
+
+async function authorizedRead(path: string): Promise<Response> {
   const headers = await requestAuthorizationHeaders(path);
-  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers })
-  return handleResponse(res)
+  let response = await fetchGetWithRetry(resolveApiUrl(path), { headers });
+  if (response.status === 401 && headers.Authorization) {
+    const previousToken = headers.Authorization.replace(/^Bearer\s+/i, "");
+    const nextToken = await refreshSessionAfterUnauthorized(previousToken);
+    response = await fetchGetWithRetry(resolveApiUrl(path), {
+      headers: { ...headers, Authorization: `Bearer ${nextToken}` },
+    });
+  }
+  return response;
+}
+
+export async function getJSON(path: string) {
+  return handleResponse(await authorizedRead(path));
 }
 
 // Downloads a binary response, e.g. the care summary PDF.
 export async function getBlob(path: string): Promise<Blob> {
-  const headers = await requestAuthorizationHeaders(path);
-  const res = await fetchGetWithRetry(resolveApiUrl(path), { headers })
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`)
-  }
+  const res = await authorizedRead(path);
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
   return res.blob()
 }
 
