@@ -18,6 +18,8 @@ assert.match(loadBody, /const currentCare = await getJSON\("\/care-continuity\/c
 assert.match(loadBody, /setProjection\(currentCare as CurrentCareProjection\);\s*setLoading\(false\);/, "first caregiver view must be released immediately after the validated projection");
 assert.match(loadBody, /void Promise\.allSettled\(backgroundTasks\)/, "secondary caregiver sections must load concurrently without blocking first paint");
 assert.doesNotMatch(loadBody, /postJSON\(/, "initial LCR hydration must not trigger reassessment or any other writes");
+assert.match(loadBody, /solenos\.workspace\.first-care-ready/, "first-care readiness must be measurable locally");
+assert.match(loadBody, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable locally");
 
 assert.match(component, /schema_status !== "complete"/, "incomplete source coverage must be visible");
 assert.match(component, /missing_required_sources/, "required source gaps must not be hidden");
