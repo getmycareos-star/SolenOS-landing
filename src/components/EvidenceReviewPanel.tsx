@@ -543,6 +543,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <strong>{item.relationship_type.replaceAll('_', ' ')}</strong>
             <div>This source is linked to another saved source.</div>
             <div>Independence: {item.source_independence_status.replaceAll('_', ' ')}</div>
+            {item.source_independence_status === 'shared_origin' && (
+              <p>This source and the linked source share an underlying origin. They must not be counted as independent corroboration.</p>
+            )}
+            {item.origin_group_key && <p>Shared source grouping is recorded.</p>}
             <p>{item.rationale}</p>
             <small>Reviewed by {item.reviewed_by_caregiver_id ? 'caregiver' : 'an unavailable identity'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
