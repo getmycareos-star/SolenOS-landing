@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
-import { ShareCareSummaryPanel } from "@/components/mvp-workspace/share/ShareCareSummaryPanel";
+const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
 import { ensureAnonymousSession, getAnonymousAccessToken, revokeAnonymousSession } from "@/api/client";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
@@ -258,8 +258,12 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               <Link
                 key={href}
                 href={href}
+                prefetch={false}
                 className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                 aria-current={active(href) ? "page" : undefined}
+                onMouseEnter={() => router.prefetch(href)}
+                onFocus={() => router.prefetch(href)}
+                onTouchStart={() => router.prefetch(href)}
                 onClick={() => setSidebarOpen(false)}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
@@ -276,7 +280,11 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           <div className="solenos-chat-sidebar-bottom">
             <Link
               href="/workspace/settings"
+              prefetch={false}
               className={`solenos-chat-nav-item${active("/workspace/settings") ? " is-active" : ""}`}
+              onMouseEnter={() => router.prefetch("/workspace/settings")}
+              onFocus={() => router.prefetch("/workspace/settings")}
+              onTouchStart={() => router.prefetch("/workspace/settings")}
               onClick={() => setSidebarOpen(false)}
             >
               <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
