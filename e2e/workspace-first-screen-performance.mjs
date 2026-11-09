@@ -83,7 +83,7 @@ try {
   await page.getByRole("navigation", { name: "Primary navigation" }).waitFor({ state: "visible" });
   const mobileMenuOpenMs = Date.now() - menuStartedAt;
 
-  const documentsLink = page.getByRole("link", { name: "Documents" });
+  const documentsLink = page.locator("#solenos-navigation").getByRole("link", { name: "Documents" });
   await documentsLink.hover(); // route prefetch is intentionally triggered only by user intent
   const routeStartedAt = Date.now();
   await documentsLink.click();
@@ -109,7 +109,7 @@ try {
 
   const forbiddenWrites = apiResponses.filter((item) =>
     item.method !== "GET" &&
-    !item.path.endsWith("/sessions/anonymous")
+    !item.path.endsWith("/sessions/anonymous") || item.path.endsWith("/sessions/refresh")
   );
   assert.deepEqual(forbiddenWrites, [], "first-screen performance test must not write care records");
 
