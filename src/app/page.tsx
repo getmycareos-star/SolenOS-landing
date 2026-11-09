@@ -27,7 +27,7 @@ export default function LandingPage() {
             <p className="el-kicker">A LIVING CARE RECORD FOR FAMILY CAREGIVERS</p>
             <h1>You know something happened.<br /><em>You just don’t remember it as one story.</em></h1>
             <p>Care happens in moments.<br />But you’re expected to remember the whole story.</p>
-            <Link href={start} className="el-button" onClick={() => { try { window.performance.mark("solenos.journey.landing-cta"); } catch { /* Performance instrumentation is optional. */ } }}>Start your care record <span aria-hidden="true">↗</span></Link>
+            <Link href={start} className="el-button">Start your care record <span aria-hidden="true">↗</span></Link>
           </div>
           <div className="el-hero-photo" role="img" aria-label="A daughter sharing a quiet, affectionate moment with her elderly mother">
             <div className="el-photo-caption">Care is made of moments.</div>
