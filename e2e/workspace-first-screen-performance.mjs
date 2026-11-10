@@ -11,10 +11,10 @@ const context = await browser.newContext({
   hasTouch: true,
 });
 const page = await context.newPage();
-const apiResponses: Array<{ method: string; path: string; status: number }> = [];
-const apiRequests: Array<{ method: string; path: string }> = [];
-const apiRequestStarts = new Map<string, number>();
-const currentCareDurations: number[] = [];
+const apiResponses = [];
+const apiRequests = [];
+const apiRequestStarts = new Map();
+const currentCareDurations = [];
 
 try {
   const cdp = await context.newCDPSession(page);
