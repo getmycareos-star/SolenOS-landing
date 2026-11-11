@@ -19,14 +19,14 @@ type Assessment = {
   claim_version: number;
   status: string;
   rationale: string;
-  review version: string;
+  policy_version: string;
   evidence_links: Array<{
     evidence_id: string;
     relationship: string;
     source_passage?: string | null;
     scope_note?: string | null;
   }>;
-  reviewed by a caregiver: string;
+  reviewed_by_caregiver_id: string;
   supersedes_assessment_id?: string | null;
   superseded_by_claim_id?: string | null;
   created_at: string;
@@ -352,7 +352,7 @@ export default function ClaimAssessmentPanel() {
           status,
           superseded_by_claim_id: status === "superseded" ? supersededByClaimId : null,
           rationale: rationale.trim(),
-          review version: "claim-assessment-v1",
+          policy_version: "claim-assessment-v1",
           evidence_links: completeLinks.map((link) => ({
             evidence_id: link.evidence_id,
             relationship: link.relationship,
@@ -492,7 +492,7 @@ export default function ClaimAssessmentPanel() {
       {!historyLoading && !historyError && history.length === 0 && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>No earlier reviews are saved for this care detail.</p>}
       {history.map((item) => <article key={item.id} style={{ borderTop: "1px solid var(--border)", padding: "9px 0", fontSize: 12 }}>
         <strong>Version {item.claim_version}: {simpleReviewStatus(item.status)}</strong>
-        <div>{new Date(item.created_at).toLocaleString()} · {item.review version} · reviewed by a caregiver</div>
+        <div>{new Date(item.created_at).toLocaleString()} · Reviewed by a caregiver</div>
         <p>{item.rationale}</p>
         <ul>{item.evidence_links.map((link, i) => <li key={i}>
           {simpleReviewStatus(link.relationship)} · source information
