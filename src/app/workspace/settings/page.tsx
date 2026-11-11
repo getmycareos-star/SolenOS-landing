@@ -19,7 +19,7 @@ import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
+import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 
@@ -270,6 +270,8 @@ function AccountCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [rotatingRecoveryCode, setRotatingRecoveryCode] = useState(false);
 
   const refreshAccount = useCallback(async () => {
     // Do not create a new anonymous care record merely to inspect account status.
@@ -305,6 +307,7 @@ function AccountCard() {
       if (mode === "create") {
         const result = await createAccount(email, password);
         setAccount(result.account ?? null);
+        setRecoveryCode(result.recovery_code);
         setMessage("Account created and linked to this care record.");
         setMode("idle");
         setPassword("");
@@ -337,6 +340,21 @@ function AccountCard() {
     }
   };
 
+  const generateRecoveryCode = async () => {
+    setRotatingRecoveryCode(true);
+    setError("");
+    setRecoveryCode("");
+    try {
+      const result = await postJSON("/accounts/recovery-code", {}) as { recovery_code: string; message: string };
+      setRecoveryCode(result.recovery_code);
+      setMessage(result.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "We couldn't generate a recovery code.");
+    } finally {
+      setRotatingRecoveryCode(false);
+    }
+  };
+
   const signOut = async () => {
     setBusy(true);
     setError("");
@@ -366,6 +384,9 @@ function AccountCard() {
       {!loaded && <p className="mobile-settings-hint" role="status">Loading account options…</p>}
       {loaded && account && mode === "idle" && (
         <div className="mobile-settings-buttons">
+          <Button variant="secondary" onClick={() => void generateRecoveryCode()} loading={rotatingRecoveryCode} disabled={busy || rotatingRecoveryCode}>
+            Generate recovery code
+          </Button>
           <Button variant="secondary" onClick={() => void signOut()} loading={busy} disabled={busy}>
             Sign out
           </Button>
@@ -417,6 +438,14 @@ function AccountCard() {
         </form>
       )}
       {message && <p className="mobile-settings-hint" role="status">{message}</p>}
+      {recoveryCode && (
+        <div className="mobile-settings-hint" role="alert" style={{ border: "1px solid var(--border, #d8ded8)", borderRadius: "0.75rem", padding: "0.8rem" }}>
+          <strong>Save this one-time recovery code now.</strong>
+          <p>This code is shown only once. Store it somewhere private and separate from this device. Anyone with the code and your account email can reset the account password.</p>
+          <code style={{ display: "block", overflowWrap: "anywhere", userSelect: "all", padding: "0.5rem 0" }}>{recoveryCode}</code>
+          <Button type="button" variant="secondary" onClick={() => setRecoveryCode("")}>I have saved the code</Button>
+        </div>
+      )}
       {error && mode === "idle" && <p className="mobile-settings-hint" role="alert">{error} <button type="button" onClick={() => void refreshAccount()} className="mobile-settings-label">Try again</button></p>}
       {render()}
     </section>
