@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
+import { LivingArchiveMark } from "@/components/brand";
 
 type QuickUpdateKind = "same_as_usual" | "change" | "concern" | "care_completed" | "uncertain";
 
@@ -284,6 +285,7 @@ export default function QuickDailyCheckIn() {
               Clear selection
             </button>
           </div>
+          {saving && <div style={{ marginTop: 10 }}><LivingArchiveMark size="sm" label="Saving your care update…" /></div>}
           {selectedAreas.length === 0 && kind !== "same_as_usual" && (
             <p style={{ margin: "8px 0 0", color: "var(--theme-panel-muted)", fontSize: 13 }}>
               Select at least one area before saving.
