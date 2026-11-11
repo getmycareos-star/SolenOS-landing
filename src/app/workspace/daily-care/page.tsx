@@ -110,7 +110,7 @@ export default function DailyCarePage() {
           align-items: center;
           min-height: 44px;
           margin-top: .5rem;
-          color: #17635f;
+          color: var(--theme-link);
           font-weight: 650;
           text-underline-offset: 3px;
         }
