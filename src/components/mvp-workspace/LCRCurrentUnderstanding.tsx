@@ -1076,7 +1076,7 @@ export function LCRCurrentUnderstanding() {
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         {source && source.claim_count > 0 && <small>Different reports linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
                         {actionForSuggestion(item) ? (
-                          <p className="lcr-entry-status">Agreed action: {simpleRecordLabel(actionForSuggestion(item)?.status)}. This suggestion has already been saved as an agreed action.</p>
+                          <p className="lcr-entry-status">Agreed action: {caregiverLabel(actionForSuggestion(item)?.status)}. This suggestion has already been saved as an agreed action.</p>
                         ) : item.request_text?.trim() && item.evidence_ids.length > 0 ? (
                           <div>
                             <button type="button" className="lcr-text-action" onClick={() => {
