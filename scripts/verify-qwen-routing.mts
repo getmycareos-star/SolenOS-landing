@@ -86,7 +86,12 @@ requireText("src/components/workflows/AICompanion.tsx", [
   "{loading ? 'Sending' : 'Send'}",
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
-assert(!companion.includes("QwenAssistPanel"), "Companion must not show a second workflow selector/panel.");
+assert(companion.includes("QwenAssistPanel"), "Companion must expose the shared reviewable assistance entry point for care-history and coordination workflows.");
+requireText("src/components/workflows/AICompanion.tsx", [
+  'title="Help organise care information"',
+  "conflicting reports, appointments, handoffs, follow-ups or medication observations",
+  "Suggestions use information you are authorised to see and always need your review.",
+]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
 
