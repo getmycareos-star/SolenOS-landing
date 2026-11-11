@@ -123,7 +123,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [answer, setAnswer] = useState("");
   const [answerProvenance, setAnswerProvenance] = useState("");
-  const [answerEvidenceIds, setAnswerEvidenceIds] = useState<string[]>([]);
   const [history, setHistory] = useState<AnswerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -273,14 +272,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setError("Please enter the answer and say who provided it or how it is known.");
       return;
     }
-    if (status === "answered" && answerEvidenceIds.length === 0) {
-      setError("Choose at least one saved note or document that supports this answer.");
-      return;
-    }
-    if (status === "answered" && answerEvidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
-      setError("One of the selected saved items is unavailable. Please choose again.");
-      return;
-    }
     setSaving(true);
     setError("");
     setNotice("");
@@ -289,7 +280,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       if (status === "answered") {
         payload.answer = answer.trim();
         payload.answer_provenance = answerProvenance.trim();
-        payload.evidence_ids = answerEvidenceIds;
       }
       if (status === "declined") {
         payload.closed_reason = answerProvenance.trim();
@@ -301,7 +291,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setNotice(status === "answered"
         ? "Your answer has been saved. It will remain separate from confirmed care information until reviewed."
         : status === "open" ? "This question has been reopened. Earlier answers are still saved." : "No answer was recorded. The question will remain available.");
-      if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }
+      if (status === "answered") { setAnswer(""); setAnswerProvenance(""); }
       await loadAll();
       await loadHistory();
     } catch {
@@ -330,7 +320,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
                 setSelectedQuestionId(item.id);
                 setAnswer("");
                 setAnswerProvenance("");
-                setAnswerEvidenceIds([]);
                 setError("");
               }}
               style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
@@ -371,13 +360,8 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
             <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Who provided this answer, and how do they know?
               <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="For example, I measured it this morning." />
             </label>
-            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Choose a saved note or document that supports this answer
-              <select multiple style={{ ...field, minHeight: 90, marginTop: 4 }} value={answerEvidenceIds} onChange={(event) => setAnswerEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-                {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {evidenceSummary(item)}</option>)}
-              </select>
-            </label>
-            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Choose at least one saved source before recording an answer. Your original report will remain unchanged.</p>
-            <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving || answerEvidenceIds.length === 0}>{saving ? "Saving…" : "Save answer"}</button>{" "}
+            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
+            <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
             <button type="button" style={button} onClick={() => void updateQuestion("declined")} disabled={saving}>I don't know the answer</button>
           </>}
           {selectedQuestion.status !== "open" && selectedQuestion.status !== "unresolved" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen this question</button>}

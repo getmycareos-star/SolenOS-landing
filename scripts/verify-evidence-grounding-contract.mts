@@ -146,6 +146,7 @@ assert(clarificationPanel.includes("Who may know the answer?") && clarificationP
 assert(clarificationPanel.includes("evidenceSummary(item)") && !clarificationPanel.includes("source_text.slice"), "saved source details must be shown as plain text, never raw JSON");
 assert(clarificationPanel.includes('window.addEventListener("careRecordUpdated"'), "clarification questions must refresh after a saved care update");
 assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
+assert(clarificationPanel.includes("Save answer") && !clarificationPanel.includes("answerEvidenceIds"), "caregivers must be able to save an attributed answer without uploading a separate document");
 assert(clarificationPanel.includes("An answer will not be treated as confirmed until it has been reviewed"), "answer capture must not automatically confirm the care record");
 assert(clarificationPanel.includes("intended_answerer_role"), "clarification must record who is best placed to answer when known");
 assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
