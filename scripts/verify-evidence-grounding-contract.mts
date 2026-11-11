@@ -84,6 +84,8 @@ assert(companion.includes("Evidence source lineage"), "Companion handoff preview
 assert(companion.includes("claim_provenance: response.claim_provenance"), "Companion must consume claim-level source references from the backend");
 assert(companion.includes("Not matched to the wording in a saved record"), "Companion must visibly mark statements without a matching source");
 assert(companion.includes("What this answer is based on"), "Companion must show source details beside the specific statement they support");
+assert(companion.includes("Supporting note or document"), "Matched care entries must expose their linked original notes and documents");
+assert(companion.includes("When it happened") && companion.includes("When it was added"), "Claim sources must show occurrence and recording times");
 assert(!companion.includes("Inspect source record references"), "caregivers must not be shown a generic list of unrelated source IDs");
 assert(companion.includes("scope_truncated"), "Companion must disclose bounded or truncated lineage retrieval");
 assert(companion.includes("not proof") || companion.includes("not proof that sources are independent"), "Companion must not present missing lineage groups as proof of independence");
