@@ -677,23 +677,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <span>Saved draft · {handoffDraft.source_references.length} source references · not shared · Living Care Record unchanged</span>
                 </div>
                 {handoffDraft.evidence_lineage && (
-                  <section className="companion-handoff-source-section" aria-label="Evidence source lineage">
-                    <h5>Evidence source lineage · {handoffDraft.evidence_lineage.status.replaceAll('_', ' ')}</h5>
-                    <p className="companion-handoff-section-note">
-                      {handoffDraft.evidence_lineage.interpretation_limit}
-                      {handoffDraft.evidence_lineage.scope_truncated ? " Source-lineage retrieval reached its safety bound; independent corroboration is not established." : ""}
-                    </p>
+                  <section className="companion-handoff-source-section" aria-label="How the sources are connected">
+                    <h5>How the sources are connected</h5>
+                    <p className="companion-handoff-section-note">These links show where information came from. They do not prove that a report is true or that two reports are separate.</p>
+                    {handoffDraft.evidence_lineage.scope_truncated && <p className="companion-handoff-section-note">Only some source links could be checked. Whether the reports are separate is unknown.</p>}
                     {handoffDraft.evidence_lineage.groups.length === 0 && (
-                      <p className="companion-handoff-section-note">No explicit shared-origin or reviewed-independence group was returned. This is not proof that sources are independent.</p>
+                      <p className="companion-handoff-section-note">No review was found showing whether these sources came from the same original. This does not mean they are separate.</p>
                     )}
                     {handoffDraft.evidence_lineage.groups.map(group => (
                       <article className="companion-handoff-template-section" key={group.lineage_id}>
                         <div className="companion-handoff-coverage-row">
-                          <span><strong>{group.source_independence_status.replaceAll('_', ' ')}</strong><small>{group.evidence_ids.join(', ')}</small></span>
-                          <span className="companion-handoff-status status-not_assessed">{group.basis?.replaceAll('_', ' ') ?? "persisted provenance"}</span>
+                          <strong>{group.source_independence_status === "shared_origin" ? "Same original source" : group.source_independence_status === "independent" ? "Reported separately" : group.source_independence_status === "not_assessed" ? "Not checked" : "Not known"}</strong>
+                          <span>{group.evidence_ids.length} saved items</span>
                         </div>
-                        {group.origin_group_keys.length > 0 && <small className="companion-handoff-section-note">Origin groups: {group.origin_group_keys.join(', ')}</small>}
-                        <small className="companion-handoff-section-note">{group.interpretation_limit}</small>
                       </article>
                     ))}
                   </section>
