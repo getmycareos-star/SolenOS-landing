@@ -236,6 +236,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [recordHistory, setRecordHistory] = useState<Record<string, unknown> | null>(null)
   const [recordHistoryLoading, setRecordHistoryLoading] = useState(false)
   const [recordHistoryError, setRecordHistoryError] = useState('')
+  const [recordSnapshotSaving, setRecordSnapshotSaving] = useState(false)
+  const [recordSnapshotNotice, setRecordSnapshotNotice] = useState('')
   const [relationships, setRelationships] = useState<SourceRelationship[]>([])
   const [relationshipsLoading, setRelationshipsLoading] = useState(false)
   const [relationshipsError, setRelationshipsError] = useState('')
@@ -373,6 +375,46 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   }, [evidenceItems, selectedId])
 
 
+
+  const saveCurrentRecordSnapshot = useCallback(async () => {
+    setRecordSnapshotSaving(true)
+    setRecordSnapshotNotice('')
+    setRecordHistoryError('')
+    try {
+      if (!personId) throw new Error('The current care record could not be identified')
+      let records = await getJSON('/care-continuity/living-records?limit=2')
+      if (!Array.isArray(records)) throw new Error('The saved care record list could not be read')
+      if (records.length === 0) {
+        const created = await postJSON('/care-continuity/living-records', {
+          record_status: 'active',
+          schema_version: 'lcr.v1',
+        })
+        if (!created || typeof created !== 'object' || (created as Record<string, unknown>).person_id !== personId) {
+          throw new Error('The care record could not be created for this session')
+        }
+        records = [created]
+      }
+      if (records.length !== 1 || typeof records[0]?.id !== 'string') {
+        throw new Error('The care record could not be identified safely')
+      }
+      const saved = await postJSON('/care-continuity/record-versions', {
+        care_record_id: records[0].id,
+        reason: 'Caregiver saved a point-in-time copy from the care history screen',
+      })
+      if (!saved || typeof saved !== 'object' || typeof (saved as Record<string, unknown>).captured_at !== 'string') {
+        throw new Error('The saved copy could not be confirmed')
+      }
+      const capturedAt = new Date(String((saved as Record<string, unknown>).captured_at))
+      if (!Number.isFinite(capturedAt.getTime())) throw new Error('The saved copy returned an invalid date')
+      const localValue = new Date(capturedAt.getTime() - capturedAt.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+      setRecordHistoryAsOf(localValue)
+      setRecordSnapshotNotice('A copy of the care record was saved. Choose “Show earlier record” to review it.')
+    } catch (error) {
+      setRecordHistoryError(error instanceof Error ? error.message : 'The care record copy could not be saved. Try again.')
+    } finally {
+      setRecordSnapshotSaving(false)
+    }
+  }, [personId])
 
   const reconstructRecordHistory = useCallback(async () => {
     if (!personId || !recordHistoryAsOf) {
@@ -681,6 +723,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               onChange={event => { setRecordHistoryAsOf(event.target.value); setRecordHistory(null); setRecordHistoryError('') }}
             />
           </label>
+          <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void saveCurrentRecordSnapshot()} disabled={recordSnapshotSaving || !personId}>
+            {recordSnapshotSaving ? 'Saving a copy…' : 'Save a copy now'}
+          </button>
+          {recordSnapshotNotice && <p role="status">{recordSnapshotNotice}</p>}
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructRecordHistory()} disabled={recordHistoryLoading || !personId || !recordHistoryAsOf}>
             {recordHistoryLoading ? 'Loading earlier care information…' : 'Show earlier record'}
           </button>
