@@ -41,7 +41,7 @@ export default function HandoffsPage() {
           <p>Review saved handoff drafts and manage incoming or outgoing care summaries for this record.</p>
         </div>
         <Link href="/workspace/companion" className="workspace-primary workspace-handoffs-create">
-          Create care handoff
+          Prepare in AI Companion
         </Link>
       </header>
 
