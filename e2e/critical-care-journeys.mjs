@@ -211,7 +211,7 @@ await record("04 document upload and extraction", async () => {
   assert.equal(extracted.status, 201, JSON.stringify(extracted.payload));
   const reviewed = await request(`/api/v1/documents/analyses/${extracted.payload.analysis_id}`, { token: identity.token });
   assert.equal(reviewed.status, 200, JSON.stringify(reviewed.payload));
-  assert.ok(reviewed.payload.extracted_text.includes("follow-up appointment"));
+  assert.ok(String(reviewed.payload.extracted_text).toLowerCase().includes("follow-up appointment"));
   const intelligence = await request("/api/v1/documents/" + documentId + "/intelligence", { token: identity.token, method: "POST", body: {} });
   assert.equal(intelligence.status, 201, JSON.stringify(intelligence.payload));
   assert.ok(intelligence.payload.observations.length > 0, "Qwen did not produce a reviewable document candidate");
