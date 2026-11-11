@@ -96,6 +96,28 @@ try {
   assert.ok([200, 201].includes(createdEvidence.response.status), `could not create browser fixture evidence: HTTP ${createdEvidence.response.status} ${JSON.stringify(createdEvidence.payload)}`);
   const evidenceId = createdEvidence.payload?.id;
   assert.ok(evidenceId, "backend did not return an evidence ID");
+  const evidenceIds = [evidenceId];
+  for (let index = 2; index <= 20; index += 1) {
+    const eventText = `Browser E2E synthetic caregiver report ${index}/20; preserve this exact wording after account conversion.`;
+    const event = await backendRequest("/api/v1/evidence", {
+      token: original.token,
+      method: "POST",
+      body: {
+        person_id: original.personId,
+        uploaded_by_caregiver_id: original.caregiverId,
+        type: "note",
+        evidence_kind: "caregiver_report",
+        epistemic_status: "unverified",
+        source_text: eventText,
+        source_type: "browser_account_continuity_e2e",
+        ingestion_key: `browser-account-continuity-${index}-${randomUUID()}`,
+      },
+    });
+    assert.ok([200, 201].includes(event.response.status), `could not create continuity fixture ${index}/20: HTTP ${event.response.status} ${JSON.stringify(event.payload)}`);
+    assert.ok(event.payload?.id, `backend did not return evidence ID for fixture ${index}/20`);
+    evidenceIds.push(event.payload.id);
+  }
+  assert.equal(evidenceIds.length, 20, "the continuity fixture must contain exactly 20 persisted care events");
 
   // Register from the actual settings UI. Registration must attach to context A's
   // already-existing anonymous care identity, not create a replacement record.
@@ -189,6 +211,8 @@ try {
   const matchingEvidence = (restoredEvidence.payload ?? []).find((item) => item.id === evidenceId);
   assert.ok(matchingEvidence, "fresh browser login did not restore the original evidence ID");
   assert.equal(matchingEvidence.source_text, sourceText, "fresh browser login changed original caregiver wording");
+  const restoredEvidenceIds = new Set((restoredEvidence.payload ?? []).map((item) => item.id));
+  assert.equal(evidenceIds.filter((id) => restoredEvidenceIds.has(id)).length, 20, "fresh browser login did not restore all 20 original care events");
 
   // Verify context B has no inherited browser A storage and now holds only its
   // independently issued account bearer for the same durable care identity.
