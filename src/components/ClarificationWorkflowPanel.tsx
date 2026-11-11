@@ -170,7 +170,12 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     }
   }, [personId]);
 
-  useEffect(() => { void loadAll(); }, [loadAll]);
+  useEffect(() => {
+    void loadAll();
+    const refreshAfterCareRecordWrite = () => { void loadAll(); };
+    window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+    return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+  }, [loadAll]);
 
   useEffect(() => {
     if (prefillQuestion) setQuestionText(prefillQuestion);
