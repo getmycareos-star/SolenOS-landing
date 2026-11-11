@@ -1,6 +1,8 @@
 "use client";
 
+import "./../accessibility-overrides.css";
 import { AppShell } from "@/components/app-shell/AppShell";
+import { GlobalDisplayPreferences } from "@/components/accessibility/GlobalDisplayPreferences";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { useEffect, useState, type ReactNode } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -90,6 +92,7 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
         >
           {children}
         </AppShell>
+        <GlobalDisplayPreferences />
       </ErrorBoundary>
     </WorkspaceProvider>
   );
