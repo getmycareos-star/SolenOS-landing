@@ -474,3 +474,33 @@
 :root[data-solenos-theme="dark"] .lcr-home .lcr-companion-entry .lcr-text-action :is(span,svg) {
   color: #17251c !important;
 }
+
+
+/* A consent gate is an informational state, not a failed history source. */
+.history-source-info {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid #c7d8c8;
+  border-radius: 10px;
+  background: #eef5ef;
+  color: #244b38;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.history-source-info strong {
+  color: #244b38;
+  font-weight: 700;
+}
+.history-source-info span {
+  color: #405c49;
+}
+:root[data-solenos-theme="dark"] .history-source-info {
+  background: #26332b !important;
+  color: #f3f7f3 !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .history-source-info :is(strong,span) {
+  color: #f3f7f3 !important;
+}
