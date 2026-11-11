@@ -87,6 +87,21 @@ Message → Note → Summary
 
 ---
 
+## Plain American English — every caregiver-facing screen
+
+All caregiver-facing screens, messages, labels, notifications, summaries, questions, and errors use plain American English.
+
+- Use familiar words, short sentences, and active voice.
+- Explain what happened, who reported it, when it happened, and what is still unclear.
+- Prefer "what we know", "what changed", "what is still unclear", and "where this came from" over technical terms.
+- Do not expose engineering or clinical-processing language such as "epistemic status", "provenance", "reconciliation", "assertion", "extraction pipeline", "OCR", "API", or "model inference".
+- Do not use unexplained acronyms, internal workflow names, database terms, or AI implementation details.
+- Use American spelling and familiar US date, time, and number conventions.
+- Keep uncertainty intact when simplifying language. Plain language must never turn a report, suggestion, or possibility into a confirmed fact.
+- Keep technical terminology in code, internal logs, and engineering documentation. It does not belong in caregiver-facing copy.
+
+This rule applies across the entire caregiver workspace, not only the Living Care Record or Companion.
+
 ## Caregiver voice (illustrations only — never templates)
 
 Use feel of:
