@@ -206,7 +206,7 @@
 :root[data-solenos-theme="dark"] .mobile-settings-account-controls :is(
   h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,a,button
 ) {
-  color: var(--theme-panel-fg);
+  color: var(--theme-panel-fg) !important;
 }
 :root[data-solenos-theme="dark"] .settings-section-intro > span {
   background: #34463a !important;
@@ -220,10 +220,13 @@
 ) {
   border-color: var(--theme-panel-border);
 }
-:root[data-solenos-theme="dark"] .settings-section-wrap :is(
-  button, a, [role="button"]
-):not(.solenos-display-trigger) {
-  color: var(--theme-panel-fg);
+:root[data-solenos-theme="dark"] .settings-section-wrap button:not(.solenos-display-trigger),
+:root[data-solenos-theme="dark"] .settings-section-wrap [role="button"]:not(.solenos-display-trigger) {
+  background: #34463a !important;
+  color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap a {
+  color: #b9d5b5 !important;
 }
 :root[data-solenos-theme="dark"] .settings-section-wrap :is(
   svg,[role="img"]
