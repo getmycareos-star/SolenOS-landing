@@ -153,6 +153,10 @@ for (const field of ["reported_at", "collection_method", "origin_device_ref", "t
   assert(panel.includes(field), `evidence review UI must expose acquisition provenance field ${field}`);
 }
 assert(panel.includes("Device used"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
+assert(panel.includes("These links show how sources are connected"), "source relationships must be explained in caregiver language");
+assert(panel.includes("Check whether the saved wording has changed"), "source integrity must use plain English");
+assert(!panel.includes("SHA-256") && !panel.includes("JSON.stringify"), "technical hashes and raw data snapshots must not be shown in the caregiver UI");
+assert(!panel.includes("source_text_sha256 ||"), "internal source fingerprints must not be displayed to caregivers");
 console.log("PASS: LCR evidence review exposes report time, collection method, optional device label, and transfer provenance.");
 
 
