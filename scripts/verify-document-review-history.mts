@@ -38,6 +38,13 @@ assert(capture.indexOf('postFormData("/upload"') < capture.indexOf('"/documents/
 assert(capture.includes('"/documents/" + encodeURIComponent(evidenceId) + "/intelligence"'), "saved source extraction must feed the Qwen document intelligence endpoint");
 assert(!capture.includes('apiUrl("/api/extract"'), "capture must not depend on the legacy extract-before-upload endpoint");
 assert(capture.includes('getJSON(') && capture.includes('/documents/analyses/'), "the capture UI must display the persisted server extraction, not client-only OCR text");
+const retryStart = capture.indexOf("export async function retryAttachedDocument");
+const retryEnd = capture.indexOf("export function dataUrlToFile", retryStart);
+const retrySource = capture.slice(retryStart, retryEnd);
+const addSituation = readFileSync("src/components/mvp-workspace/AddSituationPanel.tsx", "utf8");
+assert(retryStart >= 0 && retryEnd > retryStart && retrySource.includes("document.evidenceId") && !retrySource.includes("postFormData"), "retry must operate on the existing evidence ID without creating a duplicate upload");
+assert(addSituation.includes("retryAttachedDocument(doc)"), "the caregiver Retry action must reuse the persisted original");
+
 assert(capture.includes('status: "failed"') && capture.includes('evidenceId,'), "an extraction failure must retain the evidence ID so the saved original remains recoverable");
 assert(documentsPage.includes("const saveReviewedPages") && documentsPage.includes('postFormData("/upload"'), "the Documents scan/upload flow must persist each original page first");
 assert(documentsPage.indexOf('postFormData("/upload"') < documentsPage.indexOf('"/documents/" + encodeURIComponent(stored.evidence_id) + "/extract"'), "the Documents scan/upload flow must upload original bytes before server extraction");
