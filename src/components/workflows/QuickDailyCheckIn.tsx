@@ -164,12 +164,13 @@ export default function QuickDailyCheckIn() {
   return (
     <section
       aria-labelledby="quick-daily-checkin-title"
+      className="quick-daily-checkin"
       style={{
         width: "100%",
         maxWidth: "48rem",
         margin: "0 auto 1rem",
         padding: "clamp(.9rem, 3vw, 1.25rem)",
-        border: "1px solid #dce5e0",
+        border: "1px solid var(--theme-panel-border)",
         borderRadius: 16,
         background: "var(--theme-panel-bg)",
         color: "var(--theme-panel-fg)",
