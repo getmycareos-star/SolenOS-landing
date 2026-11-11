@@ -1,0 +1,244 @@
+/*
+ * Dark-mode remediation: shared component surface/foreground contracts.
+ * Imported after the base, mobile and accessibility styles so these explicit
+ * component rules win without changing the light theme or globally inverting UI.
+ */
+:root {
+  --theme-panel-bg: #ffffff;
+  --theme-panel-fg: #172b35;
+  --theme-panel-muted: #52645a;
+  --theme-panel-border: #dce5e8;
+  --theme-field-bg: #ffffff;
+  --theme-field-fg: #172b35;
+  --theme-field-placeholder: #5f7179;
+  --theme-subtle-bg: #f5f8f5;
+  --theme-warning-bg: #fff4dc;
+  --theme-warning-fg: #3b2e11;
+  --theme-warning-border: #c8a85d;
+}
+:root[data-solenos-theme="dark"] {
+  --theme-panel-bg: #202a24;
+  --theme-panel-fg: #f3f7f3;
+  --theme-panel-muted: #c4d0c6;
+  --theme-panel-border: #526256;
+  --theme-field-bg: #18211c;
+  --theme-field-fg: #ffffff;
+  --theme-field-placeholder: #c4d0c6;
+  --theme-subtle-bg: #26332b;
+  --theme-warning-bg: #3b3020;
+  --theme-warning-fg: #fff0cf;
+  --theme-warning-border: #a8894d;
+}
+
+/* Care history drawer: all controls and states share a dark surface contract. */
+:root[data-solenos-theme="dark"] .history-drawer,
+:root[data-solenos-theme="dark"] .history-drawer-header,
+:root[data-solenos-theme="dark"] .history-list-scroll,
+:root[data-solenos-theme="dark"] .history-detail-scroll {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .history-drawer :is(
+  h1,h2,h3,h4,p,span,strong,small,li,dt,dd,label
+) {
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .history-drawer :is(
+  .history-drawer-heading span,
+  .history-date-group h3,
+  .history-event-time,
+  .history-event-description,
+  .history-detail-date,
+  .history-detail-list dt,
+  .history-drawer-footer
+) {
+  color: var(--theme-panel-muted);
+}
+:root[data-solenos-theme="dark"] .history-search-wrap {
+  background: var(--theme-field-bg) !important;
+  color: var(--theme-field-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .history-search-wrap :is(svg,button) {
+  color: var(--theme-field-fg) !important;
+}
+:root[data-solenos-theme="dark"] .history-search-wrap input {
+  background: transparent !important;
+  color: var(--theme-field-fg) !important;
+  -webkit-text-fill-color: var(--theme-field-fg) !important;
+  border-color: transparent !important;
+}
+:root[data-solenos-theme="dark"] .history-search-wrap input::placeholder {
+  color: var(--theme-field-placeholder) !important;
+  -webkit-text-fill-color: var(--theme-field-placeholder) !important;
+}
+:root[data-solenos-theme="dark"] .history-filter-chip {
+  background: #26332b !important;
+  color: #f3f7f3 !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .history-filter-chip.is-active {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+  border-color: #a8c9a3 !important;
+}
+:root[data-solenos-theme="dark"] .history-icon-button,
+:root[data-solenos-theme="dark"] .history-search-wrap button {
+  background: #34463a !important;
+  color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .history-source-warning {
+  background: var(--theme-warning-bg) !important;
+  color: var(--theme-warning-fg) !important;
+  border: 1px solid var(--theme-warning-border) !important;
+}
+:root[data-solenos-theme="dark"] .history-source-warning :is(strong,span,p,svg) {
+  color: var(--theme-warning-fg) !important;
+}
+:root[data-solenos-theme="dark"] .history-empty,
+:root[data-solenos-theme="dark"] .history-error,
+:root[data-solenos-theme="dark"] .history-state,
+:root[data-solenos-theme="dark"] .history-event-card,
+:root[data-solenos-theme="dark"] .history-original-text,
+:root[data-solenos-theme="dark"] .history-integrity-note {
+  background: var(--theme-subtle-bg);
+  color: var(--theme-panel-fg);
+  border-color: var(--theme-panel-border);
+}
+:root[data-solenos-theme="dark"] .history-event-open,
+:root[data-solenos-theme="dark"] .history-event-open :is(strong,span) {
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .history-event-category,
+:root[data-solenos-theme="dark"] .history-detail-category,
+:root[data-solenos-theme="dark"] .history-detail-section h3 {
+  color: #b9d5b5;
+}
+:root[data-solenos-theme="dark"] .history-drawer button:not(.history-filter-chip):not(.history-event-open) {
+  color: var(--theme-panel-fg);
+}
+
+/* Living Care Record cards, empty states, companion entry and refresh actions. */
+:root[data-solenos-theme="dark"] .lcr-record-section :is(
+  .lcr-section-heading,
+  .lcr-situation-assessment,
+  .lcr-current-fact,
+  .lcr-history-details,
+  .lcr-assessment-details,
+  .lcr-companion-entry
+) {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .lcr-record-section :is(
+  .lcr-section-heading h2,
+  .lcr-entry-heading h3,
+  .lcr-current-fact h4,
+  .lcr-current-fact > strong,
+  .lcr-companion-entry h2,
+  .lcr-companion-entry p,
+  .lcr-history-details > summary,
+  .lcr-assessment-details > summary
+) {
+  color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .lcr-record-section :is(
+  .lcr-eyebrow,
+  .lcr-section-heading p,
+  .lcr-entry-heading p,
+  .lcr-current-fact > p,
+  .lcr-current-fact > small,
+  .lcr-current-fact .lcr-entry-status
+) {
+  color: var(--theme-panel-muted) !important;
+}
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-text-action {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+  border-color: #a8c9a3 !important;
+}
+:root[data-solenos-theme="dark"] .lcr-record-section :is(.lcr-empty-state, .lcr-empty, [data-empty-state]) {
+  background: var(--theme-panel-bg);
+  color: var(--theme-panel-fg);
+  border-color: var(--theme-panel-border);
+}
+
+/* Appointment workspace uses a deliberate light-card treatment in the base CSS.
+   Keep the surface light and force every foreground, including muted helper text,
+   SVG icons and action labels, to a readable dark value. */
+:root[data-solenos-theme="dark"] .appointment-workspace {
+  background: #ffffff !important;
+  color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,small,label,li,summary,b,dt,dd,a,button
+) {
+  color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(svg,[role="img"]) {
+  color: #40584a !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  .guided-muted,.appointment-stage-intro,.appointment-lcr-brief-heading p
+) {
+  color: #52645a !important;
+}
+
+/* Settings cards and account controls were outside the earlier dark surface list. */
+:root[data-solenos-theme="dark"] .settings-section-wrap,
+:root[data-solenos-theme="dark"] .settings-section-wrap .mobile-settings-card,
+:root[data-solenos-theme="dark"] .settings-section-wrap .mobile-settings-account-controls,
+:root[data-solenos-theme="dark"] .mobile-settings > .mobile-settings-card,
+:root[data-solenos-theme="dark"] .settings-section-nav {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap :is(
+  h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,a,button
+),
+:root[data-solenos-theme="dark"] .mobile-settings-card :is(
+  h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,a,button
+),
+:root[data-solenos-theme="dark"] .mobile-settings-account-controls :is(
+  h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,a,button
+) {
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .settings-section-intro > span {
+  background: #34463a !important;
+  color: #f3f7f3 !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-intro :is(h2,p) {
+  color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap :is(
+  button,a,[role="button"]
+) {
+  border-color: var(--theme-panel-border);
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap :is(
+  button, a, [role="button"]
+):not(.solenos-display-trigger) {
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap :is(
+  svg,[role="img"]
+) {
+  color: currentColor !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap :is(
+  input:not([type="checkbox"]):not([type="radio"]),select,textarea
+) {
+  background: var(--theme-field-bg) !important;
+  color: var(--theme-field-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+  -webkit-text-fill-color: var(--theme-field-fg) !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap :is(input,textarea)::placeholder {
+  color: var(--theme-field-placeholder) !important;
+  -webkit-text-fill-color: var(--theme-field-placeholder) !important;
+}
