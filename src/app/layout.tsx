@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./mobile-app.css";
 import "./accessibility-overrides.css";
+import "./dark-mode-remediation.css";
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_PROMISE } from "@/lib/brand";
 
 export const metadata: Metadata = {
