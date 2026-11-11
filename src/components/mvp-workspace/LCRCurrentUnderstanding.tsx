@@ -548,7 +548,7 @@ function caregiverLabel(value?: string | null): string {
   if (!value?.trim()) return "Not recorded";
   const normalized = value.trim().toLowerCase();
   return CAREGIVER_LABELS[normalized]
-    ?? normalized.replaceAll("_", " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+    ?? normalized.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export function LCRCurrentUnderstanding() {
@@ -897,7 +897,7 @@ export function LCRCurrentUnderstanding() {
           title: item.request_text.trim(),
           action_type: "follow_up",
           rationale: (item.priority_reasons ?? []).join("; ") || item.description || "A persisted LCR follow-up request is recorded.",
-          limitations: `Information status: ${item.epistemic_status}. Registration does not resolve uncertainty or establish clinical urgency.`,
+          limitations: `Information status: ${caregiverLabel(item.epistemic_status)}. Saving this suggestion does not confirm the information or show how urgent it is.`,
           evidence_ids: item.evidence_ids,
           responsible_caregiver_id: session.caregiver.id,
           create_reminder: createReminderForSuggestion,
