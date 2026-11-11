@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { KeyRound, MonitorSmartphone, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { ensureAnonymousSession, getJSON, postJSON, deleteJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON, deleteJSON, signInToAccount } from "@/api/client";
 
 type Device = {
   id: string;
@@ -37,6 +37,9 @@ export function IdentityDeviceRecoveryPanel() {
   const [savingDevice, setSavingDevice] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [replacementRecoveryCode, setReplacementRecoveryCode] = useState("");
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const [error, setError] = useState("");
@@ -90,23 +93,34 @@ export function IdentityDeviceRecoveryPanel() {
     }
   };
 
-  const requestRecovery = async (event: FormEvent<HTMLFormElement>) => {
+  const recoverAccount = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setRecoveryBusy(true);
     setRecoveryMessage("");
+    setReplacementRecoveryCode("");
     setError("");
     try {
-      const response = await fetch("/api/v1/identity/recovery-requests", {
+      const response = await fetch("/api/v1/accounts/recover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, recovery_code: recoveryCode, new_password: newPassword }),
       });
-      const body = await response.json().catch(() => ({})) as { message?: string; detail?: string };
-      if (!response.ok) throw new Error(body.detail || "We couldn't submit the recovery request.");
-      setRecoveryMessage(body.message || "Request recorded. Additional verification is required.");
-      setEmail("");
+      const body = await response.json().catch(() => ({})) as {
+        message?: string;
+        detail?: string;
+        recovery_code?: string;
+      };
+      if (!response.ok) throw new Error(body.detail || "We couldn't recover this account.");
+      // The recovery endpoint revokes every old session. Sign in immediately
+      // with the new password to establish a fresh bearer on this device.
+      await signInToAccount(email, newPassword);
+      setRecoveryMessage(body.message || "Account recovered. You are signed in on this device.");
+      setReplacementRecoveryCode(body.recovery_code || "");
+      setRecoveryCode("");
+      setNewPassword("");
+      show("Account access restored.", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn't submit the recovery request.");
+      setError(e instanceof Error ? e.message : "We couldn't recover this account.");
     } finally {
       setRecoveryBusy(false);
     }
@@ -144,19 +158,32 @@ export function IdentityDeviceRecoveryPanel() {
         <Button variant="secondary" disabled={loading} onClick={() => void loadDevices()}>Refresh devices</Button>
       </div>
       <div style={{ borderTop: "1px solid var(--border, #d8ded8)", marginTop: "1rem", paddingTop: "1rem" }}>
-        <h3 className="mobile-settings-label"><KeyRound size={14} aria-hidden /> Account recovery request</h3>
+        <h3 className="mobile-settings-label"><KeyRound size={14} aria-hidden /> Recover an account</h3>
         <p className="mobile-settings-hint">
-          Submit the email address associated with an optional account. The response does not reveal whether an account exists. This records a pending request; automated password-reset delivery is not enabled yet, so this form does not itself restore access.
+          Use the one-time recovery code saved when the account was created or last rotated. A successful recovery resets the password and revokes every existing session. A registered device alone cannot recover an account.
         </p>
-        <form onSubmit={(event) => void requestRecovery(event)} style={{ display: "grid", gap: "0.7rem" }}>
+        <form onSubmit={(event) => void recoverAccount(event)} style={{ display: "grid", gap: "0.7rem" }}>
           <label className="mobile-settings-label" htmlFor="identity-recovery-email">Account email
             <input id="identity-recovery-email" className="mobile-settings-input" type="email" autoComplete="email" required maxLength={320} value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
+          <label className="mobile-settings-label" htmlFor="identity-recovery-code">One-time recovery code
+            <input id="identity-recovery-code" className="mobile-settings-input" type="text" autoComplete="off" required minLength={32} maxLength={200} value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value)} />
+          </label>
+          <label className="mobile-settings-label" htmlFor="identity-recovery-password">New password
+            <input id="identity-recovery-password" className="mobile-settings-input" type="password" autoComplete="new-password" required minLength={12} maxLength={256} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
+          </label>
           <Button type="submit" variant="secondary" loading={recoveryBusy} disabled={recoveryBusy}>
-            {recoveryBusy ? undefined : "Submit recovery request"}
+            {recoveryBusy ? undefined : "Recover account"}
           </Button>
         </form>
         {recoveryMessage && <p className="mobile-settings-hint" role="status">{recoveryMessage}</p>}
+        {replacementRecoveryCode && (
+          <div className="mobile-settings-hint" role="alert" style={{ border: "1px solid var(--border, #d8ded8)", borderRadius: "0.75rem", padding: "0.8rem" }}>
+            <strong>Save your replacement recovery code.</strong>
+            <code style={{ display: "block", overflowWrap: "anywhere", userSelect: "all", padding: "0.5rem 0" }}>{replacementRecoveryCode}</code>
+            <Button type="button" variant="secondary" onClick={() => setReplacementRecoveryCode("")}>I have saved the code</Button>
+          </div>
+        )}
       </div>
       {render()}
     </section>
