@@ -431,5 +431,34 @@ await record("frontend network failure is surfaced rather than rendered as empty
   await context.close();
 });
 
+
+await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
+  const surfaces = ["/workspace/daily-care", "/workspace", "/workspace/companion", "/workspace/appointments", "/workspace/documents", "/workspace/settings", "/workspace/community"];
+  for (const route of surfaces) {
+    const { context, page, observed } = await createBrowserPage(session, route);
+    await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
+    const bodyText = await page.locator("body").innerText();
+    assert.ok(bodyText.trim().length > 40, `surface did not render: ${route}`);
+    await verifyMobile(page);
+    if (route === "/workspace") {
+      assert.ok(observed.some((item) => item.path.includes("/care-continuity/current-care") && item.status === 200), "LCR screen did not consume the persisted current-care API");
+    }
+    if (route === "/workspace/community") await page.waitForURL("**/workspace", { timeout: 10_000 });
+    await context.close();
+  }
+
+  const companion = await createBrowserPage(session, "/workspace/companion");
+  await companion.page.locator("#companion-message-input").fill("What did the caregiver record about sleep and appetite?");
+  await companion.page.getByRole("button", { name: "Send" }).click();
+  await companion.page.waitForFunction(() => {
+    const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
+    return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
+  }, { timeout: 210_000 });
+  const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
+  assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
+  await verifyMobile(companion.page);
+  await companion.context.close();
+});
+
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
