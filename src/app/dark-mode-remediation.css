@@ -636,3 +636,123 @@
   color: #f3f7f3 !important;
   -webkit-text-fill-color: #f3f7f3 !important;
 }
+
+
+/* Dark-mode text contract requested for explanatory product surfaces.
+   Every text node is white; every surface in scope stays dark.
+   The marketing landing page does not use .public-shell and is unchanged. */
+:root[data-solenos-theme="dark"] .public-shell {
+  background: #111813 !important;
+  color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .public-shell :is(
+  header, nav, main, section, article, footer, aside, blockquote,
+  div, li, ol, ul
+) {
+  background-color: #18221b !important;
+  color: #ffffff !important;
+  border-color: #465449 !important;
+}
+:root[data-solenos-theme="dark"] .public-shell :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,em,b,i,small,li,dt,dd,label,
+  summary,figcaption,blockquote,a,time
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .public-shell :is(
+  a,button,[role="button"]
+) {
+  background-color: #26342a !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .public-shell :is(
+  input,select,textarea
+) {
+  background: #111813 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .public-shell :is(input,textarea)::placeholder {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .public-shell svg {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
+
+/* Appointment workspace: dark surfaces and strictly white foreground. */
+:root[data-solenos-theme="dark"] .appointment-workspace,
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  div,section,article,aside,header,footer,fieldset
+) {
+  background-color: #18221b !important;
+  color: #ffffff !important;
+  border-color: #465449 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,small,label,li,summary,b,dt,dd,a,
+  button,legend,th,td
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  input,select,textarea
+) {
+  background: #111813 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(input,textarea)::placeholder {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace svg {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
+
+/* Settings consent, opt-in/out confirmations and all explanatory copy. */
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel,
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel :is(
+  div,section,article,aside,fieldset
+) {
+  background-color: #18221b !important;
+  color: #ffffff !important;
+  border-color: #465449 !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel :is(
+  h1,h2,h3,h4,h5,h6,p,span,strong,small,label,li,dt,dd,a,button,
+  legend,summary
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel :is(
+  .policy-consent-message,.policy-required-ack,.policy-improvement-details,
+  .panel-muted,.consent-checkbox
+) {
+  background-color: #18221b !important;
+  color: #ffffff !important;
+  border-color: #465449 !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel :is(
+  input,select,textarea
+) {
+  background: #111813 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel svg {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
