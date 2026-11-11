@@ -53,7 +53,7 @@ jobs:
   deploy:
     name: Deploy production to Netlify
     needs: verify
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && !contains(github.event.head_commit.message, '[verify-only]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production

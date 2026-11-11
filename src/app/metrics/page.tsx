@@ -57,8 +57,12 @@ export default async function MetricsPage({
             <span className="value">{data.growth.users_created_30d}</span>
           </div>
           <div className="ops-stat">
-            <span className="label">Monthly growth %</span>
-            <span className="value">{data.growth.monthly_growth_pct ?? "—"}</span>
+            <span className="label">Users prior 30d</span>
+            <span className="value">{data.growth.users_created_previous_30d}</span>
+          </div>
+          <div className="ops-stat">
+            <span className="label">30d growth vs prior 30d</span>
+            <span className="value">{data.growth.monthly_growth_pct == null ? "—" : `${data.growth.monthly_growth_pct}%`}</span>
           </div>
         </div>
       </section>
@@ -109,7 +113,7 @@ export default async function MetricsPage({
             <span className="value">{data.engagement.avg_inputs_per_user}</span>
           </div>
           <div className="ops-stat">
-            <span className="label">Records reopened</span>
+            <span className="label">Records revisited (2+ days)</span>
             <span className="value">{data.engagement.care_records_reopened}</span>
           </div>
           <div className="ops-stat">
@@ -123,7 +127,7 @@ export default async function MetricsPage({
         <h2>D · Continuity health</h2>
         <div className="ops-snapshot">
           <div className="ops-stat">
-            <span className="label">Records reopened</span>
+            <span className="label">Records revisited (2+ days)</span>
             <span className="value">{data.continuity.care_records_reopened}</span>
           </div>
           <div className="ops-stat">

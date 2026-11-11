@@ -88,6 +88,7 @@ export type OpsDashboardData = {
     verified_users: number;
     created_7d: number;
     created_30d: number;
+    created_previous_30d: number;
     most_recent_signup: string | null;
   };
   operational_cases: {
@@ -138,6 +139,7 @@ export type InvestorDashboardData = {
     total_registered_users: number;
     users_created_7d: number;
     users_created_30d: number;
+    users_created_previous_30d: number;
     monthly_growth_pct: number | null;
   };
   adoption: {
@@ -273,6 +275,7 @@ export async function loadOpsDashboard(input?: {
     verifiedUsers,
     users7d,
     users30d,
+    usersPrevious30d,
     recentSignupRows,
     casesTotal,
     casesActive,
@@ -308,6 +311,13 @@ export async function loadOpsDashboard(input?: {
     ),
     scalar(pool, `SELECT COUNT(*)::int AS v FROM users WHERE created_at > NOW() - INTERVAL '7 days'`),
     scalar(pool, `SELECT COUNT(*)::int AS v FROM users WHERE created_at > NOW() - INTERVAL '30 days'`),
+    scalar(
+      pool,
+      `SELECT COUNT(*)::int AS v
+       FROM users
+       WHERE created_at >= NOW() - INTERVAL '60 days'
+         AND created_at < NOW() - INTERVAL '30 days'`,
+    ),
     querySafe<{ created_at: string }>(
       pool,
       `SELECT created_at FROM users ORDER BY created_at DESC LIMIT 1`,
@@ -433,19 +443,37 @@ export async function loadOpsDashboard(input?: {
        WHERE user_id IS NOT NULL
        GROUP BY user_id
      ),
+     eligible AS (
+       SELECT user_id, d0
+       FROM first_day
+       WHERE d0 <= (NOW() AT TIME ZONE 'UTC')::date - 7
+     ),
      returned AS (
        SELECT DISTINCT e.user_id
        FROM solen_events e
-       JOIN first_day f ON f.user_id = e.user_id
+       JOIN eligible f ON f.user_id = e.user_id
        WHERE DATE(e.timestamp AT TIME ZONE 'UTC') > f.d0
          AND DATE(e.timestamp AT TIME ZONE 'UTC') <= f.d0 + 7
      )
-     SELECT COUNT(*)::int AS v FROM returned`,
+     SELECT CASE
+       WHEN COUNT(*) = 0 THEN 0
+       ELSE ROUND(100.0 * COUNT(r.user_id) / COUNT(*), 1)
+     END AS v
+     FROM eligible e
+     LEFT JOIN returned r ON r.user_id = e.user_id`,
   );
 
   const careRecordsReopened = await scalar(
     pool,
-    `SELECT COUNT(*)::int AS v FROM solen_events WHERE event_name = 'care_record_viewed'`,
+    `SELECT COUNT(*)::int AS v
+     FROM (
+       SELECT metadata->>'case_id' AS case_id
+       FROM solen_events
+       WHERE event_name = 'care_record_viewed'
+         AND metadata->>'case_id' IS NOT NULL
+       GROUP BY metadata->>'case_id'
+       HAVING COUNT(DISTINCT DATE(timestamp AT TIME ZONE 'UTC')) >= 2
+     ) revisited_cases`,
   );
   const aptPrep = await scalar(
     pool,
@@ -503,7 +531,7 @@ export async function loadOpsDashboard(input?: {
 
   // Memory fallback when DB empty
   const mem = memoryEventCounts();
-  const useMemory = !pool || (totalEvents === 0 && mem.length > 0);
+  const useMemory = process.env.NODE_ENV !== "production" && (!pool || (totalEvents === 0 && mem.length > 0));
 
   let rawEvents: RawEventRow[] = [];
   let rawTotal = 0;
@@ -561,7 +589,7 @@ export async function loadOpsDashboard(input?: {
 
   const lastEvent =
     lastEventRows[0]?.timestamp ??
-    (mem.length > 0 ? mem[mem.length - 1]!.timestamp : null);
+    (process.env.NODE_ENV !== "production" && mem.length > 0 ? mem[mem.length - 1]!.timestamp : null);
 
   let ingestion: "healthy" | "warning" | "unknown" = "unknown";
   if (lastEvent) {
@@ -575,8 +603,8 @@ export async function loadOpsDashboard(input?: {
 
   return {
     founder: {
-      users: totalRegistered || totalUsersEvent,
-      active_care_cases: casesActive || careCasesEvent,
+      users: totalRegistered,
+      active_care_cases: casesActive,
       returning_users: returningUsers,
       retention_7d: retention7d,
       care_records_reopened: careRecordsReopened,
@@ -597,6 +625,7 @@ export async function loadOpsDashboard(input?: {
       verified_users: verifiedUsers,
       created_7d: users7d,
       created_30d: users30d,
+      created_previous_30d: usersPrevious30d,
       most_recent_signup: recentSignupRows[0]?.created_at ?? null,
     },
     operational_cases: {
@@ -651,7 +680,7 @@ export async function loadOpsDashboard(input?: {
       sample_error_message: e.sample_error_message ?? "",
     })),
     system: {
-      total_events: totalEvents || mem.length,
+      total_events: pool ? totalEvents : mem.length,
       events_24h: events24h,
       last_event_received: lastEvent,
       ingestion_health: ingestion,
@@ -659,22 +688,23 @@ export async function loadOpsDashboard(input?: {
       query_latency_ms: queryLatency,
     },
     raw_events: rawEvents,
-    raw_total: rawTotal || mem.length,
+    raw_total: rawTotal,
   };
 }
 
 export async function loadInvestorDashboard(): Promise<InvestorDashboardData> {
   const ops = await loadOpsDashboard();
   const u30 = ops.operational_users.created_30d;
-  const uPrevApprox = Math.max(0, ops.operational_users.total_registered - u30);
+  const uPrevious30 = ops.operational_users.created_previous_30d;
   const monthlyGrowth =
-    uPrevApprox > 0 ? Math.round((u30 / uPrevApprox) * 1000) / 10 : null;
+    uPrevious30 > 0 ? Math.round(((u30 - uPrevious30) / uPrevious30) * 1000) / 10 : null;
 
   return {
     growth: {
       total_registered_users: ops.operational_users.total_registered,
       users_created_7d: ops.operational_users.created_7d,
       users_created_30d: ops.operational_users.created_30d,
+      users_created_previous_30d: ops.operational_users.created_previous_30d,
       monthly_growth_pct: monthlyGrowth,
     },
     adoption: {

@@ -12,7 +12,7 @@
   background: var(--ops-bg);
   color: var(--ops-fg);
   font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.45;
   padding: 1rem 1.25rem 3rem;
 }
@@ -176,4 +176,35 @@
   color: var(--ops-muted);
   margin: 0 0 1rem;
   max-width: 40rem;
+}
+
+
+@media (max-width: 640px) {
+  .ops-console {
+    padding: 1rem 0.85rem 2rem;
+    font-size: 13px;
+  }
+
+  .ops-header {
+    align-items: flex-start;
+  }
+
+  .ops-header h1 {
+    font-size: 19px;
+  }
+
+  .ops-snapshot {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .ops-stat .value {
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .ops-table th,
+  .ops-table td {
+    padding: 0.5rem 0.55rem;
+  }
 }

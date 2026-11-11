@@ -76,11 +76,11 @@ export default async function OpsPage({
             <span className="value">{data.founder.returning_users}</span>
           </div>
           <div className="ops-stat">
-            <span className="label">7-Day Retention</span>
-            <span className="value">{data.founder.retention_7d}</span>
+            <span className="label">7-Day Retention (eligible cohort)</span>
+            <span className="value">{data.founder.retention_7d}%</span>
           </div>
           <div className="ops-stat">
-            <span className="label">Care Records Reopened</span>
+            <span className="label">Records Revisited (2+ days)</span>
             <span className="value">{data.founder.care_records_reopened}</span>
           </div>
           <div className="ops-stat">
@@ -88,7 +88,7 @@ export default async function OpsPage({
             <span className="value">{data.founder.appointment_prep_sessions}</span>
           </div>
           <div className="ops-stat">
-            <span className="label">Open Errors</span>
+            <span className="label">Error Events (all time)</span>
             <span className="value">{data.founder.open_errors}</span>
           </div>
           <div className="ops-stat">
@@ -201,7 +201,7 @@ export default async function OpsPage({
           <h2>D · Continuity</h2>
           <div className="ops-panel">
             <div>Returning users: {data.continuity.returning_users}</div>
-            <div>7-day retention (users): {data.continuity.retention_7d}</div>
+            <div>7-day retention: {data.continuity.retention_7d}%</div>
             <div>Care records reopened: {data.continuity.care_records_reopened}</div>
             <div>Appointment prep: {data.continuity.appointment_prep_sessions}</div>
             <div>Avg days between visits: {data.continuity.avg_days_between_visits ?? "—"}</div>
