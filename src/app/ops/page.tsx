@@ -77,7 +77,7 @@ export default async function OpsPage({
           </div>
           <div className="ops-stat">
             <span className="label">7-Day Retention (eligible cohort)</span>
-            <span className="value">{data.founder.retention_7d}%</span>
+            <span className="value">{data.founder.retention_7d == null ? "—" : `${data.founder.retention_7d}%`}</span>
           </div>
           <div className="ops-stat">
             <span className="label">Records Revisited (2+ days)</span>
@@ -201,8 +201,8 @@ export default async function OpsPage({
           <h2>D · Continuity</h2>
           <div className="ops-panel">
             <div>Returning users: {data.continuity.returning_users}</div>
-            <div>7-day retention: {data.continuity.retention_7d}%</div>
-            <div>Care records reopened: {data.continuity.care_records_reopened}</div>
+            <div>7-day retention: {data.continuity.retention_7d == null ? "—" : `${data.continuity.retention_7d}%`}</div>
+            <div>Records revisited (2+ days): {data.continuity.care_records_reopened}</div>
             <div>Appointment prep: {data.continuity.appointment_prep_sessions}</div>
             <div>Avg days between visits: {data.continuity.avg_days_between_visits ?? "—"}</div>
             <div>Return visit events: {data.continuity.return_visit_count}</div>

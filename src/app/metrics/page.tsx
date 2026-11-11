@@ -38,7 +38,9 @@ export default async function MetricsPage({
       <p className="metrics-note">
         Aggregated company visibility only. No user IDs, sessions, raw events, or error
         payloads. Continuity health measures whether SolenOS is becoming caregivers&apos;
-        external memory.
+        external memory. Retention includes only users whose first recorded activity was at least
+        seven days ago. 30-day growth compares the latest 30 days with the immediately
+        preceding 30 days. These are product-usage measures, not revenue or paid conversion.
       </p>
 
       <section className="ops-section">
@@ -101,8 +103,8 @@ export default async function MetricsPage({
             <span className="value">{data.engagement.returning_users}</span>
           </div>
           <div className="ops-stat">
-            <span className="label">7d retention</span>
-            <span className="value">{data.engagement.retention_7d}</span>
+            <span className="label">7d retention (eligible cohort)</span>
+            <span className="value">{data.engagement.retention_7d == null ? "—" : `${data.engagement.retention_7d}%`}</span>
           </div>
           <div className="ops-stat">
             <span className="label">Avg sessions</span>

@@ -40,6 +40,18 @@ async function scalar(
   return typeof v === "number" ? v : Number(v) || 0;
 }
 
+async function nullableScalar(
+  pool: Pool | null,
+  sql: string,
+  params: unknown[] = [],
+): Promise<number | null> {
+  const rows = await querySafe<{ v: string | number | null }>(pool, sql, params);
+  const v = rows[0]?.v;
+  if (v == null) return null;
+  const parsed = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export type FunnelStep = {
   step: string;
   event_name: string;
@@ -69,7 +81,7 @@ export type OpsDashboardData = {
     users: number;
     active_care_cases: number;
     returning_users: number;
-    retention_7d: number;
+    retention_7d: number | null;
     care_records_reopened: number;
     appointment_prep_sessions: number;
     open_errors: number;
@@ -435,7 +447,7 @@ export async function loadOpsDashboard(input?: {
      ) t`,
   );
 
-  const retention7d = await scalar(
+  const retention7d = await nullableScalar(
     pool,
     `WITH first_day AS (
        SELECT user_id, MIN(DATE(timestamp AT TIME ZONE 'UTC')) AS d0
@@ -456,7 +468,7 @@ export async function loadOpsDashboard(input?: {
          AND DATE(e.timestamp AT TIME ZONE 'UTC') <= f.d0 + 7
      )
      SELECT CASE
-       WHEN COUNT(*) = 0 THEN 0
+       WHEN COUNT(*) = 0 THEN NULL
        ELSE ROUND(100.0 * COUNT(r.user_id) / COUNT(*), 1)
      END AS v
      FROM eligible e
