@@ -139,7 +139,7 @@ const reviewStatusLabel = (value: string) => ({
   supported: 'Matches the saved source',
   contested: 'Other information disagrees',
   complete: 'Complete',
-}[value] ?? value.replaceAll('_', ' ')
+}[value] ?? value.replaceAll('_', ' '))
 const reviewCriterionLabel = (value: string) => ({
   'source attribution': 'Who provided it',
   'independent corroboration': 'Whether there are separate reports',
