@@ -216,7 +216,7 @@ export default function TimelinePage() {
         </Button>
       </header>
 
-      <section aria-label="Latest recorded event" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "white", padding: 20, marginBottom: 20 }}>
+      <section aria-label="Latest recorded event" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "var(--theme-panel-bg)", padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
           <History size={19} aria-hidden />
           <h2 style={{ fontSize: 18, margin: 0 }}>Latest recorded event</h2>
@@ -239,7 +239,7 @@ export default function TimelinePage() {
 
       <section aria-label="Timeline controls" style={{ marginBottom: 20 }}>
         <label htmlFor="timeline-search" style={{ display: "block", fontWeight: 650, marginBottom: 8 }}>Search the care history</label>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--solenos-hairline)", background: "white", borderRadius: 12, padding: "0 12px", minHeight: 48 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--solenos-hairline)", background: "var(--theme-panel-bg)", borderRadius: 12, padding: "0 12px", minHeight: 48 }}>
           <Search size={18} aria-hidden />
           <input id="timeline-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search events, notes, tags, evidence IDs…" style={{ border: 0, outline: 0, flex: 1, minWidth: 0, padding: "12px 0", background: "transparent", color: "inherit", font: "inherit" }} />
         </div>
@@ -247,7 +247,7 @@ export default function TimelinePage() {
           {FILTERS.map((item) => {
             const active = filter === item.id;
             return (
-              <button key={item.id} type="button" aria-pressed={active} onClick={() => setFilter(item.id)} style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 999, padding: "9px 13px", minHeight: 40, background: active ? "#e4ede5" : "white", color: "#172b35", font: "inherit", fontWeight: active ? 700 : 500, cursor: "pointer" }}>
+              <button key={item.id} type="button" aria-pressed={active} onClick={() => setFilter(item.id)} style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 999, padding: "9px 13px", minHeight: 40, background: active ? "var(--theme-selected-bg)" : "var(--theme-panel-bg)", color: "var(--theme-panel-fg)", font: "inherit", fontWeight: active ? 700 : 500, cursor: "pointer" }}>
                 {item.label}
               </button>
             );
@@ -256,7 +256,7 @@ export default function TimelinePage() {
       </section>
 
       {error && (
-        <section role="alert" style={{ border: "1px solid #d8a7a7", borderRadius: 12, padding: 16, marginBottom: 20, background: "#fff8f8" }}>
+        <section role="alert" style={{ border: "1px solid #d8a7a7", borderRadius: 12, padding: 16, marginBottom: 20, background: "var(--theme-warning-bg)" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
             <AlertCircle size={20} aria-hidden />
             <div style={{ flex: 1 }}>
@@ -295,7 +295,7 @@ export default function TimelinePage() {
                   const category = eventCategory(event);
                   const description = parseDescription(event.description);
                   return (
-                    <article key={event.id} style={{ position: "relative", border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "white", overflow: "hidden" }}>
+                    <article key={event.id} style={{ position: "relative", border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "var(--theme-panel-bg)", overflow: "hidden" }}>
                       <span aria-hidden="true" style={{ position: "absolute", width: 10, height: 10, borderRadius: "50%", background: "#64866b", left: -24, top: 22, boxShadow: "0 0 0 4px var(--paper)" }} />
                       <button type="button" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)} style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", padding: 16, display: "block", color: "inherit", cursor: "pointer", font: "inherit" }}>
                         <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 8 }}>
