@@ -7,6 +7,12 @@ const drawer = fs.readFileSync(path.join(root, "src/components/app-shell/History
 const shell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "src/app/mobile-app.css"), "utf8");
 const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
+const evidenceReview = fs.readFileSync(path.join(root, "src/components/EvidenceReviewPanel.tsx"), "utf8");
+const evidenceCompletenessRoute = path.join(root, "src/app/workspace/evidence-completeness/page.tsx");
+assert.equal(fs.existsSync(evidenceCompletenessRoute), false, "internal evidence policy configuration must not be routable in the caregiver workspace");
+assert.doesNotMatch(evidenceReview, /workspace\/evidence-completeness|Review source completeness/, "caregiver evidence review must not link to internal policy configuration");
+assert.doesNotMatch(evidenceReview, /from ["']next\/link["']/, "the removed administrative route must not leave an unused navigation dependency");
+assert.match(drawer, /item\.person_id === session\.person\.id/, "history events must be restricted to the authenticated care-record person");
 
 assert.match(drawer, /ensureAnonymousSession/);
 assert.match(drawer, /getJSON\("\/events\/"/);
