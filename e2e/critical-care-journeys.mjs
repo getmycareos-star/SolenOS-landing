@@ -509,7 +509,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await companion.page.waitForFunction(() => {
     const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
     return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
-  }, { timeout: 210_000 });
+  }, undefined, { timeout: 210_000 });
   const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
   assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
   await verifyMobile(companion.page);
