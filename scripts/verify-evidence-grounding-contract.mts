@@ -57,19 +57,19 @@ for (const status of [
   assert(claimPanel.includes(`"${status}"`), `claim assessment UI must expose ${status}`);
 }
 assert(claimPanel.includes("/assessments"), "claim assessment UI must persist and retrieve assessment history");
-assert(claimPanel.includes("Exact source passage"), "claim assessment UI must require a source passage workflow");
+assert(claimPanel.includes("Exact words from the source"), "claim assessment UI must require a source passage workflow");
 assert(claimPanel.includes("superseded_by_claim_id"), "superseded claims must record a specific replacement claim");
-assert(claimPanel.includes("failed request is not an empty history"), "failed history reads must not be presented as empty history");
+assert(claimPanel.includes("This does not mean there are no past reviews"), "failed history reads must not be presented as empty history");
 console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
 assert(claimPanel.includes("/assessment-impact"), "claim assessment panel must retrieve persisted evidence-change/reassessment impact");
-assert(claimPanel.includes("Assessment impact could not be checked"), "failed assessment-impact reads must not imply that the assessment is current");
-assert(claimPanel.includes("No deterministic review trigger found"), "assessment-impact UI must state the bounded nature of a no-trigger result");
-assert(claimPanel.includes("does not prove truth or completeness"), "assessment-impact UI must disclose that deterministic triggers do not establish truth or completeness");
+assert(claimPanel.includes("New information could not be checked"), "failed assessment-impact reads must not imply that the assessment is current");
+assert(claimPanel.includes("No reason to repeat this review was found"), "assessment-impact UI must state the bounded nature of a no-trigger result");
+assert(claimPanel.includes("does not prove that the information is true or complete"), "assessment-impact UI must disclose that deterministic triggers do not establish truth or completeness");
 console.log("PASS: claim assessment impact is connected to the LCR with fail-safe error messaging and explicit interpretation limits.");
 assert(claimPanel.includes("/uncertainty/claims/dependencies"), "claim dependency UI must persist relationships through the authenticated backend API");
 assert(claimPanel.includes("/uncertainty/claims/"), "claim dependency UI must retrieve the persisted dependency graph");
-assert(claimPanel.includes("not proof of truth"), "dependency links must not be presented as proof of claim truth");
-assert(claimPanel.includes("Dependency persistence was not confirmed"), "failed dependency writes must not be shown as successful");
+assert(claimPanel.includes("do not prove it is true"), "dependency links must not be presented as proof of claim truth");
+assert(claimPanel.includes("This link could not be saved"), "failed dependency writes must not be shown as successful");
 console.log("PASS: claim dependency graph is connected to the LCR with failure-safe persistence messaging.");
 
 assert(panel.includes("/relationships"), "source-lineage UI must use the persisted relationship API");
