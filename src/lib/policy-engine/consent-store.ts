@@ -75,20 +75,18 @@ function commitProfiles(update: (candidate: Map<string, ConsentProfile>) => void
   for (const [id, profile] of candidate) current.set(id, profile);
 }
 
-export function getConsentProfile(userId: string): ConsentProfile | null {
-  return profiles().get(userId) ?? null;
+/**
+ * The synchronous legacy policy engine cannot query the authenticated
+ * PostgreSQL consent endpoint. Therefore its local cache is never proof of
+ * consent. Until a caller supplies server-verified consent, all policy reads
+ * fail closed. The caregiver-facing consent UI uses /api/v1/consent directly.
+ */
+export function getConsentProfile(_userId: string): ConsentProfile | null {
+  return null;
 }
 
-export function hasValidConsent(userId: string): boolean {
-  const profile = profiles().get(userId);
-  if (!profile || profile.limited_mode) return false;
-  return (
-    profile.accepted_terms_version === TERMS_OF_SERVICE_VERSION &&
-    profile.medical_disclaimer_acknowledged &&
-    profile.privacy_model_acknowledged &&
-    profile.multi_caregiver_acknowledged &&
-    profile.no_advertising_acknowledged
-  );
+export function hasValidConsent(_userId: string): boolean {
+  return false;
 }
 
 export function acceptConsent(input: ConsentAcceptanceInput): ConsentProfile {
