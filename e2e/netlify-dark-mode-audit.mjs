@@ -14,7 +14,6 @@ const routes = [
   "/workspace/appointments",
   "/workspace/settings",
   "/workspace/handoffs",
-  "/workspace/community",
   "/workspace/daily-care",
   "/workspace/documents",
 ];
