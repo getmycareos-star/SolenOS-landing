@@ -134,6 +134,7 @@ export default function QwenAssistPanel({
   return (
     <section
       aria-label={title}
+      className="qwen-assist-panel"
       style={{
         border: "1px solid var(--border)",
         borderRadius: "12px",
