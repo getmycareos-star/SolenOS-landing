@@ -31,7 +31,7 @@ async function backendRequest(path, { token, method = "GET", body } = {}) {
 
 async function connectRealBackend(page, { loseFirstAccountResponse = false } = {}) {
   let shouldLoseAccountResponse = loseFirstAccountResponse;
-  await page.route("**/api/v1/**", async (route) => {
+  await page.route("**/api/**", async (route) => {
     try {
       const requestUrl = new URL(route.request().url());
       const target = new URL(requestUrl.pathname + requestUrl.search, backend);
