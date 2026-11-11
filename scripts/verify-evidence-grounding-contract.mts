@@ -81,6 +81,10 @@ console.log("PASS: source-lineage UI persists explicit relationship assessments 
 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
 assert(companion.includes("Evidence source lineage"), "Companion handoff preview must render source lineage, not only type it");
+assert(companion.includes("claim_provenance: response.claim_provenance"), "Companion must consume claim-level source references from the backend");
+assert(companion.includes("Not matched to the wording in a saved record"), "Companion must visibly mark statements without a matching source");
+assert(companion.includes("What this answer is based on"), "Companion must show source details beside the specific statement they support");
+assert(!companion.includes("Inspect source record references"), "caregivers must not be shown a generic list of unrelated source IDs");
 assert(companion.includes("scope_truncated"), "Companion must disclose bounded or truncated lineage retrieval");
 assert(companion.includes("not proof") || companion.includes("not proof that sources are independent"), "Companion must not present missing lineage groups as proof of independence");
 console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
