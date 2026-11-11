@@ -8,6 +8,8 @@ on:
       - "e2e/netlify-dark-mode-audit.mjs"
       - "src/api/client.ts"
       - "src/app/workspace/**"
+      - "src/app/accessibility-overrides.css"
+      - "scripts/verify-handoff-source-provenance.mts"
       - "src/components/workflows/**"
       - "src/components/mvp-workspace/**"
       - "src/components/DocumentIntelligenceReview.tsx"
