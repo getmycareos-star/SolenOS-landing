@@ -55,6 +55,8 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     expiresAt: session.expires_at,
   });
   const page = await context.newPage();
+  const observed = [];
+  page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
   await page.route("**/api/**", async (route) => {
     const source = new URL(route.request().url());
     const target = new URL(source.pathname + source.search, backend);
@@ -64,20 +66,12 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     await route.fulfill({ response });
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
-  return { context, page };
+  return { context, page, observed };
 }
 
-async function browserPageConsumes(page, pathname) {
-  const observed = [];
-  const listener = (response) => {
-    const url = new URL(response.url());
-    if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() });
-  };
-  page.on("response", listener);
+async function browserPageConsumes(page, pathname, observed) {
   await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
-  page.off("response", listener);
   return observed.filter((item) => item.path.includes(pathname));
-}
 
 async function verifyMobile(page) {
   const dimensions = await page.evaluate(() => ({
@@ -384,14 +378,14 @@ await record("12 account recovery preserves care record", async () => {
 
 // UI consumption checks: real frontend pages use the proxied backend, including mobile layout and failure UI.
 await record("frontend consumes persisted documents and appointments", async () => {
-  const { context, page } = await createBrowserPage(session, "/workspace/documents");
-  const documentRequests = await browserPageConsumes(page, "/evidence/");
+  const { context, page, observed } = await createBrowserPage(session, "/workspace/documents");
+  const documentRequests = await browserPageConsumes(page, "/evidence/", observed);
   assert.ok(documentRequests.some((item) => item.status === 200), JSON.stringify(documentRequests));
   await verifyMobile(page);
   await context.close();
 
   const appointmentPage = await createBrowserPage(session, "/workspace/appointments");
-  const appointmentRequests = await browserPageConsumes(appointmentPage.page, "/appointment-workspaces");
+  const appointmentRequests = await browserPageConsumes(appointmentPage.page, "/appointment-workspaces", appointmentPage.observed);
   assert.ok(appointmentRequests.some((item) => item.status === 200), JSON.stringify(appointmentRequests));
   await verifyMobile(appointmentPage.page);
   await appointmentPage.context.close();
