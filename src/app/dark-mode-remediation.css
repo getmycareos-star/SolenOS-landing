@@ -245,3 +245,218 @@
   color: var(--theme-field-placeholder) !important;
   -webkit-text-fill-color: var(--theme-field-placeholder) !important;
 }
+
+
+/* Error and retry controls remain legible when an API-backed panel is unavailable. */
+:root[data-solenos-theme="dark"] .history-drawer .history-error button,
+:root[data-solenos-theme="dark"] .history-drawer .history-empty button {
+  background: #34463a !important;
+  color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-topbar .solenos-chat-brand-mark {
+  background: #dce9df !important;
+  color: #244b38 !important;
+}
+
+/* Companion uses component-scoped styled-jsx with light-only literals.
+   Override its semantic surfaces at the shell boundary, not individual routes. */
+:root[data-solenos-theme="dark"] .companion-shell {
+  color: #f3f7f3 !important;
+  --cc-ink: #f3f7f3;
+  --cc-muted: #c4d0c6;
+  --cc-line: #526256;
+}
+:root[data-solenos-theme="dark"] .companion-shell :is(
+  .companion-topbar,
+  .companion-conversation,
+  .companion-purpose,
+  .companion-boundary,
+  .companion-side-note,
+  .companion-starter,
+  .companion-composer,
+  .companion-pending-care-updates,
+  .companion-care-update
+) {
+  background: #202a24 !important;
+  color: #f3f7f3 !important;
+  border-color: #526256 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell :is(
+  .companion-purpose,
+  .companion-boundary,
+  .companion-side-note,
+  .companion-starter,
+  .companion-composer,
+  .companion-conversation
+) {
+  box-shadow: none;
+}
+:root[data-solenos-theme="dark"] .companion-shell :is(
+  .companion-brand h2,
+  .companion-purpose h3,
+  .companion-boundary strong,
+  .companion-empty-heading h3,
+  .companion-starter-copy strong,
+  .companion-side-note strong,
+  .companion-message-meta strong,
+  .companion-bubble,
+  .companion-care-update-heading,
+  .companion-care-update > p,
+  .companion-pending-care-heading h3
+) {
+  color: #f3f7f3 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell :is(
+  .companion-eyebrow,
+  .companion-kicker,
+  .companion-purpose-copy p,
+  .companion-boundary span,
+  .companion-empty-heading > span,
+  .companion-empty-heading p,
+  .companion-starter-copy > span,
+  .companion-starter-arrow,
+  .companion-empty-footnote,
+  .companion-thread-label,
+  .companion-message-meta,
+  .companion-message-meta time,
+  .companion-provenance,
+  .companion-provenance-details,
+  .companion-side-note p,
+  .companion-input-hint,
+  .companion-footer-note,
+  .companion-care-update-source
+) {
+  color: #c4d0c6 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell :is(
+  .companion-mark,
+  .companion-empty-icon,
+  .companion-starter-icon,
+  .companion-side-note-icon,
+  .companion-avatar
+) {
+  background: #34463a !important;
+  color: #dce9df !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-starter:hover {
+  background: #34463a !important;
+  border-color: #8ba58d !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-new,
+:root[data-solenos-theme="dark"] .companion-shell .companion-add-button {
+  background: #34463a !important;
+  color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-composer textarea {
+  background: transparent !important;
+  color: #f3f7f3 !important;
+  -webkit-text-fill-color: #f3f7f3 !important;
+  caret-color: #f3f7f3 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-composer textarea::placeholder {
+  color: #c4d0c6 !important;
+  -webkit-text-fill-color: #c4d0c6 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-composer-footer {
+  border-color: #526256 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-send {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+  border-color: #a8c9a3 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-send:disabled {
+  background: #34463a !important;
+  color: #d0dbd2 !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-care-update-error {
+  color: #ffb4ab !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-error {
+  background: #3b3020 !important;
+  color: #fff0cf !important;
+  border-color: #a8894d !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-emergency {
+  background: #3b2323 !important;
+  color: #ffdad6 !important;
+  border-color: #a85b55 !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell .companion-emergency :is(strong,p) {
+  color: #ffdad6 !important;
+}
+
+/* LCR's header and Companion handoff entry sit outside .lcr-record-section. */
+:root[data-solenos-theme="dark"] .lcr-home .lcr-header :is(
+  .lcr-eyebrow,.lcr-intro,.lcr-record-meta,.lcr-record-meta span
+) {
+  color: #d0dbd2 !important;
+}
+:root[data-solenos-theme="dark"] .lcr-home .lcr-companion-entry {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .lcr-home .lcr-companion-entry :is(
+  h1,h2,h3,h4,p,span,strong,small,label,button,svg
+) {
+  color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .lcr-home .lcr-companion-entry button {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+}
+
+/* Daily Care's recoverable load-error surface is not a white-on-white exception. */
+:root[data-solenos-theme="dark"] .daily-care-error {
+  background: #202a24 !important;
+  color: #f3f7f3 !important;
+  border-color: #526256 !important;
+}
+:root[data-solenos-theme="dark"] .daily-care-error :is(h1,h2,h3,p) {
+  color: #f3f7f3 !important;
+}
+:root[data-solenos-theme="dark"] .daily-care-error button {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+  border-color: #a8c9a3 !important;
+}
+
+/* Handoff sharing surfaces must not combine dark backgrounds with light-mode ink. */
+:root[data-solenos-theme="dark"] .companion-handoff-sharing,
+:root[data-solenos-theme="dark"] .companion-handoff-sharing > section,
+:root[data-solenos-theme="dark"] .companion-handoff-sharing [style*="background"] {
+  background: #202a24 !important;
+  color: #f3f7f3 !important;
+  border-color: #526256 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing :is(
+  h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,summary,button,svg
+) {
+  color: #f3f7f3 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing button {
+  background: #34463a !important;
+  color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing a {
+  color: #b9d5b5 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing [role="alert"] {
+  color: #ffb4ab !important;
+}
+
+/* Appointment primary action and Settings eyebrow use explicit readable pairs. */
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-primary {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+  border-color: #a8c9a3 !important;
+}
+:root[data-solenos-theme="dark"] .settings-page-heading .settings-eyebrow {
+  color: #b9d5b5 !important;
+}
