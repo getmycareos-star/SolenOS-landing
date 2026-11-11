@@ -1,5 +1,4 @@
-import { apiUrl, safeJson } from "@/lib/api-url";
-import { ensureAnonymousSession, postFormData, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postFormData, postJSON } from "@/api/client";
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputEntryMethod } from "@/lib/input-entry-contract";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
@@ -8,43 +7,37 @@ function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-async function persistOriginalDocument(file: File, extractedText: string): Promise<string> {
+async function persistOriginalDocument(file: File): Promise<string> {
   const session = await ensureAnonymousSession();
   const form = new FormData();
   form.append("file", file);
   form.append("person_id", session.person.id);
   form.append("caregiver_id", session.caregiver.id);
   form.append("evidence_type", "document");
-  form.append("extracted_text", extractedText.slice(0, 100_000));
-  const result = (await postFormData("/upload", form)) as { evidence_id?: string; persisted?: boolean };
-  if (!result.persisted || !result.evidence_id) throw new Error("The original file was not confirmed as saved.");
-
-  // Snap, Scan and Upload converge on the same server-owned extraction lifecycle.
-  // The original upload is already durable; an unavailable Qwen run must not
-  // discard it or prevent the caregiver from continuing.
-  try {
-    await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/extract", {});
-    try {
-      await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/intelligence", {});
-    } catch {
-      // The saved extraction remains available for an explicit Qwen retry in Documents.
-    }
-  } catch {
-    // Preserve the successful upload even if OCR/extraction is unavailable.
-    // The Documents workspace exposes the original for a later extraction retry.
+  // The server must extract from the immutable uploaded bytes. Client OCR/text is
+  // deliberately not treated as authoritative source material.
+  form.append("extracted_text", "");
+  const result = (await postFormData("/upload", form)) as {
+    evidence_id?: string;
+    persisted?: boolean;
+  };
+  if (!result.persisted || !result.evidence_id) {
+    throw new Error("The original file was not confirmed as saved.");
   }
-  window.dispatchEvent(new Event("careRecordUpdated"));
   return result.evidence_id;
 }
 
-/** Extract file → AttachedDocument. Same path for Scan / Snap / Upload / Share. */
+/**
+ * Snap, Scan, Upload and Share all follow the same order:
+ * persist original -> server extraction/OCR -> Qwen candidate review.
+ * Extraction failure never deletes or discards the already-saved original.
+ */
 export async function extractAttachedDocument(
   file: File,
   entryMethod: InputEntryMethod,
 ): Promise<AttachedDocument> {
-  const id = createDocId();
   const base: AttachedDocument = {
-    id,
+    id: createDocId(),
     name: file.name,
     mimeType: file.type || "application/octet-stream",
     extractedText: "",
@@ -53,131 +46,75 @@ export async function extractAttachedDocument(
     sourceFile: file,
   };
 
-  if (file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name)) {
-    try {
-      const text = (await file.text()).trim();
-      if (text) {
-        try {
-          const boundedText = text.slice(0, 100_000);
-          const evidenceId = await persistOriginalDocument(file, boundedText);
-          return { ...base, evidenceId, extractedText: boundedText, status: "ready" };
-        } catch {
-          return { ...base, extractedText: text, status: "failed", errorNote: "The text was read, but the original file could not be saved to the Living Care Record. Retry the upload before submitting it." };
-        }
-      }
-    } catch {
-      /* fall through */
-    }
-  }
-
+  let evidenceId: string;
   try {
-    const form = new FormData();
-    form.append("file", file);
-    // Bound the request so a slow/cold extractor never leaves the UI on "Reading…" forever.
-    const controller = new AbortController();
-    const timeoutMs = 40_000;
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    let res: Response;
-    try {
-      const session = await ensureAnonymousSession();
-      res = await fetch(apiUrl("/api/extract"), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: form,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timer);
-    }
-    let data: {
-      ok?: boolean;
-      document?: {
-        id: string;
-        name: string;
-        mime_type: string | null;
-        extracted_text: string;
-        extracted_text_preview: string;
-        extracted_char_count: number;
-        ocr_confidence?: number | null;
-        extraction_source?: string;
-      };
-      note?: string;
-      message?: string;
-      error?: string;
-    } = {};
-    try {
-      data = (await safeJson(res)) as typeof data;
-    } catch (err) {
-      data = { error: err instanceof Error ? err.message : "Extraction failed" };
-    }
-
-    const doc = data.document;
-    if (res.status === 415 && file.type.startsWith("image/")) {
-      try {
-        const evidenceId = await persistOriginalDocument(file, "");
-        return {
-          ...base,
-          evidenceId,
-          status: "ready",
-          errorNote:
-            "This image was saved as evidence, but scanned-image text extraction is not available in this deployment. Type the key details before submitting.",
-        };
-      } catch {
-        return {
-          ...base,
-          status: "failed",
-          errorNote:
-            "Scanned-image text extraction is not available, and the original image could not be saved. Type the key details instead.",
-        };
-      }
-    }
-    if (!res.ok || !data.ok || !doc?.extracted_text?.trim()) {
-      const isImage = file.type.startsWith("image/");
-      return {
-        ...base,
-        status: "failed",
-        errorNote: sanitizeCaregiverErrorMessage(
-          data.note ??
-            data.message ??
-            data.error ??
-            (isImage
-              ? "Could not read text from this image yet. Type what you see, or try another photo/PDF."
-              : "Could not read this document. Try another file, or type the key details."),
-        ),
-      };
-    }
-
-    let evidenceId: string;
-    try {
-      evidenceId = await persistOriginalDocument(file, doc.extracted_text.trim().slice(0, 100_000));
-    } catch {
-      return {
-        ...base, id: doc.id, extractedText: doc.extracted_text.trim().slice(0, 100_000), status: "failed",
-        errorNote: "The text was extracted, but the original file could not be saved to the Living Care Record. Retry the upload before submitting it.",
-      };
-    }
-
-    return {
-      ...base,
-      id: doc.id,
-      evidenceId,
-      name: doc.name,
-      mimeType: doc.mime_type ?? base.mimeType,
-      extractedText: doc.extracted_text.trim(),
-      extractedTextPreview: doc.extracted_text_preview,
-      extractedCharCount: doc.extracted_char_count,
-      status: "ready",
-      ocrConfidence: doc.ocr_confidence ?? null,
-    };
-  } catch (e) {
-    const aborted = e instanceof DOMException && e.name === "AbortError";
+    evidenceId = await persistOriginalDocument(file);
+  } catch (error) {
     return {
       ...base,
       status: "failed",
       errorNote: sanitizeCaregiverErrorMessage(
-        aborted
-          ? "Reading this document is taking too long. You can try again, or type the key details."
-          : "Could not reach the document reader. You can still type what the document says.",
+        error instanceof Error
+          ? error.message
+          : "The original document could not be saved. Retry the upload.",
+      ),
+    };
+  }
+
+  // The original is now durable. Do not route through the legacy /api/extract
+  // endpoint: it made extraction a prerequisite for upload and bypassed the
+  // evidence-bound document lifecycle used by Documents and LCR review.
+  try {
+    const extraction = (await postJSON(
+      "/documents/" + encodeURIComponent(evidenceId) + "/extract",
+      {},
+    )) as { analysis_id?: string; extraction_method?: string };
+
+    if (!extraction.analysis_id) {
+      throw new Error("The server saved the original but did not return an extraction record.");
+    }
+
+    const persisted = (await getJSON(
+      "/documents/analyses/" + encodeURIComponent(extraction.analysis_id),
+    )) as {
+      extracted_text?: string;
+      extracted_char_count?: number;
+      extraction_method?: string;
+    };
+
+    let reviewNote: string | undefined;
+    try {
+      await postJSON(
+        "/documents/" + encodeURIComponent(evidenceId) + "/intelligence",
+        {},
+      );
+    } catch {
+      reviewNote =
+        "The original and extracted text are saved. Automated document review is temporarily unavailable; retry it from Documents.";
+    }
+
+    window.dispatchEvent(new Event("careRecordUpdated"));
+    return {
+      ...base,
+      evidenceId,
+      name: file.name,
+      mimeType: file.type || base.mimeType,
+      extractedText: (persisted.extracted_text || "").trim(),
+      extractedCharCount: persisted.extracted_char_count,
+      extractionSource: persisted.extraction_method || extraction.extraction_method,
+      status: "ready",
+      errorNote: reviewNote,
+    };
+  } catch (error) {
+    window.dispatchEvent(new Event("careRecordUpdated"));
+    return {
+      ...base,
+      evidenceId,
+      status: "failed",
+      errorNote: sanitizeCaregiverErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "The original is saved, but text extraction failed. Retry extraction from Documents.",
       ),
     };
   }
