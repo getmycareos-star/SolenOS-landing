@@ -256,7 +256,7 @@ export default function TimelinePage() {
       </section>
 
       {error && (
-        <section role="alert" style={{ border: "1px solid #d8a7a7", borderRadius: 12, padding: 16, marginBottom: 20, background: "var(--theme-warning-bg)" }}>
+        <section role="alert" style={{ border: "1px solid var(--theme-warning-border)", borderRadius: 12, padding: 16, marginBottom: 20, background: "var(--theme-warning-bg)", color: "var(--theme-warning-fg)" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
             <AlertCircle size={20} aria-hidden />
             <div style={{ flex: 1 }}>
