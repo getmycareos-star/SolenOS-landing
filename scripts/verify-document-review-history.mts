@@ -6,6 +6,7 @@ const continuity = readFileSync("src/components/CareContinuityIntegrityPanel.tsx
 
 const source = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
 const capture = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
+const documentsPage = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 
 assert(
   source.includes("/documents/intelligence/") && source.includes("/review-history"),
@@ -38,5 +39,9 @@ assert(capture.includes('"/documents/" + encodeURIComponent(evidenceId) + "/inte
 assert(!capture.includes('apiUrl("/api/extract"'), "capture must not depend on the legacy extract-before-upload endpoint");
 assert(capture.includes('getJSON(') && capture.includes('/documents/analyses/'), "the capture UI must display the persisted server extraction, not client-only OCR text");
 assert(capture.includes('status: "failed"') && capture.includes('evidenceId,'), "an extraction failure must retain the evidence ID so the saved original remains recoverable");
+assert(documentsPage.includes("const saveReviewedPages") && documentsPage.includes('postFormData("/upload"'), "the Documents scan/upload flow must persist each original page first");
+assert(documentsPage.indexOf('postFormData("/upload"') < documentsPage.indexOf('"/documents/" + encodeURIComponent(stored.evidence_id) + "/extract"'), "the Documents scan/upload flow must upload original bytes before server extraction");
+assert(documentsPage.includes('"/documents/" + encodeURIComponent(stored.evidence_id) + "/intelligence"'), "the Documents scan/upload flow must invoke document intelligence after extraction");
+
 
 console.log("✓ accepting a document observation refreshes the LCR and care-continuity panels");
