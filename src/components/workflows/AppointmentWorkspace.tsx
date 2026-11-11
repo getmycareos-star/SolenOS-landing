@@ -450,7 +450,7 @@ export default function AppointmentWorkspace() {
         .guided-appointments li { display:flex; justify-content:space-between; gap:10px; margin:7px 0; font-size:12px; }
         .guided-footnote { margin:12px 0 0; color:var(--theme-panel-muted); font-size:10px; line-height:1.55; }
         .guided-capture-label { display:flex; flex-direction:column; gap:7px; margin-top:14px; color:var(--theme-panel-fg); font-size:12px; font-weight:750; }
-        .guided-capture-label textarea { width:100%; box-sizing:border-box; min-height:100px; padding:12px; border:1px solid var(--theme-panel-border); border-radius:10px; background:var(--theme-panel-bg); color:var(--theme-panel-fg); font:inherit; font-size:14px; line-height:1.55; resize:vertical; }
+        .guided-capture-label textarea { width:100%; box-sizing:border-box; min-height:100px; padding:12px; border:1px solid var(--theme-panel-border); border-radius:10px; background:var(--theme-field-bg); color:var(--theme-field-fg); font:inherit; font-size:14px; line-height:1.55; resize:vertical; }
         .guided-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
         .guided-primary,.guided-secondary { min-height:42px; padding:10px 14px; border:1px solid var(--theme-action-border); border-radius:11px; background:var(--theme-action-bg); color:var(--theme-action-fg); font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
         .guided-secondary { background:var(--theme-panel-bg); }
