@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { LivingArchiveMark } from "@/components/brand";
 
 export type QwenWorkflow =
   | "daily_capture" | "add_record" | "document" | "living_care_record"
@@ -175,6 +176,7 @@ export default function QwenAssistPanel({
           </button>
         </div>
       </div>
+      {loading && <div style={{ marginTop: 10 }}><LivingArchiveMark size="sm" label="Working on your request…" /></div>}
 
       {error && <p role="alert" style={{ color: "var(--theme-warning-fg)", background: "var(--theme-warning-bg)", border: "1px solid var(--theme-warning-border)", borderRadius: "8px", padding: "10px 12px", fontSize: "14px", lineHeight: 1.5, marginTop: "10px" }}>{error}</p>}
       {reply && (
