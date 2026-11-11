@@ -851,6 +851,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Sources for this answer">
                       <strong>What this answer is based on</strong>
                       <p>Each statement is checked against the wording in saved records. A match does not prove that a report is true or that two records came from different people.</p>
+                      <p><strong>Inspect source record references</strong></p>
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
@@ -895,8 +896,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       ))}
                       <p>Conversation only. Nothing in this answer was added to the Living Care Record.</p>
                     </section>}
-                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">A review of how current these records are is not available. Their currentness is unknown.</p>}
-                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No review of how current these records are was returned. This does not mean they are current.</p>}
+                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">Freshness assessment storage is unavailable in this schema. A review of how current these records are is not available. Their currentness is unknown.</p>}
+                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No freshness assessments were returned. No review of how current these records are was returned. This does not mean they are current.</p>}
                   </div>
                 </article>
               })}
