@@ -139,6 +139,8 @@ export default function QuickDailyCheckIn() {
         throw new Error("The server did not confirm that this update was saved.");
       }
 
+      // The LCR screen subscribes to this event and reloads from PostgreSQL.
+      window.dispatchEvent(new Event("careRecordUpdated"));
       setReceipt({
         id: String(response.id),
         summary,

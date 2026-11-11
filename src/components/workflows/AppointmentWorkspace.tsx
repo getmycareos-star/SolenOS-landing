@@ -11,6 +11,9 @@ type PreparationBrief = {
   facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null }>
   events: Array<{ source_id: string; title: string; description?: string | null; occurred_at?: string | null; status: string }>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
+  assertions: Array<{ source_id: string; field: string; asserted_value: string; assertion_kind: string; assertion_status: string; source_label: string; source_text?: string | null; event_time_text?: string | null; observed_at?: string | null; recorded_at?: string | null; evidence_ids: string[]; interpretation_limit: string }>
+  open_questions: Array<{ source_id: string; question: string; intended_answerer_role?: string | null; intended_answerer_label?: string | null; necessity: string; necessity_rationale?: string | null; priority: string; status: string; evidence_ids: string[]; asked_at?: string | null }>
+  contradictions: Array<{ source_id: string; field: string; description: string; resolution_status: string; resolution_notes?: string | null; unresolved_remainder?: string | null; source_assertion_ids: string[]; evidence_ids: string[]; created_at?: string | null }>
   limitations: string[]
   evidence_lineage: {
     status: string
@@ -46,7 +49,7 @@ type PreparationBrief = {
     history_complete: boolean
     interpretation_limit: string
   }
-  source_coverage: { evidence_freshness_assessments: string }
+  source_coverage: { evidence_freshness_assessments: string; open_questions: string; contradictions: string; medications_and_allergies: string }
 }
 type WorkspaceRecord = {
   id: string
@@ -193,7 +196,8 @@ export default function AppointmentWorkspace() {
     try {
       const result = await postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number; written_to_lcr?: boolean }
       setOutcomeProposals(result.items || [])
-      setMessage((result.count || 0) + ' outcome candidate(s) prepared. Nothing has been added to the Living Care Record yet.')
+      if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
+      setMessage((result.count || 0) + ' outcome report(s) saved to the Living Care Record as unreviewed caregiver reports. Review each report to accept, correct or reject its status.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Outcome candidates could not be prepared.')
     } finally {
@@ -216,6 +220,7 @@ export default function AppointmentWorkspace() {
         '/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals/' + encodeURIComponent(proposal.id) + '/review',
         body,
       ) as { proposal: OutcomeProposal; corrected_proposal?: OutcomeProposal | null; written_to_lcr?: boolean }
+      if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
       setOutcomeProposals(current => {
         const updated = current.map(item => item.id === proposal.id ? result.proposal : item)
         return result.corrected_proposal && !updated.some(item => item.id === result.corrected_proposal?.id)
@@ -225,8 +230,8 @@ export default function AppointmentWorkspace() {
       setMessage(decision === 'accept'
         ? (result.written_to_lcr ? 'Accepted as a caregiver-reviewed LCR assertion. It is not clinically verified.' : 'No LCR assertion was created.')
         : decision === 'correct'
-          ? 'Correction saved as a separate pending proposal. Review and accept it separately.'
-          : 'Candidate rejected. No LCR assertion was created.')
+          ? 'Correction saved as a new unreviewed caregiver report in the LCR. Review it to confirm or reject its status.'
+          : 'Candidate rejected. Its source-linked report remains in LCR history marked rejected.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The review decision could not be saved.')
     } finally {
@@ -335,8 +340,11 @@ export default function AppointmentWorkspace() {
           {brief && <>
             <div className="guided-columns">
               <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.title}</strong>{item.description && <p>{item.description}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {item.status}</small></li>)}</ul> : <p className="guided-muted">No recent care events were returned for this brief.</p>}</section>
-              <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.fact_type.replaceAll('_', ' ')}</strong><p>{item.value || 'No detail recorded'}</p><small>{item.epistemic_status.replaceAll('_', ' ')}</small></li>)}</ul> : <p className="guided-muted">No care facts were returned for this brief.</p>}</section>
+              <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.fact_type.replaceAll('_', ' ')}</strong><p>{item.value || 'No detail recorded'}</p><small>{item.epistemic_status.replaceAll('_', ' ')}</small></li>)}</ul> : <p className="guided-muted">No care facts were returned for this brief.</p>}{brief.source_coverage.medications_and_allergies === "unavailable" && <p className="guided-muted">A dedicated medication/allergy source is unavailable. Only medication information explicitly present in the recorded care information above is shown.</p>}</section>
             </div>
+            <section className="guided-assertions"><h5>Recorded observations and caregiver reports</h5>{brief.assertions.length ? <ul>{brief.assertions.slice(0, 10).map(item => <li key={item.source_id}><strong>{item.field.replaceAll("_", " ")}</strong><p>{item.asserted_value}</p><small>{item.source_label} · {item.assertion_status.replaceAll("_", " ")} · {item.observed_at ? new Date(item.observed_at).toLocaleString() : item.event_time_text || "Event time not recorded"}</small>{item.source_text && item.source_text !== item.asserted_value && <p>{item.source_text.slice(0, 280)}</p>}<small>{item.interpretation_limit}{item.evidence_ids.length ? ` · ${item.evidence_ids.length} linked evidence source(s)` : " · No evidence attachment linked"}</small></li>)}</ul> : <p className="guided-muted">No source-attributed care observations were returned for this brief.</p>}</section>
+            <section className="guided-questions"><h5>Questions to raise with the healthcare professional</h5>{brief.source_coverage.open_questions === "failed" ? <p className="guided-muted">Unresolved questions could not be loaded from the care record.</p> : brief.open_questions.length ? <ul>{brief.open_questions.slice(0, 8).map(item => <li key={item.source_id}><strong>{item.question}</strong><small>{item.intended_answerer_label || item.intended_answerer_role || "Answerer not recorded"} · {item.priority.replaceAll("_", " ")} · {item.status.replaceAll("_", " ")}</small>{item.necessity_rationale && <p>{item.necessity_rationale}</p>}</li>)}</ul> : <p className="guided-muted">No unresolved questions were returned. This does not establish that none exist.</p>}</section>
+            <section className="guided-conflicts"><h5>Unresolved concerns and conflicting information</h5>{brief.source_coverage.contradictions === "failed" ? <p className="guided-muted">Conflicting information could not be loaded from the care record.</p> : brief.contradictions.length ? <ul>{brief.contradictions.slice(0, 8).map(item => <li key={item.source_id}><strong>{item.field.replaceAll("_", " ")} · {item.resolution_status.replaceAll("_", " ")}</strong><p>{item.description}</p>{item.unresolved_remainder && <p>{item.unresolved_remainder}</p>}<small>{item.source_assertion_ids.length} linked assertion(s) · {item.evidence_ids.length} evidence source(s)</small></li>)}</ul> : <p className="guided-muted">No unresolved conflicts were returned for this brief.</p>}</section>
             <section className="guided-appointments"><h5>Appointments in the care record</h5>{brief.appointments.length ? <ul>{brief.appointments.slice(0, 5).map(item => <li key={item.source_id}><strong>{item.title}</strong><span>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {item.status}</span></li>)}</ul> : <p className="guided-muted">No appointment was returned. This does not establish that no appointment exists.</p>}</section>
             <section className="guided-lineage" aria-label="Evidence source lineage">
               <h5>Evidence source lineage</h5>
