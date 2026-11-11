@@ -61,7 +61,9 @@ jobs:
           ref: main
           path: backend-service
       - name: Record backend revision under test
-        run: git -C backend-service rev-parse HEAD
+        run: |
+          git -C backend-service rev-parse HEAD
+          git -C backend-service log -1 --oneline
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -131,6 +133,7 @@ jobs:
         run: node e2e/critical-care-journeys.mjs
 
       - name: Audit rendered dark mode on the Netlify preview and current deployment
+        if: always()
         env:
           BACKEND_URL: http://127.0.0.1:8000
           NETLIFY_PREVIEW_URL: https://6af48229b6b35b68a14b6591--solenosai.netlify.app
