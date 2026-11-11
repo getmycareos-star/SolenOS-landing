@@ -335,3 +335,125 @@ a, button, input, select, textarea, label, summary {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+
+/* Display preference correction: preserve the established SolenOS brand palette.
+   The settings control has its own sage styling; it must not recolor primary actions. */
+:root {
+  --care-accent: #167d78;
+}
+.workspace-primary,
+.workspace-primary button,
+.care-reality-fab {
+  background-color: var(--care-accent);
+  color: #ffffff;
+  border-color: var(--care-accent);
+}
+
+/* Keep the Display control clear of the bottom-right care-record action. */
+.solenos-display-preferences {
+  inset-block-end: max(88px, calc(env(safe-area-inset-bottom) + 76px));
+}
+.solenos-display-trigger {
+  background: #dce9dc;
+  color: #18251b;
+  border-color: #9eb8a1;
+}
+.solenos-display-panel {
+  background: #ffffff;
+  color: #18251b;
+  border-color: #aebdb1;
+}
+.solenos-display-panel :is(h2, legend, label, p, button) {
+  color: inherit;
+}
+.solenos-display-panel input[type="radio"] {
+  accent-color: #267c78;
+}
+
+/* Dark mode surfaces: cover legacy components that still use literal white
+   backgrounds instead of the shared design tokens. */
+:root[data-solenos-theme="dark"] :is(
+  [class*="card"], [class*="panel"], [class*="drawer"], [class*="modal"],
+  [class*="menu"], [class*="popover"], [class*="surface"], [class*="section"],
+  [class*="history"], [class*="document"], [class*="appointment"],
+  [class*="handoff"], [class*="reminder"], [class*="notification"],
+  [class*="capture"], [class*="record"], [class*="companion"]
+):not(.solenos-display-trigger):not(.solenos-display-panel) {
+  background-color: #202a24;
+  color: #e4ece5;
+  border-color: #526256;
+}
+:root[data-solenos-theme="dark"] :is(
+  input:not([type="radio"]):not([type="checkbox"]), textarea, select
+) {
+  background-color: #18211c !important;
+  color: #f4f7f4 !important;
+  border-color: #718477 !important;
+}
+:root[data-solenos-theme="dark"] :is(
+  input, textarea, select, button
+)::placeholder {
+  color: #b9c6bb !important;
+  opacity: 1;
+}
+:root[data-solenos-theme="dark"] :is(
+  .history-drawer, .history-drawer-header, .history-search-wrap,
+  .history-filter-chip, .history-event-card, .history-action-menu,
+  .history-drawer-footer, .history-original-text, .history-detail-actions button,
+  .history-error, .history-empty button
+) {
+  background-color: #202a24 !important;
+  color: #e4ece5 !important;
+  border-color: #526256 !important;
+}
+:root[data-solenos-theme="dark"] :is(
+  .history-event-open > strong, .history-detail-title, .history-detail-list dd,
+  .history-detail-category, .history-detail-section h3, .history-action-menu button
+) {
+  color: #e4ece5 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-display-trigger {
+  background: #dce9dc !important;
+  color: #18251b !important;
+}
+:root[data-solenos-theme="dark"] .solenos-display-panel {
+  background: #202a24 !important;
+  color: #f2f6f2 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-display-panel :is(h2, legend, label, p, button) {
+  color: #f2f6f2 !important;
+}
+:root[data-solenos-theme="dark"] .workspace-primary,
+:root[data-solenos-theme="dark"] .workspace-primary button,
+:root[data-solenos-theme="dark"] .care-reality-fab {
+  background-color: #167d78 !important;
+  color: #ffffff !important;
+  border-color: #167d78 !important;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-solenos-theme="system"] :is(
+    [class*="card"], [class*="panel"], [class*="drawer"], [class*="modal"],
+    [class*="menu"], [class*="popover"], [class*="surface"], [class*="section"],
+    [class*="history"], [class*="document"], [class*="appointment"],
+    [class*="handoff"], [class*="reminder"], [class*="notification"],
+    [class*="capture"], [class*="record"], [class*="companion"]
+  ):not(.solenos-display-trigger):not(.solenos-display-panel) {
+    background-color: #202a24;
+    color: #e4ece5;
+    border-color: #526256;
+  }
+  :root[data-solenos-theme="system"] :is(
+    input:not([type="radio"]):not([type="checkbox"]), textarea, select
+  ) {
+    background-color: #18211c !important;
+    color: #f4f7f4 !important;
+    border-color: #718477 !important;
+  }
+}
+@media (max-width: 640px) {
+  .solenos-display-preferences {
+    inset-inline-end: max(12px, env(safe-area-inset-right));
+    inset-block-end: max(84px, calc(env(safe-area-inset-bottom) + 72px));
+  }
+}
