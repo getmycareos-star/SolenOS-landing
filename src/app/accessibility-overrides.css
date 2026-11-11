@@ -272,3 +272,155 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+
+
+/* Theme contrast repair: explicit component surface/foreground pairs.
+   Keep action colours intentional; never invert every descendant globally. */
+:root {
+  --theme-panel-bg: #ffffff;
+  --theme-panel-fg: #172b35;
+  --theme-panel-muted: #52645a;
+  --theme-panel-border: #dce5e8;
+  --theme-field-bg: #ffffff;
+  --theme-field-fg: #172b35;
+  --theme-field-placeholder: #5f7179;
+  --theme-subtle-bg: #f5f8f5;
+}
+:root[data-solenos-theme="dark"] {
+  --theme-panel-bg: #202a24;
+  --theme-panel-fg: #f3f7f3;
+  --theme-panel-muted: #c4d0c6;
+  --theme-panel-border: #526256;
+  --theme-field-bg: #18211c;
+  --theme-field-fg: #ffffff;
+  --theme-field-placeholder: #c4d0c6;
+  --theme-subtle-bg: #26332b;
+}
+
+/* Form controls: override the Daily Capture !important light-only rules. */
+:root[data-solenos-theme="dark"] .structured-daily-capture :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  select, textarea
+) {
+  background: var(--theme-field-bg) !important;
+  color: var(--theme-field-fg) !important;
+  caret-color: var(--theme-field-fg) !important;
+  -webkit-text-fill-color: var(--theme-field-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .structured-daily-capture :is(input, textarea)::placeholder {
+  color: var(--theme-field-placeholder) !important;
+  -webkit-text-fill-color: var(--theme-field-placeholder) !important;
+}
+:root[data-solenos-theme="dark"] .structured-daily-capture select option {
+  background: var(--theme-field-bg);
+  color: var(--theme-field-fg);
+}
+
+/* Surfaces that previously retained white/light backgrounds in dark mode. */
+:root[data-solenos-theme="dark"] :is(
+  .workspace-more-menu-dropdown,
+  .solenos-main-menu,
+  .solenos-record-details-dialog,
+  .solenos-record-details-header,
+  .companion-pending-care-updates,
+  .companion-care-update,
+  .companion-pending-care-heading,
+  .lcr-record-section > .lcr-section-heading,
+  .lcr-record-section > .lcr-situation-assessment,
+  .lcr-record-section .lcr-current-fact,
+  .lcr-record-section .lcr-history-details,
+  .lcr-record-section .lcr-history-details > .lcr-situation-assessment,
+  .lcr-record-section .lcr-assessment-details,
+  .policy-improvement-details,
+  .policy-settings-panel .consent-checkbox,
+  .settings-section-nav,
+  .solenos-display-panel
+) {
+  background-color: var(--theme-panel-bg);
+  color: var(--theme-panel-fg);
+  border-color: var(--theme-panel-border);
+}
+
+/* Nested LCR and record-dialog text had fixed dark foregrounds. */
+:root[data-solenos-theme="dark"] :is(
+  .solenos-record-details-dialog,
+  .companion-pending-care-updates,
+  .companion-care-update,
+  .lcr-record-section,
+  .policy-improvement-details,
+  .policy-settings-panel .consent-checkbox,
+  .settings-section-nav,
+  .solenos-main-menu
+) :is(h1,h2,h3,h4,h5,p,span,strong,small,li,dt,dd,label,a,summary,button) {
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .lcr-record-section :is(
+  .lcr-eyebrow,
+  .lcr-section-heading > div > p:last-child,
+  .lcr-entry-heading p,
+  .lcr-current-fact > p,
+  .lcr-current-fact > small,
+  .lcr-current-fact .lcr-entry-status
+),
+:root[data-solenos-theme="dark"] .companion-care-update :is(
+  .companion-care-update-heading span,
+  .companion-care-update-source
+),
+:root[data-solenos-theme="dark"] .solenos-record-details-header :is(p, span),
+:root[data-solenos-theme="dark"] .policy-improvement-details h5 {
+  color: var(--theme-panel-muted);
+}
+
+/* Child controls must retain readable foregrounds on their own surfaces. */
+:root[data-solenos-theme="dark"] :is(
+  .companion-care-update-actions input,
+  .companion-care-update-actions button,
+  .companion-pending-care-heading button,
+  .solenos-record-details-header button,
+  .policy-settings-panel .consent-checkbox input,
+  .settings-section-nav a,
+  .solenos-main-menu button
+) {
+  border-color: var(--theme-panel-border);
+}
+:root[data-solenos-theme="dark"] :is(
+  .companion-care-update-actions input,
+  .companion-pending-care-heading button,
+  .solenos-record-details-header button
+) {
+  background: var(--theme-field-bg);
+  color: var(--theme-field-fg);
+}
+:root[data-solenos-theme="dark"] .companion-care-update-actions button {
+  background: #344b3b;
+  color: #ffffff;
+}
+:root[data-solenos-theme="dark"] .workspace-more-menu-item--destructive,
+:root[data-solenos-theme="dark"] .workspace-more-menu-item.is-destructive {
+  color: #ffaaa2;
+}
+:root[data-solenos-theme="dark"] .solenos-main-menu button:hover,
+:root[data-solenos-theme="dark"] .settings-section-nav a:hover {
+  background: #34463a;
+}
+:root[data-solenos-theme="dark"] .policy-settings-panel .consent-checkbox input[type="checkbox"] {
+  accent-color: #a7c9aa;
+}
+
+/* The record details dialog contains a separate loading state and content pane. */
+:root[data-solenos-theme="dark"] .solenos-record-details-content,
+:root[data-solenos-theme="dark"] .solenos-record-details-loading {
+  background: var(--theme-panel-bg);
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .solenos-record-details-header h2 {
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-entry-heading h3,
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-current-fact h4,
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-current-fact > strong,
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-history-details > summary,
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-assessment-details > summary {
+  color: var(--theme-panel-fg);
+}
