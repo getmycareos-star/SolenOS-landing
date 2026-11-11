@@ -113,7 +113,7 @@ export const PRIVACY_POLICY = {
 
 export const TERMS_OF_USE = {
   title: "Terms of Service",
-  updated: "July 2026",
+  updated: "11 November 2026",
   lead:
     "These Terms govern your use of the SolenOS platform, website, and related services. By accessing or using SolenOS, you agree to these Terms. If you do not agree, please do not use the Service.",
   sections: [
