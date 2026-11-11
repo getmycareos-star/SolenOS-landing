@@ -165,16 +165,6 @@ const HANDOFF_TEMPLATE_FALLBACK = {
   ],
 } as const
 
-const SOURCE_REFERENCE_LABELS: Record<string, string> = {
-  care_event: 'Care entry',
-  care_evidence: 'Source evidence',
-  care_assertion: 'LCR assertion · caregiver-attributed',
-  appointment: 'Appointment record',
-  freshness_assessment: 'Evidence freshness review',
-  document_extractions: 'Extracted document text · not yet an LCR assertion',
-  companion_conversation: 'Prior Companion message · conversation context only',
-}
-
 const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'I need to talk it through', description: 'One thing at a time. No need to organise it first.', prompt: "I'm overwhelmed. Help me work through one thing at a time." },
   { icon: Clock3, title: 'Something has changed', description: 'Sort what is known from what is still unclear.', prompt: 'Something has changed in care. Help me work out what we know and what is unclear.' },
@@ -821,8 +811,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
               {messages.map((msg, index) => {
                 const isUser = msg.role === 'user'
-                const contextCount = (msg.source_event_ids?.length ?? 0) + (msg.source_evidence_ids?.length ?? 0) + (msg.source_appointment_ids?.length ?? 0) + (msg.source_assertion_ids?.length ?? 0) + (msg.source_lcr_context_ids?.length ?? 0)
-                const freshnessCount = msg.source_freshness_assessment_ids?.length ?? 0
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
