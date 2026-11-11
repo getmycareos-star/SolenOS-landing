@@ -434,7 +434,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setRelationships(result as SourceRelationship[])
     } catch {
       setRelationships([])
-      setRelationshipsError('Source lineage could not be loaded. No relationship list is assumed; retry when connected.')
+      setRelationshipsError('Links to other sources could not be loaded. No list is assumed; try again when connected.')
     } finally {
       setRelationshipsLoading(false)
     }
