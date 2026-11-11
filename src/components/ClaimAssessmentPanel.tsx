@@ -208,7 +208,7 @@ export default function ClaimAssessmentPanel() {
       setHistory(rows as Assessment[]);
     } catch {
       setHistory([]);
-      setHistoryError("Past reviews is unavailable. A failed request is not an empty history.");
+      setHistoryError("Past reviews could not be loaded. This does not mean there are no past reviews.");
     } finally {
       setHistoryLoading(false);
     }
@@ -239,7 +239,7 @@ export default function ClaimAssessmentPanel() {
       setAssessmentImpact(result as AssessmentImpact);
     } catch {
       setAssessmentImpact(null);
-      setImpactError("Assessment impact could not be checked. This is not evidence that the assessment is current.");
+      setImpactError("New information could not be checked. This does not mean this review is current.");
     } finally {
       setImpactLoading(false);
     }
@@ -314,7 +314,7 @@ export default function ClaimAssessmentPanel() {
       }
       setDependencies(rows);
     } catch {
-      setDependencyError("Dependency persistence was not confirmed. The relationship may be duplicate, cross-record, or cyclic; no successful save is assumed.");
+      setDependencyError("This link could not be saved. It may already exist or conflict with another care detail. No change was made.");
     } finally {
       setDependencySaving(false);
     }
