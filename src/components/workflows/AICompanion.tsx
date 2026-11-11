@@ -428,6 +428,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       // holding the chat request open; the panel remains manually refreshable.
       const refreshAfterResponse = async (attempt = 0) => {
         const items = await refreshPendingCareUpdates(response.session_id)
+        if (items.length > 0) window.dispatchEvent(new Event("careRecordUpdated"))
         if (!items.length && attempt < 3) {
           window.setTimeout(() => void refreshAfterResponse(attempt + 1), 2500)
         }
@@ -470,6 +471,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         if (result?.corrected_proposal) updated.push(result.corrected_proposal as CareUpdateProposal)
         return { ...message, care_update_candidates: updated }
       }))
+      window.dispatchEvent(new Event("careRecordUpdated"))
       setCandidateCorrections(prev => ({ ...prev, [proposal.id]: '' }))
     } catch {
       setCandidateErrors(prev => ({ ...prev, [proposal.id]: 'The review could not be saved. The proposal remains unchanged. Retry when connected.' }))
