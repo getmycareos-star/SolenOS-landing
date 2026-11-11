@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type ThemePreference = "light" | "dark" | "system";
-type TextScale = "100" | "125" | "150" | "200";
+type TextScale = "100" | "125";
 type Preferences = { theme: ThemePreference; scale: TextScale };
 
 const STORAGE_KEY = "solenos_display_preferences_v1";
@@ -11,10 +11,17 @@ const DEFAULTS: Preferences = { theme: "system", scale: "100" };
 
 function validPreferences(value: unknown): Preferences {
   if (!value || typeof value !== "object") return DEFAULTS;
-  const candidate = value as Partial<Preferences>;
+  const candidate = value as Partial<{ theme: unknown; scale: unknown }>;
+  const scale: TextScale =
+    candidate.scale === "125" || candidate.scale === "150" || candidate.scale === "200"
+      ? "125"
+      : "100";
   return {
-    theme: candidate.theme === "light" || candidate.theme === "dark" || candidate.theme === "system" ? candidate.theme : DEFAULTS.theme,
-    scale: candidate.scale === "125" || candidate.scale === "150" || candidate.scale === "200" || candidate.scale === "100" ? candidate.scale : DEFAULTS.scale,
+    theme:
+      candidate.theme === "light" || candidate.theme === "dark" || candidate.theme === "system"
+        ? candidate.theme
+        : DEFAULTS.theme,
+    scale,
   };
 }
 
@@ -78,11 +85,11 @@ export function GlobalDisplayPreferences() {
             ))}
           </fieldset>
           <fieldset>
-            <legend>Text size</legend>
-            {(["100", "125", "150", "200"] as const).map((scale) => (
+            <legend>Font size</legend>
+            {(["100", "125"] as const).map((scale) => (
               <label key={scale}>
                 <input type="radio" name="solenos-text-scale" value={scale} checked={prefs.scale === scale} onChange={() => update({ scale })} />
-                {scale === "100" ? "Default (100%)" : scale === "125" ? "Large (125%)" : scale === "150" ? "Larger (150%)" : "Extra large (200%)"}
+                {scale === "100" ? "Default" : "Large"}
               </label>
             ))}
           </fieldset>
