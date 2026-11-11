@@ -85,6 +85,7 @@ const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/Q
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert.ok(appointmentWorkflow.includes("var(--theme-panel-bg)") && appointmentWorkflow.includes("var(--theme-field-bg)"));
+assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
 assert.doesNotMatch(appointmentWorkflow, /background:#fff|color:#26392c|color:#536653/);
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
 const dailyCareQwen = fs.readFileSync(path.join(root, "src/components/workflows/DailyCareQwen.tsx"), "utf8");
