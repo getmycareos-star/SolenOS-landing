@@ -227,8 +227,8 @@ export default function AppointmentWorkspace() {
       setMessage(decision === 'accept'
         ? (result.written_to_lcr ? 'Accepted as a caregiver-reviewed LCR assertion. It is not clinically verified.' : 'No LCR assertion was created.')
         : decision === 'correct'
-          ? 'Correction saved as a separate pending proposal. Review and accept it separately.'
-          : 'Candidate rejected. No LCR assertion was created.')
+          ? 'Correction saved as a new unreviewed caregiver report in the LCR. Review it to confirm or reject its status.'
+          : 'Candidate rejected. Its source-linked report remains in LCR history marked rejected.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The review decision could not be saved.')
     } finally {
