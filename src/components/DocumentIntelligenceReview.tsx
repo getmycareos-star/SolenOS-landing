@@ -45,6 +45,8 @@ type Analysis = {
   analysis_id: string;
   source_evidence_id: string;
   document_name: string;
+  document_type?: string;
+  page_count?: number;
   observations: Candidate[];
   intelligence_status?: string;
   open_questions?: string[];
@@ -203,10 +205,14 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
       </div>
       {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
+      {items.some((item) => item.open_questions?.length) && <div role="note" style={{ padding: 10, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 5 }}>
+        <strong style={{ fontSize: 12 }}>Document extraction notes</strong>
+        {items.flatMap((item) => item.open_questions || []).map((question, index) => <p key={index} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
+      </div>}
       {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: 13 }}>Saved documents awaiting server extraction</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => <div key={document.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", padding: 9, border: "1px solid var(--border)", borderRadius: 8 }}><span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span><button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Extract and understand</button></div>)}</div>}
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.observations.length} candidate statement(s)</p></div>
+          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p></div>
           <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary>
             {analysis.extractionMethod && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Extraction provenance: {analysis.extractionMethod.replaceAll("_", " ")}</p>}
@@ -217,7 +223,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 : analysis.extractedText ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre>
                   : <p style={{ fontSize: 12 }}>No readable server-extracted text is stored for this document.</p>}
           </details>
-          {analysis.intelligence_status !== "available" && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and server-extracted text remain saved; no LCR facts were created.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Run / retry document understanding</button></div>}
+          {analysis.intelligence_status !== "available" && analysis.intelligence_status !== "partial" && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and server-extracted text remain saved; no LCR facts were created.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Run / retry document understanding</button></div>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
           {analysis.observations.map((candidate, index) => {
             const key = analysis.analysis_id + ":" + index;
