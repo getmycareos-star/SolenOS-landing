@@ -1238,7 +1238,7 @@ export function LCRCurrentUnderstanding() {
                       <p>Previously recorded: {change.previous_state ?? "Not recorded"} · Currently recorded: {change.current_state ?? "Not recorded"}</p>
                       <p className="lcr-entry-status">Review this comparison if a new report or correction changes the saved information. No medical cutoff is assumed.</p>
                       <p className="lcr-entry-status">
-                        Review state: {(caregiverLabel(change.confirmation_status || "not recorded")}.
+                        Review state: {caregiverLabel(change.confirmation_status || "not recorded")}. 
                         {change.confirmation_status === "rejected"
                           ? " This assessment was disputed and is not presented as an established change."
                           : change.confirmation_status === "inconclusive"
@@ -1367,7 +1367,7 @@ export function LCRCurrentUnderstanding() {
               <li key={pattern.id} className="lcr-current-fact">
                 <div className="lcr-entry-heading">
                   <strong>{caregiverLabel(pattern.subject_type)} · {caregiverLabel(pattern.pattern_type)}</strong>
-                  <span>{pattern.is_active && !pattern.superseded_by_pattern_id ? "active" : "superseded"} · {caregiverLabel(pattern.pattern_strength)}</span>
+                  <span>{pattern.is_active && !pattern.superseded_by_pattern_id ? "Current" : "Replaced by a newer review"} · {caregiverLabel(pattern.pattern_strength)}</span>
                 </div>
                 <p>
                   Recorded in {pattern.evidence_count} event(s), from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)}.
@@ -1406,14 +1406,14 @@ export function LCRCurrentUnderstanding() {
               <li key={change.id} className="lcr-current-fact">
                 <div className="lcr-entry-heading">
                   <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
-                  <span>{caregiverLabel(change.significance_verdict) ?? "Not reviewed yet"}</span>
+                  <span>{change.significance_verdict ? caregiverLabel(change.significance_verdict) : "Not reviewed yet"}</span>
                 </div>
                 <p>{change.explanation || "No explanation was stored with this assessment."}</p>
                 <p className="lcr-entry-status">
                   Previous: {change.previous_state ?? "Not recorded"} · Current: {change.current_state ?? "Not recorded"}
                 </p>
                 <p className="lcr-entry-status">
-                  Review status: {(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected").replaceAll("_", " ")}
+                  Review status: {caregiverLabel(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected")}
                 </p>
                 <label className="lcr-evidence-reason">
                   Review note
@@ -1562,7 +1562,7 @@ export function LCRCurrentUnderstanding() {
                   <li key={item.source_collection + ":" + item.id} className="lcr-current-fact">
                     <div className="lcr-entry-heading">
                       <strong>{displayCurrentCareTitle(item)}</strong>
-                      <span>{item.epistemic_status === "caregiver_reported" ? "Caregiver-reported" : item.epistemic_status === "inferred" ? "Possible interpretation" : item.epistemic_status === "unknown" ? "Not yet known" : item.epistemic_status || "Status not recorded"}</span>
+                      <span>{caregiverLabel(item.epistemic_status)}</span>
                     </div>
                     <p style={{ whiteSpace: "pre-line" }}>{displayDescription(item.description)}</p>
                     <p className="lcr-entry-status">{item.kind} · {item.status === "recorded" ? "Saved" : (item.status || "Status not recorded").replaceAll("_", " ")}</p>
