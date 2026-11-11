@@ -119,6 +119,7 @@ const labels: Record<ReviewType, string> = {
 const reviewStatusLabel = (value: string) => ({
   not_assessed: 'Not checked',
   undetermined: 'Not sure',
+  unknown: 'Not yet known',
   unverified: 'Not confirmed',
   verified: 'Checked',
   partially_verified: 'Partly checked',
@@ -129,6 +130,7 @@ const reviewStatusLabel = (value: string) => ({
   historical: 'Older information',
   current: 'Still current',
   partial: 'Some details are missing',
+  partial_revision_history: 'Only part of the saved history is available',
   missing: 'Missing',
   conflicting: 'Reports disagree',
   specified: 'Recorded',
@@ -138,6 +140,16 @@ const reviewStatusLabel = (value: string) => ({
   supported: 'Matches the saved source',
   contested: 'Other information disagrees',
   complete: 'Complete',
+  caregiver_reported: 'Reported by a caregiver',
+  inferred: 'Possible interpretation',
+  contradictory: 'Reports disagree',
+  occurred_at: 'When it happened',
+  observed_at: 'When it was observed',
+  reported_at: 'When it was reported',
+  collected_at: 'When it was collected',
+  recorded_at: 'When it was saved',
+  ingested_at: 'When it was added to SolenOS',
+  effective_at: 'When it took effect',
 }[value] ?? value.replaceAll('_', ' '))
 const reviewCriterionLabel = (value: string) => ({
   'source attribution': 'Who provided it',
@@ -523,12 +535,12 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Reviewing…' : 'Review this information'}</button>
       {freshnessPolicyNotice && <p role="status" style={{ fontSize: 12 }}>{freshnessPolicyNotice}</p>}
       <h4 style={{ fontSize: 12, marginBottom: 4 }}>Past reviews of how current this information is</h4>
-      {freshnessHistoryLoading && <p role="status" style={{ fontSize: 12 }}>Loading assessment history…</p>}
+      {freshnessHistoryLoading && <p role="status" style={{ fontSize: 12 }}>Loading past reviews…</p>}
       {freshnessHistoryError && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{freshnessHistoryError} <button type="button" style={button} onClick={() => void loadFreshnessHistory()} disabled={freshnessHistoryLoading}>Retry history</button></p>}
-      {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No past reviews were found for this information.</p>}
+      {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No earlier reviews were found for this information.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: 12 }}>
         <strong>{reviewStatusLabel(item.freshness_status)}</strong>
-        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · time since then {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
+        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · time since it was recorded {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
         <p>{item.rationale}</p>
       </article>)}
     </details>
@@ -562,9 +574,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>Related original source</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>How this source is connected to other information ({relationships.length})</summary>
+          <summary>How this source is linked to other saved information ({relationships.length})</summary>
           <p>These links show how sources are connected. They do not prove that two reports are separate or that a statement is true.</p>
-          {relationshipsLoading && <p role="status">Loading source relationships…</p>}
+          {relationshipsLoading && <p role="status">Loading links to other saved information…</p>}
           {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
           {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No links to other saved sources are recorded for this item yet.</p>}
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
@@ -580,9 +592,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </article>)}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Details found in this source ({observations.length})</summary>
+          <summary>Details in this source ({observations.length})</summary>
           <p>Each detail keeps the exact words from the original source. A report stays labelled as a report; an interpretation is not shown as something someone directly saw.</p>
-          {observationsLoading && <p role="status">Loading structured observations…</p>}
+          {observationsLoading && <p role="status">Loading recorded details…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
           {!observationsLoading && !observationsError && observations.length === 0 && <p>No extracted details are available for this source yet.</p>}
           {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
@@ -603,7 +615,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <summary>See what the record said earlier</summary>
           <p>Shows the latest saved version of each item at the time you choose. Some earlier changes may not be available.</p>
           <label style={{ display: 'block', marginTop: 8 }}>
-            Historical date and time
+            Date and time
             <input
               style={field}
               type="datetime-local"
@@ -612,11 +624,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             />
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructRecordHistory()} disabled={recordHistoryLoading || !personId || !recordHistoryAsOf}>
-            {recordHistoryLoading ? 'Loading earlier record…' : 'Show earlier record'}
+            {recordHistoryLoading ? 'Loading earlier care information…' : 'Show earlier record'}
           </button>
           {recordHistoryError && <p role="alert" style={{ color: 'var(--error)' }}>{recordHistoryError}</p>}
           {recordHistory && <div role="status" style={{ marginTop: 8 }}>
-            <p><strong>Information available:</strong> {reviewStatusLabel(String(recordHistory.coverage_status))} · {String(recordHistory.target_count)} saved items{recordHistory.truncated ? ' · only part of the history is shown' : ''}</p>
+            <p><strong>Earlier information available:</strong> {reviewStatusLabel(String(recordHistory.coverage_status))} · {String(recordHistory.target_count)} saved items{recordHistory.truncated ? ' · only part of the history is shown' : ''}</p>
             <p><strong>Chosen date and time:</strong> {String(recordHistory.requested_as_of)}</p>
             <p>No complete historical record is assumed. Some earlier changes may not be available in this view.</p>
           </div>}
@@ -629,7 +641,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <input style={field} type="datetime-local" value={historyAsOf} onChange={event => { setHistoryAsOf(event.target.value); setReconstructedHistory(null); setHistoryReconstructionError('') }} />
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructHistoricalState()} disabled={historyReconstructionLoading || !selectedId || !historyAsOf}>
-            {historyReconstructionLoading ? 'Loading earlier record…' : 'Show earlier version'}
+            {historyReconstructionLoading ? 'Loading earlier care information…' : 'Show earlier version'}
           </button>
           {historyReconstructionError && <p role="alert" style={{ color: 'var(--error)' }}>{historyReconstructionError}</p>}
           {reconstructedHistory && <div role="status" style={{ marginTop: 8 }}>
