@@ -433,7 +433,19 @@ await record("frontend network failure is surfaced rather than rendered as empty
 
 
 await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
-  const surfaces = ["/workspace/daily-care", "/workspace", "/workspace/companion", "/workspace/appointments", "/workspace/documents", "/workspace/settings", "/workspace/community"];
+  const daily = await createBrowserPage(session, "/workspace/daily-care");
+  await daily.page.getByRole("button", { name: "Something changed", exact: true }).click();
+  await daily.page.getByRole("button", { name: "Sleep", exact: true }).click();
+  await daily.page.locator('textarea[placeholder="Add a detail if it would help…"]').fill("Browser UI confirms restless sleep and several overnight awakenings.");
+  await daily.page.getByRole("button", { name: "Save update", exact: true }).click();
+  await daily.page.getByText("Saved to the care record.", { exact: false }).waitFor({ timeout: 20_000 });
+  const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
+  assert.equal(dailyHistory.status, 200);
+  assert.ok(JSON.stringify(dailyHistory.payload).includes("Browser UI confirms restless sleep"));
+  await verifyMobile(daily.page);
+  await daily.context.close();
+
+  const surfaces = ["/workspace", "/workspace/companion", "/workspace/appointments", "/workspace/documents", "/workspace/settings", "/workspace/community"];
   for (const route of surfaces) {
     const { context, page, observed } = await createBrowserPage(session, route);
     await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
