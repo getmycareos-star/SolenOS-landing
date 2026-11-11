@@ -1,0 +1,139 @@
+name: Critical care journeys — real backend and browser
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "e2e/critical-care-journeys.mjs"
+      - "src/api/client.ts"
+      - "src/app/workspace/**"
+      - "src/components/workflows/**"
+      - "src/components/mvp-workspace/**"
+      - "src/components/DocumentIntelligenceReview.tsx"
+      - ".github/workflows/critical-care-journeys-e2e.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: critical-care-journeys-main
+  cancel-in-progress: false
+
+jobs:
+  critical-care-journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: solenos_ci
+          POSTGRES_PASSWORD: solenos_ci
+          POSTGRES_DB: solenos_critical_journeys
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U solenos_ci -d solenos_critical_journeys"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      APP_ENV: test
+      SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
+      DATABASE_URL: postgresql+psycopg2://solenos_ci:solenos_ci@localhost:5432/solenos_critical_journeys
+      OLLAMA_BASE_URL: http://127.0.0.1:11434
+      OLLAMA_MODEL: qwen3.5:4b
+      OLLAMA_TIMEOUT_SECONDS: "180"
+      OLLAMA_NUM_CTX: "1024"
+      OLLAMA_NUM_PREDICT: "96"
+      OLLAMA_NUM_THREADS: "2"
+      SOLENOS_REQUIRE_LIVE_QWEN: "1"
+    steps:
+      - name: Check out frontend main
+        uses: actions/checkout@v4
+
+      - name: Check out backend main
+        uses: actions/checkout@v4
+        with:
+          repository: getmycareos-star/SolenOS_backend
+          ref: main
+          path: backend-service
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend-service/backend/pyproject.toml
+
+      - name: Install browser and backend dependencies
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+          python -m pip install --upgrade pip
+          python -m pip install -e ./backend-service/backend
+
+      - name: Apply all PostgreSQL migrations
+        working-directory: backend-service/backend
+        run: python -m alembic upgrade head
+
+      - name: Start isolated Qwen runtime
+        run: |
+          docker run -d --name solenos-critical-qwen -p 11434:11434 ollama/ollama:latest
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker logs solenos-critical-qwen
+          exit 1
+
+      - name: Download the configured Qwen model
+        run: docker exec solenos-critical-qwen ollama pull "$OLLAMA_MODEL"
+
+      - name: Start FastAPI on the isolated PostgreSQL database
+        working-directory: backend-service/backend
+        run: |
+          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_MODEL="$OLLAMA_MODEL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" OLLAMA_NUM_CTX="$OLLAMA_NUM_CTX" OLLAMA_NUM_PREDICT="$OLLAMA_NUM_PREDICT" OLLAMA_NUM_THREADS="$OLLAMA_NUM_THREADS" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/solenos-critical-backend.log
+          exit 1
+
+      - name: Build and start the actual Next.js frontend
+        run: |
+          npm run build
+          nohup npm run start -- --hostname 127.0.0.1 >/tmp/solenos-critical-frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/workspace >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/solenos-critical-frontend.log
+          exit 1
+
+      - name: Execute all 12 real-backend journeys in Chromium
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+          SOLENOS_REQUIRE_LIVE_QWEN: "1"
+        run: node e2e/critical-care-journeys.mjs
+
+      - name: Print service logs on failure
+        if: failure()
+        run: |
+          cat /tmp/solenos-critical-backend.log || true
+          cat /tmp/solenos-critical-frontend.log || true
+          docker logs solenos-critical-qwen || true
+
+      - name: Stop isolated Qwen runtime
+        if: always()
+        run: docker rm -f solenos-critical-qwen || true
