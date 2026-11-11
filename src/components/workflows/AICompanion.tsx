@@ -103,6 +103,7 @@ interface ClaimSourceReference {
   reported_by?: string | null
   entered_by?: string | null
   record_status?: string | null
+  source_state_label?: string | null
   related_evidence_ids?: string[]
   related_evidence?: Array<{
     label: string
@@ -839,9 +840,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
-                          {claim.support_status === 'matched_saved_wording' ? (
+                          {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only') ? (
                             <div>
-                              <p> <ShieldCheck size={14} aria-hidden="true" /> This wording appears in a saved record.</p>
+                              <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : 'This wording appears in a saved record.'}</p>
                               {claim.source_references.map((source, sourceIndex) => (
                                 <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
                                   <strong>{source.label}</strong>
@@ -849,7 +850,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.recorded_at && <p>When it was added: {new Date(source.recorded_at).toLocaleString()}</p>}
                                   {source.reported_by && <p>Reported by: {source.reported_by}</p>}
                                   {source.entered_by && <p>{source.entered_by}</p>}
-                                  {source.record_status && <p>Record status: {source.record_status.replaceAll('_', ' ')}</p>}
+                                  {source.source_state_label && <p>{source.source_state_label}</p>}
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Supporting note or document</strong>
