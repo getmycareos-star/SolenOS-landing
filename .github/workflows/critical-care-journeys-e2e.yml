@@ -138,7 +138,7 @@ jobs:
         if: always()
         env:
           BACKEND_URL: http://127.0.0.1:8000
-          NETLIFY_PREVIEW_URL: https://6af48229b6b35b68a14b6591--solenosai.netlify.app
+          NETLIFY_PREVIEW_URL: https://deploy-preview-191--solenosai.netlify.app
           NETLIFY_DEPLOY_URL: https://solenosai.netlify.app
         run: node e2e/netlify-dark-mode-audit.mjs
 
