@@ -460,3 +460,17 @@
 :root[data-solenos-theme="dark"] .settings-page-heading .settings-eyebrow {
   color: #b9d5b5 !important;
 }
+
+
+/* Resolve higher-specificity legacy accessibility overrides in handoff cards. */
+:root[data-solenos-theme="dark"] :is(
+  .companion-handoff-sharing,
+  .companion-handoff,
+  .companion-handoff-sharing > section,
+  .companion-handoff-source-item
+) :is(h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,summary,button,svg) {
+  color: #f3f7f3 !important;
+}
+:root[data-solenos-theme="dark"] .lcr-home .lcr-companion-entry .lcr-text-action :is(span,svg) {
+  color: #17251c !important;
+}
