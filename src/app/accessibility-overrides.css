@@ -507,3 +507,6 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 :root[data-solenos-theme="dark"] .timeline-workspace :is(button,input) {
   color: var(--theme-panel-fg);
 }
+
+:root { --theme-link: #17635f; --theme-error-fg: #8a2e2e; }
+:root[data-solenos-theme="dark"] { --theme-link: #9fd2c8; --theme-error-fg: #ffb4ab; }
