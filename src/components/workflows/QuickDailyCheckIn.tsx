@@ -36,8 +36,8 @@ const buttonStyle = (selected: boolean): CSSProperties => ({
   padding: "10px 14px",
   borderRadius: 10,
   border: selected ? "2px solid #527d70" : "1px solid #cbd8d2",
-  background: selected ? "#eaf2ed" : "#fff",
-  color: "#172b35",
+  background: selected ? "var(--theme-selected-bg)" : "var(--theme-panel-bg)",
+  color: "var(--theme-panel-fg)",
   fontSize: 15,
   fontWeight: selected ? 700 : 600,
   textAlign: "left",
@@ -171,14 +171,14 @@ export default function QuickDailyCheckIn() {
         padding: "clamp(.9rem, 3vw, 1.25rem)",
         border: "1px solid #dce5e0",
         borderRadius: 16,
-        background: "#fff",
-        color: "#172b35",
+        background: "var(--theme-panel-bg)",
+        color: "var(--theme-panel-fg)",
       }}
     >
       <h2 id="quick-daily-checkin-title" style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 700 }}>
         Quick update
       </h2>
-      <p style={{ margin: "0 0 14px", color: "#52656d", lineHeight: 1.55 }}>
+      <p style={{ margin: "0 0 14px", color: "var(--theme-panel-muted)", lineHeight: 1.55 }}>
         Record a simple update without completing the full daily-care form.
       </p>
 
@@ -208,11 +208,11 @@ export default function QuickDailyCheckIn() {
                   ? "Which areas are you unsure about?"
                   : "Which areas does this update relate to?"}
           </p>
-          <p style={{ margin: "0 0 10px", color: "#52656d", fontSize: 13, lineHeight: 1.5 }}>
+          <p style={{ margin: "0 0 10px", color: "var(--theme-panel-muted)", fontSize: 13, lineHeight: 1.5 }}>
             {kind === "uncertain" ? "Select only the areas you are unsure about. This will not be treated as a confirmed observation." : "Select only the areas you can report on. Unselected areas will not be marked as checked or unchanged."}
           </p>
           {kind === "same_as_usual" && (
-            <p style={{ margin: "0 0 10px", color: "#52656d", fontSize: 13, lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 10px", color: "var(--theme-panel-muted)", fontSize: 13, lineHeight: 1.5 }}>
               Selecting areas is optional. If you leave them blank, SolenOS records only your overall impression; no individual care domains are marked as checked or unchanged. This does not establish or change the person’s baseline.
             </p>
           )}
@@ -254,10 +254,10 @@ export default function QuickDailyCheckIn() {
               minHeight: 76,
               marginTop: 6,
               padding: "10px 12px",
-              border: "1px solid #bdcbd0",
+              border: "1px solid var(--theme-panel-border)",
               borderRadius: 9,
-              background: "#fff",
-              color: "#172b35",
+              background: "var(--theme-panel-bg)",
+              color: "var(--theme-panel-fg)",
               font: "inherit",
               fontSize: 16,
               resize: "vertical",
@@ -278,13 +278,13 @@ export default function QuickDailyCheckIn() {
               type="button"
               onClick={() => { setKind(null); setSelectedAreas([]); setNote(""); setError(""); }}
               disabled={saving}
-              style={{ minHeight: 46, padding: "10px 14px", borderRadius: 9, border: "1px solid #cbd8d2", background: "#fff", color: "#172b35", fontWeight: 600 }}
+              style={{ minHeight: 46, padding: "10px 14px", borderRadius: 9, border: "1px solid #cbd8d2", background: "var(--theme-panel-bg)", color: "var(--theme-panel-fg)", fontWeight: 600 }}
             >
               Clear selection
             </button>
           </div>
           {selectedAreas.length === 0 && kind !== "same_as_usual" && (
-            <p style={{ margin: "8px 0 0", color: "#52656d", fontSize: 13 }}>
+            <p style={{ margin: "8px 0 0", color: "var(--theme-panel-muted)", fontSize: 13 }}>
               Select at least one area before saving.
             </p>
           )}
@@ -292,21 +292,21 @@ export default function QuickDailyCheckIn() {
       )}
 
       {error && (
-        <p role="alert" style={{ margin: "12px 0 0", padding: "10px 12px", borderRadius: 9, background: "#fff4dc", border: "1px solid #c8a85d", color: "#3b2e11" }}>
+        <p role="alert" style={{ margin: "12px 0 0", padding: "10px 12px", borderRadius: 9, background: "var(--theme-warning-bg)", border: "1px solid var(--theme-warning-border)", color: "var(--theme-warning-fg)" }}>
           {error}
         </p>
       )}
 
       {receipt && (
-        <div role="status" style={{ marginTop: 12, padding: "12px", borderRadius: 9, background: "#edf5eb", border: "1px solid #8eae8a", color: "#172b35" }}>
+        <div role="status" style={{ marginTop: 12, padding: "12px", borderRadius: 9, background: "var(--theme-success-bg)", border: "1px solid var(--theme-success-border)", color: "var(--theme-panel-fg)" }}>
           <strong>Saved to the care record.</strong>
           <p style={{ margin: "5px 0 0", lineHeight: 1.5 }}>{receipt.summary}</p>
           {receipt.recordedAt && (
-            <p style={{ margin: "5px 0 0", fontSize: 13, color: "#52656d" }}>
+            <p style={{ margin: "5px 0 0", fontSize: 13, color: "var(--theme-panel-muted)" }}>
               Recorded {new Date(receipt.recordedAt).toLocaleString()}
             </p>
           )}
-          <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#52656d" }}>
+          <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--theme-panel-muted)" }}>
             Record reference: {receipt.id}
           </span>
         </div>
