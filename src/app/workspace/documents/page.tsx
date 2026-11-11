@@ -274,6 +274,7 @@ export default function DocumentsPage() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -547,6 +548,10 @@ export default function DocumentsPage() {
             <h2 style={{ margin: 0, fontSize: 18 }}>Your document library</h2>
             <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>Original files are stored separately from AI interpretation.</p>
           </div>
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 42, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 12px", border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }} aria-label="Add documents">
+            <FileText size={16} /> Add documents
+          </button>
+          <input ref={fileInputRef} type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.md,.csv,.json,.xml,.yaml,.yml" aria-label="Choose care documents" style={{ display: "none" }} onChange={(event) => { void handleFiles(event.currentTarget.files); event.currentTarget.value = ""; }} />
           <button type="button" onClick={() => void loadDocuments(true)} disabled={refreshing || loading} style={{ minHeight: 42, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }} aria-label="Refresh documents">
             <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
           </button>
