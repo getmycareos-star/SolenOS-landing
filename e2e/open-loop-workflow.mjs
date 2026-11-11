@@ -318,17 +318,28 @@ try {
   await page.getByLabel("Add a note (optional)").fill(dailyCareNote);
   await page.getByRole("button", { name: "Save update", exact: true }).click();
   await page.getByRole("status").filter({ hasText: "Saved to the care record." }).waitFor({ timeout: 20_000 });
-  const currentCareResponse = await fetch(new URL("/api/v1/care-continuity/current-care", backend), {
+  const eventListResponse = await fetch(new URL(`/api/v1/events/${encodeURIComponent(session.personId)}`, backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!eventListResponse.ok) {
+    throw new Error(`Could not retrieve saved Daily Care events: HTTP ${eventListResponse.status} ${await eventListResponse.text()}`);
+  }
+  const events = await eventListResponse.json();
+  const savedDailyEvent = events.find((item) => String(item.description ?? "").includes(dailyCareNote));
+  if (!savedDailyEvent) {
+    throw new Error("The Daily Care UI showed a save receipt, but the authenticated event read did not return the saved caregiver note.");
+  }
+  const currentCareResponse = await fetch(new URL("/api/v1/care-continuity/current-care?limit_per_source=50", backend), {
     headers: { authorization: `Bearer ${session.token}` },
   });
   if (!currentCareResponse.ok) {
-    throw new Error(`Could not retrieve the saved Daily Care update: HTTP ${currentCareResponse.status} ${await currentCareResponse.text()}`);
+    throw new Error(`Could not retrieve the saved Daily Care LCR projection: HTTP ${currentCareResponse.status} ${await currentCareResponse.text()}`);
   }
   const currentCare = await currentCareResponse.json();
-  if (!JSON.stringify(currentCare).includes(dailyCareNote)) {
-    throw new Error("The Daily Care UI showed a save receipt, but the authenticated current-care read did not return the saved caregiver note.");
+  if (!(currentCare.items ?? []).some((item) => item.id === savedDailyEvent.id)) {
+    throw new Error("The saved Daily Care event was not present in the authenticated Living Care Record projection.");
   }
-  console.log("PASS: real Daily Care UI capture persisted to PostgreSQL and was retrieved through the authenticated current-care API.");
+  console.log("PASS: real Daily Care UI capture persisted, read back from PostgreSQL, and appeared in the authenticated Living Care Record.");
 
   // Exercise persisted conflict handling through the actual LCR UI and API.
   // The partial resolution must preserve its unresolved remainder; reopening must
