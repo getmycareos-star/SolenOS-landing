@@ -18,6 +18,7 @@ import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
+import { LivingArchiveMark } from "@/components/brand";
 
 type EvidenceRecord = {
   id: string;
@@ -624,7 +625,7 @@ export default function DocumentsPage() {
           </article>)}</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0 || reviewPages.some((page) => !page.reviewed || !page.prepared)} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save reviewed documents</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
         </section>}
-        {uploading && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}>Reading available text and saving the original file. Please keep this page open.</p>}
+        {uploading && <div style={{ margin: "12px 0 0" }}><LivingArchiveMark size="sm" label="Saving the original document…" /><p style={{ margin: "6px 0 0", fontSize: 13 }}>Please keep this page open. The document is not confirmed saved until the server responds.</p></div>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
         {listError && <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14 }}><p style={{ margin: "0 0 10px" }}>{listError}</p><button type="button" onClick={() => void loadDocuments()} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Try again</button></div>}
 
@@ -633,7 +634,7 @@ export default function DocumentsPage() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search document names and available text" aria-label="Search documents" style={{ width: "100%", minWidth: 0, border: 0, outline: 0, background: "transparent", color: "var(--text)", fontSize: 15, minHeight: 42 }} />
         </div>
 
-        {loading ? <div role="status" style={{ padding: 24, textAlign: "center", color: "var(--text-secondary)" }}><LoaderCircle size={20} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Loading saved documents…</div> : visibleDocuments.length === 0 ? (
+        {loading ? <div role="status" style={{ padding: 24, textAlign: "center", color: "var(--text-secondary)" }}><LivingArchiveMark size="sm" label="Loading saved documents…" /></div> : visibleDocuments.length === 0 ? (
           <div style={{ padding: "26px 12px", textAlign: "center" }}>
             <FileText size={34} style={{ margin: "0 auto 10px", color: "var(--text-secondary)" }} />
             <h3 style={{ margin: 0, fontSize: 16 }}>{documents.length === 0 ? "No saved documents yet" : "No matching documents"}</h3>
