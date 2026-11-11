@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { TERMS_OF_SERVICE_VERSION } from "./contract-constants";
 import type { ConsentAcceptanceInput, ConsentProfile } from "./types";
 
 const GLOBAL_KEY = "__solenos_consent_profiles__";
