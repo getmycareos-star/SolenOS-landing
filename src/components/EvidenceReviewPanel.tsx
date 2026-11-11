@@ -743,7 +743,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void saveCurrentRecordSnapshot()} disabled={recordSnapshotSaving || !personId}>
             {recordSnapshotSaving ? 'Saving a copy…' : 'Save a copy now'}
           </button>
-          {recordSnapshotNotice && <p role="status">{recordSnapshotNotice}</p>}
+          {recordSnapshotNotice && <p role="status" aria-live="polite">{recordSnapshotNotice}</p>}
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructRecordHistory()} disabled={recordHistoryLoading || !personId || !recordHistoryAsOf}>
             {recordHistoryLoading ? 'Loading earlier care information…' : 'Show earlier record'}
           </button>
