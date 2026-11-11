@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: critical-care-journeys-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   critical-care-journeys:
@@ -137,7 +137,7 @@ jobs:
         env:
           BACKEND_URL: http://127.0.0.1:8000
           NETLIFY_PREVIEW_URL: https://6af48229b6b35b68a14b6591--solenosai.netlify.app
-          NETLIFY_DEPLOY_URL: https://6af48b07c35453231c02ea19--solenosai.netlify.app
+          NETLIFY_DEPLOY_URL: https://solenosai.netlify.app
         run: node e2e/netlify-dark-mode-audit.mjs
 
       - name: Upload rendered dark-mode screenshots and contrast report
