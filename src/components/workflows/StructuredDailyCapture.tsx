@@ -597,6 +597,8 @@ export default function StructuredDailyCapture() {
       setSaveError(null);
       setSavedEntrySummary(variables.notes.trim() || 'Entry recorded.');
       setSaved(true);
+      // Refresh the shared LCR projection only after the backend confirms persistence.
+      window.dispatchEvent(new Event('careRecordUpdated'));
       // Once Daily Capture is persisted, reconcile the saved observations against the longitudinal LCR.
       // Reconciliation failure is shown by the Delta panel and never rolls back a successfully saved capture.
       const deltaContent = JSON.stringify({
