@@ -52,6 +52,7 @@ type Analysis = {
   processed_page_count?: number | null;
   total_page_count?: number | null;
   processed_page_numbers?: number[];
+  unprocessed_page_numbers?: number[];
   unreadable_page_numbers?: number[];
   open_questions?: string[];
   review_required: boolean;
@@ -221,7 +222,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {analysis.intelligence_status === "partial"
                 ? `Partial extraction · processed ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages`
                 : analysis.intelligence_status === "available" ? "Page extraction completed" : "Document understanding not yet completed"}
-              {analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
+              {analysis.unprocessed_page_numbers?.length ? ` · not processed: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
