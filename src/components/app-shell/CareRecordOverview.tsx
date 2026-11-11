@@ -96,7 +96,7 @@ export function CareRecordOverview() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <section aria-labelledby="care-record-overview-title" style={{ display: "grid", gap: 18, color: "#26392c" }}>
+    <section className="care-record-overview" aria-labelledby="care-record-overview-title" style={{ display: "grid", gap: 18, color: "#26392c" }}>
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <p style={{ margin: "0 0 5px", color: "#66816a", fontSize: 11, fontWeight: 800, letterSpacing: ".08em" }}>SAVED CARE INFORMATION</p>
