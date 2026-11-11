@@ -237,7 +237,7 @@ a, button, input, select, textarea, label, summary {
   .lcr-record-section .lcr-current-fact > p,
   .companion-care-update > p, .mobile-settings-label,
   .mobile-settings-hint
-) { color: #e4ece5; }
+) { color: #ffffff; }
 :root[data-solenos-theme="dark"] :is(input, textarea, select) {
   background-color: #18211c;
   color: #f4f7f4;
@@ -315,7 +315,7 @@ a, button, input, select, textarea, label, summary {
   [class*="capture"], [class*="record"], [class*="companion"]
 ):not(.solenos-display-trigger):not(.solenos-display-panel) {
   background-color: #202a24;
-  color: #e4ece5;
+  color: #ffffff;
   border-color: #526256;
 }
 :root[data-solenos-theme="dark"] :is(
@@ -338,14 +338,14 @@ a, button, input, select, textarea, label, summary {
   .history-error, .history-empty button
 ) {
   background-color: #202a24 !important;
-  color: #e4ece5 !important;
+  color: #ffffff !important;
   border-color: #526256 !important;
 }
 :root[data-solenos-theme="dark"] :is(
   .history-event-open > strong, .history-detail-title, .history-detail-list dd,
   .history-detail-category, .history-detail-section h3, .history-action-menu button
 ) {
-  color: #e4ece5 !important;
+  color: #ffffff !important;
 }
 :root[data-solenos-theme="dark"] .solenos-display-trigger {
   background: #dce9dc !important;
@@ -404,7 +404,7 @@ a, button, input, select, textarea, label, summary {
   span, strong, b, em, i, code, pre, blockquote, figcaption, caption,
   time, output, summary
 ):not(button):not(button *):not(a):not(a *) {
-  color: #e4ece5;
+  color: #ffffff;
 }
 :root[data-solenos-theme="dark"] :is(
   input:not([type="radio"]):not([type="checkbox"]), textarea, select
@@ -461,49 +461,60 @@ a, button, input, select, textarea, label, summary {
 }
 
 
-/* Final dark-theme legibility pass.
-   Dark app surfaces use pure white foregrounds. Explicit paper/white reading
-   surfaces retain dark ink; native PDF pages keep their own black-on-white render. */
-:root[data-solenos-theme="dark"] body * {
+/* Dark theme: use pure white for text on the explicitly dark application
+   surfaces. Do not globally recolor every descendant: light controls, paper,
+   and document previews must retain their own foreground/background pairing. */
+:root[data-solenos-theme="dark"] body,
+:root[data-solenos-theme="dark"] .solenos-shell,
+:root[data-solenos-theme="dark"] .solenos-shell.mvp-shell,
+:root[data-solenos-theme="dark"] .mvp-header.shell-header,
+:root[data-solenos-theme="dark"] .sidebar-rail,
+:root[data-solenos-theme="dark"] .solenos-sidebar,
+:root[data-solenos-theme="dark"] .mvp-main,
+:root[data-solenos-theme="dark"] main,
+:root[data-solenos-theme="dark"] .mobile-screen,
+:root[data-solenos-theme="dark"] .feature-page,
+:root[data-solenos-theme="dark"] :is(
+  .mobile-settings-card, .care-card-understanding, .care-card-changed,
+  .care-card-matters, .care-card-remembered, .care-card-note,
+  .lcr-record-section > .lcr-section-heading,
+  .lcr-record-section > .lcr-situation-assessment,
+  .lcr-record-section .lcr-current-fact,
+  .lcr-record-section .lcr-history-details,
+  .lcr-record-section .lcr-assessment-details,
+  .companion-pending-care-updates, .companion-care-update,
+  .panel, .card, [role="dialog"], .modal, .settings-card,
+  [class*="card"], [class*="panel"], [class*="drawer"], [class*="modal"],
+  [class*="menu"], [class*="popover"], [class*="surface"], [class*="section"],
+  [class*="history"], [class*="appointment"], [class*="handoff"],
+  [class*="reminder"], [class*="notification"], [class*="capture"],
+  [class*="record"], [class*="companion"]
+):not(.solenos-display-trigger):not(.solenos-display-panel) {
   text-shadow: none !important;
 }
-:root[data-solenos-theme="dark"] body *:not(.solenos-display-trigger):not(.solenos-display-trigger *):not(.workspace-primary):not(.workspace-primary *):not(.care-reality-fab):not(.document-page):not(.document-page *):not(.document-paper):not(.document-paper *):not(.document-preview-page):not(.document-preview-page *):not(.document-preview-paper):not(.document-preview-paper *):not(.pdf-page):not(.pdf-page *):not(.pdf-preview-page):not(.pdf-preview-page *):not(.page-sheet):not(.page-sheet *):not(.preview-page):not(.preview-page *):not([style*="background-color: white"]):not([style*="background-color:#fff"]):not([style*="background-color: #fff"]):not([style*="background: white"]):not([style*="background: #fff"]):not([style*="background:#fff"]):not([style*="background-color: rgb(255, 255, 255)"]):not([style*="background: rgb(255, 255, 255)"]) {
-  color: #ffffff !important;
-}
-:root[data-solenos-theme="dark"] body *:not(.solenos-display-trigger):not(.solenos-display-trigger *):not(.workspace-primary):not(.workspace-primary *):not(.care-reality-fab):not(.document-page):not(.document-page *):not(.document-paper):not(.document-paper *):not(.document-preview-page):not(.document-preview-page *):not(.document-preview-paper):not(.document-preview-paper *):not(.pdf-page):not(.pdf-page *):not(.pdf-preview-page):not(.pdf-preview-page *):not(.page-sheet):not(.page-sheet *):not(.preview-page):not(.preview-page *):not([style*="background-color: white"]):not([style*="background-color:#fff"]):not([style*="background-color: #fff"]):not([style*="background: white"]):not([style*="background: #fff"]):not([style*="background:#fff"]):not([style*="background-color: rgb(255, 255, 255)"]):not([style*="background: rgb(255, 255, 255)"]) :is(p, span, label, small, strong, em, li, dt, dd, h1, h2, h3, h4, h5, h6, legend, summary, time, output, figcaption, caption, pre) {
-  color: #ffffff !important;
-}
-:root[data-solenos-theme="dark"] body :is(
-  .document-page, .document-paper, .document-preview-page, .document-preview-paper,
-  .pdf-page, .pdf-preview-page, .page-sheet, .preview-page,
-  [style*="background-color: white"], [style*="background-color:#fff"],
-  [style*="background-color: #fff"], [style*="background: white"],
-  [style*="background: #fff"], [style*="background:#fff"],
-  [style*="background-color: rgb(255, 255, 255)"],
-  [style*="background: rgb(255, 255, 255)"]
-),
-:root[data-solenos-theme="dark"] body :is(
-  .document-page, .document-paper, .document-preview-page, .document-preview-paper,
-  .pdf-page, .pdf-preview-page, .page-sheet, .preview-page,
-  [style*="background-color: white"], [style*="background-color:#fff"],
-  [style*="background-color: #fff"], [style*="background: white"],
-  [style*="background: #fff"], [style*="background:#fff"],
-  [style*="background-color: rgb(255, 255, 255)"],
-  [style*="background: rgb(255, 255, 255)"]
-) * {
-  background-color: #ffffff !important;
-  color: #18251b !important;
+:root[data-solenos-theme="dark"] :is(
+  p, li, dt, dd, label, legend, small, h1, h2, h3, h4, h5, h6,
+  span, strong, b, em, i, code, pre, blockquote, figcaption, caption,
+  time, output, summary
+):not(button):not(button *):not(a):not(a *) {
+  color: #ffffff;
   text-shadow: none !important;
+}
+:root[data-solenos-theme="dark"] .solenos-display-panel,
+:root[data-solenos-theme="dark"] .solenos-display-panel * {
+  color: #ffffff !important;
 }
 :root[data-solenos-theme="dark"] .solenos-display-trigger,
 :root[data-solenos-theme="dark"] .solenos-display-trigger * {
   background: #dce9dc !important;
   color: #18251b !important;
 }
-:root[data-solenos-theme="dark"] .workspace-primary,
-:root[data-solenos-theme="dark"] .workspace-primary *,
-:root[data-solenos-theme="dark"] .care-reality-fab,
-:root[data-solenos-theme="dark"] .care-reality-fab * {
+:root[data-solenos-theme="dark"] :is(input, textarea, select) {
+  background-color: #18211c !important;
   color: #ffffff !important;
-  text-shadow: none !important;
+  border-color: #718477 !important;
+}
+:root[data-solenos-theme="dark"] :is(input, textarea, select)::placeholder {
+  color: #ffffff !important;
+  opacity: 1 !important;
 }
