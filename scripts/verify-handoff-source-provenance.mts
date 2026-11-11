@@ -6,8 +6,16 @@ const sharingComponent = await readFile(new URL("../src/components/workflows/Car
 const handoffPage = await readFile(new URL("../src/app/workspace/handoffs/page.tsx", import.meta.url), "utf8");
 const apiClient = await readFile(new URL("../src/api/client.ts", import.meta.url), "utf8");
 
-assert.match(handoffPage, /redirect\("\/workspace\/companion"\)/,
-  "standalone handoff page must route caregivers into AI Companion");
+assert.match(handoffPage, /CareHandoffSharing/,
+  "Care Handoffs route must render the persisted handoff workspace");
+assert.match(handoffPage, /Care Handoffs/,
+  "the handoff route must have its own visible page heading");
+assert.match(handoffPage, /onResumeDraft=\{resumeDraft\}/,
+  "caregivers must be able to resume a persisted draft from the Handoffs workspace");
+assert.match(handoffPage, /href="\/workspace\/companion"/,
+  "caregivers must retain a route to prepare a new handoff through Companion");
+assert.doesNotMatch(handoffPage, /redirect\(/,
+  "the Handoffs route must not redirect into Companion");
 for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
   assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
 }
@@ -35,6 +43,8 @@ assert.match(companionPage, /onResumeDraft/,
 
 assert.match(sharingComponent, /getJSON\("\/handoff-drafts\?limit=10"\)/,
   "caregiver-owned persisted drafts must be discoverable");
+assert.match(sharingComponent, /canUseHandoffs\s*\?\s*getJSON\("\/handoffs\/outbox"\)/,
+  "outgoing handoff history must not trigger a 403 before required consent is saved");
 assert.match(sharingComponent, /getJSON\("\/handoff-drafts\//,
   "saved drafts must be retrieved from the backend before review");
 assert.match(sharingComponent, /putJSON\("\/handoff-drafts\//,
