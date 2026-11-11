@@ -111,12 +111,42 @@ const outcomes: Record<ReviewType, string[]> = {
   completeness: ['complete', 'partial', 'missing', 'undetermined'],
 }
 const labels: Record<ReviewType, string> = {
-  quality: 'Evidence quality',
-  reliability: 'Evidence reliability',
-  source_confidence: 'Source verification',
-  freshness: 'Freshness',
-  completeness: 'Completeness',
+  quality: 'Information quality',
+  reliability: 'How reliable the source is',
+  source_confidence: 'Who provided the information',
+  freshness: 'How current it is',
+  completeness: 'How complete it is',
 }
+const reviewStatusLabel = (value: string) => ({
+  not_assessed: 'Not checked',
+  undetermined: 'Not sure',
+  unverified: 'Not confirmed',
+  verified: 'Checked',
+  partially_verified: 'Partly checked',
+  independent_source_linked: 'A separate report is linked',
+  copied_or_same_origin: 'Copied from the same original source',
+  none_linked: 'No other report is linked',
+  stale: 'May be out of date',
+  historical: 'Older information',
+  current: 'Still current',
+  partial: 'Some details are missing',
+  missing: 'Missing',
+  conflicting: 'Reports disagree',
+  specified: 'Recorded',
+  adequate: 'Enough detail',
+  limited: 'Limited detail',
+  insufficient: 'Not enough detail',
+  supported: 'Matches the saved source',
+  contested: 'Other information disagrees',
+  complete: 'Complete',
+}[value] ?? value.replaceAll('_', ' ')
+const reviewCriterionLabel = (value: string) => ({
+  'source attribution': 'Who provided it',
+  'independent corroboration': 'Whether there are separate reports',
+  'temporal context': 'When it happened',
+  'evidence freshness': 'Whether it is still current',
+  'record completeness': 'Whether details are missing',
+}[value] ?? value.replaceAll('_', ' '))
 const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12, background: 'var(--surface)' }
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
@@ -595,12 +625,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
                 <li key={String(item.target_type) + ':' + String(item.target_id)}>
                   <strong>{String(item.target_type).replaceAll('_', ' ')}</strong>
                   {' — '}version {String(item.version_number)} ({String(item.change_kind)})
-                  <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.state, null, 2)}</pre>
-                  <p>Supporting records: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0} authorized source reference(s)</p>
+                        <p>Supporting information linked: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}</p>
                 </li>
               ))}
             </ul>
-            <p>{String(recordHistory.interpretation_limit)}</p>
+            <p>Some earlier changes may not be available in this view.</p>
           </div>}
         </details>
 
@@ -617,8 +646,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {reconstructedHistory && <div role="status" style={{ marginTop: 8 }}>
             <p><strong>Recorded version:</strong> {String(reconstructedHistory.version_number)} · {String(reconstructedHistory.change_kind)} · {String(reconstructedHistory.recorded_change_at || 'time not recorded')}</p>
             <p><strong>Chosen date and time:</strong> {String(reconstructedHistory.requested_as_of)}</p>
-            <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(reconstructedHistory.state, null, 2)}</pre>
-            <p>{String(reconstructedHistory.interpretation_limit)}</p>
+            <p>An earlier saved version is available. This does not prove the statement was true.</p>
           </div>}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
@@ -627,12 +655,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {sourceIntegrityError && <p role="alert" style={{ color: 'var(--error)' }}>{sourceIntegrityError} <button type="button" style={button} onClick={() => void loadSourceIntegrity()} disabled={sourceIntegrityLoading}>Try again</button></p>}
           {!sourceIntegrityLoading && !sourceIntegrityError && sourceIntegrity && <>
             <p><strong>Saved wording:</strong> {sourceIntegrity.source_text_integrity_status === 'match' ? 'Matches the original saved copy' : sourceIntegrity.source_text_integrity_status === 'mismatch' ? 'Does not match the original saved copy' : 'Comparison is not available'}</p>
-            <p><strong></strong> {sourceIntegrity.hash_scope}</p>
-            <p style={{ overflowWrap: 'anywhere' }}><strong></strong> {sourceIntegrity.stored_source_text_sha256 || 'Unavailable'}</p>
-            <p style={{ overflowWrap: 'anywhere' }}><strong></strong> {sourceIntegrity.recomputed_source_text_sha256 || 'Unavailable'}</p>
-            <p><strong>Original uploaded file:</strong> {sourceIntegrity.original_binary_status.replaceAll('_', ' ')}
-              {sourceIntegrity.original_binary_available === false ? ' · original file cannot be opened' : ''}
-            </p>
+            <p><strong>Original uploaded file:</strong> {sourceIntegrity.original_binary_status === 'match' ? 'Matches the saved copy' : sourceIntegrity.original_binary_status === 'mismatch' ? 'Does not match the saved copy' : sourceIntegrity.original_binary_available === false ? 'Cannot be opened' : 'Not checked'}</p>
             {sourceIntegrity.original_binary_status === 'match' && (
               <p>The original file matches the copy first saved.</p>
             )}
@@ -645,7 +668,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Other records with the same original file:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_binary_duplicate_candidate_ids.length + ' possible match(es)'
               : 'No identical original file was found.'}</p>
-            <p><strong>Similar wording check:</strong> {sourceIntegrity.near_duplicate_comparison_status.replaceAll('_', ' ')} {sourceIntegrity.near_duplicate_algorithm_version}</p>
+            <p><strong>Similar wording check:</strong> {sourceIntegrity.near_duplicate_comparison_status === 'complete' ? 'Finished' : sourceIntegrity.near_duplicate_comparison_status === 'not_run' ? 'Not checked' : 'Could not be completed'}</p>
             {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
               <p key={group.evidence_ids.join(':') + index}>
                 Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {group.interpretation}
@@ -653,11 +676,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
             <p><strong>How current it is:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>How complete it is:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
-            <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'not checked; external locations are not fetched automatically' : 'not provided'}</p>
+            <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
-          <p style={{ overflowWrap: 'anywhere' }}>{selected.source_text_sha256 || 'Comparison unavailable'}</p>
           <small>The wording check only compares the saved text. It does not confirm who wrote the original or prove that an uploaded file is genuine.</small>
         </details>
       </>}
@@ -668,35 +690,35 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </select>
         </label>
         <label style={{ fontSize: 12 }}>Your review
-          <select style={field} value={outcome} onChange={event => setYour review(event.target.value)}>
-            {outcomes[reviewType].map(value => <option key={value} value={value}>{value.replace(/_/g, ' ')}</option>)}
+          <select style={field} value={outcome} onChange={event => setOutcome(event.target.value)}>
+            {outcomes[reviewType].map(value => <option key={value} value={value}>{reviewStatusLabel(value)}</option>)}
           </select>
         </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9, marginTop: 9 }}>
         <label style={{ fontSize: 12 }}>Who provided this information?
           <select style={field} value={sourceResult} onChange={event => setSourceResult(event.target.value)}>
-            <option value="not_assessed">Not assessed</option><option value="present">Present</option><option value="incomplete">Incomplete</option><option value="unverified">Unverified</option>
+            <option value="not_assessed">Not checked</option><option value="present">Recorded</option><option value="incomplete">Incomplete</option><option value="unverified">Not confirmed</option>
           </select>
         </label>
         <label style={{ fontSize: 12 }}>Was this reported separately?
           <select style={field} value={corroborationResult} onChange={event => setCorroborationResult(event.target.value)}>
-            <option value="not_assessed">Not assessed</option><option value="independent_source_linked">A separate report is linked</option><option value="copied_or_same_origin">Copied from the same original source</option><option value="none_linked">None linked</option>
+            <option value="not_assessed">Not checked</option><option value="independent_source_linked">A separate report is linked</option><option value="copied_or_same_origin">Copied from the same original source</option><option value="none_linked">No other report is linked</option>
           </select>
         </label>
         <label style={{ fontSize: 12 }}>When did it happen?
           <select style={field} value={temporalResult} onChange={event => setTemporalResult(event.target.value)}>
-            <option value="not_assessed">Not assessed</option><option value="specified">Specified</option><option value="partial">Partial</option><option value="missing">Missing</option><option value="conflicting">Conflicting</option>
+            <option value="not_assessed">Not checked</option><option value="specified">Recorded</option><option value="partial">Partly recorded</option><option value="missing">Missing</option><option value="conflicting">Reports disagree</option>
           </select>
         </label>
         <label style={{ fontSize: 12 }}>Does this information still apply?
           <select style={field} value={freshnessResult} onChange={event => setFreshnessResult(event.target.value)}>
-            <option value="not_assessed">Not assessed</option><option value="current">Current</option><option value="stale">Stale</option><option value="historical">Historical</option><option value="undetermined">Undetermined</option>
+            <option value="not_assessed">Not checked</option><option value="current">Still current</option><option value="stale">May be out of date</option><option value="historical">Older information</option><option value="undetermined">Not sure</option>
           </select>
         </label>
         <label style={{ fontSize: 12 }}>Is anything missing?
           <select style={field} value={completenessResult} onChange={event => setCompletenessResult(event.target.value)}>
-            <option value="not_assessed">Not assessed</option><option value="complete">Complete</option><option value="partial">Partial</option><option value="missing">Missing</option><option value="undetermined">Undetermined</option>
+            <option value="not_assessed">Not checked</option><option value="complete">Complete</option><option value="partial">Some details are missing</option><option value="missing">Missing</option><option value="undetermined">Not sure</option>
           </select>
         </label>
       </div>
@@ -709,10 +731,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <h4 style={{ fontSize: 13, marginBottom: 5 }}>Past reviews</h4>
       {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Past reviews could not be loaded. Try again; a failed load does not mean there are no reviews.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No past reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
-        <strong>{labels[review.review_type] || review.review_type}: {review.outcome.replace(/_/g, ' ')}</strong>
+        <strong>{labels[review.review_type] || 'Saved review'}: {reviewStatusLabel(review.outcome)}</strong>
         <div>{new Date(review.created_at).toLocaleString()} · review rule {review.policy_version}</div>
         <p>{review.rationale}</p>
-        <ul>{review.criteria.map((criterion, index) => <li key={index}>{criterion.criterion}: {criterion.result.replace(/_/g, ' ')} — {criterion.rationale}</li>)}</ul>
+        <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {criterion.rationale}</li>)}</ul>
         <details><summary>Who provided this information? snapshot</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(review.source_attribution, null, 2)}</pre></details>
       </article>)}
     </> : null}
