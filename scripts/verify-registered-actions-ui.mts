@@ -36,7 +36,7 @@ for (const contract of [
   'currentCaregiverId',
   'Only the responsible caregiver can change this action.',
   'Another caregiver',
-  'Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} linked record(s)',
+  'Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)',
   'Sources: {event.evidence_ids.length} saved item(s)',
   'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id}',
   'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])}',
