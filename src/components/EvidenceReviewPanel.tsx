@@ -322,7 +322,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       )
       if (!result || typeof result !== 'object' || (result as Record<string, unknown>).person_id !== personId ||
           !Array.isArray((result as Record<string, unknown>).items) ||
-          (result as Record<string, unknown>).coverage_status !== 'partial_version_history') {
+          (result as Record<string, unknown>).coverage_status !== 'partial_revision_history') {
         throw new Error('Historical response is not valid for this care record')
       }
       setRecordHistory(result as Record<string, unknown>)
@@ -620,7 +620,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {recordHistory && <div role="status" style={{ marginTop: 8 }}>
             <p><strong>Information available:</strong> {reviewStatusLabel(String(recordHistory.coverage_status))} · {String(recordHistory.target_count)} saved items{recordHistory.truncated ? ' · only part of the history is shown' : ''}</p>
             <p><strong>Chosen date and time:</strong> {String(recordHistory.requested_as_of)}</p>
-            <p>Some earlier changes may not be available in this view.</p>
+            <p>No complete historical record is assumed. Some earlier changes may not be available in this view.</p>
           </div>}
         </details>
 
