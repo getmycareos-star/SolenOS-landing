@@ -281,6 +281,7 @@ await record("06 Companion context and Qwen output", async () => {
 
 // 7. Change detection: reconcile against saved source evidence and retrieve the run.
 await record("07 change detection and supporting evidence", async () => {
+  const deltaStartedAt = performance.now();
   const reconciled = await request("/api/v1/care-delta/reconcile", {
     token: identity.token, method: "POST",
     body: {
@@ -292,7 +293,9 @@ await record("07 change detection and supporting evidence", async () => {
       persist: true,
     },
   });
+  const deltaDurationMs = Math.round(performance.now() - deltaStartedAt);
   assert.equal(reconciled.status, 200, JSON.stringify(reconciled.payload));
+  assert.ok(deltaDurationMs < 150_000, `Delta Engine exceeded the 150-second inference budget: ${deltaDurationMs}ms`);
   const invalid = await request("/api/v1/care-delta/reconcile", {
     token: identity.token, method: "POST",
     body: { person_id: identity.personId, source: "critical_care_journey_e2e", content: "", persist: true },
