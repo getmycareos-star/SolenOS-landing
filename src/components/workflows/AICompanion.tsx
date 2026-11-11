@@ -135,6 +135,17 @@ interface ClaimProvenance {
   }>
 }
 
+const SOURCE_REFERENCE_LABELS: Record<string, string> = {
+  document_extractions: 'Extracted document text',
+  care_evidence: 'Original uploaded source',
+  events: 'Recorded care event',
+  care_events: 'Recorded care event',
+  assertions: 'Care record assertion',
+  care_assertions: 'Care record assertion',
+  conversation_messages: 'Prior Companion message',
+  companion_messages: 'Prior Companion message',
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -848,6 +859,16 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
                       </section>
                     })}
+                    {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Selected saved sources">
+                      <strong>Selected saved sources</strong>
+                      {msg.source_record_refs?.map((reference, referenceIndex) => (
+                        <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
+                          <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || reference.record_type.replaceAll('_', ' ')}</strong>
+                          {reference.record_type === 'document_extractions' && <p>Extracted document text is context only, not yet an LCR assertion. Review and accept a candidate in Documents before it becomes a caregiver-reviewed LCR assertion.</p>}
+                          {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Prior Companion message — conversation context only. It is not care evidence.</p>}
+                        </div>
+                      ))}
+                    </section>}
                     {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Sources for this answer">
                       <strong>What this answer is based on</strong>
                       <p>Each statement is checked against the wording in saved records. A match does not prove that a report is true or that two records came from different people.</p>
