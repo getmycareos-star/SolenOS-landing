@@ -153,7 +153,7 @@ export function AddSituationPanel({
         onDocumentsChange(
           documents.map((d) => (d.id === doc.id ? { ...next, id: d.id } : d)),
         );
-        if (next.status === "failed" || (next.status === "ready" && !next.extractedText.trim())) {
+        if (next.errorNote || next.status === "failed" || (next.status === "ready" && !next.extractedText.trim())) {
           setLocalHint(next.errorNote ?? "Text extraction is not available for this file. Type the key details instead.");
         } else {
           setLocalHint(null);
