@@ -527,3 +527,112 @@
 :root[data-solenos-theme="dark"] .appointment-workspace :is(input,select,textarea) {
   border-color: #45624d !important;
 }
+
+
+/* Focused final fixes: appointment workspace and required privacy acknowledgement only. */
+:root[data-solenos-theme="dark"] .appointment-workspace {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  .appointment-heading-icon,.appointment-lcr-brief,.appointment-brief-grid > div,
+  .appointment-coverage-item,.appointment-summary,.appointment-followup
+) {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  .appointment-heading h3,.appointment-stage-panel h4,.appointment-stage-panel h5,
+  .appointment-brief-grid strong,.appointment-summary h5,.appointment-followups-heading h5
+) {
+  color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  .appointment-heading p,.appointment-kicker,.appointment-stage-intro,
+  .appointment-lcr-brief-heading p,.appointment-brief-grid li,
+  .appointment-brief-grid li p,.appointment-brief-grid > div > p,
+  .appointment-brief-limitations,.appointment-source-coverage > strong,
+  .appointment-coverage-item b,.appointment-coverage-item small,
+  .appointment-summary p,.appointment-summary li,
+  .appointment-fields label,.appointment-followup label,.appointment-review-status
+) {
+  color: var(--theme-panel-muted) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  .appointment-boundary,.appointment-save-boundary,.appointment-source-coverage,
+  .appointment-stage-panel,.appointment-save-controls
+) {
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  .appointment-fields input,.appointment-fields textarea,
+  .appointment-followup input,.appointment-followup select,
+  .appointment-review-status select
+) {
+  background: var(--theme-field-bg) !important;
+  color: var(--theme-field-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+  -webkit-text-fill-color: var(--theme-field-fg) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  input,textarea,select
+)::placeholder {
+  color: var(--theme-field-placeholder) !important;
+  -webkit-text-fill-color: var(--theme-field-placeholder) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-stage {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-stage.is-active {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+  border-color: #a8c9a3 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-secondary {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-brief-warning {
+  background: var(--theme-warning-bg) !important;
+  color: var(--theme-warning-fg) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-brief-warning * {
+  color: var(--theme-warning-fg) !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-primary {
+  background: #b9d5b5 !important;
+  color: #17251c !important;
+  border-color: #a8c9a3 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  .appointment-heading-icon,.appointment-workspace svg
+) {
+  color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel .policy-required-ack,
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel .policy-required-ack p,
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel .policy-required-ack .panel-muted {
+  color: #f3f7f3 !important;
+  -webkit-text-fill-color: #f3f7f3 !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel .policy-required-ack {
+  background: #26332b !important;
+  border: 1px solid #647568 !important;
+  border-radius: 10px;
+  padding: 12px;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel .policy-required-ack a {
+  color: #b9d5b5 !important;
+  text-decoration: underline;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel .policy-required-ack .consent-checkbox,
+:root[data-solenos-theme="dark"] .settings-section-wrap .policy-settings-panel .policy-required-ack .consent-checkbox span {
+  color: #f3f7f3 !important;
+  -webkit-text-fill-color: #f3f7f3 !important;
+}
