@@ -105,9 +105,9 @@ assert.ok(dailyCareQwen.includes("var(--theme-field-bg)"));
 assert.ok(assistPanel.includes('className="qwen-assist-panel"'));
 assert.ok(!assistPanel.includes('background: "#ffffff", color: "#172b35"'));
 
-assert.ok(accessibilityCss.includes(".companion-handoff-sharing"));
-assert.ok(accessibilityCss.includes(".appointment-brief-grid"));
-assert.ok(accessibilityCss.includes(".history-search-wrap"));
-assert.ok(accessibilityCss.includes(".continuity-prompt-form"));
-assert.ok(accessibilityCss.includes("[data-solenos-error-surface]"));
+assert.ok(themeOverrides.includes(".companion-handoff-sharing"));
+assert.ok(themeOverrides.includes(".appointment-brief-grid"));
+assert.ok(themeOverrides.includes(".history-search-wrap"));
+assert.ok(themeOverrides.includes(".continuity-prompt-form"));
+assert.ok(themeOverrides.includes("[data-solenos-error-surface]"));
 console.log("Caregiver UI contract checks passed.");
