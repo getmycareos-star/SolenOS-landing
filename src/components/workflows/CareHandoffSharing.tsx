@@ -500,6 +500,14 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           ))}
         </section>
       )}
+      {savedDrafts.length === 0 && !loading && !historyError && (
+        <section style={{ ...panel, marginTop: 0 }} aria-label="Saved handoff drafts">
+          <h4 style={{ marginTop: 0 }}>Saved handoff drafts</h4>
+          <p style={{ fontSize: 13, color: "#667267", marginBottom: 0 }}>
+            No handoff drafts have been saved for this care record yet. Use AI Companion to prepare a draft from authorised saved records.
+          </p>
+        </section>
+      )}
 
       {draft && audience === "professional" && (
         <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
