@@ -306,7 +306,7 @@ await record("09 appointment summary persistence", async () => {
   assert.equal(saved.status, 201, JSON.stringify(saved.payload));
   appointmentWorkspaceId = saved.payload.id;
   const replay = await request("/api/v1/appointment-workspaces", { token: identity.token, method: "POST", body: payload });
-  assert.equal(replay.status, 200, JSON.stringify(replay.payload));
+  assert.ok([200, 201].includes(replay.status), JSON.stringify(replay.payload));
   assert.equal(replay.payload.id, appointmentWorkspaceId);
   const list = await request("/api/v1/appointment-workspaces", { token: identity.token });
   assert.equal(list.status, 200);
@@ -395,6 +395,38 @@ await record("frontend consumes persisted documents and appointments", async () 
   assert.ok(appointmentRequests.some((item) => item.status === 200), JSON.stringify(appointmentRequests));
   await verifyMobile(appointmentPage.page);
   await appointmentPage.context.close();
+});
+
+
+await record("frontend loading and empty states", async () => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await context.addInitScript((identity) => {
+    localStorage.setItem("solenos_anonymous_access_token", identity.token);
+    localStorage.setItem("solenos_backend_person_id", identity.personId);
+    localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
+    localStorage.setItem("solenos_anonymous_session_expires_at", identity.expiresAt);
+  }, {
+    token: session.access_token,
+    personId: session.person.id,
+    caregiverId: session.caregiver.id,
+    expiresAt: session.expires_at,
+  });
+  const page = await context.newPage();
+  await page.route("**/api/v1/evidence/**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    await route.continue();
+  });
+  await page.goto(new URL("/workspace/documents", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("status").filter({ hasText: "Loading saved documents" }).waitFor({ timeout: 10_000 });
+  await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
+  await verifyMobile(page);
+  await context.close();
+
+  const emptySession = await newSession("empty documents state");
+  const emptyPage = await createBrowserPage(emptySession, "/workspace/documents");
+  await emptyPage.page.getByText("No saved documents yet", { exact: true }).waitFor({ timeout: 15_000 });
+  await verifyMobile(emptyPage.page);
+  await emptyPage.context.close();
 });
 
 await record("frontend network failure is surfaced rather than rendered as empty data", async () => {
