@@ -262,7 +262,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         canUseHandoffs
           ? getJSON("/handoffs/inbox") as Promise<{ items?: InboxItem[] }>
           : Promise.resolve({ items: [] as InboxItem[] }),
-        getJSON("/handoffs/outbox") as Promise<{ items?: OutboxItem[] }>,
+        canUseHandoffs
+          ? getJSON("/handoffs/outbox") as Promise<{ items?: OutboxItem[] }>
+          : Promise.resolve({ items: [] as OutboxItem[] }),
         getJSON("/handoff-drafts?limit=10") as Promise<{ items?: Array<DraftPayload & { updated_at?: string }> }>,
       ]);
       if (directoryResult.status === "fulfilled") setDirectory(directoryResult.value.items ?? []);
