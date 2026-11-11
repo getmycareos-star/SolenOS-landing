@@ -160,7 +160,7 @@ export default function QwenAssistPanel({
             rows={compact ? 2 : 3}
             maxLength={1800}
             placeholder="Ask a question about the information here…"
-            style={{ width: "100%", boxSizing: "border-box", border: "2px solid #718477", borderRadius: "8px", padding: "10px", background: "#ffffff", color: "#172b35", caretColor: "#172b35", WebkitTextFillColor: "#172b35", fontSize: "16px", resize: "vertical" }}
+            style={{ width: "100%", boxSizing: "border-box", border: "2px solid var(--theme-panel-border)", borderRadius: "8px", padding: "10px", background: "var(--theme-field-bg)", color: "var(--theme-field-fg)", caretColor: "var(--theme-field-fg)", WebkitTextFillColor: "var(--theme-field-fg)", fontSize: "16px", resize: "vertical" }}
           />
         </label>
         <div>
@@ -168,14 +168,14 @@ export default function QwenAssistPanel({
             type="button"
             onClick={askQwen}
             disabled={loading || !question.trim()}
-            style={{ border: "2px solid #8eae8a", borderRadius: "8px", padding: "10px 16px", minHeight: "44px", background: loading || !question.trim() ? "#e8eee9" : "#b9d5b5", color: "#17251c", fontSize: "14px", fontWeight: 750, opacity: 1, cursor: loading || !question.trim() ? "not-allowed" : "pointer" }}
+            style={{ border: "2px solid #8eae8a", borderRadius: "8px", padding: "10px 16px", minHeight: "44px", background: loading || !question.trim() ? "var(--theme-action-disabled-bg)" : "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontSize: "14px", fontWeight: 750, opacity: 1, cursor: loading || !question.trim() ? "not-allowed" : "pointer" }}
           >
             {loading ? "Working…" : "Send"}
           </button>
         </div>
       </div>
 
-      {error && <p role="alert" style={{ color: "#3b2e11", background: "#fff4dc", border: "1px solid #c8a85d", borderRadius: "8px", padding: "10px 12px", fontSize: "14px", lineHeight: 1.5, marginTop: "10px" }}>{error}</p>}
+      {error && <p role="alert" style={{ color: "var(--theme-warning-fg)", background: "var(--theme-warning-bg)", border: "1px solid var(--theme-warning-border)", borderRadius: "8px", padding: "10px 12px", fontSize: "14px", lineHeight: 1.5, marginTop: "10px" }}>{error}</p>}
       {reply && (
         <div style={{ marginTop: "12px", border: "1px solid var(--border)", borderRadius: "9px", padding: "12px", background: "var(--bg)" }}>
           <p style={{ fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{reply.reply}</p>
