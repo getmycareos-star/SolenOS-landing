@@ -104,6 +104,15 @@ interface ClaimSourceReference {
   entered_by?: string | null
   record_status?: string | null
   related_evidence_ids?: string[]
+  related_evidence?: Array<{
+    label: string
+    record_id: string
+    source_excerpt: string
+    occurred_at?: string | null
+    recorded_at?: string | null
+    reported_by?: string | null
+    record_status?: string | null
+  }>
 }
 
 interface ClaimProvenance {
@@ -858,6 +867,16 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.entered_by && <p>{source.entered_by}</p>}
                                   {source.record_status && <p>Record status: {source.record_status.replaceAll('_', ' ')}</p>}
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                                  {(source.related_evidence?.length ?? 0) > 0 && <div>
+                                    <strong>Supporting note or document</strong>
+                                    {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
+                                      <p>{item.label}</p>
+                                      {item.reported_by && <p>Reported by: {item.reported_by}</p>}
+                                      {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
+                                      {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
+                                      {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
+                                    </div>)}
+                                  </div>}
                                 </div>
                               ))}
                             </div>
