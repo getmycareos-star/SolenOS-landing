@@ -562,3 +562,119 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 :root[data-solenos-theme="dark"] .appointment-workspace button {
   color: #172b35;
 }
+
+
+/* Application-wide contrast invariant for deliberately light surfaces in dark mode.
+   This catches inline white/light panels used by workspace features without changing
+   their surface colour. Text on those surfaces is always dark and neutral. */
+:root[data-solenos-theme="dark"] :is(
+  .care-record-overview,
+  .companion-handoff,
+  .companion-handoff-sharing,
+  .companion-handoff-sharing > section,
+  .companion-handoff-source-item,
+  .appointment-brief-grid > div,
+  .appointment-fields,
+  .appointment-followup,
+  .appointment-review-status,
+  .history-drawer-header,
+  .history-search-wrap,
+  .continuity-prompt-form,
+  .continuity-prompt-form label,
+  .continuity-prompt-form input,
+  .document-card,
+  .workspace-entry-action,
+  .solenos-display-panel,
+  .solenos-record-details-dialog
+) {
+  color: #172b35;
+}
+:root[data-solenos-theme="dark"] :is(
+  .companion-handoff,
+  .companion-handoff-sharing,
+  .companion-handoff-sharing > section,
+  .companion-handoff-source-item,
+  .appointment-brief-grid > div,
+  .history-drawer-header,
+  .history-search-wrap,
+  .continuity-prompt-form
+) :is(h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,summary) {
+  color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] :is(
+  .companion-handoff-sharing,
+  .appointment-fields,
+  .appointment-followup,
+  .appointment-review-status,
+  .continuity-prompt-form
+) :is(input,textarea,select) {
+  background: #ffffff !important;
+  color: #172b35 !important;
+  caret-color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+  border-color: #aebbb1 !important;
+}
+:root[data-solenos-theme="dark"] :is(
+  .companion-handoff-sharing,
+  .appointment-fields,
+  .appointment-followup,
+  .appointment-review-status,
+  .continuity-prompt-form
+) :is(input,textarea,select)::placeholder {
+  color: #586b60 !important;
+  -webkit-text-fill-color: #586b60 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing :is(
+  .companion-handoff-sharing button,
+  button
+) {
+  color: #172b35;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing button:not(:disabled) {
+  border-color: #9aafa0;
+}
+:root[data-solenos-theme="dark"] .appointment-brief-grid :is(strong,li,span,small) {
+  color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-brief-grid small,
+:root[data-solenos-theme="dark"] .appointment-stage-intro,
+:root[data-solenos-theme="dark"] .appointment-lcr-brief-heading p {
+  color: #52645a !important;
+}
+:root[data-solenos-theme="dark"] .history-drawer-header :is(h1,h2,h3,p,span,strong,small,button),
+:root[data-solenos-theme="dark"] .history-search-wrap :is(input,button,span) {
+  color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] .history-search-wrap input {
+  background: #ffffff !important;
+  color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] .history-search-wrap input::placeholder {
+  color: #586b60 !important;
+  -webkit-text-fill-color: #586b60 !important;
+}
+:root[data-solenos-theme="dark"] .continuity-prompt-form input {
+  background: #ffffff !important;
+  color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] .continuity-prompt-form input::placeholder {
+  color: #586b60 !important;
+  -webkit-text-fill-color: #586b60 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing :is(textarea,select) {
+  background: #ffffff !important;
+  color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+}
+
+/* Native error/recovery screens are outside the workspace shell but must obey
+   the same light-surface contrast rule. */
+:root[data-solenos-theme="dark"] [data-solenos-error-surface] {
+  background: #ffffff !important;
+  color: #172b35 !important;
+}
+:root[data-solenos-theme="dark"] [data-solenos-error-surface] :is(h1,h2,h3,p,span,strong,small,button) {
+  color: #172b35 !important;
+}
