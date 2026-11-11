@@ -86,7 +86,7 @@ main, section, article, aside, form, fieldset,
 }
 
 
-/* Workspace display preferences. Public landing routes do not import this file. */
+/* Shared display preferences and theme overrides; imported after base and mobile styles. */
 :root {
   --solenos-text-scale: 1;
   --surface: #ffffff;
