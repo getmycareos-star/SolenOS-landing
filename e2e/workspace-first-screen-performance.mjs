@@ -31,7 +31,7 @@ try {
   // Route same-origin frontend requests to the isolated FastAPI + PostgreSQL
   // service. The test uses a fresh server-issued anonymous session and creates
   // no care events, evidence, appointments, handoffs or Companion messages.
-  await page.route("**/api/v1/**", async (route) => {
+  await page.route("**/api/**", async (route) => {
     const request = route.request();
     const requestUrl = new URL(request.url());
     const target = new URL(requestUrl.pathname + requestUrl.search, backend);
@@ -44,7 +44,7 @@ try {
 
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.pathname.includes("/api/v1/")) {
+    if (url.pathname.startsWith("/api/")) {
       apiRequestStarts.set(request.url(), Date.now());
       apiRequests.push({ method: request.method(), path: url.pathname });
     }
@@ -52,7 +52,7 @@ try {
   page.on("response", (response) => {
     const request = response.request();
     const url = new URL(response.url());
-    if (!url.pathname.includes("/api/v1/")) return;
+    if (!url.pathname.startsWith("/api/")) return;
     apiResponses.push({ method: request.method(), path: url.pathname, status: response.status() });
     const started = apiRequestStarts.get(request.url());
     if (started && url.pathname.endsWith("/care-continuity/current-care")) {
