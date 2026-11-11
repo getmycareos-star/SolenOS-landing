@@ -1,9 +1,14 @@
-name: Anonymous account continuity browser E2E
+name: Main caregiver workflow integration and continuity browser E2E
 
 on:
   pull_request:
     paths:
       - "src/api/client.ts"
+      - "src/components/workflows/StructuredDailyCapture.tsx"
+      - "src/components/workflows/QuickDailyCheckIn.tsx"
+      - "src/components/workflows/AICompanion.tsx"
+      - "src/components/DocumentIntelligenceReview.tsx"
+      - "src/components/workflows/AppointmentWorkspace.tsx"
       - "src/app/workspace/settings/page.tsx"
       - "e2e/anonymous-account-continuity.mjs"
       - "e2e/workspace-first-screen-performance.mjs"
