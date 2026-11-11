@@ -239,7 +239,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           type="button"
           className="solenos-chat-mobile-scrim"
           aria-label="Close navigation"
-          onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
+          onClick={() => setSidebarOpen(false)}
         />
       )}
       <div className={`solenos-chat-sidebar-host${sidebarOpen ? " is-sidebar-open" : ""}`}>
@@ -278,7 +278,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 onMouseEnter={() => router.prefetch(href)}
                 onFocus={() => router.prefetch(href)}
                 onTouchStart={() => router.prefetch(href)}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
                 <span>{label}</span>
@@ -299,7 +299,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               onMouseEnter={() => router.prefetch("/workspace/settings")}
               onFocus={() => router.prefetch("/workspace/settings")}
               onTouchStart={() => router.prefetch("/workspace/settings")}
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
             >
               <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
               <span>Settings</span>
