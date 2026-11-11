@@ -710,7 +710,7 @@ export function HistoryDrawer() {
       if (eventResult.status === "fulfilled" && eventItems) {
         availableSources += 1;
         const validEvents = (eventItems as CareEvent[]).filter((item) =>
-          Boolean(item && typeof item.id === "string" && typeof item.person_id === "string" &&
+          Boolean(item && typeof item.id === "string" && item.person_id === session.person.id &&
             typeof item.event_type === "string" && typeof item.title === "string")
         );
         nextRecords.push(...validEvents.map((event) => ({ ...event, source_kind: "care-event" as const })));
