@@ -65,12 +65,17 @@ export function IdentityDeviceRecoveryPanel() {
     setError("");
     try {
       await ensureAnonymousSession();
-      await postJSON("/identity/devices", {
+      const result = await postJSON("/identity/devices", {
         installation_key: getInstallationKey(),
         label: "This browser/device",
         platform: typeof navigator === "undefined" ? "unknown" : navigator.platform || "browser",
       }) as { device: Device };
-      show("Device registration saved. It is not treated as verified identity.", "success");
+      show(
+        result.device.trust_status === "verified"
+          ? "This device is registered and verified for the signed-in account."
+          : "Device registration saved. Sign in to the account on this device to verify it.",
+        "success",
+      );
       await loadDevices();
     } catch (e) {
       setError(e instanceof Error ? e.message : "We couldn't register this device.");
