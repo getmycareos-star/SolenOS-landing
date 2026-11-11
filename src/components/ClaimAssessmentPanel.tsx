@@ -19,7 +19,7 @@ type Assessment = {
   claim_version: number;
   status: string;
   rationale: string;
-  policy_version: string;
+  review version: string;
   evidence_links: Array<{
     evidence_id: string;
     relationship: string;
@@ -82,6 +82,34 @@ const button: CSSProperties = {
   background: "var(--surface)", color: "var(--text)", cursor: "pointer",
 };
 
+function simpleReviewStatus(value: string): string {
+  return ({
+    supported: "Supported by the saved source",
+    partially_supported: "Some details are supported",
+    contradicted: "Does not match other information",
+    unverified: "Not confirmed",
+    uncertain: "Still unclear",
+    conflicting: "Reports do not match",
+    missing_evidence: "No source is attached",
+    stale: "May be out of date",
+    superseded: "Replaced by newer information",
+    withdrawn: "No longer being used",
+    derived_from: "Based on",
+    requires: "Needs",
+    supports: "Supports",
+    qualifies: "Adds limits to",
+    supersedes: "Replaces",
+    partial_support: "Supports part of it",
+    scope_limited: "Supports only part",
+    contradicts: "Does not match",
+    neutral: "No clear link",
+    review_required: "Needs another review",
+    current: "Current",
+    outdated: "May be out of date",
+    unchanged: "No change found",
+  } as Record<string, string>)[value] ?? value.replaceAll("_", " ");
+}
+
 function emptyLink(): DraftLink {
   return { evidence_id: "", relationship: "supports", source_passage: "", scope_note: "" };
 }
@@ -138,7 +166,7 @@ export default function ClaimAssessmentPanel() {
       if (!Array.isArray(evidenceRows) || evidenceRows.some((item) =>
         item?.person_id !== scopedPersonId || typeof item?.id !== "string" ||
         typeof item?.source_text !== "string")) {
-        throw new Error("Evidence records were not valid for the authenticated care record");
+        throw new Error("Source informations were not valid for the authenticated care record");
       }
       setPersonId(scopedPersonId);
       setClaims(claimRows as Claim[]);
@@ -180,7 +208,7 @@ export default function ClaimAssessmentPanel() {
       setHistory(rows as Assessment[]);
     } catch {
       setHistory([]);
-      setHistoryError("Assessment history is unavailable. A failed request is not an empty history.");
+      setHistoryError("Past reviews is unavailable. A failed request is not an empty history.");
     } finally {
       setHistoryLoading(false);
     }
@@ -324,7 +352,7 @@ export default function ClaimAssessmentPanel() {
           status,
           superseded_by_claim_id: status === "superseded" ? supersededByClaimId : null,
           rationale: rationale.trim(),
-          policy_version: "claim-assessment-v1",
+          review version: "claim-assessment-v1",
           evidence_links: completeLinks.map((link) => ({
             evidence_id: link.evidence_id,
             relationship: link.relationship,
@@ -343,14 +371,14 @@ export default function ClaimAssessmentPanel() {
     }
   }
 
-  return <section style={panel} aria-label="Evidence-grounded claim assessments">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Review the information supporting a care detail</h3>
+  return <section style={panel} aria-label="Review saved care information">
+    <h3 style={{ fontSize: 15, marginTop: 0 }}>Review the information behind a care detail</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      Assess a specific claim against linked evidence. Support and contradiction passages must exactly match the saved source text. Assessments are append-only versions; they do not overwrite the original report or independently prove a clinical fact.
+      Compare a care detail with the saved sources. Any quoted passage must match the source exactly. Each review is saved as a new version. The original report is kept, and a review does not prove a medical fact.
     </p>
-    {loading && <p role="status">Loading persisted claims and evidence…</p>}
+    {loading && <p role="status">Loading saved care details and sources…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
-    {!loading && !error && claims.length === 0 && <p>There are no care details requiring this review yet.</p>}
+    {!loading && !error && claims.length === 0 && <p>There are no care details to review yet.</p>}
     {!loading && !error && claims.length > 0 && <>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Claim
         <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
@@ -358,15 +386,15 @@ export default function ClaimAssessmentPanel() {
         </select>
       </label>
       {selectedClaim && <div style={{ fontSize: 12, padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
-        <div><strong>Reported claim:</strong> {selectedClaim.asserted_value}</div>
-        <div><strong>Reporter/source label:</strong> {selectedClaim.source_label || "Not recorded"}</div>
-        <div><strong>Current assertion status:</strong> {selectedClaim.assertion_status.replaceAll("_", " ")}</div>
+        <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
+        <div><strong>Who reported it:</strong> {selectedClaim.source_label || "Not recorded"}</div>
+        <div><strong>Review status:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
         <div><strong>Linked evidence IDs:</strong> {selectedClaim.evidence_ids?.length ? selectedClaim.evidence_ids.join(", ") : "None recorded"}</div>
       </div>}
       <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 12, minWidth: 0 }}>
-        <legend style={{ fontSize: 12 }}>Claim dependency graph</legend>
-        <p style={{ fontSize: 12 }}>Declare how this claim relates to another claim. The API rejects cross-record links and cycles. A link is provenance, not proof of truth.</p>
-        {dependencyLoading && <p role="status">Loading claim dependencies…</p>}
+        <legend style={{ fontSize: 12 }}>How this detail relates to other details</legend>
+        <p style={{ fontSize: 12 }}>Show how this care detail relates to another. These links help organize information; they do not prove it is true.</p>
+        {dependencyLoading && <p role="status">Loading related care details…</p>}
         {dependencyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{dependencyError}</p>}
         {dependencyNotice && <p role="status" style={{ fontSize: 12 }}>{dependencyNotice}</p>}
         {!dependencyLoading && !dependencyError && dependencies.length === 0 &&
@@ -375,35 +403,35 @@ export default function ClaimAssessmentPanel() {
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "Depends on" : "Required by"}{" "}
             <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Claim not in current list"}</strong>
-            {" · "}{edge.dependency_type.replaceAll("_", " ")} · {edge.rationale}
+            {" · "}{simpleReviewStatus(edge.dependency_type)} · {edge.rationale}
           </li>)}
         </ul>}
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related claim
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related care detail
           <select style={field} value={dependencyTargetId} onChange={(event) => setDependencyTargetId(event.target.value)}>
             <option value="">Select a different claim</option>
             {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
               <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 100)}</option>)}
           </select>
         </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Relationship type
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>How they are related
           <select style={field} value={dependencyType} onChange={(event) => setDependencyType(event.target.value)}>
             {["derived_from", "requires", "supports", "qualifies", "supersedes"].map((value) =>
-              <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+              <option key={value} value={value}>{simpleReviewStatus(value)}</option>)}
           </select>
         </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Why are these claims linked?
+        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Why are these details related?
           <textarea style={{ ...field, minHeight: 60 }} value={dependencyRationale} onChange={(event) => setDependencyRationale(event.target.value)} />
         </label>
         <button type="button" style={button} onClick={() => void submitDependency()} disabled={dependencySaving || dependencyLoading}>
-          {dependencySaving ? "Saving relationship…" : "Add claim dependency"}
+          {dependencySaving ? "Saving link…" : "Link these details"}
         </button>
       </fieldset>
-      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Explicit assessment status
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Review result
         <select style={field} value={status} onChange={(event) => setStatus(event.target.value as (typeof statuses)[number])}>
-          {statuses.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+          {statuses.map((value) => <option key={value} value={value}>{simpleReviewStatus(value)}</option>)}
         </select>
       </label>
-      {status === "superseded" && <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Superseded by claim
+      {status === "superseded" && <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Replaced by
         <select style={field} value={supersededByClaimId} onChange={(event) => setSupersededByClaimId(event.target.value)}>
           <option value="">Select the replacement claim</option>
           {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
@@ -413,66 +441,66 @@ export default function ClaimAssessmentPanel() {
       </label>}
       <div style={{ display: "grid", gap: 10 }}>
         {links.map((link, index) => <fieldset key={index} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
-          <legend style={{ fontSize: 12 }}>Evidence link {index + 1}</legend>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Evidence record
+          <legend style={{ fontSize: 12 }}>Source link {index + 1}</legend>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Source information
             <select style={field} value={link.evidence_id} onChange={(event) => updateLink(index, { evidence_id: event.target.value })}>
-              <option value="">Select evidence (required for this link)</option>
+              <option value="">Choose a source</option>
               {evidence.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}
             </select>
           </label>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Relationship to this claim
+          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>How this source relates to the care detail
             <select style={field} value={link.relationship} onChange={(event) => updateLink(index, { relationship: event.target.value as DraftLink["relationship"] })}>
-              {relationships.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+              {relationships.map((value) => <option key={value} value={value}>{simpleReviewStatus(value)}</option>)}
             </select>
           </label>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Exact source passage
-            <textarea style={{ ...field, minHeight: 68 }} value={link.source_passage} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact passage from the selected evidence record. Do not paraphrase." />
+          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Exact words from the source
+            <textarea style={{ ...field, minHeight: 68 }} value={link.source_passage} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact words from the selected source. Do not rewrite them." />
           </label>
-          <label style={{ display: "block", fontSize: 12 }}>Scope limitation (optional)
+          <label style={{ display: "block", fontSize: 12 }}>What this source does not show (optional)
             <input style={field} value={link.scope_note} onChange={(event) => updateLink(index, { scope_note: event.target.value })} placeholder="What this passage does or does not establish" />
           </label>
-          {links.length > 1 && <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => setLinks((current) => current.filter((_, i) => i !== index))}>Remove link</button>}
+          {links.length > 1 && <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => setLinks((current) => current.filter((_, i) => i !== index))}>Remove source</button>}
         </fieldset>)}
       </div>
-      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => setLinks((current) => [...current, emptyLink()])} disabled={links.length >= 10}>Add evidence link</button>
-      <label style={{ display: "block", fontSize: 12, marginTop: 9 }}>Assessment rationale
-        <textarea style={{ ...field, minHeight: 75 }} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Explain the scope of the assessment, the evidence considered, and what remains uncertain." />
+      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => setLinks((current) => [...current, emptyLink()])} disabled={links.length >= 10}>Add another source</button>
+      <label style={{ display: "block", fontSize: 12, marginTop: 9 }}>Why this review was made
+        <textarea style={{ ...field, minHeight: 75 }} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Explain what information you checked and what is still unclear." />
       </label>
-      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || historyLoading}>{saving ? "Saving…" : "Save claim assessment"}</button>
+      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || historyLoading}>{saving ? "Saving…" : "Save review"}</button>
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <section aria-label="Assessment impact review" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
         <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Check whether new information affects this review</h4>
         <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This deterministic check looks for changed evidence links, unavailable previously assessed evidence, changed declared prerequisites, and unresolved matching conflicts. It does not prove truth or completeness.</p>
-        {impactLoading && <p role="status">Checking persisted assessment dependencies…</p>}
+        {impactLoading && <p role="status">Checking whether new information affects this review…</p>}
         {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
         {!impactLoading && !impactError && assessmentImpact && <>
-          <strong>{assessmentImpact.review_required ? "Review required or not yet established as current" : "No deterministic review trigger found"}</strong>
-          <div style={{ fontSize: 12, marginTop: 5 }}>Status: {assessmentImpact.status.replaceAll("_", " ")}{assessmentImpact.assessment_version != null ? ` · assessment version ${assessmentImpact.assessment_version}` : ""}</div>
+          <strong>{assessmentImpact.review_required ? "Review required or not yet established as current" : "No reason to repeat this review was found"}</strong>
+          <div style={{ fontSize: 12, marginTop: 5 }}>Status: {simpleReviewStatus(assessmentImpact.status)}{assessmentImpact.assessment_version != null ? ` · review version ${assessmentImpact.assessment_version}` : ""}</div>
           {assessmentImpact.reasons.length > 0
-            ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{reason.replaceAll("_", " ")}</li>)}</ul>
+            ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{simpleReviewStatus(reason)}</li>)}</ul>
             : <p style={{ fontSize: 12 }}>No specific reason to repeat this review was found in the information checked. This does not prove that the assessment is complete or correct.</p>}
-          {assessmentImpact.missing_evidence_ids.length > 0 && <p>Unavailable evidence IDs: {assessmentImpact.missing_evidence_ids.join(", ")}</p>}
-          {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Claim evidence not included in the latest assessment: {assessmentImpact.unassessed_claim_evidence_ids.join(", ")}</p>}
-          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Changed prerequisite claims: {assessmentImpact.changed_prerequisite_claim_ids.join(", ")}</p>}
-          {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Unresolved conflict · {item.field}</strong><div>{item.description}</div><small>{item.resolution_status} · {item.conflict_id}</small></div>)}
+          {assessmentImpact.missing_evidence_ids.length > 0 && <p>Sources that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
+          {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Sources not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
+          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that changed: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
+          {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {item.field}</strong><div>{item.description}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
           <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>{assessmentImpact.interpretation_limit}</p>
         </>}
       </section>
-      <h4 style={{ fontSize: 13, marginBottom: 5 }}>Assessment history</h4>
-      {historyLoading && <p role="status">Loading saved assessment versions…</p>}
+      <h4 style={{ fontSize: 13, marginBottom: 5 }}>Past reviews</h4>
+      {historyLoading && <p role="status">Loading saved review versions…</p>}
       {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError} <button type="button" style={button} onClick={() => void loadHistory()} disabled={historyLoading}>Retry history</button></p>}
-      {!historyLoading && !historyError && history.length === 0 && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>No previous reviews are recorded for this detail.</p>}
+      {!historyLoading && !historyError && history.length === 0 && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>No earlier reviews are saved for this care detail.</p>}
       {history.map((item) => <article key={item.id} style={{ borderTop: "1px solid var(--border)", padding: "9px 0", fontSize: 12 }}>
-        <strong>Version {item.claim_version}: {item.status.replaceAll("_", " ")}</strong>
-        <div>{new Date(item.created_at).toLocaleString()} · {item.policy_version} · reviewer {item.reviewed_by_caregiver_id}</div>
+        <strong>Version {item.claim_version}: {simpleReviewStatus(item.status)}</strong>
+        <div>{new Date(item.created_at).toLocaleString()} · {item.review version} · reviewed by a caregiver</div>
         <p>{item.rationale}</p>
         <ul>{item.evidence_links.map((link, i) => <li key={i}>
-          {link.relationship.replaceAll("_", " ")} · evidence {link.evidence_id}
+          {simpleReviewStatus(link.relationship)} · source information
           {link.source_passage ? <blockquote style={{ margin: "5px 0", paddingLeft: 8, borderLeft: "2px solid var(--border)" }}>{link.source_passage}</blockquote> : null}
           {link.scope_note ? <div>Scope: {link.scope_note}</div> : null}
         </li>)}</ul>
-        {item.supersedes_assessment_id && <small>Supersedes assessment {item.supersedes_assessment_id}</small>}
-        {item.superseded_by_claim_id && <small>Superseded by claim {item.superseded_by_claim_id}</small>}
+        {item.supersedes_assessment_id && <small>Replaces an earlier review</small>}
+        {item.superseded_by_claim_id && <small>Replaced by {item.superseded_by_claim_id}</small>}
       </article>)}
     </>}
   </section>;
