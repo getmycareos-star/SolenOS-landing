@@ -10,6 +10,7 @@ import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 const AppointmentWorkspace = dynamic(() => import('@/components/workflows/AppointmentWorkspace'), { ssr: false })
 import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
+import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 const CASUAL_GREETING = /^(?:hi|hello|hey|hiya|howdy|how are you(?: doing| today)?|how'?s it going|what'?s up|good morning|good afternoon|good evening|good night|thanks|thank you(?: so much)?|bye|goodbye|see you)[.!?,;:]*$/i
 
@@ -569,6 +570,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         </div>
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
+
+      <QwenAssistPanel
+        title="Help organise care information"
+        description="Ask about saved care history, changes, conflicting reports, appointments, handoffs, follow-ups or medication observations. Suggestions use information you are authorised to see and always need your review."
+        compact={home}
+      />
 
       {!home && (
       <section className="companion-purpose">
