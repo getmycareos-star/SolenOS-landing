@@ -80,7 +80,7 @@ assert(panel.includes("Links to other sources could not be loaded") && panel.inc
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
-assert(companion.includes("Evidence source lineage"), "Companion handoff preview must render source lineage, not only type it");
+assert(companion.includes("How the sources are connected"), "Companion handoff preview must render source lineage, not only type it");
 assert(companion.includes("claim_provenance: response.claim_provenance"), "Companion must consume claim-level source references from the backend");
 assert(companion.includes("Not matched to the wording in a saved record"), "Companion must visibly mark statements without a matching source");
 assert(companion.includes("What this answer is based on"), "Companion must show source details beside the specific statement they support");
@@ -88,13 +88,13 @@ assert(companion.includes("Supporting note or document"), "Matched care entries 
 assert(companion.includes("When it happened") && companion.includes("When it was added"), "Claim sources must show occurrence and recording times");
 assert(!companion.includes("Inspect source record references"), "caregivers must not be shown a generic list of unrelated source IDs");
 assert(companion.includes("scope_truncated"), "Companion must disclose bounded or truncated lineage retrieval");
-assert(companion.includes("not proof") || companion.includes("not proof that sources are independent"), "Companion must not present missing lineage groups as proof of independence");
+assert(companion.includes("do not prove that a report is true or that two reports are separate"), "Companion must not present missing lineage groups as proof of independence");
 console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
 
 const appointment = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert(appointment.includes("Evidence source lineage"), "Appointment preparation must render source lineage");
+assert(appointment.includes("How the sources are connected"), "Appointment preparation must render source lineage");
 assert(appointment.includes("scope_truncated"), "Appointment preparation must disclose bounded lineage retrieval");
-assert(appointment.includes("not establish that the sources are independent"), "Appointment preparation must not infer independence from missing lineage");
+assert(appointment.includes("This does not mean they are separate"), "Appointment preparation must not infer independence from missing lineage");
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
 
 const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
