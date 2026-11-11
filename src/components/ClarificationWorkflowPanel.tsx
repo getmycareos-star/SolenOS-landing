@@ -266,7 +266,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     }
   }
 
-  async function updateQuestion(status: "answered" | "open" | "declined") {
+  async function updateQuestion(status: "answered" | "open" | "unresolved") {
     if (!selectedQuestion || !scopePersonId) return;
     if (status === "answered" && (answer.trim().length < 2 || answerProvenance.trim().length < 3)) {
       setError("Please enter the answer and say who provided it or how it is known.");
@@ -281,8 +281,8 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         payload.answer = answer.trim();
         payload.answer_provenance = answerProvenance.trim();
       }
-      if (status === "declined") {
-        payload.closed_reason = answerProvenance.trim();
+      if (status === "unresolved") {
+        payload.closed_reason = "The caregiver does not know the answer yet.";
       }
       const updated = await patchJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}`, payload);
       if (!updated || updated.id !== selectedQuestion.id || updated.person_id !== scopePersonId || updated.status !== status) {
@@ -290,7 +290,8 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       }
       setNotice(status === "answered"
         ? "Your answer has been saved. It will remain separate from confirmed care information until reviewed."
-        : status === "open" ? "This question has been reopened. Earlier answers are still saved." : "No answer was recorded. The question will remain available.");
+        : status === "open" ? "This question has been reopened. Earlier answers are still saved."
+        : "No answer was recorded. This question remains open for later.");
       if (status === "answered") { setAnswer(""); setAnswerProvenance(""); }
       await loadAll();
       await loadHistory();
@@ -362,7 +363,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
             </label>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
             <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
-            <button type="button" style={button} onClick={() => void updateQuestion("declined")} disabled={saving}>I don't know the answer</button>
+            <button type="button" style={button} onClick={() => void updateQuestion("unresolved")} disabled={saving}>I don't know the answer yet</button>
           </>}
           {selectedQuestion.status !== "open" && selectedQuestion.status !== "unresolved" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen this question</button>}
           <div style={{ marginTop: 12 }}>
