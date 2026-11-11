@@ -62,7 +62,7 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     const target = new URL(source.pathname + source.search, backend);
     const headers = { ...route.request().headers() };
     delete headers.origin;
-    const response = await route.fetch({ url: target.toString(), headers });
+    const response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
     await route.fulfill({ response });
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
