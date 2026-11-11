@@ -151,6 +151,63 @@ const reviewStatusLabel = (value: string) => ({
   ingested_at: 'When it was added to SolenOS',
   effective_at: 'When it took effect',
 }[value] ?? value.replaceAll('_', ' '))
+function historicalSnapshotSections(value: Record<string, unknown> | null): Array<{ label: string; count: number }> {
+  const state = value?.state;
+  if (!state || typeof state !== 'object') return [];
+  const tables = (state as Record<string, unknown>).tables;
+  if (!tables || typeof tables !== 'object') return [];
+  const labels: Record<string, string> = {
+    care_facts: 'Saved care information',
+    care_assertions: 'Caregiver reports',
+    care_events: 'Daily care and other events',
+    evidence: 'Documents and other sources',
+    changes: 'Recorded changes',
+    situations: 'Care situations',
+    care_state_revisions: 'Earlier saved changes',
+    care_delta_runs: 'Change reviews',
+    care_delta_items: 'Change details',
+    care_decisions: 'Care decisions',
+    decision_outcomes: 'Decision results',
+    care_timeline_entries: 'Care history entries',
+    care_follow_up_links: 'Follow-ups',
+    care_review_decisions: 'Review decisions',
+    care_provenance_records: 'Source details',
+    care_uncertainties: 'Items needing clarification',
+    care_missing_information: 'Missing information',
+    care_conflicts: 'Reports that do not match',
+    care_action_outcomes: 'Follow-up results',
+    record_provenance: 'Source records',
+    record_provenance_links: 'Links to sources',
+    care_record_change_sets: 'Saved record changes',
+    care_record_change_items: 'Details of record changes',
+    care_corrections: 'Corrections',
+    record_amendments: 'Record updates',
+    record_amendment_items: 'Updated details',
+    care_record_audit_log: 'Record activity',
+    care_record_identifiers: 'Record identifiers',
+    care_record_sections: 'Saved record sections',
+    care_record_links: 'Linked care records',
+    care_record_status_history: 'Record status history',
+    care_fact_revisions: 'Care information history',
+    care_assertion_revisions: 'Report history',
+    care_decision_revisions: 'Decision history',
+    care_event_revisions: 'Event history',
+    care_observation_revisions: 'Observation history',
+    care_change_revisions: 'Change history',
+    care_situation_revisions: 'Care situation history',
+    care_evidence_revisions: 'Source history',
+    care_record_retractions: 'Removed record items',
+    care_record_restorations: 'Restored record items',
+    caregiver_contexts: 'Caregiver context',
+    caregiver_perspectives: 'Caregiver perspectives',
+    caregiver_observations: 'Caregiver observations',
+  };
+  return Object.entries(tables as Record<string, unknown>)
+    .filter((entry): entry is [string, unknown[]] => Array.isArray(entry[1]) && entry[1].length > 0)
+    .map(([key, rows]) => ({ label: labels[key] ?? 'Other saved information', count: rows.length }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 const reviewCriterionLabel = (value: string) => ({
   'source attribution': 'Who provided it',
   'independent corroboration': 'Whether there are separate reports',
@@ -329,16 +386,17 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       const asOf = new Date(recordHistoryAsOf)
       if (!Number.isFinite(asOf.getTime())) throw new Error('Invalid historical instant')
       const result = await getJSON(
-        `/care-continuity/state-reconstruction/as-of?as_of=${encodeURIComponent(asOf.toISOString())}&limit=200`
+        `/care-continuity/record-snapshots/as-of?as_of=${encodeURIComponent(asOf.toISOString())}`
       )
       if (!result || typeof result !== 'object' || (result as Record<string, unknown>).person_id !== personId ||
-          !Array.isArray((result as Record<string, unknown>).items) ||
-          (result as Record<string, unknown>).coverage_status !== 'partial_revision_history') {
-        throw new Error('Historical response is not valid for this care record')
+          (result as Record<string, unknown>).coverage_status !== 'saved_snapshot_only' ||
+          (result as Record<string, unknown>).integrity_status !== 'verified' ||
+          historicalSnapshotSections(result as Record<string, unknown>).length === 0) {
+        throw new Error('No verified saved record copy is available for this date')
       }
       setRecordHistory(result as Record<string, unknown>)
     } catch {
-      setRecordHistoryError('The earlier care record could not be loaded. Some history may be unavailable; try again when connected.')
+      setRecordHistoryError('No verified saved copy of the full care record is available for that date. This does not mean the record was empty.')
     } finally {
       setRecordHistoryLoading(false)
     }
@@ -613,7 +671,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>See what the record said earlier</summary>
-          <p>Shows the latest saved version of each item at the time you choose. Some earlier changes may not be available.</p>
+          <p>Shows the latest saved copy of the care record from the date you choose. Changes made after that copy are not included.</p>
           <label style={{ display: 'block', marginTop: 8 }}>
             Date and time
             <input
@@ -628,9 +686,12 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </button>
           {recordHistoryError && <p role="alert" style={{ color: 'var(--error)' }}>{recordHistoryError}</p>}
           {recordHistory && <div role="status" style={{ marginTop: 8 }}>
-            <p><strong>Earlier information available:</strong> {reviewStatusLabel(String(recordHistory.coverage_status))} · {String(recordHistory.target_count)} saved items{recordHistory.truncated ? ' · only part of the history is shown' : ''}</p>
-            <p><strong>Chosen date and time:</strong> {String(recordHistory.requested_as_of)}</p>
-            <p>No complete historical record is assumed. Some earlier changes may not be available in this view.</p>
+            <p><strong>Saved copy from:</strong> {recordHistory.snapshot_as_of ? new Date(String(recordHistory.snapshot_as_of)).toLocaleString() : 'Time not recorded'}</p>
+            <p><strong>Information areas with saved entries:</strong> {historicalSnapshotSections(recordHistory).length}</p>
+            <ul style={{ margin: '6px 0', paddingLeft: 20 }}>
+              {historicalSnapshotSections(recordHistory).map(section => <li key={section.label}>{section.label}: {section.count}</li>)}
+            </ul>
+            <p>This is a saved copy, not a guarantee that every care update was captured. Information added after this date is not shown.</p>
           </div>}
         </details>
 
