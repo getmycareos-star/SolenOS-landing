@@ -255,8 +255,28 @@ try {
     localStorage.getItem("solenos_backend_caregiver_id")
   ), { timeout: 20_000 });
 
-  // Recover from the second browser using the offline one-time code. This
-  // resets the password, revokes browser A's account session, and signs B in.
+  // Sign in on device B, then register it through the Settings UI.
+  await pageB.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
+  await pageB.locator("#account-email").fill(email);
+  await pageB.locator("#account-password").fill(password);
+  await pageB.getByRole("button", { name: "Sign in", exact: true }).click();
+  await pageB.getByText("Signed in. Your existing care record is available in this session.", { exact: true }).waitFor({ timeout: 20_000 });
+  const deviceBSession = await pageB.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
+  assert.ok(deviceBSession, "device B did not receive an authenticated session");
+  await pageB.getByRole("button", { name: "Register this device", exact: true }).click();
+  await pageB.getByText("This device is registered and verified for the signed-in account.", { exact: true }).waitFor({ timeout: 20_000 });
+  const devicesOnB = await backendRequest("/api/v1/identity/devices", { token: deviceBSession });
+  assert.equal(devicesOnB.response.status, 200, "device B could not list registered devices");
+  assert.equal(devicesOnB.payload?.devices?.length, 2, "both devices should be registered");
+  const deviceB = devicesOnB.payload.devices.find((item) => item.id !== deviceAId);
+  assert.ok(deviceB, "device B registration was not persisted");
+  assert.equal(deviceB.trust_status, "verified", "device B was not verified");
+  const revokeA = await backendRequest("/api/v1/identity/devices/" + encodeURIComponent(deviceAId), { token: deviceBSession, method: "DELETE" });
+  assert.equal(revokeA.response.status, 200, "device A revocation failed");
+  const revokedDeviceAToken = await backendRequest("/api/v1/evidence/" + encodeURIComponent(original.personId), { token: afterRegistration.token });
+  assert.equal(revokedDeviceAToken.response.status, 401, "revoked device A can still access records");
+
+  // Use the offline recovery code on device B after revoking device A.
   const replacementPassword = "Recovered-browser-B-password-2026!";
   await pageB.locator("#identity-recovery-email").fill(email);
   await pageB.locator("#identity-recovery-code").fill(recoveryCode);
