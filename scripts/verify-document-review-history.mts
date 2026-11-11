@@ -5,6 +5,7 @@ const lcr = readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.t
 const continuity = readFileSync("src/components/CareContinuityIntegrityPanel.tsx", "utf8");
 
 const source = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
+const capture = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 
 assert(
   source.includes("/documents/intelligence/") && source.includes("/review-history"),
@@ -30,4 +31,12 @@ assert(lcr.includes("DOCUMENT_ASSERTION_LABELS") && lcr.includes("Medication inf
 assert(continuity.includes('addEventListener("careRecordUpdated"') && continuity.includes('removeEventListener("careRecordUpdated"'), "the care-continuity assertion panel must reload after a document assertion is accepted");
 
 console.log("✓ decision versions, pending corrections and source-quotation boundaries are explicit");
+
+assert(capture.includes('postFormData("/upload"') && capture.includes('postJSON('), "all capture methods must persist the original and use the server document lifecycle");
+assert(capture.indexOf('postFormData("/upload"') < capture.indexOf('"/documents/" + encodeURIComponent(evidenceId) + "/extract"'), "the original bytes must be persisted before extraction starts");
+assert(capture.includes('"/documents/" + encodeURIComponent(evidenceId) + "/intelligence"'), "saved source extraction must feed the Qwen document intelligence endpoint");
+assert(!capture.includes('apiUrl("/api/extract"'), "capture must not depend on the legacy extract-before-upload endpoint");
+assert(capture.includes('getJSON(') && capture.includes('/documents/analyses/'), "the capture UI must display the persisted server extraction, not client-only OCR text");
+assert(capture.includes('status: "failed"') && capture.includes('evidenceId,'), "an extraction failure must retain the evidence ID so the saved original remains recoverable");
+
 console.log("✓ accepting a document observation refreshes the LCR and care-continuity panels");
