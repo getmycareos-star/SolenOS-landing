@@ -117,6 +117,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         interpretationFailed = true;
       }
       await load();
+      // The original evidence and extracted source text are now available to LCR retrieval.
+      window.dispatchEvent(new Event("careRecordUpdated"));
       if (interpretationFailed) {
         setError("The original and server extraction are saved, but document understanding did not finish. Retry it from the review list.");
       }
@@ -134,6 +136,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     try {
       await postJSON("/documents/" + encodeURIComponent(analysis.source_evidence_id) + "/intelligence", {});
       await load();
+      window.dispatchEvent(new Event("careRecordUpdated"));
     } catch {
       setError("Document understanding could not run. The original and saved extraction are unchanged; retry when the analysis service is available.");
     } finally {
@@ -176,7 +179,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   return (
     <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-        <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Review each extracted statement before it enters the Living Care Record.</p></div>
+        <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>The source document and extracted text are available to the LCR with their review status. Accept an extracted statement before treating it as a caregiver-reviewed assertion.</p></div>
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
       </div>
       {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
