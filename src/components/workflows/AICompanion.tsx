@@ -106,6 +106,9 @@ interface ClaimSourceReference {
   source_independence_status?: string | null
   exact_wording_duplicate_count?: number
   source_state_label?: string | null
+  correction_note?: string | null
+  correction_rationale?: string | null
+  previous_source_excerpt?: string | null
   related_evidence_ids?: string[]
   related_evidence?: Array<{
     label: string
@@ -855,6 +858,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.reported_by && <p>Reported by: {source.reported_by}</p>}
                                   {source.entered_by && <p>{source.entered_by}</p>}
                                   {source.source_state_label && <p>{source.source_state_label}</p>}
+                                  {source.correction_note && <p>{source.correction_note}</p>}
+                                  {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
+                                  {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
                                   {source.source_independence_status === 'shared_origin' && <p>This source shares its original with another saved record. It is not a separate report.</p>}
                                   {source.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
                                   {source.source_independence_status === 'not_assessed' && <p>Whether this source is separate from other reports has not been checked.</p>}
