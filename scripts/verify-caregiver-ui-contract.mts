@@ -83,6 +83,9 @@ const appLayout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8")
 assert.ok(appLayout.includes('import "./accessibility-overrides.css";'));
 const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
+const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
+assert.ok(appointmentWorkflow.includes("var(--theme-panel-bg)") && appointmentWorkflow.includes("var(--theme-field-bg)"));
+assert.doesNotMatch(appointmentWorkflow, /background:#fff|color:#26392c|color:#536653/);
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
 const dailyCareQwen = fs.readFileSync(path.join(root, "src/components/workflows/DailyCareQwen.tsx"), "utf8");
 
