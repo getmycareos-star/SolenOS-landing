@@ -685,7 +685,7 @@ export function LCRCurrentUnderstanding() {
             setRegisteredActionsError(null);
           } catch (cause) {
             setRegisteredActions([]);
-            setRegisteredActionsError(cause instanceof Error ? cause.message : "Registered actions could not be loaded.");
+            setRegisteredActionsError(cause instanceof Error ? cause.message : "Agreed actions could not be loaded.");
           }
         })(),
         (async () => {
