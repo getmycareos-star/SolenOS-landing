@@ -510,3 +510,9 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 
 :root { --theme-link: #17635f; --theme-error-fg: #8a2e2e; }
 :root[data-solenos-theme="dark"] { --theme-link: #9fd2c8; --theme-error-fg: #ffb4ab; }
+
+:root { --theme-action-disabled-fg: #52645a; }
+:root[data-solenos-theme="dark"] { --theme-action-disabled-fg: #e6eee7; }
+:root[data-solenos-theme="dark"] .structured-daily-capture button:disabled,
+:root[data-solenos-theme="dark"] .daily-care-qwen button:disabled,
+:root[data-solenos-theme="dark"] .qwen-assist-panel button:disabled { color: var(--theme-action-disabled-fg) !important; }
