@@ -68,11 +68,11 @@ assert.doesNotMatch(landingStyles, /Strong, high-contrast calls to action/);
 assert.doesNotMatch(landingStyles, /box-shadow: 0 3px 0 rgba\(23, 63, 75, 0\.18\)/);
 assert.doesNotMatch(notifications, /Backend-backed notifications/);
 assert.match(assistPanel, /background: "var\\(--theme-field-bg\\)", color: "var\\(--theme-field-fg\\)"/);
-assert.match(assistPanel, /background: loading \|\| !question\.trim\(\) \? "#e8eee9" : "#b9d5b5"/);
+assert.ok(assistPanel.includes("--theme-action-disabled-bg"));
 assert.match(assistPanel, /setQuestion\(event\.target\.value\); setError\(null\)/);
 assert.match(assistPanel, /--theme-warning-bg/);
 assert.match(qwenPanel, /background: "var\\(--theme-field-bg\\)", color: "var\\(--theme-field-fg\\)"/);
-assert.match(qwenPanel, /background: loading \|\| !question\.trim\(\) \? "#e8eee9" : "#b9d5b5"/);
+assert.ok(qwenPanel.includes("--theme-action-disabled-bg"));
 assert.match(qwenPanel, /setError\(null\)/);
 assert.doesNotMatch(qwenPanel, /Context used:/);
 
@@ -85,18 +85,18 @@ const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline
 const dailyCareQwen = fs.readFileSync(path.join(root, "src/components/workflows/DailyCareQwen.tsx"), "utf8");
 
 // Dark-mode contrast is a supported product contract, not a screenshot-only check.
-assert.match(themeOverrides, /:root\\[data-solenos-theme="dark"\\][\\s\\S]*?--theme-panel-bg: #202a24/);
-assert.match(themeOverrides, /--theme-field-bg: #18211c/);
-assert.match(themeOverrides, /--theme-warning-fg: #fff0cf/);
-assert.match(dailyCarePage, /background: var\\(--theme-panel-bg\\)/);
-assert.match(dailyCarePage, /color: var\\(--theme-field-fg\\)/);
-assert.match(quickCheckIn, /var\\(--theme-selected-bg\\)/);
+assert.ok(themeOverrides.includes(':root[data-solenos-theme="dark"]') && themeOverrides.includes("--theme-panel-bg: #202a24"));
+assert.ok(themeOverrides.includes("--theme-field-bg: #18211c"));
+assert.ok(themeOverrides.includes("--theme-warning-fg: #fff0cf"));
+assert.ok(dailyCarePage.includes("var(--theme-panel-bg)"));
+assert.ok(dailyCarePage.includes("var(--theme-field-fg)"));
+assert.ok(quickCheckIn.includes("var(--theme-selected-bg)") && quickCheckIn.includes('className="quick-daily-checkin"'));
 assert.match(quickCheckIn, /className="quick-daily-checkin"/);
-assert.match(appointmentsPage, /var\\(--theme-panel-fg\\)/);
-assert.match(timelinePage, /timeline-workspace/);
-assert.match(timelinePage, /var\\(--theme-selected-bg\\)/);
-assert.match(dailyCareQwen, /var\\(--theme-field-bg\\)/);
-assert.match(assistPanel, /className="qwen-assist-panel"/);
-assert.doesNotMatch(assistPanel, /background: "#ffffff", color: "#172b35"/);
+assert.ok(appointmentsPage.includes("var(--theme-panel-fg)"));
+assert.ok(timelinePage.includes("timeline-workspace"));
+assert.ok(timelinePage.includes("var(--theme-selected-bg)"));
+assert.ok(dailyCareQwen.includes("var(--theme-field-bg)"));
+assert.ok(assistPanel.includes('className="qwen-assist-panel"'));
+assert.ok(!assistPanel.includes('background: "#ffffff", color: "#172b35"'));
 
 console.log("Caregiver UI contract checks passed.");
