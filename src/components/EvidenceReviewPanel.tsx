@@ -401,16 +401,16 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       const asOf = new Date(historyAsOf)
       if (Number.isNaN(asOf.getTime())) throw new Error('The selected date and time is invalid.')
       const result = await getJSON(
-        `/care-continuity/state-versions/evidence/${encodeURIComponent(selectedId)}/as-of?as_of=${encodeURIComponent(asOf.toISOString())}`
+        `/care-continuity/state-revisions/evidence/${encodeURIComponent(selectedId)}/as-of?as_of=${encodeURIComponent(asOf.toISOString())}`
       )
       if (!result || result.person_id !== personId || result.target_type !== 'evidence' ||
-          result.target_id !== selectedId || result.historical_state_source !== 'persisted_care_state_version' ||
+          result.target_id !== selectedId || result.historical_state_source !== 'persisted_care_state_revision' ||
           typeof result.interpretation_limit !== 'string') {
         throw new Error('The historical response did not match the selected evidence record and care record.')
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
-      setHistoryReconstructionError('An earlier saved version could not be shown for that time. This does not mean the source did not exist; try again or choose another date.')
+      setHistoryReconstructionError('An earlier saved version could not be shown for that time. This does not establish that the evidence did not exist. A missing historical revision is not proof that the source was absent; try again or choose another date.')
     } finally {
       setHistoryReconstructionLoading(false)
     }
