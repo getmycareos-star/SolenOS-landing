@@ -70,10 +70,33 @@ assert.doesNotMatch(notifications, /Backend-backed notifications/);
 assert.match(assistPanel, /background: "var\\(--theme-field-bg\\)", color: "var\\(--theme-field-fg\\)"/);
 assert.match(assistPanel, /background: loading \|\| !question\.trim\(\) \? "#e8eee9" : "#b9d5b5"/);
 assert.match(assistPanel, /setQuestion\(event\.target\.value\); setError\(null\)/);
-assert.match(assistPanel, /background: "#fff4dc"/);
+assert.match(assistPanel, /--theme-warning-bg/);
 assert.match(qwenPanel, /background: "var\\(--theme-field-bg\\)", color: "var\\(--theme-field-fg\\)"/);
 assert.match(qwenPanel, /background: loading \|\| !question\.trim\(\) \? "#e8eee9" : "#b9d5b5"/);
 assert.match(qwenPanel, /setError\(null\)/);
 assert.doesNotMatch(qwenPanel, /Context used:/);
+
+
+const themeOverrides = fs.readFileSync(path.join(root, "src/app/accessibility-overrides.css"), "utf8");
+const dailyCarePage = fs.readFileSync(path.join(root, "src/app/workspace/daily-care/page.tsx"), "utf8");
+const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
+const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
+const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
+const dailyCareQwen = fs.readFileSync(path.join(root, "src/components/workflows/DailyCareQwen.tsx"), "utf8");
+
+// Dark-mode contrast is a supported product contract, not a screenshot-only check.
+assert.match(themeOverrides, /:root\\[data-solenos-theme="dark"\\][\\s\\S]*?--theme-panel-bg: #202a24/);
+assert.match(themeOverrides, /--theme-field-bg: #18211c/);
+assert.match(themeOverrides, /--theme-warning-fg: #fff0cf/);
+assert.match(dailyCarePage, /background: var\\(--theme-panel-bg\\)/);
+assert.match(dailyCarePage, /color: var\\(--theme-field-fg\\)/);
+assert.match(quickCheckIn, /var\\(--theme-selected-bg\\)/);
+assert.match(quickCheckIn, /className="quick-daily-checkin"/);
+assert.match(appointmentsPage, /var\\(--theme-panel-fg\\)/);
+assert.match(timelinePage, /timeline-workspace/);
+assert.match(timelinePage, /var\\(--theme-selected-bg\\)/);
+assert.match(dailyCareQwen, /var\\(--theme-field-bg\\)/);
+assert.match(assistPanel, /className="qwen-assist-panel"/);
+assert.doesNotMatch(assistPanel, /background: "#ffffff", color: "#172b35"/);
 
 console.log("Caregiver UI contract checks passed.");
