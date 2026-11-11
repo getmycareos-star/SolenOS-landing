@@ -504,3 +504,26 @@
 :root[data-solenos-theme="dark"] .history-source-info :is(strong,span) {
   color: #f3f7f3 !important;
 }
+
+
+/* Strengthen interactive boundaries where the adjacent surface is similarly dark. */
+:root[data-solenos-theme="dark"] .history-search-wrap {
+  border-color: #8ba58d !important;
+}
+:root[data-solenos-theme="dark"] .companion-shell :is(
+  .companion-starter,
+  .companion-composer
+) {
+  border-color: #8ba58d !important;
+}
+:root[data-solenos-theme="dark"] .settings-section-wrap :is(
+  button,a,[role="button"],input:not([type="checkbox"]):not([type="radio"]),select,textarea
+) {
+  border-color: #8ba58d !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace .appointment-primary {
+  border-color: #45624d !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(input,select,textarea) {
+  border-color: #45624d !important;
+}
