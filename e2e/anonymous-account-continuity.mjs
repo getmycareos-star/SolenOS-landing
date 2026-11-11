@@ -161,6 +161,14 @@ try {
   assert.equal(registeredDevices.response.status, 200, "Settings could not retrieve its registered device");
   assert.equal(registeredDevices.payload?.devices?.length, 1, "Settings did not persist the device registration");
   assert.equal(registeredDevices.payload.devices[0].trust_status, "verified", "account-authenticated device was not marked verified");
+  const rotatedRecovery = await backendRequest("/api/v1/accounts/recovery-code", {
+    token: afterRegistration.token,
+    method: "POST",
+    body: {},
+  });
+  assert.equal(rotatedRecovery.response.status, 200, `could not create a recovery code for the browser test: ${JSON.stringify(rotatedRecovery.payload)}`);
+  const recoveryCode = rotatedRecovery.payload?.recovery_code;
+  assert.ok(recoveryCode && recoveryCode.length >= 32, "backend did not issue a one-time recovery code");
 
   // Revoke both the pre-registration anonymous capability and the account
   // session used in browser A. The next browser must prove credential-only login.
@@ -199,11 +207,15 @@ try {
     localStorage.getItem("solenos_backend_caregiver_id")
   ), { timeout: 20_000 });
 
-  await pageB.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
-  await pageB.locator("#account-email").fill(email);
-  await pageB.locator("#account-password").fill(password);
-  await pageB.getByRole("button", { name: "Sign in", exact: true }).click();
-  await pageB.getByText("Signed in. Your existing care record is available in this session.", { exact: true }).waitFor({ timeout: 20_000 });
+  // Recover from the second browser using the offline one-time code. This
+  // resets the password, revokes browser A's account session, and signs B in.
+  const replacementPassword = "Recovered-browser-B-password-2026!";
+  await pageB.locator("#identity-recovery-email").fill(email);
+  await pageB.locator("#identity-recovery-code").fill(recoveryCode);
+  await pageB.locator("#identity-recovery-password").fill(replacementPassword);
+  await pageB.getByRole("button", { name: "Recover account", exact: true }).click();
+  await pageB.getByText("Password reset. All existing sessions were revoked. Sign in again on this device to restore access.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageB.getByText("Save your replacement recovery code.", { exact: true }).waitFor({ timeout: 20_000 });
 
   const restored = await pageB.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
@@ -213,7 +225,9 @@ try {
   assert.ok(restored.token, "fresh browser did not receive an account session token");
   assert.notEqual(restored.token, original.token, "fresh browser reused the revoked anonymous bearer");
   assert.equal(restored.personId, original.personId, "fresh browser login restored a different person ID");
-  assert.equal(restored.caregiverId, original.caregiverId, "fresh browser login restored a different caregiver ID");
+  assert.equal(restored.caregiverId, original.caregiverId, "fresh browser recovery restored a different caregiver ID");
+  const revokedBrowserAToken = await backendRequest(`/api/v1/evidence/${encodeURIComponent(original.personId)}`, { token: afterRegistration.token });
+  assert.equal(revokedBrowserAToken.response.status, 401, "account recovery left browser A's prior session active");
 
   const restoredEvidence = await backendRequest(`/api/v1/evidence/${encodeURIComponent(restored.personId)}`, { token: restored.token });
   assert.equal(restoredEvidence.response.status, 200, `fresh browser could not retrieve care evidence: ${JSON.stringify(restoredEvidence.payload)}`);
