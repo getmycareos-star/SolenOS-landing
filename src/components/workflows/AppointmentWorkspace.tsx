@@ -193,6 +193,7 @@ export default function AppointmentWorkspace() {
     try {
       const result = await postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number; written_to_lcr?: boolean }
       setOutcomeProposals(result.items || [])
+      if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
       setMessage((result.count || 0) + ' outcome report(s) saved to the Living Care Record as unreviewed caregiver reports. Review each report to accept, correct or reject its status.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Outcome candidates could not be prepared.')
