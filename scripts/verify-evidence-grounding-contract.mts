@@ -46,7 +46,7 @@ console.log("PASS: evidence builder emits no synthetic event IDs, confidence, so
 const panel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
 assert(panel.includes("/integrity"), "evidence review UI must call the persisted source-integrity endpoint");
 assert(panel.includes("source_text_integrity_status"), "evidence review UI must display the server-computed integrity status");
-assert(panel.includes("A matching file check only shows that the saved copy has not changed"), "the UI must disclose that a text hash does not authenticate the uploaded original");
+assert(panel.includes("A matching file check only shows that the saved copy has not changed"), "the UI must explain what the saved-copy comparison means");
 console.log("PASS: evidence review UI displays server-computed integrity without claiming original-file authenticity.");
 
 const claimPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClaimAssessmentPanel.tsx"), "utf8");
@@ -106,7 +106,7 @@ console.log("PASS: evidence review exposes persisted historical reconstruction w
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
 assert(panel.includes("Each detail keeps the exact words from the original source"), "read-only observation history must retain the exact source passage");
 assert(panel.includes("A report stays labelled as a report"), "observation UI must preserve report versus observation distinctions");
-assert(panel.includes("item.epistemic_status.replaceAll"), "read-only observation history must retain the recorded information status");
+assert(panel.includes("reviewStatusLabel(item.epistemic_status)"), "read-only observation history must retain the recorded information status");
 console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
 
 assert(panel.includes("supersedes_observation_id"), "observation corrections must link to the prior version");
