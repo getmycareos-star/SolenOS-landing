@@ -7,53 +7,105 @@ import { SUPPORT_EMAIL } from "../early-access-trust";
 
 export const PRIVACY_POLICY = {
   title: "Privacy Policy",
-  updated: "July 2026",
+  updated: "11 November 2026",
   lead:
-    "SolenOS holds a person's care story. This page explains how we treat that information — in plain language.",
+    "SolenOS holds information about a person's care journey. This policy explains what information the service handles, why it is used, who may receive it, and what you can and cannot currently ask us to do with it.",
   sections: [
     {
-      title: "What SolenOS is for",
+      title: "1. What SolenOS is — and is not",
       body: [
-        "SolenOS helps families preserve continuity of a care journey — what happened, what changed, what remains uncertain — so caregivers do not have to reconstruct everything from memory.",
-        "We are not a social network, advertising platform, or medical advice service.",
+        "SolenOS helps caregivers organize care notes, documents, observations, decisions, and changes over time in a Living Care Record. It is designed to support continuity and understanding, not to replace the person receiving care, their caregivers, or qualified professionals.",
+        "SolenOS is not a healthcare provider, medical-record system operated by a clinic, emergency service, advertising platform, or social network. It does not diagnose, prescribe, or make healthcare decisions. AI-generated information can be incomplete or wrong and must be reviewed by a person.",
+        "SolenOS is an early-access service. Features, availability, and workflows may change, and some privacy requests cannot yet be completed automatically. Please do not use SolenOS as your only copy of important care information.",
       ],
     },
     {
-      title: "What we may collect",
+      title: "2. Information we handle",
       body: [
-        "What you share about care, documents, and observations you choose to provide.",
-        "Account or early-access contact details you provide (such as an email address).",
-        "Basic technical information needed to run the service securely.",
-        "Optional product feedback you choose to send (including after understanding responses).",
+        "Care information you choose to enter, including observations, notes, events, questions, decisions, outcomes, appointment details, and information about the person receiving care.",
+        "Documents and other files you upload, together with related information such as filenames, file type, upload time, source text, and extraction or review results. Uploaded documents may contain sensitive health and personal information.",
+        "Information needed to operate a care workspace, such as caregiver and care-recipient identifiers, account email address, session and security records, consent choices, and contributor attribution.",
+        "Information you send to AI Companion or document and capture assistance, including the request and the relevant care context selected for that task.",
+        "Basic technical and operational information, such as service requests, timestamps, error categories, and security events. We aim to keep operational logs from containing care-record content, credentials, or session tokens; this does not mean every provider log or diagnostic record has been independently audited.",
+        "Feedback you deliberately submit to help improve SolenOS. We do not treat ordinary care-record entries as blanket permission to use those entries for product-improvement training.",
       ],
     },
     {
-      title: "How we use information",
+      title: "3. How we use information",
       body: [
-        "To maintain your Living Care Record and help you understand the care reality over time.",
-        "To operate, secure, and improve SolenOS — never to sell care stories for advertising.",
-        "During early access, feedback may be used to improve how SolenOS organizes and understands care situations.",
+        "To create, maintain, retrieve, and protect the care workspace and its Living Care Record.",
+        "To preserve source information and attribution, organize events over time, identify missing or conflicting information, and help caregivers review changes and prepare for conversations with professionals.",
+        "To provide the AI-assisted functions you choose to use. The system may process relevant care context to generate a response or proposed extraction. AI-generated candidates are intended to remain reviewable; they are not a substitute for the original source or a professional assessment.",
+        "To authenticate caregivers, maintain sessions, prevent unauthorized access, investigate service failures, and protect the service.",
+        "If you separately opt in, to review feedback you explicitly submit for product improvement. The backend checks for a recorded improvement opt-in before accepting this feedback. This optional choice is separate from the processing needed to provide the core care-record service.",
+        "We do not sell care stories or use care information to serve advertising.",
       ],
     },
     {
-      title: "Who can see a Care Reality",
+      title: "4. AI processing and its limits",
       body: [
-        "The Living Care Record belongs to the person receiving care.",
-        "Trusted contributors you invite may add to the same Care Reality with attribution — SolenOS is not a family chat feed.",
+        "The current backend source routes Qwen-powered assistance through Ollama's native API using a private model-runtime configuration. The code does not call a hosted Qwen API, OpenAI API, or Gemini API as a fallback when this runtime is unavailable. If the configured model is unavailable or fails, the backend is designed to return an error rather than silently substitute another hosted model.",
+        "When you use an AI-assisted function, the request and the relevant care information selected for that function may be sent from the backend to that configured model runtime for processing. Do not assume that AI processing is the same as keeping information solely on your device.",
+        "The repository does not establish the complete production runtime configuration, exact physical processing location, provider-side logging, or provider retention period. We therefore do not promise a specific AI data-residency location or that all model-runtime diagnostics are immediately erased.",
+        "AI output may omit context, misread a document, or make an incorrect interpretation. Review it against the source. SolenOS does not make an AI response an authoritative care fact merely because a model generated it.",
       ],
     },
     {
-      title: "Your choices",
+      title: "5. Who may receive or access information",
       body: [
-        "You can review Privacy and Terms anytime from the public site or inside SolenOS.",
-        "Only upload information you are comfortable storing in SolenOS.",
-        "Contact us if you need help with access, correction, or deletion requests as we grow.",
+        "Care information is scoped to its care workspace. A caregiver's authenticated session is associated with a particular care record; it is not intended to grant access to unrelated care records.",
+        "People you invite or authorize as contributors may be able to access or add information within the shared care workspace and the permissions available to them. Contributions are intended to retain attribution. Do not invite someone unless you are comfortable giving them that access and have authority to share the information.",
+        "SolenOS uses hosting, database, and model-runtime infrastructure to operate the service. Those providers may process information as needed to provide their services. We have not yet published a complete, independently verified register of every subprocessor, its role, processing location, onward transfers, and retention terms. We will not invent a complete provider or residency list where the current repository does not establish one.",
+        "We may disclose information where required by applicable law or where reasonably necessary to protect users, investigate abuse, or respond to a security incident. We do not sell personal or care information.",
       ],
     },
     {
-      title: "Contact",
+      title: "6. Storage, security, and retention",
       body: [
-        `Questions about privacy: email ${SUPPORT_EMAIL} or use Contact on this site. We will respond as carefully as we can.`,
+        "The backend source stores structured care information in a PostgreSQL database. Uploaded evidence is represented in the backend data model, which can include original document bytes as well as extracted or source text. The exact production storage configuration and all backup, replica, log, and provider locations must not be inferred from source code alone.",
+        "The service includes safeguards such as password hashing, hashed session-token storage, authenticated care-record scoping, and access checks. These controls reduce risk but do not make an online service risk-free. We do not claim that every stored item is encrypted at rest or that every provider's security controls have been independently audited.",
+        "We do not currently publish a complete, enforced retention schedule covering care records, uploaded files, extracted text, AI conversations, security logs, backups, and provider copies. We therefore cannot promise a fixed deletion or backup-expiry period.",
+        "Keep your own copy of important documents and care information. Do not upload information you are not authorized to share or are unwilling to store with an online early-access service.",
+      ],
+    },
+    {
+      title: "7. Access, correction, export, and deletion",
+      body: [
+        "You can email davidsolenos@gmail.com to ask about information associated with your care workspace, request a correction, ask for an export, or request deletion. We may need to verify your identity and your authority to act for the person whose care information is involved. Being signed in as a caregiver does not by itself establish legal authority over another person's information.",
+        "The backend currently supports authenticated privacy-request intake and a restricted human review step. Submitting a request records that it was received; it does not itself mean that the request has been approved or fulfilled. We will not describe a request as completed until the relevant action has actually been performed and checked.",
+        "Correction fulfilment currently supports a limited class of insight-description corrections. The original value is retained in a correction record. This is not a general ability to rewrite every source document, uploaded record, or item of care history.",
+        "A complete self-service export and end-to-end erasure of all eligible care information, uploaded bytes, derived records, backups, and provider copies are not currently established as available capabilities. We cannot promise that every export or deletion request can be fulfilled immediately or that submitting one automatically removes data.",
+        "Deleting an optional SolenOS login account is not the same as deleting the care record. The current account-deletion endpoint removes the login account and its linked email, revokes other account-linked sessions, and explicitly retains the care record and its history. Contact us separately if you want to request review of care-record deletion.",
+        "If a request cannot be completed, we will explain the limitation and, where applicable, the reason. We do not publish a guaranteed response or completion deadline at this time.",
+      ],
+    },
+    {
+      title: "8. Your choices and responsibilities",
+      body: [
+        "Use only information you have permission to provide. If you are acting for another person, consider their wishes, capacity, legal arrangements, and applicable requirements before entering or sharing their information.",
+        "Review AI-generated content and proposed records before relying on them. Correct errors and preserve the original source where it matters.",
+        "Keep your sign-in details and any one-time recovery code private. Do not share a device or session with someone who should not see the care workspace.",
+        "You can review the Privacy Policy and Terms of Use from the public site or inside SolenOS. Contact us if you need help understanding a data-use choice or making a privacy request.",
+      ],
+    },
+    {
+      title: "9. International processing and legal status",
+      body: [
+        "SolenOS may rely on infrastructure and service providers operating in a country different from yours. The current source review does not establish a complete map of production data locations, international transfers, or provider-side retention. We do not make a country-specific data-residency promise in this policy.",
+        "SolenOS does not claim to be HIPAA-certified or to be a HIPAA-covered entity or business associate in every use case. Whether a particular law applies depends on the facts and relationships involved. This policy is a plain-language description of current product behavior, not legal advice or a compliance certification.",
+      ],
+    },
+    {
+      title: "10. Changes to this policy",
+      body: [
+        "We may update this policy when the product, its providers, or its data practices change. We will revise the date at the top when we make a change. For material changes, we will take reasonable steps to make the updated policy visible. Please review it periodically.",
+      ],
+    },
+    {
+      title: "11. Contact",
+      body: [
+        "For privacy questions, access, correction, export, or deletion requests, email davidsolenos@gmail.com or use Contact on the SolenOS website. Include enough information for us to locate the relevant request, but do not email passwords, recovery codes, or unnecessary medical details.",
+        "We will review messages carefully. A request is not complete until we confirm what action was taken.",
       ],
     },
   ],
