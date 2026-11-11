@@ -150,7 +150,7 @@ await record("02 Daily Capture", async () => {
   assert.ok([200, 201].includes(replay.status), JSON.stringify(replay.payload));
   assert.equal(replay.payload.id, saved.payload.id);
   assert.equal(replay.payload.idempotent_replay, true);
-  const invalid = await request("/api/v1/daily/log", { token: identity.token, method: "POST", body: { observation: "" } });
+  const invalid = await request("/api/v1/daily/log", { token: identity.token, method: "POST", body: { person_id: identity.personId, caregiver_id: identity.caregiverId, capture_idempotency_key: "short-key", observation: "bad request" } });
   assert.equal(invalid.status, 422);
   const expired = await request(`/api/v1/persons/${identity.personId}`, { token: "expired-invalid-token" });
   assert.equal(expired.status, 401);
