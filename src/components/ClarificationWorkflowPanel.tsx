@@ -77,6 +77,26 @@ function displayDate(value?: string | null): string {
   return Number.isNaN(date.getTime()) ? "Date not recorded" : date.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
 }
 
+function evidenceSummary(item: Evidence): string {
+  const raw = (item.source_text || "").trim();
+  if (!raw) return "Saved care information";
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const content = parsed.original_capture ?? parsed.original_notes ?? parsed;
+    if (typeof content === "string") return content.slice(0, 100);
+    if (content && typeof content === "object" && !Array.isArray(content)) {
+      const parts = Object.entries(content as Record<string, unknown>)
+        .filter(([, value]) => ["string", "number", "boolean"].includes(typeof value))
+        .map(([key, value]) => `${key.replaceAll("_", " ")}: ${String(value)}`);
+      if (parts.length) return parts.join(" · ").slice(0, 100);
+      return "Saved care information";
+    }
+    return "Saved care information";
+  } catch {
+    return raw.slice(0, 100);
+  }
+}
+
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
   if (!Array.isArray(rows) || rows.some((value: unknown) => {
     if (!value || typeof value !== "object") return true;
@@ -348,7 +368,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
             </label>
             <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Choose a saved note or document that supports this answer
               <select multiple style={{ ...field, minHeight: 90, marginTop: 4 }} value={answerEvidenceIds} onChange={(event) => setAnswerEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-                {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {item.source_text.slice(0, 100)}</option>)}
+                {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {evidenceSummary(item)}</option>)}
               </select>
             </label>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Choose at least one saved source before recording an answer. Your original report will remain unchanged.</p>
@@ -403,7 +423,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           </label>}
           <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Related saved information
             <select multiple style={{ ...field, minHeight: 86 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-              {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {item.source_text.slice(0, 80)}</option>)}
+              {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {evidenceSummary(item)}</option>)}
             </select>
           </label>
           <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>{saving ? "Saving…" : "Save question"}</button>

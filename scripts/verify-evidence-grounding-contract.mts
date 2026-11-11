@@ -143,6 +143,7 @@ assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification wo
 assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
 assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
 assert(clarificationPanel.includes("Who may know the answer?") && clarificationPanel.includes("No saved source linked yet"), "caregivers must see plain-language question context without internal record identifiers");
+assert(clarificationPanel.includes("evidenceSummary(item)") && !clarificationPanel.includes("source_text.slice"), "saved source details must be shown as plain text, never raw JSON");
 assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
 assert(clarificationPanel.includes("An answer will not be treated as confirmed until it has been reviewed"), "answer capture must not automatically confirm the care record");
 assert(clarificationPanel.includes("intended_answerer_role"), "clarification must record who is best placed to answer when known");
