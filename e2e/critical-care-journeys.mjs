@@ -484,9 +484,14 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await daily.page.locator('textarea[placeholder="Add a detail if it would help…"]').fill("Browser UI confirms restless sleep and several overnight awakenings.");
   await daily.page.getByRole("button", { name: "Save update", exact: true }).click();
   await daily.page.getByText("Saved to the care record.", { exact: false }).waitFor({ timeout: 20_000 });
+  const structuredNote = "Structured Add Record entry: breakfast intake was lower than usual.";
+  await daily.page.locator('textarea[placeholder="Add any additional notes about the day"]').fill(structuredNote);
+  await daily.page.getByRole("button", { name: "Save daily care update", exact: true }).click();
+  await daily.page.getByText("Saved.", { exact: false }).last().waitFor({ timeout: 20_000 });
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
   assert.equal(dailyHistory.status, 200);
   assert.ok(JSON.stringify(dailyHistory.payload).includes("Browser UI confirms restless sleep"));
+  assert.ok(JSON.stringify(dailyHistory.payload).includes(structuredNote));
   await verifyMobile(daily.page);
   await daily.context.close();
 
