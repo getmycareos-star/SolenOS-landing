@@ -146,7 +146,7 @@ const reviewCriterionLabel = (value: string) => ({
   'temporal context': 'When it happened',
   'evidence freshness': 'Whether it is still current',
   'record completeness': 'Whether details are missing',
-}[value] ?? reviewStatusLabel(value))
+}[value] ?? value.replaceAll('_', ' '))
 const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12, background: 'var(--surface)' }
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
@@ -269,7 +269,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setFreshnessAssessments(history.items)
       setFreshnessHistoryError('')
     } catch (cause) {
-      setFreshnessPolicyError(cause instanceof Error ? cause.message : 'Freshness assessment could not be confirmed as persisted.')
+      setFreshnessPolicyError(cause instanceof Error ? cause.message : 'The review could not be confirmed as saved.')
     } finally {
       setFreshnessPolicySaving(false)
     }
@@ -308,7 +308,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   const reconstructRecordHistory = useCallback(async () => {
     if (!personId || !recordHistoryAsOf) {
-      setRecordHistoryError('Choose a date and time before requesting the recorded care-record snapshot.')
+      setRecordHistoryError('Choose a date and time before viewing the earlier care record.')
       return
     }
     setRecordHistoryLoading(true)
@@ -327,7 +327,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setRecordHistory(result as Record<string, unknown>)
     } catch {
-      setRecordHistoryError('The recorded care-state snapshot could not be loaded. No complete historical record is assumed; retry when the connection is available.')
+      setRecordHistoryError('The earlier care record could not be loaded. Some history may be unavailable; try again when connected.')
     } finally {
       setRecordHistoryLoading(false)
     }
@@ -391,7 +391,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   const reconstructHistoricalState = useCallback(async () => {
     if (!selectedId || !personId || !historyAsOf) {
-      setHistoryReconstructionError('Choose a date and time before requesting a historical snapshot.')
+      setHistoryReconstructionError('Choose a date and time before viewing the earlier source information.')
       return
     }
     setHistoryReconstructionLoading(true)
@@ -410,7 +410,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
-      setHistoryReconstructionError('A persisted historical version could not be reconstructed for that time. This does not establish that the evidence did not exist; retry or inspect the saved version history.')
+      setHistoryReconstructionError('An earlier saved version could not be shown for that time. This does not mean the source did not exist; try again or choose another date.')
     } finally {
       setHistoryReconstructionLoading(false)
     }
@@ -487,15 +487,15 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         rationale: rationale.trim(),
         policy_version: 'evidence-review-v1',
         criteria: [
-          { criterion: 'source attribution', result: sourceResult, rationale: 'Review of the persisted source identity and attribution fields.' },
-          { criterion: 'independent corroboration', result: corroborationResult, rationale: 'Review of whether linked material represents an independent source.' },
-          { criterion: 'temporal context', result: temporalResult, rationale: 'Review of whether the source timing and event timing are sufficiently specified.' },
-          { criterion: 'evidence freshness', result: freshnessResult, rationale: 'Review of whether the evidence remains current for the relevant care question.' },
-          { criterion: 'record completeness', result: completenessResult, rationale: 'Review of whether the source record contains the information needed for this assessment.' },
+          { criterion: 'source attribution', result: sourceResult, rationale: 'Check who provided the original information.' },
+          { criterion: 'independent corroboration', result: corroborationResult, rationale: 'Check whether another report was made separately.' },
+          { criterion: 'temporal context', result: temporalResult, rationale: 'Check whether the dates and times are clear.' },
+          { criterion: 'evidence freshness', result: freshnessResult, rationale: 'Check whether the information still applies.' },
+          { criterion: 'record completeness', result: completenessResult, rationale: 'Check whether important details are missing.' },
         ],
       })
       setRationale('')
-      setNotice('Review saved to the care record. It does not overwrite the source evidence or automatically establish a clinical fact.')
+      setNotice('Review saved. The original source is unchanged, and this review does not confirm a medical fact.')
       await loadReviews()
     } catch {
       setError('The review was not confirmed as saved. Check the connection and retry; the source evidence remains unchanged.')
@@ -508,7 +508,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   return <section style={panel} aria-label="Saved source reviews">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Sources and supporting information</h3>
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
-    {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading persisted evidence…</p>}
+    {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading saved source information…</p>}
     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Reviews are saved with the reason and date. They do not turn a caregiver report into an independently confirmed fact.</p>
     <p style={{ fontSize: 12, margin: "8px 0 12px" }}><Link href="/workspace/evidence-completeness" style={{ color: "var(--text)", textDecoration: "underline" }}>Review source completeness</Link></p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
@@ -534,7 +534,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <p>{item.rationale}</p>
       </article>)}
     </details>
-    {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No evidence records were returned for this care record.</p> : evidenceItems.length > 0 ? <>
+    {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No saved source information was found for this care record.</p> : evidenceItems.length > 0 ? <>
       <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Original information
         <select style={field} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
           {evidenceItems.map(item => <option key={item.id} value={item.id}>{item.type.replaceAll('_', ' ')} · {item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : 'Date not recorded'}</option>)}
@@ -671,7 +671,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
-          <small>The wording check only compares the saved text. It does not confirm who wrote the original or prove that an uploaded file is genuine.</small>
+          <small>This check compares the saved wording and file. It does not prove who created the original.</small>
         </details>
       </>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9 }}>
