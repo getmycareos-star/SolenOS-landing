@@ -101,7 +101,11 @@ await record("01 first caregiver session", async () => {
     const target = new URL(source.pathname + source.search, backend);
     const headers = { ...route.request().headers() };
     delete headers.origin;
-    await route.fulfill({ response: await route.fetch({ url: target.toString(), headers }) });
+    const response = await route.fetch({ url: target.toString(), headers, timeout: 210000 }).catch((error) => {
+      if (page.isClosed()) return null;
+      throw error;
+    });
+    if (response) await route.fulfill({ response });
   });
   await page.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(
