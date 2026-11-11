@@ -167,6 +167,67 @@ const reviewStatusLabel = (value: string) => ({
   not_available: 'Not available',
   not_returned: 'Not available',
 }[value] ?? value.replaceAll('_', ' '))
+type HistoricalSnapshotItem = {
+  key: string;
+  title: string;
+  detail: string;
+  date: string;
+  status: string;
+  source: string;
+};
+
+type HistoricalSnapshotDetail = {
+  label: string;
+  total: number;
+  items: HistoricalSnapshotItem[];
+};
+
+function historicalSnapshotDetails(value: Record<string, unknown> | null): HistoricalSnapshotDetail[] {
+  const state = value?.state;
+  if (!state || typeof state !== 'object') return [];
+  const tables = (state as Record<string, unknown>).tables;
+  if (!tables || typeof tables !== 'object') return [];
+  const configs = [
+    { table: 'care_facts', label: 'Saved care information', title: ['field', 'fact_type', 'title'], detail: ['fact_value', 'value', 'description', 'details'], date: ['recorded_at', 'created_at'], status: ['epistemic_state', 'status'], source: ['source_label', 'source_type'] },
+    { table: 'care_assertions', label: 'Caregiver reports', title: ['field', 'subject_type'], detail: ['asserted_value', 'source_text', 'description'], date: ['observed_at', 'recorded_at', 'created_at'], status: ['epistemic_state', 'assertion_status'], source: ['source_label'] },
+    { table: 'care_events', label: 'Daily care and other events', title: ['title', 'event_type'], detail: ['description', 'summary', 'details'], date: ['occurred_at', 'recorded_at', 'created_at'], status: ['status'], source: ['source_label', 'source_type'] },
+    { table: 'evidence', label: 'Documents and other sources', title: ['filename', 'title', 'type'], detail: ['description', 'summary', 'source_text'], date: ['recorded_at', 'created_at', 'uploaded_at'], status: ['review_status', 'status'], source: ['source_label', 'source_type'] },
+    { table: 'care_decisions', label: 'Care decisions', title: ['title', 'decision_type'], detail: ['decision_text', 'description', 'rationale'], date: ['decided_at', 'recorded_at', 'created_at'], status: ['decision_status', 'status'], source: ['source_label'] },
+    { table: 'caregiver_observations', label: 'Caregiver observations', title: ['observation_type', 'category'], detail: ['description', 'observed_value', 'value'], date: ['observed_at', 'recorded_at', 'created_at'], status: ['epistemic_status', 'status'], source: ['source_label', 'source_type'] },
+    { table: 'care_uncertainties', label: 'Items that still need checking', title: ['field', 'subject_type', 'title'], detail: ['question', 'description', 'reason'], date: ['created_at', 'recorded_at'], status: ['status'], source: ['source_label'] },
+    { table: 'care_conflicts', label: 'Reports that do not match', title: ['field', 'subject_type'], detail: ['description', 'resolution_status', 'status'], date: ['created_at', 'updated_at'], status: ['resolution_status', 'status'], source: ['source_label'] },
+    { table: 'decision_outcomes', label: 'Decision results', title: ['outcome_type', 'title'], detail: ['outcome_text', 'description', 'notes'], date: ['recorded_at', 'created_at'], status: ['status'], source: ['source_label'] },
+    { table: 'care_timeline_entries', label: 'Care history entries', title: ['title', 'event_type'], detail: ['description', 'summary'], date: ['occurred_at', 'recorded_at', 'created_at'], status: ['status'], source: ['source_label'] },
+  ] as const;
+  const pick = (row: Record<string, unknown>, keys: readonly string[]) => {
+    for (const key of keys) {
+      const raw = row[key];
+      if (typeof raw === 'string' && raw.trim()) return raw.trim();
+      if (typeof raw === 'number') return String(raw);
+    }
+    return '';
+  };
+  const output: HistoricalSnapshotDetail[] = [];
+  for (const config of configs) {
+    const rows = (tables as Record<string, unknown>)[config.table];
+    if (!Array.isArray(rows) || rows.length === 0) continue;
+    const items = rows.slice(0, 25).filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object').map((row, index) => {
+      const rawDate = pick(row, config.date);
+      const parsedDate = rawDate ? new Date(rawDate) : null;
+      return {
+        key: String(row.id ?? index),
+        title: pick(row, config.title) || config.label,
+        detail: pick(row, config.detail) || 'No extra details were saved.',
+        date: parsedDate && Number.isFinite(parsedDate.getTime()) ? parsedDate.toLocaleString() : 'Date not recorded',
+        status: pick(row, config.status),
+        source: pick(row, config.source),
+      };
+    });
+    output.push({ label: config.label, total: rows.length, items });
+  }
+  return output;
+}
+
 function historicalSnapshotSections(value: Record<string, unknown> | null): Array<{ label: string; count: number }> {
   const state = value?.state;
   if (!state || typeof state !== 'object') return [];
@@ -424,7 +485,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       if (!Number.isFinite(capturedAt.getTime())) throw new Error('The saved copy returned an invalid date')
       const localValue = new Date(capturedAt.getTime() - capturedAt.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
       setRecordHistoryAsOf(localValue)
-      setRecordSnapshotNotice('A copy of the care record was saved. Choose “Show earlier record” to review it.')
+      setRecordSnapshotNotice('A copy of the care record was saved. Choose “Show earlier record” to see what was saved.')
     } catch (error) {
       setRecordHistoryError(error instanceof Error ? error.message : 'The care record copy could not be saved. Try again.')
     } finally {
@@ -729,7 +790,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>See what the record said earlier</summary>
-          <p>Shows the latest saved copy of the care record from the date you choose. Changes made after that copy are not included.</p>
+          <p>Shows the saved care information from the date you choose. Changes made after that copy are not included.</p>
           <label style={{ display: 'block', marginTop: 8 }}>
             Date and time
             <input
@@ -750,11 +811,23 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {recordHistoryError && <p role="alert" style={{ color: 'var(--error)' }}>{recordHistoryError}</p>}
           {recordHistory && <div role="status" style={{ marginTop: 8 }}>
             <p><strong>Saved copy from:</strong> {recordHistory.snapshot_as_of ? new Date(String(recordHistory.snapshot_as_of)).toLocaleString() : 'Time not recorded'}</p>
-            <p><strong>Information areas with saved entries:</strong> {historicalSnapshotSections(recordHistory).length}</p>
-            <ul style={{ margin: '6px 0', paddingLeft: 20 }}>
-              {historicalSnapshotSections(recordHistory).map(section => <li key={section.label}>{section.label}: {section.count}</li>)}
-            </ul>
-            <p>This is a saved copy, not a guarantee that every care update was captured. Information added after this date is not shown.</p>
+            <p><strong>Saved information:</strong></p>
+            {historicalSnapshotDetails(recordHistory).map(section => (
+              <details key={section.label} style={{ margin: '8px 0' }}>
+                <summary>{section.label} ({section.total})</summary>
+                <ul style={{ margin: '6px 0', paddingLeft: 20 }}>
+                  {section.items.map(item => (
+                    <li key={item.key} style={{ marginBottom: 8 }}>
+                      <strong>{item.title}</strong>
+                      <p>{item.detail}</p>
+                      <small>{item.date}{item.status ? ` · ${reviewStatusLabel(item.status)}` : ''}{item.source ? ` · From: ${item.source}` : ''}</small>
+                    </li>
+                  ))}
+                </ul>
+                {section.total > section.items.length && <p>Showing {section.items.length} of {section.total} saved items.</p>}
+              </details>
+            ))}
+            <p>This saved copy may not include every care update. Information added after this date is not shown.</p>
           </div>}
         </details>
 
