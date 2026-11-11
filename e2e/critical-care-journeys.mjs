@@ -75,6 +75,7 @@ async function browserPageConsumes(page, pathname, observed) {
 }
 
 async function verifyMobile(page) {
+  await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {});
   const dimensions = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     document: document.documentElement.scrollWidth,
