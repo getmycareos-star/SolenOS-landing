@@ -1528,7 +1528,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{displayCurrentCareTitle(item)}</strong>
                       <span>{item.epistemic_status === "caregiver_reported" ? "Caregiver-reported" : item.epistemic_status === "inferred" ? "Possible interpretation" : item.epistemic_status === "unknown" ? "Not yet known" : item.epistemic_status || "Status not recorded"}</span>
                     </div>
-                    <p>{displayDescription(item.description)}</p>
+                    <p style={{ whiteSpace: "pre-line" }}>{displayDescription(item.description)}</p>
                     <p className="lcr-entry-status">{item.kind} · {item.status === "recorded" ? "Saved" : (item.status || "Status not recorded").replaceAll("_", " ")}</p>
                     <small>Source: {item.source_label || "Not recorded"} · {item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {item.evidence_ids?.length > 0 && <small>Original caregiver report linked to this entry</small>}
