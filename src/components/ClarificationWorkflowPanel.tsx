@@ -49,6 +49,34 @@ const panel: CSSProperties = { border: "1px solid var(--border)", borderRadius: 
 const field: CSSProperties = { boxSizing: "border-box", width: "100%", padding: "9px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
 const button: CSSProperties = { border: "1px solid var(--border)", borderRadius: 7, padding: "8px 11px", background: "var(--surface)", color: "var(--text)", cursor: "pointer" };
 
+function questionStatusLabel(status: string): string {
+  switch (status) {
+    case "open": return "Waiting for an answer";
+    case "answered": return "Answered — review needed";
+    case "declined": return "No answer provided";
+    case "closed": return "Closed";
+    case "unresolved": return "Still unclear";
+    default: return "Needs review";
+  }
+}
+
+function answererLabel(role?: string | null): string {
+  const labels: Record<string, string> = {
+    person_receiving_care: "Person receiving care",
+    reporting_caregiver: "Caregiver who shared the report",
+    other_caregiver: "Another caregiver",
+    professional: "Care professional",
+    not_known: "Not known",
+  };
+  return role ? labels[role] || "Not recorded" : "Not recorded";
+}
+
+function displayDate(value?: string | null): string {
+  if (!value) return "Date not recorded";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date not recorded" : date.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+}
+
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
   if (!Array.isArray(rows) || rows.some((value: unknown) => {
     if (!value || typeof value !== "object") return true;
@@ -116,7 +144,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setEvidence([]);
       setSelectedClaimId("");
       setSelectedQuestionId("");
-      setError("Claims, clarification questions, or evidence could not be loaded from the authenticated care record. A failed read is not treated as an empty record.");
+      setError("Care questions could not be loaded. Your saved information has not been changed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -147,7 +175,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setHistory(rows as AnswerEvent[]);
     } catch {
       setHistory([]);
-      setHistoryError("Answer history is unavailable. A failed request is not an empty history.");
+      setHistoryError("Earlier answers could not be loaded. Please try again.");
     }
   }, [scopePersonId, selectedQuestionId]);
 
@@ -155,19 +183,19 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
 
   async function createQuestion() {
     if (!scopePersonId || !selectedClaim || questionText.trim().length < 5) {
-      setError("Select a source-attributed claim and enter a specific clarification question.");
+      setError("Choose a care detail and write a clear question.");
       return;
     }
     if (necessity !== "not_assessed" && necessityRationale.trim().length < 3) {
-      setError("A necessary/optional assessment requires a rationale; leave necessity unassessed if you cannot justify it.");
+      setError("Please explain why this question needs an answer, or leave that choice undecided.");
       return;
     }
     if (intendedAnswererLabel.trim() && (!intendedAnswererRole || intendedAnswererRole === "not_known")) {
-      setError("A named answerer label requires a compatible, explicitly selected answerer role.");
+      setError("Choose who may know the answer before adding a name.");
       return;
     }
     if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
-      setError("Every linked evidence item must belong to this authenticated care record.");
+      setError("One of the selected saved items is unavailable. Please choose again.");
       return;
     }
     setSaving(true);
@@ -199,15 +227,15 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         throw new Error("Question create response not confirmed");
       }
       setQuestionText("");
-      setNotice("Clarification question saved with its claim context and selected evidence references.");
+      setNotice("Your question has been saved.");
       await loadAll();
       setSelectedQuestionId(created.id);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "";
       if (message.toLowerCase().includes("equivalent open clarification question already exists")) {
-        setError("An equivalent open question already exists for this claim and subject. Select the existing question and review its answer history before asking again.");
+        setError("This question is already open. Choose it above to review or answer it.");
       } else {
-        setError("Question persistence was not confirmed. No successful creation is assumed.");
+        setError("Your question could not be saved. Please try again.");
       }
     } finally {
       setSaving(false);
@@ -217,15 +245,15 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   async function updateQuestion(status: "answered" | "open" | "declined") {
     if (!selectedQuestion || !scopePersonId) return;
     if (status === "answered" && (answer.trim().length < 2 || answerProvenance.trim().length < 3)) {
-      setError("An answer requires the answer text and an explicit source/provenance description.");
+      setError("Please enter the answer and say who provided it or how it is known.");
       return;
     }
     if (status === "answered" && answerEvidenceIds.length === 0) {
-      setError("Select at least one persisted evidence record that supports this answer. Typed text alone cannot answer the question.");
+      setError("Choose at least one saved note or document that supports this answer.");
       return;
     }
     if (status === "answered" && answerEvidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
-      setError("Every answer evidence reference must belong to this authenticated care record.");
+      setError("One of the selected saved items is unavailable. Please choose again.");
       return;
     }
     setSaving(true);
@@ -246,138 +274,141 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         throw new Error("Question transition response not confirmed");
       }
       setNotice(status === "answered"
-        ? "Answer saved with session-attributed identity and immutable answer history."
-        : status === "open" ? "Question reopened; previous answer history is preserved." : "Decline saved with its recorded reason.");
+        ? "Your answer has been saved. It will remain separate from confirmed care information until reviewed."
+        : status === "open" ? "This question has been reopened. Earlier answers are still saved." : "No answer was recorded. The question will remain available.");
       if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEvidenceIds([]); }
       await loadAll();
       await loadHistory();
     } catch {
-      setError("Question transition persistence was not confirmed. The current status must not be assumed to have changed.");
+      setError("That change could not be saved. Please try again.");
     } finally {
       setSaving(false);
     }
   }
 
-  return <section style={panel} aria-label="Evidence-grounded clarification workflow">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Questions and missing information</h3>
-    <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      Each question is tied to a source-attributed claim and can include evidence references. Answers are attributed to the authenticated caregiver and retained as immutable versions. An answer does not automatically verify or resolve the underlying claim.
+  return <section style={panel} aria-label="Care details that need checking">
+    <h3 style={{ fontSize: 16, marginTop: 0 }}>Care details that need checking</h3>
+    <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+      These questions help keep the care record accurate. You can answer now or leave a question open. An answer will not be treated as confirmed until it has been reviewed.
     </p>
-    {loading && <p role="status">Loading persisted claims, questions, and evidence…</p>}
-    {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Retry load</button></p>}
+    {loading && <p role="status">Loading care questions…</p>}
+    {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
-      {claims.length === 0 && <p>Questions can be recorded when a specific care detail needs clarification. No such detail is available to link yet.</p>}
-      {claims.length > 0 && <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
-        <legend style={{ fontSize: 12 }}>Create a targeted clarification</legend>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Claim
-          <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
-            {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 100)}</option>)}
-          </select>
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Question
-          <textarea style={{ ...field, minHeight: 65 }} value={questionText} onChange={(event) => setQuestionText(event.target.value)} placeholder="What specific missing detail needs clarification?" />
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Priority
-          <select style={field} value={priority} onChange={(event) => setPriority(event.target.value)}>
-            {["informational", "low", "medium", "high", "critical"].map((value) => <option key={value} value={value}>{value}</option>)}
-          </select>
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Intended answerer
-          <select style={field} value={intendedAnswererRole} onChange={(event) => setIntendedAnswererRole(event.target.value)}>
-            <option value="">Not assessed</option>
-            {["person_receiving_care", "reporting_caregiver", "other_caregiver", "professional", "not_known"].map((value) =>
-              <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
-          </select>
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Answerer label (optional, only when known)
-          <input style={field} value={intendedAnswererLabel} onChange={(event) => setIntendedAnswererLabel(event.target.value)} disabled={!intendedAnswererRole || intendedAnswererRole === "not_known"} placeholder="Name/role stated by the caregiver" />
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Is this clarification necessary?
-          <select style={field} value={necessity} onChange={(event) => setNecessity(event.target.value)}>
-            <option value="not_assessed">Not assessed</option>
-            <option value="necessary">Necessary</option>
-            <option value="optional">Optional</option>
-          </select>
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Necessity rationale
-          <textarea style={{ ...field, minHeight: 55 }} value={necessityRationale} onChange={(event) => setNecessityRationale(event.target.value)} placeholder="Required when necessary/optional is selected" />
-        </label>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related evidence (multi-select)
-          <select multiple style={{ ...field, minHeight: 86 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-            {evidence.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id} · {item.source_text.slice(0, 65)}</option>)}
-          </select>
-        </label>
-        <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>
-          {saving ? "Saving…" : "Create clarification question"}
-        </button>
-      </fieldset>}
-      <div style={{ marginTop: 14 }}>
-        <strong style={{ fontSize: 13 }}>Persisted questions</strong>
-        {questions.length === 0 && <p style={{ fontSize: 12 }}>No clarification questions are recorded yet.</p>}
-        {questions.length > 0 && <>
-          <label style={{ display: "block", fontSize: 12, margin: "8px 0" }}>Question
-            <select
-              style={field}
-              value={selectedQuestionId}
-              onChange={(event) => {
-                setSelectedQuestionId(event.target.value);
-                setAnswerEvidenceIds([]);
+      {questions.length === 0 && <p>Nothing needs checking right now. If a care detail becomes unclear, you can add a question here.</p>}
+      {questions.length > 0 && <>
+        <div style={{ display: "grid", gap: 10 }}>
+          {questions.filter((item) => item.status === "open" || item.status === "unresolved").map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setSelectedQuestionId(item.id);
                 setAnswer("");
                 setAnswerProvenance("");
+                setAnswerEvidenceIds([]);
                 setError("");
               }}
+              style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
             >
-              {questions.map((item) => <option key={item.id} value={item.id}>{item.status} · {item.question.slice(0, 120)}</option>)}
-            </select>
-          </label>
-          {selectedQuestion && <div style={{ fontSize: 12, border: "1px solid var(--border)", borderRadius: 7, padding: 10 }}>
-            <p><strong>Subject:</strong> {selectedQuestion.subject_type} / {selectedQuestion.subject_id} · <strong>Priority:</strong> {selectedQuestion.priority}</p>
-            <p><strong>Linked claim:</strong> {selectedQuestion.claim_id || "Legacy question without a normalized claim link"}</p>
-            <p><strong>Intended answerer:</strong> {selectedQuestion.intended_answerer_role || "Not recorded"}{selectedQuestion.intended_answerer_label ? ` · ${selectedQuestion.intended_answerer_label}` : ""}</p>
-            <p><strong>Necessity:</strong> {selectedQuestion.necessity.replaceAll("_", " ")}{selectedQuestion.necessity_rationale ? ` · ${selectedQuestion.necessity_rationale}` : ""}</p>
-            <p>{selectedQuestion.question}</p>
-            <p><strong>Evidence IDs:</strong> {selectedQuestion.evidence_ids?.length ? selectedQuestion.evidence_ids.join(", ") : "None linked"}</p>
-            {selectedQuestion.answer && <p><strong>Current answer:</strong> {selectedQuestion.answer}<br />Source: {selectedQuestion.answer_provenance || "Not recorded"}<br />Answered by: {selectedQuestion.answered_by_caregiver_id || "Legacy answer without recorded actor"}</p>}
-            {selectedQuestion.status !== "answered" && <>
-              <label style={{ display: "block", marginBottom: 8 }}>Answer
-                <textarea style={{ ...field, minHeight: 65 }} value={answer} onChange={(event) => setAnswer(event.target.value)} />
-              </label>
-              <label style={{ display: "block", marginBottom: 8 }}>Answer source / provenance
-                <textarea style={{ ...field, minHeight: 55 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="Who answered, and what source or firsthand knowledge supports it?" />
-              </label>
-              <label style={{ display: "block", marginBottom: 8 }}>Persisted evidence supporting this answer (required)
-                <select
-                  multiple
-                  style={{ ...field, minHeight: 86 }}
-                  value={answerEvidenceIds}
-                  onChange={(event) => setAnswerEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}
-                >
-                  {evidence.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.type} · {item.id} · {item.source_text.slice(0, 65)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving || answerEvidenceIds.length === 0}>Record answer</button>{" "}
-              <button type="button" style={button} onClick={() => void updateQuestion("declined")} disabled={saving}>Decline (use provenance field for reason)</button>
-            </>}
-            {selectedQuestion.status !== "open" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen without deleting prior answers</button>}
+              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status)} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}</span>
+              <strong style={{ fontSize: 14, fontWeight: 600 }}>{item.question}</strong>
+              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{item.evidence_ids?.length ? "Linked to saved care information" : "No saved source linked yet"}</span>
+            </button>
+          ))}
+          {questions.some((item) => item.status !== "open" && item.status !== "unresolved") && (
+            <details>
+              <summary style={{ cursor: "pointer", fontSize: 13 }}>View answered and closed questions</summary>
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {questions.filter((item) => item.status !== "open" && item.status !== "unresolved").map((item) => (
+                  <button key={item.id} type="button" onClick={() => setSelectedQuestionId(item.id)} style={{ ...button, textAlign: "left" }}>
+                    <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status)}</span>
+                    <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
+        {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
+          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status)} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
+          <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
+          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>
+          {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
+            <strong style={{ fontSize: 12 }}>Last answer</strong>
+            <p>{selectedQuestion.answer}</p>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {selectedQuestion.answer_provenance || "Not recorded"}</p>
+            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
+          {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
+            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Your answer
+              <textarea style={{ ...field, minHeight: 70, marginTop: 4 }} value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Write what you know. It is okay if you are not sure." />
+            </label>
+            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Who provided this answer, and how do they know?
+              <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="For example, I measured it this morning." />
+            </label>
+            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Choose a saved note or document that supports this answer
+              <select multiple style={{ ...field, minHeight: 90, marginTop: 4 }} value={answerEvidenceIds} onChange={(event) => setAnswerEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
+                {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {item.source_text.slice(0, 100)}</option>)}
+              </select>
+            </label>
+            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Choose at least one saved source before recording an answer. Your original report will remain unchanged.</p>
+            <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving || answerEvidenceIds.length === 0}>{saving ? "Saving…" : "Save answer"}</button>{" "}
+            <button type="button" style={button} onClick={() => void updateQuestion("declined")} disabled={saving}>I don't know the answer</button>
+          </>}
+          {selectedQuestion.status !== "open" && selectedQuestion.status !== "unresolved" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen this question</button>}
           <div style={{ marginTop: 12 }}>
-            <strong style={{ fontSize: 13 }}>Immutable answer history</strong>
+            <strong style={{ fontSize: 12 }}>Earlier answers</strong>
             {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError}</p>}
-            {!historyError && history.length === 0 && <p style={{ fontSize: 12 }}>No answer events are recorded yet.</p>}
+            {!historyError && history.length === 0 && <p style={{ fontSize: 12 }}>No earlier answers have been saved.</p>}
             <ol style={{ fontSize: 12, paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
-                <p>{item.answer}</p><p>Source: {item.answer_provenance}</p>
-                <p>Answer version {item.answer_version} · Evidence IDs: {item.evidence_ids.length ? item.evidence_ids.join(", ") : "not recorded"}</p>
-                <p>Answered by {item.answered_by_caregiver_id} · {item.created_at}</p>
+                <p>{item.answer}</p>
+                <p>Source: {item.answer_provenance}</p>
+                <p>Saved {displayDate(item.created_at)}</p>
               </li>)}
             </ol>
           </div>
-        </>}
-      </div>
+        </div>}
+      </>}
+      <details open={Boolean(prefillQuestion)} style={{ marginTop: 14 }}>
+        <summary style={{ cursor: "pointer", fontSize: 13 }}>Ask another question</summary>
+        {claims.length === 0 ? <p style={{ fontSize: 12 }}>A care detail must be saved before a question can be linked to it.</p> : <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 8, minWidth: 0 }}>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Which care detail is unclear?
+            <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
+              {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field.replaceAll("_", " ")}: {claim.asserted_value.slice(0, 100)}</option>)}
+            </select>
+          </label>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>What would you like to ask?
+            <textarea style={{ ...field, minHeight: 65 }} value={questionText} onChange={(event) => setQuestionText(event.target.value)} placeholder="Write one clear question." />
+          </label>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Who may know the answer?
+            <select style={field} value={intendedAnswererRole} onChange={(event) => setIntendedAnswererRole(event.target.value)}>
+              <option value="">Not sure</option>
+              {["person_receiving_care", "reporting_caregiver", "other_caregiver", "professional", "not_known"].map((value) =>
+                <option key={value} value={value}>{answererLabel(value)}</option>)}
+            </select>
+          </label>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Name or role, if known
+            <input style={field} value={intendedAnswererLabel} onChange={(event) => setIntendedAnswererLabel(event.target.value)} disabled={!intendedAnswererRole || intendedAnswererRole === "not_known"} />
+          </label>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Why does this need an answer?
+            <select style={field} value={necessity} onChange={(event) => setNecessity(event.target.value)}>
+              <option value="not_assessed">No decision yet</option>
+              <option value="necessary">Important to confirm</option>
+              <option value="optional">Helpful, but can wait</option>
+            </select>
+          </label>
+          {necessity !== "not_assessed" && <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Why?
+            <textarea style={{ ...field, minHeight: 55 }} value={necessityRationale} onChange={(event) => setNecessityRationale(event.target.value)} />
+          </label>}
+          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Related saved information
+            <select multiple style={{ ...field, minHeight: 86 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
+              {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {item.source_text.slice(0, 80)}</option>)}
+            </select>
+          </label>
+          <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>{saving ? "Saving…" : "Save question"}</button>
+        </fieldset>}
+      </details>
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;

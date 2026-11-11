@@ -1627,6 +1627,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
+      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
       <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
@@ -1641,10 +1642,6 @@ export function LCRCurrentUnderstanding() {
         <details className="lcr-history-details">
           <summary>When information differs</summary>
           {advancedPanelsOpen ? <ConflictResolutionPanel personId={personId} /> : null}
-        </details>
-        <details className="lcr-history-details">
-          <summary>Questions and unresolved matters</summary>
-          {advancedPanelsOpen ? <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div> : null}
         </details>
         <details className="lcr-history-details">
           <summary>Reported information and record history</summary>
