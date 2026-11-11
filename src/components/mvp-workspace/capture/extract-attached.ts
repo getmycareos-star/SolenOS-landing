@@ -120,6 +120,66 @@ export async function extractAttachedDocument(
   }
 }
 
+export async function retryAttachedDocument(
+  document: AttachedDocument,
+): Promise<AttachedDocument> {
+  if (!document.evidenceId) {
+    return document.sourceFile
+      ? extractAttachedDocument(document.sourceFile, document.entryMethod ?? "upload")
+      : {
+          ...document,
+          status: "failed",
+          errorNote: "The original upload reference is unavailable. Attach the original file again.",
+        };
+  }
+
+  try {
+    const extraction = (await postJSON(
+      "/documents/" + encodeURIComponent(document.evidenceId) + "/extract",
+      {},
+    )) as { analysis_id?: string; extraction_method?: string };
+    if (!extraction.analysis_id) {
+      throw new Error("The saved original did not return an extraction record.");
+    }
+    const persisted = (await getJSON(
+      "/documents/analyses/" + encodeURIComponent(extraction.analysis_id),
+    )) as {
+      extracted_text?: string;
+      extracted_char_count?: number;
+      extraction_method?: string;
+    };
+    let errorNote: string | undefined;
+    try {
+      await postJSON(
+        "/documents/" + encodeURIComponent(document.evidenceId) + "/intelligence",
+        {},
+      );
+    } catch {
+      errorNote =
+        "Text extraction is saved, but automated review is unavailable. Retry from Documents when the review service is available.";
+    }
+    window.dispatchEvent(new Event("careRecordUpdated"));
+    return {
+      ...document,
+      extractedText: (persisted.extracted_text || "").trim(),
+      extractedCharCount: persisted.extracted_char_count,
+      extractionSource: persisted.extraction_method || extraction.extraction_method,
+      status: "ready",
+      errorNote,
+    };
+  } catch (error) {
+    return {
+      ...document,
+      status: "failed",
+      errorNote: sanitizeCaregiverErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "The original is saved, but extraction failed. Retry without uploading another copy.",
+      ),
+    };
+  }
+}
+
 export function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, data] = dataUrl.split(",");
   const mime = /data:([^;]+)/.exec(header ?? "")?.[1] ?? "image/jpeg";
