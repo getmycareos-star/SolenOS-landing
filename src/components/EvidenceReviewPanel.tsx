@@ -113,7 +113,7 @@ const labels: Record<ReviewType, string> = {
   quality: 'Information quality',
   reliability: 'How reliable the source is',
   source_confidence: 'Who provided the information',
-  freshness: 'How current it is',
+  freshness: 'How recent it is',
   completeness: 'How complete it is',
 }
 const reviewStatusLabel = (value: string) => ({
@@ -303,13 +303,13 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     try {
       const result = await getJSON('/care-continuity/evidence-freshness/policies') as { items?: FreshnessPolicy[] }
       if (!Array.isArray(result?.items) || result.items.some(item => item.person_id !== personId || typeof item.id !== 'string')) {
-        throw new Error('Invalid freshness policy response')
+        throw new Error('Invalid review rule response')
       }
       setFreshnessPolicies(result.items)
       if (freshnessPolicyId && !result.items.some(item => item.id === freshnessPolicyId)) setFreshnessPolicyId('')
     } catch {
       setFreshnessPolicies([])
-      setFreshnessPolicyError('Domain freshness policies could not be loaded. No policy list is assumed; retry when connected.')
+      setFreshnessPolicyError('Review rules for how recent this information should be could not be loaded. Try again when connected.')
     } finally {
       setFreshnessPolicyLoading(false)
     }
@@ -319,7 +319,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   const assessSelectedFreshness = useCallback(async () => {
     if (!selectedId || !freshnessPolicyId) {
-      setFreshnessPolicyError('Choose an evidence record and a saved domain policy before assessing freshness.')
+      setFreshnessPolicyError('Choose a source and a saved review rule before checking how recent it is.')
       return
     }
     setFreshnessPolicySaving(true)
@@ -331,11 +331,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         policy_id: freshnessPolicyId,
       }) as FreshnessAssessment & { person_id?: string }
       if (!saved?.id || saved.evidence_id !== selectedId || saved.person_id !== personId || saved.policy_id !== freshnessPolicyId) {
-        throw new Error('The freshness assessment response did not match the selected evidence and policy.')
+        throw new Error('The review result did not match the selected source and review rule.')
       }
       setFreshnessPolicyNotice('Review saved: ' + reviewStatusLabel(saved.freshness_status) + '. This does not prove the information is true.')
       const history = await getJSON('/care-continuity/evidence-freshness/assessments/' + encodeURIComponent(selectedId)) as { items?: FreshnessAssessment[] }
-      if (!Array.isArray(history?.items)) throw new Error('Assessment was saved, but its history could not be verified. Retry history retrieval.')
+      if (!Array.isArray(history?.items)) throw new Error('The review was saved, but its history could not be checked. Try loading past reviews again.')
       setFreshnessAssessments(history.items)
       setFreshnessHistoryError('')
     } catch (cause) {
@@ -351,11 +351,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     setFreshnessHistoryError('')
     try {
       const result = await getJSON('/care-continuity/evidence-freshness/assessments/' + encodeURIComponent(selectedId)) as { items?: FreshnessAssessment[] }
-      if (!Array.isArray(result?.items)) throw new Error('Invalid freshness assessment history')
+      if (!Array.isArray(result?.items)) throw new Error('Invalid review of how recent this information is history')
       setFreshnessAssessments(result.items)
     } catch {
       setFreshnessAssessments([])
-      setFreshnessHistoryError('Freshness assessment history is unavailable; a failed read is not an empty history.')
+      setFreshnessHistoryError('Past reviews are unavailable. This does not mean there are no past reviews.')
     } finally {
       setFreshnessHistoryLoading(false)
     }
@@ -517,7 +517,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       if (!result || result.person_id !== personId || result.target_type !== 'evidence' ||
           result.target_id !== selectedId || result.historical_state_source !== 'persisted_care_state_revision' ||
           typeof result.interpretation_limit !== 'string') {
-        throw new Error('The historical response did not match the selected evidence record and care record.')
+        throw new Error('The earlier information did not match the selected source and care record.')
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
@@ -570,7 +570,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setObservations(result as Observation[])
     } catch {
       setObservations([])
-      setObservationsError('Structured observations could not be loaded. No observation list is assumed; retry when connected.')
+      setObservationsError('Recorded details could not be loaded. No observation list is assumed; retry when connected.')
     } finally {
       setObservationsLoading(false)
     }
@@ -624,8 +624,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Check whether information is still up to date</summary>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Choose a review rule set by the caregiver. There is no single time limit for every kind of information. A review does not prove that information is true or still applies today.</p>
-      {freshnessPolicyLoading && <p role="status">Loading saved policies…</p>}
-      {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry policy list</button></p>}
+      {freshnessPolicyLoading && <p role="status">Loading saved review rules…</p>}
+      {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry review rules</button></p>}
       <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Choose a saved review rule
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
           <option value="">Choose a review rule</option>
@@ -655,7 +655,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Type of source</dt><dd style={{ margin: 0 }}>{selected.type || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.evidence_kind || 'not_assessed')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How certain this is</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How sure we are about this information</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Added by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id ? 'Caregiver' : null].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
@@ -784,7 +784,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               </p>
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
-            <p><strong>How current it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How complete it is:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
+            <p><strong>How recent it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How complete it is:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
             <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
