@@ -216,6 +216,7 @@ export default function AppointmentWorkspace() {
         '/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals/' + encodeURIComponent(proposal.id) + '/review',
         body,
       ) as { proposal: OutcomeProposal; corrected_proposal?: OutcomeProposal | null; written_to_lcr?: boolean }
+      if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
       setOutcomeProposals(current => {
         const updated = current.map(item => item.id === proposal.id ? result.proposal : item)
         return result.corrected_proposal && !updated.some(item => item.id === result.corrected_proposal?.id)
