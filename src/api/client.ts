@@ -475,6 +475,7 @@ export type AccountLoginResponse = {
 export type AccountCreateResponse = {
   account: { id: string; email: string; created_at: string | null };
   caregiver_profile_id: string;
+  recovery_code: string;
   message: string;
 };
 
