@@ -79,6 +79,8 @@ assert.doesNotMatch(qwenPanel, /Context used:/);
 
 const themeOverrides = fs.readFileSync(path.join(root, "src/app/accessibility-overrides.css"), "utf8");
 const dailyCarePage = fs.readFileSync(path.join(root, "src/app/workspace/daily-care/page.tsx"), "utf8");
+const appLayout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
+assert.ok(appLayout.includes('import "./accessibility-overrides.css";'));
 const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
