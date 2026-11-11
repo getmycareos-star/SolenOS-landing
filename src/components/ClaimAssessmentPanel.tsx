@@ -285,7 +285,7 @@ export default function ClaimAssessmentPanel() {
   async function submitDependency() {
     if (!personId || !selectedClaim || !dependencyTargetId || dependencyTargetId === selectedClaim.id ||
       dependencyRationale.trim().length < 3) {
-      setDependencyError("Select a different claim and provide a rationale for the relationship.");
+      setDependencyError("Select a different care detail and provide a rationale for the relationship.");
       return;
     }
     setDependencySaving(true);
@@ -330,7 +330,7 @@ export default function ClaimAssessmentPanel() {
       return;
     }
     if (status === "superseded" && (!supersededByClaimId || supersededByClaimId === selectedClaim.id)) {
-      setError("Select a different claim in this same care record as the supersession target.");
+      setError("Select a different care detail in this same care record as the supersession target.");
       return;
     }
     const completeLinks = links.filter((link) => link.evidence_id.trim());
@@ -362,10 +362,10 @@ export default function ClaimAssessmentPanel() {
         },
       );
       setRationale("");
-      setNotice("Claim assessment saved as a new version. SolenOS does not infer truth from repeated statements or this status alone.");
+      setNotice("Review saved as a new version. Repeated reports or this review result do not prove that something is true.");
       await loadHistory();
     } catch {
-      setError("Assessment persistence was not confirmed. Check the required status-to-evidence relationships, exact source passages, and connection; no successful save is assumed.");
+      setError("The review could not be confirmed as saved. Check the selected sources and exact quoted words, then try again.");
     } finally {
       setSaving(false);
     }
@@ -389,7 +389,7 @@ export default function ClaimAssessmentPanel() {
         <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
         <div><strong>Who reported it:</strong> {selectedClaim.source_label || "Not recorded"}</div>
         <div><strong>Review status:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
-        <div><strong>Linked evidence IDs:</strong> {selectedClaim.evidence_ids?.length ? selectedClaim.evidence_ids.join(", ") : "None recorded"}</div>
+        <div><strong>Sources attached:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
       </div>}
       <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 12, minWidth: 0 }}>
         <legend style={{ fontSize: 12 }}>How this detail relates to other details</legend>
@@ -402,13 +402,13 @@ export default function ClaimAssessmentPanel() {
         {dependencies.length > 0 && <ul style={{ fontSize: 12, paddingLeft: 18 }}>
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "Depends on" : "Required by"}{" "}
-            <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Claim not in current list"}</strong>
+            <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Care detail not in this list"}</strong>
             {" · "}{simpleReviewStatus(edge.dependency_type)} · {edge.rationale}
           </li>)}
         </ul>}
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related care detail
           <select style={field} value={dependencyTargetId} onChange={(event) => setDependencyTargetId(event.target.value)}>
-            <option value="">Select a different claim</option>
+            <option value="">Select a different care detail</option>
             {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
               <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 100)}</option>)}
           </select>
@@ -445,7 +445,7 @@ export default function ClaimAssessmentPanel() {
           <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Source information
             <select style={field} value={link.evidence_id} onChange={(event) => updateLink(index, { evidence_id: event.target.value })}>
               <option value="">Choose a source</option>
-              {evidence.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id}</option>)}
+              {evidence.map((item) => <option key={item.id} value={item.id}>{simpleReviewStatus(item.type)}</option>)}
             </select>
           </label>
           <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>How this source relates to the care detail
@@ -468,9 +468,9 @@ export default function ClaimAssessmentPanel() {
       </label>
       <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || historyLoading}>{saving ? "Saving…" : "Save review"}</button>
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
-      <section aria-label="Assessment impact review" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
+      <section aria-label="Check for new information" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
         <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Check whether new information affects this review</h4>
-        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This deterministic check looks for changed evidence links, unavailable previously assessed evidence, changed declared prerequisites, and unresolved matching conflicts. It does not prove truth or completeness.</p>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This check looks for new or missing sources, changes to related care details, and reports that do not match. It does not prove that the information is true or complete.</p>
         {impactLoading && <p role="status">Checking whether new information affects this review…</p>}
         {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
         {!impactLoading && !impactError && assessmentImpact && <>
@@ -478,7 +478,7 @@ export default function ClaimAssessmentPanel() {
           <div style={{ fontSize: 12, marginTop: 5 }}>Status: {simpleReviewStatus(assessmentImpact.status)}{assessmentImpact.assessment_version != null ? ` · review version ${assessmentImpact.assessment_version}` : ""}</div>
           {assessmentImpact.reasons.length > 0
             ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{simpleReviewStatus(reason)}</li>)}</ul>
-            : <p style={{ fontSize: 12 }}>No specific reason to repeat this review was found in the information checked. This does not prove that the assessment is complete or correct.</p>}
+            : <p style={{ fontSize: 12 }}>No reason to repeat this review was found in the information checked. This does not prove that the review is complete or correct.</p>}
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Sources that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Sources not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that changed: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
@@ -500,7 +500,7 @@ export default function ClaimAssessmentPanel() {
           {link.scope_note ? <div>Scope: {link.scope_note}</div> : null}
         </li>)}</ul>
         {item.supersedes_assessment_id && <small>Replaces an earlier review</small>}
-        {item.superseded_by_claim_id && <small>Replaced by {item.superseded_by_claim_id}</small>}
+        {item.superseded_by_claim_id && <small>Replaced by newer care information</small>}
       </article>)}
     </>}
   </section>;
