@@ -253,7 +253,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               type="button"
               className="solenos-sidebar-icon-button"
               aria-label="Close navigation"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
             >
               <PanelLeftClose size={19} />
             </button>
