@@ -249,7 +249,7 @@ export default function DailyCareQwen() {
         .daily-care-qwen textarea { resize: vertical; }
         .daily-care-qwen button { min-height: 44px; padding: .65rem .9rem; border: 1px solid var(--theme-action-border); border-radius: 9px; background: var(--theme-action-bg); color: var(--theme-action-fg); font: inherit; font-weight: 700; cursor: pointer; }
         .daily-care-qwen button:disabled { opacity: .55; cursor: not-allowed; }
-        .daily-care-qwen__error { color: #8a2e2e; }
+        .daily-care-qwen__error { color: var(--theme-error-fg); }
         .daily-care-qwen__feedback { padding: .7rem; border-radius: 8px; background: var(--theme-subtle-bg); }
         .daily-care-qwen__result { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--theme-panel-border); overflow-wrap: anywhere; }
         .daily-care-qwen__result h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
