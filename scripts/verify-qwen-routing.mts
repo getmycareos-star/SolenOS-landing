@@ -86,11 +86,13 @@ requireText("src/components/workflows/AICompanion.tsx", [
   "{loading ? 'Sending' : 'Send'}",
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
-assert(companion.includes("QwenAssistPanel"), "Companion must expose the shared reviewable assistance entry point for care-history and coordination workflows.");
+assert(!companion.includes("QwenAssistPanel"), "Companion must not render a second AI assistance input above its primary conversation composer.");
+assert.equal((companion.match(/aria-label="Send a message to Companion"/g) ?? []).length, 1, "Companion must render exactly one message form.");
+assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1, "Companion must render exactly one message textarea.");
 requireText("src/components/workflows/AICompanion.tsx", [
-  'title="Help organise care information"',
-  "conflicting reports, appointments, handoffs, follow-ups or medication observations",
-  "Suggestions use information you are authorised to see and always need your review.",
+  'postJSON(\'/conversation/message\'',
+  'placeholder="What’s happening today? A few words are enough…"',
+  "aria-label=\"Send a message to Companion\"",
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
