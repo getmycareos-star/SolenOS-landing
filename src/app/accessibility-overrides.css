@@ -459,3 +459,51 @@ a, button, input, select, textarea, label, summary {
   color: #ffffff !important;
   opacity: 1 !important;
 }
+
+
+/* Final dark-theme legibility pass.
+   Dark app surfaces use pure white foregrounds. Explicit paper/white reading
+   surfaces retain dark ink; native PDF pages keep their own black-on-white render. */
+:root[data-solenos-theme="dark"] body * {
+  text-shadow: none !important;
+}
+:root[data-solenos-theme="dark"] body *:not(.solenos-display-trigger):not(.solenos-display-trigger *):not(.workspace-primary):not(.workspace-primary *):not(.care-reality-fab):not(.document-page):not(.document-page *):not(.document-paper):not(.document-paper *):not(.document-preview-page):not(.document-preview-page *):not(.document-preview-paper):not(.document-preview-paper *):not(.pdf-page):not(.pdf-page *):not(.pdf-preview-page):not(.pdf-preview-page *):not(.page-sheet):not(.page-sheet *):not(.preview-page):not(.preview-page *):not([style*="background-color: white"]):not([style*="background-color:#fff"]):not([style*="background-color: #fff"]):not([style*="background: white"]):not([style*="background: #fff"]):not([style*="background:#fff"]):not([style*="background-color: rgb(255, 255, 255)"]):not([style*="background: rgb(255, 255, 255)"]) {
+  color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] body *:not(.solenos-display-trigger):not(.solenos-display-trigger *):not(.workspace-primary):not(.workspace-primary *):not(.care-reality-fab):not(.document-page):not(.document-page *):not(.document-paper):not(.document-paper *):not(.document-preview-page):not(.document-preview-page *):not(.document-preview-paper):not(.document-preview-paper *):not(.pdf-page):not(.pdf-page *):not(.pdf-preview-page):not(.pdf-preview-page *):not(.page-sheet):not(.page-sheet *):not(.preview-page):not(.preview-page *):not([style*="background-color: white"]):not([style*="background-color:#fff"]):not([style*="background-color: #fff"]):not([style*="background: white"]):not([style*="background: #fff"]):not([style*="background:#fff"]):not([style*="background-color: rgb(255, 255, 255)"]):not([style*="background: rgb(255, 255, 255)"]) :is(p, span, label, small, strong, em, li, dt, dd, h1, h2, h3, h4, h5, h6, legend, summary, time, output, figcaption, caption, pre) {
+  color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] body :is(
+  .document-page, .document-paper, .document-preview-page, .document-preview-paper,
+  .pdf-page, .pdf-preview-page, .page-sheet, .preview-page,
+  [style*="background-color: white"], [style*="background-color:#fff"],
+  [style*="background-color: #fff"], [style*="background: white"],
+  [style*="background: #fff"], [style*="background:#fff"],
+  [style*="background-color: rgb(255, 255, 255)"],
+  [style*="background: rgb(255, 255, 255)"]
+),
+:root[data-solenos-theme="dark"] body :is(
+  .document-page, .document-paper, .document-preview-page, .document-preview-paper,
+  .pdf-page, .pdf-preview-page, .page-sheet, .preview-page,
+  [style*="background-color: white"], [style*="background-color:#fff"],
+  [style*="background-color: #fff"], [style*="background: white"],
+  [style*="background: #fff"], [style*="background:#fff"],
+  [style*="background-color: rgb(255, 255, 255)"],
+  [style*="background: rgb(255, 255, 255)"]
+) * {
+  background-color: #ffffff !important;
+  color: #18251b !important;
+  text-shadow: none !important;
+}
+:root[data-solenos-theme="dark"] .solenos-display-trigger,
+:root[data-solenos-theme="dark"] .solenos-display-trigger * {
+  background: #dce9dc !important;
+  color: #18251b !important;
+}
+:root[data-solenos-theme="dark"] .workspace-primary,
+:root[data-solenos-theme="dark"] .workspace-primary *,
+:root[data-solenos-theme="dark"] .care-reality-fab,
+:root[data-solenos-theme="dark"] .care-reality-fab * {
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
