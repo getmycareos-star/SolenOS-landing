@@ -197,7 +197,7 @@ export default function AppointmentWorkspace() {
       const result = await postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number; written_to_lcr?: boolean }
       setOutcomeProposals(result.items || [])
       if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
-      setMessage((result.count || 0) + ' outcome report(s) saved to the Living Care Record as unreviewed caregiver reports. Review each report to accept, correct or reject its status.')
+      setMessage((result.count || 0) + ' outcome candidate(s) prepared from the saved appointment revision. No LCR assertion is created until you accept a candidate after review.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Outcome candidates could not be prepared.')
     } finally {
@@ -230,8 +230,8 @@ export default function AppointmentWorkspace() {
       setMessage(decision === 'accept'
         ? (result.written_to_lcr ? 'Accepted as a caregiver-reviewed LCR assertion. It is not clinically verified.' : 'No LCR assertion was created.')
         : decision === 'correct'
-          ? 'Correction saved as a new unreviewed caregiver report in the LCR. Review it to confirm or reject its status.'
-          : 'Candidate rejected. Its source-linked report remains in LCR history marked rejected.')
+          ? 'Correction saved as a separate pending candidate. Review and accept it separately before it becomes an LCR assertion.'
+          : 'Candidate rejected. No LCR assertion was created; the rejection remains in review history.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The review decision could not be saved.')
     } finally {

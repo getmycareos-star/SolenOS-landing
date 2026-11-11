@@ -747,9 +747,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates" disabled={pendingCareUpdatesRefreshing}>{pendingCareUpdatesRefreshing ? 'Refreshing…' : 'Refresh'}</button>
                 </div>
                 {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
-                  <div className="companion-care-update-heading"><strong>Saved LCR report · caregiver-attributed</strong><span>Unreviewed</span></div>
+                  <div className="companion-care-update-heading"><strong>Proposed care-record update</strong><span>Awaiting review</span></div>
                   <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
-                  <p className="companion-care-update-source">Saved to the Living Care Record as an unreviewed caregiver report. Review it to accept, correct or reject its status.</p>
+                  <p className="companion-care-update-source">Qwen extracted this candidate from the original Companion message. It is not an accepted LCR assertion. Review it to accept, correct or reject it.</p>
                   {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
                   <div className="companion-care-update-actions">
                     <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
@@ -796,7 +796,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       const value = candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''
                       const pending = candidate.status === 'pending_authorization'
                       return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
-                        <div className="companion-care-update-heading"><strong>Saved LCR report · caregiver-attributed</strong><span>{pending ? 'Unreviewed' : candidate.status.replace(/_/g, ' ')}</span></div>
+                        <div className="companion-care-update-heading"><strong>Proposed care-record update</strong><span>{pending ? 'Awaiting review' : candidate.status.replace(/_/g, ' ')}</span></div>
                         <p>{value}</p>
                         <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Original proposal'}</p>
                         {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
@@ -809,7 +809,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           </label>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
-                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Caregiver-reviewed report in the Living Care Record; not independently clinically verified.' : candidate.status === 'rejected' ? 'Rejected. The source-linked report remains in LCR history marked rejected.' : candidate.status === 'corrected' ? 'Superseded by a caregiver correction. The corrected report is separately saved in the LCR as unreviewed.' : 'Unreviewed caregiver report saved in the Living Care Record.'}</p>}
+                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Caregiver-reviewed report in the Living Care Record; not independently clinically verified.' : candidate.status === 'rejected' ? 'Rejected. No LCR assertion was created; the source-linked review decision remains in proposal history.' : candidate.status === 'corrected' ? 'The original proposal is retained. The corrected candidate is separate and still requires acceptance before an LCR assertion is created.' : 'Candidate awaiting caregiver review; no LCR assertion has been created.'}</p>}
                         {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
                       </section>
                     })}
