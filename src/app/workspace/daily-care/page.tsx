@@ -14,7 +14,7 @@ const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
   {
     ssr: false,
-    loading: () => <BrandLoading message="Opening daily care…" />,
+    loading: () => <BrandLoading animate message="Opening daily care…" />,
   },
 );
 
@@ -67,7 +67,7 @@ export default function DailyCarePage() {
           <StructuredDailyCapture />
         </>
       ) : (
-        <BrandLoading message="Preparing your private care record…" />
+        <BrandLoading animate message="Preparing your private care record…" />
       )}
 
       <style jsx global>{`
