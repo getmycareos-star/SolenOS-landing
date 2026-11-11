@@ -139,6 +139,7 @@ try {
     database_scope: "disposable_postgresql_ci_only",
   }));
 } finally {
+  await page.unrouteAll({ behavior: "ignoreErrors" });
   await context.close();
   await browser.close();
 }
