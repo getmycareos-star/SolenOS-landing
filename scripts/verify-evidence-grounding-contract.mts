@@ -142,13 +142,13 @@ const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/compone
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
 assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
 assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
-assert(clarificationPanel.includes("Legacy question without a normalized claim link"), "legacy questions without normalized links must be labelled honestly");
+assert(clarificationPanel.includes("Who may know the answer?") && clarificationPanel.includes("No saved source linked yet"), "caregivers must see plain-language question context without internal record identifiers");
 assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
-assert(clarificationPanel.includes("does not automatically verify or resolve the underlying claim"), "answer capture must not automatically resolve its linked claim");
+assert(clarificationPanel.includes("An answer will not be treated as confirmed until it has been reviewed"), "answer capture must not automatically confirm the care record");
 assert(clarificationPanel.includes("intended_answerer_role"), "clarification must record who is best placed to answer when known");
 assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
-assert(clarificationPanel.includes("Immutable answer history"), "clarification answer versions must be visible");
-assert(clarificationPanel.includes("A failed request is not an empty history"), "failed answer-history reads must not be shown as empty history");
+assert(clarificationPanel.includes("Earlier answers"), "earlier clarification answers must remain visible");
+assert(clarificationPanel.includes("Earlier answers could not be loaded. Please try again."), "failed answer-history reads must show a clear retry message");
 assert(lcr.includes('const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel")'), "LCR must code-split import the clarification workflow");
 assert(lcr.includes("<ClarificationWorkflowPanel personId={personId}"), "clarification workflow must be mounted in the actual LCR");
 console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
