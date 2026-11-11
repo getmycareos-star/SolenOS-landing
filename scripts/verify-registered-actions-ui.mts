@@ -63,7 +63,7 @@ assert.ok(
 );
 assert.ok(
   lcr.includes('setRegisteredActions([]);') &&
-    lcr.includes('Registered actions are unavailable because the caregiver session could not be established.'),
+    lcr.includes('Agreed actions are unavailable because your care record session could not be confirmed.'),
   "Action state must be cleared on session failure",
 );
 
