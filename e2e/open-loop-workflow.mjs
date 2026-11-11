@@ -13,7 +13,7 @@ try {
   // Simulate a lost response only after the first create request really commits,
   // then require the caregiver's retry to converge on the original record.
   let simulatedLostCreateResponse = false;
-  await page.route("**/api/v1/**", async (route) => {
+  await page.route("**/api/**", async (route) => {
     try {
       const request = route.request();
       const requestUrl = new URL(request.url());
