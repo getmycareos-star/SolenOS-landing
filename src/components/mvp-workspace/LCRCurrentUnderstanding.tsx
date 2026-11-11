@@ -679,7 +679,7 @@ export function LCRCurrentUnderstanding() {
           try {
             const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
             if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== scopedPersonId)) {
-              throw new Error("Registered actions did not match the active care-record session.");
+              throw new Error("Saved actions did not match this care record.");
             }
             setRegisteredActions(savedActions as RegisteredAction[]);
             setRegisteredActionsError(null);
@@ -741,7 +741,7 @@ export function LCRCurrentUnderstanding() {
       setCurrentCaregiverId("");
       setProjection(null);
       setRegisteredActions([]);
-      setRegisteredActionsError("Registered actions are unavailable because the caregiver session could not be established.");
+      setRegisteredActionsError("Agreed actions are unavailable because your care record session could not be confirmed.");
       setError(cause instanceof Error ? cause.message : "The care history could not be loaded.");
     } finally {
       setLoading(false);
@@ -1076,7 +1076,7 @@ export function LCRCurrentUnderstanding() {
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         {source && source.claim_count > 0 && <small>Different reports linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
                         {actionForSuggestion(item) ? (
-                          <p className="lcr-entry-status">Registered action: {actionForSuggestion(item)?.status.replaceAll("_", " ")}. This suggestion has already been explicitly registered.</p>
+                          <p className="lcr-entry-status">Agreed action: {simpleRecordLabel(actionForSuggestion(item)?.status)}. This suggestion has already been saved as an agreed action.</p>
                         ) : item.request_text?.trim() && item.evidence_ids.length > 0 ? (
                           <div>
                             <button type="button" className="lcr-text-action" onClick={() => {
