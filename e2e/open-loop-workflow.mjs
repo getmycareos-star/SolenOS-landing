@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { readFile } from "node:fs/promises";
 
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
@@ -12,7 +13,7 @@ try {
   // Simulate a lost response only after the first create request really commits,
   // then require the caregiver's retry to converge on the original record.
   let simulatedLostCreateResponse = false;
-  await page.route("**/api/v1/**", async (route) => {
+  await page.route("**/api/**", async (route) => {
     try {
       const request = route.request();
       const requestUrl = new URL(request.url());
@@ -271,6 +272,77 @@ try {
   });
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
+
+  // Exercise the complete Documents UI path: choose a real synthetic file,
+  // review it, upload it to FastAPI/PostgreSQL, reload the library, retrieve
+  // the original bytes, and verify the downloaded file is byte-for-byte equal.
+  await page.goto(new URL("/workspace/companion", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Add document or image" }).waitFor({ timeout: 15_000 });
+  const documentName = "CI-only-care-record-document.txt";
+  const documentText = "SolenOS integration fixture. Caregiver reports that breakfast was untouched on the synthetic test date. This is not a real care record.";
+  await page.getByRole("button", { name: "Add document or image" }).click();
+  await page.getByRole("menu", { name: "Document and image intake" }).getByRole("menuitem", { name: /Upload document/ }).click();
+  await page.locator('input[type="file"][accept*=".pdf"]').setInputFiles({
+    name: documentName,
+    mimeType: "text/plain",
+    buffer: Buffer.from(documentText, "utf8"),
+  });
+  await page.waitForURL((url) => url.pathname === "/workspace/documents" && url.searchParams.get("intake") === "1", { timeout: 15_000 });
+  await page.getByRole("heading", { name: "Documents" }).waitFor({ timeout: 15_000 });
+  const reviewCard = page.locator("article").filter({ hasText: documentName });
+  await reviewCard.getByLabel("I reviewed this text against the original scan.").check();
+  await page.getByRole("button", { name: "Save reviewed documents", exact: true }).click();
+  await page.getByRole("status").filter({ hasText: /Saved 1 original file/ }).waitFor({ timeout: 30_000 });
+  const savedDocument = page.getByRole("button").filter({ hasText: documentName }).last();
+  await savedDocument.waitFor({ timeout: 15_000 });
+  await savedDocument.click();
+  await page.getByRole("dialog", { name: documentName }).waitFor({ timeout: 15_000 });
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download original document" }).click();
+  const downloaded = await downloadPromise;
+  if (downloaded.suggestedFilename() !== documentName) {
+    throw new Error(`Document download filename mismatch: ${downloaded.suggestedFilename()}`);
+  }
+  const downloadedPath = await downloaded.path();
+  if (!downloadedPath) throw new Error("The uploaded original document could not be downloaded.");
+  const downloadedText = await readFile(downloadedPath, "utf8");
+  if (downloadedText !== documentText) {
+    throw new Error("The downloaded original document does not match the uploaded bytes.");
+  }
+  console.log("PASS: real Documents UI upload, PostgreSQL-backed retrieval, and original-file download round trip.");
+
+  // Exercise real Daily Care capture through the browser UI, then read the saved
+  // record back from the authenticated current-care endpoint.
+  await page.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "How has today been?" }).waitFor({ timeout: 15_000 });
+  const dailyCareNote = "CI-only Daily Care capture: caregiver observed a later-than-usual bedtime and interrupted sleep.";
+  await page.getByRole("group", { name: "Choose a quick care update" }).getByRole("button", { name: "Something changed", exact: true }).click();
+  await page.getByRole("group", { name: "Select care areas" }).getByRole("button", { name: "Sleep", exact: true }).click();
+  await page.getByLabel("Add a note (optional)").fill(dailyCareNote);
+  await page.getByRole("button", { name: "Save update", exact: true }).click();
+  await page.getByRole("status").filter({ hasText: "Saved to the care record." }).waitFor({ timeout: 20_000 });
+  const eventListResponse = await fetch(new URL(`/api/v1/events/${encodeURIComponent(session.personId)}`, backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!eventListResponse.ok) {
+    throw new Error(`Could not retrieve saved Daily Care events: HTTP ${eventListResponse.status} ${await eventListResponse.text()}`);
+  }
+  const events = await eventListResponse.json();
+  const savedDailyEvent = events.find((item) => String(item.description ?? "").includes(dailyCareNote));
+  if (!savedDailyEvent) {
+    throw new Error("The Daily Care UI showed a save receipt, but the authenticated event read did not return the saved caregiver note.");
+  }
+  const currentCareResponse = await fetch(new URL("/api/v1/care-continuity/current-care?limit_per_source=50", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!currentCareResponse.ok) {
+    throw new Error(`Could not retrieve the saved Daily Care LCR projection: HTTP ${currentCareResponse.status} ${await currentCareResponse.text()}`);
+  }
+  const currentCare = await currentCareResponse.json();
+  if (!(currentCare.items ?? []).some((item) => item.id === savedDailyEvent.id)) {
+    throw new Error("The saved Daily Care event was not present in the authenticated Living Care Record projection.");
+  }
+  console.log("PASS: real Daily Care UI capture persisted, read back from PostgreSQL, and appeared in the authenticated Living Care Record.");
 
   // Exercise persisted conflict handling through the actual LCR UI and API.
   // The partial resolution must preserve its unresolved remainder; reopening must

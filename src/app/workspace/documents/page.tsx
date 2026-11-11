@@ -121,7 +121,7 @@ async function extractText(file: File): Promise<{ text: string; note: string | n
     form.append("file", file);
     const session = await ensureAnonymousSession();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 40_000);
+    const timer = setTimeout(() => controller.abort(), 120_000);
     let response: Response;
     try {
       response = await fetch(apiUrl("/api/extract"), {
