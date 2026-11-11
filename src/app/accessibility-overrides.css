@@ -424,3 +424,86 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 :root[data-solenos-theme="dark"] .lcr-record-section .lcr-assessment-details > summary {
   color: var(--theme-panel-fg);
 }
+
+
+/* Shared semantic palette for every caregiver-facing workspace surface. */
+:root {
+  --theme-selected-bg: #eaf2ed;
+  --theme-warning-bg: #fff4dc;
+  --theme-warning-border: #c8a85d;
+  --theme-warning-fg: #3b2e11;
+  --theme-success-bg: #edf5eb;
+  --theme-success-border: #8eae8a;
+  --theme-action-bg: #b9d5b5;
+  --theme-action-border: #8eae8a;
+  --theme-action-fg: #17251c;
+  --theme-action-disabled-bg: #e8eee9;
+}
+:root[data-solenos-theme="dark"] {
+  --theme-selected-bg: #344b3b;
+  --theme-warning-bg: #3b3020;
+  --theme-warning-border: #a8894d;
+  --theme-warning-fg: #fff0cf;
+  --theme-success-bg: #26392d;
+  --theme-success-border: #668b70;
+  --theme-action-bg: #b9d5b5;
+  --theme-action-border: #a7c9aa;
+  --theme-action-fg: #17251c;
+  --theme-action-disabled-bg: #3a453d;
+}
+
+/* Daily Capture and Quick Update: explicit foreground/surface pairing. */
+:root[data-solenos-theme="dark"] .structured-daily-capture,
+:root[data-solenos-theme="dark"] .structured-daily-capture :is(h1,h2,h3,h4,p,label,li,strong,span) {
+  color: var(--theme-panel-fg);
+}
+:root[data-solenos-theme="dark"] .structured-daily-capture > section,
+:root[data-solenos-theme="dark"] .quick-daily-checkin {
+  background: var(--theme-panel-bg);
+  color: var(--theme-panel-fg);
+  border-color: var(--theme-panel-border);
+}
+:root[data-solenos-theme="dark"] .structured-daily-capture > div:first-child p,
+:root[data-solenos-theme="dark"] .quick-daily-checkin :is(.muted, small) {
+  color: var(--theme-panel-muted);
+}
+:root[data-solenos-theme="dark"] .structured-daily-capture :is(input,select,textarea),
+:root[data-solenos-theme="dark"] .quick-daily-checkin textarea {
+  background: var(--theme-field-bg) !important;
+  color: var(--theme-field-fg) !important;
+  caret-color: var(--theme-field-fg) !important;
+  -webkit-text-fill-color: var(--theme-field-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .structured-daily-capture :is(input,textarea)::placeholder,
+:root[data-solenos-theme="dark"] .quick-daily-checkin textarea::placeholder {
+  color: var(--theme-field-placeholder) !important;
+  -webkit-text-fill-color: var(--theme-field-placeholder) !important;
+}
+
+/* Qwen assistance panels use the same semantic surface and field tokens. */
+:root[data-solenos-theme="dark"] .daily-care-qwen,
+:root[data-solenos-theme="dark"] .qwen-assist-panel {
+  background: var(--theme-panel-bg);
+  color: var(--theme-panel-fg);
+  border-color: var(--theme-panel-border);
+}
+:root[data-solenos-theme="dark"] .daily-care-qwen :is(p,span,small,label),
+:root[data-solenos-theme="dark"] .qwen-assist-panel :is(p,span,small,label) {
+  color: var(--theme-panel-muted);
+}
+:root[data-solenos-theme="dark"] .daily-care-qwen :is(input,textarea),
+:root[data-solenos-theme="dark"] .qwen-assist-panel textarea {
+  background: var(--theme-field-bg) !important;
+  color: var(--theme-field-fg) !important;
+  caret-color: var(--theme-field-fg) !important;
+  -webkit-text-fill-color: var(--theme-field-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .daily-care-qwen button,
+:root[data-solenos-theme="dark"] .qwen-assist-panel button {
+  color: var(--theme-action-fg);
+}
+:root[data-solenos-theme="dark"] .timeline-workspace :is(button,input) {
+  color: var(--theme-panel-fg);
+}
