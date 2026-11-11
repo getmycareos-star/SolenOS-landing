@@ -114,6 +114,14 @@ type HandoffOutboxItem = {
   recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
 };
 
+function isRequiredHandoffConsentDenial(
+  result: PromiseSettledResult<unknown>,
+): boolean {
+  return result.status === "rejected" &&
+    result.reason instanceof Error &&
+    result.reason.message.trim() === "Required consent is missing or revoked";
+}
+
 type CareStateRevision = {
   id: string;
   target_type?: string;
@@ -665,12 +673,14 @@ export function HistoryDrawer() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
+  const [handoffConsentRequired, setHandoffConsentRequired] = useState(false);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const loadHistory = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
     setSourceWarnings([]);
+    setHandoffConsentRequired(false);
 
     try {
       const session = await ensureAnonymousSession();
@@ -679,12 +689,22 @@ export function HistoryDrawer() {
       }
 
       const personPath = encodeURIComponent(session.person.id);
+      let canUseHandoffs = false;
+      let handoffConsentCheckFailed = false;
+      try {
+        const consent = await getJSON("/consent") as { verified?: boolean; required?: boolean };
+        canUseHandoffs = consent.verified === true && consent.required === false;
+        setHandoffConsentRequired(!canUseHandoffs);
+      } catch {
+        handoffConsentCheckFailed = true;
+        setHandoffConsentRequired(false);
+      }
       const results = await Promise.allSettled([
         getJSON("/events/" + personPath),
         getJSON("/evidence/" + personPath),
         getJSON("/appointment-workspaces"),
-        getJSON("/handoffs/inbox"),
-        getJSON("/handoffs/outbox"),
+        canUseHandoffs ? getJSON("/handoffs/inbox") : Promise.resolve({ items: [] as HandoffInboxItem[] }),
+        canUseHandoffs ? getJSON("/handoffs/outbox") : Promise.resolve({ items: [] as HandoffOutboxItem[] }),
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
@@ -693,6 +713,15 @@ export function HistoryDrawer() {
 
       const nextRecords: HistoryRecord[] = [];
       const warnings: string[] = [];
+      if (handoffConsentCheckFailed) {
+        warnings.push("Handoff availability could not be verified because sharing consent could not be checked.");
+      }
+      const consentRequiredForHandoffs =
+        !handoffConsentCheckFailed &&
+        (!canUseHandoffs ||
+          isRequiredHandoffConsentDenial(results[3]) ||
+          isRequiredHandoffConsentDenial(results[4]));
+      setHandoffConsentRequired(consentRequiredForHandoffs);
       let availableSources = 0;
 
       const eventResult = results[0];
@@ -816,6 +845,7 @@ export function HistoryDrawer() {
 
       const inboxResult = results[3];
       if (
+        canUseHandoffs &&
         inboxResult.status === "fulfilled" &&
         inboxResult.value &&
         typeof inboxResult.value === "object" &&
@@ -825,12 +855,13 @@ export function HistoryDrawer() {
         const inbox = (inboxResult.value as { items: HandoffInboxItem[] }).items
           .filter((item) => item && typeof item.id === "string");
         nextRecords.push(...inbox.map(mapIncomingHandoff));
-      } else {
+      } else if (canUseHandoffs && !isRequiredHandoffConsentDenial(inboxResult)) {
         warnings.push("Incoming handoff history could not be loaded.");
       }
 
       const outboxResult = results[4];
       if (
+        canUseHandoffs &&
         outboxResult.status === "fulfilled" &&
         outboxResult.value &&
         typeof outboxResult.value === "object" &&
@@ -840,7 +871,7 @@ export function HistoryDrawer() {
         const outbox = (outboxResult.value as { items: HandoffOutboxItem[] }).items
           .filter((item) => item && typeof item.id === "string");
         nextRecords.push(...outbox.map(mapOutgoingHandoff));
-      } else {
+      } else if (canUseHandoffs && !isRequiredHandoffConsentDenial(outboxResult)) {
         warnings.push("Outgoing handoff history could not be loaded.");
       }
 
@@ -1094,6 +1125,13 @@ export function HistoryDrawer() {
                       <RefreshCw size={16} aria-hidden className={refreshing ? "history-spinning" : undefined} />
                     </button>
                   </div>
+
+                  {handoffConsentRequired && !loading && (
+                    <div className="history-source-info" role="status">
+                      <strong>Handoff history is protected</strong>
+                      <span>Incoming and outgoing handoffs stay hidden until the required sharing consent is completed in Care Handoffs.</span>
+                    </div>
+                  )}
 
                   {sourceWarnings.length > 0 && !loading && (
                     <div className="history-source-warning" role="status">
