@@ -1327,7 +1327,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{action.normalized_action}</strong>
                       <p className="lcr-entry-status">Agreed action · {action.status.replaceAll("_", " ")} · Version {action.version}</p>
                       <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"} · Created by: {action.created_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}</small>
-                      <small>Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)</small>
+                      <small>Sources: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)</small>
                       {action.deadline && <small>Due date: {formatWhen(action.deadline)}</small>}
                       {action.linked_reminder_status && <small>Linked reminder: {action.linked_reminder_status} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
                       {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
