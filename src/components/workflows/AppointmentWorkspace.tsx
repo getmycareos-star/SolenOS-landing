@@ -196,6 +196,7 @@ export default function AppointmentWorkspace() {
     try {
       const result = await postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number; written_to_lcr?: boolean }
       setOutcomeProposals(result.items || [])
+      // Candidates stay in proposal storage until explicit caregiver acceptance creates an LCR assertion.
       if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
       setMessage((result.count || 0) + ' outcome candidate(s) prepared from the saved appointment revision. No LCR assertion is created until you accept a candidate after review.')
     } catch (cause) {
