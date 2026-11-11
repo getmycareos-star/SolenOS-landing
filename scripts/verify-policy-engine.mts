@@ -109,8 +109,8 @@ recordConsentAcceptance({
   data_improvement_consent: false,
   no_advertising_acknowledged: true,
 });
-assert(hasValidConsent("cg_policy_ok"), "consent recorded");
-console.log("✓ consent manager — capture always, soft-prompt when missing");
+assert(!hasValidConsent("cg_policy_ok"), "local cache cannot authorize production consent");
+console.log("✓ legacy consent cache cannot authorize production consent");
 
 assert(detectMedicalAdviceRequest("What medication should I give her?"), "flags medical advice request");
 assert(detectMedicalAdviceRequest("Is this serious?"), "flags worry/seriousness question");
@@ -124,14 +124,14 @@ const adviceFlagged = validateIngestionPolicy({
 });
 assert(adviceFlagged.allowed, "worry + med-change still allows ingestion");
 assert(adviceFlagged.medical_advice_request, "flags medical concern for output constraints");
-assert(adviceFlagged.blocked_reason === null, "no block reason when consented");
+assert(adviceFlagged.blocked_reason === null, "no block reason when consent is unavailable");
 
 const prescribeFlagged = validateIngestionPolicy({
   user_id: "cg_policy_ok",
   raw_input: "What medication should I give her?",
   has_documents: false,
 });
-assert(prescribeFlagged.allowed, "clinical question still allows capture");
+assert(prescribeFlagged.allowed, "clinical question still allows capture without local consent");
 assert(prescribeFlagged.medical_advice_request, "clinical question flagged for output guard");
 console.log("✓ medical boundary — capture always, constrain outputs");
 
@@ -177,8 +177,8 @@ const ingested = await processSituationInput({
   timestamp: "2026-07-01T10:00:00.000Z",
 });
 assert(ingested.events_created.length >= 1, "CareEvent after consent");
-assert(ingested.policy_engine_layer?.consent_verified === true, "consent verified on ingest");
-console.log("✓ pipeline allows with consent");
+assert(ingested.policy_engine_layer?.consent_verified === false, "local cache must not verify consent on ingest");
+console.log("✓ pipeline remains fail-closed without server-verified consent");
 
 const worried = await processSituationInput({
   raw_input:
