@@ -119,6 +119,58 @@ try {
   }
   assert.equal(evidenceIds.length, 20, "the continuity fixture must contain exactly 20 persisted care events");
 
+  // Preserve a source-linked observation and an explicit correction so the
+  // second browser verifies lineage, not just a flat count of evidence rows.
+  const sourceStart = 0;
+  const sourceEnd = sourceText.length;
+  const originalObservation = await backendRequest(`/api/v1/care-continuity/evidence/${encodeURIComponent(evidenceId)}/observations`, {
+    token: original.token,
+    method: "POST",
+    body: {
+      observation_kind: "caregiver_report",
+      epistemic_status: "reported",
+      subject_label: "Care recipient",
+      attribute: "reported_statement",
+      value_text: "Care recipient had an unsteady moment.",
+      context: "Synthetic identity-continuity test observation.",
+      observer_label: "Caregiver",
+      source_passage: sourceText,
+      source_span_start: sourceStart,
+      source_span_end: sourceEnd,
+      extraction_method: "caregiver_manual",
+      extraction_version: "1",
+      reported_at: new Date().toISOString(),
+    },
+  });
+  assert.equal(originalObservation.response.status, 201, `could not create source-linked observation: ${JSON.stringify(originalObservation.payload)}`);
+  const originalObservationId = originalObservation.payload?.id;
+  assert.ok(originalObservationId, "backend did not return the original observation ID");
+
+  const correctedObservation = await backendRequest(`/api/v1/care-continuity/evidence/${encodeURIComponent(evidenceId)}/observations`, {
+    token: original.token,
+    method: "POST",
+    body: {
+      observation_kind: "caregiver_report",
+      epistemic_status: "reported",
+      subject_label: "Care recipient",
+      attribute: "reported_statement",
+      value_text: "Care recipient needed support while walking.",
+      context: "Caregiver correction; original source and observation remain preserved.",
+      observer_label: "Caregiver",
+      source_passage: sourceText,
+      source_span_start: sourceStart,
+      source_span_end: sourceEnd,
+      extraction_method: "caregiver_correction",
+      extraction_version: "1",
+      reported_at: new Date().toISOString(),
+      supersedes_observation_id: originalObservationId,
+      correction_rationale: "Caregiver clarified the structured interpretation.",
+    },
+  });
+  assert.equal(correctedObservation.response.status, 201, `could not create observation correction: ${JSON.stringify(correctedObservation.payload)}`);
+  const correctedObservationId = correctedObservation.payload?.id;
+  assert.ok(correctedObservationId, "backend did not return the correction observation ID");
+
   // Register from the actual settings UI. Registration must attach to context A's
   // already-existing anonymous care identity, not create a replacement record.
   await pageA.getByRole("button", { name: "Create account", exact: true }).click();
@@ -236,6 +288,14 @@ try {
   assert.equal(matchingEvidence.source_text, sourceText, "fresh browser login changed original caregiver wording");
   const restoredEvidenceIds = new Set((restoredEvidence.payload ?? []).map((item) => item.id));
   assert.equal(evidenceIds.filter((id) => restoredEvidenceIds.has(id)).length, 20, "fresh browser login did not restore all 20 original care events");
+  const restoredObservations = await backendRequest(`/api/v1/care-continuity/evidence/${encodeURIComponent(evidenceId)}/observations`, { token: restored.token });
+  assert.equal(restoredObservations.response.status, 200, "second browser could not retrieve the source-linked observation history");
+  const observationRows = restoredObservations.payload ?? [];
+  assert.ok(observationRows.some((row) => row.id === originalObservationId), "original observation was not preserved after recovery");
+  const restoredCorrection = observationRows.find((row) => row.id === correctedObservationId);
+  assert.ok(restoredCorrection, "correction was not preserved after recovery");
+  assert.equal(restoredCorrection.supersedes_observation_id, originalObservationId, "correction-to-original relationship changed after recovery");
+  assert.ok(observationRows.every((row) => row.evidence_id === evidenceId), "observation evidence relationship changed after recovery");
 
   // Verify context B has no inherited browser A storage and now holds only its
   // independently issued account bearer for the same durable care identity.
