@@ -11,6 +11,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "e2e/workspace-first-screen-performance.mjs"
       - "src/api/client.ts"
       - "src/app/workspace/settings/page.tsx"
       - "e2e/anonymous-account-continuity.mjs"
