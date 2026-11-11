@@ -484,6 +484,42 @@ function formatWhen(value?: string | null): string {
     : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+const CAREGIVER_LABELS: Record<string, string> = {
+  unknown: "Not yet known",
+  missing: "Not recorded",
+  unverified: "Not confirmed",
+  uncertain: "Still unclear",
+  caregiver_reported: "Reported by a caregiver",
+  reported: "Reported",
+  observed: "Observed",
+  confirmed: "Confirmed",
+  disputed: "Reports do not match",
+  needs_clarification: "Needs checking",
+  awaiting_confirmation: "Needs review",
+  detected: "Found in saved information",
+  inconclusive: "Could not be confirmed",
+  rejected: "Not supported",
+  superseded: "Replaced by a newer review",
+  active: "Current",
+  inactive: "No longer current",
+  emergence: "First recorded",
+  frequency_increase: "Recorded more often",
+  frequency_decrease: "Recorded less often",
+  recurrence: "Repeated",
+  temporal_clustering: "Several events close together",
+  medication: "Medication",
+  mobility: "Movement",
+  care_recipient: "Person receiving care",
+  daily_care: "Daily care",
+};
+
+function caregiverLabel(value?: string | null): string {
+  if (!value?.trim()) return "Not recorded";
+  const normalized = value.trim().toLowerCase();
+  return CAREGIVER_LABELS[normalized]
+    ?? normalized.replaceAll("_", " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+}
+
 export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
   const [currentCaregiverId, setCurrentCaregiverId] = useState("");
@@ -640,13 +676,13 @@ export function LCRCurrentUnderstanding() {
           try {
             const persistedPatterns = await getJSON(`/change/patterns/${encodeURIComponent(scopedPersonId)}`);
             if (!Array.isArray(persistedPatterns) || persistedPatterns.some((item) => item?.person_id !== scopedPersonId)) {
-              throw new Error("The persisted pattern history did not match the active care-record session.");
+              throw new Error("The saved repeated-change information did not match the active care record.");
             }
             setPatterns(persistedPatterns as PersistedPattern[]);
             setPatternsError(null);
           } catch (cause) {
             setPatterns([]);
-            setPatternsError(cause instanceof Error ? cause.message : "Persisted pattern history is unavailable.");
+            setPatternsError(cause instanceof Error ? cause.message : "Saved repeated-change history is unavailable.");
           }
         })(),
         (async () => {
@@ -675,7 +711,7 @@ export function LCRCurrentUnderstanding() {
       setProjection(null);
       setRegisteredActions([]);
       setRegisteredActionsError("Registered actions are unavailable because the caregiver session could not be established.");
-      setError(cause instanceof Error ? cause.message : "The longitudinal care record could not be loaded.");
+      setError(cause instanceof Error ? cause.message : "The care history could not be loaded.");
     } finally {
       setLoading(false);
       if (!backgroundStarted) setRefreshing(false);
@@ -738,7 +774,7 @@ export function LCRCurrentUnderstanding() {
       if (!result?.change || result.change.id !== change.id ||
           result.change.person_id !== session.person.id || !Array.isArray(result.evidence) || !Array.isArray(result.assertions) || !Array.isArray(result.confirmation_history) ||
           result.evidence.some((item) => !change.evidence_ids.includes(item.id))) {
-        throw new Error("The returned evidence did not match the saved change assessment.");
+        throw new Error("The returned source information did not match the saved change review.");
       }
       setChangeEvidence((previous) => ({ ...previous, [change.id]: { evidence: result.evidence, assertions: result.assertions, confirmation_history: result.confirmation_history } }));
     } catch (cause) {
@@ -763,7 +799,7 @@ export function LCRCurrentUnderstanding() {
       const session = await ensureAnonymousSession();
       const result = await postJSON("/care-continuity/situation-understanding/reassess", {}) as SituationAssessmentResponse;
       if (!result.assessment || result.assessment.person_id !== session.person.id) {
-        throw new Error("The assessment did not match the active care-record session.");
+        throw new Error("The review did not match the active care record.");
       }
       setAssessment(result.assessment);
       setSourceFreshness(result.source_freshness ?? null);
@@ -994,7 +1030,7 @@ export function LCRCurrentUnderstanding() {
                           Why it appears: {(item.priority_reasons ?? []).join("; ") || "The saved record marks this item high priority, but the reason was not returned."}
                         </p>
                         <p className="lcr-entry-status">
-                          Status: {item.recorded_status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}
+                          Status: {caregiverLabel(item.recorded_status)} · Information: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}
                         </p>
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                         {item.owner && <small>Recorded owner: {item.owner}</small>}
@@ -1007,7 +1043,7 @@ export function LCRCurrentUnderstanding() {
                           : <small>This priority comes from a saved follow-up assessment; supporting source material is not linked here.</small>}
                         {source?.source_label && <small>Source label: {source.source_label}</small>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
-                        {source && source.claim_count > 0 && <small>Competing claims linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
+                        {source && source.claim_count > 0 && <small>Different reports linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
                         {actionForSuggestion(item) ? (
                           <p className="lcr-entry-status">Registered action: {actionForSuggestion(item)?.status.replaceAll("_", " ")}. This suggestion has already been explicitly registered.</p>
                         ) : item.request_text?.trim() && item.evidence_ids.length > 0 ? (
@@ -1024,7 +1060,7 @@ export function LCRCurrentUnderstanding() {
                                 <p>Proposed action: {item.request_text}</p>
                                 <p>Why suggested: {(item.priority_reasons ?? []).join("; ") || item.description || "The persisted open-loop record contains a follow-up request."}</p>
                                 <p>Supporting sources: {item.evidence_ids.length} linked record(s)</p>
-                                <p>Limitations: Information is marked {item.epistemic_status.replaceAll("_", " ")}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
+                                <p>Limitations: Information is marked {caregiverLabel(item.epistemic_status)}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
                                 <p>Responsible caregiver: the caregiver authenticated in this session. No other caregiver will be assigned.</p>
                                 <p>Due date: {item.due_at ? `The source record contains ${formatWhen(item.due_at)}; no reminder will be created unless you explicitly choose one below.` : "No supported due date is recorded."}</p>
                                 <p>Timing context: recorded priority {item.priority || "not recorded"} · recorded consequence of delay {item.consequence_of_delay || "not recorded"} · deadline source {item.deadline_source || "not recorded"}. No deadline is invented.</p>
@@ -1099,7 +1135,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{item.title}</strong>
                       <p>{item.description || "No additional description was recorded."}</p>
                       <p className="lcr-entry-status">Recorded deferral: {item.deferred_reason || "The status is explicitly marked deferred; no reason was supplied."}</p>
-                      <p className="lcr-entry-status">Status: {item.recorded_status.replaceAll("_", " ")} · Priority: {item.priority || "not recorded"} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      <p className="lcr-entry-status">Status: {caregiverLabel(item.recorded_status)} · Priority: {item.priority || "not recorded"} · Information: {caregiverLabel(item.epistemic_status)}</p>
                       {item.request_text && <p>Recorded follow-up request: {item.request_text}</p>}
                       {item.verification_rule && <small>Recorded completion check: {item.verification_rule}</small>}
                       {item.review_at && <small>Recorded review date: {formatWhen(item.review_at)}</small>}
@@ -1108,7 +1144,7 @@ export function LCRCurrentUnderstanding() {
                         ? <small>Recorded priority factors: {item.priority_reasons.join("; ")}</small>
                         : <small>No priority-change trigger was recorded; reassess if the underlying record changes.</small>}
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
-                      <small>Source type: {item.source.replaceAll("_", " ")}</small>
+                      <small>Source type: {caregiverLabel(item.source)}</small>
                       <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
                     </li>
                   ))}
@@ -1130,9 +1166,9 @@ export function LCRCurrentUnderstanding() {
                 <ul className="lcr-current-facts">
                   {baselineItems.map((item) => (
                     <li key={"baseline:" + item.source + ":" + item.id} className="lcr-current-fact">
-                      <strong>Recorded baseline · {item.title}</strong>
-                      <p>This record was explicitly marked as a baseline or usual state. It is not a population norm.</p>
-                      <p className="lcr-entry-status">Source: {item.source.replaceAll("_", " ")} · Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      <strong>Usual or starting point · {item.title}</strong>
+                      <p>This was marked as a usual or starting point for this person. It is not a comparison with other people.</p>
+                      <p className="lcr-entry-status">Source: {caregiverLabel(item.source)} · Status: {caregiverLabel(item.status)} · Information: {caregiverLabel(item.epistemic_status)}</p>
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                       <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
                       {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
@@ -1144,37 +1180,37 @@ export function LCRCurrentUnderstanding() {
                     );
                     return (
                       <li key={"candidate:" + item.source + ":" + item.id} className="lcr-current-fact">
-                        <strong>Recorded follow-up candidate · {item.title}</strong>
+                        <strong>Possible follow-up · {item.title}</strong>
                         <p>This record was flagged for attention or follow-through. That flag does not establish immediate urgency.</p>
-                        <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                        <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · Information: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                         {source?.description && <p>{source.description}</p>}
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                         <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
-                        <small>Source type: {item.source.replaceAll("_", " ")}</small>
+                        <small>Source type: {caregiverLabel(item.source)}</small>
                       </li>
                     );
                   })}
                   {watchOpenLoops.map((item) => (
                     <li key={"open-loop:" + item.source + ":" + item.id} className="lcr-current-fact">
-                      <strong>Open item · {item.title}</strong>
-                      <p>The saved record does not classify this item as immediate or deferred. Its timing should not be assumed.</p>
-                      <p className="lcr-entry-status">Status: {item.recorded_status.replaceAll("_", " ")} · Recorded priority: {item.priority || "not assessed"} · Information: {item.epistemic_status.replaceAll("_", " ")}</p>
+                      <strong>Still needs follow-up · {item.title}</strong>
+                      <p>The saved information does not say whether this needs attention now or can wait. Do not assume a deadline.</p>
+                      <p className="lcr-entry-status">Status: {caregiverLabel(item.recorded_status)} · Recorded priority: {item.priority || "not assessed"} · Information: {caregiverLabel(item.epistemic_status)}</p>
                       {item.description && <p>{item.description}</p>}
                       {item.owner && <small>Recorded owner: {item.owner}</small>}
                       {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                       <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
-                      <small>Source type: {item.source.replaceAll("_", " ")}</small>
+                      <small>Source type: {caregiverLabel(item.source)}</small>
                     </li>
                   ))}
                   {watchMissingInformation.map((item) => (
                     <li key={"missing:" + item.source + ":" + item.id} className="lcr-current-fact">
                       <strong>Information still missing · {item.title}</strong>
-                      <p>This gap remains in the persisted assessment. Its urgency is not established by the missing information alone.</p>
-                      <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Information: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                      <p>This information is still missing. That alone does not tell us how urgent it is.</p>
+                      <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · Information: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                       <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
-                      <small>Source type: {item.source.replaceAll("_", " ")}</small>
+                      <small>Source type: {caregiverLabel(item.source)}</small>
                     </li>
                   ))}
                   {watchUncertainties.map((item) => {
@@ -1186,23 +1222,23 @@ export function LCRCurrentUnderstanding() {
                       <li key={item.source + ":" + item.id} className="lcr-current-fact">
                         <strong>{item.title}</strong>
                         <p>{disputed ? "Conflicting accounts remain unresolved. Neither account is selected as the winner." : "This item remains uncertain or requires clarification."}</p>
-                        <p className="lcr-entry-status">Status: {item.status.replaceAll("_", " ")} · Evidence state: {item.epistemic_status.replaceAll("_", " ")} · Source: {item.source.replaceAll("_", " ")}</p>
+                        <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · Evidence state: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                         {source?.description && <p>{source.description}</p>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                         <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
-                        <small>Source type: {item.source.replaceAll("_", " ")}</small>
+                        <small>Source type: {caregiverLabel(item.source)}</small>
                       </li>
                     );
                   })}
                   {watchChanges.map((change) => (
                     <li key={change.id} className="lcr-current-fact">
-                      <strong>{change.subject_type.replaceAll("_", " ")} · {change.change_type.replaceAll("_", " ")}</strong>
-                      <p>{change.explanation || "A persisted change candidate was recorded without an explanation."}</p>
+                      <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
+                      <p>{change.explanation || "A possible change was saved, but no explanation is available."}</p>
                       <p>Previously recorded: {change.previous_state ?? "Not recorded"} · Currently recorded: {change.current_state ?? "Not recorded"}</p>
-                      <p className="lcr-entry-status">Reassess this comparison if a newer source observation or correction changes the saved evidence. No clinical threshold is inferred.</p>
+                      <p className="lcr-entry-status">Review this comparison if a new report or correction changes the saved information. No medical cutoff is assumed.</p>
                       <p className="lcr-entry-status">
-                        Review state: {(change.confirmation_status || "not recorded").replaceAll("_", " ")}.
+                        Review state: {(caregiverLabel(change.confirmation_status || "not recorded")}.
                         {change.confirmation_status === "rejected"
                           ? " This assessment was disputed and is not presented as an established change."
                           : change.confirmation_status === "inconclusive"
@@ -1228,17 +1264,17 @@ export function LCRCurrentUnderstanding() {
                   ))}
                   {activeWatchPatterns.map((pattern) => (
                     <li key={pattern.id} className="lcr-current-fact">
-                      <strong>{pattern.subject_type.replaceAll("_", " ")} · {pattern.pattern_type.replaceAll("_", " ")}</strong>
+                      <strong>{caregiverLabel(pattern.subject_type)} · {caregiverLabel(pattern.pattern_type)}</strong>
                       <p>Recorded from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)} across {pattern.evidence_count} linked event(s).</p>
-                      {pattern.direction && <p>Recorded direction: {pattern.direction.replaceAll("_", " ")}</p>}
-                      <p className="lcr-entry-status">Reassess this comparison if new source observations or corrections change the recorded interval. No causal trigger or clinical threshold is inferred.</p>
+                      {pattern.direction && <p>Recorded direction: {caregiverLabel(pattern.direction)}</p>}
+                      <p className="lcr-entry-status">Reassess this comparison if new source observations or corrections change the recorded interval. This does not show what caused the change or whether it is medically important.</p>
                       {pattern.alternative_interpretations?.length ? (
                         <div>
-                          <strong>Alternative explanations / limitations</strong>
+                          <strong>Other possible explanations</strong>
                           {pattern.alternative_interpretations.map((alternative, index) => <p key={index}>{typeof alternative === "string" ? alternative : JSON.stringify(alternative)}</p>)}
                         </div>
-                      ) : <p>Alternative explanations were not returned with this pattern; no cause is inferred.</p>}
-                      <small>Source events: {pattern.event_ids.length}</small>
+                      ) : <p>Other possible explanations were not provided. No cause is assumed.</p>}
+                      <small>Recorded events: {pattern.event_ids.length}</small>
                     </li>
                   ))}
                 </ul>
@@ -1315,38 +1351,38 @@ export function LCRCurrentUnderstanding() {
             )}
 
 
-      <details className="lcr-history-details"><summary>See patterns in the care history</summary>
+      <details className="lcr-history-details"><summary>See repeated changes over time</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
-          <h3 id="lcr-pattern-history-heading">Patterns over time</h3>
-          <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} active patterns in loaded history</span>
+          <h3 id="lcr-pattern-history-heading">Repeated changes over time</h3>
+          <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} repeated changes in the saved history</span>
         </div>
-        {patternsError && <p role="status">Persisted pattern history could not be loaded: {patternsError}</p>}
+        {patternsError && <p role="status">Saved repeated-change history could not be loaded: {patternsError}</p>}
         {!patternsError && patterns.length === 0 && (
-          <p>There is not enough recorded history to identify a pattern yet.</p>
+          <p>There is not enough saved history to tell whether something repeats yet.</p>
         )}
         {patterns.length > 0 && (
           <ul className="lcr-current-facts">
             {patterns.map((pattern) => (
               <li key={pattern.id} className="lcr-current-fact">
                 <div className="lcr-entry-heading">
-                  <strong>{pattern.subject_type.replaceAll("_", " ")} · {pattern.pattern_type.replaceAll("_", " ")}</strong>
-                  <span>{pattern.is_active && !pattern.superseded_by_pattern_id ? "active" : "superseded"} · {pattern.pattern_strength.replaceAll("_", " ")}</span>
+                  <strong>{caregiverLabel(pattern.subject_type)} · {caregiverLabel(pattern.pattern_type)}</strong>
+                  <span>{pattern.is_active && !pattern.superseded_by_pattern_id ? "active" : "superseded"} · {caregiverLabel(pattern.pattern_strength)}</span>
                 </div>
                 <p>
-                  Recorded across {pattern.evidence_count} linked event(s), from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)}.
+                  Recorded in {pattern.evidence_count} event(s), from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)}.
                 </p>
                 {pattern.rate_per_period != null && (
-                  <p className="lcr-entry-status">Recorded rate: {pattern.rate_per_period.toFixed(2)} per 30-day period. This is a record rate, not an estimate of unobserved events.</p>
+                  <p className="lcr-entry-status">Saved records show {pattern.rate_per_period.toFixed(2)} events per 30 days. This counts records only; it does not estimate events that were not recorded.</p>
                 )}
-                {pattern.direction && <p className="lcr-entry-status">Direction: {pattern.direction.replaceAll("_", " ")}</p>}
-                {pattern.confidence == null && <p className="lcr-entry-status">There is not enough information to rate how reliable this pattern assessment is.</p>}
+                {pattern.direction && <p className="lcr-entry-status">Direction: {caregiverLabel(pattern.direction)}</p>}
+                {pattern.confidence == null && <p className="lcr-entry-status">There is not enough information to judge how reliable this repeated-change finding is.</p>}
                 {pattern.alternative_interpretations?.map((item, index) => (
                   <p className="lcr-entry-status" key={index}>
                     {typeof item === "string" ? item : JSON.stringify(item)}
                   </p>
                 ))}
-                <small>Source events: {pattern.event_ids.length}</small>
+                <small>Recorded events: {pattern.event_ids.length}</small>
               </li>
             ))}
           </ul>
@@ -1354,30 +1390,30 @@ export function LCRCurrentUnderstanding() {
       </div>
 
       </details>
-      <details className="lcr-history-details"><summary>Review changes over time</summary>
+      <details className="lcr-history-details"><summary>Review saved changes</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-change-history-heading">Changes over time</h3>
-          <span>{changes.length} persisted assessments</span>
+          <span>{changes.length} saved change reviews</span>
         </div>
         {changesError && <p role="status">Saved change history could not be loaded: {changesError}</p>}
         {!changesError && changes.length === 0 && (
-          <p>There are not enough saved assessments to describe changes yet. Missing assessments do not mean no changes occurred.</p>
+          <p>There is not enough saved information to describe changes yet. Missing records do not mean nothing changed.</p>
         )}
         {changes.length > 0 && (
           <ul className="lcr-current-facts">
             {changes.map((change) => (
               <li key={change.id} className="lcr-current-fact">
                 <div className="lcr-entry-heading">
-                  <strong>{change.subject_type.replaceAll("_", " ")} · {change.change_type.replaceAll("_", " ")}</strong>
-                  <span>{change.significance_verdict?.replaceAll("_", " ") ?? "Significance not assessed"}</span>
+                  <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
+                  <span>{caregiverLabel(change.significance_verdict) ?? "Not reviewed yet"}</span>
                 </div>
                 <p>{change.explanation || "No explanation was stored with this assessment."}</p>
                 <p className="lcr-entry-status">
                   Previous: {change.previous_state ?? "Not recorded"} · Current: {change.current_state ?? "Not recorded"}
                 </p>
                 <p className="lcr-entry-status">
-                  Confirmation: {(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected").replaceAll("_", " ")}
+                  Review status: {(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected").replaceAll("_", " ")}
                 </p>
                 <label className="lcr-evidence-reason">
                   Review note
@@ -1387,7 +1423,7 @@ export function LCRCurrentUnderstanding() {
                     rows={2}
                     maxLength={2000}
                   />
-                  <small>Record context or explain why this assessment is incorrect or uncertain.</small>
+                  <small>Add context or explain why this change may be incorrect or uncertain.</small>
                 </label>
                 {confirmationError[change.id] && <p role="alert">{confirmationError[change.id]}</p>}
                 {change.is_active !== false && !change.superseded_by_change_id ? (
@@ -1395,18 +1431,18 @@ export function LCRCurrentUnderstanding() {
                     {(["detected", "awaiting_confirmation"].includes(change.confirmation_status || "detected")) ? (
                       <>
                         <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "confirmed")}>Confirm</button>
-                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "inconclusive")}>Mark inconclusive</button>
-                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "rejected")}>Reject assessment</button>
+                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "inconclusive")}>Could not confirm</button>
+                        <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "rejected")}>Dispute this change</button>
                         {change.confirmation_status !== "awaiting_confirmation" && (
-                          <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Request confirmation</button>
+                          <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Ask for confirmation</button>
                         )}
                       </>
                     ) : (
-                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Reopen review</button>
+                      <button type="button" className="lcr-text-action" disabled={confirmationLoadingId === change.id} onClick={() => void transitionConfirmation(change, "awaiting_confirmation")}>Review again</button>
                     )}
                   </div>
                 ) : (
-                  <small>This assessment has been superseded. It remains in the record for audit history.</small>
+                  <small>A newer review replaced this one. The earlier review remains in the care history.</small>
                 )}
                 <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
                 <small>Supporting sources: {change.evidence_ids.length} linked record(s)</small>
@@ -1432,10 +1468,10 @@ export function LCRCurrentUnderstanding() {
                       <article key={item.id} className="lcr-current-fact">
                         <strong>{item.title}</strong>
                         <p>{item.description || "No source description was recorded."}</p>
-                        <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : item.event_type.replaceAll("_", " ")} · {item.status === "recorded" ? "Saved" : item.status.replaceAll("_", " ")}</small>
+                        <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : caregiverLabel(item.event_type)} · {item.status === "recorded" ? "Saved" : caregiverLabel(item.status)}</small>
                         <small>Observed: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
                         <small>Recorded: {formatWhen(item.recorded_at)}</small>
-                        <small>Time provenance: {item.time_provenance || "Not recorded"}</small>
+                        <small>How the time was recorded: {item.time_provenance || "Not recorded"}</small>
                       </article>
                     ))}
                     {changeEvidence[change.id] && !changeEvidence[change.id].error && changeEvidence[change.id].evidence.length === 0 && (
@@ -1443,12 +1479,12 @@ export function LCRCurrentUnderstanding() {
                     )}
                     {changeEvidence[change.id]?.assertions.length > 0 && (
                       <div aria-label="Structured source assertions">
-                        <strong>Structured observations</strong>
+                        <strong>Recorded observations</strong>
                         <ul>
                           {changeEvidence[change.id].assertions.map((assertion) => (
                             <li key={assertion.id}>
-                              <p>{assertion.field.replaceAll("_", " ")}: {assertion.asserted_value}</p>
-                              <small>{assertion.subject_type.replaceAll("_", " ")} · {assertion.assertion_status} · {assertion.source_label}</small>
+                              <p>{caregiverLabel(assertion.field)}: {assertion.asserted_value}</p>
+                              <small>{caregiverLabel(assertion.subject_type)} · {caregiverLabel(assertion.assertion_status)} · {assertion.source_label}</small>
                               <small>Observed: {formatWhen(assertion.observed_at)} · Recorded: {formatWhen(assertion.recorded_at)}</small>
                               {assertion.source_text && <p>{assertion.source_text}</p>}
                             </li>
@@ -1457,15 +1493,15 @@ export function LCRCurrentUnderstanding() {
                       </div>
                     )}
                     {changeEvidence[change.id]?.confirmation_history.length > 0 && (
-                      <div aria-label="Confirmation history">
+                      <div aria-label="Review history">
                         <strong>Review history</strong>
                         <ul>
                           {changeEvidence[change.id].confirmation_history.map((transition) => (
                             <li key={transition.id}>
-                              <p>{transition.previous_status.replaceAll("_", " ")} → {transition.new_status.replaceAll("_", " ")}</p>
+                              <p>{caregiverLabel(transition.previous_status)} → {caregiverLabel(transition.new_status)}</p>
                               {transition.reason && <p>{transition.reason}</p>}
-                              <small>Recorded {formatWhen(transition.created_at)} · reviewer: caregiver</small>
-                              {transition.evidence_ids.length > 0 && <small>Review evidence: {transition.evidence_ids.length} linked record(s)</small>}
+                              <small>Recorded {formatWhen(transition.created_at)} · reviewed by a caregiver</small>
+                              {transition.evidence_ids.length > 0 && <small>Information used for this review: {transition.evidence_ids.length} linked record(s)</small>}
                             </li>
                           ))}
                         </ul>
@@ -1583,14 +1619,14 @@ export function LCRCurrentUnderstanding() {
                         {item.ambiguity_note && <small>Ambiguity: {item.ambiguity_note}</small>}
                       </div>
                     )}
-                    {item.evidence_ids?.length > 0 && <small>Evidence review coverage: {(item.evidence_assessment_coverage || "not returned").replaceAll("_", " ")}</small>}
+                    {item.evidence_ids?.length > 0 && <small>Source review status: {(item.evidence_assessment_coverage || "not returned").replaceAll("_", " ")}</small>}
                     {item.evidence_assessments?.map((review) => (
                       <div key={review.evidence_id + ":" + review.review_type} className="lcr-entry-status">
                         <small>{review.review_type.replaceAll("_", " ")}: {review.outcome.replaceAll("_", " ")} · policy {review.policy_version} · reviewed {formatWhen(review.reviewed_at)}</small>
                         <small>{review.rationale}</small>
                       </div>
                     ))}
-                    {item.claim_count > 0 && <small>Competing claims linked: {item.claim_count}</small>}
+                    {item.claim_count > 0 && <small>Different reports linked: {item.claim_count}</small>}
                     {item.source_collection === "facts" && (
                       <div className="lcr-evidence-integrity">
                         <button type="button" onClick={() => void loadEvidenceIntegrity(item.id)} disabled={evidenceIntegrityLoadingId === item.id}>
