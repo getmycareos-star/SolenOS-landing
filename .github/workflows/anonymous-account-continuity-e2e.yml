@@ -6,6 +6,7 @@ on:
       - "src/api/client.ts"
       - "src/app/workspace/settings/page.tsx"
       - "e2e/anonymous-account-continuity.mjs"
+      - "e2e/workspace-first-screen-performance.mjs"
       - ".github/workflows/anonymous-account-continuity-e2e.yml"
   push:
     branches: [main]
@@ -102,6 +103,12 @@ jobs:
           done
           cat /tmp/solenos-account-continuity-frontend.log
           exit 1
+
+      - name: Run corrected mobile first-screen performance test
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+        run: node e2e/workspace-first-screen-performance.mjs
 
       - name: Run fresh-browser-context account continuity test
         env:
