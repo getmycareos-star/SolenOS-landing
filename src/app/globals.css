@@ -5885,3 +5885,70 @@ input[type="file"] { width: 100%; white-space: normal; }
   .lcr-record-section .lcr-entry-heading { flex-wrap: wrap; }
   .lcr-record-section .lcr-history-details > .lcr-situation-assessment { padding: 12px; }
 }
+
+
+/* Living Archive loading mark — one motif, three useful sizes. */
+.living-archive-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-width: 0;
+  color: var(--solenos-sage);
+}
+.living-archive-loading__mark {
+  display: block;
+  width: var(--archive-mark-size, 3.5rem);
+  height: var(--archive-mark-size, 3.5rem);
+  overflow: visible;
+}
+.living-archive-loading__arch,
+.living-archive-loading__spine {
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.living-archive-loading__arch--outer {
+  stroke-dasharray: 110;
+  stroke-dashoffset: 110;
+  animation: living-archive-draw 1.5s ease-in-out infinite;
+}
+.living-archive-loading__arch--inner {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: living-archive-draw 1.5s 0.18s ease-in-out infinite;
+}
+.living-archive-loading__spine {
+  stroke-dasharray: 75;
+  stroke-dashoffset: 75;
+  animation: living-archive-draw 1.5s 0.36s ease-in-out infinite;
+}
+.living-archive-loading__label {
+  color: var(--solenos-muted);
+  font: 500 0.875rem/1.45 var(--font-solenos-sans);
+}
+.brand-loading {
+  gap: 0.85rem;
+  min-height: 48vh;
+}
+.brand-loading .living-archive-loading {
+  margin-bottom: 0.15rem;
+}
+.brand-loading__message {
+  margin-top: -0.35rem;
+}
+@keyframes living-archive-draw {
+  0%, 12% { stroke-dashoffset: 110; opacity: 0.45; }
+  55%, 78% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -110; opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .living-archive-loading__arch,
+  .living-archive-loading__spine {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+}
