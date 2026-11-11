@@ -119,7 +119,7 @@ export default function DailyCarePage() {
           max-width: 48rem;
           margin: 0 auto;
           padding: 0;
-          color: #172b35;
+          color: var(--theme-panel-fg);
           font-size: 1rem;
           line-height: 1.55;
           overflow-wrap: anywhere;
@@ -158,15 +158,15 @@ export default function DailyCarePage() {
           margin: 0 !important;
           font-size: 1rem !important;
           line-height: 1.6 !important;
-          color: #52656d !important;
+          color: var(--theme-panel-muted) !important;
         }
         .structured-daily-capture > section {
           width: 100%;
           margin: 0 0 1rem;
           padding: clamp(.9rem, 3vw, 1.25rem);
-          border: 1px solid #dce5e8;
+          border: 1px solid var(--theme-panel-border);
           border-radius: 16px;
-          background: #fff;
+          background: var(--theme-panel-bg);
           box-shadow: 0 2px 10px rgba(23, 43, 53, .035);
         }
         .structured-daily-capture > section > h2 {
@@ -198,10 +198,10 @@ export default function DailyCarePage() {
           max-width: 100% !important;
           min-height: 46px;
           padding: .7rem .8rem !important;
-          border: 1px solid #bdcbd0 !important;
+          border: 1px solid var(--theme-panel-border) !important;
           border-radius: 9px !important;
-          background: #fff !important;
-          color: #172b35 !important;
+          background: var(--theme-field-bg) !important;
+          color: var(--theme-field-fg) !important;
           font-family: inherit;
           font-size: 16px !important;
           line-height: 1.45;
