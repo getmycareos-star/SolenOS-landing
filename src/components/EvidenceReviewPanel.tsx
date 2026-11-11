@@ -216,8 +216,8 @@ function historicalSnapshotDetails(value: Record<string, unknown> | null): Histo
       const parsedDate = rawDate ? new Date(rawDate) : null;
       return {
         key: String(row.id ?? index),
-        title: pick(row, config.title) || config.label,
-        detail: pick(row, config.detail) || 'No extra details were saved.',
+        title: reviewStatusLabel(pick(row, config.title) || config.label),
+        detail: (pick(row, config.detail) || 'No extra details were saved.').slice(0, 500),
         date: parsedDate && Number.isFinite(parsedDate.getTime()) ? parsedDate.toLocaleString() : 'Date not recorded',
         status: pick(row, config.status),
         source: pick(row, config.source),
@@ -820,13 +820,16 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
                     <li key={item.key} style={{ marginBottom: 8 }}>
                       <strong>{item.title}</strong>
                       <p>{item.detail}</p>
-                      <small>{item.date}{item.status ? ` · ${reviewStatusLabel(item.status)}` : ''}{item.source ? ` · From: ${item.source}` : ''}</small>
+                      <small>{item.date}{item.status ? ` · ${reviewStatusLabel(item.status)}` : ''}{item.source ? ` · From: ${reviewStatusLabel(item.source)}` : ''}</small>
                     </li>
                   ))}
                 </ul>
                 {section.total > section.items.length && <p>Showing {section.items.length} of {section.total} saved items.</p>}
               </details>
             ))}
+            {historicalSnapshotSections(recordHistory).filter(section => section.label === 'Other saved information').reduce((total, section) => total + section.count, 0) > 0 && (
+              <p>Other saved information: {historicalSnapshotSections(recordHistory).filter(section => section.label === 'Other saved information').reduce((total, section) => total + section.count, 0)} saved item(s).</p>
+            )}
             <p>This saved copy may not include every care update. Information added after this date is not shown.</p>
           </div>}
         </details>
