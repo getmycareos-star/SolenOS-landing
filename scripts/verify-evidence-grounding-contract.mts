@@ -180,10 +180,10 @@ for (const route of [
   assert(freshnessPanel.includes(route), `LCR freshness UI must connect to persisted route ${route}`);
 }
 assert(!freshnessPanel.includes("Save new policy version"), "freshness policies are selected from persisted immutable versions rather than authored in the LCR review panel");
-assert(freshnessPanel.includes("Apply saved policy") && freshnessPanel.includes("Assess selected evidence"), "LCR must retain assessment against an existing saved freshness policy");
-assert(freshnessPanel.includes("No universal freshness threshold is applied"), "freshness UI must reject an invented universal threshold");
+assert(freshnessPanel.includes("Choose a saved review rule") && freshnessPanel.includes("Review this information"), "LCR must retain assessment against an existing saved freshness policy");
+assert(freshnessPanel.includes("There is no single time limit for every kind of information"), "freshness UI must reject an invented universal threshold");
 assert(freshnessPanel.toLowerCase().includes("a failed read is not an empty history"), "freshness history failure must not be displayed as an empty history");
-assert(freshnessPanel.includes("This is a policy result, not a truth judgment"), "freshness assessments must not be presented as truth verification");
+assert(freshnessPanel.includes("A review does not prove that information is true or still applies today"), "freshness assessments must not be presented as truth verification");
 assert(freshnessPanel.includes("source_time_kind"), "freshness UI must show which timestamp dimension drove the assessment");
 console.log("PASS: saved freshness policy assessment and history are connected to the LCR with explicit limits.");
 
