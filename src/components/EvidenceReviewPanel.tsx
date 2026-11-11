@@ -139,7 +139,7 @@ const reviewStatusLabel = (value: string) => ({
   supported: 'Matches the saved source',
   contested: 'Other information disagrees',
   complete: 'Complete',
-}[value] ?? reviewStatusLabel(value)
+}[value] ?? value.replaceAll('_', ' ')
 const reviewCriterionLabel = (value: string) => ({
   'source attribution': 'Who provided it',
   'independent corroboration': 'Whether there are separate reports',
@@ -519,7 +519,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Choose a saved review rule
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
           <option value="">Choose a review rule</option>
-          {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{policy.domain_key} · {policy.policy_version} · {policy.max_age_days == null ? 'no max-age rule' : policy.max_age_days + 'd review'}{policy.historical_after_days == null ? '' : ' · historical ' + policy.historical_after_days + 'd'}</option>)}
+          {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{policy.domain_key.replaceAll('_', ' ')} · {policy.max_age_days == null ? 'No time limit set' : 'Review after ' + policy.max_age_days + ' days'}</option>)}
         </select>
       </label>
       <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Reviewing…' : 'Review this information'}</button>
@@ -618,24 +618,15 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </button>
           {recordHistoryError && <p role="alert" style={{ color: 'var(--error)' }}>{recordHistoryError}</p>}
           {recordHistory && <div role="status" style={{ marginTop: 8 }}>
-            <p><strong>Information available:</strong> {String(recordHistory.coverage_status)} · {String(recordHistory.target_count)} items{recordHistory.truncated ? ' · only part of the history is shown' : ''}</p>
+            <p><strong>Information available:</strong> {reviewStatusLabel(String(recordHistory.coverage_status))} · {String(recordHistory.target_count)} saved items{recordHistory.truncated ? ' · only part of the history is shown' : ''}</p>
             <p><strong>Chosen date and time:</strong> {String(recordHistory.requested_as_of)}</p>
-            <ul>
-              {((recordHistory.items as Array<Record<string, unknown>>) || []).map(item => (
-                <li key={String(item.target_type) + ':' + String(item.target_id)}>
-                  <strong>{String(item.target_type).replaceAll('_', ' ')}</strong>
-                  {' — '}version {String(item.revision_number)} ({String(item.change_kind)})
-                        <p>Supporting information linked: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}</p>
-                </li>
-              ))}
-            </ul>
             <p>Some earlier changes may not be available in this view.</p>
           </div>}
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>See source information from an earlier date</summary>
-          <p>Choose an instant to retrieve the last persisted version at or before that time. This is a historical database snapshot, not proof that the stored claim was true.</p>
+          <p>Choose a date and time to see the latest saved version from then. This does not prove the statement was true.</p>
           <label style={{ display: 'block', marginTop: 8 }}>Date and time
             <input style={field} type="datetime-local" value={historyAsOf} onChange={event => { setHistoryAsOf(event.target.value); setReconstructedHistory(null); setHistoryReconstructionError('') }} />
           </label>
@@ -644,7 +635,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </button>
           {historyReconstructionError && <p role="alert" style={{ color: 'var(--error)' }}>{historyReconstructionError}</p>}
           {reconstructedHistory && <div role="status" style={{ marginTop: 8 }}>
-            <p><strong>Saved version:</strong> {String(reconstructedHistory.revision_number)} · {String(reconstructedHistory.recorded_change_at || 'time not recorded')}</p>
+            <p><strong>Saved version:</strong> {String(reconstructedHistory.recorded_change_at || 'Time not recorded')}</p>
             <p><strong>Chosen date and time:</strong> {String(reconstructedHistory.requested_as_of)}</p>
             <p>An earlier saved version is available. This does not prove the statement was true.</p>
           </div>}
@@ -735,7 +726,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <div>{new Date(review.created_at).toLocaleString()}</div>
         <p>{review.rationale}</p>
         <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {criterion.rationale}</li>)}</ul>
-        <details><summary>Who provided this information? snapshot</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(review.source_attribution, null, 2)}</pre></details>
+
       </article>)}
     </> : null}
   </section>
