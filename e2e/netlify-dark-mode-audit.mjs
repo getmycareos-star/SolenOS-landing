@@ -100,6 +100,7 @@ try {
           await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {});
           await page.waitForFunction(
             () => document.documentElement.dataset.solenosTheme === "dark",
+            null,
             { timeout: 15000 },
           );
 
@@ -126,7 +127,7 @@ try {
           const rendered = await page.evaluate(() => {
             function parseColor(value) {
               if (!value || value === "transparent" || value === "none") return null;
-              const match = value.match(/rgba?\\(([^)]+)\\)/i);
+              const match = value.match(/rgba?\(([^)]+)\)/i);
               if (!match) return null;
               const parts = match[1].split(",").map((part) => Number.parseFloat(part.trim()));
               if (parts.length < 3 || parts.some((part) => !Number.isFinite(part))) return null;
@@ -195,7 +196,7 @@ try {
                 .filter((node) => node.nodeType === Node.TEXT_NODE)
                 .map((node) => node.textContent || "")
                 .join(" ")
-                .replace(/\\s+/g, " ")
+                .replace(/\s+/g, " ")
                 .trim();
               if (!directText) continue;
               const foreground = parseColor(style.color);
@@ -273,7 +274,7 @@ try {
             await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
           }
           process.stdout.write(
-            `${failures.includes(result) ? "FAIL" : "PASS"} ${target.label} ${routePath} ${viewport.label}: ${rendered.issues.length} contrast, ${routeIssues.length} route/API issues\\n`,
+            `${failures.includes(result) ? "FAIL" : "PASS"} ${target.label} ${routePath} ${viewport.label}: ${rendered.issues.length} contrast, ${routeIssues.length} route/API issues\n`,
           );
         } catch (error) {
           const result = {
@@ -286,7 +287,7 @@ try {
           };
           results.push(result);
           failures.push(result);
-          process.stdout.write(`FAIL ${target.label} ${routePath} ${viewport.label}: ${String(error)}\\n`);
+          process.stdout.write(`FAIL ${target.label} ${routePath} ${viewport.label}: ${String(error)}\n`);
         } finally {
           await context.close();
         }
@@ -302,5 +303,5 @@ fs.writeFileSync(
   JSON.stringify({ results, failures }, null, 2),
 );
 
-process.stdout.write(`DARK_MODE_AUDIT total=${results.length} failed=${failures.length}\\n`);
+process.stdout.write(`DARK_MODE_AUDIT total=${results.length} failed=${failures.length}\n`);
 if (failures.length) process.exitCode = 1;
