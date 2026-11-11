@@ -163,7 +163,7 @@ export type InvestorDashboardData = {
   };
   engagement: {
     returning_users: number;
-    retention_7d: number;
+    retention_7d: number | null;
     avg_sessions_per_user: number;
     avg_inputs_per_user: number;
     care_records_reopened: number;
