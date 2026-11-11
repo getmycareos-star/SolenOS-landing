@@ -239,26 +239,26 @@ export default function DailyCareQwen() {
       ) : null}
 
       <style jsx>{`
-        .daily-care-qwen { width: 100%; max-width: 48rem; margin: 0 auto 1rem; padding: 1rem; border: 1px solid #dce5e8; border-radius: 16px; background: #fff; color: #172b35; }
-        .daily-care-qwen__eyebrow { margin: 0 0 .3rem; color: #52656d; font-size: .78rem; font-weight: 750; letter-spacing: .08em; }
+        .daily-care-qwen { width: 100%; max-width: 48rem; margin: 0 auto 1rem; padding: 1rem; border: 1px solid var(--theme-panel-border); border-radius: 16px; background: var(--theme-panel-bg); color: var(--theme-panel-fg); }
+        .daily-care-qwen__eyebrow { margin: 0 0 .3rem; color: var(--theme-panel-muted); font-size: .78rem; font-weight: 750; letter-spacing: .08em; }
         .daily-care-qwen h2 { margin: 0 0 .4rem; font-size: 1.25rem; line-height: 1.3; }
-        .daily-care-qwen__heading p:not(.daily-care-qwen__eyebrow) { margin: 0 0 1rem; color: #52656d; line-height: 1.55; }
+        .daily-care-qwen__heading p:not(.daily-care-qwen__eyebrow) { margin: 0 0 1rem; color: var(--theme-panel-muted); line-height: 1.55; }
         .daily-care-qwen__form { display: grid; gap: .55rem; }
         .daily-care-qwen label { display: block; margin-top: .25rem; font-weight: 650; }
-        .daily-care-qwen textarea, .daily-care-qwen input { width: 100%; min-width: 0; border: 1px solid #bdcbd0; border-radius: 9px; padding: .7rem .8rem; background: #fff; color: #172b35; font: inherit; font-size: 16px; line-height: 1.5; }
+        .daily-care-qwen textarea, .daily-care-qwen input { width: 100%; min-width: 0; border: 1px solid var(--theme-panel-border); border-radius: 9px; padding: .7rem .8rem; background: var(--theme-field-bg); color: var(--theme-field-fg); font: inherit; font-size: 16px; line-height: 1.5; }
         .daily-care-qwen textarea { resize: vertical; }
-        .daily-care-qwen button { min-height: 44px; padding: .65rem .9rem; border: 1px solid #b8cfca; border-radius: 9px; background: #e4efeb; color: #172b35; font: inherit; font-weight: 700; cursor: pointer; }
+        .daily-care-qwen button { min-height: 44px; padding: .65rem .9rem; border: 1px solid var(--theme-action-border); border-radius: 9px; background: var(--theme-action-bg); color: var(--theme-action-fg); font: inherit; font-weight: 700; cursor: pointer; }
         .daily-care-qwen button:disabled { opacity: .55; cursor: not-allowed; }
         .daily-care-qwen__error { color: #8a2e2e; }
-        .daily-care-qwen__feedback { padding: .7rem; border-radius: 8px; background: #f0f5f2; }
-        .daily-care-qwen__result { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid #dce5e8; overflow-wrap: anywhere; }
+        .daily-care-qwen__feedback { padding: .7rem; border-radius: 8px; background: var(--theme-subtle-bg); }
+        .daily-care-qwen__result { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--theme-panel-border); overflow-wrap: anywhere; }
         .daily-care-qwen__result h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
         .daily-care-qwen__answer { white-space: pre-wrap; line-height: 1.65; }
-        .daily-care-qwen__scope, .daily-care-qwen__disclaimer { color: #52656d; font-size: .9rem; line-height: 1.55; }
+        .daily-care-qwen__scope, .daily-care-qwen__disclaimer { color: var(--theme-panel-muted); font-size: .9rem; line-height: 1.55; }
         .daily-care-qwen__sources ul { list-style: none; margin: .5rem 0 1rem; padding: 0; display: grid; gap: .5rem; }
-        .daily-care-qwen__sources li { display: grid; gap: .2rem; padding: .65rem; border: 1px solid #e0e7e8; border-radius: 8px; }
-        .daily-care-qwen__sources span, .daily-care-qwen__sources code { color: #52656d; font-size: .82rem; overflow-wrap: anywhere; }
-        .daily-care-qwen__proposal { margin: .7rem 0; padding: .8rem; border: 1px solid #dce5e8; border-radius: 10px; }
+        .daily-care-qwen__sources li { display: grid; gap: .2rem; padding: .65rem; border: 1px solid var(--theme-panel-border); border-radius: 8px; }
+        .daily-care-qwen__sources span, .daily-care-qwen__sources code { color: var(--theme-panel-muted); font-size: .82rem; overflow-wrap: anywhere; }
+        .daily-care-qwen__proposal { margin: .7rem 0; padding: .8rem; border: 1px solid var(--theme-panel-border); border-radius: 10px; }
         .daily-care-qwen__proposal h4 { margin: 0 0 .6rem; font-size: 1rem; }
         .daily-care-qwen__proposal p { line-height: 1.5; overflow-wrap: anywhere; }
         .daily-care-qwen__status { font-weight: 700; text-transform: capitalize; }
