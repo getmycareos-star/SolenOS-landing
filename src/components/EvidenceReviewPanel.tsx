@@ -150,6 +150,22 @@ const reviewStatusLabel = (value: string) => ({
   recorded_at: 'When it was saved',
   ingested_at: 'When it was added to SolenOS',
   effective_at: 'When it took effect',
+  direct: 'Seen by a caregiver',
+  indirect: 'Reported from another source',
+  second_hand: 'Reported by someone else',
+  document_review: 'Taken from a reviewed document',
+  manual: 'Entered by a caregiver',
+  upload: 'Uploaded',
+  document_upload: 'Uploaded document',
+  camera: 'Photo',
+  image: 'Photo',
+  scan: 'Scanned document',
+  scanned_document: 'Scanned document',
+  import: 'Imported information',
+  device: 'Device reading',
+  not_recorded: 'Not recorded',
+  not_available: 'Not available',
+  not_returned: 'Not available',
 }[value] ?? value.replaceAll('_', ' '))
 function historicalSnapshotSections(value: Record<string, unknown> | null): Array<{ label: string; count: number }> {
   const state = value?.state;
@@ -629,7 +645,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Choose a saved review rule
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
           <option value="">Choose a review rule</option>
-          {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{policy.domain_key.replaceAll('_', ' ')} · {policy.max_age_days == null ? 'No time limit set' : 'Review after ' + policy.max_age_days + ' days'}</option>)}
+          {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{reviewStatusLabel(policy.domain_key)} · {policy.max_age_days == null ? 'No time limit set' : 'Review after ' + policy.max_age_days + ' days'}</option>)}
         </select>
       </label>
       <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Reviewing…' : 'Review this information'}</button>
@@ -640,14 +656,14 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No earlier reviews were found for this information.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: 12 }}>
         <strong>{reviewStatusLabel(item.freshness_status)}</strong>
-        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · time since it was recorded {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
+        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (reviewStatusLabel(item.source_time_kind || 'not_recorded')) + ')' : 'unknown'} · time since it was recorded {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
         <p>{item.rationale}</p>
       </article>)}
     </details>
     {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No saved source information was found for this care record.</p> : evidenceItems.length > 0 ? <>
       <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Original information
         <select style={field} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
-          {evidenceItems.map(item => <option key={item.id} value={item.id}>{item.type.replaceAll('_', ' ')} · {item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : 'Date not recorded'}</option>)}
+          {evidenceItems.map(item => <option key={item.id} value={item.id}>{reviewStatusLabel(item.type)} · {item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : 'Date not recorded'}</option>)}
         </select>
       </label>
       {selected && <>
@@ -663,7 +679,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{selected.collection_method || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{selected.transfer_source || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
