@@ -139,14 +139,14 @@ const reviewStatusLabel = (value: string) => ({
   supported: 'Matches the saved source',
   contested: 'Other information disagrees',
   complete: 'Complete',
-}[value] ?? value.replaceAll('_', ' ')
+}[value] ?? reviewStatusLabel(value)
 const reviewCriterionLabel = (value: string) => ({
   'source attribution': 'Who provided it',
   'independent corroboration': 'Whether there are separate reports',
   'temporal context': 'When it happened',
   'evidence freshness': 'Whether it is still current',
   'record completeness': 'Whether details are missing',
-}[value] ?? value.replaceAll('_', ' '))
+}[value] ?? reviewStatusLabel(value))
 const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12, background: 'var(--surface)' }
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
@@ -202,7 +202,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   useEffect(() => { void loadEvidence() }, [loadEvidence])
   const [selectedId, setSelectedId] = useState('')
   const [reviewType, setReviewType] = useState<ReviewType>('reliability')
-  const [outcome, setYour review] = useState('unverified')
+  const [outcome, setOutcome] = useState('unverified')
   const [rationale, setRationale] = useState('')
   const [sourceResult, setSourceResult] = useState('not_assessed')
   const [corroborationResult, setCorroborationResult] = useState('not_assessed')
@@ -263,7 +263,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       if (!saved?.id || saved.evidence_id !== selectedId || saved.person_id !== personId || saved.policy_id !== freshnessPolicyId) {
         throw new Error('The freshness assessment response did not match the selected evidence and policy.')
       }
-      setFreshnessPolicyNotice('Freshness assessment persisted: ' + saved.freshness_status.replaceAll('_', ' ') + '. This is a policy result, not a truth judgment.')
+      setFreshnessPolicyNotice('Review saved: ' + reviewStatusLabel(saved.freshness_status) + '. This does not prove the information is true.')
       const history = await getJSON('/care-continuity/evidence-freshness/assessments/' + encodeURIComponent(selectedId)) as { items?: FreshnessAssessment[] }
       if (!Array.isArray(history?.items)) throw new Error('Assessment was saved, but its history could not be verified. Retry history retrieval.')
       setFreshnessAssessments(history.items)
@@ -469,7 +469,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   function changeReviewType(next: ReviewType) {
     setReviewType(next)
-    setYour review(outcomes[next][0])
+    setOutcome(outcomes[next][0])
   }
 
   async function submit() {
@@ -529,8 +529,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {freshnessHistoryError && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{freshnessHistoryError} <button type="button" style={button} onClick={() => void loadFreshnessHistory()} disabled={freshnessHistoryLoading}>Retry history</button></p>}
       {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No past reviews were found for this information.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: 12 }}>
-        <strong>{item.freshness_status.replaceAll('_', ' ')}</strong> · review rule {item.policy_version}
-        <div>Assessed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · time since then {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
+        <strong>{reviewStatusLabel(item.freshness_status)}</strong>
+        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · time since then {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
         <p>{item.rationale}</p>
       </article>)}
     </details>
@@ -544,8 +544,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Type of source</dt><dd style={{ margin: 0 }}>{selected.type || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{selected.evidence_kind?.replaceAll('_', ' ') || 'Not classified'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How certain this is</dt><dd style={{ margin: 0 }}>{selected.epistemic_status?.replaceAll('_', ' ') || 'Not assessed'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.evidence_kind || 'not_assessed')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How certain this is</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Added by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id ? 'Caregiver' : null].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
@@ -572,7 +572,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{item.relationship_type.replaceAll('_', ' ')}</strong>
             <div>This source is linked to another saved source.</div>
-            <div>Were these reports separate? {item.source_independence_status.replaceAll('_', ' ')}</div>
+            <div>Were these reports separate? {reviewStatusLabel(item.source_independence_status)}</div>
             {item.source_independence_status === 'shared_origin' && (
               <p>This source and the linked source share an underlying origin. They must not be counted as independent corroboration.</p>
             )}
@@ -588,7 +588,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
           {!observationsLoading && !observationsError && observations.length === 0 && <p>No extracted details are available for this source yet.</p>}
           {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
-            <strong>{item.attribute.replaceAll('_', ' ')} · {item.epistemic_status.replaceAll('_', ' ')}</strong>
+            <strong>{item.attribute.replaceAll('_', ' ')} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{item.observation_kind.replaceAll('_', ' ')} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
             <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
@@ -624,7 +624,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               {((recordHistory.items as Array<Record<string, unknown>>) || []).map(item => (
                 <li key={String(item.target_type) + ':' + String(item.target_id)}>
                   <strong>{String(item.target_type).replaceAll('_', ' ')}</strong>
-                  {' — '}version {String(item.version_number)} ({String(item.change_kind)})
+                  {' — '}version {String(item.revision_number)} ({String(item.change_kind)})
                         <p>Supporting information linked: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0}</p>
                 </li>
               ))}
@@ -644,7 +644,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </button>
           {historyReconstructionError && <p role="alert" style={{ color: 'var(--error)' }}>{historyReconstructionError}</p>}
           {reconstructedHistory && <div role="status" style={{ marginTop: 8 }}>
-            <p><strong>Recorded version:</strong> {String(reconstructedHistory.version_number)} · {String(reconstructedHistory.change_kind)} · {String(reconstructedHistory.recorded_change_at || 'time not recorded')}</p>
+            <p><strong>Saved version:</strong> {String(reconstructedHistory.revision_number)} · {String(reconstructedHistory.recorded_change_at || 'time not recorded')}</p>
             <p><strong>Chosen date and time:</strong> {String(reconstructedHistory.requested_as_of)}</p>
             <p>An earlier saved version is available. This does not prove the statement was true.</p>
           </div>}
@@ -675,7 +675,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               </p>
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
-            <p><strong>How current it is:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>How complete it is:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
+            <p><strong>How current it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How complete it is:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
             <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
@@ -732,7 +732,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       <h4 style={{ fontSize: 13, marginBottom: 5 }}>Past reviews</h4>
       {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Past reviews could not be loaded. Try again; a failed load does not mean there are no reviews.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No past reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
         <strong>{labels[review.review_type] || 'Saved review'}: {reviewStatusLabel(review.outcome)}</strong>
-        <div>{new Date(review.created_at).toLocaleString()} · review rule {review.policy_version}</div>
+        <div>{new Date(review.created_at).toLocaleString()}</div>
         <p>{review.rationale}</p>
         <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {criterion.rationale}</li>)}</ul>
         <details><summary>Who provided this information? snapshot</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(review.source_attribution, null, 2)}</pre></details>
