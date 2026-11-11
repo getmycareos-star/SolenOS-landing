@@ -453,6 +453,7 @@ export default function StructuredDailyCapture() {
         return { ...current, candidates: { ...current.candidates, observations } };
       });
       if (decision === 'accept' && result.assertion_id) {
+        window.dispatchEvent(new Event('careRecordUpdated'));
         try {
           const projection = await getJSON('/care-continuity/current-care?limit_per_source=50') as { items?: Array<{ id?: string }> };
           const visibleInLcr = Array.isArray(projection?.items) &&
