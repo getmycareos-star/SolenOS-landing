@@ -6,9 +6,9 @@ export const POLICY_ENGINE_IDENTITY =
 export const POLICY_ENGINE_DEFINING_PRINCIPLE =
   "Capture always succeeds — PolicyEngine validates every write; consent gates interpretation and sharing, never raw CareEvent persistence.";
 
-export const TERMS_OF_SERVICE_VERSION = "2026-07-15";
+export const TERMS_OF_SERVICE_VERSION = "2026-11-11";
 
-export const TERMS_EFFECTIVE_DATE = "15th July, 2026";
+export const TERMS_EFFECTIVE_DATE = "11 November 2026";
 
 export const TERMS_CONTACT = "davidsolenos@gmail.com";
 
