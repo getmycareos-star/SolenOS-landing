@@ -827,8 +827,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
                 {section.total > section.items.length && <p>Showing {section.items.length} of {section.total} saved items.</p>}
               </details>
             ))}
-            {historicalSnapshotSections(recordHistory).filter(section => section.label === 'Other saved information').reduce((total, section) => total + section.count, 0) > 0 && (
-              <p>Other saved information: {historicalSnapshotSections(recordHistory).filter(section => section.label === 'Other saved information').reduce((total, section) => total + section.count, 0)} saved item(s).</p>
+            {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and other sources', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0) > 0 && (
+              <p>Other saved history and details: {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and other sources', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0)} saved item(s).</p>
             )}
             <p>This saved copy may not include every care update. Information added after this date is not shown.</p>
           </div>}
