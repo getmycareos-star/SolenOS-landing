@@ -1,5 +1,5 @@
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { ensureAnonymousSession, postFormData } from "@/api/client";
+import { ensureAnonymousSession, postFormData, postJSON } from "@/api/client";
 import type { AttachedDocument } from "@/lib/mvp-workspace";
 import type { InputEntryMethod } from "@/lib/input-entry-contract";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
@@ -18,6 +18,17 @@ async function persistOriginalDocument(file: File, extractedText: string): Promi
   form.append("extracted_text", extractedText.slice(0, 100_000));
   const result = (await postFormData("/upload", form)) as { evidence_id?: string; persisted?: boolean };
   if (!result.persisted || !result.evidence_id) throw new Error("The original file was not confirmed as saved.");
+
+  // Snap, Scan and Upload converge on the same server-owned extraction lifecycle.
+  // The original upload is already durable; an unavailable Qwen run must not
+  // discard it or prevent the caregiver from continuing.
+  await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/extract", {});
+  try {
+    await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/intelligence", {});
+  } catch {
+    // The saved document remains available for an explicit retry in Documents.
+  }
+  window.dispatchEvent(new Event("careRecordUpdated"));
   return result.evidence_id;
 }
 
