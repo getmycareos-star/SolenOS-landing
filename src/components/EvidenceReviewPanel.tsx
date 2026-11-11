@@ -723,6 +723,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               onChange={event => { setRecordHistoryAsOf(event.target.value); setRecordHistory(null); setRecordHistoryError('') }}
             />
           </label>
+          <p>Save a copy now to keep a dated version you can review later.</p>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void saveCurrentRecordSnapshot()} disabled={recordSnapshotSaving || !personId}>
             {recordSnapshotSaving ? 'Saving a copy…' : 'Save a copy now'}
           </button>
