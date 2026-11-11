@@ -43,7 +43,8 @@ export function GlobalDisplayPreferences() {
   useEffect(() => {
     if (!ready) return;
     const root = document.documentElement;
-    // System default intentionally means the accessible light theme, not OS dark mode.\n    root.dataset.solenosTheme = prefs.theme === "dark" ? "dark" : "light";
+    // System default intentionally means the accessible light theme, not OS dark mode.
+    root.dataset.solenosTheme = prefs.theme === "dark" ? "dark" : "light";
     root.style.setProperty("--solenos-text-scale", String(Number(prefs.scale) / 100));
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
