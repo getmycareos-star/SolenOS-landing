@@ -516,3 +516,49 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 :root[data-solenos-theme="dark"] .structured-daily-capture button:disabled,
 :root[data-solenos-theme="dark"] .daily-care-qwen button:disabled,
 :root[data-solenos-theme="dark"] .qwen-assist-panel button:disabled { color: var(--theme-action-disabled-fg) !important; }
+
+
+/* White workspace surfaces must always use dark, neutral text—even in dark theme.
+   This is intentional: a light card never receives white or green body copy. */
+:root[data-solenos-theme="dark"] .care-record-overview,
+:root[data-solenos-theme="dark"] .care-record-overview :is(section, article) {
+  color: #172b35;
+}
+:root[data-solenos-theme="dark"] .care-record-overview :is(
+  h1,h2,h3,h4,h5,p,span,strong,small,li,button
+) {
+  color: #172b35;
+}
+:root[data-solenos-theme="dark"] .care-record-overview > header > div > p:first-child,
+:root[data-solenos-theme="dark"] .care-record-overview > header > div > p:last-child,
+:root[data-solenos-theme="dark"] .care-record-overview [role="status"] {
+  color: #40534a;
+}
+:root[data-solenos-theme="dark"] .care-record-overview button {
+  background: #eaf2ed;
+  color: #172b35;
+  border-color: #9aafa0;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace {
+  background: #ffffff;
+  color: #172b35;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(
+  h1,h2,h3,h4,h5,p,span,strong,small,label,li,summary,b
+) {
+  color: #172b35;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(input,textarea,select) {
+  background: #ffffff !important;
+  color: #172b35 !important;
+  caret-color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+  border-color: #aebbb1 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace :is(input,textarea,select)::placeholder {
+  color: #586b60 !important;
+  -webkit-text-fill-color: #586b60 !important;
+}
+:root[data-solenos-theme="dark"] .appointment-workspace button {
+  color: #172b35;
+}
