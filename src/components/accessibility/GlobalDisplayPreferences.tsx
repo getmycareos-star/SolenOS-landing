@@ -73,7 +73,7 @@ export function GlobalDisplayPreferences() {
             {(["light", "dark", "system"] as const).map((theme) => (
               <label key={theme}>
                 <input type="radio" name="solenos-theme" value={theme} checked={prefs.theme === theme} onChange={() => update({ theme })} />
-                {theme === "system" ? "System" : theme === "light" ? "Light" : "Dark"}
+                {theme === "system" ? "System default" : theme === "light" ? "Light" : "Dark"}
               </label>
             ))}
           </fieldset>
@@ -82,7 +82,7 @@ export function GlobalDisplayPreferences() {
             {(["100", "125", "150", "200"] as const).map((scale) => (
               <label key={scale}>
                 <input type="radio" name="solenos-text-scale" value={scale} checked={prefs.scale === scale} onChange={() => update({ scale })} />
-                {scale === "100" ? "Standard (100%)" : scale + "%"}
+                {scale === "100" ? "Default (100%)" : scale === "125" ? "Large (125%)" : scale === "150" ? "Larger (150%)" : "Extra large (200%)"}
               </label>
             ))}
           </fieldset>
