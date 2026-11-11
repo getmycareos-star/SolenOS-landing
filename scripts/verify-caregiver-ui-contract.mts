@@ -91,7 +91,6 @@ assert.ok(themeOverrides.includes("--theme-warning-fg: #fff0cf"));
 assert.ok(dailyCarePage.includes("var(--theme-panel-bg)"));
 assert.ok(dailyCarePage.includes("var(--theme-field-fg)"));
 assert.ok(quickCheckIn.includes("var(--theme-selected-bg)") && quickCheckIn.includes('className="quick-daily-checkin"'));
-assert.match(quickCheckIn, /className="quick-daily-checkin"/);
 assert.ok(appointmentsPage.includes("var(--theme-panel-fg)"));
 assert.ok(timelinePage.includes("timeline-workspace"));
 assert.ok(timelinePage.includes("var(--theme-selected-bg)"));
