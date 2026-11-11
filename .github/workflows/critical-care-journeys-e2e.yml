@@ -59,6 +59,8 @@ jobs:
           repository: getmycareos-star/SolenOS_backend
           ref: main
           path: backend-service
+      - name: Record backend revision under test
+        run: git -C backend-service rev-parse HEAD
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
