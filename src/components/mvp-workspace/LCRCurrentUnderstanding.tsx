@@ -486,6 +486,37 @@ function formatWhen(value?: string | null): string {
 
 const CAREGIVER_LABELS: Record<string, string> = {
   unknown: "Not yet known",
+  not_assessed: "Not checked yet",
+  not_recorded: "Not recorded",
+  inferred: "Possible interpretation",
+  onset: "First reported",
+  cessation: "No longer reported",
+  increase: "Increase recorded",
+  decrease: "Decrease recorded",
+  transition: "Changed",
+  persistence: "Continued over time",
+  fluctuation: "Changed over time",
+  stabilization: "More steady over time",
+  recovery: "Recorded as improving",
+  disappearance: "No longer recorded",
+  trend: "Change over time",
+  acceleration: "Changing faster",
+  clustering: "Several events close together",
+  instability: "Changes over time",
+  deviation: "Different from usual",
+  convergence: "Similar changes in different areas",
+  divergence: "Different changes in different areas",
+  emerging: "Early sign",
+  established: "Seen more than once",
+  weak: "Limited information",
+  none: "No clear repeated change",
+  meaningful_candidate: "May be important",
+  not_meaningful: "No clear importance found",
+  insufficient_evidence: "Not enough information to judge",
+  increasing: "Increasing",
+  decreasing: "Decreasing",
+  stable: "No change recorded",
+  fluctuating: "Changing over time",
   missing: "Not recorded",
   unverified: "Not confirmed",
   uncertain: "Still unclear",
@@ -700,7 +731,7 @@ export function LCRCurrentUnderstanding() {
           } catch (cause) {
             setAssessment(null);
             setSourceFreshness(null);
-            setAssessmentError(cause instanceof Error ? cause.message : "The saved situation assessment could not be loaded.");
+            setAssessmentError(cause instanceof Error ? cause.message : "The saved care summary could not be loaded.");
           }
         })(),
       ];
@@ -1040,7 +1071,7 @@ export function LCRCurrentUnderstanding() {
                         {item.due_at && <small>Recorded due date: {formatWhen(item.due_at)}</small>}
                         {item.evidence_ids.length > 0
                           ? <small>Supporting sources: {item.evidence_ids.length} linked record(s)</small>
-                          : <small>This priority comes from a saved follow-up assessment; supporting source material is not linked here.</small>}
+                          : <small>This item was marked for follow-up in the saved record, but no supporting information is linked here.</small>}
                         {source?.source_label && <small>Source label: {source.source_label}</small>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         {source && source.claim_count > 0 && <small>Different reports linked: {source.claim_count}. Review the underlying record before resolving disagreement.</small>}
@@ -1142,7 +1173,7 @@ export function LCRCurrentUnderstanding() {
                       {!item.review_at && <small>No review date was recorded.</small>}
                       {item.priority_reasons && item.priority_reasons.length > 0
                         ? <small>Recorded priority factors: {item.priority_reasons.join("; ")}</small>
-                        : <small>No priority-change trigger was recorded; reassess if the underlying record changes.</small>}
+                        : <small>No reason for changing its priority was saved. Review it again if the care information changes.</small>}
                       <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
                       <small>Source type: {caregiverLabel(item.source)}</small>
                       <small>Supporting sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " linked record(s)" : "No supporting source is linked"}</small>
@@ -1222,7 +1253,7 @@ export function LCRCurrentUnderstanding() {
                       <li key={item.source + ":" + item.id} className="lcr-current-fact">
                         <strong>{item.title}</strong>
                         <p>{disputed ? "Conflicting accounts remain unresolved. Neither account is selected as the winner." : "This item remains uncertain or requires clarification."}</p>
-                        <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · Evidence state: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
+                        <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · Information status: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                         {source?.description && <p>{source.description}</p>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{source.source_passage}</blockquote></details>}
                         <small>Event date: {formatWhen(item.occurred_at)} · Record date: {formatWhen(item.recorded_at)}</small>
@@ -1240,15 +1271,15 @@ export function LCRCurrentUnderstanding() {
                       <p className="lcr-entry-status">
                         Review state: {caregiverLabel(change.confirmation_status || "not recorded")}. 
                         {change.confirmation_status === "rejected"
-                          ? " This assessment was disputed and is not presented as an established change."
+                          ? " This change was disputed and is not shown as confirmed."
                           : change.confirmation_status === "inconclusive"
-                            ? " The assessment remains inconclusive."
+                            ? " This change could not be confirmed."
                             : change.confirmation_status === "confirmed"
-                              ? " A caregiver confirmed this change assessment; it remains a record, not a diagnosis."
-                              : " This candidate has not been confirmed."}
+                              ? " A caregiver confirmed this change. This is not a diagnosis."
+                              : " This possible change has not been confirmed."}
                       </p>
-                      <small>Comparison window: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
-                      <small>Supporting sources: {change.evidence_ids.length} linked record(s)</small>
+                      <small>Dates compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
+                      <small>Supporting information: {change.evidence_ids.length} saved item(s)</small>
                       <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
                         {expandedChangeId === change.id ? "Hide supporting records" : "View supporting records"}
                       </button>
@@ -1267,7 +1298,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{caregiverLabel(pattern.subject_type)} · {caregiverLabel(pattern.pattern_type)}</strong>
                       <p>Recorded from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)} across {pattern.evidence_count} linked event(s).</p>
                       {pattern.direction && <p>Recorded direction: {caregiverLabel(pattern.direction)}</p>}
-                      <p className="lcr-entry-status">Reassess this comparison if new source observations or corrections change the recorded interval. This does not show what caused the change or whether it is medically important.</p>
+                      <p className="lcr-entry-status">Review this again if new information or a correction changes the dates being compared. This does not show what caused the change or whether it is medically important.</p>
                       {pattern.alternative_interpretations?.length ? (
                         <div>
                           <strong>Other possible explanations</strong>
@@ -1408,7 +1439,7 @@ export function LCRCurrentUnderstanding() {
                   <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
                   <span>{change.significance_verdict ? caregiverLabel(change.significance_verdict) : "Not reviewed yet"}</span>
                 </div>
-                <p>{change.explanation || "No explanation was stored with this assessment."}</p>
+                <p>{change.explanation || "No explanation was saved with this change review."}</p>
                 <p className="lcr-entry-status">
                   Previous: {change.previous_state ?? "Not recorded"} · Current: {change.current_state ?? "Not recorded"}
                 </p>
@@ -1445,7 +1476,7 @@ export function LCRCurrentUnderstanding() {
                   <small>A newer review replaced this one. The earlier review remains in the care history.</small>
                 )}
                 <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
-                <small>Supporting sources: {change.evidence_ids.length} linked record(s)</small>
+                <small>Supporting information: {change.evidence_ids.length} saved item(s)</small>
                 <button
                   type="button"
                   className="lcr-text-action"
@@ -1525,7 +1556,7 @@ export function LCRCurrentUnderstanding() {
           but are intentionally not exposed as caregiver-facing copy. The record itself remains
           available through the timeline, source review and care-history controls. */}
       {loading ? (
-        <p role="status">Loading persisted care information…</p>
+        <p role="status">Loading saved care information…</p>
       ) : error ? (
         <div role="alert" className="lcr-empty-state">
           <AlertCircle size={20} aria-hidden="true" />
