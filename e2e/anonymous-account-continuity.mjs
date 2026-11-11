@@ -294,8 +294,8 @@ try {
   assert.notEqual(restored.token, original.token, "fresh browser reused the revoked anonymous bearer");
   assert.equal(restored.personId, original.personId, "fresh browser login restored a different person ID");
   assert.equal(restored.caregiverId, original.caregiverId, "fresh browser recovery restored a different caregiver ID");
-  const revokedBrowserAToken = await backendRequest(`/api/v1/evidence/${encodeURIComponent(original.personId)}`, { token: afterRegistration.token });
-  assert.equal(revokedBrowserAToken.response.status, 401, "account recovery left browser A's prior session active");
+  const revokedBrowserBToken = await backendRequest(`/api/v1/evidence/${encodeURIComponent(original.personId)}`, { token: deviceBSession });
+  assert.equal(revokedBrowserBToken.response.status, 401, "account recovery left device B's prior session active");
 
   const restoredEvidence = await backendRequest(`/api/v1/evidence/${encodeURIComponent(restored.personId)}`, { token: restored.token });
   assert.equal(restoredEvidence.response.status, 200, `fresh browser could not retrieve care evidence: ${JSON.stringify(restoredEvidence.payload)}`);
