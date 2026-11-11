@@ -153,6 +153,15 @@ try {
   assert.equal(afterRegistration.caregiverId, original.caregiverId, "registration changed the browser caregiver ID");
   assert.notEqual(afterRegistration.token, original.token, "account sign-in did not replace the anonymous browser bearer");
 
+  // Register the authenticated installation through the actual Settings UI.
+  // The backend should bind the device to this account session and mark it
+  // verified only because the session was issued by successful account login.
+  await pageA.getByRole("button", { name: "Register this device", exact: true }).click();
+  const registeredDevices = await backendRequest("/api/v1/identity/devices", { token: afterRegistration.token });
+  assert.equal(registeredDevices.response.status, 200, "Settings could not retrieve its registered device");
+  assert.equal(registeredDevices.payload?.devices?.length, 1, "Settings did not persist the device registration");
+  assert.equal(registeredDevices.payload.devices[0].trust_status, "verified", "account-authenticated device was not marked verified");
+
   // Revoke both the pre-registration anonymous capability and the account
   // session used in browser A. The next browser must prove credential-only login.
   const revoked = await backendRequest("/api/v1/sessions/revoke", {
