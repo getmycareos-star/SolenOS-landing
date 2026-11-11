@@ -214,7 +214,7 @@ export default function CareRemindersPage() {
         </div>
 
         {loading ? (
-          <BrandLoading message="Loading saved reminders…" />
+          <BrandLoading animate message="Loading saved reminders…" />
         ) : visibleReminders.length === 0 ? (
           <div className="care-reminders-empty">
             <Clock3 size={24} aria-hidden />
