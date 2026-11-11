@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { readFile } from "node:fs/promises";
 
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
@@ -271,6 +272,41 @@ try {
   });
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
+
+  // Exercise the complete Documents UI path: choose a real synthetic file,
+  // review it, upload it to FastAPI/PostgreSQL, reload the library, retrieve
+  // the original bytes, and verify the downloaded file is byte-for-byte equal.
+  await page.goto(new URL("/workspace/documents", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Documents" }).waitFor({ timeout: 15_000 });
+  const documentName = "CI-only-care-record-document.txt";
+  const documentText = "SolenOS integration fixture. Caregiver reports that breakfast was untouched on the synthetic test date. This is not a real care record.";
+  await page.getByRole("button", { name: "Add documents", exact: true }).click();
+  await page.locator('input[type="file"][aria-label="Choose care documents"]').setInputFiles({
+    name: documentName,
+    mimeType: "text/plain",
+    buffer: Buffer.from(documentText, "utf8"),
+  });
+  const reviewCard = page.locator("article").filter({ hasText: documentName });
+  await reviewCard.getByLabel("I reviewed this text against the original scan.").check();
+  await page.getByRole("button", { name: "Save reviewed documents", exact: true }).click();
+  await page.getByRole("status").filter({ hasText: /Saved 1 original file/ }).waitFor({ timeout: 30_000 });
+  const savedDocument = page.getByRole("button").filter({ hasText: documentName }).last();
+  await savedDocument.waitFor({ timeout: 15_000 });
+  await savedDocument.click();
+  await page.getByRole("dialog", { name: documentName }).waitFor({ timeout: 15_000 });
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download original document" }).click();
+  const downloaded = await downloadPromise;
+  if (downloaded.suggestedFilename() !== documentName) {
+    throw new Error(`Document download filename mismatch: ${downloaded.suggestedFilename()}`);
+  }
+  const downloadedPath = await downloaded.path();
+  if (!downloadedPath) throw new Error("The uploaded original document could not be downloaded.");
+  const downloadedText = await readFile(downloadedPath, "utf8");
+  if (downloadedText !== documentText) {
+    throw new Error("The downloaded original document does not match the uploaded bytes.");
+  }
+  console.log("PASS: real Documents UI upload, PostgreSQL-backed retrieval, and original-file download round trip.");
 
   // Exercise persisted conflict handling through the actual LCR UI and API.
   // The partial resolution must preserve its unresolved remainder; reopening must
