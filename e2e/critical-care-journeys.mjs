@@ -116,6 +116,14 @@ await record("01 first caregiver session", async () => {
   assert.equal(person.status, 200, JSON.stringify(person.payload));
   assert.equal(person.payload.id, identity.personId);
   assert.ok(identity.caregiverId);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction((expected) =>
+    localStorage.getItem("solenos_backend_person_id") === expected.personId &&
+    localStorage.getItem("solenos_backend_caregiver_id") === expected.caregiverId &&
+    Boolean(localStorage.getItem("solenos_anonymous_access_token")),
+    { personId: identity.personId, caregiverId: identity.caregiverId },
+    { timeout: 15_000 },
+  );
   await verifyMobile(page);
   await context.close();
 });
