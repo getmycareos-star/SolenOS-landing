@@ -3,6 +3,7 @@ import "./globals.css";
 import "./accessibility-overrides.css";
 import "./mobile-app.css";
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_PROMISE } from "@/lib/brand";
+import { GlobalDisplayPreferences } from "@/components/accessibility/GlobalDisplayPreferences";
 
 
 
@@ -31,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="solenos-font-fallbacks">
-      <body>{children}</body>
+      <body>{children}<GlobalDisplayPreferences /></body>
     </html>
   );
 }
