@@ -24,7 +24,7 @@ for (const contract of [
   'Keep as suggestion',
   'Defer consideration',
   'Request clarification',
-  'Registered actions',
+  'Agreed actions',
   'View change history',
   'Confirm completed',
   'Needs clarification',
