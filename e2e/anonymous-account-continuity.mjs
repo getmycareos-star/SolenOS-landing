@@ -209,10 +209,13 @@ try {
   // The backend should bind the device to this account session and mark it
   // verified only because the session was issued by successful account login.
   await pageA.getByRole("button", { name: "Register this device", exact: true }).click();
+  await pageA.getByText("This device is registered and verified for the signed-in account.", { exact: true }).waitFor({ timeout: 20_000 });
   const registeredDevices = await backendRequest("/api/v1/identity/devices", { token: afterRegistration.token });
   assert.equal(registeredDevices.response.status, 200, "Settings could not retrieve its registered device");
   assert.equal(registeredDevices.payload?.devices?.length, 1, "Settings did not persist the device registration");
   assert.equal(registeredDevices.payload.devices[0].trust_status, "verified", "account-authenticated device was not marked verified");
+  const deviceAId = registeredDevices.payload.devices[0].id;
+  assert.ok(deviceAId, "Settings did not return device A identifier");
   const rotatedRecovery = await backendRequest("/api/v1/accounts/recovery-code", {
     token: afterRegistration.token,
     method: "POST",
@@ -234,14 +237,7 @@ try {
   const oldTokenProbe = await backendRequest(`/api/v1/evidence/${encodeURIComponent(original.personId)}`, { token: original.token });
   assert.equal(oldTokenProbe.response.status, 401, "revoked anonymous bearer still accesses the record");
 
-  // Exercise the caregiver-facing Settings sign-out control. It must revoke
-  // the active account bearer before removing all four browser credentials.
-  await pageA.getByRole("button", { name: "Sign out", exact: true }).click();
-  await pageA.getByText("Signed out securely. Your care record remains on SolenOS. Sign in again to restore access on this browser.", { exact: true }).waitFor({ timeout: 20_000 });
-  const remainingCredentials = await pageA.evaluate((keys) => keys.filter((key) => localStorage.getItem(key) !== null), storageKeys);
-  assert.deepEqual(remainingCredentials, [], "Settings sign-out retained anonymous session credentials");
-  const revokedAccountTokenProbe = await backendRequest(`/api/v1/evidence/${encodeURIComponent(original.personId)}`, { token: afterRegistration.token });
-  assert.equal(revokedAccountTokenProbe.response.status, 401, "Settings sign-out left the account bearer active");
+  // Keep device A active until device B explicitly revokes it.
   await pageA.unrouteAll({ behavior: "ignoreErrors" });
   await contextA.close();
 
