@@ -678,3 +678,119 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 :root[data-solenos-theme="dark"] [data-solenos-error-surface] :is(h1,h2,h3,p,span,strong,small,button) {
   color: #172b35 !important;
 }
+
+/* Dedicated Care Handoffs workspace and dark-mode-safe sharing panels. */
+.workspace-handoffs-page {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  color: var(--text);
+}
+.workspace-handoffs-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.workspace-handoffs-eyebrow {
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.workspace-handoffs-header h1 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+.workspace-handoffs-header p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.workspace-handoffs-create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  text-align: center;
+}
+.workspace-handoffs-boundary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+.workspace-handoffs-boundary svg { flex: 0 0 auto; }
+.workspace-handoffs-boundary p { margin: 0; color: inherit; line-height: 1.5; }
+.workspace-handoffs-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+:root[data-solenos-theme="dark"] .workspace-handoffs-boundary,
+:root[data-solenos-theme="dark"] .workspace-handoffs-back {
+  border-color: #526256;
+  background: #202a24;
+  color: #f1f5f1;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing {
+  color: #f1f5f1;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing [style*="background"] {
+  background-color: #202a24 !important;
+  color: #f1f5f1 !important;
+  border-color: #526256 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing :is(
+  h1, h2, h3, h4, h5, p, span, strong, small, label, li, dt, dd
+) {
+  color: #f1f5f1 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing button {
+  background-color: #34463a !important;
+  color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing :is(input, textarea, select) {
+  background-color: #18211c !important;
+  color: #ffffff !important;
+  border-color: #718477 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing a {
+  color: #b8e0bd !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing [role="alert"] {
+  color: #ffb4b4 !important;
+}
+:root[data-solenos-theme="dark"] .companion-handoff-sharing [role="status"] {
+  color: #c8e6c9 !important;
+}
+@media (max-width: 640px) {
+  .workspace-handoffs-page { padding: 18px 12px 36px; }
+  .workspace-handoffs-header { display: grid; }
+  .workspace-handoffs-create { width: 100%; }
+}
+
