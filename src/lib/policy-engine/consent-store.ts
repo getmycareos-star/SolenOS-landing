@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { TERMS_OF_SERVICE_VERSION } from "./contract-constants";
@@ -10,44 +10,69 @@ type GlobalConsent = typeof globalThis & {
   [GLOBAL_KEY]?: Map<string, ConsentProfile>;
 };
 
-function profiles(): Map<string, ConsentProfile> {
-  const g = globalThis as GlobalConsent;
-  if (!g[GLOBAL_KEY]) {
-    g[GLOBAL_KEY] = new Map<string, ConsentProfile>();
-    loadFromDisk(g[GLOBAL_KEY]);
-  }
-  return g[GLOBAL_KEY]!;
-}
-
 function consentFilePath(): string {
   return join(process.cwd(), ".data", "consent-store.json");
 }
 
+/**
+ * Legacy policy-engine cache only.
+ *
+ * Production caregiver consent is authoritative in the FastAPI PostgreSQL
+ * caregiver_consents ledger. This process-local cache must never be treated as
+ * proof of durable production consent or used as a substitute for the API.
+ */
 function loadFromDisk(map: Map<string, ConsentProfile>): void {
-  try {
-    const path = consentFilePath();
-    if (!existsSync(path)) return;
-    const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, ConsentProfile>;
-    for (const [id, profile] of Object.entries(raw)) {
-      map.set(id, profile);
+  const path = consentFilePath();
+  if (!existsSync(path)) return;
+
+  // Corrupt/unreadable consent state must fail closed rather than silently
+  // creating an empty cache that can later be mistaken for a successful write.
+  const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Legacy consent cache has an invalid format");
+  }
+  for (const [id, profile] of Object.entries(parsed as Record<string, ConsentProfile>)) {
+    if (!profile || typeof profile !== "object" || profile.user_id !== id) {
+      throw new Error("Legacy consent cache contains an invalid caregiver profile");
     }
-  } catch {
-    // Non-fatal — in-memory consent still works for the process.
+    map.set(id, profile);
   }
 }
 
-function persistToDisk(map: Map<string, ConsentProfile>): void {
-  try {
-    const dir = join(process.cwd(), ".data");
-    mkdirSync(dir, { recursive: true });
-    const obj: Record<string, ConsentProfile> = {};
-    for (const [id, profile] of map.entries()) {
-      obj[id] = profile;
-    }
-    writeFileSync(consentFilePath(), JSON.stringify(obj, null, 2), "utf8");
-  } catch {
-    // Non-fatal
+function profiles(): Map<string, ConsentProfile> {
+  const g = globalThis as GlobalConsent;
+  if (!g[GLOBAL_KEY]) {
+    const cache = new Map<string, ConsentProfile>();
+    loadFromDisk(cache);
+    g[GLOBAL_KEY] = cache;
   }
+  return g[GLOBAL_KEY]!;
+}
+
+function persistToDisk(map: Map<string, ConsentProfile>): void {
+  const dir = join(process.cwd(), ".data");
+  mkdirSync(dir, { recursive: true });
+  const obj: Record<string, ConsentProfile> = {};
+  for (const [id, profile] of map.entries()) obj[id] = profile;
+
+  const path = consentFilePath();
+  const temporaryPath = `${path}.${process.pid}.tmp`;
+  try {
+    writeFileSync(temporaryPath, JSON.stringify(obj, null, 2), { encoding: "utf8", flag: "w" });
+    renameSync(temporaryPath, path);
+  } catch (error) {
+    throw new Error("Consent cache persistence failed; consent was not updated", { cause: error });
+  }
+}
+
+/** Persist the candidate snapshot before changing the in-memory view. */
+function commitProfiles(update: (candidate: Map<string, ConsentProfile>) => void): void {
+  const current = profiles();
+  const candidate = new Map(current);
+  update(candidate);
+  persistToDisk(candidate);
+  current.clear();
+  for (const [id, profile] of candidate) current.set(id, profile);
 }
 
 export function getConsentProfile(userId: string): ConsentProfile | null {
@@ -78,8 +103,7 @@ export function acceptConsent(input: ConsentAcceptanceInput): ConsentProfile {
     timestamp: new Date().toISOString(),
     limited_mode: false,
   };
-  profiles().set(input.user_id, profile);
-  persistToDisk(profiles());
+  commitProfiles((candidate) => candidate.set(input.user_id, profile));
   return profile;
 }
 
@@ -92,8 +116,7 @@ export function revokeConsent(userId: string): ConsentProfile | null {
     data_improvement_consent: false,
     timestamp: new Date().toISOString(),
   };
-  profiles().set(userId, revoked);
-  persistToDisk(profiles());
+  commitProfiles((candidate) => candidate.set(userId, revoked));
   return revoked;
 }
 
@@ -108,12 +131,10 @@ export function updateDataImprovementConsent(
     data_improvement_consent: dataImprovementConsent,
     timestamp: new Date().toISOString(),
   };
-  profiles().set(userId, updated);
-  persistToDisk(profiles());
+  commitProfiles((candidate) => candidate.set(userId, updated));
   return updated;
 }
 
 export function resetConsentStore(): void {
-  profiles().clear();
-  persistToDisk(profiles());
+  commitProfiles((candidate) => candidate.clear());
 }
