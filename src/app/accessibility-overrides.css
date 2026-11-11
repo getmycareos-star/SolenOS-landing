@@ -416,27 +416,44 @@ a, button, input, select, textarea, label, summary {
 /* System default is deliberately light and does not respond to OS colour preference. */
 
 
-/* Dark-theme legibility: enforce crisp white text throughout the app.
-   The Display trigger is intentionally excluded because it has a light sage
-   background with dark text for contrast. */
-:root[data-solenos-theme="dark"] body *:not(.solenos-display-trigger):not(.solenos-display-trigger *) {
-  color: #ffffff !important;
-  text-shadow: none !important;
-}
+/* Dark-theme contrast is surface-aware: white text on dark surfaces,
+   but dark text on intentionally white document sheets and light panels. */
 :root[data-solenos-theme="dark"] body {
-  color: #ffffff;
   text-shadow: none;
 }
 :root[data-solenos-theme="dark"] .solenos-display-trigger,
 :root[data-solenos-theme="dark"] .solenos-display-trigger * {
   color: #18251b !important;
 }
+/* Keep document/PDF paper white, with readable dark text inside it. */
+:root[data-solenos-theme="dark"] body :is(
+  .document-page, .document-paper, .document-preview-page, .document-preview-paper,
+  .pdf-page, .pdf-preview-page, .page-sheet, .preview-page,
+  [style*="background-color: white"], [style*="background-color:#fff"],
+  [style*="background-color: #fff"], [style*="background: white"],
+  [style*="background: #fff"], [style*="background:#fff"],
+  [style*="background-color: rgb(255, 255, 255)"],
+  [style*="background: rgb(255, 255, 255)"]
+) {
+  color: #18251b !important;
+  background-color: #ffffff !important;
+  text-shadow: none !important;
+}
+:root[data-solenos-theme="dark"] body :is(
+  .document-page, .document-paper, .document-preview-page, .document-preview-paper,
+  .pdf-page, .pdf-preview-page, .page-sheet, .preview-page,
+  [style*="background-color: white"], [style*="background-color:#fff"],
+  [style*="background-color: #fff"], [style*="background: white"],
+  [style*="background: #fff"], [style*="background:#fff"],
+  [style*="background-color: rgb(255, 255, 255)"],
+  [style*="background: rgb(255, 255, 255)"]
+) * {
+  color: #18251b !important;
+  text-shadow: none !important;
+}
 :root[data-solenos-theme="dark"] .solenos-display-panel,
 :root[data-solenos-theme="dark"] .solenos-display-panel * {
   color: #ffffff !important;
-}
-:root[data-solenos-theme="dark"] .solenos-display-panel input[type="radio"] {
-  accent-color: #a7c9aa;
 }
 :root[data-solenos-theme="dark"] body :is(input, textarea, select)::placeholder {
   color: #ffffff !important;
