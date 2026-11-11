@@ -136,17 +136,17 @@ export default function QwenAssistPanel({
       aria-label={title}
       className="qwen-assist-panel"
       style={{
-        border: "1px solid var(--border)",
+        border: "1px solid var(--theme-panel-border)",
         borderRadius: "12px",
         padding: compact ? "12px" : "16px",
-        background: "var(--surface)",
+        background: "var(--theme-panel-bg)",
         margin: "16px 0",
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
         <div>
           <h2 style={{ fontSize: "15px", fontWeight: 650, margin: 0 }}>{title}</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginTop: "4px", lineHeight: 1.5 }}>
+          <p style={{ color: "var(--theme-panel-muted)", fontSize: "12px", marginTop: "4px", lineHeight: 1.5 }}>
             {description}
           </p>
         </div>
