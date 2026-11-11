@@ -1091,7 +1091,7 @@ export function LCRCurrentUnderstanding() {
                                 <p>Proposed action: {item.request_text}</p>
                                 <p>Why suggested: {(item.priority_reasons ?? []).join("; ") || item.description || "A follow-up request is saved in the care record."}</p>
                                 <p>Sources: {item.evidence_ids.length} saved item(s)</p>
-                                <p>Limitations: Information is marked {caregiverLabel(item.epistemic_status)}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
+                                <p>What this does not tell us: This information is marked {caregiverLabel(item.epistemic_status)}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
                                 <p>Responsible caregiver: the caregiver authenticated in this session. No other caregiver will be assigned.</p>
                                 <p>Due date: {item.due_at ? `The source record contains ${formatWhen(item.due_at)}; no reminder will be created unless you explicitly choose one below.` : "No supported due date is recorded."}</p>
                                 <p>Timing context: recorded priority {item.priority || "not recorded"} · recorded consequence of delay {item.consequence_of_delay || "not recorded"} · deadline source {item.deadline_source || "not recorded"}. No deadline is invented.</p>
@@ -1302,7 +1302,7 @@ export function LCRCurrentUnderstanding() {
                       {pattern.alternative_interpretations?.length ? (
                         <div>
                           <strong>Other possible explanations</strong>
-                          {pattern.alternative_interpretations.map((alternative, index) => <p key={index}>{typeof alternative === "string" ? alternative : JSON.stringify(alternative)}</p>)}
+                          {pattern.alternative_interpretations.map((alternative, index) => <p key={index}>{typeof alternative === "string" ? alternative : "Another possible explanation was saved."}</p>)}
                         </div>
                       ) : <p>Other possible explanations were not provided. No cause is assumed.</p>}
                       <small>Saved events: {pattern.event_ids.length}</small>
@@ -1404,10 +1404,10 @@ export function LCRCurrentUnderstanding() {
                   Recorded in {pattern.evidence_count} event(s), from {formatWhen(pattern.temporal_start)} to {formatWhen(pattern.temporal_end)}.
                 </p>
                 {pattern.rate_per_period != null && (
-                  <p className="lcr-entry-status">Saved records show {pattern.rate_per_period.toFixed(2)} events per 30 days. This counts records only; it does not estimate events that were not recorded.</p>
+                  <p className="lcr-entry-status">Saved records show {pattern.rate_per_period.toFixed(2)} events every 30 days. This counts saved records only, not events that may have gone unrecorded.</p>
                 )}
-                {pattern.direction && <p className="lcr-entry-status">Direction: {caregiverLabel(pattern.direction)}</p>}
-                {pattern.confidence == null && <p className="lcr-entry-status">There is not enough information to judge how reliable this repeated-change finding is.</p>}
+                {pattern.direction && <p className="lcr-entry-status">Change noted: {caregiverLabel(pattern.direction)}</p>}
+                {pattern.confidence == null && <p className="lcr-entry-status">There is not enough information to know how reliable this repeated change is.</p>}
                 {pattern.alternative_interpretations?.map((item, index) => (
                   <p className="lcr-entry-status" key={index}>
                     {typeof item === "string" ? item : JSON.stringify(item)}
@@ -1650,7 +1650,7 @@ export function LCRCurrentUnderstanding() {
                         {item.ambiguity_note && <small>Ambiguity: {item.ambiguity_note}</small>}
                       </div>
                     )}
-                    {item.evidence_ids?.length > 0 && <small>How the source was reviewed: {(item.evidence_assessment_coverage || "not returned").replaceAll("_", " ")}</small>}
+                    {item.evidence_ids?.length > 0 && <small>How the source was reviewed: {caregiverLabel(item.evidence_assessment_coverage || "not returned")}</small>}
                     {item.evidence_assessments?.map((review) => (
                       <div key={review.evidence_id + ":" + review.review_type} className="lcr-entry-status">
                         <small>{review.review_type.replaceAll("_", " ")}: {review.outcome.replaceAll("_", " ")} · policy {review.policy_version} · reviewed {formatWhen(review.reviewed_at)}</small>
