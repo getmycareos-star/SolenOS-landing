@@ -278,7 +278,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 onMouseEnter={() => router.prefetch(href)}
                 onFocus={() => router.prefetch(href)}
                 onTouchStart={() => router.prefetch(href)}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
                 <span>{label}</span>
