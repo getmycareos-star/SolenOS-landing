@@ -13,7 +13,7 @@ import {
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import { UPLOAD_PRIVACY_NOTICE } from "@/lib/early-access-trust";
 import Link from "next/link";
-import { extractAttachedDocument } from "./capture/extract-attached";
+import { extractAttachedDocument, retryAttachedDocument } from "./capture/extract-attached";
 import { SnapCameraCapture } from "./capture/SnapCameraCapture";
 import { ScanDocumentCapture } from "./capture/ScanDocumentCapture";
 
@@ -73,14 +73,12 @@ export function AddSituationPanel({
           added.push(await extractAttachedDocument(file, method));
         }
         onDocumentsChange([...documents, ...added]);
-        const imageNeedsManualText = added.find(
-          (d) => d.status === "ready" && !d.extractedText.trim() && Boolean(d.evidenceId) && Boolean(d.errorNote),
-        );
-        if (imageNeedsManualText?.errorNote) {
-          setLocalHint(imageNeedsManualText.errorNote);
+        const extractionNote = added.find((document) => document.errorNote)?.errorNote;
+        if (extractionNote) {
+          setLocalHint(extractionNote);
         } else {
-          const failed = added.filter((d) => d.status === "failed");
-          if (failed.length > 0 && added.every((d) => d.status === "failed")) {
+          const failed = added.filter((document) => document.status === "failed");
+          if (failed.length > 0 && added.every((document) => document.status === "failed")) {
             setLocalHint(
               failed[0]?.errorNote ??
                 "Could not read that file. Type the key details, or try another supported file.",
@@ -151,12 +149,7 @@ export function AddSituationPanel({
       setLocalHint(null);
       setExtracting(true);
       try {
-        const file = doc.sourceFile;
-        if (!file) {
-          setLocalHint("That file is no longer available — try attaching it again.");
-          return;
-        }
-        const next = await extractAttachedDocument(file, doc.entryMethod ?? "upload");
+        const next = await retryAttachedDocument(doc);
         onDocumentsChange(
           documents.map((d) => (d.id === doc.id ? { ...next, id: d.id } : d)),
         );
