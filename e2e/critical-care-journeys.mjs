@@ -202,7 +202,7 @@ await record("04 document upload and extraction", async () => {
   form.append("person_id", identity.personId);
   form.append("caregiver_id", identity.caregiverId);
   form.append("evidence_type", "document");
-  form.append("file", new Blob(["Discharge note: follow-up appointment requested in two weeks."], { type: "text/plain" }), "journey-discharge-note.txt");
+  form.append("file", new Blob(["Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today."], { type: "text/plain" }), "journey-discharge-note.txt");
   const uploaded = await request("/api/v1/upload", { token: identity.token, method: "POST", form });
   assert.equal(uploaded.status, 201, JSON.stringify(uploaded.payload));
   documentId = uploaded.payload.evidence_id;
@@ -226,7 +226,7 @@ await record("04 document upload and extraction", async () => {
   duplicateForm.append("person_id", identity.personId);
   duplicateForm.append("caregiver_id", identity.caregiverId);
   duplicateForm.append("evidence_type", "document");
-  duplicateForm.append("file", new Blob(["Discharge note: follow-up appointment requested in two weeks."], { type: "text/plain" }), "journey-discharge-note-copy.txt");
+  duplicateForm.append("file", new Blob(["Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today."], { type: "text/plain" }), "journey-discharge-note-copy.txt");
   const duplicate = await request("/api/v1/upload", { token: identity.token, method: "POST", form: duplicateForm });
   assert.equal(duplicate.status, 201, JSON.stringify(duplicate.payload));
   assert.equal(duplicate.payload.duplicate_detected, true);
