@@ -851,7 +851,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Sources for this answer">
                       <strong>What this answer is based on</strong>
                       <p>Each statement is checked against the wording in saved records. A match does not prove that a report is true or that two records came from different people.</p>
-                      <p><strong>Inspect source record references</strong></p>
+                      <p><strong>Supporting source details</strong></p>
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
