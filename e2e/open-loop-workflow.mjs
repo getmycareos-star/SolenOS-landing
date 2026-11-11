@@ -308,6 +308,28 @@ try {
   }
   console.log("PASS: real Documents UI upload, PostgreSQL-backed retrieval, and original-file download round trip.");
 
+  // Exercise real Daily Care capture through the browser UI, then read the saved
+  // record back from the authenticated current-care endpoint.
+  await page.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "How has today been?" }).waitFor({ timeout: 15_000 });
+  const dailyCareNote = "CI-only Daily Care capture: caregiver observed a later-than-usual bedtime and interrupted sleep.";
+  await page.getByRole("group", { name: "Choose a quick care update" }).getByRole("button", { name: "Something changed", exact: true }).click();
+  await page.getByRole("group", { name: "Select care areas" }).getByRole("button", { name: "Sleep", exact: true }).click();
+  await page.getByLabel("Add a note (optional)").fill(dailyCareNote);
+  await page.getByRole("button", { name: "Save update", exact: true }).click();
+  await page.getByRole("status").filter({ hasText: "Saved to the care record." }).waitFor({ timeout: 20_000 });
+  const currentCareResponse = await fetch(new URL("/api/v1/care-continuity/current-care", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!currentCareResponse.ok) {
+    throw new Error(`Could not retrieve the saved Daily Care update: HTTP ${currentCareResponse.status} ${await currentCareResponse.text()}`);
+  }
+  const currentCare = await currentCareResponse.json();
+  if (!JSON.stringify(currentCare).includes(dailyCareNote)) {
+    throw new Error("The Daily Care UI showed a save receipt, but the authenticated current-care read did not return the saved caregiver note.");
+  }
+  console.log("PASS: real Daily Care UI capture persisted to PostgreSQL and was retrieved through the authenticated current-care API.");
+
   // Exercise persisted conflict handling through the actual LCR UI and API.
   // The partial resolution must preserve its unresolved remainder; reopening must
   // append a new audit event without erasing the earlier partial-resolution event.
