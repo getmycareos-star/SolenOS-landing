@@ -20,6 +20,14 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "task_text: taskText.slice",
   "Explain the document text and answer only from uploaded document evidence.",
   "context_text: boundedContext",
+  "source_document_analysis_ids: string[]",
+  "source_appointment_ids: string[]",
+  "source_handoff_ids: string[]",
+  "source_notification_ids: string[]",
+  "Sources used for this suggestion",
+  "Information used",
+  "status.source_freshness_assessment_ids",
+
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
   '{loading ? "Working…" : "Send"}',
@@ -36,7 +44,9 @@ for (const workflow of [
   "reminders_notifications", "care_coordination", "companion",
   "caregiver_feedback", "sharing_export", "roles_access", "account_recovery",
   "settings_security", "record_lifecycle", "offline_sync", "ai_reliability",
-  "audit_review",
+  "audit_review", "care_transition", "incident_follow_through", "emergency_readiness",
+  "care_coverage_gap", "care_instruction_change_tracker", "critical_information_completeness",
+  "personal_preferences_distress_context", "caregiver_strain_support", "document_validity_renewal",
 ]) assert(assist.includes(JSON.stringify(workflow)), `Internal workflow contract must include ${workflow}.`);
 assert(!assist.includes("Railway-hosted local model"), "Internal runtime details must not be shown.");
 assert(!assist.includes("Check Qwen"), "Internal model status controls must not be shown.");
