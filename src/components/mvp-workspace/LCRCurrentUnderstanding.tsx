@@ -1369,7 +1369,7 @@ export function LCRCurrentUnderstanding() {
                             <li key={event.id}>
                               {event.previous_status ?? "not registered"} → {event.new_status.replaceAll("_", " ")} · {formatWhen(event.created_at)} · Changed by: {event.actor_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}
                               {event.reason && <p>{event.reason}</p>}
-                              <small>Evidence: {event.evidence_ids.length} saved item(s)</small>
+                              <small>Sources: {event.evidence_ids.length} saved item(s)</small>
                             </li>
                           ))}
                         </ol>
