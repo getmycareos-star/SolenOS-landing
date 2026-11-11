@@ -31,7 +31,7 @@ assert.match(component, /Needs attention now/);
 assert.match(component, /There isn’t enough recorded care information to assess immediate priorities yet/);
 assert.doesNotMatch(component, /No immediate concerns were identified in the information currently available\./);
 assert.match(component, /formatWhen\(item\.occurred_at\).*formatWhen\(item\.recorded_at\)/s);
-assert.match(component, /Supporting evidence:/);
+assert.match(component, /View supporting information/);
 assert.match(component, /Review state:/);
 assert.match(component, /assessmentError/);
 assert.match(component, /changesError.*This does not mean nothing has changed/s);
