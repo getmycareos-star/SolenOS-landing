@@ -1,10 +1,9 @@
 name: Netlify deploy preview
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-    types: [opened, synchronize, reopened]
     paths:
       - "src/**"
       - "package.json"
@@ -16,12 +15,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: solenos-netlify-preview-pr-${{ github.event.pull_request.number }}
+  group: solenos-netlify-preview-main
   cancel-in-progress: true
 
 jobs:
   deploy-preview:
-    if: github.event.pull_request.draft == false
     name: Build and publish isolated Netlify preview
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -31,10 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: main
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
       - run: npm ci
       - name: Verify token is configured
@@ -44,7 +42,7 @@ jobs:
             echo "::error::Missing GitHub Actions secret NETLIFY_AUTH_TOKEN. No preview was deployed."
             exit 1
           fi
-      - name: Build and deploy a draft preview (never production)
+      - name: Build and deploy an isolated Netlify preview (never production)
         shell: bash
         run: |
           npx --yes netlify-cli@latest deploy --build --site "$NETLIFY_SITE_ID" --context deploy-preview --json > netlify-preview.json
