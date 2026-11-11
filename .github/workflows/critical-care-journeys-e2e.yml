@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "e2e/critical-care-journeys.mjs"
+      - "e2e/netlify-dark-mode-audit.mjs"
       - "src/api/client.ts"
       - "src/app/workspace/**"
       - "src/components/workflows/**"
@@ -128,6 +129,21 @@ jobs:
           BACKEND_URL: http://127.0.0.1:8000
           SOLENOS_REQUIRE_LIVE_QWEN: "1"
         run: node e2e/critical-care-journeys.mjs
+
+      - name: Audit rendered dark mode on the Netlify preview and current deployment
+        env:
+          BACKEND_URL: http://127.0.0.1:8000
+          NETLIFY_PREVIEW_URL: https://6af48229b6b35b68a14b6591--solenosai.netlify.app
+          NETLIFY_DEPLOY_URL: https://6af48b07c35453231c02ea19--solenosai.netlify.app
+        run: node e2e/netlify-dark-mode-audit.mjs
+
+      - name: Upload rendered dark-mode screenshots and contrast report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: netlify-dark-mode-rendered-audit
+          path: artifacts/dark-mode/
+          if-no-files-found: warn
 
       - name: Print service logs on failure
         if: failure()
