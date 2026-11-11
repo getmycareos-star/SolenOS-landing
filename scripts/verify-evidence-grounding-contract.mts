@@ -171,6 +171,9 @@ console.log("PASS: LCR evidence review exposes report time, collection method, o
 
 const evidenceReviewPanel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
 assert(evidenceReviewPanel.includes("/care-continuity/record-snapshots/as-of"), "evidence UI must load a saved full-record snapshot for the selected date");
+assert(evidenceReviewPanel.includes("/care-continuity/record-versions"), "caregivers must be able to save a dated copy of their care record");
+assert(evidenceReviewPanel.includes("Save a copy now"), "the saved-copy action must be visible in the care history screen");
+assert(evidenceReviewPanel.includes("living-records?limit=2"), "the saved-copy action must resolve the existing care record through the authenticated API");
 assert(evidenceReviewPanel.includes("saved_snapshot_only"), "historical snapshot UI must identify the exact saved-copy coverage limit");
 assert(evidenceReviewPanel.includes("No verified saved copy of the full care record is available"), "missing snapshots must not be presented as an empty care record");
 assert(evidenceReviewPanel.includes("/care-continuity/state-revisions/evidence/"), "evidence UI must retain the separate source-specific revision lookup");
