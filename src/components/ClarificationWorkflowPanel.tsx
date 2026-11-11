@@ -150,17 +150,20 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
+      const loadedClaims = claimRows as Claim[];
+      const loadedQuestions = questionRows as Question[];
+      const loadedEvidence = evidenceRows as Evidence[];
       setScopePersonId(sessionPersonId);
-      setClaims(claimRows as Claim[]);
-      setQuestions(questionRows as Question[]);
-      setEvidence(evidenceRows as Evidence[]);
-      setSelectedClaimId((current) => current && claimRows.some((row) => row.id === current) ? current : claimRows[0]?.id ?? "");
+      setClaims(loadedClaims);
+      setQuestions(loadedQuestions);
+      setEvidence(loadedEvidence);
+      setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
-        const currentQuestion = questionRows.find((row) => row.id === current);
+        const currentQuestion = loadedQuestions.find((row) => row.id === current);
         if (currentQuestion && (currentQuestion.status === "open" || currentQuestion.status === "unresolved")) return current;
-        return questionRows.find((row) => row.status === "open" || row.status === "unresolved")?.id
+        return loadedQuestions.find((row) => row.status === "open" || row.status === "unresolved")?.id
           ?? currentQuestion?.id
-          ?? questionRows[0]?.id
+          ?? loadedQuestions[0]?.id
           ?? "";
       });
     } catch {
