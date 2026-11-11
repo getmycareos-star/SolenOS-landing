@@ -46,7 +46,7 @@ console.log("PASS: evidence builder emits no synthetic event IDs, confidence, so
 const panel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
 assert(panel.includes("/integrity"), "evidence review UI must call the persisted source-integrity endpoint");
 assert(panel.includes("source_text_integrity_status"), "evidence review UI must display the server-computed integrity status");
-assert(panel.includes("Original file authenticity"), "the UI must disclose that a text hash does not authenticate the uploaded original");
+assert(panel.includes("A matching file check only shows that the saved copy has not changed"), "the UI must disclose that a text hash does not authenticate the uploaded original");
 console.log("PASS: evidence review UI displays server-computed integrity without claiming original-file authenticity.");
 
 const claimPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClaimAssessmentPanel.tsx"), "utf8");
@@ -75,8 +75,8 @@ console.log("PASS: claim dependency graph is connected to the LCR with failure-s
 assert(panel.includes("/relationships"), "source-lineage UI must use the persisted relationship API");
 assert(panel.includes("source_independence_status"), "source-lineage UI must display explicit source-independence state");
 assert(panel.includes("shared_origin"), "source-lineage UI must preserve shared-origin/dependent-source state");
-assert(panel.includes("not automatic proof"), "source-lineage UI must not equate a relationship with verified truth");
-assert(panel.includes("Source lineage could not be loaded") && panel.includes("No relationship list is assumed"), "failed relationship reads must not be presented as an empty lineage history");
+assert(panel.includes("They do not prove that two reports are separate"), "source-lineage UI must not equate a relationship with verified truth");
+assert(panel.includes("Links to other sources could not be loaded") && panel.includes("No list is assumed"), "failed relationship reads must not be presented as an empty lineage history");
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
@@ -104,8 +104,8 @@ assert(evidenceReview.includes("This does not establish that the evidence did no
 console.log("PASS: evidence review exposes persisted historical reconstruction with an explicit absence limitation.");
 
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
-assert(panel.includes("Each observation preserves an exact passage from the original source"), "read-only observation history must retain the exact source passage");
-assert(panel.includes("A reported account remains reported"), "observation UI must preserve report versus observation distinctions");
+assert(panel.includes("Each detail keeps the exact words from the original source"), "read-only observation history must retain the exact source passage");
+assert(panel.includes("A report stays labelled as a report"), "observation UI must preserve report versus observation distinctions");
 assert(panel.includes("item.epistemic_status.replaceAll"), "read-only observation history must retain the recorded information status");
 console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
 
@@ -152,7 +152,7 @@ console.log("PASS: claim-linked clarification and immutable attributed answer hi
 for (const field of ["reported_at", "collection_method", "origin_device_ref", "transfer_source", "transfer_reference"]) {
   assert(panel.includes(field), `evidence review UI must expose acquisition provenance field ${field}`);
 }
-assert(panel.includes("Origin device label"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
+assert(panel.includes("Device used"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
 console.log("PASS: LCR evidence review exposes report time, collection method, optional device label, and transfer provenance.");
 
 
