@@ -49,6 +49,28 @@ type PanelData = {
 }
 
 const emptyData: PanelData = { assertions: [], freshness: [], revisions: [], outcomes: [] }
+function simpleRecordLabel(value?: string | null): string {
+  if (!value) return "Not recorded";
+  return ({
+    current: "Still current",
+    stale: "May be out of date",
+    historical: "Older information",
+    undetermined: "Not sure",
+    unknown: "Not yet known",
+    not_assessed: "Not checked",
+    accepted: "Accepted",
+    rejected: "Not accepted",
+    superseded: "Replaced by newer information",
+    created: "Added",
+    updated: "Updated",
+    corrected: "Corrected",
+    deleted: "Removed",
+    restored: "Restored",
+    current_state: "Current care information",
+    historical_observation: "Earlier observation",
+  } as Record<string, string>)[value] ?? value.replace(/_/g, " ");
+}
+
 const cardStyle: CSSProperties = {
   border: '1px solid var(--border)', borderRadius: 10, padding: 14,
   background: 'var(--surface)', marginTop: 12,
@@ -149,17 +171,17 @@ export default function CareContinuityIntegrityPanel({
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
               <strong>{item.field}: {item.asserted_value}</strong>
-              <span style={{ fontSize: 12 }}>{fresh?.status?.replace(/_/g, ' ') || 'freshness unknown'}</span>
+              <span style={{ fontSize: 12 }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Source: {item.source_label} · {item.assertion_kind.replace(/_/g, ' ')} · status: {item.assertion_status} · {item.source_event_id ? 'linked care event' : 'caregiver report'}
+              Reported by: {item.source_label} · {simpleRecordLabel(item.assertion_kind)} · Review: {simpleRecordLabel(item.assertion_status)} · {item.source_event_id ? 'linked care event' : 'caregiver report'}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
-                ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as caregiver-reviewed</button>
-                : <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A review interval has not been recorded, so this current-state report cannot be marked as current here.</p>
+                ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as checked by a caregiver</button>
+                : <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No review schedule is saved, so this report cannot be marked as current here.</p>
             )}
           </article>
         })}
@@ -172,8 +194,8 @@ export default function CareContinuityIntegrityPanel({
         {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes to the saved care information are available yet.</p> : data.revisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
-            <p style={{ fontSize: 12, margin: '5px 0' }}>Version {item.revision_number} · {item.change_kind.replace(/_/g, ' ')} · {new Date(item.changed_at).toLocaleString()}</p>
-            <small>Previous and updated details remain preserved in the record history. Supporting sources: {item.evidence_ids.length} linked record(s).</small>
+            <p style={{ fontSize: 12, margin: '5px 0' }}>Version {item.revision_number} · {simpleRecordLabel(item.change_kind)} · {new Date(item.changed_at).toLocaleString()}</p>
+            <small>Previous and updated details remain preserved in the record history. Sources: {item.evidence_ids.length} saved item(s).</small>
           </article>
         )}
       </div>
@@ -182,7 +204,7 @@ export default function CareContinuityIntegrityPanel({
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Recorded outcomes and corrections</h3>
         {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No recorded outcomes are available yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
-            <strong>{item.outcome_status.replace(/_/g, ' ')}</strong> · {new Date(item.created_at).toLocaleString()}
+            <strong>{simpleRecordLabel(item.outcome_status)}</strong> · {new Date(item.created_at).toLocaleString()}
             {item.notes && <p>{item.notes}</p>}{item.correction_text && <p><strong>Recorded correction:</strong> {item.correction_text}</p>}
           </div>
         )}
