@@ -473,6 +473,7 @@ await record("frontend network failure is surfaced rather than rendered as empty
   await page.route("**/api/v1/evidence/**", (route) => route.abort("failed"));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("alert").first().waitFor({ timeout: 15_000 });
+  await verifyMobile(page);
   await context.close();
 });
 
