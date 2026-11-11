@@ -92,6 +92,31 @@ interface CareUpdateProposal {
   created_at?: string | null
 }
 
+interface ClaimSourceReference {
+  record_type: string
+  record_id: string
+  label: string
+  matched_passage: string
+  source_excerpt?: string
+  occurred_at?: string | null
+  recorded_at?: string | null
+  reported_by?: string | null
+  entered_by?: string | null
+  record_status?: string | null
+  related_evidence_ids?: string[]
+}
+
+interface ClaimProvenance {
+  coverage: string
+  matching_limit?: string
+  claims: Array<{
+    claim_id: string
+    text: string
+    support_status: string
+    source_references: ClaimSourceReference[]
+  }>
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -107,6 +132,7 @@ interface Message {
   source_freshness_assessment_ids?: string[]
   freshness_source_status?: string
   source_record_refs?: Array<{ record_type: string; record_id: string }>
+  claim_provenance?: ClaimProvenance
   ai_generated?: boolean
   written_to_lcr?: boolean
   persistence?: string
@@ -410,6 +436,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         source_freshness_assessment_ids: response.source_freshness_assessment_ids,
         freshness_source_status: response.freshness_source_status,
         source_record_refs: response.source_record_refs,
+        claim_provenance: response.claim_provenance,
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
@@ -813,15 +840,34 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
                       </section>
                     })}
-                    {!isUser && msg.ai_generated && <div className="companion-provenance"><ShieldCheck size={14} aria-hidden="true" /><span>{contextCount + freshnessCount + (msg.source_record_refs?.length ?? 0) > 0
-                      ? 'Response used ' + (msg.source_event_ids?.length ?? 0) + ' care entries, ' + (msg.source_evidence_ids?.length ?? 0) + ' evidence items, ' + (msg.source_appointment_ids?.length ?? 0) + ' appointments, ' + (msg.source_assertion_ids?.length ?? 0) + ' caregiver-reviewed assertions, ' + (msg.source_lcr_context_ids?.length ?? 0) + ' additional record references, and ' + freshnessCount + ' freshness assessments and ' + (msg.source_record_refs?.length ?? 0) + ' inspectable source references.'
-                      : 'No matching care context was returned for this response.'} Conversation only; not added to the Living Care Record.</span></div>}
-                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">Freshness assessment storage is unavailable in this schema. Currentness is unknown.</p>}
-                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No freshness assessment was returned for the selected evidence; this does not establish currentness.</p>}
-                    {!isUser && (msg.source_record_refs?.length ?? 0) > 0 && <details className="companion-provenance-details">
-                      <summary>Inspect source record references ({msg.source_record_refs?.length ?? 0})</summary>
-                      <ul>{msg.source_record_refs?.map(ref => <li key={ref.record_type + ':' + ref.record_id}><span>{SOURCE_REFERENCE_LABELS[ref.record_type] ?? ref.record_type.replaceAll('_', ' ')}</span> <code>{ref.record_id}</code></li>)}</ul>
-                    </details>}
+                    {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Sources for this answer">
+                      <strong>What this answer is based on</strong>
+                      <p>Each statement is checked against the wording in saved records. A match does not prove that a report is true or that two records came from different people.</p>
+                      {msg.claim_provenance.claims.map(claim => (
+                        <article key={claim.claim_id} className="companion-provenance-details">
+                          <p><strong>{claim.text}</strong></p>
+                          {claim.support_status === 'matched_saved_wording' ? (
+                            <div>
+                              <p> <ShieldCheck size={14} aria-hidden="true" /> This wording appears in a saved record.</p>
+                              {claim.source_references.map((source, sourceIndex) => (
+                                <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
+                                  <strong>{source.label}</strong>
+                                  {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
+                                  {source.recorded_at && <p>When it was added: {new Date(source.recorded_at).toLocaleString()}</p>}
+                                  {source.reported_by && <p>Reported by: {source.reported_by}</p>}
+                                  {source.entered_by && <p>{source.entered_by}</p>}
+                                  {source.record_status && <p>Record status: {source.record_status.replaceAll('_', ' ')}</p>}
+                                  {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                                </div>
+                              ))}
+                            </div>
+                          ) : <p role="note">Not matched to the wording in a saved record. Check this statement before relying on it.</p>}
+                        </article>
+                      ))}
+                      <p>Conversation only. Nothing in this answer was added to the Living Care Record.</p>
+                    </section>}
+                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">A review of how current these records are is not available. Their currentness is unknown.</p>}
+                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No review of how current these records are was returned. This does not mean they are current.</p>}
                   </div>
                 </article>
               })}
