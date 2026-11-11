@@ -747,9 +747,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates" disabled={pendingCareUpdatesRefreshing}>{pendingCareUpdatesRefreshing ? 'Refreshing…' : 'Refresh'}</button>
                 </div>
                 {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
-                  <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>Pending review</span></div>
+                  <div className="companion-care-update-heading"><strong>Saved LCR report · caregiver-attributed</strong><span>Unreviewed</span></div>
                   <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
-                  <p className="companion-care-update-source">Source quotation from original Companion message</p>
+                  <p className="companion-care-update-source">Saved to the Living Care Record as an unreviewed caregiver report. Review it to accept, correct or reject its status.</p>
                   {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
                   <div className="companion-care-update-actions">
                     <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
@@ -796,7 +796,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       const value = candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''
                       const pending = candidate.status === 'pending_authorization'
                       return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
-                        <div className="companion-care-update-heading"><strong>Proposed care record update</strong><span>{pending ? 'Pending review' : candidate.status.replace(/_/g, ' ')}</span></div>
+                        <div className="companion-care-update-heading"><strong>Saved LCR report · caregiver-attributed</strong><span>{pending ? 'Unreviewed' : candidate.status.replace(/_/g, ' ')}</span></div>
                         <p>{value}</p>
                         <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Original proposal'}</p>
                         {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
