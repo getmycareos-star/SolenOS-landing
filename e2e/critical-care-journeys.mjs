@@ -9,8 +9,8 @@ const browser = await chromium.launch({ headless: true });
 const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
 
-async function request(path, { token, method = "GET", body, form } = {}) {
-  const headers = token ? { authorization: `Bearer ${token}` } : {};
+async function request(path, { token, method = "GET", body, form, extraHeaders = {} } = {}) {
+  const headers = { ...extraHeaders, ...(token ? { authorization: `Bearer ${token}` } : {}) };
   if (body !== undefined) headers["content-type"] = "application/json";
   const response = await fetch(new URL(path, backend), {
     method,
@@ -318,14 +318,22 @@ await record("09 appointment summary persistence", async () => {
 // 10. Handoff: prepare a source-referenced draft and confirm it remains persisted/read-only.
 let handoffDraftId;
 await record("10 evidence-backed handoff", async () => {
+  const requestId = unique("handoff-request");
+  const handoffBody = { purpose: "professional_appointment", audience: "professional", window_days: 30 };
   const draft = await request("/api/v1/handoff-drafts/prepare", {
-    token: identity.token, method: "POST",
-    body: { purpose: "professional_appointment", audience: "professional", window_days: 30 },
+    token: identity.token, method: "POST", body: handoffBody,
+    extraHeaders: { "x-request-id": requestId },
   });
   assert.equal(draft.status, 200, JSON.stringify(draft.payload));
   assert.equal(draft.payload.draft_persisted, true);
   assert.equal(draft.payload.updates_lcr, false);
   handoffDraftId = draft.payload.draft_id;
+  const replay = await request("/api/v1/handoff-drafts/prepare", {
+    token: identity.token, method: "POST", body: handoffBody,
+    extraHeaders: { "x-request-id": requestId },
+  });
+  assert.equal(replay.status, 200, JSON.stringify(replay.payload));
+  assert.equal(replay.payload.draft_id, handoffDraftId);
   const list = await request("/api/v1/handoff-drafts?limit=10", { token: identity.token });
   assert.equal(list.status, 200);
   assert.ok(JSON.stringify(list.payload).includes(handoffDraftId));
