@@ -382,7 +382,7 @@ export default function ClaimAssessmentPanel() {
     {!loading && !error && claims.length > 0 && <>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Care detail
         <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
-          {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 120)}</option>)}
+          {claims.map((claim) => <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {claim.asserted_value.slice(0, 120)}</option>)}
         </select>
       </label>
       {selectedClaim && <div style={{ fontSize: 12, padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
@@ -410,7 +410,7 @@ export default function ClaimAssessmentPanel() {
           <select style={field} value={dependencyTargetId} onChange={(event) => setDependencyTargetId(event.target.value)}>
             <option value="">Select a different care detail</option>
             {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
-              <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 100)}</option>)}
+              <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {claim.asserted_value.slice(0, 100)}</option>)}
           </select>
         </label>
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>How they are related
@@ -435,7 +435,7 @@ export default function ClaimAssessmentPanel() {
         <select style={field} value={supersededByClaimId} onChange={(event) => setSupersededByClaimId(event.target.value)}>
           <option value="">Choose the care detail that replaces this one</option>
           {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
-            <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 120)}</option>
+            <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {claim.asserted_value.slice(0, 120)}</option>
           )}
         </select>
       </label>}
