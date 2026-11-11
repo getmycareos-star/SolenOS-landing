@@ -809,7 +809,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           </label>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
                           <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
-                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Saved as a caregiver-attributed report in the Living Care Record.' : candidate.status === 'rejected' ? 'Rejected. No LCR assertion was created.' : candidate.status === 'corrected' ? 'Original proposal retained. A corrected version requires separate acceptance.' : candidate.status.replace(/_/g, ' ')}</p>}
+                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Caregiver-reviewed report in the Living Care Record; not independently clinically verified.' : candidate.status === 'rejected' ? 'Rejected. The source-linked report remains in LCR history marked rejected.' : candidate.status === 'corrected' ? 'Superseded by a caregiver correction. The corrected report is separately saved in the LCR as unreviewed.' : 'Unreviewed caregiver report saved in the Living Care Record.'}</p>}
                         {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
                       </section>
                     })}
