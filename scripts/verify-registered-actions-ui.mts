@@ -25,7 +25,7 @@ for (const contract of [
   'Defer consideration',
   'Request clarification',
   'Registered actions',
-  'View audit history',
+  'View change history',
   'Confirm completed',
   'Needs clarification',
   'registeredActionsError',
@@ -37,7 +37,7 @@ for (const contract of [
   'Only the responsible caregiver can change this action.',
   'Another caregiver',
   'Supporting evidence: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} linked record(s)',
-  'Evidence: {event.evidence_ids.length} linked record(s)',
+  'Sources: {event.evidence_ids.length} saved item(s)',
   'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id}',
   'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])}',
 ]) {
