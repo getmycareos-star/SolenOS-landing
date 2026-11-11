@@ -183,7 +183,7 @@ a, button, input, select, textarea, label, summary {
 .solenos-display-panel input[type="radio"] { width: 20px; height: 20px; flex: 0 0 auto; }
 .solenos-display-note { margin: 12px 0 0; font-size: .875rem; }
 
-/* Dark theme is available explicitly and follows the OS when System is selected. */
+/* Dark theme is applied only when explicitly selected. System default stays light. */
 :root[data-solenos-theme="dark"] {
   color-scheme: dark;
   --solenos-paper: #111817;
@@ -414,3 +414,31 @@ a, button, input, select, textarea, label, summary {
   border-color: #718477 !important;
 }
 /* System default is deliberately light and does not respond to OS colour preference. */
+
+
+/* Dark-theme legibility: enforce crisp white text throughout the app.
+   The Display trigger is intentionally excluded because it has a light sage
+   background with dark text for contrast. */
+:root[data-solenos-theme="dark"] body *:not(.solenos-display-trigger):not(.solenos-display-trigger *) {
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+:root[data-solenos-theme="dark"] body {
+  color: #ffffff;
+  text-shadow: none;
+}
+:root[data-solenos-theme="dark"] .solenos-display-trigger,
+:root[data-solenos-theme="dark"] .solenos-display-trigger * {
+  color: #18251b !important;
+}
+:root[data-solenos-theme="dark"] .solenos-display-panel,
+:root[data-solenos-theme="dark"] .solenos-display-panel * {
+  color: #ffffff !important;
+}
+:root[data-solenos-theme="dark"] .solenos-display-panel input[type="radio"] {
+  accent-color: #a7c9aa;
+}
+:root[data-solenos-theme="dark"] body :is(input, textarea, select)::placeholder {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
