@@ -94,6 +94,7 @@ const dailyCareQwen = fs.readFileSync(path.join(root, "src/components/workflows/
 assert.ok(themeOverrides.includes(':root[data-solenos-theme="dark"]') && themeOverrides.includes("--theme-panel-bg: #202a24"));
 assert.ok(themeOverrides.includes("--theme-field-bg: #18211c"));
 assert.ok(themeOverrides.includes("--theme-warning-fg: #fff0cf"));
+assert.ok(themeOverrides.includes("--theme-action-disabled-fg: #e6eee7") && themeOverrides.includes("button:disabled"));
 assert.ok(dailyCarePage.includes("var(--theme-panel-bg)"));
 assert.ok(dailyCarePage.includes("var(--theme-field-fg)"));
 assert.ok(quickCheckIn.includes("var(--theme-selected-bg)") && quickCheckIn.includes('className="quick-daily-checkin"'));
