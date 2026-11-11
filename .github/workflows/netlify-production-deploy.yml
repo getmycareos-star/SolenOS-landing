@@ -43,6 +43,22 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+      - name: Verify production backend supports saved care history
+        env:
+          BACKEND_OPENAPI_URL: https://solenosbackend-production.up.railway.app/openapi.json
+        shell: bash
+        run: |
+          curl --fail --silent --show-error "$BACKEND_OPENAPI_URL" -o /tmp/solenos-openapi.json
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const spec = JSON.parse(fs.readFileSync("/tmp/solenos-openapi.json", "utf8"));
+          const requiredPath = "/api/v1/care-continuity/record-snapshots/as-of";
+          if (!Object.hasOwn(spec.paths ?? {}, requiredPath)) {
+            console.error("Production backend does not yet provide saved care history. Frontend production deployment is blocked.");
+            process.exit(1);
+          }
+          console.log("Production backend has the saved care history endpoint.");
+          NODE
       - name: Type-check
         run: npm run typecheck
       - name: Run product and safety regression checks
