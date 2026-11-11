@@ -102,9 +102,9 @@ assert(appointment.includes("This does not mean they are separate"), "Appointmen
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
 
 const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
-assert(evidenceReview.includes("/care-continuity/state-revisions/evidence/"), "Evidence review must call the persisted as-of reconstruction API");
-assert(evidenceReview.includes("persisted_care_state_revision"), "Evidence review must validate the historical response source");
-assert(evidenceReview.includes("This does not establish that the evidence did not exist"), "Historical lookup failure must not be displayed as evidence absence");
+assert(evidenceReview.includes("/care-continuity/state-versions/evidence/"), "Evidence review must call the persisted as-of reconstruction API");
+assert(evidenceReview.includes("persisted_care_state_version"), "Evidence review must validate the historical response source");
+assert(evidenceReview.includes("This does not mean the source did not exist"), "Historical lookup failure must not be displayed as evidence absence");
 console.log("PASS: evidence review exposes persisted historical reconstruction with an explicit absence limitation.");
 
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
