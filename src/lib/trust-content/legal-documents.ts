@@ -44,9 +44,9 @@ export const PRIVACY_POLICY = {
     {
       title: "4. AI processing and its limits",
       body: [
-        "The current backend source routes Qwen-powered assistance through Ollama's native API using a private model-runtime configuration. The code does not call a hosted Qwen API, OpenAI API, or Gemini API as a fallback when this runtime is unavailable. If the configured model is unavailable or fails, the backend is designed to return an error rather than silently substitute another hosted model.",
+        "Our current technical design routes Qwen-powered assistance through a private Ollama model runtime. SolenOS is not designed to send requests to a hosted Qwen API, OpenAI API, or Gemini API as a fallback if that runtime is unavailable. If the configured model is unavailable or fails, the backend is designed to return an error rather than silently substitute another hosted model.",
         "When you use an AI-assisted function, the request and the relevant care information selected for that function may be sent from the backend to that configured model runtime for processing. Do not assume that AI processing is the same as keeping information solely on your device.",
-        "The repository does not establish the complete production runtime configuration, exact physical processing location, provider-side logging, or provider retention period. We therefore do not promise a specific AI data-residency location or that all model-runtime diagnostics are immediately erased.",
+        "We have not yet independently confirmed the complete production runtime configuration, the exact physical processing location, or the model operator's logging and retention practices. We therefore do not promise a specific AI data-residency location or that all model-runtime diagnostics are immediately erased.",
         "AI output may omit context, misread a document, or make an incorrect interpretation. Review it against the source. SolenOS does not make an AI response an authoritative care fact merely because a model generated it.",
       ],
     },
@@ -55,14 +55,14 @@ export const PRIVACY_POLICY = {
       body: [
         "Care information is scoped to its care workspace. A caregiver's authenticated session is associated with a particular care record; it is not intended to grant access to unrelated care records.",
         "People you invite or authorize as contributors may be able to access or add information within the shared care workspace and the permissions available to them. Contributions are intended to retain attribution. Do not invite someone unless you are comfortable giving them that access and have authority to share the information.",
-        "SolenOS uses hosting, database, and model-runtime infrastructure to operate the service. Those providers may process information as needed to provide their services. We have not yet published a complete, independently verified register of every subprocessor, its role, processing location, onward transfers, and retention terms. We will not invent a complete provider or residency list where the current repository does not establish one.",
+        "SolenOS uses hosting, database, and model-runtime infrastructure to operate the service. Those providers may process information as needed to provide their services. We have not yet published a complete, independently verified list of the service providers that may process information, what each provider does, where processing occurs, or how long each provider retains information. We will update this information as those details are confirmed.",
         "We may disclose information where required by applicable law or where reasonably necessary to protect users, investigate abuse, or respond to a security incident. We do not sell personal or care information.",
       ],
     },
     {
       title: "6. Storage, security, and retention",
       body: [
-        "The backend source stores structured care information in a PostgreSQL database. Uploaded evidence is represented in the backend data model, which can include original document bytes as well as extracted or source text. The exact production storage configuration and all backup, replica, log, and provider locations must not be inferred from source code alone.",
+        "The backend source stores structured care information in a PostgreSQL database. Uploaded evidence is represented in the backend data model, which can include original document bytes as well as extracted or source text. We have not independently confirmed the complete production storage configuration or the locations of every backup, replica, log, and provider copy.",
         "The service includes safeguards such as password hashing, hashed session-token storage, authenticated care-record scoping, and access checks. These controls reduce risk but do not make an online service risk-free. We do not claim that every stored item is encrypted at rest or that every provider's security controls have been independently audited.",
         "We do not currently publish a complete, enforced retention schedule covering care records, uploaded files, extracted text, AI conversations, security logs, backups, and provider copies. We therefore cannot promise a fixed deletion or backup-expiry period.",
         "Keep your own copy of important documents and care information. Do not upload information you are not authorized to share or are unwilling to store with an online early-access service.",
@@ -91,7 +91,7 @@ export const PRIVACY_POLICY = {
     {
       title: "9. International processing and legal status",
       body: [
-        "SolenOS may rely on infrastructure and service providers operating in a country different from yours. The current source review does not establish a complete map of production data locations, international transfers, or provider-side retention. We do not make a country-specific data-residency promise in this policy.",
+        "SolenOS may rely on infrastructure and service providers operating in a country different from yours. We have not yet confirmed and published a complete map of production data locations, international transfers, or provider-side retention. We do not make a country-specific data-residency promise in this policy.",
         "SolenOS does not claim to be HIPAA-certified or to be a HIPAA-covered entity or business associate in every use case. Whether a particular law applies depends on the facts and relationships involved. This policy is a plain-language description of current product behavior, not legal advice or a compliance certification.",
       ],
     },
