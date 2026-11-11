@@ -630,7 +630,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         {notice && <p role="status" style={{ color: "#356441", fontSize: 12, lineHeight: 1.5 }}>{notice}</p>}
         {showHistory && (
           <div style={{ marginTop: 12 }}>
-            {consentRequired && <p role="status">Incoming handoffs are hidden until required privacy and multi-caregiver acknowledgements are saved. <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Review Settings → Privacy</Link>.</p>}
+            {consentRequired && <p role="status">Incoming and outgoing handoffs are hidden until required privacy and multi-caregiver acknowledgements are saved. <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Review Settings → Privacy</Link>.</p>}
             {historyError && <p role="alert">Handoff history could not be loaded. Refresh and verify connectivity.</p>}
             {!historyError && !loading && inbox.length === 0 && outbox.length === 0 && <p>No incoming or outgoing handoffs are recorded for this session.</p>}
             <h5 style={{ margin: "12px 0 6px" }}>Incoming</h5>
