@@ -35,6 +35,6 @@ assert.match(component, /Supporting evidence:/);
 assert.match(component, /Review state:/);
 assert.match(component, /assessmentError/);
 assert.match(component, /changesError.*This does not mean nothing has changed/s);
-assert.match(component, /patternsError.*This does not mean no patterns exist/s);
+assert.match(component, /patternsError.*This does not mean nothing is repeating/s);
 assert.match(component, /assessment\.open_loops\.has_more/);
 console.log("Attention summary classification and evidence-display contract checks passed.");
