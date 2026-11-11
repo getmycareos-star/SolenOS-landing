@@ -226,6 +226,8 @@ await record("05 Living Care Record projection and evidence", async () => {
   ), "LCR projection omitted the newly persisted evidence lineage");
   const empty = await request("/api/v1/care-continuity/current-care?limit_per_source=1&query=definitely-no-match-journey", { token: identity.token });
   assert.equal(empty.status, 200);
+  const invalid = await request("/api/v1/care-continuity/current-care?limit_per_source=0", { token: identity.token });
+  assert.equal(invalid.status, 422);
 });
 
 // 6. Companion: must return model-generated output grounded in this care record.
@@ -251,6 +253,11 @@ await record("06 Companion context and Qwen output", async () => {
       "Companion response must explicitly identify whether a model generated it",
     );
   }
+  const invalid = await request("/api/v1/conversation/message", {
+    token: identity.token, method: "POST",
+    body: { person_id: identity.personId, text: "" },
+  });
+  assert.equal(invalid.status, 422);
   const history = await request(`/api/v1/conversation/${answer.payload.session_id}`, { token: identity.token });
   assert.equal(history.status, 200);
   assert.ok(history.payload.messages?.length >= 2);
@@ -270,6 +277,11 @@ await record("07 change detection and supporting evidence", async () => {
     },
   });
   assert.equal(reconciled.status, 200, JSON.stringify(reconciled.payload));
+  const invalid = await request("/api/v1/care-delta/reconcile", {
+    token: identity.token, method: "POST",
+    body: { person_id: identity.personId, source: "critical_care_journey_e2e", content: "", persist: true },
+  });
+  assert.equal(invalid.status, 422);
   const runs = await request(`/api/v1/care-delta/runs/${identity.personId}`, { token: identity.token });
   assert.equal(runs.status, 200);
   assert.ok(runs.payload.some((run) => run.evidence_ids?.includes(evidenceId)));
@@ -310,6 +322,11 @@ await record("09 appointment summary persistence", async () => {
   const replay = await request("/api/v1/appointment-workspaces", { token: identity.token, method: "POST", body: payload });
   assert.ok([200, 201].includes(replay.status), JSON.stringify(replay.payload));
   assert.equal(replay.payload.id, appointmentWorkspaceId);
+  const invalid = await request("/api/v1/appointment-workspaces", {
+    token: identity.token, method: "POST",
+    body: { status: "invalid-stage", payload: {}, change_reason: "invalid enum", idempotency_key: unique("invalid-appointment") },
+  });
+  assert.equal(invalid.status, 422);
   const list = await request("/api/v1/appointment-workspaces", { token: identity.token });
   assert.equal(list.status, 200);
   assert.ok(list.payload.items.some((item) => item.id === appointmentWorkspaceId));
@@ -334,6 +351,11 @@ await record("10 evidence-backed handoff", async () => {
   });
   assert.equal(replay.status, 200, JSON.stringify(replay.payload));
   assert.equal(replay.payload.draft_id, handoffDraftId);
+  const invalid = await request("/api/v1/handoff-drafts/prepare", {
+    token: identity.token, method: "POST",
+    body: { purpose: "invalid-purpose", audience: "professional", window_days: 30 },
+  });
+  assert.equal(invalid.status, 422);
   const list = await request("/api/v1/handoff-drafts?limit=10", { token: identity.token });
   assert.equal(list.status, 200);
   assert.ok(JSON.stringify(list.payload).includes(handoffDraftId));
@@ -377,6 +399,11 @@ await record("12 account recovery preserves care record", async () => {
   });
   assert.equal(recovered.status, 200, JSON.stringify(recovered.payload));
   assert.equal(recovered.payload.recovered, true);
+  const reusedCode = await request("/api/v1/accounts/recover", {
+    method: "POST",
+    body: { email: accountEmail, recovery_code: recoveryCode, new_password: "CI-second-recovery-passphrase-2026!" },
+  });
+  assert.equal(reusedCode.status, 401);
   const oldPassword = await request("/api/v1/accounts/login", {
     method: "POST", body: { email: accountEmail, password },
   });
