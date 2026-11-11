@@ -191,7 +191,7 @@ console.log("PASS: saved freshness policy assessment and history are connected t
 const companionPanel = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
 assert(companionPanel.includes("source_freshness_assessment_ids"), "Companion must expose freshness assessment provenance");
 assert(companionPanel.includes("source_record_refs"), "Companion must carry typed source record references");
-assert(companionPanel.includes("Inspect source record references"), "Companion must let caregivers inspect source record references");
+assert(companionPanel.includes("claim.source_references.map") && companionPanel.includes("source.source_excerpt") && companionPanel.includes("source.label"), "Companion must display source labels and exact supporting excerpts beside matched claims");
 assert(companionPanel.includes("freshness assessments"), "Companion must distinguish freshness assessments from evidence truth");
 const appointmentWorkspace = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert(appointmentWorkspace.includes("Evidence freshness assessments"), "Appointment preparation must show freshness assessments");
