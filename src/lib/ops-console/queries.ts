@@ -127,7 +127,7 @@ export type OpsDashboardData = {
   };
   continuity: {
     returning_users: number;
-    retention_7d: number;
+    retention_7d: number | null;
     care_records_reopened: number;
     appointment_prep_sessions: number;
     avg_days_between_visits: number | null;
