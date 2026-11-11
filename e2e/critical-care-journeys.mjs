@@ -72,6 +72,7 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
 async function browserPageConsumes(page, pathname, observed) {
   await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
   return observed.filter((item) => item.path.includes(pathname));
+}
 
 async function verifyMobile(page) {
   const dimensions = await page.evaluate(() => ({
