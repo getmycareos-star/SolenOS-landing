@@ -22,11 +22,16 @@ async function persistOriginalDocument(file: File, extractedText: string): Promi
   // Snap, Scan and Upload converge on the same server-owned extraction lifecycle.
   // The original upload is already durable; an unavailable Qwen run must not
   // discard it or prevent the caregiver from continuing.
-  await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/extract", {});
   try {
-    await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/intelligence", {});
+    await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/extract", {});
+    try {
+      await postJSON("/documents/" + encodeURIComponent(result.evidence_id) + "/intelligence", {});
+    } catch {
+      // The saved extraction remains available for an explicit Qwen retry in Documents.
+    }
   } catch {
-    // The saved document remains available for an explicit retry in Documents.
+    // Preserve the successful upload even if OCR/extraction is unavailable.
+    // The Documents workspace exposes the original for a later extraction retry.
   }
   window.dispatchEvent(new Event("careRecordUpdated"));
   return result.evidence_id;
