@@ -1066,8 +1066,8 @@ export default function StructuredDailyCapture() {
           <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a medicine</h3>
           
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {medicationError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{medicationError}</p>}
-            {medicationFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{medicationFeedback}</p>}
+            {medicationError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-warning-bg)', border: '1px solid var(--theme-warning-border)', color: 'var(--theme-warning-fg)' }}>{medicationError}</p>}
+            {medicationFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-success-bg)', border: '1px solid var(--theme-success-border)', color: 'var(--theme-panel-fg)' }}>{medicationFeedback}</p>}
             <div>
               <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medicine name</label>
               <input
@@ -1232,10 +1232,10 @@ export default function StructuredDailyCapture() {
                       style={{ 
                         fontSize: '13px', 
                         fontWeight: '500', 
-                        color: 'white', 
+                        color: 'var(--theme-action-fg)', 
                         background: medicationUploading || !medicationForm.medication_name.trim() 
-                                   ? 'var(--text-secondary)' 
-                                   : 'var(--accent)', 
+                                   ? 'var(--theme-action-disabled-bg)' 
+                                   : 'var(--theme-action-bg)', 
                         padding: '8px 16px', 
                         borderRadius: '6px', 
                         cursor: medicationUploading || !medicationForm.medication_name.trim() 
@@ -1260,7 +1260,7 @@ export default function StructuredDailyCapture() {
                         borderRadius: '4px', 
                         border: '1px solid var(--border)', 
                         background: cameraState.status === 'unknown' ? 'var(--accent)' : 'var(--text-secondary)', 
-                        color: 'white', 
+                        color: 'var(--theme-action-fg)', 
                         cursor: cameraState.status === 'unknown' ? 'pointer' : 'default' 
                       }}
                     >
@@ -1296,10 +1296,10 @@ export default function StructuredDailyCapture() {
                       style={{ 
                         fontSize: '13px', 
                         fontWeight: '500', 
-                        color: 'white', 
+                        color: 'var(--theme-action-fg)', 
                         background: medicationUploading || !medicationForm.medication_name.trim() 
-                                   ? 'var(--text-secondary)' 
-                                   : 'var(--accent)', 
+                                   ? 'var(--theme-action-disabled-bg)' 
+                                   : 'var(--theme-action-bg)', 
                         padding: '8px 16px', 
                         borderRadius: '6px', 
                         cursor: medicationUploading || !medicationForm.medication_name.trim() 
@@ -1473,8 +1473,8 @@ export default function StructuredDailyCapture() {
               </div>
             </div>
               
-              {vitalError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{vitalError}</p>}
-              {vitalFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{vitalFeedback}</p>}
+              {vitalError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-warning-bg)', border: '1px solid var(--theme-warning-border)', color: 'var(--theme-warning-fg)' }}>{vitalError}</p>}
+              {vitalFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-success-bg)', border: '1px solid var(--theme-success-border)', color: 'var(--theme-panel-fg)' }}>{vitalFeedback}</p>}
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
                   type="submit"
@@ -1600,8 +1600,8 @@ export default function StructuredDailyCapture() {
               
             </div>
               
-              {scaleError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#fff4dc', border: '1px solid #c8a85d', color: '#3b2e11' }}>{scaleError}</p>}
-              {scaleFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: '#edf5eb', border: '1px solid #8eae8a', color: '#172b35' }}>{scaleFeedback}</p>}
+              {scaleError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-warning-bg)', border: '1px solid var(--theme-warning-border)', color: 'var(--theme-warning-fg)' }}>{scaleError}</p>}
+              {scaleFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-success-bg)', border: '1px solid var(--theme-success-border)', color: 'var(--theme-panel-fg)' }}>{scaleFeedback}</p>}
               <div style={{ marginTop: '16px', textAlign: 'right' }}>
                 <button
                   type="submit"
@@ -1664,8 +1664,8 @@ export default function StructuredDailyCapture() {
             style={{ 
               fontSize: '16px', 
               fontWeight: '600', 
-              color: 'white', 
-              background: submittingMutation ? 'var(--text-secondary)' : 'var(--trust)', 
+              color: 'var(--theme-action-fg)', 
+              background: submittingMutation ? 'var(--theme-action-disabled-bg)' : 'var(--theme-action-bg)', 
               padding: '12px 24px', 
               borderRadius: '8px', 
               cursor: submittingMutation ? 'default' : 'pointer' 
