@@ -77,7 +77,7 @@ jobs:
         run: |
           npm ci
           npm install --no-save --package-lock=false playwright
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
           python -m pip install --upgrade pip
           python -m pip install -e ./backend-service/backend
 
