@@ -48,7 +48,8 @@ assert.match(companion, /role="dialog".*aria-label=\{cameraMode === 'scan'/s, "S
 assert.match(companion, /initialPrompt = null/, "Companion accepts the record-edit prompt without opening a second entry screen");
 assert.match(documents, /consumePendingDocumentIntake/, "Documents must consume the in-memory selected File objects");
 assert.match(documents, /params\.get\("intake"\)/, "Documents must process the direct-intake handoff");
-assert.doesNotMatch(documents, /Snap &amp; scan with camera|Upload files \/ pages|Add another page with camera|type="file"|capture="environment"/, "Documents must be a saved-document library, not an intake launcher");
+assert.doesNotMatch(documents, /Snap &amp; scan with camera|Add another page with camera|capture="environment"/, "Camera capture remains a Companion intake flow, not a second camera workflow in Documents");
+assert.match(documents, /type="file"/, "Documents must expose direct file selection for caregiver-reviewed original uploads.");
 assert.match(documents, /saveReviewedPages/, "the library retains caregiver-reviewed original-file persistence");
 assert.match(documents, /Review before saving/);
 assert.match(documents, /saveReviewedPages/);
