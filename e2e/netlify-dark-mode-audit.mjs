@@ -244,6 +244,7 @@ try {
               theme: document.documentElement.dataset.solenosTheme || null,
               pathname: window.location.pathname,
               title: document.title,
+              handoffsHeading: document.querySelector("#care-handoffs-title")?.textContent?.trim() ?? null,
               issues,
             };
           });
@@ -253,6 +254,9 @@ try {
             : null;
           const routeIssues = [
             ...(navigationIssue ? [navigationIssue] : []),
+            ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Care Handoffs"
+              ? [{ kind: "missing_handoffs_heading", actual: rendered.handoffsHeading }]
+              : []),
             ...apiFailures.filter((item) => item.status === 403).map((item) => ({ kind: "api_403", ...item })),
           ];
           const result = {
