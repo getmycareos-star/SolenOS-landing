@@ -155,7 +155,14 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setQuestions(questionRows as Question[]);
       setEvidence(evidenceRows as Evidence[]);
       setSelectedClaimId((current) => current && claimRows.some((row) => row.id === current) ? current : claimRows[0]?.id ?? "");
-      setSelectedQuestionId((current) => current && questionRows.some((row) => row.id === current) ? current : questionRows[0]?.id ?? "");
+      setSelectedQuestionId((current) => {
+        const currentQuestion = questionRows.find((row) => row.id === current);
+        if (currentQuestion && (currentQuestion.status === "open" || currentQuestion.status === "unresolved")) return current;
+        return questionRows.find((row) => row.status === "open" || row.status === "unresolved")?.id
+          ?? currentQuestion?.id
+          ?? questionRows[0]?.id
+          ?? "";
+      });
     } catch {
       setScopePersonId("");
       setClaims([]);
