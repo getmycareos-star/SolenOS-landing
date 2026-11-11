@@ -103,6 +103,8 @@ interface ClaimSourceReference {
   reported_by?: string | null
   entered_by?: string | null
   record_status?: string | null
+  source_independence_status?: string | null
+  exact_wording_duplicate_count?: number
   source_state_label?: string | null
   related_evidence_ids?: string[]
   related_evidence?: Array<{
@@ -113,6 +115,8 @@ interface ClaimSourceReference {
     recorded_at?: string | null
     reported_by?: string | null
     record_status?: string | null
+    source_independence_status?: string | null
+    exact_wording_duplicate_count?: number
   }>
 }
 
@@ -851,12 +855,20 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.reported_by && <p>Reported by: {source.reported_by}</p>}
                                   {source.entered_by && <p>{source.entered_by}</p>}
                                   {source.source_state_label && <p>{source.source_state_label}</p>}
+                                  {source.source_independence_status === 'shared_origin' && <p>This source shares its original with another saved record. It is not a separate report.</p>}
+                                  {source.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
+                                  {source.source_independence_status === 'not_assessed' && <p>Whether this source is separate from other reports has not been checked.</p>}
+                                  {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {source.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Supporting note or document</strong>
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
                                       <p>{item.label}</p>
                                       {item.reported_by && <p>Reported by: {item.reported_by}</p>}
+                                      {item.source_independence_status === 'shared_origin' && <p>This note shares its original with another saved record. It is not a separate report.</p>}
+                                      {item.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
+                                      {item.source_independence_status === 'not_assessed' && <p>Whether this note is separate from other reports has not been checked.</p>}
+                                      {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {item.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
                                       {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
