@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
 
@@ -510,7 +509,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
     {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading saved source information…</p>}
     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Reviews are saved with the reason and date. They do not turn a caregiver report into an independently confirmed fact.</p>
-    <p style={{ fontSize: 12, margin: "8px 0 12px" }}><Link href="/workspace/evidence-completeness" style={{ color: "var(--text)", textDecoration: "underline" }}>Review source completeness</Link></p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Check whether information is still up to date</summary>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Choose a review rule set by the caregiver. There is no single time limit for every kind of information. A review does not prove that information is true or still applies today.</p>
