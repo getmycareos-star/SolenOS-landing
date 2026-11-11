@@ -26,7 +26,7 @@ type Assessment = {
     source_passage?: string | null;
     scope_note?: string | null;
   }>;
-  reviewed_by_caregiver_id: string;
+  reviewed by a caregiver: string;
   supersedes_assessment_id?: string | null;
   superseded_by_claim_id?: string | null;
   created_at: string;
@@ -181,7 +181,7 @@ export default function ClaimAssessmentPanel() {
       setClaims([]);
       setEvidence([]);
       setSelectedClaimId("");
-      setError("Claims and evidence could not be loaded from this care record. No empty record set is assumed; retry when connected.");
+      setError("Care details and sources could not be loaded. This does not mean the record is empty. Try again when connected.");
     } finally {
       setLoading(false);
     }
@@ -326,7 +326,7 @@ export default function ClaimAssessmentPanel() {
 
   async function submit() {
     if (!selectedClaim || rationale.trim().length < 3) {
-      setError("Select a claim and provide an assessment rationale.");
+      setError("Choose a care detail and explain why you are reviewing it.");
       return;
     }
     if (status === "superseded" && (!supersededByClaimId || supersededByClaimId === selectedClaim.id)) {
@@ -335,11 +335,11 @@ export default function ClaimAssessmentPanel() {
     }
     const completeLinks = links.filter((link) => link.evidence_id.trim());
     if (completeLinks.length !== links.length) {
-      setError("Each evidence-link row must select an evidence record or be removed.");
+      setError("Choose a source for each row or remove the row.");
       return;
     }
     if (new Set(completeLinks.map((link) => link.evidence_id)).size !== completeLinks.length) {
-      setError("Select each evidence record only once per assessment.");
+      setError("Use each source only once in this review.");
       return;
     }
     setSaving(true);
@@ -380,7 +380,7 @@ export default function ClaimAssessmentPanel() {
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && claims.length === 0 && <p>There are no care details to review yet.</p>}
     {!loading && !error && claims.length > 0 && <>
-      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Claim
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Care detail
         <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
           {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 120)}</option>)}
         </select>
@@ -433,7 +433,7 @@ export default function ClaimAssessmentPanel() {
       </label>
       {status === "superseded" && <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Replaced by
         <select style={field} value={supersededByClaimId} onChange={(event) => setSupersededByClaimId(event.target.value)}>
-          <option value="">Select the replacement claim</option>
+          <option value="">Choose the care detail that replaces this one</option>
           {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
             <option key={claim.id} value={claim.id}>{claim.field}: {claim.asserted_value.slice(0, 120)}</option>
           )}
