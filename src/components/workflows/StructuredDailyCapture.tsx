@@ -1259,7 +1259,7 @@ export default function StructuredDailyCapture() {
                         padding: '8px 12px', 
                         borderRadius: '4px', 
                         border: '1px solid var(--border)', 
-                        background: cameraState.status === 'unknown' ? 'var(--accent)' : 'var(--text-secondary)', 
+                        background: cameraState.status === 'unknown' ? 'var(--theme-action-bg)' : 'var(--theme-action-disabled-bg)', 
                         color: 'var(--theme-action-fg)', 
                         cursor: cameraState.status === 'unknown' ? 'pointer' : 'default' 
                       }}
