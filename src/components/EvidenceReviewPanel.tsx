@@ -172,7 +172,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   useEffect(() => { void loadEvidence() }, [loadEvidence])
   const [selectedId, setSelectedId] = useState('')
   const [reviewType, setReviewType] = useState<ReviewType>('reliability')
-  const [outcome, setOutcome] = useState('unverified')
+  const [outcome, setYour review] = useState('unverified')
   const [rationale, setRationale] = useState('')
   const [sourceResult, setSourceResult] = useState('not_assessed')
   const [corroborationResult, setCorroborationResult] = useState('not_assessed')
@@ -292,7 +292,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       )
       if (!result || typeof result !== 'object' || (result as Record<string, unknown>).person_id !== personId ||
           !Array.isArray((result as Record<string, unknown>).items) ||
-          (result as Record<string, unknown>).coverage_status !== 'partial_revision_history') {
+          (result as Record<string, unknown>).coverage_status !== 'partial_version_history') {
         throw new Error('Historical response is not valid for this care record')
       }
       setRecordHistory(result as Record<string, unknown>)
@@ -371,16 +371,16 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       const asOf = new Date(historyAsOf)
       if (Number.isNaN(asOf.getTime())) throw new Error('The selected date and time is invalid.')
       const result = await getJSON(
-        `/care-continuity/state-revisions/evidence/${encodeURIComponent(selectedId)}/as-of?as_of=${encodeURIComponent(asOf.toISOString())}`
+        `/care-continuity/state-versions/evidence/${encodeURIComponent(selectedId)}/as-of?as_of=${encodeURIComponent(asOf.toISOString())}`
       )
       if (!result || result.person_id !== personId || result.target_type !== 'evidence' ||
-          result.target_id !== selectedId || result.historical_state_source !== 'persisted_care_state_revision' ||
+          result.target_id !== selectedId || result.historical_state_source !== 'persisted_care_state_version' ||
           typeof result.interpretation_limit !== 'string') {
         throw new Error('The historical response did not match the selected evidence record and care record.')
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
-      setHistoryReconstructionError('A persisted historical revision could not be reconstructed for that time. This does not establish that the evidence did not exist; retry or inspect the saved revision history.')
+      setHistoryReconstructionError('A persisted historical version could not be reconstructed for that time. This does not establish that the evidence did not exist; retry or inspect the saved version history.')
     } finally {
       setHistoryReconstructionLoading(false)
     }
@@ -439,7 +439,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   function changeReviewType(next: ReviewType) {
     setReviewType(next)
-    setOutcome(outcomes[next][0])
+    setYour review(outcomes[next][0])
   }
 
   async function submit() {
@@ -475,37 +475,37 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   }
 
   if (!personId && !evidenceLoading && !evidenceError) return null
-  return <section style={panel} aria-label="Persisted evidence assessments">
+  return <section style={panel} aria-label="Saved source reviews">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Sources and supporting information</h3>
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
     {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading persisted evidence…</p>}
-    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Assessments are versioned records with a rationale. They do not assign numeric confidence or turn a caregiver report into independently verified evidence.</p>
+    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Reviews are saved with the reason and date. They do not turn a caregiver report into an independently confirmed fact.</p>
     <p style={{ fontSize: 12, margin: "8px 0 12px" }}><Link href="/workspace/evidence-completeness" style={{ color: "var(--text)", textDecoration: "underline" }}>Review source completeness</Link></p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
-      <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Review when information was last checked</summary>
-      <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Policies are explicit, caregiver-defined and immutable by version. No universal freshness threshold is applied. A freshness result does not establish truth or current clinical status.</p>
+      <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Check whether information is still up to date</summary>
+      <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Choose a review rule set by the caregiver. There is no single time limit for every kind of information. A review does not prove that information is true or still applies today.</p>
       {freshnessPolicyLoading && <p role="status">Loading saved policies…</p>}
       {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry policy list</button></p>}
-      <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Apply saved policy
+      <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Choose a saved review rule
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
-          <option value="">Choose a saved domain policy</option>
+          <option value="">Choose a review rule</option>
           {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{policy.domain_key} · {policy.policy_version} · {policy.max_age_days == null ? 'no max-age rule' : policy.max_age_days + 'd review'}{policy.historical_after_days == null ? '' : ' · historical ' + policy.historical_after_days + 'd'}</option>)}
         </select>
       </label>
-      <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Assessing…' : 'Assess selected evidence'}</button>
+      <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Reviewing…' : 'Review this information'}</button>
       {freshnessPolicyNotice && <p role="status" style={{ fontSize: 12 }}>{freshnessPolicyNotice}</p>}
-      <h4 style={{ fontSize: 12, marginBottom: 4 }}>Persisted freshness assessment history</h4>
+      <h4 style={{ fontSize: 12, marginBottom: 4 }}>Past reviews of how current this information is</h4>
       {freshnessHistoryLoading && <p role="status" style={{ fontSize: 12 }}>Loading assessment history…</p>}
       {freshnessHistoryError && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{freshnessHistoryError} <button type="button" style={button} onClick={() => void loadFreshnessHistory()} disabled={freshnessHistoryLoading}>Retry history</button></p>}
-      {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No saved freshness assessments were returned for the selected evidence.</p>}
+      {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No past reviews were found for this information.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: 12 }}>
-        <strong>{item.freshness_status.replaceAll('_', ' ')}</strong> · policy {item.policy_version}
-        <div>Assessed {new Date(item.assessed_at).toLocaleString()} · source time {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · age {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
+        <strong>{item.freshness_status.replaceAll('_', ' ')}</strong> · review rule {item.policy_version}
+        <div>Assessed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (item.source_time_kind || 'time kind unknown').replaceAll('_', ' ') + ')' : 'unknown'} · time since then {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
         <p>{item.rationale}</p>
       </article>)}
     </details>
     {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No evidence records were returned for this care record.</p> : evidenceItems.length > 0 ? <>
-      <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Source material
+      <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Original information
         <select style={field} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
           {evidenceItems.map(item => <option key={item.id} value={item.id}>{item.type.replaceAll('_', ' ')} · {item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : 'Date not recorded'}</option>)}
         </select>
@@ -513,36 +513,36 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {selected && <>
         <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Source category</dt><dd style={{ margin: 0 }}>{selected.type || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Evidence kind</dt><dd style={{ margin: 0 }}>{selected.evidence_kind?.replaceAll('_', ' ') || 'Not classified'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Information status</dt><dd style={{ margin: 0 }}>{selected.epistemic_status?.replaceAll('_', ' ') || 'Not assessed'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Type of source</dt><dd style={{ margin: 0 }}>{selected.type || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{selected.evidence_kind?.replaceAll('_', ' ') || 'Not classified'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How certain this is</dt><dd style={{ margin: 0 }}>{selected.epistemic_status?.replaceAll('_', ' ') || 'Not assessed'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Added by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id ? 'Caregiver' : null].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Collected by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.collected_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Event time</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Collected at</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Reported at</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Collection method</dt><dd style={{ margin: 0 }}>{selected.collection_method || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Origin device label</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Transfer source</dt><dd style={{ margin: 0 }}>{selected.transfer_source || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Transfer reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Uploaded at</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Ingested at</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Origin channel</dt><dd style={{ margin: 0 }}>{selected.origin_channel || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Original source reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Parent evidence</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{selected.collection_method || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{selected.transfer_source || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Date added</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was added</dt><dd style={{ margin: 0 }}>{selected.origin_channel || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Related original source</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>How this source relates to other information ({relationships.length})</summary>
-          <p>Relationships are explicit, attributed assessments—not automatic proof that sources are independent or that a claim is true.</p>
+          <summary>How this source is connected to other information ({relationships.length})</summary>
+          <p>These links show how sources are connected. They do not prove that two reports are separate or that a statement is true.</p>
           {relationshipsLoading && <p role="status">Loading source relationships…</p>}
           {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
-          {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No links to other sources are recorded for this item yet.</p>}
+          {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No links to other saved sources are recorded for this item yet.</p>}
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{item.relationship_type.replaceAll('_', ' ')}</strong>
             <div>This source is linked to another saved source.</div>
-            <div>Independence: {item.source_independence_status.replaceAll('_', ' ')}</div>
+            <div>Were these reports separate? {item.source_independence_status.replaceAll('_', ' ')}</div>
             {item.source_independence_status === 'shared_origin' && (
               <p>This source and the linked source share an underlying origin. They must not be counted as independent corroboration.</p>
             )}
@@ -552,8 +552,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </article>)}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Details extracted from this source ({observations.length})</summary>
-          <p>Each observation preserves an exact passage from the original source. A reported account remains reported; an inferred interpretation is not a directly observed fact.</p>
+          <summary>Details found in this source ({observations.length})</summary>
+          <p>Each detail keeps the exact words from the original source. A report stays labelled as a report; an interpretation is not shown as something someone directly saw.</p>
           {observationsLoading && <p role="status">Loading structured observations…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
           {!observationsLoading && !observationsError && observations.length === 0 && <p>No extracted details are available for this source yet.</p>}
@@ -562,18 +562,18 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <div>{item.observation_kind.replaceAll('_', ' ')} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
             <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
-            {item.supersedes_observation_id && <div>Corrects an earlier observation: {item.correction_rationale || 'No correction rationale recorded'}</div>}
-            {item.negated !== null && item.negated !== undefined && <div>Negation recorded: {item.negated ? 'yes' : 'no'}</div>}
-            {item.hedge_marker && <div>Hedging: {item.hedge_marker}</div>}
-            {item.ambiguity_note && <div>Ambiguity: {item.ambiguity_note}</div>}
+            {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
+            {item.negated !== null && item.negated !== undefined && <div>Does the source say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
+            {item.hedge_marker && <div>Uncertain wording: {item.hedge_marker}</div>}
+            {item.ambiguity_note && <div>What is unclear: {item.ambiguity_note}</div>}
             {item.observer_label && <div>Observer: {item.observer_label}{item.observation_method ? ` · ${item.observation_method}` : ''}</div>}
             <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>View what was recorded at an earlier date</summary>
-          <p>Shows the latest saved revision per target at the selected instant. This is a partial revision-history projection, not a guarantee that every care-record change was captured.</p>
+          <summary>See what the record said earlier</summary>
+          <p>Shows the latest saved version of each item at the time you choose. Some earlier changes may not be available.</p>
           <label style={{ display: 'block', marginTop: 8 }}>
             Historical date and time
             <input
@@ -584,19 +584,19 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             />
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructRecordHistory()} disabled={recordHistoryLoading || !personId || !recordHistoryAsOf}>
-            {recordHistoryLoading ? 'Reconstructing…' : 'Reconstruct recorded care state'}
+            {recordHistoryLoading ? 'Loading earlier record…' : 'Show earlier record'}
           </button>
           {recordHistoryError && <p role="alert" style={{ color: 'var(--error)' }}>{recordHistoryError}</p>}
           {recordHistory && <div role="status" style={{ marginTop: 8 }}>
-            <p><strong>Coverage:</strong> {String(recordHistory.coverage_status)} · {String(recordHistory.target_count)} targets{recordHistory.truncated ? ' · result truncated' : ''}</p>
-            <p><strong>Requested instant:</strong> {String(recordHistory.requested_as_of)}</p>
+            <p><strong>Information available:</strong> {String(recordHistory.coverage_status)} · {String(recordHistory.target_count)} items{recordHistory.truncated ? ' · only part of the history is shown' : ''}</p>
+            <p><strong>Chosen date and time:</strong> {String(recordHistory.requested_as_of)}</p>
             <ul>
               {((recordHistory.items as Array<Record<string, unknown>>) || []).map(item => (
                 <li key={String(item.target_type) + ':' + String(item.target_id)}>
                   <strong>{String(item.target_type).replaceAll('_', ' ')}</strong>
-                  {' — '}revision {String(item.revision_number)} ({String(item.change_kind)})
+                  {' — '}version {String(item.version_number)} ({String(item.change_kind)})
                   <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(item.state, null, 2)}</pre>
-                  <p>Evidence links: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0} authorized source reference(s)</p>
+                  <p>Supporting records: {Array.isArray(item.evidence_ids) ? item.evidence_ids.length : 0} authorized source reference(s)</p>
                 </li>
               ))}
             </ul>
@@ -605,115 +605,115 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>View source information from an earlier date</summary>
-          <p>Choose an instant to retrieve the last persisted revision at or before that time. This is a historical database snapshot, not proof that the stored claim was true.</p>
-          <label style={{ display: 'block', marginTop: 8 }}>Historical instant
+          <summary>See source information from an earlier date</summary>
+          <p>Choose an instant to retrieve the last persisted version at or before that time. This is a historical database snapshot, not proof that the stored claim was true.</p>
+          <label style={{ display: 'block', marginTop: 8 }}>Date and time
             <input style={field} type="datetime-local" value={historyAsOf} onChange={event => { setHistoryAsOf(event.target.value); setReconstructedHistory(null); setHistoryReconstructionError('') }} />
           </label>
           <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void reconstructHistoricalState()} disabled={historyReconstructionLoading || !selectedId || !historyAsOf}>
-            {historyReconstructionLoading ? 'Reconstructing…' : 'Reconstruct at selected time'}
+            {historyReconstructionLoading ? 'Loading earlier record…' : 'Show earlier version'}
           </button>
           {historyReconstructionError && <p role="alert" style={{ color: 'var(--error)' }}>{historyReconstructionError}</p>}
           {reconstructedHistory && <div role="status" style={{ marginTop: 8 }}>
-            <p><strong>Recorded revision:</strong> {String(reconstructedHistory.revision_number)} · {String(reconstructedHistory.change_kind)} · {String(reconstructedHistory.recorded_change_at || 'time not recorded')}</p>
-            <p><strong>Requested instant:</strong> {String(reconstructedHistory.requested_as_of)}</p>
+            <p><strong>Recorded version:</strong> {String(reconstructedHistory.version_number)} · {String(reconstructedHistory.change_kind)} · {String(reconstructedHistory.recorded_change_at || 'time not recorded')}</p>
+            <p><strong>Chosen date and time:</strong> {String(reconstructedHistory.requested_as_of)}</p>
             <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(reconstructedHistory.state, null, 2)}</pre>
             <p>{String(reconstructedHistory.interpretation_limit)}</p>
           </div>}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Check whether saved source text has changed</summary>
-          {sourceIntegrityLoading && <p role="status">Checking stored source text…</p>}
-          {sourceIntegrityError && <p role="alert" style={{ color: 'var(--error)' }}>{sourceIntegrityError} <button type="button" style={button} onClick={() => void loadSourceIntegrity()} disabled={sourceIntegrityLoading}>Retry integrity check</button></p>}
+          <summary>Check whether the saved wording has changed</summary>
+          {sourceIntegrityLoading && <p role="status">Checking saved wording…</p>}
+          {sourceIntegrityError && <p role="alert" style={{ color: 'var(--error)' }}>{sourceIntegrityError} <button type="button" style={button} onClick={() => void loadSourceIntegrity()} disabled={sourceIntegrityLoading}>Try again</button></p>}
           {!sourceIntegrityLoading && !sourceIntegrityError && sourceIntegrity && <>
-            <p><strong>Stored text hash:</strong> {sourceIntegrity.source_text_integrity_status === 'match' ? 'MATCH — current stored text matches the stored fingerprint' : sourceIntegrity.source_text_integrity_status === 'mismatch' ? 'MISMATCH — stored text and fingerprint differ' : 'UNAVAILABLE — no fingerprint is stored'}</p>
-            <p><strong>Hash scope:</strong> {sourceIntegrity.hash_scope}</p>
-            <p style={{ overflowWrap: 'anywhere' }}><strong>Stored:</strong> {sourceIntegrity.stored_source_text_sha256 || 'Unavailable'}</p>
-            <p style={{ overflowWrap: 'anywhere' }}><strong>Recomputed:</strong> {sourceIntegrity.recomputed_source_text_sha256 || 'Unavailable'}</p>
+            <p><strong>Saved wording:</strong> {sourceIntegrity.source_text_integrity_status === 'match' ? 'Matches the original saved copy' : sourceIntegrity.source_text_integrity_status === 'mismatch' ? 'Does not match the original saved copy' : 'Comparison is not available'}</p>
+            <p><strong></strong> {sourceIntegrity.hash_scope}</p>
+            <p style={{ overflowWrap: 'anywhere' }}><strong></strong> {sourceIntegrity.stored_source_text_sha256 || 'Unavailable'}</p>
+            <p style={{ overflowWrap: 'anywhere' }}><strong></strong> {sourceIntegrity.recomputed_source_text_sha256 || 'Unavailable'}</p>
             <p><strong>Original uploaded file:</strong> {sourceIntegrity.original_binary_status.replaceAll('_', ' ')}
-              {sourceIntegrity.original_binary_available === false ? ' · binary source is inaccessible' : ''}
+              {sourceIntegrity.original_binary_available === false ? ' · original file cannot be opened' : ''}
             </p>
             {sourceIntegrity.original_binary_status === 'match' && (
-              <p>Original file bytes match the stored SHA-256 and byte length.</p>
+              <p>The original file matches the copy first saved.</p>
             )}
             {sourceIntegrity.original_binary_status === 'mismatch' && (
-              <p role="alert">Original file bytes do not match their stored fingerprint or byte length.</p>
+              <p role="alert">The original file differs from the copy first saved.</p>
             )}
-            <p><strong>Exact source-text duplicate candidates:</strong> {sourceIntegrity.exact_source_text_duplicate_candidate_ids.length
+            <p><strong>Other records with exactly the same wording:</strong> {sourceIntegrity.exact_source_text_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_source_text_duplicate_candidate_ids.length + ' possible match(es)'
-              : 'No exact fingerprint candidate found; semantic duplicates were not assessed.'}</p>
-            <p><strong>Exact binary duplicate candidates:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
+              : 'No exact wording match was found. Similar wording has not been checked.'}</p>
+            <p><strong>Other records with the same original file:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_binary_duplicate_candidate_ids.length + ' possible match(es)'
-              : 'No exact binary fingerprint candidate found.'}</p>
-            <p><strong>Near-duplicate comparison:</strong> {sourceIntegrity.near_duplicate_comparison_status.replaceAll('_', ' ')} · algorithm {sourceIntegrity.near_duplicate_algorithm_version}</p>
+              : 'No identical original file was found.'}</p>
+            <p><strong>Similar wording check:</strong> {sourceIntegrity.near_duplicate_comparison_status.replaceAll('_', ' ')} {sourceIntegrity.near_duplicate_algorithm_version}</p>
             {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
               <p key={group.evidence_ids.join(':') + index}>
-                Similarity candidate involving {group.evidence_ids.filter(id => id !== selectedId).length} other source record(s) · {group.interpretation}
+                Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {group.interpretation}
               </p>
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
-            <p><strong>Freshness:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>Completeness:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
-            <p><strong>External source reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'not checked; external locations are not fetched automatically' : 'not provided'}</p>
-            <p>Original file authenticity is not established by a stored hash. A matching hash proves byte consistency, not who created the source.</p>
+            <p><strong>How current it is:</strong> {sourceIntegrity.freshness_status.replaceAll('_', ' ')} · <strong>How complete it is:</strong> {sourceIntegrity.completeness_status.replaceAll('_', ' ')}</p>
+            <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'not checked; external locations are not fetched automatically' : 'not provided'}</p>
+            <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
-          {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>Integrity has not been verified.</p>}
-          <p style={{ overflowWrap: 'anywhere' }}>{selected.source_text_sha256 || 'Hash unavailable for this record'}</p>
-          <small>The SHA-256 check covers only the stored UTF-8 text. It does not authenticate the original author or prove the authenticity of an uploaded binary.</small>
+          {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
+          <p style={{ overflowWrap: 'anywhere' }}>{selected.source_text_sha256 || 'Comparison unavailable'}</p>
+          <small>The wording check only compares the saved text. It does not confirm who wrote the original or prove that an uploaded file is genuine.</small>
         </details>
       </>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9 }}>
-        <label style={{ fontSize: 12 }}>Review dimension
+        <label style={{ fontSize: 12 }}>What are you reviewing?
           <select style={field} value={reviewType} onChange={event => changeReviewType(event.target.value as ReviewType)}>
             {(Object.keys(labels) as ReviewType[]).map(key => <option key={key} value={key}>{labels[key]}</option>)}
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Outcome
-          <select style={field} value={outcome} onChange={event => setOutcome(event.target.value)}>
+        <label style={{ fontSize: 12 }}>Your review
+          <select style={field} value={outcome} onChange={event => setYour review(event.target.value)}>
             {outcomes[reviewType].map(value => <option key={value} value={value}>{value.replace(/_/g, ' ')}</option>)}
           </select>
         </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9, marginTop: 9 }}>
-        <label style={{ fontSize: 12 }}>Source attribution
+        <label style={{ fontSize: 12 }}>Who provided this information?
           <select style={field} value={sourceResult} onChange={event => setSourceResult(event.target.value)}>
             <option value="not_assessed">Not assessed</option><option value="present">Present</option><option value="incomplete">Incomplete</option><option value="unverified">Unverified</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Independent corroboration
+        <label style={{ fontSize: 12 }}>Was this reported separately?
           <select style={field} value={corroborationResult} onChange={event => setCorroborationResult(event.target.value)}>
-            <option value="not_assessed">Not assessed</option><option value="independent_source_linked">Independent source linked</option><option value="copied_or_same_origin">Copied / same origin</option><option value="none_linked">None linked</option>
+            <option value="not_assessed">Not assessed</option><option value="independent_source_linked">A separate report is linked</option><option value="copied_or_same_origin">Copied from the same original source</option><option value="none_linked">None linked</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Temporal context
+        <label style={{ fontSize: 12 }}>When did it happen?
           <select style={field} value={temporalResult} onChange={event => setTemporalResult(event.target.value)}>
             <option value="not_assessed">Not assessed</option><option value="specified">Specified</option><option value="partial">Partial</option><option value="missing">Missing</option><option value="conflicting">Conflicting</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Evidence freshness
+        <label style={{ fontSize: 12 }}>Does this information still apply?
           <select style={field} value={freshnessResult} onChange={event => setFreshnessResult(event.target.value)}>
             <option value="not_assessed">Not assessed</option><option value="current">Current</option><option value="stale">Stale</option><option value="historical">Historical</option><option value="undetermined">Undetermined</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Record completeness
+        <label style={{ fontSize: 12 }}>Is anything missing?
           <select style={field} value={completenessResult} onChange={event => setCompletenessResult(event.target.value)}>
             <option value="not_assessed">Not assessed</option><option value="complete">Complete</option><option value="partial">Partial</option><option value="missing">Missing</option><option value="undetermined">Undetermined</option>
           </select>
         </label>
       </div>
-      <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Review rationale
+      <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Why are you making this review?
         <textarea style={{ ...field, minHeight: 70 }} value={rationale} onChange={event => setRationale(event.target.value)} />
       </label>
-      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || loading || !selected}>{saving ? 'Saving…' : 'Save evidence review'}</button>
-      <button type="button" style={{ ...button, marginTop: 9, marginLeft: 8 }} onClick={() => void loadReviews()} disabled={loading}>{loading ? 'Loading…' : 'Refresh review history'}</button>
+      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || loading || !selected}>{saving ? 'Saving…' : 'Save review'}</button>
+      <button type="button" style={{ ...button, marginTop: 9, marginLeft: 8 }} onClick={() => void loadReviews()} disabled={loading}>{loading ? 'Loading…' : 'Refresh past reviews'}</button>
       {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{error}</p>}
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
-      <h4 style={{ fontSize: 13, marginBottom: 5 }}>Persisted review history</h4>
-      {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Review history is unavailable. An empty list cannot be inferred from a failed request.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No saved review records were returned.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
+      <h4 style={{ fontSize: 13, marginBottom: 5 }}>Past reviews</h4>
+      {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Past reviews could not be loaded. Try again; a failed load does not mean there are no reviews.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No past reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
         <strong>{labels[review.review_type] || review.review_type}: {review.outcome.replace(/_/g, ' ')}</strong>
-        <div>{new Date(review.created_at).toLocaleString()} · policy {review.policy_version}</div>
+        <div>{new Date(review.created_at).toLocaleString()} · review rule {review.policy_version}</div>
         <p>{review.rationale}</p>
         <ul>{review.criteria.map((criterion, index) => <li key={index}>{criterion.criterion}: {criterion.result.replace(/_/g, ' ')} — {criterion.rationale}</li>)}</ul>
-        <details><summary>Source attribution snapshot</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(review.source_attribution, null, 2)}</pre></details>
+        <details><summary>Who provided this information? snapshot</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 11 }}>{JSON.stringify(review.source_attribution, null, 2)}</pre></details>
       </article>)}
     </> : null}
   </section>
