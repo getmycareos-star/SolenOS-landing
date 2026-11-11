@@ -420,6 +420,19 @@ type EvidenceIntegrity = {
   interpretation_limit: string;
 };
 
+const DOCUMENT_ASSERTION_LABELS: Record<string, string> = {
+  document_medication_statement: "Medication information from document",
+  document_allergy_statement: "Allergy information from document",
+  document_diagnosis_statement: "Diagnosis information from document",
+  document_appointment_statement: "Appointment information from document",
+  document_care_event_statement: "Care event from document",
+  document_observation_statement: "Observation from document",
+}
+
+function displayCurrentCareTitle(item: CurrentCareItem): string {
+  return DOCUMENT_ASSERTION_LABELS[item.title || ""] || item.title || item.kind || "Care record item"
+}
+
 function displayDescription(value?: string | null): string {
   if (!value?.trim()) return "No description was recorded.";
   try {
@@ -1512,7 +1525,7 @@ export function LCRCurrentUnderstanding() {
                 {projection.items.map((item) => (
                   <li key={item.source_collection + ":" + item.id} className="lcr-current-fact">
                     <div className="lcr-entry-heading">
-                      <strong>{item.title || item.kind || "Care record item"}</strong>
+                      <strong>{displayCurrentCareTitle(item)}</strong>
                       <span>{item.epistemic_status === "caregiver_reported" ? "Caregiver-reported" : item.epistemic_status === "inferred" ? "Possible interpretation" : item.epistemic_status === "unknown" ? "Not yet known" : item.epistemic_status || "Status not recorded"}</span>
                     </div>
                     <p>{displayDescription(item.description)}</p>
