@@ -9,6 +9,26 @@ type Candidate = {
   source_quote: string;
   review_status: string;
   review_decision?: string;
+  page_number?: number | null;
+  field_type?: string;
+  event_date?: string | null;
+  recorded_date?: string | null;
+  confidence?: number | null;
+  warnings?: string[];
+  canonical_candidate?: {
+    candidate_id: string;
+    document_id: string;
+    page_number: number | null;
+    source_excerpt: string;
+    field_type: string;
+    extracted_value: string | null;
+    event_date: string | null;
+    recorded_date: string;
+    confidence: number | null;
+    review_status: string;
+    warnings: string[];
+    medication_details?: { strength: string | null; dosage_instructions: string | null } | null;
+  };
 };
 type ReviewEvent = {
   id: string;
@@ -213,6 +233,21 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             return <div key={key} style={{ display: "grid", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 14 }}>{candidate.subject}</strong><span aria-label={statusPresentation.label} style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.02em", padding: "4px 8px", borderRadius: 999, border: "1px solid " + statusPresentation.border, background: statusPresentation.background, color: statusPresentation.color }}>{statusPresentation.label}</span></div>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{candidate.observation}</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: "var(--text-secondary)" }}>
+                <span>Field: {candidate.field_type || "observation"}</span>
+                <span>Source page: {candidate.page_number ? candidate.page_number : "Unresolved"}</span>
+                <span>Event date: {candidate.event_date || "Not stated"}</span>
+                <span>Recorded: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Unavailable"}</span>
+              </div>
+              {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: 12 }}>
+                <strong>Medication details — kept separate</strong>
+                <span>Strength: {candidate.canonical_candidate.medication_details.strength || "Not stated"}</span>
+                <span>Dosage instructions: {candidate.canonical_candidate.medication_details.dosage_instructions || "Not stated"}</span>
+              </div>}
+              {!!candidate.warnings?.length && <div role="note" style={{ padding: 9, border: "1px solid #b99a62", borderRadius: 8, background: "var(--surface)", display: "grid", gap: 4 }}>
+                <strong style={{ fontSize: 12 }}>Needs clarification</strong>
+                {candidate.warnings.map((warning, warningIndex) => <p key={warningIndex} style={{ margin: 0, fontSize: 12 }}>{warning}</p>)}
+              </div>}
               <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>EXACT SOURCE QUOTATION</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</p></div>
               {pending && <>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected subject<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
