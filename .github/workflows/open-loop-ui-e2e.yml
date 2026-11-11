@@ -58,11 +58,11 @@ jobs:
       - name: Check out frontend
         uses: actions/checkout@v4
 
-      - name: Check out backend corroboration commit for real API integration
+      - name: Check out backend mainline for real API integration
         uses: actions/checkout@v4
         with:
           repository: getmycareos-star/SolenOS_backend
-          ref: refs/pull/392/head
+          ref: main
           path: backend-service
 
       - name: Set up Node.js
