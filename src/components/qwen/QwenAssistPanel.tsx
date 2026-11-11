@@ -12,7 +12,10 @@ export type QwenWorkflow =
   | "reminders_notifications" | "care_coordination" | "companion"
   | "caregiver_feedback" | "sharing_export" | "roles_access" | "account_recovery"
   | "settings_security" | "record_lifecycle" | "offline_sync" | "ai_reliability"
-  | "audit_review";
+  | "audit_review" | "care_transition" | "incident_follow_through"
+  | "emergency_readiness" | "care_coverage_gap" | "care_instruction_change_tracker"
+  | "critical_information_completeness" | "personal_preferences_distress_context"
+  | "caregiver_strain_support" | "document_validity_renewal";
 
 type QwenBackgroundJobResult = {
   job_id: string;
@@ -22,6 +25,11 @@ type QwenBackgroundJobResult = {
   error?: string | null;
   source_event_ids: string[];
   source_evidence_ids: string[];
+  source_document_analysis_ids: string[];
+  source_appointment_ids: string[];
+  source_handoff_ids: string[];
+  source_notification_ids: string[];
+  source_freshness_assessment_ids: string[];
   review_required: boolean;
   written_to_lcr: false;
   persistence: "read_only_assistance";
@@ -94,7 +102,14 @@ export default function QwenAssistPanel({
             status.persistence !== "read_only_assistance" ||
             status.review_required !== true ||
             typeof status.reply !== "string" ||
-            !status.reply.trim()
+            !status.reply.trim() ||
+            !Array.isArray(status.source_event_ids) ||
+            !Array.isArray(status.source_evidence_ids) ||
+            !Array.isArray(status.source_document_analysis_ids) ||
+            !Array.isArray(status.source_appointment_ids) ||
+            !Array.isArray(status.source_handoff_ids) ||
+            !Array.isArray(status.source_notification_ids) ||
+            !Array.isArray(status.source_freshness_assessment_ids)
           ) {
             throw new Error("The completed response failed safety checks.");
           }
@@ -167,10 +182,33 @@ export default function QwenAssistPanel({
           <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "10px" }}>
             Suggestion · Please review it. This does not change your care record.
           </p>
-          {(reply.source_event_ids.length > 0 || reply.source_evidence_ids.length > 0) && (
-            <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
-              Based on {reply.source_event_ids.length} saved care update(s) and {reply.source_evidence_ids.length} attached item(s).
-            </p>
+          {[
+            ...reply.source_event_ids.map((id, index) => ({ label: `Care update ${index + 1}`, id })),
+            ...reply.source_evidence_ids.map((id, index) => ({ label: `Attached item ${index + 1}`, id })),
+            ...reply.source_document_analysis_ids.map((id, index) => ({ label: `Document review ${index + 1}`, id })),
+            ...reply.source_appointment_ids.map((id, index) => ({ label: `Appointment ${index + 1}`, id })),
+            ...reply.source_handoff_ids.map((id, index) => ({ label: `Care handoff ${index + 1}`, id })),
+            ...reply.source_notification_ids.map((id, index) => ({ label: `Follow-up notice ${index + 1}`, id })),
+            ...reply.source_freshness_assessment_ids.map((id, index) => ({ label: `Evidence review ${index + 1}`, id })),
+          ].length > 0 && (
+            <div aria-label="Sources used for this suggestion" style={{ marginTop: "12px", borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
+              <p style={{ fontSize: "12px", fontWeight: 650, margin: "0 0 6px" }}>Information used</p>
+              <ul style={{ margin: 0, paddingLeft: "18px", display: "grid", gap: "4px" }}>
+                {[
+                  ...reply.source_event_ids.map((id, index) => ({ label: `Care update ${index + 1}`, id })),
+                  ...reply.source_evidence_ids.map((id, index) => ({ label: `Attached item ${index + 1}`, id })),
+                  ...reply.source_document_analysis_ids.map((id, index) => ({ label: `Document review ${index + 1}`, id })),
+                  ...reply.source_appointment_ids.map((id, index) => ({ label: `Appointment ${index + 1}`, id })),
+                  ...reply.source_handoff_ids.map((id, index) => ({ label: `Care handoff ${index + 1}`, id })),
+                  ...reply.source_notification_ids.map((id, index) => ({ label: `Follow-up notice ${index + 1}`, id })),
+                  ...reply.source_freshness_assessment_ids.map((id, index) => ({ label: `Evidence review ${index + 1}`, id })),
+                ].map((source) => (
+                  <li key={source.id} style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                    {source.label} · reference {source.id.slice(0, 8)}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       )}
