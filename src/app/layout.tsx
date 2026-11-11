@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./accessibility-overrides.css";
 import "./mobile-app.css";
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_PROMISE } from "@/lib/brand";
-import { GlobalDisplayPreferences } from "@/components/accessibility/GlobalDisplayPreferences";
-
-
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://solenosai.netlify.app"),
@@ -32,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="solenos-font-fallbacks">
-      <body>{children}<GlobalDisplayPreferences /></body>
+      <body>{children}</body>
     </html>
   );
 }
