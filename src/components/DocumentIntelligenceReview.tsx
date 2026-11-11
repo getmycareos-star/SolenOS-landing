@@ -13,6 +13,7 @@ type Candidate = {
   field_type?: string;
   event_date?: string | null;
   recorded_date?: string | null;
+  extracted_at?: string;
   confidence?: number | null;
   warnings?: string[];
   canonical_candidate?: {
@@ -23,7 +24,8 @@ type Candidate = {
     field_type: string;
     extracted_value: string | null;
     event_date: string | null;
-    recorded_date: string;
+    recorded_date: string | null;
+    extracted_at: string;
     confidence: number | null;
     review_status: string;
     warnings: string[];
@@ -258,7 +260,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <span>Field: {candidate.field_type || "observation"}</span>
                 <span>Source page: {candidate.page_number ? candidate.page_number : "Unresolved"}</span>
                 <span>Event date: {candidate.event_date || "Not stated"}</span>
-                <span>Recorded: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Unavailable"}</span>
+                <span>Source recorded: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Not stated in document"}</span>
+                {candidate.extracted_at && <span>Extracted: {new Date(candidate.extracted_at).toLocaleString()}</span>}
               </div>
               {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: 12 }}>
                 <strong>Medication details — kept separate</strong>
