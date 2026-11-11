@@ -764,6 +764,9 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
   color: #f1f5f1 !important;
   border-color: #526256 !important;
 }
+:root[data-solenos-theme="dark"] .companion-handoff-sharing [style*="border"] {
+  border-color: #526256 !important;
+}
 :root[data-solenos-theme="dark"] .companion-handoff-sharing :is(
   h1, h2, h3, h4, h5, p, span, strong, small, label, li, dt, dd
 ) {
