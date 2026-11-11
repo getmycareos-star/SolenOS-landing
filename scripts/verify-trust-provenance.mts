@@ -155,7 +155,7 @@ console.log("✓ UI panel");
 const lcrCurrentUnderstanding = path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 assert(fs.existsSync(lcrCurrentUnderstanding), "current-care understanding component exists");
 const lcrSource = fs.readFileSync(lcrCurrentUnderstanding, "utf8");
-assert(lcrSource.includes('import EvidenceReviewPanel from "@/components/EvidenceReviewPanel";'), "evidence review panel is connected to LCR");
+assert(lcrSource.includes('import("@/components/EvidenceReviewPanel")'), "evidence review panel is connected to LCR");
 assert(lcrSource.includes("<EvidenceReviewPanel personId={personId} />"), "evidence review panel is rendered in current-care understanding");
 console.log("✓ persisted evidence review is reachable from current-care understanding");
 
