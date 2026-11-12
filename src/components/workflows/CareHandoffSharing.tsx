@@ -114,6 +114,16 @@ function readableStatus(value: string): string {
   return value.replaceAll("_", " ").replace(/^./, character => character.toUpperCase());
 }
 
+function caregiverEvidenceLabel(value: string): string {
+  const status = value.trim().toLowerCase();
+  if (["confirmed", "verified", "clinically_verified", "source_verified"].includes(status)) return "Confirmed source record";
+  if (["reported", "caregiver_reported", "reported_by_caregiver", "caregiver_authored"].includes(status)) return "Reported";
+  if (["uncertain", "inferred", "unverified", "disputed", "conflicting", "rejected", "pending_review"].includes(status)) return "Uncertain or needs review";
+  if (["missing", "not_recorded", "not_assessed", "unavailable", "unknown", "not_available"].includes(status)) return "Missing or not recorded";
+  if (["needs_clarification", "clarification_required"].includes(status)) return "Needs clarification";
+  return "Status not classified";
+}
+
 function readableScope(value: string): string {
   if (value === "lcr_summary") return "Care record and Daily Care";
   if (value === "documents") return "Uploaded documents";
@@ -683,7 +693,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
               <strong style={{ fontSize: 12 }}>{item.section}</strong>
               <p style={{ fontSize: 13, lineHeight: 1.5, margin: "5px 0" }}>{item.text}</p>
-              <small style={{ color: "#667267" }}>Information: {readableStatus(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)}</small>
+              <small style={{ color: "#667267" }}>Information: {caregiverEvidenceLabel(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)}</small>
             </article>
           )) : draft.sections.map((group, groupIndex) => (
             <article key={group.title + groupIndex} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
