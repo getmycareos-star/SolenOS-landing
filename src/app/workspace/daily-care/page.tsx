@@ -44,6 +44,7 @@ type DailyCareDocumentStatus = {
   uploaded_at?: string | null;
   processing_status: string;
   page_count?: number | null;
+  processed_page_count?: number | null;
   processed_page_numbers?: number[];
   unprocessed_page_numbers?: number[];
   unreadable_page_numbers?: number[];
@@ -547,7 +548,7 @@ export default function DailyCarePage() {
                     <li key={item.evidence_id}>
                       <strong>{caregiverSafeAssistantText(item.document_name) || "Uploaded document"}</strong>
                       <p>{statusText[item.processing_status] || "Processing status is available in the document library."}</p>
-                      {typeof item.page_count === "number" && <span>{processed.length} of {item.page_count} pages processed</span>}
+                      {typeof item.page_count === "number" && <span>{typeof item.processed_page_count === "number" ? item.processed_page_count : processed.length} of {item.page_count} readable pages processed</span>}
                       {unreadable.length > 0 && <p>Page{unreadable.length === 1 ? "" : "s"} {unreadable.join(", ")} could not be read. SolenOS has not treated missing text as proof that those pages contain nothing important.</p>}
                       {unprocessed.length > 0 && <p>Page{unprocessed.length === 1 ? "" : "s"} {unprocessed.join(", ")} still need processing.</p>}
                       {item.medication_conflict && <p role="status">The document contains conflicting medication instructions. Confirm the current instruction with the prescribing professional or pharmacist before acting on it.</p>}
