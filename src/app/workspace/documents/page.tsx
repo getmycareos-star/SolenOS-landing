@@ -13,11 +13,12 @@ import {
   Search,
   ScanLine,
   ShieldCheck,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
 
-import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from "@/api/client";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
@@ -130,6 +131,9 @@ export default function DocumentsPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState(false);
+  const [versionPredecessorId, setVersionPredecessorId] = useState("");
+  const [linkingVersion, setLinkingVersion] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [documentIntelligenceRefresh, setDocumentIntelligenceRefresh] = useState(0);
 
@@ -378,6 +382,45 @@ export default function DocumentsPage() {
     link.remove();
   };
 
+  const linkSelectedVersion = async () => {
+    if (!selected || !versionPredecessorId || linkingVersion) return;
+    setLinkingVersion(true);
+    setPreviewError(null);
+    try {
+      const result = await postJSON("/upload/" + encodeURIComponent(versionPredecessorId) + "/versions", {
+        replacement_evidence_id: selected.id,
+      }) as { relationship?: string };
+      if (result.relationship !== "corrected_version_of") throw new Error("SolenOS did not confirm the document-version link.");
+      await loadDocuments(true);
+      setDocumentIntelligenceRefresh((value) => value + 1);
+      setUploadMessage({ kind: "success", text: "The corrected document is linked to its earlier version. Both originals remain preserved; existing care-record information has not been silently replaced." });
+      setVersionPredecessorId("");
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "SolenOS could not link these document versions.");
+    } finally {
+      setLinkingVersion(false);
+    }
+  };
+
+  const deleteSelectedDocument = async () => {
+    if (!selected || deletingDocument) return;
+    if (!window.confirm("Delete this document and its uncommitted extraction data? This cannot be undone.")) return;
+    setDeletingDocument(true);
+    setPreviewError(null);
+    try {
+      const result = await deleteJSON("/upload/" + encodeURIComponent(selected.id)) as { deleted?: boolean };
+      if (!result.deleted) throw new Error("SolenOS did not confirm document deletion.");
+      closePreview();
+      await loadDocuments(true);
+      setDocumentIntelligenceRefresh((value) => value + 1);
+      setUploadMessage({ kind: "success", text: "The document and its uncommitted extracted information were deleted. Information already used in the Living Care Record must be resolved before its source can be deleted." });
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "SolenOS could not delete this document. No deletion was confirmed.");
+    } finally {
+      setDeletingDocument(false);
+    }
+  };
+
   return (
     <div className="mobile-screen" style={{ gap: 18, paddingBottom: 28 }}>
       <header className="mobile-page-head" style={{ marginBottom: 0 }}>
@@ -532,10 +575,22 @@ export default function DocumentsPage() {
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button type="button" onClick={downloadOriginal} disabled={!previewUrl} aria-label="Download original document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><Download size={16} /> Download</button>
+              <button type="button" onClick={() => void deleteSelectedDocument()} disabled={deletingDocument} aria-label="Delete document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--danger, #a22)" }}>{deletingDocument ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />} Delete</button>
               <button type="button" onClick={closePreview} aria-label="Close document preview" style={{ width: 42, minHeight: 42, display: "grid", placeItems: "center", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><X size={19} /></button>
             </div>
           </header>
           <div style={{ padding: 14, overflow: "auto", minHeight: 180 }}>
+            {documents.some((doc) => doc.id !== selected.id) && <section aria-label="Corrected document version" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+              <strong style={{ fontSize: 14 }}>Is this a corrected copy of an earlier document?</strong>
+              <p style={{ margin: "5px 0 9px", color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.45 }}>Link it to the earlier file. Both originals stay available, and SolenOS will not change the care record automatically.</p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <select aria-label="Earlier document version" value={versionPredecessorId} onChange={(event) => setVersionPredecessorId(event.target.value)} style={{ minHeight: 40, flex: "1 1 220px", minWidth: 0, border: "1px solid var(--border)", borderRadius: 8, padding: "7px 9px", background: "var(--surface)", color: "var(--text)" }}>
+                  <option value="">Choose earlier document…</option>
+                  {documents.filter((doc) => doc.id !== selected.id).map((doc) => <option key={doc.id} value={doc.id}>{doc.title} · {formatDate(doc.uploadedAt)}</option>)}
+                </select>
+                <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>{linkingVersion ? "Linking…" : "Link versions"}</button>
+              </div>
+            </section>}
             {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Retrieving original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: 13, color: "var(--text-secondary)" }}>The original file was retrieved successfully. Download it to open it in a compatible app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: 15 }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 14, lineHeight: 1.6 }}>{caregiverSafeAssistantText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>Original file preview is not available yet.</p>}
           </div>
         </section>
