@@ -348,21 +348,24 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "error", text: invalid.size <= 0 ? `${invalid.name} is empty.` : `${invalid.name} is larger than 10 MiB. Choose a smaller file.` });
       return;
     }
-    setPreparingScan(true);
-    try {
-      const pages: ReviewPage[] = [];
-      for (const file of files) {
-        const isScannedImage = file.type.startsWith("image/");
-        const extracted = isScannedImage
-          ? { text: "", note: "Set page rotation/crop if needed, then apply the image adjustments before extracting text." }
-          : await extractText(file);
-        pages.push({ ingestionKey: crypto.randomUUID(), captureTimestamp: new Date().toISOString(), file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
-      }
-      setReviewPages((current) => [...current, ...pages]);
-      setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
-    } finally {
-      setPreparingScan(false);
-    }
+    const pages: ReviewPage[] = files.map((file) => {
+      const isScannedImage = file.type.startsWith("image/");
+      return {
+        ingestionKey: crypto.randomUUID(),
+        captureTimestamp: new Date().toISOString(),
+        file,
+        text: "",
+        note: "Original file is ready. SolenOS will extract and process it after the upload is saved.",
+        reviewed: false,
+        uncertain: false,
+        rotation: 0,
+        crop: { top: 0, right: 0, bottom: 0, left: 0 },
+        prepared: true,
+        previewUrl: isScannedImage ? URL.createObjectURL(file) : file.type === "application/pdf" ? URL.createObjectURL(file) : null,
+      };
+    });
+    setReviewPages((current) => [...current, ...pages]);
+    setUploadMessage({ kind: "success", text: `${files.length} original file(s) ready to save. Text extraction and document understanding will run after upload.` });
   };
 
   useEffect(() => {
@@ -457,17 +460,10 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "error", text: "The crop area is too small. Leave at least 20% of the page in each direction." });
       return;
     }
-    setPreparingScan(true);
     setUploadMessage(null);
-    try {
-      const processed = await createProcessedImage(page.file, page.rotation, page.crop);
-      const extracted = await extractText(processed);
-      setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: extracted.text, note: extracted.note, prepared: true, reviewed: false } : item));
-    } catch {
-      setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: "", note: "Image processing failed. The original scan is still available; retry or transcribe the text manually.", prepared: false, reviewed: false } : item));
-    } finally {
-      setPreparingScan(false);
-    }
+    setReviewPages((current) => current.map((item, i) => i === index
+      ? { ...item, prepared: true, reviewed: false, note: "Page adjustments saved. SolenOS will apply the saved crop and rotation during server-side extraction after upload." }
+      : item));
   };
 
   const combineImagePagesIntoPdf = async () => {
@@ -477,7 +473,7 @@ export default function DocumentsPage() {
       return;
     }
     if (imagePages.some((page) => !page.prepared || !page.reviewed)) {
-      setUploadMessage({ kind: "error", text: "Apply crop/straighten, extract text and review each image page before combining them." });
+      setUploadMessage({ kind: "error", text: "Save crop/straighten settings for each image page before combining them." });
       return;
     }
     setPreparingScan(true);
@@ -537,11 +533,11 @@ export default function DocumentsPage() {
         form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload");
         form.append("capture_timestamp", page.captureTimestamp);
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(scanPageNumber));
-        form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\n" + page.text.trim() : page.text.trim());
-        form.append("scan_review_status", page.reviewed ? "caregiver_reviewed" : "not_reviewed");
+        // The server extracts from the preserved original. Browser text is not authoritative.
+        form.append("scan_review_status", "not_reviewed");
         form.append("scan_rotation_degrees", String(page.rotation));
         form.append("scan_crop_json", JSON.stringify(page.crop));
-        form.append("scan_text_prepared", String(page.file.type.startsWith("image/") && page.prepared));
+        form.append("scan_text_prepared", "false");
         const stored = await postFormData("/upload", form) as {
           evidence_id?: string;
           persisted?: boolean;
@@ -561,7 +557,7 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Background extraction and document understanding are queued, running or already complete for ${backgroundProcessingQueued}; ${backgroundQueueUnavailable} file(s) need a manual retry from the review list. You can leave this page. Extracted statements remain review-only until you accept them into the Living Care Record.`,
+        text: `Saved ${saved} original file(s). Background extraction and document understanding are queued, running or already complete for ${backgroundProcessingQueued}; ${backgroundQueueUnavailable} file(s) need processing attention. You can leave this page. SolenOS will not add extracted statements to the Living Care Record without the required evidence review.`,
       });
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
@@ -632,15 +628,15 @@ export default function DocumentsPage() {
           </button>
         </div>
 
-        {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Extracting readable text…</p>}
-        {reviewPages.length > 0 && <section aria-label="Review extracted text before saving" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
+
+        {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
-          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save pages now or adjust and review the text first. You can review extracted statements later." : "Save the selected file now, or review and correct its extracted text first."} Original files are preserved.</p>
-          <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine reviewed image pages into one PDF</button>
-          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save your captured pages now. SolenOS will process them after upload." : "Save the original file now. SolenOS will process it after upload."} Original files are preserved.</p>
+          <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine image pages into one PDF</button>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You do not need to read or correct extracted text before saving. SolenOS preserves the original and processes it in the background. Unclear results remain marked as uncertain.</p>
           <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}><strong>About scanned text:</strong> The original page is preserved. Server OCR uses your saved crop and rotation settings when available. You can review statements later; no extracted statement becomes an LCR fact until you accept it.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
-            <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.text.trim() ? "Text extracted — review required" : "No readable text extracted"}</p>
+            <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · Original file · Server processing after upload</p>
             {page.file.type === "application/pdf" && page.previewUrl && <iframe title={page.file.name + " preview"} src={page.previewUrl} style={{ width: "100%", height: 320, border: "1px solid var(--border)", borderRadius: 8 }} />}
             {page.previewUrl && page.file.type.startsWith("image/") && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}>
               <div data-scan-crop-stage style={{ position: "relative", width: "fit-content", maxWidth: "100%", margin: "0 auto", touchAction: "none", transform: `rotate(${page.rotation}deg)`, transformOrigin: "center center" }}>
@@ -696,11 +692,10 @@ export default function DocumentsPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>
                 {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, reviewed: false, text: "", note: "Crop changed. Apply adjustments and re-extract text." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
               </div>
-              <button type="button" onClick={() => void prepareImagePage(index)} disabled={preparingScan || uploading} style={{ justifySelf: "start", minHeight: 42, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Apply crop / straighten and extract text</button>
+              <button type="button" onClick={() => void prepareImagePage(index)} disabled={preparingScan || uploading} style={{ justifySelf: "start", minHeight: 42, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Save crop / straighten settings</button>
             </div>}
             {page.note && <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{page.note}</p>}
-            <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 650 }}>Extracted text — review and correct before saving<textarea value={page.text} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: event.target.value } : item))} rows={4} maxLength={100000} placeholder="No readable text extracted. Type a transcription or save the original without text." style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: 8, padding: 10, background: "var(--surface)", color: "var(--text)", fontSize: 15, lineHeight: 1.6 }} /></label>
-            <div style={{ display: "grid", gap: 8, marginTop: 8 }}><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.uncertain} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, uncertain: event.target.checked } : item))} />Some extracted text is uncertain or could not be read reliably.</label><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.reviewed} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, reviewed: event.target.checked } : item))} />I reviewed this text against the original scan.</label><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
           </article>)}</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
         </section>}
