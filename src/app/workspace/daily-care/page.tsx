@@ -9,6 +9,7 @@ import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
+import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -17,6 +18,8 @@ const StructuredDailyCapture = dynamic(
     loading: () => <BrandLoading animate message="Opening daily care…" />,
   },
 );
+
+type CaptureMode = "something" | "medicine" | "measurement" | "photo" | "checkin" | "note";
 
 type CareItem = {
   id?: string;
@@ -45,6 +48,8 @@ export default function DailyCarePage() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
   const [historyItems, setHistoryItems] = useState<CareItem[]>([]);
   const [contextLoading, setContextLoading] = useState(true);
@@ -52,6 +57,8 @@ export default function DailyCarePage() {
 
   useEffect(() => {
     let active = true;
+    setContextLoading(true);
+    setContextError("");
     void ensureAnonymousSession()
       .then(async () => {
         const [careResult, historyResult] = await Promise.allSettled([
@@ -84,6 +91,12 @@ export default function DailyCarePage() {
     return () => {
       active = false;
     };
+  }, [refreshVersion]);
+
+  useEffect(() => {
+    const refresh = () => setRefreshVersion((value) => value + 1);
+    window.addEventListener("careRecordUpdated", refresh);
+    return () => window.removeEventListener("careRecordUpdated", refresh);
   }, []);
 
   return (
@@ -134,26 +147,66 @@ export default function DailyCarePage() {
             {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
           </section>
 
-          <section aria-labelledby="daily-care-checkin-title" className="daily-care-context-panel">
-            <h2 id="daily-care-checkin-title">Anything different today?</h2>
-            <p className="daily-care-muted">Share something, check in, or leave things as they are.</p>
-            <QuickDailyCheckIn />
-          </section>
-
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
-            <h2 id="daily-care-capture-title">Share something</h2>
-            <p className="daily-care-muted">An observation, medicine event, measurement, photograph or note. You can leave this empty.</p>
+            <h2 id="daily-care-capture-title">Anything different today?</h2>
+            <p className="daily-care-muted">Share something, check in, or leave things as they are. Nothing is required.</p>
             <Button
               variant="primary"
               aria-expanded={captureOpen}
-              onClick={() => setCaptureOpen((open) => !open)}
+              onClick={() => {
+                setCaptureOpen((open) => {
+                  if (open) setCaptureMode(null);
+                  return !open;
+                });
+              }}
             >
               {captureOpen ? "Close capture" : "Share something"}
             </Button>
             {captureOpen && (
               <div className="daily-care-capture-state">
-                <p className="daily-care-muted">Add only what you know. You do not need to complete every section.</p>
-                <StructuredDailyCapture />
+                {!captureMode ? (
+                  <div role="group" aria-label="Choose what you want to share" className="daily-care-capture-options">
+                    {([
+                      { value: "something", label: "Something happened", detail: "Share an observation in your own words." },
+                      { value: "medicine", label: "Medicine", detail: "Record what happened with a medicine." },
+                      { value: "measurement", label: "Measurement", detail: "Record a reading that was actually taken." },
+                      { value: "photo", label: "Photograph", detail: "Add a photo as care-record evidence." },
+                      { value: "checkin", label: "Quick check-in", detail: "Share one overall impression of today." },
+                      { value: "note", label: "Note", detail: "Save a short note without categorizing it." },
+                    ] as const).map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className="daily-care-capture-option"
+                        onClick={() => setCaptureMode(option.value)}
+                      >
+                        <strong>{option.label}</strong>
+                        <span>{option.detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="daily-care-capture-mode-heading">
+                      <strong>{({
+                        something: "Something happened",
+                        medicine: "Medicine",
+                        measurement: "Measurement",
+                        photo: "Photograph",
+                        checkin: "Quick check-in",
+                        note: "Note",
+                      } as const)[captureMode]}</strong>
+                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>Back to choices</Button>
+                    </div>
+                    {captureMode === "checkin" ? (
+                      <QuickDailyCheckIn />
+                    ) : captureMode === "photo" ? (
+                      <DailyCarePhotoCapture />
+                    ) : (
+                      <StructuredDailyCapture mode={captureMode} />
+                    )}
+                  </>
+                )}
               </div>
             )}
           </section>
@@ -254,6 +307,39 @@ export default function DailyCarePage() {
           flex-wrap: wrap;
         }
         .daily-care-capture-state { margin-top: 1rem; }
+        .daily-care-capture-options {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+          gap: .65rem;
+          margin-top: .9rem;
+        }
+        .daily-care-capture-option {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: .3rem;
+          min-height: 76px;
+          padding: .85rem 1rem;
+          border: 1px solid var(--theme-panel-border);
+          border-radius: 12px;
+          background: var(--theme-field-bg);
+          color: var(--theme-panel-fg);
+          text-align: left;
+          cursor: pointer;
+        }
+        .daily-care-capture-option span {
+          color: var(--theme-panel-muted);
+          font-size: .88rem;
+          line-height: 1.4;
+        }
+        .daily-care-capture-mode-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: .75rem;
+          margin-bottom: .9rem;
+        }
         .daily-care-page-head > div { min-width: 0; flex: 1 1 auto; }
         .daily-care-page-head h1 {
           font-size: clamp(1.65rem, 6vw, 2.25rem);
