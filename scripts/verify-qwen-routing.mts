@@ -137,9 +137,9 @@ requireText("src/app/workspace/documents/page.tsx", [
 ]);
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
-assert(documentPage.includes('postFormData("/upload"'), "Reviewed original uploads must persist through the backend.");
-assert(documentPage.includes("You can review extracted statements later."), "Caregivers must be able to save originals before reviewing extracted content.");
-assert(documentPage.includes("Extracted statements remain review-only until you accept them into the Living Care Record."), "Extracted statements must remain review-only until caregiver acceptance.");
+assert(documentPage.includes('postFormData("/upload"'), "Original uploads must persist through the backend.");
+assert(documentPage.includes("Original file is ready. SolenOS will extract and process it after the upload is saved."), "Caregivers must be able to save originals before reviewing extracted content.");
+assert(documentPage.includes("SolenOS will not add extracted statements to the Living Care Record without the required evidence review."), "Extracted statements must remain evidence-gated before entering the Living Care Record.");
 assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",
