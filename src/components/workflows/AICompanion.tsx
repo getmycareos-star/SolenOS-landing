@@ -214,6 +214,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [pendingCareUpdates, setPendingCareUpdates] = useState<CareUpdateProposal[]>([])
   const [pendingCareUpdatesError, setPendingCareUpdatesError] = useState<string | null>(null)
   const [pendingCareUpdatesRefreshing, setPendingCareUpdatesRefreshing] = useState(false)
+  const [careReviewReceipt, setCareReviewReceipt] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
   const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
@@ -504,6 +505,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         corrected_text: decision === 'correct' ? correctedText : undefined,
         correction_context: decision === 'correct' ? (candidateCorrectionContexts[proposal.id] ?? '').trim() || undefined : undefined,
       }) as any
+      if (decision === 'accept') {
+        const reconciliation = result?.care_continuity_execution?.stages?.reconciliation
+        setCareReviewReceipt(
+          reconciliation === 'committed'
+            ? 'The accepted update and its care-record reassessment were saved.'
+            : 'The update was reviewed, but the care-record reassessment could not be confirmed. Refresh the care record before relying on it.',
+        )
+      }
       setPendingCareUpdates(previous => previous.flatMap(item => {
         if (item.id !== proposal.id) return [item]
         return result?.corrected_proposal ? [result.corrected_proposal as CareUpdateProposal] : []
@@ -782,6 +791,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       <div className="companion-workspace">
         <main className="companion-conversation" aria-label="Conversation">
               {pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
+              {careReviewReceipt && <p role="status" className="companion-care-update-source">{careReviewReceipt}</p>}
               {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
                 <div className="companion-pending-care-heading">
                   <h3>Care updates awaiting your review</h3>
