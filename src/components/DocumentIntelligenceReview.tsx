@@ -56,6 +56,16 @@ type Analysis = {
   processed_page_numbers?: number[];
   unprocessed_page_numbers?: number[];
   unreadable_page_numbers?: number[];
+  ocr_quality_by_page?: Array<{
+    page_number: number;
+    mean_token_confidence: number | null;
+    low_confidence_token_count: number;
+    token_count: number;
+    method: string;
+    is_probability: false;
+    handwriting_warning: string;
+  }>;
+  extraction_status?: string;
   open_questions?: string[];
   review_required: boolean;
   extractedText?: string;
@@ -245,6 +255,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 : analysis.intelligence_status === "available" ? "Document understanding completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "Document understanding is processing in the background" : "Document understanding not yet completed"}
               {analysis.unprocessed_page_numbers?.length ? ` · not processed: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
+            {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
+              OCR engine confidence (0–100 heuristic, not a probability): {analysis.ocr_quality_by_page.map((page) => `Page ${page.page_number}: ${page.mean_token_confidence === null ? "unavailable" : page.mean_token_confidence + "/100"}; ${page.low_confidence_token_count} low-confidence word(s) of ${page.token_count}`).join(" · ")}. Handwriting may still be misread, even when engine confidence is high.
+            </p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
             </div>}
