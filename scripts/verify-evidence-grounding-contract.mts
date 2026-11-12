@@ -147,7 +147,7 @@ const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/compone
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
 assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
 assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
-assert(clarificationPanel.includes("Who may know the answer?") && clarificationPanel.includes("No saved source linked yet"), "caregivers must see plain-language question context without internal record identifiers");
+assert(clarificationPanel.includes("Who may know:") && clarificationPanel.includes("No saved source linked yet"), "caregivers must see plain-language question context without internal record identifiers");
 assert(clarificationPanel.includes("evidenceSummary(item)") && !clarificationPanel.includes("source_text.slice"), "saved source details must be shown as plain text, never raw JSON");
 assert(clarificationPanel.includes("questionHasLinkedSource(item)") && clarificationPanel.includes("source_record_refs"), "clarification source labels must recognize linked claims and persisted source records, not only attachments");
 assert(clarificationPanel.includes('window.addEventListener("careRecordUpdated"'), "clarification questions must refresh after a saved care update");
