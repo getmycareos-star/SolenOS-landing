@@ -12,34 +12,35 @@ assert.match(handoffPage, /Care Handoffs/,
   "the handoff route must have its own visible page heading");
 assert.match(handoffPage, /onResumeDraft=\{resumeDraft\}/,
   "caregivers must be able to resume a persisted draft from the Handoffs workspace");
-assert.match(handoffPage, /href="\/workspace\/companion"/,
-  "caregivers must retain a route to prepare a new handoff through Companion");
-assert.doesNotMatch(handoffPage, /redirect\(/,
-  "the Handoffs route must not redirect into Companion");
-for (const label of ["Create care handoff", "Family caregiver", "Professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
-  assert.ok(companionPage.includes(label), `AI Companion must expose ${label}`);
-}
-assert.ok(companionPage.includes("<AppointmentWorkspace />"), "appointments must retain their separate workflow");
-assert.ok(companionPage.includes("handoffPurpose === 'appointment'"), "doctor appointment must be a supported handoff purpose");
-assert.match(companionPage, /handoffPurpose === 'appointment' \? 'professional_appointment'/, "doctor appointment must map to the backend-supported purpose");
-assert.match(companionPage, /handoffAudience === 'professional' && \(/, "doctor appointment must only be offered for professional handoffs");
-assert.match(companionPage, /Professional handoffs can be prepared for your private review only/, "professional sharing limitation must be disclosed before draft preparation");
-assert.match(companionPage, /savedDraft\.purpose === "professional_appointment" \? "appointment"/, "resumed appointment drafts must restore their original purpose");
+assert.doesNotMatch(handoffPage, /href="\\/workspace\\/companion"/,
+  "handoff preparation must not be routed through AI Companion");
+assert.doesNotMatch(handoffPage, /redirect\\(/,
+  "the Handoffs route must not redirect away from its dedicated workspace");
 
-assert.match(companionPage, /postJSON\('\/handoff-drafts\/prepare'/,
-  "handoff preparation must be performed by the backend");
-assert.match(companionPage, /X-Request-ID/,
-  "draft preparation must use a stable idempotency key across retries");
-assert.match(companionPage, /generation_status/,
-  "Companion must expose actual Qwen generation status");
-assert.match(companionPage, /validation_status/,
-  "Companion must expose backend grounding validation status");
-assert.match(companionPage, /source_references/,
+assert.match(companionPage, /postJSON\\('\\/conversation\\/message'/,
+  "AI Companion must remain a conversation interface");
+assert.doesNotMatch(companionPage, /handoff-drafts|Create care handoff|AppointmentWorkspace|ScanDocumentCapture|SnapCameraCapture/,
+  "AI Companion must not own handoff, appointment, or document-intake workflows");
+
+for (const label of ["Prepare a care handoff", "Family caregiver", "Healthcare professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
+  assert.ok(sharingComponent.includes(label), `Care Handoffs must expose ${label}`);
+}
+assert.match(sharingComponent, /postJSON\\("\\/handoff-drafts\\/prepare"/,
+  "handoff preparation must be performed by the backend from the dedicated workspace");
+assert.match(sharingComponent, /X-Request-ID/,
+  "draft preparation must reuse a stable request ID across retries");
+assert.match(sharingComponent, /generation_status/,
+  "the persisted draft response must retain actual generation status");
+assert.match(sharingComponent, /validation_status/,
+  "the persisted draft response must retain backend grounding validation status");
+assert.match(sharingComponent, /source_references/,
   "draft review must expose backend source references");
-assert.match(companionPage, /Information coverage and gaps/,
+assert.match(sharingComponent, /Information included and availability/,
   "draft review must expose source availability and missing information");
-assert.match(companionPage, /onResumeDraft/,
+assert.match(sharingComponent, /onResumeDraft/,
   "caregivers must be able to resume persisted drafts");
+assert.match(handoffPage, /savedDraft\.purpose === "professional_appointment" \? "professional" : "family"/,
+  "resumed appointment drafts must restore their original audience");
 
 assert.match(sharingComponent, /getJSON\("\/handoff-drafts\?limit=10"\)/,
   "caregiver-owned persisted drafts must be discoverable");
