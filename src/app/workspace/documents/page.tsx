@@ -48,6 +48,8 @@ type UploadMessage = { kind: "success" | "error"; text: string } | null;
 type CropInsets = { top: number; right: number; bottom: number; left: number };
 type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
+type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
+
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
   if (value && typeof value === "object") return value;
