@@ -30,6 +30,8 @@ assert(!captureFunction.includes("/extract"), "caregiver capture must not wait f
 assert(!captureFunction.includes("/intelligence"), "caregiver capture must not wait for synchronous Qwen interpretation");
 assert.match(attachmentSource, /durably queues document extraction and understanding/, "the upload contract must hand off processing to the durable worker");
 assert.match(addRecordSource, /Saved — processing in background/, "saved documents must show truthful background-processing state");
+assert.match(addRecordSource, /Original saved — processing not started/, "a saved original must not be described as processing when the queue failed");
+assert.match(addRecordSource, /doc\.status === "saved" && !!doc\.errorNote/, "a saved original with a queue failure must offer a processing-only retry");
 
 assert.match(attachmentSource, /document\.entryMethod === "snap" && document\.evidenceId[\s\S]*?status: "saved"/, "retry must not send a saved care photo through document OCR");
 assert.match(addRecordSource, /Photo saved — not interpreted/, "caregivers must see that a Snap photo is saved but not interpreted");
