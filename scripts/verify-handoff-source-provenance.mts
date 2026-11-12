@@ -12,12 +12,12 @@ assert.match(handoffPage, /Care Handoffs/,
   "the handoff route must have its own visible page heading");
 assert.match(handoffPage, /onResumeDraft=\{resumeDraft\}/,
   "caregivers must be able to resume a persisted draft from the Handoffs workspace");
-assert.doesNotMatch(handoffPage, /href="\\/workspace\\/companion"/,
+assert.doesNotMatch(handoffPage, /href="\/workspace\/companion"/,
   "handoff preparation must not be routed through AI Companion");
-assert.doesNotMatch(handoffPage, /redirect\\(/,
+assert.doesNotMatch(handoffPage, /redirect\(/,
   "the Handoffs route must not redirect away from its dedicated workspace");
 
-assert.match(companionPage, /postJSON\\('\\/conversation\\/message'/,
+assert.match(companionPage, /postJSON\('\/conversation\/message'/,
   "AI Companion must remain a conversation interface");
 assert.doesNotMatch(companionPage, /handoff-drafts|Create care handoff|AppointmentWorkspace|ScanDocumentCapture|SnapCameraCapture/,
   "AI Companion must not own handoff, appointment, or document-intake workflows");
@@ -25,7 +25,7 @@ assert.doesNotMatch(companionPage, /handoff-drafts|Create care handoff|Appointme
 for (const label of ["Prepare a care handoff", "Family caregiver", "Healthcare professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
   assert.ok(sharingComponent.includes(label), `Care Handoffs must expose ${label}`);
 }
-assert.match(sharingComponent, /postJSON\\("\\/handoff-drafts\\/prepare"/,
+assert.match(sharingComponent, /postJSON\("\/handoff-drafts\/prepare"/,
   "handoff preparation must be performed by the backend from the dedicated workspace");
 assert.match(sharingComponent, /X-Request-ID/,
   "draft preparation must reuse a stable request ID across retries");
