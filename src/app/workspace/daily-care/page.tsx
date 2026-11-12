@@ -23,6 +23,7 @@ type CaptureMode = "something" | "medicine" | "measurement" | "photo" | "checkin
 
 type CareItem = {
   id?: string;
+  source_id?: string;
   title?: string;
   description?: string | null;
   text?: string | null;
@@ -42,6 +43,10 @@ type CareItem = {
   created_by_caregiver_id?: string | null;
   created_at?: string | null;
 };
+
+function historyRecordId(item: CareItem): string {
+  return item.id || item.source_id || "";
+}
 
 function displayCareTime(value?: string | null): string {
   if (!value) return "Time not recorded";
@@ -388,13 +393,23 @@ export default function DailyCarePage() {
                     ["handoffs", "Care handoffs"],
                     ["updates", "Other care updates"],
                   ] as const).filter(([key]) => sinceLastOpenItems.some((item) => classifyHistoryRecord(item) === key))
-                    .map(([key, label]) => (
-                      <li key={key}>
-                        {sinceLastOpenItems.filter((item) => classifyHistoryRecord(item) === key).length} {label.toLowerCase()}
-                      </li>
-                    ))}
+                    .map(([key, label]) => {
+                      const matching = sinceLastOpenItems.filter((item) => classifyHistoryRecord(item) === key);
+                      const targetId = historyRecordId(matching[0]);
+                      return (
+                        <li key={key}>
+                          {targetId ? (
+                            <a href={`#daily-care-event-${targetId}`}>
+                              {matching.length} {label.toLowerCase()}
+                            </a>
+                          ) : (
+                            <>{matching.length} {label.toLowerCase()}</>
+                          )}
+                        </li>
+                      );
+                    })}
                 </ul>
-                <p className="daily-care-muted">Each count links to an actual saved record in Recent care history below.</p>
+                <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
               </>
             ) : (
               <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
@@ -478,8 +493,14 @@ export default function DailyCarePage() {
             </div>
             {historyItems.length > 0 ? (
               <ul className="daily-care-record-list">
-                {historyItems.slice(0, 8).map((item, index) => (
-                  <li key={item.id || `history-item-${index}`}>
+                {[...new Map(
+                  [...historyItems.slice(0, 8), ...(sinceLastOpenItems || [])]
+                    .map((item, index) => [historyRecordId(item) || `history-item-${index}`, item] as const)
+                ).values()].map((item, index) => (
+                  <li
+                    id={historyRecordId(item) ? `daily-care-event-${historyRecordId(item)}` : undefined}
+                    key={historyRecordId(item) || `history-item-${index}`}
+                  >
                     <strong>{item.title || item.event_type || item.source_type || "Care record entry"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
