@@ -61,3 +61,10 @@ A component, model, endpoint, static contract, or passing unit test does not pro
 10. Persistence is proven across process/session boundaries; mocked extraction or in-memory SQLite alone is insufficient.
 
 Until this journey passes, the architecture is implemented in parts but not verified end to end.
+
+
+## Existing backend verification assets
+
+The backend already contains a PostgreSQL-backed HTTP journey in [postgres_anonymous_e2e.py](https://github.com/getmycareos-star/SolenOS_backend/blob/main/backend/scripts/postgres_anonymous_e2e.py). The [Backend tests workflow](https://github.com/getmycareos-star/SolenOS_backend/blob/main/.github/workflows/backend-tests.yml) runs it against a disposable PostgreSQL service. It covers Daily Care source/event persistence, review correction, explicit acceptance/rejection, LCR retrieval, session refresh, cross-person isolation, and other continuity workflows.
+
+The same journey seeds persisted extraction candidates directly rather than depending on a live model call. That is appropriate for deterministic verification of persistence and review/promotion boundaries, but it does **not** prove extraction quality. Live model extraction must remain a separate test gate. The PostgreSQL test run must report success before the complete architecture is marked verified.
