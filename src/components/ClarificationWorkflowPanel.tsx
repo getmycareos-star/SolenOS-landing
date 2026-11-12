@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
-import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 
 type Claim = {
   id: string;
