@@ -153,6 +153,8 @@ assert.match(dailyCarePage, /daily-care-event-/,
   "summary categories link to their underlying saved timeline entries");
 assert.match(dailyCarePage, /historyRecordId/,
   "history links use the actual persisted source ID");
+assert.match(dailyCarePage, /function careEventTimestamp[\\s\\S]*?return item\\.occurred_at \\|\\| item\\.observed_at \\|\\| item\\.recorded_at/,
+  "Daily Care groups and orders late-arriving reports by event/observation time before falling back to submission time");
 assert.match(dailyCarePage, /displayHistoryTime/,
   "history distinguishes event time from recording time");
 assert.match(dailyCarePage, /displayHistorySource/,
