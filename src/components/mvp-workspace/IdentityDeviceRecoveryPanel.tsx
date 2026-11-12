@@ -134,10 +134,10 @@ export function IdentityDeviceRecoveryPanel() {
   return (
     <section className="mobile-settings-card" aria-labelledby="identity-security-title">
       <h2 id="identity-security-title" className="mobile-settings-card-title">
-        <ShieldCheck size={16} aria-hidden /> Identity &amp; device security
+        <ShieldCheck size={16} aria-hidden /> Devices and account access
       </h2>
       <p className="mobile-settings-hint">
-        Anonymous care access remains available. Device registration helps you recognize a browser, but a device alone can never prove identity or restore account access.
+        You can use your care record without creating an account. Registering a device helps you recognize it later, but this device alone cannot prove who you are or restore account access.
       </p>
       {loading && <p className="mobile-settings-hint" role="status">Loading registered devices…</p>}
       {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
@@ -147,12 +147,12 @@ export function IdentityDeviceRecoveryPanel() {
           <span>
             <span className="mobile-settings-label"><MonitorSmartphone size={14} aria-hidden /> {device.label}</span>
             <span className="mobile-settings-hint">
-              {device.platform || "Platform not reported"} · {device.trust_status === "unverified" ? "Registered, not verified" : device.trust_status}
+              {device.trust_status === "verified" ? "Verified for this account" : device.trust_status === "unverified" ? "Not yet verified" : "Status not available"}
             </span>
-            <span className="mobile-settings-hint">Device-only recovery: not allowed</span>
+            <span className="mobile-settings-hint">This device cannot restore account access by itself.</span>
           </span>
           <Button variant="destructive" disabled={revokingId !== null} loading={revokingId === device.id} onClick={() => void revokeDevice(device)}>
-            {revokingId === device.id ? undefined : <><Trash2 size={14} aria-hidden /> Revoke</>}
+            {revokingId === device.id ? undefined : <><Trash2 size={14} aria-hidden /> Remove device access</>}
           </Button>
         </div>
       ))}
