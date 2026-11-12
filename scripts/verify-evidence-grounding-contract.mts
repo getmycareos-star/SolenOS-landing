@@ -62,6 +62,9 @@ assert(claimPanel.includes("superseded_by_claim_id"), "superseded claims must re
 assert(claimPanel.includes("This does not mean there are no past reviews"), "failed history reads must not be presented as empty history");
 console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
 assert(claimPanel.includes("/assessment-impact"), "claim assessment panel must retrieve persisted evidence-change/reassessment impact");
+assert(claimPanel.includes("changed_observation_ids"), "claim assessment panel must consume source-correction impact");
+assert(claimPanel.includes("A source detail was added or corrected after this review"), "claim assessment panel must explain source correction impact in plain English");
+assert(claimPanel.includes("Related care details that need another review"), "claim assessment panel must explain downstream dependency reassessment");
 assert(claimPanel.includes("New information could not be checked"), "failed assessment-impact reads must not imply that the assessment is current");
 assert(claimPanel.includes("No reason to repeat this review was found"), "assessment-impact UI must state the bounded nature of a no-trigger result");
 assert(claimPanel.includes("does not prove that the information is true or complete"), "assessment-impact UI must disclose that deterministic triggers do not establish truth or completeness");
@@ -89,6 +92,9 @@ assert(companion.includes("source_independence_status === 'shared_origin'"), "Co
 assert(companion.includes("exact_wording_duplicate_count"), "Companion must disclose repeated wording without counting it as separate corroboration");
 assert(companion.includes("matched_historical_only"), "Corrected or replaced source wording must remain visible as history, not current support");
 assert(companion.includes("correction_rationale"), "Corrected source details must retain the reason for the correction");
+assert(companion.includes("matched_validated_aggregate"), "Companion must display deterministically validated incident counts");
+assert(companion.includes("aggregate_count_mismatch") && companion.includes("aggregate_not_validated"), "Companion must distinguish a wrong count from an unconfirmed count");
+assert(companion.includes("observations?.map"), "Companion must show structured observations linked to supporting notes");
 assert(companion.includes("When it happened") && companion.includes("When it was added"), "Claim sources must show occurrence and recording times");
 assert(!companion.includes("Inspect source record references"), "caregivers must not be shown a generic list of unrelated source IDs");
 assert(companion.includes("scope_truncated"), "Companion must disclose bounded or truncated lineage retrieval");
