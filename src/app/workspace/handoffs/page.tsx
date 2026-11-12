@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { CareHandoffSharing } from "@/components/workflows/CareHandoffSharing";
 
@@ -38,11 +37,9 @@ export default function HandoffsPage() {
         <div>
           <p className="workspace-handoffs-eyebrow">CARE COORDINATION</p>
           <h1 id="care-handoffs-title">Care Handoffs</h1>
-          <p>Review saved handoff drafts and manage incoming or outgoing care summaries for this record.</p>
+          <p>Prepare and review care handoffs, and manage incoming or outgoing care summaries for this record.</p>
         </div>
-        <Link href="/workspace/companion" className="workspace-primary workspace-handoffs-create">
-          Prepare in AI Companion
-        </Link>
+
       </header>
 
       <aside className="workspace-handoffs-boundary" role="note">
