@@ -184,7 +184,63 @@ function parseDescription(description?: string | null): string {
     const parsed: unknown = JSON.parse(description);
     if (typeof parsed === "string") return parsed;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return Object.entries(parsed as Record<string, unknown>)
+      const root = parsed as Record<string, unknown>;
+      const capture = (root.original_capture && typeof root.original_capture === "object" && !Array.isArray(root.original_capture)
+        ? root.original_capture
+        : root) as Record<string, unknown>;
+      const readable: string[] = [];
+      const quick = capture.quick_check_in && typeof capture.quick_check_in === "object"
+        ? capture.quick_check_in as Record<string, unknown>
+        : null;
+      if (quick && typeof quick.kind === "string") {
+        const labels: Record<string, string> = {
+          same_as_usual: "About the same as usual",
+          change: "Some things were different",
+          uncertain: "It was hard to tell",
+        };
+        readable.push(labels[quick.kind] || "Quick check-in recorded");
+      }
+      const note = typeof quick?.note === "string" && quick.note.trim()
+        ? quick.note.trim()
+        : typeof capture.notes === "string" && capture.notes.trim()
+          ? capture.notes.trim()
+          : typeof capture.original_notes === "string" && capture.original_notes.trim()
+            ? capture.original_notes.trim()
+            : "";
+      if (note) readable.push(note);
+
+      if (Array.isArray(capture.medications)) {
+        for (const item of capture.medications) {
+          if (!item || typeof item !== "object") continue;
+          const medicine = item as Record<string, unknown>;
+          const name = typeof medicine.medication_name === "string" ? medicine.medication_name : "Medicine";
+          const status = typeof medicine.status === "string" ? medicine.status : "status not recorded";
+          const labels: Record<string, string> = {
+            given: "reported given",
+            not_given: "reported not given",
+            uncertain: "administration uncertain",
+            other: "other medicine event",
+          };
+          const time = typeof medicine.administered_at === "string"
+            ? ` at ${formatDateTime(medicine.administered_at)}`
+            : "";
+          readable.push(`${name}: ${labels[status] || status.replace(/_/g, " ")}${time}`);
+        }
+      }
+      if (Array.isArray(capture.vitals)) {
+        for (const item of capture.vitals) {
+          if (!item || typeof item !== "object") continue;
+          const reading = item as Record<string, unknown>;
+          const label = typeof reading.measurement_name === "string" && reading.measurement_name.trim()
+            ? reading.measurement_name
+            : typeof reading.vital_type === "string" ? reading.vital_type.replace(/_/g, " ") : "Measurement";
+          if (typeof reading.value === "number" || typeof reading.value === "string") {
+            readable.push(`${label}: ${reading.value}${typeof reading.unit === "string" && reading.unit ? ` ${reading.unit}` : ""}`);
+          }
+        }
+      }
+      if (readable.length) return readable.join("\n");
+      return Object.entries(root)
         .filter(([, value]) => value !== null && value !== undefined && value !== "")
         .map(([key, value]) => `${key.replaceAll("_", " ")}: ${typeof value === "string" ? value : JSON.stringify(value)}`)
         .join("\n");
