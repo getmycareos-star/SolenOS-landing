@@ -16,7 +16,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
   form.append("caregiver_id", session.caregiver.id);
   // Snap captures a care photo, not a scanned document. The backend document\n  // extraction endpoint intentionally accepts only evidence_type=document.\n  form.append("evidence_type", entryMethod === "snap" ? "care_photo" : "document");
   form.append("capture_method", entryMethod);
-  form.append("capture_timestamp", new Date().toISOString());
+  form.append("capture_timestamp", new Date(file.lastModified || Date.now()).toISOString());
   const scanPageNumber = entryMethod === "scan" ? /scan_page_(\d+)/i.exec(file.name)?.[1] : undefined;
   if (scanPageNumber) form.append("capture_page_number", scanPageNumber);
   // The server must extract from the immutable uploaded bytes. Client OCR/text is
