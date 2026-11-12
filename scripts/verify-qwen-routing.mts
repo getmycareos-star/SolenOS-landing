@@ -113,7 +113,7 @@ assert.equal((companion.match(/aria-label="Send a message to Companion"/g) ?? []
 assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1, "Companion must render exactly one message textarea.");
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
-  'placeholder="What’s happening today? A few words are enough…"',
+  'placeholder="Ask about the care history, a recent change, or something you’re unsure about…"',
   "aria-label=\"Send a message to Companion\"",
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
@@ -121,8 +121,12 @@ assert(!companion.includes("connected backend"), "Technical service details must
 
 const documentPage = read("src/app/workspace/documents/page.tsx");
 assert(!documentPage.includes("QwenAssistPanel"), "The saved-document library must not mount a separate AI workflow panel.");
-assert(!documentPage.includes('capture="environment"'), "Camera intake is launched from Companion, not the saved-document library.");
-assert(!documentPage.includes('type="file"'), "The saved-document library must not expose a second upload launcher.");
+assert(documentPage.includes('capture="environment"'), "Snap a photo must open the device camera from Documents.");
+assert(documentPage.includes('type="file"'), "Documents must own the upload and snap file inputs.");
+assert(documentPage.includes("Scan pages"), "Documents must expose multi-page scan capture.");
+assert(documentPage.includes("navigator.mediaDevices?.getUserMedia"), "Multi-page scan must use the camera directly in Documents.");
+assert(!companion.includes("companion-add-menu") && !companion.includes("setPendingDocumentIntake"),
+  "AI Companion must not own document upload, camera capture or scanning.");
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Reviewed original uploads must persist through the backend.");
