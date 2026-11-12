@@ -158,10 +158,10 @@ function formatDay(value?: string | null): string {
 }
 
 function eventCategory(event: CareEvent): string {
-  const value = `${event.event_type} ${event.title} ${(event.tags ?? []).join(" ")}`.toLowerCase();
+  const value = `${event.event_type} ${event.source_type ?? ""} ${event.title} ${(event.tags ?? []).join(" ")}`.toLowerCase();
   if (/decision|decided|choice/.test(value)) return "Decision";
   if (/document|upload|file|discharge|letter|report/.test(value)) return "Document";
-  if (/follow.?up|open.?loop|pending|unresolved|question|appointment/.test(value) || event.follow_up_candidate) return "Follow-up";
+  if (/follow.?up|open.?loop|pending|unresolved|question|appointment|conflict|uncertaint|missing.?information|information.?gap|reconciliation/.test(value) || event.follow_up_candidate || event.attention_candidate) return "Follow-up";
   if (/observation|daily.?care|daily.?capture|symptom|behavio[u]?r/.test(value)) return "Observation";
   if (/correction|amend|supersed/.test(value)) return "Correction";
   if (/handoff|hand.?over|transfer/.test(value)) return "Handoff";
