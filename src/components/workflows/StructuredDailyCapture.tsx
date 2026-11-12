@@ -570,6 +570,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         person_id: personId,
         caregiver_id: caregiverId,
         capture_idempotency_key: captureIdempotencyKey,
+        capture_kind: mode,
         medications: medications.map(med => ({
           ...med,
           scheduled_for: med.scheduled_for ? new Date(med.scheduled_for).toISOString() : null,
@@ -767,12 +768,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             fontSize: '12px', 
             padding: '2px 6px', 
             borderRadius: '4px', 
-            backgroundColor: med.status === 'given' ? 'var(--success-soft)' : 
-                         med.status === 'refused' ? 'var(--error-soft)' : 
-                         med.status === 'missed' ? 'var(--warning-soft)' : 'var(--bg)', 
-            color: med.status === 'given' ? 'var(--success)' : 
-                   med.status === 'refused' ? 'var(--error)' : 
-                   med.status === 'missed' ? 'var(--warning)' : 'var(--text-secondary)' 
+            backgroundColor: med.status === 'given' ? 'var(--success-soft)' :
+                         ['not_given', 'refused', 'missed', 'uncertain'].includes(med.status) ? 'var(--warning-soft)' : 'var(--bg)',
+            color: med.status === 'given' ? 'var(--success)' :
+                   ['not_given', 'refused', 'missed', 'uncertain'].includes(med.status) ? 'var(--warning)' : 'var(--text-secondary)' 
           }}>
             {med.status.charAt(0).toUpperCase() + med.status.slice(1)}
           </span>
