@@ -148,9 +148,9 @@ assert.ok(naturalDailyUpdate.includes('postJSON("/daily-care/entries"'), "natura
 assert.ok(naturalDailyUpdate.includes("notes: report"), "the exact caregiver wording must be submitted as the source report");
 assert.ok(naturalDailyUpdate.includes("response?.success !== true"), "the UI must require a backend save receipt before showing success");
 assert.ok(naturalDailyUpdate.includes("no extracted details have been treated as confirmed"), "failed extraction must be exposed without implying interpretation succeeded");
-assert.ok(naturalDailyUpdate.includes("Your report suggests Mum’s medication may have changed"), "possible medication changes must be surfaced as unconfirmed");
+assert.ok(naturalDailyUpdate.includes("Your report suggests a medication may have changed"), "possible medication changes must be surfaced as unconfirmed");
 assert.ok(naturalDailyUpdate.includes("execution_status?.assessment"), "the caregiver must be told when extraction assessment fails after the source is saved");
-assert.ok(dailyCarePage.includes("Mum’s care today"), "Daily Care must present one chronological view of the current day");
+assert.ok(dailyCarePage.includes("Care today"), "Daily Care must present one chronological view of the current day");
 assert.ok(dailyCarePage.includes("dailyTimePeriod(item)"), "daily updates must be grouped by their recorded time of day");
 assert.ok(dailyCarePage.includes("Needs confirmation"), "unconfirmed medication changes must remain visible when the caregiver returns");
 assert.ok(dailyCarePage.includes("No daily entry is required"), "an empty day must not be framed as an overdue entry");
