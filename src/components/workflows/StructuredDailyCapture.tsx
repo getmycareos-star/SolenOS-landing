@@ -1271,6 +1271,43 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       <section>
         <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medicines</h2>
         
+        <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, marginBottom: 16 }}>
+          <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 600 }}>Add a medication to the care record</h3>
+          <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.45 }}>
+            Add what you have been told or what you currently understand. This starts as a caregiver report, not a verified prescription.
+          </p>
+          <form onSubmit={handleCreateMedicationRecord} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+              Medicine name
+              <input value={medicationRecordName} onChange={(event) => setMedicationRecordName(event.target.value)} maxLength={240} required placeholder="Enter medicine name" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+              Dose or strength (optional)
+              <input value={medicationRecordDose} onChange={(event) => setMedicationRecordDose(event.target.value)} maxLength={240} placeholder="Only if known" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+              Note (optional)
+              <textarea value={medicationRecordNote} onChange={(event) => setMedicationRecordNote(event.target.value)} maxLength={2000} rows={2} placeholder="Where this information came from, if useful" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+            </label>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 12 }}>We’ll ask you to review this report in 30 days. You can review it now before it becomes a current medication choice.</p>
+            {medicationRecordError && <p role="alert" style={{ margin: 0, color: "var(--error)" }}>{medicationRecordError}</p>}
+            {medicationRecordMessage && <p role="status" style={{ margin: 0, color: "var(--text-secondary)" }}>{medicationRecordMessage}</p>}
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button type="submit" className="workspace-primary" disabled={medicationRecordSaving || !medicationRecordName.trim()} style={{ minHeight: 42, padding: "9px 14px", borderRadius: 8 }}>{medicationRecordSaving ? "Saving…" : "Add to care record"}</button>
+            </div>
+          </form>
+          {pendingMedicationRecords.length > 0 && (
+            <div style={{ borderTop: "1px solid var(--border)", marginTop: 14, paddingTop: 12 }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Reports waiting for your review</h4>
+              {pendingMedicationRecords.map((item) => (
+                <div key={item.medication_id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 0", borderTop: "1px solid var(--border)" }}>
+                  <div style={{ minWidth: 0 }}><strong style={{ fontSize: 13 }}>{item.name}</strong>{item.dose && <span style={{ color: "var(--text-secondary)", fontSize: 12 }}> · {item.dose}</span>}<p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: 11 }}>Caregiver report · not yet reviewed</p></div>
+                  <button type="button" className="workspace-primary" disabled={medicationRecordReviewing !== null} onClick={() => void handleReviewMedicationRecord(item.medication_id)} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8 }}>{medicationRecordReviewing === item.medication_id ? "Saving…" : "Review and confirm current"}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {/* Medication form */}
         <div style={{ 
           background: 'var(--surface)', 
