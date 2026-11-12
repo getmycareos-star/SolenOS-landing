@@ -412,6 +412,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setRevisionHistory(saved.revision_history ?? []);
       setSourceFreshness(saved.source_freshness ?? null);
       setReviewConfirmed(false);
+      setApprovedPdf(null);
       setNotice("Draft revision saved. It has not been approved or shared.");
       await load();
     } catch (saveError) {
@@ -724,7 +725,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </div>
           {draft.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableStatus(item.source)}: {readableStatus(item.status)}{item.reason ? " (" + readableStatus(item.reason) + ")" : ""}</p>)}
           <label htmlFor="professional-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Caregiver note (optional)</label>
-          <textarea id="professional-caregiver-note" value={caregiverNote} onChange={event => { setProfessionalReviewConfirmed(false); setCaregiverNote(event.target.value); }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled as a caregiver report." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+          <textarea id="professional-caregiver-note" value={caregiverNote} onChange={event => { setProfessionalReviewConfirmed(false); setApprovedPdf(null); setCaregiverNote(event.target.value); }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled as a caregiver report." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
           <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status !== "current"} onClick={() => void saveDraftRevision()}>Save changes to summary</button>
           {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>The saved care information has changed or could not be checked. Prepare a fresh summary before approval.</p>}
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
