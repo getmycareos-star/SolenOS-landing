@@ -243,7 +243,7 @@ export function ChangeIntelligencePanel() {
                       <article key={source.id}>
                         <strong>{source.field}: {source.asserted_value}</strong>
                         <p>{source.source_text ?? source.source_label}</p>
-                        <p className="panel-muted">{source.assertion_kind} · {source.assertion_status} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                        <p className="panel-muted">{source.assertion_kind} · Information: {readable(source.epistemic_state || "reported")} · Review: {readable(source.assertion_status)} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
                       </article>
                     ))}
                     {details[change.id].observations.map((source) => (
