@@ -77,12 +77,12 @@ assert.doesNotMatch(detailedAppointment, /Evidence IDs:|Assessment \{item\.asses
 
 
 assert.match(historyDrawer, /caregiverSafeAssistantText/);
-assert.doesNotMatch(historyDrawer, /JSON\\.stringify\\(snapshot/);
-assert.doesNotMatch(historyDrawer, /JSON\\.stringify\\(item\\.context/);
+assert.doesNotMatch(historyDrawer, /JSON\.stringify\\(snapshot/);
+assert.doesNotMatch(historyDrawer, /JSON\.stringify\\(item\\.context/);
 assert.match(historyDrawer, /Malformed serialized data is not shown as caregiver text/);
 assert.match(historyDrawer, /Earlier care details are saved/);
 assert.match(documentsPage, /caregiverSafeAssistantText\\(selected\\.extractedText\\)/);
-assert.match(lcr, /caregiverSafeAssistantText\\(source\\.description\\)/);
-assert.match(lcr, /caregiverSafeAssistantText\\(source\\.source_passage\\)/);
+assert.match(lcr, /caregiverSafeAssistantText\\(source\.description\\)/);
+assert.match(lcr, /caregiverSafeAssistantText\\(source\.source_passage\\)/);
 
 console.log("Caregiver language boundary checks passed.");
