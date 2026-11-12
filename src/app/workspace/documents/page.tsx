@@ -44,6 +44,7 @@ type DocumentItem = {
   uploadedAt: string | null;
   status: string;
   extractedText: string;
+  possibleVersionOfEvidenceId?: string | null;
   evidence: EvidenceRecord;
 };
 
@@ -92,6 +93,7 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     uploadedAt: item.uploaded_at || item.created_at || null,
     status: item.evidence_status || "recorded",
     extractedText: item.source_text || "",
+    possibleVersionOfEvidenceId: asString(meta.possible_version_of_evidence_id) || null,
     evidence: item,
   };
 }
@@ -214,7 +216,7 @@ export default function DocumentsPage() {
   };
 
   useEffect(() => {
-    setVersionPredecessorId("");
+    setVersionPredecessorId(selected?.possibleVersionOfEvidenceId || "");
     const predecessorId = selected?.evidence.parent_evidence_id;
     if (!selected || !predecessorId) {
       setVersionComparison(null);
@@ -604,13 +606,13 @@ export default function DocumentsPage() {
             </div>
           </header>
           <div style={{ padding: 14, overflow: "auto", minHeight: 180 }}>
-            {documents.some((doc) => doc.id !== selected.id && (!selected.uploadedAt || !doc.uploadedAt || doc.uploadedAt <= selected.uploadedAt)) && <section aria-label="Corrected document version" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+            {selected.possibleVersionOfEvidenceId && !selected.evidence.parent_evidence_id && <section aria-label="Corrected document version" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
               <strong style={{ fontSize: 14 }}>Is this a corrected copy of an earlier document?</strong>
               <p style={{ margin: "5px 0 9px", color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.45 }}>Link it to the earlier file. Both originals stay available, and SolenOS will not change the care record automatically.</p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <select aria-label="Earlier document version" value={versionPredecessorId} onChange={(event) => setVersionPredecessorId(event.target.value)} style={{ minHeight: 40, flex: "1 1 220px", minWidth: 0, border: "1px solid var(--border)", borderRadius: 8, padding: "7px 9px", background: "var(--surface)", color: "var(--text)" }}>
                   <option value="">Choose earlier document…</option>
-                  {documents.filter((doc) => doc.id !== selected.id && (!selected.uploadedAt || !doc.uploadedAt || doc.uploadedAt <= selected.uploadedAt)).map((doc) => <option key={doc.id} value={doc.id}>{doc.title} · {formatDate(doc.uploadedAt)}</option>)}
+                  {documents.filter((doc) => doc.id === selected.possibleVersionOfEvidenceId).map((doc) => <option key={doc.id} value={doc.id}>{doc.title} · {formatDate(doc.uploadedAt)}</option>)}
                 </select>
                 <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>{linkingVersion ? "Linking…" : "Link versions"}</button>
               </div>
