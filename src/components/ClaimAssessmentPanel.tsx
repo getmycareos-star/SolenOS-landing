@@ -42,7 +42,7 @@ type AssessmentImpact = {
   missing_evidence_ids: string[];
   unassessed_claim_evidence_ids: string[];
   changed_prerequisite_claim_ids: string[];
-  changed_observation_ids?: string[];
+  changed_observation_ids: string[];
   unresolved_conflicts?: Array<{ conflict_id: string; field: string; description: string; resolution_status: string; created_at?: string | null }>;
   interpretation_limit: string;
 };
@@ -236,6 +236,7 @@ export default function ClaimAssessmentPanel() {
         !Array.isArray(result.missing_evidence_ids) ||
         !Array.isArray(result.unassessed_claim_evidence_ids) ||
         !Array.isArray(result.changed_prerequisite_claim_ids) ||
+        !Array.isArray(result.changed_observation_ids) ||
         typeof result.interpretation_limit !== "string") {
         throw new Error("Invalid claim assessment impact response");
       }
