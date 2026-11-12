@@ -94,12 +94,12 @@ function NotificationsCard() {
       await ensureAnonymousSession();
       const prefs = await getJSON("/notifications/preferences") as {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
-        quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string;
+        quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
       };
       setQuietHours(prefs.quiet_hours_enabled);
       setQuietStart(prefs.quiet_hours_start || "21:00");
       setQuietEnd(prefs.quiet_hours_end || "08:00");
-      setTimezoneName(prefs.timezone_name || (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"));
+      setTimezoneName(prefs.configured ? (prefs.timezone_name || "UTC") : (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"));
       setReminders(prefs.reminders_enabled);
     } catch {
       setError("We couldn't load your notification settings. Check your connection and try again.");
