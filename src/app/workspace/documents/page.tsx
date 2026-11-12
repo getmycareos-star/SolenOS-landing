@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
-import { apiUrl, safeJson } from "@/lib/api-url";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
 
@@ -47,7 +46,7 @@ type DocumentItem = {
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
 type CropInsets = { top: number; right: number; bottom: number; left: number };
-type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
+type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
@@ -109,51 +108,6 @@ function isImage(mimeType: string): boolean {
 function isPdf(mimeType: string): boolean {
   return mimeType === "application/pdf";
 }
-
-async function extractText(file: File): Promise<{ text: string; note: string | null }> {
-  if (file.type.startsWith("text/") || /\.(txt|md|csv|json|xml|ya?ml)$/i.test(file.name)) {
-    try {
-      return { text: (await file.text()).slice(0, 100_000), note: null };
-    } catch {
-      return { text: "", note: "The original file can still be saved, but its text could not be read in this browser." };
-    }
-  }
-
-  try {
-    const form = new FormData();
-    form.append("file", file);
-    const session = await ensureAnonymousSession();
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 120_000);
-    let response: Response;
-    try {
-      response = await fetch(apiUrl("/api/extract"), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: form,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timer);
-    }
-    const data = await safeJson(response) as {
-      ok?: boolean;
-      document?: { extracted_text?: string };
-      note?: string;
-      detail?: string;
-      error?: string;
-    };
-    const text = typeof data.document?.extracted_text === "string" ? data.document.extracted_text.slice(0, 100_000) : "";
-    if (response.ok && data.ok && text.trim()) return { text, note: null };
-    return {
-      text: "",
-      note: data.note || data.detail || data.error || "The original will be saved, but text extraction is not available for this file in the current deployment.",
-    };
-  } catch {
-    return { text: "", note: "The original will be saved, but text extraction could not be reached. You can retry document understanding later." };
-  }
-}
-
 
 async function createProcessedImage(file: File, rotationDegrees: number, crop: CropInsets): Promise<File> {
   const sourceUrl = URL.createObjectURL(file);
@@ -353,13 +307,21 @@ export default function DocumentsPage() {
       const pages: ReviewPage[] = [];
       for (const file of files) {
         const isScannedImage = file.type.startsWith("image/");
-        const extracted = isScannedImage
-          ? { text: "", note: "Set page rotation/crop if needed, then apply the image adjustments before extracting text." }
-          : await extractText(file);
-        pages.push({ ingestionKey: crypto.randomUUID(), captureTimestamp: new Date().toISOString(), file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
+        pages.push({
+          ingestionKey: crypto.randomUUID(),
+          captureTimestamp: new Date().toISOString(),
+          file,
+          note: isScannedImage
+            ? "SolenOS will read this saved scan in the background. Adjust the page only if needed."
+            : "SolenOS will read this saved original in the background. You can review extracted statements after processing.",
+          rotation: 0,
+          crop: { top: 0, right: 0, bottom: 0, left: 0 },
+          prepared: !isScannedImage,
+          previewUrl: isScannedImage ? URL.createObjectURL(file) : null,
+        });
       }
       setReviewPages((current) => [...current, ...pages]);
-      setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
+      setUploadMessage({ kind: "success", text: `${files.length} original file(s) added. Save them once; SolenOS will read them in the background.` });
     } finally {
       setPreparingScan(false);
     }
@@ -460,11 +422,18 @@ export default function DocumentsPage() {
     setPreparingScan(true);
     setUploadMessage(null);
     try {
-      const processed = await createProcessedImage(page.file, page.rotation, page.crop);
-      const extracted = await extractText(processed);
-      setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: extracted.text, note: extracted.note, prepared: true, reviewed: false } : item));
+      await createProcessedImage(page.file, page.rotation, page.crop);
+      setReviewPages((current) => current.map((item, i) => i === index ? {
+        ...item,
+        note: "SolenOS will apply these adjustments when it reads the saved original.",
+        prepared: true,
+      } : item));
     } catch {
-      setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: "", note: "Image processing failed. The original scan is still available; retry or transcribe the text manually.", prepared: false, reviewed: false } : item));
+      setReviewPages((current) => current.map((item, i) => i === index ? {
+        ...item,
+        note: "Image adjustments could not be prepared. The original scan is still available; try again or save it without adjustments.",
+        prepared: false,
+      } : item));
     } finally {
       setPreparingScan(false);
     }
@@ -476,8 +445,8 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "error", text: "Add at least two image pages before creating a combined PDF." });
       return;
     }
-    if (imagePages.some((page) => !page.prepared || !page.reviewed)) {
-      setUploadMessage({ kind: "error", text: "Apply crop/straighten, extract text and review each image page before combining them." });
+    if (imagePages.some((page) => !page.prepared)) {
+      setUploadMessage({ kind: "error", text: "Apply crop/straighten to each image page before combining them." });
       return;
     }
     setPreparingScan(true);
@@ -485,7 +454,6 @@ export default function DocumentsPage() {
     try {
       const pdfFile = await createMultiPagePdf(imagePages);
       if (pdfFile.size > MAX_FILE_BYTES) throw new Error("The combined PDF exceeds the 10 MiB upload limit. Combine fewer pages or split this document into smaller PDFs.");
-      const combinedText = imagePages.map((page, index) => `[Page ${index + 1}]\n${page.uncertain ? "[UNCERTAIN EXTRACTION] " : ""}${page.text.trim() || "[No readable text extracted; consult original page.]"}`).join("\n\n");
       const existingPdf = reviewPages.some((page) => page.file.type === "application/pdf" && page.file.name === pdfFile.name);
       if (existingPdf) {
         setUploadMessage({ kind: "error", text: "A combined PDF with this name is already in the review list. Save or discard this batch before creating another." });
@@ -495,10 +463,7 @@ export default function DocumentsPage() {
         ingestionKey: crypto.randomUUID(),
         captureTimestamp: new Date().toISOString(),
         file: pdfFile,
-        text: combinedText,
-        note: "Combined multi-page PDF generated from the reviewed scan pages below. Original uploaded page files remain separate and unchanged.",
-        reviewed: true,
-        uncertain: imagePages.some((page) => page.uncertain),
+        note: "Combined multi-page PDF generated from the adjusted scan pages. SolenOS will read it after saving; original page files remain separate and unchanged.",
         rotation: 0,
         crop: { top: 0, right: 0, bottom: 0, left: 0 },
         prepared: true,
@@ -537,11 +502,9 @@ export default function DocumentsPage() {
         form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload");
         form.append("capture_timestamp", page.captureTimestamp);
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(scanPageNumber));
-        form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\n" + page.text.trim() : page.text.trim());
-        form.append("scan_review_status", page.reviewed ? "caregiver_reviewed" : "not_reviewed");
+        form.append("scan_review_status", "not_reviewed");
         form.append("scan_rotation_degrees", String(page.rotation));
         form.append("scan_crop_json", JSON.stringify(page.crop));
-        form.append("scan_text_prepared", String(page.file.type.startsWith("image/") && page.prepared));
         const stored = await postFormData("/upload", form) as {
           evidence_id?: string;
           persisted?: boolean;
@@ -636,11 +599,11 @@ export default function DocumentsPage() {
         {reviewPages.length > 0 && <section aria-label="Review extracted text before saving" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save pages now or adjust and review the text first. You can review extracted statements later." : "Save the selected file now, or review and correct its extracted text first."} Original files are preserved.</p>
-          <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine reviewed image pages into one PDF</button>
-          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Check names, dates, numbers and instructions. Extraction can be wrong. Mark unclear wording as [uncertain] instead of guessing. The original scan is preserved unchanged.</p>
+          <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine scan pages into one PDF</button>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Keep the original page clear and readable. Adjust the crop or straighten it only if needed. SolenOS will extract the text after the original is saved.</p>
           <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}><strong>About scanned text:</strong> The original page is preserved. Server OCR uses your saved crop and rotation settings when available. You can review statements later; no extracted statement becomes an LCR fact until you accept it.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
-            <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.text.trim() ? "Text extracted — review required" : "No readable text extracted"}</p>
+            <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · {page.file.type.startsWith("image/") && !page.prepared ? "Original scan — adjustments optional" : "Ready for background reading"}</p>
             {page.file.type === "application/pdf" && page.previewUrl && <iframe title={page.file.name + " preview"} src={page.previewUrl} style={{ width: "100%", height: 320, border: "1px solid var(--border)", borderRadius: 8 }} />}
             {page.previewUrl && page.file.type.startsWith("image/") && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}>
               <div data-scan-crop-stage style={{ position: "relative", width: "fit-content", maxWidth: "100%", margin: "0 auto", touchAction: "none", transform: `rotate(${page.rotation}deg)`, transformOrigin: "center center" }}>
@@ -666,7 +629,7 @@ export default function DocumentsPage() {
                     const dy = (event.clientY - drag.startY) / drag.height * 100;
                     const left = Math.max(0, Math.min(80 - drag.crop.right, drag.crop.left + dx));
                     const top = Math.max(0, Math.min(80 - drag.crop.bottom, drag.crop.top + dy));
-                    setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply adjustments and re-extract text." } : item));
+                    setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply the adjustments before saving." } : item));
                   }}
                   onPointerUp={() => { cropDrag.current = null; }}
                   onPointerCancel={() => { cropDrag.current = null; }}
@@ -681,26 +644,26 @@ export default function DocumentsPage() {
                       if (event.key === "ArrowRight") crop.left = Math.min(80 - crop.right, crop.left + step);
                       if (event.key === "ArrowUp") crop.top = Math.max(0, crop.top - step);
                       if (event.key === "ArrowDown") crop.top = Math.min(80 - crop.bottom, crop.top + step);
-                      return { ...item, crop, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply adjustments and re-extract text." };
+                      return { ...item, crop, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply the adjustments before saving." };
                     }));
                   }}
                   style={{ position: "absolute", left: `${page.crop.left}%`, top: `${page.crop.top}%`, width: `${100 - page.crop.left - page.crop.right}%`, height: `${100 - page.crop.top - page.crop.bottom}%`, border: "2px solid #fff", boxShadow: "0 0 0 1px #17251c", cursor: "move", touchAction: "none", boxSizing: "border-box", background: "transparent" }} />
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply the adjustments before saving." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply the adjustments before saving." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply the adjustments before saving." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply the adjustments before saving." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
               </div>
               <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>Straightening: {page.rotation.toFixed(1)}°. Crop margins are percentages of the rotated page.</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>
-                {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, reviewed: false, text: "", note: "Crop changed. Apply adjustments and re-extract text." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
+                {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, reviewed: false, text: "", note: "Crop changed. Apply the adjustments before saving." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
               </div>
-              <button type="button" onClick={() => void prepareImagePage(index)} disabled={preparingScan || uploading} style={{ justifySelf: "start", minHeight: 42, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Apply crop / straighten and extract text</button>
+              <button type="button" onClick={() => void prepareImagePage(index)} disabled={preparingScan || uploading} style={{ justifySelf: "start", minHeight: 42, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Apply crop / straighten</button>
             </div>}
             {page.note && <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{page.note}</p>}
-            <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 650 }}>Extracted text — review and correct before saving<textarea value={page.text} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, text: event.target.value } : item))} rows={4} maxLength={100000} placeholder="No readable text extracted. Type a transcription or save the original without text." style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: 8, padding: 10, background: "var(--surface)", color: "var(--text)", fontSize: 15, lineHeight: 1.6 }} /></label>
-            <div style={{ display: "grid", gap: 8, marginTop: 8 }}><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.uncertain} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, uncertain: event.target.checked } : item))} />Some extracted text is uncertain or could not be read reliably.</label><label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5 }}><input type="checkbox" checked={page.reviewed} onChange={(event) => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, reviewed: event.target.checked } : item))} />I reviewed this text against the original scan.</label><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
+            <p style={{ margin: "8px 0", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>SolenOS reads the saved original in the background. Review extracted statements after processing; nothing enters the Living Care Record until you accept it.</p>
+            <div style={{ display: "grid", gap: 8, marginTop: 8 }}><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
           </article>)}</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
         </section>}
