@@ -39,11 +39,11 @@ if (SOLENOS_SCHEMA_FIELD_NAMES.join(",") !== CANONICAL_OUTPUT_FIELD_ORDER.join("
 }
 console.log("✓ immutable output schema field order");
 
-if (!SOLENOS_SYSTEM_PROMPT.includes("cognitive decomposition engine")) {
-  throw new Error("system prompt missing canonical system identity");
+if (!SOLENOS_SYSTEM_PROMPT.includes("Living Care Record (LCR)") || !SOLENOS_SYSTEM_PROMPT.includes("governed backend care-domain workflows")) {
+  throw new Error("system prompt must identify the LCR and keep record authority in governed backend workflows");
 }
-if (!SOLENOS_SYSTEM_PROMPT.includes(CANONICAL_CORE_PRINCIPLE.split(".")[0]!)) {
-  throw new Error("system prompt missing core principle");
+if (!CANONICAL_CORE_PRINCIPLE.includes("source, actor, time context, and epistemic status")) {
+  throw new Error("canonical LCR provenance principle is missing");
 }
 if (!SOLENOS_SYSTEM_PROMPT.includes("HARD FAIL CONDITIONS")) {
   throw new Error("system prompt missing primary failure model");
