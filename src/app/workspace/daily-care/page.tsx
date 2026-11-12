@@ -405,7 +405,6 @@ export default function DailyCarePage() {
           }
         } else {
           setHistoryError("Recent care history could not be loaded. The daily summary is unavailable.");
-          setContextError((current) => current || "Recent care history could not be loaded. Try refreshing the record.");
         }
         setReady(true);
         setContextLoading(false);
