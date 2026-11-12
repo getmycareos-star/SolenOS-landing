@@ -29,26 +29,20 @@ assert.match(companion, /Extracted document text.*not yet an LCR assertion/, "do
 assert.match(companion, /Prior Companion message.*conversation context only/, "prior conversation references must be distinguished from care evidence");
 assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
 assert.doesNotMatch(companion, /Add to care story/);
-assert.match(companion, /companion-add-menu/);
-assert.match(companion, /Upload document/);
-assert.match(companion, /Snap a photo/);
-assert.match(companion, /Scan document/);
-assert.match(companion, /setPendingDocumentIntake/, "selected browser files must be handed to Documents without serializing file data");
-assert.match(companion, /uploadInputRef\.current\?\.click\(\)/, "Upload must open the native file picker directly from the + menu action");
-assert.match(companion, /captureInputRef\.current\?\.click\(\)/, "Snap must open the device camera directly from the + menu action");
-assert.match(companion, /capture="environment"/, "Snap must request the rear-facing device camera");
-assert.match(companion, /setCameraMode\('scan'\)/, "Scan must open the in-app multi-page camera without navigating first");
-assert.match(companion, /navigator\.mediaDevices\?\.getUserMedia/, "Scan must request a live camera stream");
-assert.match(companion, /captureCameraPage/, "scan capture must create page images from the live camera stream");
-assert.match(companion, /finishCameraIntake\(capturedPages, 'scan'\)/, "Scan must collect pages before navigating to review");
-assert.match(companion, /router\.push\('\/workspace\/documents\?intake=1'\)/, "navigate to the document library only after files are selected or captured");
-assert.match(companion, /facingMode: \{ ideal: 'environment' \}/, "scanner should prefer the rear-facing camera");
-assert.match(companion, /aria-label={addMenuOpen \? "Close attachment actions"/, "the + control must become a close control while the action menu is open");
-assert.match(companion, /role="dialog".*aria-label=\{cameraMode === 'scan'/s, "Scan must display an in-app camera surface");
-assert.match(companion, /initialPrompt = null/, "Companion accepts the record-edit prompt without opening a second entry screen");
-assert.match(documents, /consumePendingDocumentIntake/, "Documents must consume the in-memory selected File objects");
-assert.match(documents, /params\.get\("intake"\)/, "Documents must process the direct-intake handoff");
-assert.doesNotMatch(documents, /Snap &amp; scan with camera|Upload files \/ pages|Add another page with camera|type="file"|capture="environment"/, "Documents must be a saved-document library, not an intake launcher");
+assert.doesNotMatch(
+  companion,
+  /companion-add-menu|Upload document|Snap a photo|Scan document|setPendingDocumentIntake|uploadInputRef|captureInputRef|captureCameraPage|navigator\.mediaDevices/,
+  "AI Companion must remain conversational; document capture belongs in Documents",
+);
+assert.match(companion, /initialPrompt = null/, "Companion accepts a prompt without opening a second entry screen");
+assert.match(documents, /uploadInputRef/, "Documents must provide direct file upload");
+assert.match(documents, /snapInputRef/, "Documents must provide a direct photo capture option");
+assert.match(documents, /capture="environment"/, "photo capture should prefer the rear-facing camera");
+assert.match(documents, /navigator\.mediaDevices\?\.getUserMedia/, "multi-page scanning must request a live camera stream");
+assert.match(documents, /captureCameraPage/, "multi-page scanning must capture actual camera frames");
+assert.match(documents, /finishCameraScan/, "captured pages must be handed to document review");
+assert.match(documents, /handleFiles/, "uploaded and captured files must enter the same document preparation workflow");
+assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /Save your files/);
 assert.match(documents, /You can review extracted statements later\./, "saving must not force immediate document review");
@@ -147,4 +141,4 @@ assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.match(lcrHome, /LCRCurrentUnderstanding/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
-console.log("Companion home contract passed: caregiver-first home, document/photo/scan intake, typed LCR/document/conversation provenance, plain-language record details, caregiver update route, device-session actions, export flow, and browseable history.");
+console.log("Companion home contract passed: conversation-only Companion, source provenance, Documents-owned upload/photo/scan intake, plain-language care record, caregiver update route, device-session actions, export flow, and browseable history.");
