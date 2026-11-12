@@ -51,6 +51,11 @@ assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load
 assert.match(intelligenceReviewSource, /postJSON\("\/documents\/" \+ encodeURIComponent\(evidenceId\) \+ "\/queue"/, "manual retry must use the durable server processing queue");
 assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURIComponent(document.id) + "/extract"'), "the review screen must not perform blocking extraction");
 assert.match(intelligenceReviewSource, /Retry background processing/, "failed or incomplete documents must expose a clear retry action");
+assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial"/, "partial source extraction must be distinct from Qwen processing status");
+assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
+assert.match(intelligenceReviewSource, /not a probability/, "OCR confidence must not be represented as a correctness probability");
+assert.match(intelligenceReviewSource, /Handwriting may still be misread/, "handwriting uncertainty must remain visible");
+assert.match(intelligenceReviewSource, /model_provenance/, "document processing model provenance must be available to the review view");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
