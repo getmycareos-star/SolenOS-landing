@@ -489,9 +489,15 @@ export async function createAccount(email: string, password: string): Promise<Ac
 }
 
 /** Sign in through the backend and replace the local anonymous capability with the account's scoped session. */
-export type CaregiverInvitationAcceptResponse = AccountLoginResponse & {
+export type CaregiverInvitationAcceptResponse = {
   accepted: true;
+  person_id: string;
+  caregiver_id: string;
   caregiver_profile_id: string;
+  session_id: string;
+  access_token: string;
+  token_type: "Bearer";
+  expires_at: string;
   access_scope: string;
 };
 
