@@ -267,6 +267,7 @@ export default function TimelinePage() {
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const [historyCoverage, setHistoryCoverage] = useState<{ hasMore: boolean; total: number }>({ hasMore: false, total: 0 });
   const [historyOffset, setHistoryOffset] = useState(0);
+  const [appliedQuery, setAppliedQuery] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [correctionTargetId, setCorrectionTargetId] = useState<string | null>(null);
   const [correctionText, setCorrectionText] = useState("");
@@ -274,7 +275,7 @@ export default function TimelinePage() {
   const [correctionSaving, setCorrectionSaving] = useState(false);
   const [correctionMessage, setCorrectionMessage] = useState("");
 
-  const loadEvents = useCallback(async (manual = false) => {
+  const loadEvents = useCallback(async (manual = false, searchTerm = "") => {
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -283,7 +284,8 @@ export default function TimelinePage() {
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this record.");
       }
-      const result = await getJSON("/daily-care/intelligence/history?limit=200&offset=0") as {
+      const searchParam = searchTerm.trim() ? `&query=${encodeURIComponent(searchTerm.trim())}` : "";
+      const result = await getJSON(`/daily-care/intelligence/history?limit=200&offset=0${searchParam}`) as {
         records?: unknown;
         page?: { has_more?: boolean; total_matching?: number };
       };
@@ -323,7 +325,8 @@ export default function TimelinePage() {
         throw new Error("A valid SolenOS care session is required to load older history.");
       }
       const offset = historyOffset;
-      const result = await getJSON(`/daily-care/intelligence/history?limit=200&offset=${offset}`) as {
+      const searchParam = appliedQuery.trim() ? `&query=${encodeURIComponent(appliedQuery.trim())}` : "";
+      const result = await getJSON(`/daily-care/intelligence/history?limit=200&offset=${offset}${searchParam}`) as {
         records?: unknown;
         page?: { has_more?: boolean; total_matching?: number };
       };
@@ -353,7 +356,7 @@ export default function TimelinePage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [historyCoverage, historyOffset, loadingMore]);
+  }, [historyCoverage, historyOffset, loadingMore, appliedQuery]);
 
   useEffect(() => {
     void loadEvents();
@@ -397,7 +400,7 @@ export default function TimelinePage() {
   }, [correctionText, correctionReason, correctionSaving, loadEvents]);
 
   const visibleEvents = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = appliedQuery.trim().toLowerCase();
     return events.filter((event) => {
       if (!matchesFilter(event, filter)) return false;
       if (!needle) return true;
@@ -416,7 +419,7 @@ export default function TimelinePage() {
       ].join(" ").toLowerCase();
       return haystack.includes(needle);
     });
-  }, [events, filter, query]);
+  }, [events, filter, appliedQuery]);
 
   const groupedEvents = useMemo(() => {
     const groups: { label: string; events: CareEvent[] }[] = [];
@@ -466,11 +469,27 @@ export default function TimelinePage() {
       </section>
 
       <section aria-label="Timeline controls" style={{ marginBottom: 20 }}>
-        <label htmlFor="timeline-search" style={{ display: "block", fontWeight: 650, marginBottom: 8 }}>Search the care history</label>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--solenos-hairline)", background: "var(--theme-panel-bg)", borderRadius: 12, padding: "0 12px", minHeight: 48 }}>
-          <Search size={18} aria-hidden />
-          <input id="timeline-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search events, notes, tags, evidence IDs…" style={{ border: 0, outline: 0, flex: 1, minWidth: 0, padding: "12px 0", background: "transparent", color: "inherit", font: "inherit" }} />
-        </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const nextQuery = query.trim();
+            setAppliedQuery(nextQuery);
+            void loadEvents(true, nextQuery);
+          }}
+        >
+          <label htmlFor="timeline-search" style={{ display: "block", fontWeight: 650, marginBottom: 8 }}>Search the care history</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--solenos-hairline)", background: "var(--theme-panel-bg)", borderRadius: 12, padding: "0 12px", minHeight: 48 }}>
+            <Search size={18} aria-hidden />
+            <input id="timeline-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search all saved care records…" style={{ border: 0, outline: 0, flex: 1, minWidth: 0, padding: "12px 0", background: "transparent", color: "inherit", font: "inherit" }} />
+            <Button type="submit" variant="secondary" disabled={loading || refreshing}>Search</Button>
+          </div>
+          {appliedQuery && (
+            <p style={{ margin: "6px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>
+              Showing server-matched records for “{appliedQuery}”. Search includes records beyond the currently loaded page.
+              <button type="button" onClick={() => { setQuery(""); setAppliedQuery(""); void loadEvents(true, ""); }} style={{ marginLeft: 8, border: 0, background: "transparent", color: "inherit", textDecoration: "underline", cursor: "pointer" }}>Clear search</button>
+            </p>
+          )}
+        </form>
         <div role="group" aria-label="Filter timeline events" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
           {FILTERS.map((item) => {
             const active = filter === item.id;
