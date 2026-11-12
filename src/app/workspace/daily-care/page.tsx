@@ -303,9 +303,13 @@ export default function DailyCarePage() {
 
         if (followUpsResult.status === "fulfilled") {
           const payload = followUpsResult.value as { items?: unknown };
-          const items = Array.isArray(payload?.items) ? payload.items as DailyCareFollowUp[] : [];
-          setFollowUps(items.filter((item) => !["closed", "cancelled"].includes(item.status)));
-          setFollowUpsError("");
+          if (Array.isArray(payload?.items)) {
+            const items = payload.items as DailyCareFollowUp[];
+            setFollowUps(items.filter((item) => !["closed", "cancelled"].includes(item.status)));
+            setFollowUpsError("");
+          } else {
+            setFollowUpsError("The saved follow-up list could not be read. Check it before assuming nothing is outstanding.");
+          }
         } else {
           setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
         }
@@ -446,7 +450,9 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
             <h2 id="daily-care-follow-ups-title">Existing follow-ups</h2>
             <p className="daily-care-muted">Open follow-ups stay in their existing record. Daily Care does not create a second copy.</p>
-            {followUps.length ? (
+            {followUpsError ? (
+              <p role="alert">{followUpsError}</p>
+            ) : followUps.length ? (
               <ul className="daily-care-record-list">
                 {followUps.slice(0, 6).map((item) => (
                   <li key={item.id}>
@@ -460,7 +466,6 @@ export default function DailyCarePage() {
             ) : (
               <p>No unresolved follow-ups are currently recorded. This does not confirm that no action is outstanding.</p>
             )}
-            {followUpsError && <p role="alert">{followUpsError}</p>}
             <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>View follow-ups</Button>
           </section>
 
