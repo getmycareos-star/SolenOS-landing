@@ -188,7 +188,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     };
   }, []);
 
-  const [pendingMedicationRecords, setPendingMedicationRecords] = useState<Array<{ medication_id: string; name: string; dose: string | null; record_status: string }>>([]);
+  const [pendingMedicationRecords, setPendingMedicationRecords] = useState<Array<{ medication_id: string; name: string; dose: string | null; record_status: string; review_overdue?: boolean }>>([]);
   const [medicationRecordName, setMedicationRecordName] = useState("");
   const [medicationRecordDose, setMedicationRecordDose] = useState("");
   const [medicationRecordNote, setMedicationRecordNote] = useState("");
