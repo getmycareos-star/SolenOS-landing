@@ -107,6 +107,14 @@ for (const action of ["something", "medicine", "measurement", "photo", "checkin"
 }
 assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
   "capture opens within the Daily Care screen");
+assert.match(dailyCarePage, /Open matters/,
+  "unresolved questions and conflicts have a distinct current-care section");
+assert.match(dailyCarePage, /displayHistoryTime/,
+  "history distinguishes event time from recording time");
+assert.match(dailyCarePage, /displayHistoryText/,
+  "persisted JSON capture payloads are rendered as caregiver-readable entries");
+assert.match(dailyCarePage, /epistemic_status/,
+  "the caregiver view retains reported or uncertain status labels");
 
 console.log("✓ quick check-in has exactly three overall-impression choices");
 console.log("✓ no care-area questionnaire or daily completion requirement");
