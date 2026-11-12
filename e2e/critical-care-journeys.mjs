@@ -496,7 +496,7 @@ await record("frontend loading and empty states", async () => {
     expiresAt: session.expires_at,
   });
   const page = await context.newPage();
-  await page.route("**/api/v1/evidence/**", async (route) => {
+  await page.route("**/api/v1/evidence*", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 900));
     await route.continue();
   });
@@ -515,7 +515,7 @@ await record("frontend loading and empty states", async () => {
 
 await record("frontend network failure is surfaced rather than rendered as empty data", async () => {
   const { context, page } = await createBrowserPage(session, "/workspace/documents");
-  await page.route("**/api/v1/evidence/**", (route) => route.abort("failed"));
+  await page.route("**/api/v1/evidence*", (route) => route.abort("failed"));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("alert").first().waitFor({ timeout: 15_000 });
   await verifyMobile(page);
