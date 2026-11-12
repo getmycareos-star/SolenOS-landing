@@ -48,6 +48,7 @@ const retryEnd = capture.indexOf("export function dataUrlToFile", retryStart);
 const retrySource = capture.slice(retryStart, retryEnd);
 const addSituation = readFileSync("src/components/mvp-workspace/AddSituationPanel.tsx", "utf8");
 assert(retryStart >= 0 && retryEnd > retryStart && retrySource.includes("document.evidenceId") && !retrySource.includes("postFormData"), "retry must operate on the existing evidence ID without creating a duplicate upload");
+assert(retrySource.includes('"/documents/" + encodeURIComponent(document.evidenceId) + "/queue"'), "retry must resume the durable worker without running OCR in the caregiver screen");
 assert(addSituation.includes("retryAttachedDocument(doc)"), "the caregiver Retry action must reuse the persisted original");
 
 assert(capture.includes('status: "failed"') && capture.includes('evidenceId,'), "an extraction failure must retain the evidence ID so the saved original remains recoverable");
