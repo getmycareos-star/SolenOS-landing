@@ -472,7 +472,7 @@ export function ShareCareSummaryPanel({
         )}
 
         {summary.freshness.isStale && (
-          <div className="share-review-date-note">
+          <div className="share-review-freshness">
             <h4 className="share-review-section-heading">This summary may be out of date</h4>
             {summary.freshness.staleItems.map((item, i) => (
               <p key={i}>{item}</p>
