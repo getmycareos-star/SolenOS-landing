@@ -46,7 +46,7 @@ type DocumentItem = {
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
 type CropInsets = { top: number; right: number; bottom: number; left: number };
-type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
+type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
@@ -107,117 +107,6 @@ function isImage(mimeType: string): boolean {
 
 function isPdf(mimeType: string): boolean {
   return mimeType === "application/pdf";
-}
-
-async function createProcessedImage(file: File, rotationDegrees: number, crop: CropInsets): Promise<File> {
-  const sourceUrl = URL.createObjectURL(file);
-  try {
-    const image = new Image();
-    image.src = sourceUrl;
-    await image.decode();
-
-    // Crop coordinates are defined against the rotated page preview, so rotate first.
-    const radians = rotationDegrees * Math.PI / 180;
-    const sin = Math.abs(Math.sin(radians));
-    const cos = Math.abs(Math.cos(radians));
-    const rotatedWidth = Math.max(1, Math.ceil(image.width * cos + image.height * sin));
-    const rotatedHeight = Math.max(1, Math.ceil(image.width * sin + image.height * cos));
-    const rotated = document.createElement("canvas");
-    rotated.width = rotatedWidth;
-    rotated.height = rotatedHeight;
-    const rotatedContext = rotated.getContext("2d");
-    if (!rotatedContext) throw new Error("Image rotation is unavailable.");
-    rotatedContext.fillStyle = "#fff";
-    rotatedContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
-    rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
-    rotatedContext.rotate(radians);
-    rotatedContext.drawImage(image, -image.width / 2, -image.height / 2);
-
-    const left = Math.round(rotatedWidth * crop.left / 100);
-    const top = Math.round(rotatedHeight * crop.top / 100);
-    const width = Math.max(1, Math.round(rotatedWidth * (100 - crop.left - crop.right) / 100));
-    const height = Math.max(1, Math.round(rotatedHeight * (100 - crop.top - crop.bottom) / 100));
-    const cropped = document.createElement("canvas");
-    cropped.width = width;
-    cropped.height = height;
-    const cropContext = cropped.getContext("2d");
-    if (!cropContext) throw new Error("Canvas crop is unavailable.");
-    cropContext.drawImage(rotated, left, top, width, height, 0, 0, width, height);
-
-    const scale = Math.min(1, 2200 / Math.max(width, height));
-    const output = document.createElement("canvas");
-    output.width = Math.max(1, Math.round(width * scale));
-    output.height = Math.max(1, Math.round(height * scale));
-    const outputContext = output.getContext("2d");
-    if (!outputContext) throw new Error("Processed image output is unavailable.");
-    outputContext.fillStyle = "#fff";
-    outputContext.fillRect(0, 0, output.width, output.height);
-    outputContext.drawImage(cropped, 0, 0, output.width, output.height);
-
-    const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.86));
-    const baseName = file.name.replace(/\.[^.]+$/, "");
-    return new File([blob], `${baseName || "scan"}-processed.jpg`, { type: "image/jpeg", lastModified: Date.now() });
-  } finally {
-    URL.revokeObjectURL(sourceUrl);
-  }
-}
-
-function joinBytes(parts: Uint8Array[]): Uint8Array {
-  const total = parts.reduce((sum, part) => sum + part.length, 0);
-  const output = new Uint8Array(total);
-  let offset = 0;
-  for (const part of parts) {
-    output.set(part, offset);
-    offset += part.length;
-  }
-  return output;
-}
-
-async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
-  if (pages.length < 2) throw new Error("Select at least two image pages to create a multi-page PDF.");
-  const encoder = new TextEncoder();
-  const imagePages: { bytes: Uint8Array; width: number; height: number }[] = [];
-  for (const page of pages) {
-    const processed = await createProcessedImage(page.file, page.rotation, page.crop);
-    const bitmap = await createImageBitmap(processed);
-    imagePages.push({ bytes: new Uint8Array(await processed.arrayBuffer()), width: bitmap.width, height: bitmap.height });
-    bitmap.close();
-  }
-
-  const objects: Uint8Array[] = [];
-  const offsets: number[] = [0];
-  let byteOffset = 0;
-  const pushObject = (id: number, chunks: Uint8Array[]) => {
-    const objectBytes = joinBytes([encoder.encode(`${id} 0 obj\n`), ...chunks, encoder.encode("\nendobj\n")]);
-    offsets[id] = byteOffset;
-    objects.push(objectBytes);
-    byteOffset += objectBytes.length;
-  };
-  const maxObjectId = 2 + imagePages.length * 3;
-  pushObject(1, [encoder.encode("<< /Type /Catalog /Pages 2 0 R >>")]);
-  const pageIds = imagePages.map((_, index) => 3 + index * 3);
-  pushObject(2, [encoder.encode(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${imagePages.length} >>`)]);
-
-  imagePages.forEach((page, index) => {
-    const pageId = 3 + index * 3;
-    const contentId = pageId + 1;
-    const imageId = pageId + 2;
-    const content = encoder.encode(`q\n${page.width} 0 0 ${page.height} 0 0 cm\n/Im0 Do\nQ\n`);
-    pushObject(pageId, [encoder.encode(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Resources << /XObject << /Im0 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`)]);
-    pushObject(contentId, [encoder.encode(`<< /Length ${content.length} >>\nstream\n`), content, encoder.encode("endstream")]);
-    pushObject(imageId, [
-      encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${page.width} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.bytes.length} >>\nstream\n`),
-      page.bytes,
-      encoder.encode("\nendstream"),
-    ]);
-  });
-
-  const header = encoder.encode("%PDF-1.4\n%âãÏÓ\n");
-  const allObjects = joinBytes(objects);
-  const finalOffset = header.length + allObjects.length;
-  const xrefRows = ["0000000000 65535 f ", ...Array.from({ length: maxObjectId }, (_, index) => `${String(offsets[index + 1] + header.length).padStart(10, "0")} 00000 n `)];
-  const xref = encoder.encode(`xref\n0 ${maxObjectId + 1}\n${xrefRows.join("\n")}\ntrailer\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\nstartxref\n${finalOffset}\n%%EOF`);
-  return new File([joinBytes([header, allObjects, xref])], `SolenOS-scan-${new Date().toISOString().slice(0, 10)}.pdf`, { type: "application/pdf", lastModified: Date.now() });
 }
 
 export default function DocumentsPage() {
@@ -416,50 +305,8 @@ export default function DocumentsPage() {
     }
     setUploadMessage(null);
     setReviewPages((current) => current.map((item, i) => i === index
-      ? { ...item, prepared: true, reviewed: false, note: "Page adjustments saved. SolenOS will apply the saved crop and rotation during server-side extraction after upload." }
+      ? { ...item, prepared: true, note: "Page adjustments saved. SolenOS will apply the saved crop and rotation during server-side extraction after upload." }
       : item));
-  };
-
-  const combineImagePagesIntoPdf = async () => {
-    const imagePages = reviewPages.filter((page) => page.file.type.startsWith("image/"));
-    if (imagePages.length < 2) {
-      setUploadMessage({ kind: "error", text: "Add at least two image pages before creating a combined PDF." });
-      return;
-    }
-    if (imagePages.some((page) => !page.prepared)) {
-      setUploadMessage({ kind: "error", text: "Save crop/straighten settings for each image page before combining them." });
-      return;
-    }
-    setPreparingScan(true);
-    setUploadMessage(null);
-    try {
-      const pdfFile = await createMultiPagePdf(imagePages);
-      if (pdfFile.size > MAX_FILE_BYTES) throw new Error("The combined PDF exceeds the 10 MiB upload limit. Combine fewer pages or split this document into smaller PDFs.");
-      const combinedText = imagePages.map((page, index) => `[Page ${index + 1}]\n${page.uncertain ? "[UNCERTAIN EXTRACTION] " : ""}${page.text.trim() || "[No readable text extracted; consult original page.]"}`).join("\n\n");
-      const existingPdf = reviewPages.some((page) => page.file.type === "application/pdf" && page.file.name === pdfFile.name);
-      if (existingPdf) {
-        setUploadMessage({ kind: "error", text: "A combined PDF with this name is already in the review list. Save or discard this batch before creating another." });
-        return;
-      }
-      setReviewPages((current) => [...current, {
-        ingestionKey: crypto.randomUUID(),
-        captureTimestamp: new Date().toISOString(),
-        file: pdfFile,
-        text: combinedText,
-        note: "Combined multi-page PDF generated from the reviewed scan pages below. Original uploaded page files remain separate and unchanged.",
-        reviewed: true,
-        uncertain: imagePages.some((page) => page.uncertain),
-        rotation: 0,
-        crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        prepared: true,
-        previewUrl: URL.createObjectURL(pdfFile),
-      }]);
-      setUploadMessage({ kind: "success", text: `Created a ${imagePages.length}-page PDF. The individual original scans will also be preserved when you save this batch.` });
-    } catch (error) {
-      setUploadMessage({ kind: "error", text: error instanceof Error ? error.message : "Could not create the combined PDF. The individual original scans are still in the review list." });
-    } finally {
-      setPreparingScan(false);
-    }
   };
 
   const saveReviewedPages = async () => {
@@ -586,7 +433,6 @@ export default function DocumentsPage() {
         {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save your captured pages now. SolenOS will process them after upload." : "Save the original file now. SolenOS will process it after upload."} Original files are preserved.</p>
-          <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine image pages into one PDF</button>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You do not need to read or correct extracted text before saving. SolenOS preserves the original and processes it in the background. Unclear results remain marked as uncertain.</p>
           <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}><strong>About scanned text:</strong> The original page is preserved. Server OCR uses your saved crop and rotation settings when available. You can review statements later; no extracted statement becomes an LCR fact until you accept it.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
@@ -616,7 +462,7 @@ export default function DocumentsPage() {
                     const dy = (event.clientY - drag.startY) / drag.height * 100;
                     const left = Math.max(0, Math.min(80 - drag.crop.right, drag.crop.left + dx));
                     const top = Math.max(0, Math.min(80 - drag.crop.bottom, drag.crop.top + dy));
-                    setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply adjustments and re-extract text." } : item));
+                    setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, prepared: false, note: "Crop area moved. Save the crop settings before uploading." } : item));
                   }}
                   onPointerUp={() => { cropDrag.current = null; }}
                   onPointerCancel={() => { cropDrag.current = null; }}
@@ -631,20 +477,20 @@ export default function DocumentsPage() {
                       if (event.key === "ArrowRight") crop.left = Math.min(80 - crop.right, crop.left + step);
                       if (event.key === "ArrowUp") crop.top = Math.max(0, crop.top - step);
                       if (event.key === "ArrowDown") crop.top = Math.min(80 - crop.bottom, crop.top + step);
-                      return { ...item, crop, prepared: false, reviewed: false, text: "", note: "Crop area moved. Apply adjustments and re-extract text." };
+                      return { ...item, crop, prepared: false, note: "Crop area moved. Save the crop settings before uploading." };
                     }));
                   }}
                   style={{ position: "absolute", left: `${page.crop.left}%`, top: `${page.crop.top}%`, width: `${100 - page.crop.left - page.crop.right}%`, height: `${100 - page.crop.top - page.crop.bottom}%`, border: "2px solid #fff", boxShadow: "0 0 0 1px #17251c", cursor: "move", touchAction: "none", boxSizing: "border-box", background: "transparent" }} />
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, prepared: false, reviewed: false, text: "", note: "Page angle changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, prepared: false, reviewed: false, text: "", note: "Page orientation changed. Apply adjustments and re-extract text." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, note: "Page angle changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, prepared: false, note: "Page angle changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, prepared: false, note: "Page orientation changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, prepared: false, note: "Page orientation changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
               </div>
               <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>Straightening: {page.rotation.toFixed(1)}°. Crop margins are percentages of the rotated page.</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>
-                {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, reviewed: false, text: "", note: "Crop changed. Apply adjustments and re-extract text." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
+                {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, note: "Crop changed. Save the crop settings before uploading." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
               </div>
               <button type="button" onClick={() => void prepareImagePage(index)} disabled={preparingScan || uploading} style={{ justifySelf: "start", minHeight: 42, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Save crop / straighten settings</button>
             </div>}
