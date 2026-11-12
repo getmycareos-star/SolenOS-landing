@@ -93,7 +93,9 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
     id: idValue,
     person_id: typeof row.person_id === "string" ? row.person_id : personId,
     event_type: eventType,
-    status: typeof row.status === "string" ? row.status : typeof row.epistemic_status === "string" ? row.epistemic_status : "Not specified",
+    status: typeof row.status === "string" ? row.status
+      : typeof row.assertion_status === "string" ? row.assertion_status
+        : typeof row.epistemic_status === "string" ? row.epistemic_status : "Not specified",
     occurred_at: typeof row.occurred_at === "string" ? row.occurred_at
       : typeof row.event_time === "string" ? row.event_time
         : typeof row.observed_at === "string" ? row.observed_at
@@ -591,7 +593,10 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
                           </dl>
                           {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Recorded significance:</strong> {event.significance_verdict}</p>}
-                          {(event.source_type === "care_event" || event.source_type === "care_assertion") && (
+                          {(event.source_type === "care_event" || (
+                            event.source_type === "care_assertion" &&
+                            !["superseded", "retracted"].includes(event.status.toLowerCase())
+                          )) && (
                             <div style={{ marginTop: 16, borderTop: "1px solid var(--solenos-hairline)", paddingTop: 14 }}>
                               <button
                                 type="button"
