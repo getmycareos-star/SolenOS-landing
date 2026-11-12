@@ -62,8 +62,8 @@ try {
   });
 
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Open Loops" }).waitFor();
-  await page.getByText("No items in this view").waitFor({ timeout: 15_000 }).catch(() => {});
+  await page.getByRole("heading", { name: "Follow-ups and questions" }).waitFor();
+  await page.getByRole("heading", { name: "No follow-ups in this view" }).waitFor({ timeout: 15_000 }).catch(() => {});
   await page.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
