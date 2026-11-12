@@ -291,7 +291,7 @@ try {
   await page.getByRole("heading", { name: "Documents" }).waitFor({ timeout: 15_000 });
   const reviewCard = page.locator("article").filter({ hasText: documentName });
   await reviewCard.getByLabel("I reviewed this text against the original scan.").check();
-  await page.getByRole("button", { name: "Save reviewed documents", exact: true }).click();
+  await page.getByRole("button", { name: "Save files", exact: true }).click();
   await page.getByRole("status").filter({ hasText: /Saved 1 original file/ }).waitFor({ timeout: 30_000 });
   const savedDocument = page.getByRole("button").filter({ hasText: documentName }).last();
   await savedDocument.waitFor({ timeout: 15_000 });
