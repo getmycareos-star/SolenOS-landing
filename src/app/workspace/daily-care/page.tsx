@@ -177,7 +177,10 @@ function displayHistoryText(item: CareItem): string {
           refused: "reported refused",
           missed: "reported missed",
         };
-        parts.push(`${name}: ${statusLabels[status] || status}`);
+        const scheduledFor = typeof medicine.scheduled_for === "string"
+          ? ` (scheduled for ${displayCareTime(medicine.scheduled_for)})`
+          : "";
+        parts.push(`${name}: ${statusLabels[status] || status}${scheduledFor}`);
       }
     }
 
