@@ -411,7 +411,6 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
           </div>
         </div>}
       </>}
-tails>
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
