@@ -161,15 +161,14 @@ assert(!workspace.includes("/workspace/companion?draft="), "LCR must not redirec
 console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
 console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");
 const companionSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "AICompanion.tsx"), "utf8");
-assert(companionSource.includes("response.care_update_candidates"), "Companion review UI must consume backend-validated proposals");
-assert(companionSource.includes("reviewCareUpdate(candidate, 'accept')"), "Companion must expose explicit acceptance");
-assert(companionSource.includes("reviewCareUpdate(candidate, 'correct')"), "Companion must expose explicit correction");
-assert(companionSource.includes("reviewCareUpdate(candidate, 'reject')"), "Companion must expose explicit rejection");
-assert(!companionSource.includes("CARE_REVIEW_SIGNAL"), "Care-update identification must not rely on frontend keyword matching");
-assert(!companionSource.includes("automatic background review"), "Frontend must not create a parallel care-review workflow");
-
-assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
-assert(companionSource.includes("refreshPendingCareUpdates") && companionSource.includes("/companion/care-updates"), "Companion must refresh persisted caregiver-review proposals through the existing review API");
+assert(!companionSource.includes("care_update_candidates"), "Companion must not load or render LCR proposals");
+assert(!companionSource.includes("reviewCareUpdate"), "Companion must not accept, correct, or reject care-record assertions");
+assert(!companionSource.includes("refreshPendingCareUpdates"), "Companion must not operate a caregiver task queue");
+assert(!companionSource.includes("type=\"file\"") && !companionSource.includes("getUserMedia"), "Companion must not own document upload or camera capture");
+assert(companionSource.includes('aria-label="Send a message to Companion"'), "Companion remains connected to the conversation composer");
+const documentsSource = fs.readFileSync(path.join(root, "src", "app", "workspace", "documents", "page.tsx"), "utf8");
+assert(documentsSource.includes("uploadInputRef.current?.click()"), "Documents must own file upload");
+assert(documentsSource.includes("ScanDocumentCapture") && documentsSource.includes("openDocumentScanner"), "Documents must own live multi-page scanning");
 // Provenance status is displayed only when returned by the backend; no write is inferred.
 const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
 assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
