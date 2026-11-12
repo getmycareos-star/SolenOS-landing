@@ -11,6 +11,7 @@ type Member = {
   name: string;
   email: string | null;
   role: string;
+  access_scope: string;
   status: string;
   can_manage_members: boolean;
   granted_at: string | null;
@@ -210,6 +211,33 @@ export function CaregiverAccessPanel() {
     }
   };
 
+  const updateScope = async (member: Member, accessScope: "full_record" | "documents_only") => {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await fetch("/api/v1/caregiver-access/members/" + encodeURIComponent(member.caregiver_id) + "/access-scope", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(getAnonymousAccessToken() ? { Authorization: "Bearer " + getAnonymousAccessToken() } : {}),
+        },
+        body: JSON.stringify({ access_scope: accessScope }),
+      }).then(async (response) => {
+        if (!response.ok) throw new Error("Access scope update failed");
+        return response.json();
+      });
+      setNotice(accessScope === "documents_only"
+        ? member.name + " can now access documents and appointment paperwork only."
+        : member.name + " can access the full care record.");
+      await load();
+    } catch {
+      setError("We couldn't update this caregiver's permissions. Their previous access remains in place.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const revoke = async (member: Member) => {
     if (!window.confirm("Remove " + member.name + "'s access to this care record? Their past contributions will remain in the history.")) return;
     setBusy(true);
@@ -257,6 +285,19 @@ export function CaregiverAccessPanel() {
                 <div>
                   <strong>{member.name}</strong>
                   <p className="mobile-settings-hint" style={{ margin: 0 }}>{member.email ?? "No email"} · {member.role === "primary" ? "Primary caregiver" : "Family caregiver"} · {member.status}</p>
+                  <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>Access: {member.access_scope === "documents_only" ? "Documents and appointment paperwork" : "Full care record"}</p>
+                  {member.status === "active" && !member.can_manage_members && (
+                    <select
+                      aria-label={"Access scope for " + member.name}
+                      className="mobile-settings-input"
+                      value={member.access_scope || "full_record"}
+                      disabled={busy}
+                      onChange={(event) => void updateScope(member, event.target.value as "full_record" | "documents_only")}
+                    >
+                      <option value="full_record">Full care record</option>
+                      <option value="documents_only">Documents and appointment paperwork only</option>
+                    </select>
+                  )}
                 </div>
                 {member.status === "active" && !member.can_manage_members && (
                   <Button type="button" variant="secondary" disabled={busy} onClick={() => void revoke(member)}><X size={15} aria-hidden /> Remove</Button>
