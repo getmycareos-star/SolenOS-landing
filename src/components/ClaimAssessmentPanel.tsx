@@ -461,7 +461,7 @@ export default function ClaimAssessmentPanel() {
             </select>
           </label>
           <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Exact words from the source
-            <textarea style={{ ...field, minHeight: 68 }} value={link.source_passage} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact words from the selected source. Do not rewrite them." />
+            <textarea style={{ ...field, minHeight: 68 }} value={caregiverSafeAssistantText(link.source_passage) || "The original wording is saved."} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact words from the selected source. Do not rewrite them." />
           </label>
           <label style={{ display: "block", fontSize: 12 }}>What this source does not show (optional)
             <input style={field} value={link.scope_note} onChange={(event) => updateLink(index, { scope_note: event.target.value })} placeholder="What this passage does or does not establish" />
@@ -490,8 +490,8 @@ export default function ClaimAssessmentPanel() {
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Sources not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Source details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
           {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
-          {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {item.field}</strong><div>{item.description}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
-          <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>{assessmentImpact.interpretation_limit}</p>
+          {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {simpleReviewStatus(item.field)}</strong><div>{caregiverSafeAssistantText(item.description) || "The saved reports do not match."}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
+          <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>{caregiverSafeAssistantText(assessmentImpact.interpretation_limit) || "This check may not include every relevant detail."}</p>
         </>}
       </section>
       <h4 style={{ fontSize: 13, marginBottom: 5 }}>Past reviews</h4>
@@ -499,13 +499,13 @@ export default function ClaimAssessmentPanel() {
       {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError} <button type="button" style={button} onClick={() => void loadHistory()} disabled={historyLoading}>Retry history</button></p>}
       {!historyLoading && !historyError && history.length === 0 && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>No earlier reviews are saved for this care detail.</p>}
       {history.map((item) => <article key={item.id} style={{ borderTop: "1px solid var(--border)", padding: "9px 0", fontSize: 12 }}>
-        <strong>Version {item.claim_version}: {simpleReviewStatus(item.status)}</strong>
+        <strong>Earlier review: {simpleReviewStatus(item.status)}</strong>
         <div>{new Date(item.created_at).toLocaleString()} · Reviewed by a caregiver</div>
-        <p>{item.rationale}</p>
+        <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
         <ul>{item.evidence_links.map((link, i) => <li key={i}>
           {simpleReviewStatus(link.relationship)} · source information
           {link.source_passage ? <blockquote style={{ margin: "5px 0", paddingLeft: 8, borderLeft: "2px solid var(--border)" }}>{link.source_passage}</blockquote> : null}
-          {link.scope_note ? <div>Scope: {link.scope_note}</div> : null}
+          {link.scope_note ? <div>What this does and does not show: {caregiverSafeAssistantText(link.scope_note) || "No further details are available."}</div> : null}
         </li>)}</ul>
         {item.supersedes_assessment_id && <small>Replaces an earlier review</small>}
         {item.superseded_by_claim_id && <small>Replaced by newer care information</small>}
