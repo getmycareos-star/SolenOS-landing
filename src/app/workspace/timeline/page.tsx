@@ -380,7 +380,7 @@ export default function TimelinePage() {
         caregiver_id: caregiverId,
         target_type: "care_event",
         target_id: event.id,
-        original_text: event.description || event.title,
+        original_text: parseDescription(event.description) || event.title,
         corrected_text: correctionText.trim(),
         reason: correctionReason.trim() || undefined,
       }) as { id?: string; care_continuity_execution?: { stages?: Record<string, string> } };
