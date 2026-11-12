@@ -45,7 +45,7 @@ assert.match(documents, /handleFiles/, "uploaded and captured files must enter t
 assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /Save your files/);
-assert.match(documents, /You can review extracted statements later\./, "saving must not force immediate document review");
+assert.match(documents, /server processing continues even if you leave/, "saving confirms that processing continues after the original upload is complete");
 assert.match(documents, /saveReviewedPages/);
 assert.match(documents, /getJSON\("\/evidence\//, "saved document records remain readable");
 assert.match(documents, /getBlob\("\/upload\//, "saved original files remain retrievable");
