@@ -37,6 +37,15 @@ type CareNotification = {
   resolved_at?: string | null;
   resolution_reason?: string | null;
   is_read: boolean;
+  push_delivery?: {
+    status: "in_app_only" | "not_attempted" | "pending" | "partial_failure" | "failed" | "accepted_by_push_service" | "cancelled" | "unknown" | string;
+    message: string;
+    target_count?: number;
+    accepted_count?: number;
+    pending_count?: number;
+    failed_count?: number;
+    cancelled_count?: number;
+  };
 };
 
 function notificationCategoryLabel(category: string): string {
@@ -309,6 +318,11 @@ function NotificationsCard() {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span className="mobile-settings-label">{item.title}</span>
               <span className="mobile-settings-hint">{item.body}</span>
+              {item.push_delivery && item.push_delivery.status !== "in_app_only" && (
+                <span className="mobile-settings-hint" role={["failed", "partial_failure"].includes(item.push_delivery.status) ? "status" : undefined}>
+                  {item.push_delivery.message}
+                </span>
+              )}
               <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {notificationCategoryLabel(item.category)}</span>
               {item.category === "open_loop_due" && <Link href="/workspace/open-loops" className="mobile-settings-hint">Review follow-ups</Link>}
               {(item.status ?? "active") === "active"
