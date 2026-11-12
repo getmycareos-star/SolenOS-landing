@@ -230,6 +230,10 @@ export default function DailyCarePage() {
     setContextError("");
     void ensureAnonymousSession()
       .then(async () => {
+        // Do not make caregivers wait for current-care and history reads before
+        // they can record an update. The capture interface is useful as soon
+        // as the anonymous session is ready; context can finish loading below.
+        if (active) setReady(true);
         const [careResult, historyResult] = await Promise.allSettled([
           getJSON("/care-continuity/current-care?limit_per_source=20"),
           getJSON("/daily-care/intelligence/history?limit=200&offset=0"),
