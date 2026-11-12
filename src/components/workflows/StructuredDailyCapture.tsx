@@ -685,12 +685,15 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       
       // Reset vitals form
       setVitalForm({
-        vital_type: 'bp_systolic',
+        vital_type: 'blood_pressure',
         value: Number.NaN,
         measured_at: toLocalDateTimeInput(),
-        unit: null,
+        unit: VITAL_UNITS.blood_pressure,
         note: null,
+        measurement_name: null,
       });
+      setDiastolicValue(Number.NaN);
+      setOptionalPulseValue(Number.NaN);
       
       // Reset scale form
       setScaleForm({
