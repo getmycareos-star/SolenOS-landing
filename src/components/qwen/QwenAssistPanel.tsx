@@ -18,6 +18,29 @@ export type QwenWorkflow =
   | "critical_information_completeness" | "personal_preferences_distress_context"
   | "caregiver_strain_support" | "document_validity_renewal";
 
+type QwenClaimSource = {
+  record_type?: string;
+  record_id?: string;
+  label?: string;
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  entered_by?: string | null;
+  reported_by?: string | null;
+  source_excerpt?: string | null;
+  source_state_label?: string | null;
+};
+type QwenClaimProvenance = {
+  coverage?: string;
+  unmatched_statement_count?: number;
+  claims?: Array<{
+    claim_id: string;
+    text: string;
+    support_status: string;
+    validation_basis?: string;
+    aggregate?: { topic?: string; window_label?: string; count?: number; candidate_count?: number } | null;
+    source_references: QwenClaimSource[];
+  }>;
+};
 type QwenBackgroundJobResult = {
   job_id: string;
   status: string;
@@ -31,6 +54,7 @@ type QwenBackgroundJobResult = {
   source_handoff_ids: string[];
   source_notification_ids: string[];
   source_freshness_assessment_ids: string[];
+  claim_provenance?: QwenClaimProvenance | null;
   review_required: boolean;
   written_to_lcr: false;
   persistence: "read_only_assistance";
@@ -185,33 +209,43 @@ export default function QwenAssistPanel({
           <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "10px" }}>
             Suggestion · Please review it. This does not change your care record.
           </p>
-          {[
-            ...reply.source_event_ids.map((id, index) => ({ label: `Care update ${index + 1}`, id })),
-            ...reply.source_evidence_ids.map((id, index) => ({ label: `Attached item ${index + 1}`, id })),
-            ...reply.source_document_analysis_ids.map((id, index) => ({ label: `Document review ${index + 1}`, id })),
-            ...reply.source_appointment_ids.map((id, index) => ({ label: `Appointment ${index + 1}`, id })),
-            ...reply.source_handoff_ids.map((id, index) => ({ label: `Care handoff ${index + 1}`, id })),
-            ...reply.source_notification_ids.map((id, index) => ({ label: `Follow-up notice ${index + 1}`, id })),
-            ...reply.source_freshness_assessment_ids.map((id, index) => ({ label: `Evidence review ${index + 1}`, id })),
-          ].length > 0 && (
-            <div aria-label="Sources used for this suggestion" style={{ marginTop: "12px", borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
-              <p style={{ fontSize: "12px", fontWeight: 650, margin: "0 0 6px" }}>Information used</p>
-              <ul style={{ margin: 0, paddingLeft: "18px", display: "grid", gap: "4px" }}>
-                {[
-                  ...reply.source_event_ids.map((id, index) => ({ label: `Care update ${index + 1}`, id })),
-                  ...reply.source_evidence_ids.map((id, index) => ({ label: `Attached item ${index + 1}`, id })),
-                  ...reply.source_document_analysis_ids.map((id, index) => ({ label: `Document review ${index + 1}`, id })),
-                  ...reply.source_appointment_ids.map((id, index) => ({ label: `Appointment ${index + 1}`, id })),
-                  ...reply.source_handoff_ids.map((id, index) => ({ label: `Care handoff ${index + 1}`, id })),
-                  ...reply.source_notification_ids.map((id, index) => ({ label: `Follow-up notice ${index + 1}`, id })),
-                  ...reply.source_freshness_assessment_ids.map((id, index) => ({ label: `Evidence review ${index + 1}`, id })),
-                ].map((source) => (
-                  <li key={source.id} style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-                    {source.label} · reference {source.id.slice(0, 8)}
-                  </li>
-                ))}
-              </ul>
+          {reply.claim_provenance?.claims && reply.claim_provenance.claims.length > 0 && (
+            <div aria-label="What each statement is based on" style={{ marginTop: "12px", borderTop: "1px solid var(--border)", paddingTop: "10px", display: "grid", gap: "10px" }}>
+              <p style={{ fontSize: "12px", fontWeight: 650, margin: 0 }}>What each statement is based on</p>
+              {reply.claim_provenance.claims.map((claim) => (
+                <section key={claim.claim_id} style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "9px", display: "grid", gap: "6px" }}>
+                  <p style={{ fontSize: "12px", lineHeight: 1.5, margin: 0 }}>{claim.text}</p>
+                  {claim.support_status === "matched_validated_aggregate" && (
+                    <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0 }}>
+                      Counted from {claim.aggregate?.count ?? claim.source_references.length} distinct saved care updates
+                      {claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.
+                    </p>
+                  )}
+                  {claim.support_status === "matched_saved_wording" && (
+                    <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0 }}>This wording appears in the saved information below.</p>
+                  )}
+                  {claim.support_status === "matched_historical_only" && (
+                    <p style={{ fontSize: "11px", color: "var(--theme-warning-fg)", margin: 0 }}>This wording appears only in an earlier or corrected record. It is not treated as current information.</p>
+                  )}
+                  {claim.support_status === "not_matched_to_saved_wording" && (
+                    <p style={{ fontSize: "11px", color: "var(--theme-warning-fg)", margin: 0 }}>We could not match this statement to the wording in a saved record. Check it before relying on it.</p>
+                  )}
+                  {claim.source_references.map((source, index) => (
+                    <div key={(source.record_type ?? "source") + "-" + (source.record_id ?? index)} style={{ borderTop: "1px solid var(--border)", paddingTop: "6px" }}>
+                      <p style={{ fontSize: "11px", fontWeight: 600, margin: 0 }}>{source.label || "Saved care information"}</p>
+                      {source.occurred_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
+                      {source.recorded_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>When it was recorded: {new Date(source.recorded_at).toLocaleString()}</p>}
+                      {source.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Reported by: {source.reported_by}</p>}
+                      {source.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Recorded by: {source.entered_by}</p>}
+                      {source.source_state_label && <p style={{ fontSize: "11px", color: "var(--theme-warning-fg)", margin: "3px 0 0" }}>{source.source_state_label}</p>}
+                      {source.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{source.source_excerpt}</blockquote>}
+                    </div>
+                  ))}
+                </section>
+              ))}
             </div>
+          )}
+          {/* Source details are shown beside the statements they support above; avoid a generic list of unrelated source IDs. */}
           )}
         </div>
       )}
