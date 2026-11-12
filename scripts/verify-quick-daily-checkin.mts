@@ -86,6 +86,14 @@ assert.match(photoCapture, /postFormData\("\/upload"/,
   "photographs use the existing evidence upload endpoint");
 assert.match(photoCapture, /result\?\.evidence_id/,
   "photo capture requires a persisted evidence receipt");
+assert.match(photoCapture, /evidence_type", "care_photo"/,
+  "photographs are stored as care-photo evidence, not medication photos");
+assert.match(detailedCapture, /When did this happen\?/,
+  "free-text observations can preserve an optional event time");
+assert.match(detailedCapture, /occurred_at: new Date\(occurredAt\)\.toISOString\(\)/,
+  "explicit caregiver event time is sent to the backend separately from recording time");
+assert.match(detailedCapture, /capture_kind: captureKind/,
+  "the selected capture interaction is preserved in the source event");
 assert.match(photoCapture, /careRecordUpdated/,
   "a saved photograph refreshes the care record");
 
