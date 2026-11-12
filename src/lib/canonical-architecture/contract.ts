@@ -31,7 +31,7 @@ export const CANONICAL_SUCCESS_METRIC =
   "A caregiver can return later and reliably understand what is known, what changed, what remains uncertain, what needs attention, and what happened next — with traceable sources.";
 
 export const CANONICAL_PRIMARY_FAILURE_MODEL =
-  "SolenOS fails when any inferred information appears, sections overlap in meaning, interpretation expands beyond input, prioritization includes reasoning, explanation leaks outside what_is_happening, or the system behaves conversationally.";
+  "SolenOS fails when unsupported claims are presented as facts, provenance is lost, uncertainty or contradictions are hidden, unreviewed model output is promoted into authoritative care state, identity boundaries are bypassed, or a read projection mutates the Living Care Record.";
 
 export const CANONICAL_CLARITY_PRINCIPLE =
   "Clarity over completeness. Structure over depth. Prioritization over explanation. Immediacy over intelligence display.";
@@ -40,7 +40,7 @@ export const CANONICAL_TRUST_PRINCIPLE =
   "Consistency is more important than quality variation.";
 
 export const CANONICAL_CORE_PRINCIPLE =
-  "ONLY what_is_happening may explain. All other fields hold a single semantic role with zero overlap.";
+  "Every care statement retains its source, actor, time context, and epistemic status; only governed care-domain workflows may change authoritative Living Care Record state.";
 
 export const CANONICAL_DETERMINISTIC_FAILURE_MODEL =
   "SolenOS fails when identical or semantically equivalent inputs produce any meaningful output variation.";
