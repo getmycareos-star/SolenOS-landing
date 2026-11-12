@@ -37,7 +37,7 @@ export type AttachedDocument = {
   mimeType: string;
   /** Extracted text when OCR/Tika succeeded; empty if pending/failed. */
   extractedText: string;
-  status: "pending" | "ready" | "failed";
+  status: "pending" | "saved" | "ready" | "failed";
   /** Human-readable note when extraction failed. */
   errorNote?: string;
   /** Optional preview of extracted text for quick UI display. */
