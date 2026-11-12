@@ -584,7 +584,9 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
   await daily.page.reload({ waitUntil: "domcontentloaded" });
   await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
-  await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
+  for (const report of scenarioReports) {
+    await daily.page.getByText(report, { exact: false }).first().waitFor({ timeout: 15_000 });
+  }
   await verifyMobile(daily.page);
   await daily.context.close();
 
