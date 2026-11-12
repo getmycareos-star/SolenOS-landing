@@ -273,26 +273,29 @@ try {
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
-  // Exercise the complete Documents UI path: choose a real synthetic file,
-  // review it, upload it to FastAPI/PostgreSQL, reload the library, retrieve
-  // the original bytes, and verify the downloaded file is byte-for-byte equal.
-  await page.goto(new URL("/workspace/companion", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Add document or image" }).waitFor({ timeout: 15_000 });
-  const documentName = "CI-only-care-record-document.txt";
-  const documentText = "SolenOS integration fixture. Caregiver reports that breakfast was untouched on the synthetic test date. This is not a real care record.";
-  await page.getByRole("button", { name: "Add document or image" }).click();
-  await page.getByRole("menu", { name: "Document and image intake" }).getByRole("menuitem", { name: /Upload document/ }).click();
-  await page.locator('input[type="file"][accept*=".pdf"]').setInputFiles({
+  // Exercise the current Documents UI path: save the original once, let the
+  // backend own extraction, reload the library, and verify byte-for-byte retrieval.
+  await page.goto(new URL("/workspace/documents", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Documents" }).waitFor({ timeout: 15_000 });
+  const documentName = "CI-only-document-upload-verification.txt";
+  const documentText = "SolenOS document upload verification fixture. No care data.";
+  const uploadRequests = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/api/")) uploadRequests.push({ path: url.pathname, method: request.method() });
+  });
+  await page.locator('input[type="file"]').first().setInputFiles({
     name: documentName,
     mimeType: "text/plain",
     buffer: Buffer.from(documentText, "utf8"),
   });
-  await page.waitForURL((url) => url.pathname === "/workspace/documents" && url.searchParams.get("intake") === "1", { timeout: 15_000 });
-  await page.getByRole("heading", { name: "Documents" }).waitFor({ timeout: 15_000 });
-  const reviewCard = page.locator("article").filter({ hasText: documentName });
-  await reviewCard.getByLabel("I reviewed this text against the original scan.").check();
-  await page.getByRole("button", { name: "Save reviewed documents", exact: true }).click();
+  await page.getByRole("button", { name: "Save files", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Save files", exact: true }).click();
   await page.getByRole("status").filter({ hasText: /Saved 1 original file/ }).waitFor({ timeout: 30_000 });
+  const preflightCalls = uploadRequests.filter((item) => item.path.endsWith("/api/extract")).length;
+  const originalUploads = uploadRequests.filter((item) => item.method === "POST" && item.path.endsWith("/upload")).length;
+  assert.equal(preflightCalls, 0, "the browser must not send the original through a separate preflight extractor");
+  assert.equal(originalUploads, 1, "the browser must persist the original exactly once");
   const savedDocument = page.getByRole("button").filter({ hasText: documentName }).last();
   await savedDocument.waitFor({ timeout: 15_000 });
   await savedDocument.click();
@@ -309,7 +312,7 @@ try {
   if (downloadedText !== documentText) {
     throw new Error("The downloaded original document does not match the uploaded bytes.");
   }
-  console.log("PASS: real Documents UI upload, PostgreSQL-backed retrieval, and original-file download round trip.");
+  console.log("PASS: one browser upload, PostgreSQL-backed retrieval, and original-file download round trip.");
 
   // Exercise real Daily Care capture through the browser UI, then read the saved
   // record back from the authenticated current-care endpoint.
