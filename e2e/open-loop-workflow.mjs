@@ -273,25 +273,19 @@ try {
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
-  // Exercise the complete Documents UI path: choose a real synthetic file,
-  // review it, upload it to FastAPI/PostgreSQL, reload the library, retrieve
-  // the original bytes, and verify the downloaded file is byte-for-byte equal.
-  await page.goto(new URL("/workspace/companion", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Add document or image" }).waitFor({ timeout: 15_000 });
+  // Exercise the original-first Documents workflow: select one synthetic file,
+  // save the original to FastAPI/PostgreSQL, retrieve it, and compare exact bytes.
+  await page.goto(new URL("/workspace/documents?intake=1", frontend).toString(), { waitUntil: "domcontentloaded" });
   const documentName = "CI-only-care-record-document.txt";
   const documentText = "SolenOS integration fixture. Caregiver reports that breakfast was untouched on the synthetic test date. This is not a real care record.";
-  await page.getByRole("button", { name: "Add document or image" }).click();
-  await page.getByRole("menu", { name: "Document and image intake" }).getByRole("menuitem", { name: /Upload document/ }).click();
-  await page.locator('input[type="file"][accept*=".pdf"]').setInputFiles({
+  await page.locator('input[type="file"][accept*="application/pdf"]').setInputFiles({
     name: documentName,
     mimeType: "text/plain",
     buffer: Buffer.from(documentText, "utf8"),
   });
-  await page.waitForURL((url) => url.pathname === "/workspace/documents" && url.searchParams.get("intake") === "1", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents" }).waitFor({ timeout: 15_000 });
-  const reviewCard = page.locator("article").filter({ hasText: documentName });
-  await reviewCard.getByLabel("I reviewed this text against the original scan.").check();
-  await page.getByRole("button", { name: "Save reviewed documents", exact: true }).click();
+  await page.getByText(documentName, { exact: true }).waitFor({ timeout: 10_000 });
+  await page.getByRole("button", { name: "Save files", exact: true }).click();
   await page.getByRole("status").filter({ hasText: /Saved 1 original file/ }).waitFor({ timeout: 30_000 });
   const savedDocument = page.getByRole("button").filter({ hasText: documentName }).last();
   await savedDocument.waitFor({ timeout: 15_000 });
