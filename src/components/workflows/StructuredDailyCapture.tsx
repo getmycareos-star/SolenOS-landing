@@ -1049,7 +1049,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
           Source saved: {careContinuityExecution.stages.source_preservation === 'verified' ? 'confirmed' : 'not confirmed'}.
           {' '}Evidence: {careContinuityExecution.stages.evidence === 'verified' ? 'linked and confirmed' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not required' : 'not confirmed'}.
-          {' '}Care-record reconciliation: {careContinuityExecution.stages.reconciliation === 'committed' ? 'saved' : 'not confirmed'}.
+          {' '}Care-record reconciliation: {['committed', 'completed'].includes(careContinuityExecution.stages.reconciliation || '') ? 'saved' : 'not confirmed'}.
         </p>
       )}
       {saved && changeIntelligenceStatus === 'available' && (
