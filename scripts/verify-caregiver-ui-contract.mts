@@ -159,4 +159,6 @@ assert.ok(dailyCarePage.includes("Daily Care does not create a second copy"), "D
 assert.ok(dailyCarePage.includes("followUpsError"), "follow-up retrieval failures must remain visible rather than appearing as an empty list");
 assert.ok(naturalDailyUpdate.includes('getJSON("/care-continuity/medications")'), "uncertain medication reports must check the existing reviewed medication record");
 assert.ok(naturalDailyUpdate.includes("existing reviewed medication record lists"), "the caregiver must be shown what the existing reviewed record says without treating it as a new dose");
+assert.ok(naturalDailyUpdate.includes('getJSON("/documents/intelligence")'), "uncertain medication reports must search existing saved-document extractions");
+assert.ok(naturalDailyUpdate.includes("This extraction is not confirmation of a new dose"), "document extraction must not be presented as a confirmed medication change");
 console.log("Caregiver UI contract checks passed.");
