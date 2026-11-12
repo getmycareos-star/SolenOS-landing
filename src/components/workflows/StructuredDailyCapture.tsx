@@ -172,7 +172,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           const pendingValid = pending.filter((item): item is { medication_id: string; name: string; dose: string | null; record_status: string; review_overdue?: boolean } => {
             if (!item || typeof item !== "object") return false;
             const row = item as Record<string, unknown>;
-            return typeof row.medication_id === "string" && typeof row.name === "string" && row.record_status === "awaiting_caregiver_review";
+            return typeof row.medication_id === "string" && typeof row.name === "string" && (row.record_status === "awaiting_caregiver_review" || row.record_status === "needs_caregiver_review");
           });
           if (active) { setCurrentMedicationRecords(valid); setPendingMedicationRecords(pendingValid); }
         })
@@ -1301,7 +1301,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Reports waiting for your review</h4>
               {pendingMedicationRecords.map((item) => (
                 <div key={item.medication_id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 0", borderTop: "1px solid var(--border)" }}>
-                  <div style={{ minWidth: 0 }}><strong style={{ fontSize: 13 }}>{item.name}</strong>{item.dose && <span style={{ color: "var(--text-secondary)", fontSize: 12 }}> · {item.dose}</span>}<p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: 11 }}>{item.review_overdue ? "Review overdue · caregiver report" : "Caregiver report · not yet reviewed"}</p></div>
+                  <div style={{ minWidth: 0 }}><strong style={{ fontSize: 13 }}>{item.name}</strong>{item.dose && <span style={{ color: "var(--text-secondary)", fontSize: 12 }}> · {item.dose}</span>}<p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: 11 }}>{item.review_overdue ? "Review overdue · caregiver report" : item.record_status === "needs_caregiver_review" ? "Previously reviewed · needs a fresh review" : "Caregiver report · not yet reviewed"}</p></div>
                   <button type="button" className="workspace-primary" disabled={medicationRecordReviewing !== null} onClick={() => void handleReviewMedicationRecord(item.medication_id)} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8 }}>{medicationRecordReviewing === item.medication_id ? "Saving…" : "Review and confirm current"}</button>
                 </div>
               ))}
