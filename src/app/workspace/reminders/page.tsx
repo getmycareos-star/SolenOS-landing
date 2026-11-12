@@ -26,7 +26,7 @@ type CareReminder = {
   cancelled_by_caregiver_id: string | null;
   created_at: string;
   delivery_mode: "in_app_notification_feed";
-  notification_delivery_status: "in_app_feed_only";
+  notification_delivery_status: "in_app_notification_created";
 };
 
 function localDateTimeValue(date: Date): string {
@@ -107,7 +107,7 @@ export default function CareRemindersPage() {
       await refresh(personId);
       setTitle("");
       setNote("");
-      setNotice("Reminder saved. It will appear in this list, and an in-app notification will be added when it is due. No push or email alert is sent.");
+      setNotice("Reminder saved. It will appear in this list, and an in-app notification will be added when it is due. Browser push is optional when enabled; SolenOS does not send email.");
     } catch (reason) {
       setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
     } finally {
@@ -171,9 +171,9 @@ export default function CareRemindersPage() {
         </Link>
         <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> CARE CONTINUITY</p>
         <h1>Care reminders</h1>
-        <p>Save a follow-up once. SolenOS adds an in-app notification when it is due.</p>
+        <p>Save a follow-up once. SolenOS records an in-app notification when it is due.</p>
         <p className="care-reminders-delivery">
-          In-app notification feed only · no push or email alert is sent.
+          In-app notification feed · optional browser push · no email alerts.
         </p>
       </div>
 
@@ -276,7 +276,7 @@ export default function CareRemindersPage() {
                       </Button>
                     </div>
                   ) : null}
-                  <p className="care-reminder-footnote">Saved in this care record · notification status: not sent</p>
+                  <p className="care-reminder-footnote">Saved in this care record · an in-app notification is recorded when due</p>
                 </li>
               );
             })}
