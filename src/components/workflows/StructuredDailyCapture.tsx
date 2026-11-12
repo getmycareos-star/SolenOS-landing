@@ -158,26 +158,33 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   }>>([]);
   useEffect(() => {
     let active = true;
-    void getJSON("/care-continuity/medications")
-      .then((response: unknown) => {
-        const records = (response as { medications?: unknown })?.medications;
-        if (!Array.isArray(records)) return;
-        const valid = records.filter((item): item is {
-          medication_id: string; name: string; dose: string | null; record_status: string;
-        } => {
-          if (!item || typeof item !== "object") return false;
-          const row = item as Record<string, unknown>;
-          return typeof row.medication_id === "string"
-            && typeof row.name === "string"
-            && row.status === "active"
-            && row.record_status === "caregiver_reviewed_current_report";
+    const loadCurrentMedicationRecords = () => {
+      void getJSON("/care-continuity/medications")
+        .then((response: unknown) => {
+          const records = (response as { medications?: unknown })?.medications;
+          if (!Array.isArray(records)) return;
+          const valid = records.filter((item): item is {
+            medication_id: string; name: string; dose: string | null; record_status: string;
+          } => {
+            if (!item || typeof item !== "object") return false;
+            const row = item as Record<string, unknown>;
+            return typeof row.medication_id === "string"
+              && typeof row.name === "string"
+              && row.status === "active"
+              && row.record_status === "caregiver_reviewed_current_report";
+          });
+          if (active) setCurrentMedicationRecords(valid);
+        })
+        .catch(() => {
+          // No current medication list is shown when the authoritative LCR read is unavailable.
         });
-        if (active) setCurrentMedicationRecords(valid);
-      })
-      .catch(() => {
-        // No current medication list is shown when the authoritative LCR read is unavailable.
-      });
-    return () => { active = false; };
+    };
+    loadCurrentMedicationRecords();
+    window.addEventListener("careRecordUpdated", loadCurrentMedicationRecords);
+    return () => {
+      active = false;
+      window.removeEventListener("careRecordUpdated", loadCurrentMedicationRecords);
+    };
   }, []);
 
   // Historical reports remain available as a separate, explicitly non-current choice.
