@@ -423,7 +423,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setPendingCareUpdates(items)
     })
     return () => { active = false }
-  }, [])
+  }, [home])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
