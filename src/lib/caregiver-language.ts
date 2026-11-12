@@ -167,6 +167,9 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim();
   if (!text || isTechnicalDiagnosticText(text)) return null;
+  if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
+    try { JSON.parse(text); return null; } catch { /* ordinary text can begin with a bracket */ }
+  }
   return text;
 }
 
