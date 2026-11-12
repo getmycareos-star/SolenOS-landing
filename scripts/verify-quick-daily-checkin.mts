@@ -135,6 +135,10 @@ assert.match(dailyCarePage, /classifyHistoryRecord/,
   "new care records are grouped by their persisted event content");
 assert.match(dailyCarePage, /displayHistoryTime/,
   "history distinguishes event time from recording time");
+assert.match(dailyCarePage, /displayHistorySource/,
+  "history shows the contributor or explicitly says when the source is unavailable");
+assert.match(dailyCarePage, /Recorded by caregiver/,
+  "caregiver-entered records are not presented as unattributed facts");
 assert.match(dailyCarePage, /displayHistoryText/,
   "persisted JSON capture payloads are rendered as caregiver-readable entries");
 assert.match(dailyCarePage, /epistemic_status/,
