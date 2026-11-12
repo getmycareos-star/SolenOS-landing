@@ -119,3 +119,31 @@ Input: *“Dad stopped eating normally after his fall. The doctor changed his me
 
 Internal code may still say `rawText`, `observation`, `entry` as technical terms.  
 **Caregiver UI and composer strings** must speak Care Reality / Care Story — never notes-app chrome.
+
+
+## Plain American English — every caregiver-facing surface
+
+This rule applies to every caregiver-facing screen, message, label, question, summary, notification, error, document result, appointment view, and handoff.
+
+- Use familiar American English, short sentences, and active voice.
+- Prefer common words over clinical, engineering, database, or AI terminology.
+- Use one main idea per sentence. Explain unfamiliar care terms when they are necessary.
+- Use American spelling: **behavior**, **organize**, **organization**, **prioritize**, **color**, **center**, and **recognize**.
+- Use clear US date and time wording. Avoid ambiguous numeric dates.
+- Say who reported or noticed something and when, using ordinary language.
+- Keep reports, observations, possibilities, and confirmed information distinct.
+- Never make a statement sound more certain just to make it shorter.
+- Do not expose internal terms such as *epistemic status, provenance, reconciliation, assertion, extraction pipeline, OCR, API, JSON, schema, database,* or *model inference*.
+- Replace technical status messages with a clear explanation of what happened and what the caregiver can do next.
+
+Examples:
+
+| Do not show | Say instead |
+|---|---|
+| Evidence provenance is incomplete. | We cannot tell where this information came from yet. |
+| Reconciliation is pending. | We are still checking how this fits with the rest of the care record. |
+| OCR extraction failed. | We could not read this page. |
+| The model inference is uncertain. | We are not sure what this means yet. |
+| Assertion accepted. | You confirmed this information. |
+
+Technical terms may remain in code, internal logs, and engineering documentation. They must not appear in caregiver-facing copy.
