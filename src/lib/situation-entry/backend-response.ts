@@ -16,6 +16,11 @@ export type WorkspaceSituationResponse = SituationResponse & {
   } | null;
   qwen_review_required?: boolean;
   qwen_written_to_lcr?: boolean;
+  care_continuity_execution?: {
+    contract_version?: string;
+    workflow?: string;
+    stages?: Record<string, string>;
+  } | null;
   events?: Array<{ id?: string; title?: string; description?: string | null; occurred_at?: string; evidence_ids?: string[] }>;
 };
 
