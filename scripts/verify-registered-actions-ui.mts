@@ -23,7 +23,7 @@ for (const contract of [
   'Approve and register',
   'Keep as suggestion',
   'Defer consideration',
-  'Request clarification',
+  'Discuss with SolenOS',
   'Agreed actions',
   'View change history',
   'Confirm completed',
@@ -57,9 +57,11 @@ assert.ok(
   "Suggestion deferral must reuse the persisted Open Loop workflow",
 );
 assert.ok(
-  lcr.includes('prefillQuestion={clarificationPrefill?.question}') &&
-    clarification.includes('postJSON("/uncertainty/questions"'),
-  "Request clarification must prefill and reuse the persisted clarification workflow",
+  lcr.includes('router.push(`/workspace/companion?prompt=${encodeURIComponent(prompt)}`)') &&
+    lcr.includes("Discuss with SolenOS") &&
+    !lcr.includes("clarificationPrefill") &&
+    !clarification.includes('postJSON("/uncertainty/questions"'),
+  "A caregiver follow-up must open the conversational Companion, not create a manual clarification task",
 );
 assert.ok(
   lcr.includes('if (!saved?.id || saved.person_id !== session.person.id || saved.suggestion_id !== suggestionId.slice(0, 160))'),
