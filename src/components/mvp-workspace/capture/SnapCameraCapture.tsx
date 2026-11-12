@@ -2,6 +2,26 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+function cameraRecoveryMessage(error: unknown, mode: "snap" | "scan"): string {
+  const name = error instanceof DOMException ? error.name : "";
+  const fallback = mode === "scan"
+    ? "The document camera could not start. Check camera access or upload the document file instead."
+    : "The camera could not start. Check camera access or upload a photo instead.";
+  if (name === "NotAllowedError" || name === "SecurityError") {
+    return "Camera access is blocked. Allow camera permission for SolenOS in your browser or device settings, then try again. You can upload a file instead.";
+  }
+  if (name === "NotFoundError" || name === "OverconstrainedError") {
+    return "No usable camera was found on this device. Connect or enable a camera, or upload a file instead.";
+  }
+  if (name === "NotReadableError" || name === "AbortError") {
+    return "The camera is busy or was interrupted. Close other apps using the camera and try again, or upload a file instead.";
+  }
+  if (name === "TypeError" || typeof navigator !== "undefined" && !navigator.mediaDevices?.getUserMedia) {
+    return "This browser cannot open a camera here. Use a supported browser over a secure connection, or upload a file instead.";
+  }
+  return fallback;
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -35,6 +55,7 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
 
     async function start() {
       try {
+        if (!navigator.mediaDevices?.getUserMedia) throw new TypeError("Camera API unavailable");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
           audio: false,
@@ -50,10 +71,9 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
           await video.play();
           setReady(true);
         }
-      } catch {
-        setError(
-          "Camera could not open. Check permissions, or use Upload for a photo already on your device.",
-        );
+      } catch (cause) {
+        stop();
+        if (!cancelled) setError(cameraRecoveryMessage(cause, "snap"));
       }
     }
 
