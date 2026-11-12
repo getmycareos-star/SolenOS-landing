@@ -342,6 +342,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       return;
     }
     const latestAnswer = history[history.length - 1];
+    if (!latestAnswer) return;
     if (decision === "accepted" && !latestAnswer.evidence_ids?.length) {
       setError("This answer has no saved supporting evidence and cannot be added to the care record.");
       return;
@@ -452,6 +453,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           </>}
           {selectedQuestion.status === "answered" && history.length > 0 && (() => {
             const latestAnswer = history[history.length - 1];
+            if (!latestAnswer) return null;
             const latestReview = reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version);
             if (latestReview) {
               return <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
