@@ -1263,7 +1263,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label htmlFor="capture-medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Status</label>
+                <label htmlFor="capture-medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>What happened?</label>
                 <select
                   id="capture-medication-status"
                   value={medicationForm.status}
@@ -1291,8 +1291,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <option value="given">Given</option>
                   <option value="not_given">Not given</option>
                   <option value="uncertain">Not sure</option>
+                  <option value="scheduled">Scheduled (not confirmed as given)</option>
                   <option value="other">Something else</option>
                 </select>
+                {medicationForm.status === "scheduled" && (
+                  <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.45 }}>
+                    This records an expected dose only. It does not confirm that the medicine was given.
+                  </p>
+                )}
               </div>
               
               <div style={{ flex: 1 }}>
