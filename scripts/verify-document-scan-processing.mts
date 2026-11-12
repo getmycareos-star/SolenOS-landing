@@ -20,7 +20,7 @@ assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop sta
 assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
 assert.match(source, /function createMultiPagePdf\(/, "multi-page PDF generation must be implemented");
 assert.match(source, /Combine scan pages into one PDF/, "caregivers must be able to create a multi-page PDF without reviewing discarded client-side OCR");
-assert.match(source, /original page files remain separate and unchanged\./i, "PDF creation must preserve individual original scans");
+assert.match(source, /original (?:uploaded )?page files remain separate and unchanged\./i, "PDF creation must preserve individual original scans");
 
 const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 const attachmentTypes = readFileSync("src/lib/mvp-workspace/types.ts", "utf8");
