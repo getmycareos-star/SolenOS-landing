@@ -7,6 +7,8 @@ import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 type SaveReceipt = {
   id: string;
   extractionStatus: string;
+  assessmentStatus: string;
+  medicationNeedsConfirmation: boolean;
 };
 
 export default function NaturalLanguageDailyUpdate() {
@@ -43,15 +45,25 @@ export default function NaturalLanguageDailyUpdate() {
         capture_idempotency_key: idempotencyKey,
         capture_kind: "natural_language_update",
         notes: report,
-      }) as { success?: boolean; id?: string; qwen_extraction_status?: string };
+      }) as {
+        success?: boolean;
+        id?: string;
+        qwen_extraction_status?: string;
+        execution_status?: { assessment?: string };
+      };
 
       if (response?.success !== true || typeof response.id !== "string" || !response.id) {
         throw new Error("The server did not confirm that your update was saved.");
       }
 
+      const medicationMentioned = /\\b(medication|medicine|dose|dosage|prescription)\\b/i.test(report);
+      const possibleChange = /\\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\\b/i.test(report);
+      const uncertainty = /\\b(i think|maybe|might|may have|not sure|cannot remember|can't remember|don't remember|forgot)\\b/i.test(report);
       setReceipt({
         id: response.id,
         extractionStatus: response.qwen_extraction_status || "not_reported",
+        assessmentStatus: response.execution_status?.assessment || "not_reported",
+        medicationNeedsConfirmation: medicationMentioned && possibleChange && uncertainty,
       });
       setReport("");
       setRequestKey(null);
@@ -90,6 +102,16 @@ export default function NaturalLanguageDailyUpdate() {
           {receipt.extractionStatus !== "available" && (
             <p style={{ margin: "6px 0 0" }}>
               SolenOS could not finish understanding this update. Your original report is safe, and no extracted details have been treated as confirmed.
+            </p>
+          )}
+          {receipt.extractionStatus === "available" && receipt.assessmentStatus === "failed" && (
+            <p style={{ margin: "6px 0 0" }}>
+              SolenOS could not organize the observations yet. Your original report remains saved.
+            </p>
+          )}
+          {receipt.medicationNeedsConfirmation && (
+            <p style={{ margin: "6px 0 0" }}>
+              Your report suggests Mum’s medication may have changed, but it does not confirm a new dose. Please check the doctor’s instructions or contact the prescribing professional before relying on a different dose.
             </p>
           )}
         </div>
