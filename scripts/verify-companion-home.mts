@@ -49,8 +49,9 @@ assert.match(companion, /initialPrompt = null/, "Companion accepts the record-ed
 assert.match(documents, /consumePendingDocumentIntake/, "Documents must consume the in-memory selected File objects");
 assert.match(documents, /params\.get\("intake"\)/, "Documents must process the direct-intake handoff");
 assert.doesNotMatch(documents, /Snap &amp; scan with camera|Upload files \/ pages|Add another page with camera|type="file"|capture="environment"/, "Documents must be a saved-document library, not an intake launcher");
-assert.match(documents, /saveReviewedPages/, "the library retains caregiver-reviewed original-file persistence");
-assert.match(documents, /Review before saving/);
+assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
+assert.match(documents, /Save your files/);
+assert.match(documents, /You can review extracted statements later\./, "saving must not force immediate document review");
 assert.match(documents, /saveReviewedPages/);
 assert.match(documents, /getJSON\("\/evidence\//, "saved document records remain readable");
 assert.match(documents, /getBlob\("\/upload\//, "saved original files remain retrievable");
