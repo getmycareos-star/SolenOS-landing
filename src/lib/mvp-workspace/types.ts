@@ -29,6 +29,8 @@ export type AttachedDocument = {
   id: string;
   /** Backend-issued evidence ID for the persisted original bytes and extracted text. */
   evidenceId?: string;
+  /** Stable key reused if the initial upload response is interrupted. */
+  uploadRetryKey?: string;
   name: string;
   mimeType: string;
   /** Extracted text when OCR/Tika succeeded; empty if pending/failed. */
