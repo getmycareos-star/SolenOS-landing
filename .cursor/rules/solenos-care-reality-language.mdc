@@ -20,6 +20,15 @@ What we understand · what changed · what connects · still unclear · before/a
 Message → Care Reality → Meaning → Connection → Care Story Update → Understanding  
 Never: Message → Note → Summary
 
+## Plain American English
+
+- Use familiar American English, short sentences, and active voice.
+- Use American spelling: behavior, organize, organization, prioritize, color, center, recognize.
+- Never expose engineering, database, AI-processing, or unexplained clinical terminology.
+- Avoid: epistemic status, provenance, reconciliation, assertion, extraction pipeline, OCR, API, JSON, schema, database, model inference.
+- Preserve who reported something, when it happened, and what remains uncertain.
+- Simplify wording without increasing certainty.
+
 **Feel:** SolenOS understands what is happening — never stores notes.  
 Examples in the SoT are illustrations only — never product if-branches.
 ---
