@@ -408,13 +408,13 @@ export default function AppointmentWorkspace() {
               </button>
             </div>
             {outcomeProposals.length > 0 && <div className="guided-proposals">
-              <h5>Caregiver review required</h5>
-              <p className="guided-muted">Each candidate is tied to the saved appointment revision. Accepting records a caregiver-reviewed detail, not a clinically verified fact.</p>
+              <h5>Please review these care details</h5>
+              <p className="guided-muted">Each item is linked to the appointment information it came from. Accepting adds it as a caregiver report; it does not mean a healthcare professional has confirmed it.</p>
               {outcomeProposals.filter(item => item.proposed_change.source_record_version === record?.version_number).map(item => <article key={item.id} className="guided-proposal">
                 <strong>{caregiverSafeAssistantText(item.proposed_change.label) || "Care detail"}</strong>
                 <p>{caregiverSafeAssistantText(item.proposed_change.asserted_value) || "The saved wording is available for review."}</p>
                 {item.proposed_change.asserted_value !== item.proposed_change.source_quote && <p><small>Original saved wording: {caregiverSafeAssistantText(item.proposed_change.source_quote) || "The original wording is available in the saved record."}</small></p>}
-                <small>Appointment record revision {item.proposed_change.source_record_version} · {caregiverStatusLabel(item.status) || 'Status not available'} · caregiver reported · not independently verified</small>
+                <small>{caregiverStatusLabel(item.status) || 'Status not available'} · caregiver reported · not independently verified</small>
                 {item.status === 'pending_authorization' && <>
                   <label className="guided-capture-label">Correction, if needed
                     <textarea rows={2} value={correctionDrafts[item.id] || ''} onChange={event => setCorrectionDrafts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Enter the corrected statement." />
