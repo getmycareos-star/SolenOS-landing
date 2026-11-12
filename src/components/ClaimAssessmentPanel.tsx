@@ -482,7 +482,7 @@ export default function ClaimAssessmentPanel() {
         {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
         {!impactLoading && !impactError && assessmentImpact && <>
           <strong>{assessmentImpact.review_required ? "Review required or not yet established as current" : "No reason to repeat this review was found"}</strong>
-          <div style={{ fontSize: 12, marginTop: 5 }}>Status: {simpleReviewStatus(assessmentImpact.status)}{assessmentImpact.assessment_version != null ? ` · review version ${assessmentImpact.assessment_version}` : ""}</div>
+          <div style={{ fontSize: 12, marginTop: 5 }}>Review: {simpleReviewStatus(assessmentImpact.status)}</div>
           {assessmentImpact.reasons.length > 0
             ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{simpleReviewStatus(reason)}</li>)}</ul>
             : <p style={{ fontSize: 12 }}>No reason to repeat this review was found in the information checked. This does not prove that the review is complete or correct.</p>}
