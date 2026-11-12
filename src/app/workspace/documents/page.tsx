@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
-import { apiUrl, safeJson } from "@/lib/api-url";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
 
@@ -373,7 +372,7 @@ export default function DocumentsPage() {
         <input ref={snapInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(event) => { const files = event.currentTarget.files; event.currentTarget.value = ""; setIntakeMode("capture"); void handleFiles(files); }} />
         <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Upload size={17} />Upload files</button>
         <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Camera size={17} />Snap a photo</button>
-        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
+        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
       </section>
 
       <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
@@ -441,7 +440,7 @@ export default function DocumentsPage() {
       {cameraOpen && <div role="dialog" aria-modal="true" aria-label="Scan care document pages" style={{ position: "fixed", inset: 0, zIndex: 120, background: "rgba(0,0,0,.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
         <section style={{ width: "min(720px, 100%)", maxHeight: "92dvh", display: "grid", gap: 12, padding: 14, background: "var(--surface)", color: "var(--text)", borderRadius: 14, overflow: "auto" }}>
           <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div><h2 style={{ margin: 0, fontSize: 18 }}>Scan pages</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Capture each page. Review, rotate and crop them before saving.</p></div>
+            <div><h2 style={{ margin: 0, fontSize: 18 }}>Scan pages</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Capture each page. SolenOS will process the original pages after upload.</p></div>
             <button type="button" onClick={closeCameraScanner} aria-label="Close scanner" style={{ width: 40, height: 40, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><X size={18} /></button>
           </header>
           <video ref={cameraVideoRef} autoPlay playsInline muted aria-label="Live document camera preview" style={{ width: "100%", maxHeight: "55dvh", background: "#111", borderRadius: 10, objectFit: "contain" }} />
