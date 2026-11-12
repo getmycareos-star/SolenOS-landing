@@ -131,8 +131,8 @@ function NotificationsCard() {
         <Button variant="secondary" onClick={() => void loadPreferences()} disabled={loading || saving}>Try again</Button>
       </div>}
       <label className="mobile-settings-row">
-        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Quiet-hours scheduling is not active. Turning this on pauses due reminder notifications; it does not schedule them for later.</span></span>
-        <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("quiet_hours_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
+        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Quiet hours are not active yet. This setting does not change when in-app reminders appear.</span></span>
+        <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled /><span className="mobile-toggle-track" /></span>
       </label>
       <label className="mobile-settings-row">
         <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">When enabled, due reminders appear in your in-app notifications. SolenOS does not send push or email alerts.</span></span>
