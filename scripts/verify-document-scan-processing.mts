@@ -25,6 +25,12 @@ const workspaceSource = readFileSync("src/components/mvp-workspace/CognitiveWork
 const intelligenceReviewSource = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
 assert.match(attachmentTypes, /status: "pending" \| "saved" \| "ready" \| "failed"/, "saved evidence must not be represented as completed interpretation");
 assert.match(attachmentSource, /entryMethod === "snap"[\s\S]*?status: "saved"/, "Snap must be marked saved, not document-ready");
+const captureFunction = attachmentSource.slice(attachmentSource.indexOf("export async function extractAttachedDocument"), attachmentSource.indexOf("export async function retryAttachedDocument"));
+assert(!captureFunction.includes("/extract"), "caregiver capture must not wait for synchronous document OCR");
+assert(!captureFunction.includes("/intelligence"), "caregiver capture must not wait for synchronous Qwen interpretation");
+assert.match(attachmentSource, /durably queues document extraction and understanding/, "the upload contract must hand off processing to the durable worker");
+assert.match(addRecordSource, /Saved — processing in background/, "saved documents must show truthful background-processing state");
+
 assert.match(attachmentSource, /document\.entryMethod === "snap" && document\.evidenceId[\s\S]*?status: "saved"/, "retry must not send a saved care photo through document OCR");
 assert.match(addRecordSource, /Photo saved — not interpreted/, "caregivers must see that a Snap photo is saved but not interpreted");
 assert.match(workspaceSource, /d\.status === "saved" && d\.entryMethod === "snap" && d\.evidenceId/, "saved Snap evidence must remain eligible for care-entry submission");
@@ -33,6 +39,12 @@ assert.match(intelligenceReviewSource, /analysis\.intelligence_status !== "parti
 assert.match(intelligenceReviewSource, /Resume remaining pages/, "caregivers must be able to resume unfinished document understanding");
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
+const saveFunction = source.slice(source.indexOf("const saveReviewedPages"), source.indexOf("const openOriginal"));
+assert.match(saveFunction, /document_processing_job_id/, "the save response must confirm durable background processing was queued");
+assert(!saveFunction.includes("/extract"), "the caregiver page must not own document extraction after upload");
+assert(!saveFunction.includes("/intelligence"), "the caregiver page must not own document understanding after upload");
+assert.match(saveFunction, /You can leave this page/, "the caregiver can leave after the original and background job are saved");
+
 assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\)/, "scan retry must preserve capture time");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
