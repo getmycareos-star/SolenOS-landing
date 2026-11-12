@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
+import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 interface ClaimSourceReference {
   record_type: string
@@ -62,12 +63,12 @@ interface ClaimProvenance {
 }
 
 const SOURCE_REFERENCE_LABELS: Record<string, string> = {
-  document_extractions: 'Extracted document text',
+  document_extractions: 'Text read from a document',
   care_evidence: 'Original uploaded source',
   events: 'Recorded care event',
   care_events: 'Recorded care event',
-  assertions: 'Care record assertion',
-  care_assertions: 'Care record assertion',
+  assertions: 'Caregiver report',
+  care_assertions: 'Caregiver report',
   conversation_messages: 'Prior Companion message',
   companion_messages: 'Prior Companion message',
 }
@@ -140,6 +141,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         client_turn_id: clientTurnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
+      const caregiverReply = caregiverSafeAssistantText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
       setInput('')
       pendingTurnId.current = null
@@ -151,7 +153,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
       const assistantMsg: Message = {
         role: 'assistant',
-        text: response.reply,
+        text: caregiverReply,
         guard_verdict: response.guard_verdict,
         safety_note: response.safety_note,
         confidence: response.confidence,
@@ -265,8 +267,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       <strong>Selected saved sources</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
                         <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
-                          <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || reference.record_type.replaceAll('_', ' ')}</strong>
-                          {reference.record_type === 'document_extractions' && <p>Extracted document text is context only, not yet an LCR assertion. Review and accept a candidate in Documents before it becomes a caregiver-reviewed LCR assertion.</p>}
+                          <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
+                          {reference.record_type === 'document_extractions' && <p>Text read from a document is only a suggestion. Review it in Documents before it is added to your care record.</p>}
                           {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Prior Companion message — conversation context only. It is not care evidence.</p>}
                         </div>
                       ))}
@@ -329,8 +331,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       ))}
                       <p>Conversation only. Nothing in this answer was added to the Living Care Record.</p>
                     </section>}
-                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">Freshness assessment storage is unavailable in this schema. A review of how current these records are is not available. Their currentness is unknown.</p>}
-                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No freshness assessments were returned. No review of how current these records are was returned. This does not mean they are current.</p>}
+                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">We couldn’t check how recent these care details are. Their current status is unknown.</p>}
+                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">We couldn’t find a review of how recent these care details are. This does not mean they are current.</p>}
                   </div>
                 </article>
               })}
