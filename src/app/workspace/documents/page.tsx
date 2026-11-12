@@ -608,7 +608,7 @@ export default function DocumentsPage() {
           <div style={{ padding: 14, overflow: "auto", minHeight: 180 }}>
             {selected.possibleVersionOfEvidenceId && !selected.evidence.parent_evidence_id && <section aria-label="Corrected document version" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
               <strong style={{ fontSize: 14 }}>Is this a corrected copy of an earlier document?</strong>
-              <p style={{ margin: "5px 0 9px", color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.45 }}>Link it to the earlier file. Both originals stay available, and SolenOS will not change the care record automatically.</p>
+              <p style={{ margin: "5px 0 9px", color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.45 }}>SolenOS noticed a matching filename. Confirm only if this is a corrected copy. Both originals stay available, and the care record will not change automatically.</p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <select aria-label="Earlier document version" value={versionPredecessorId} onChange={(event) => setVersionPredecessorId(event.target.value)} style={{ minHeight: 40, flex: "1 1 220px", minWidth: 0, border: "1px solid var(--border)", borderRadius: 8, padding: "7px 9px", background: "var(--surface)", color: "var(--text)" }}>
                   <option value="">Choose earlier document…</option>
