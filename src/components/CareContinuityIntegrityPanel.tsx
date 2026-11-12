@@ -77,7 +77,7 @@ function simpleRecordLabel(value?: string | null): string {
     restored: "Restored",
     current_state: "Current care information",
     historical_observation: "Earlier observation",
-  } as Record<string, string>)[value] ?? value.replace(/_/g, " ");
+  } as Record<string, string>)[value] ?? "Status not available";
 }
 
 const cardStyle: CSSProperties = {
@@ -183,7 +183,7 @@ export default function CareContinuityIntegrityPanel({
               <span style={{ fontSize: 12 }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Source: {item.source_label} · {simpleRecordLabel(item.assertion_kind)} · Information: {careInformationLabel(item.epistemic_state || 'reported')} · Review: {simpleRecordLabel(item.assertion_status)} · {item.source_event_id ? 'linked care event' : 'caregiver report'}
+              Shared by: {item.source_label} · {simpleRecordLabel(item.assertion_kind)} · {careInformationLabel(item.epistemic_state || 'reported')} · Review: {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
@@ -203,8 +203,8 @@ export default function CareContinuityIntegrityPanel({
         {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes to the saved care information are available yet.</p> : data.revisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
-            <p style={{ fontSize: 12, margin: '5px 0' }}>Version {item.revision_number} · {simpleRecordLabel(item.change_kind)} · {new Date(item.changed_at).toLocaleString()}</p>
-            <small>Previous and updated details remain preserved in the record history. Sources: {item.evidence_ids.length} saved item(s).</small>
+            <p style={{ fontSize: 12, margin: '5px 0' }}>Change recorded {new Date(item.changed_at).toLocaleString()} · {simpleRecordLabel(item.change_kind)}</p>
+            <small>Previous and updated details remain preserved in the record history. Related information: {item.evidence_ids.length} item(s).</small>
           </article>
         )}
       </div>
