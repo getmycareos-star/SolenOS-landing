@@ -97,8 +97,8 @@ function NotificationsCard() {
     return () => { active = false; };
   }, []);
 
-  const loadInbox = useCallback(async () => {
-    setInboxLoading(true);
+  const loadInbox = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) setInboxLoading(true);
     setInboxError("");
     try {
       await ensureAnonymousSession();
@@ -111,7 +111,7 @@ function NotificationsCard() {
     } catch {
       setInboxError("We couldn't load notifications. Check your connection and try again.");
     } finally {
-      setInboxLoading(false);
+      if (!options?.silent) setInboxLoading(false);
     }
   }, []);
 
@@ -197,7 +197,20 @@ function NotificationsCard() {
     }
   };
 
-  useEffect(() => { void loadInbox(); }, [loadInbox]);
+  useEffect(() => {
+    void loadInbox();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void loadInbox({ silent: true });
+    };
+    const interval = window.setInterval(refreshWhenVisible, 30_000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+    };
+  }, [loadInbox]);
 
   const loadPreferences = useCallback(async () => {
     setLoading(true);
@@ -261,7 +274,7 @@ function NotificationsCard() {
       <div className="mobile-settings-row" style={{ alignItems: "flex-start" }}>
         <span style={{ flex: 1 }}>
           <span className="mobile-settings-label">Quiet hours</span>
-          <span className="mobile-settings-hint">{scheduleSupported ? "Due reminders wait until quiet hours end. Your reminder due time does not change." : "Quiet-hours scheduling will be available after the backend update is deployed."}</span>
+          <span className="mobile-settings-hint">{scheduleSupported ? "Due reminders wait until quiet hours end. Your reminder due time does not change." : "Quiet-hours times aren't available from the server right now. Your reminders can still appear in your inbox."}</span>
           <span style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.6rem" }}>
             <label className="mobile-settings-label">Starts
               <input className="mobile-settings-input" type="time" value={quietStart} disabled={loading || saving || !scheduleSupported} onChange={(event) => setQuietStart(event.target.value)} />
@@ -289,7 +302,7 @@ function NotificationsCard() {
         <h3 className="mobile-settings-label">Recent notifications · {unreadCount} unread</h3>
         {inboxLoading && <p className="mobile-settings-hint" role="status">Loading notifications…</p>}
         {inboxError && <p className="mobile-settings-hint" role="alert">{inboxError}</p>}
-        {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No care updates right now. SolenOS will add one when saved information changes meaningfully or a necessary detail needs your input.</p>}
+        {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No notifications yet. When a saved care reminder is due, it will appear here. Care updates that need your attention will appear here too.</p>}
         {notifications.map((item) => (
           <article key={item.id} className="mobile-settings-row" aria-label={item.title}>
             <span style={{ flex: 1, minWidth: 0 }}>
