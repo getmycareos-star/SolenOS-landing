@@ -186,6 +186,8 @@ assert.match(detailedCapture, /Review and confirm current/,
   "caregivers have an explicit review action before a medicine becomes a current choice");
 assert.match(detailedCapture, /\/review/,
   "the review action uses the dedicated medication review endpoint");
+assert.match(detailedCapture, /Recorded details:/,
+  "caregivers can inspect the original report details before reviewing a medication");
 assert.match(detailedCapture, /needs_caregiver_review/,
   "previously reviewed medications can re-enter the review queue when their review window expires");
 assert.match(detailedCapture, /Review overdue · caregiver report/,
