@@ -222,6 +222,20 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
       <p style={{ fontSize: 12, lineHeight: 1.5 }}>{result.caregiver_summary || result.event_summary}</p>
       {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Some findings could not be linked to their own saved source. Review those items before relying on them.</p>}
       {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each listed finding is linked to the source wording used for its review. This does not establish clinical truth or independent corroboration.</p>}
+      {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary') && (
+        <section style={{ borderTop: '1px solid var(--border)', paddingTop: 9, marginTop: 9 }}>
+          <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Summary source check</h4>
+          {result.claim_provenance.claims.filter((claim) => claim.claim_type === 'summary').map((claim) => (
+            <article key={claim.claim_id} style={{ marginBottom: 8 }}>
+              <p style={{ fontSize: 12, margin: '0 0 4px' }}>{claim.text}</p>
+              {claim.support_status === 'matched_exact_source_wording' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears in a saved source.</p>}
+              {claim.support_status === 'historical_only' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears only in earlier information.</p>}
+              {claim.support_status === 'not_matched_to_source' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>We could not match this summary statement to the wording in a saved source. Check it before relying on it.</p>}
+              {claim.source_references.map((reference, index) => <p key={reference.record_type + '-' + index} style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>{reference.label || 'Saved care information'}{reference.occurred_at ? ' · ' + new Date(reference.occurred_at).toLocaleString() : ''}</p>)}
+            </article>
+          ))}
+        </section>
+      )}
       {result.computed_changes?.length ? <section style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
         <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Compared state</h4>
         {result.computed_changes.map((item, index) => <p key={index} style={{ fontSize: 12, margin: '5px 0' }}>
