@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/brand";
 import Link from "next/link";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
+import { CaregiverHandoverInbox } from "@/components/mvp-workspace/CaregiverHandoverInbox";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -26,6 +27,7 @@ function WorkspaceHomeInner() {
 
   return (
     <main className="mobile-screen feature-page solenos-lcr-home">
+      <CaregiverHandoverInbox />
       <LCRCurrentUnderstanding />
       <section aria-label="Ask SolenOS" style={{ display: "grid", gap: 10, padding: "18px 0" }}>
         <div>
