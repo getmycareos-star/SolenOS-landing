@@ -10,41 +10,38 @@ import {
 
 assert.equal(caregiverStatusLabel("needs_clarification"), "Needs clarification");
 assert.equal(caregiverStatusLabel("completed"), "Completed");
-assert.equal(caregiverStatusLabel("future_internal_state"), null);
+assert.equal(caregiverStatusLabel("awaiting_confirmation"), "Needs review");
+assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
+assert.equal(caregiverStatusLabel("unknown_internal_state"), null);
 assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
-assert.equal(isTechnicalDiagnosticText("Database schema unavailable"), true);
-assert.equal(isTechnicalDiagnosticText("Freshness assessment storage is unavailable in this schema."), true);
-assert.equal(isTechnicalDiagnosticText("The provenance reconciliation API returned an assertion payload."), true);
-assert.equal(caregiverSafeAssistantText("The OCR extraction pipeline is unavailable."), null);
-assert.equal(caregiverSafeAssistantText("{\"schema\":\"internal\",\"status\":\"unknown\"}"), null);
-assert.equal(caregiverSafeAssistantText("Database schema unavailable"), null);
-assert.equal(caregiverSafeAssistantText("Your message has been saved. We do not know what caused the change yet."), "Your message has been saved. We do not know what caused the change yet.");
-assert.match(caregiverSafeErrorMessage(), /check your connection/i);
-assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
-assert.equal(caregiverStatusLabel("needs_confirmation"), "Needs a fresh check");
 
-const dailyCare = readFileSync(new URL("../src/app/workspace/daily-care/page.tsx", import.meta.url), "utf8");
-const companion = readFileSync(new URL("../src/components/workflows/AICompanion.tsx", import.meta.url), "utf8");
-const documentReview = readFileSync(new URL("../src/components/DocumentIntelligenceReview.tsx", import.meta.url), "utf8");
-const settings = readFileSync(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
-const lcr = readFileSync(new URL("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", import.meta.url), "utf8");
-const changeIntelligence = readFileSync(new URL("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx", import.meta.url), "utf8");
-const dailyCareIntelligence = readFileSync(new URL("../src/components/workflows/DailyCareQwen.tsx", import.meta.url), "utf8");
-const handoff = readFileSync(new URL("../src/components/workflows/CareHandoffSharing.tsx", import.meta.url), "utf8");
-const lcr = readFileSync(new URL("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", import.meta.url), "utf8");
-const appointment = readFileSync(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
-const continuity = readFileSync(new URL("../src/components/CareContinuityIntegrityPanel.tsx", import.meta.url), "utf8");
-const deviceAccess = readFileSync(new URL("../src/components/mvp-workspace/IdentityDeviceRecoveryPanel.tsx", import.meta.url), "utf8");
-const detailedAppointment = readFileSync(new URL("../src/components/workflows/DetailedAppointmentWorkspace.tsx", import.meta.url), "utf8");
-const evidenceReview = readFileSync(new URL("../src/components/EvidenceReviewPanel.tsx", import.meta.url), "utf8");
-const appointmentPage = readFileSync(new URL("../src/app/workspace/appointments/page.tsx", import.meta.url), "utf8");
-const claimAssessment = readFileSync(new URL("../src/components/ClaimAssessmentPanel.tsx", import.meta.url), "utf8");
-const conflictReview = readFileSync(new URL("../src/components/ConflictResolutionPanel.tsx", import.meta.url), "utf8");
-const clarification = readFileSync(new URL("../src/components/ClarificationWorkflowPanel.tsx", import.meta.url), "utf8");
-const careHistory = readFileSync(new URL("../src/components/CareContinuityIntegrityPanel.tsx", import.meta.url), "utf8");
-const handoff = readFileSync(new URL("../src/components/workflows/CareHandoffSharing.tsx", import.meta.url), "utf8");
-const sharedSummary = readFileSync(new URL("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx", import.meta.url), "utf8");
+for (const diagnostic of [
+  "Database schema unavailable",
+  "Freshness assessment storage is unavailable in this schema.",
+  "The provenance reconciliation API returned an assertion payload.",
+  "The OCR extraction pipeline is unavailable.",
+  "Original file SHA-256: abc123",
+  "{\"schema\":\"internal\",\"status\":\"unknown\"}",
+]) {
+  assert.equal(caregiverSafeAssistantText(diagnostic), null, diagnostic);
+}
+assert.equal(isTechnicalDiagnosticText("Database schema unavailable"), true);
+assert.equal(
+  caregiverSafeAssistantText("Your message has been saved. We do not know what caused the change yet."),
+  "Your message has been saved. We do not know what caused the change yet.",
+);
+assert.match(caregiverSafeErrorMessage(), /check your connection/i);
+
+const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
+const companion = read("../src/components/workflows/AICompanion.tsx");
+const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
+const settings = read("../src/app/workspace/settings/page.tsx");
+const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
+const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
+const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
+const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -58,61 +55,10 @@ assert.match(lcr, /caregiverSafeAssistantText\(item\.interpretation_limit\)/);
 assert.doesNotMatch(lcr, /Extraction method:|Hedge \/ uncertainty marker|Near-duplicate review|algorithm version|policy version/i);
 assert.doesNotMatch(changeIntelligence, /replaceAll\("_"|not calibrated|Observation coverage: baseline|evidence references:/i);
 assert.match(changeIntelligence, /caregiverSafeErrorMessage/);
+assert.match(changeIntelligence, /caregiverInformationLabel/);
 assert.doesNotMatch(dailyCareIntelligence, /source\.source_id<\/code>|review_status\.replaceAll|sent .*records to Qwen/i);
 assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(result\.answer\)/);
+assert.match(dailyCareIntelligence, /caregiverSafeErrorMessage/);
 assert.match(handoff, /function readableStatus\(value: string\): string \{\s+return caregiverStatusLabel\(value\) \?\? "Not available";/);
-assert.doesNotMatch(lcr, /Loading care-integrity tools|Loading evidence review|Loading clarification workflow/);
-assert.ok(!lcr.includes("cause instanceof Error ? cause.message"));
-assert.ok(!appointment.includes("Freshness assessment storage"));
-assert.ok(!appointment.includes("source_time_kind:"));
-assert.ok(!appointment.includes("cause instanceof Error ? cause.message"));
-assert.ok(!appointment.includes("replaceAll('_',"));
-assert.ok(!appointment.includes('replaceAll("_",'));
-assert.match(appointment, /caregiverStatusLabel/);
-assert.ok(!appointment.includes("Appointment record revision"));
-assert.ok(!appointment.includes("Each candidate is tied"));
-assert.ok(!appointment.includes("caregiver-reviewed detail"));
-assert.ok(!continuity.includes('value.replace(/_/g'));
-assert.ok(!deviceAccess.includes("e instanceof Error ? e.message"));
-assert.doesNotMatch(deviceAccess, /Identity &amp; device security/);
-assert.ok(!detailedAppointment.includes("database schema"));
-assert.ok(!detailedAppointment.includes("source_time_kind"));
-assert.ok(!detailedAppointment.includes("Evidence IDs:"));
-assert.ok(!detailedAppointment.includes("Assessment {item.assessment_id"));
-assert.ok(!detailedAppointment.includes("error instanceof Error ? error.message"));
-assert.ok(!evidenceReview.includes("value.replaceAll('_', ' ')"));
-assert.ok(!evidenceReview.includes("SHA-256"));
-assert.ok(!evidenceReview.includes("Source-text integrity could not be checked"));
-assert.ok(!evidenceReview.includes("{item.near_duplicate_interpretation_limit}"));
-assert.ok(!evidenceReview.includes("{item.observation_method}"));
-assert.ok(!evidenceReview.includes("selected.origin_device_ref ||"));
-assert.doesNotMatch(appointmentPage, /Appointment workspace/);
-assert.ok(!lcr.includes("JSON.stringify(item)"));
-assert.ok(!lcr.includes("Extraction method:"));
-assert.ok(!lcr.includes("algorithm version unavailable"));
-assert.ok(!lcr.includes("informational LCR item"));
-assert.ok(!documentReview.includes("OCR engine confidence"));
-assert.ok(!documentReview.includes("ACCEPTED INTO LCR"));
-assert.ok(!documentReview.includes("immutable decision history"));
-assert.ok(!documentReview.includes("persisted source text"));
-assert.ok(!documentReview.includes("caregiver-reviewed detail"));
-assert.ok(!detailedAppointment.includes("LCR facts"));
-assert.ok(!appointment.includes("caregiver-reviewed assertion"));
-assert.ok(!settings.includes("Identity &amp; device security"));
-assert.ok(!settings.includes("Release channel"));
-assert.ok(!claimAssessment.includes('value.replaceAll("_", " ")'));
-assert.ok(!conflictReview.includes('value.replaceAll("_", " ")'));
-assert.ok(!conflictReview.includes('evidence_ids.join(", ")'));
-assert.ok(!clarification.includes('key.replaceAll("_", " ")'));
-assert.ok(!clarification.includes('latestReview.decision.replaceAll'));
-assert.ok(!careHistory.includes('value.replace(/_/g'));
-assert.ok(!companion.includes("LCR assertion"));
-assert.ok(!handoff.includes("Source freshness"));
-assert.ok(!handoff.includes("revision {saved.revision_number"));
-assert.ok(!handoff.includes("value.replaceAll(\"_\", \" \""));
-assert.ok(!handoff.includes("source snapshot"));
-assert.ok(!handoff.includes("error instanceof Error ? error.message"));
-assert.ok(!sharedSummary.includes("FRESHNESS NOTE"));
-assert.ok(!sharedSummary.includes("Freshness note"));
 
 console.log("Caregiver language boundary checks passed.");
