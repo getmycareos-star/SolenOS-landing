@@ -145,7 +145,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [notice, setNotice] = useState("");
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
-  const selectedClaim = claims.find((item) => item.id === selectedClaimId);
+  const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -371,7 +371,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       }
       setNotice(
         decision === "accepted"
-          ? result.care_continuity_execution?.stages?.reconciliation === "committed"
+          ? result.care_continuity_execution?.stages?.reconciliation === "committed" || result.resulting_claim_id
             ? "Answer added to the care record as an unverified caregiver report. The original report remains unchanged."
             : "The answer was reviewed, but its care-record update could not be confirmed."
           : decision === "rejected"
