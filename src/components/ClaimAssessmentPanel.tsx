@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { careInformationLabel } from "@/lib/care-epistemics/information-status";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Claim = {
   id: string;
@@ -112,7 +112,7 @@ function simpleReviewStatus(value: string): string {
     current: "Current",
     outdated: "May be out of date",
     unchanged: "No change found",
-  } as Record<string, string>)[value] ?? value.replaceAll("_", " ");
+  } as Record<string, string>)[value] ?? caregiverStatusLabel(value) ?? "Not available";
 }
 
 function emptyLink(): DraftLink {
@@ -393,8 +393,8 @@ export default function ClaimAssessmentPanel() {
       </label>
       {selectedClaim && <div style={{ fontSize: 12, padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
         <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
-        <div><strong>Who reported it:</strong> {selectedClaim.source_label || "Not recorded"}</div>
-        <div><strong>Information status:</strong> {careInformationLabel(selectedClaim.epistemic_state || "reported")}</div>
+        <div><strong>Who reported it:</strong> {caregiverSafeAssistantText(selectedClaim.source_label) || "Not recorded"}</div>
+        <div><strong>Information status:</strong> {caregiverInformationLabel(selectedClaim.epistemic_state || "reported") || "Not yet confirmed"}</div>
         <div><strong>Review status:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
         <div><strong>Sources attached:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
       </div>}
@@ -410,7 +410,7 @@ export default function ClaimAssessmentPanel() {
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "Depends on" : "Required by"}{" "}
             <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Care detail not in this list"}</strong>
-            {" · "}{simpleReviewStatus(edge.dependency_type)} · {edge.rationale}
+            {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSafeAssistantText(edge.rationale) || "No further explanation is available."}
           </li>)}
         </ul>}
         <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Related care detail
