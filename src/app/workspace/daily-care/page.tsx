@@ -214,6 +214,36 @@ function displayHistoryText(item: CareItem): string {
   }
 }
 
+function recordedTimestamp(item: CareItem): string | null {
+  return item.recorded_at || item.uploaded_at || item.created_at || item.occurred_at || null;
+}
+
+function wasRecordedToday(item: CareItem, now = new Date()): boolean {
+  const value = recordedTimestamp(item);
+  if (!value) return false;
+  const recorded = new Date(value);
+  return !Number.isNaN(recorded.getTime())
+    && recorded.getFullYear() === now.getFullYear()
+    && recorded.getMonth() === now.getMonth()
+    && recorded.getDate() === now.getDate();
+}
+
+function dailyTimePeriod(item: CareItem): "morning" | "afternoon" | "evening" | "other" {
+  const value = recordedTimestamp(item);
+  if (!value) return "other";
+  const recorded = new Date(value);
+  if (Number.isNaN(recorded.getTime())) return "other";
+  if (recorded.getHours() < 12) return "morning";
+  if (recorded.getHours() < 17) return "afternoon";
+  return "evening";
+}
+
+function isUnconfirmedMedicationChange(text: string): boolean {
+  return /\b(medication|medicine|dose|dosage|prescription)\b/i.test(text)
+    && /\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\b/i.test(text)
+    && /\b(i think|maybe|might|may have|not sure|cannot remember|can't remember|don't remember|forgot)\b/i.test(text);
+}
+
 export default function DailyCarePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -322,6 +352,23 @@ export default function DailyCarePage() {
     window.addEventListener("careRecordUpdated", refresh);
     return () => window.removeEventListener("careRecordUpdated", refresh);
   }, []);
+
+  const todayItems = historyItems
+    .filter((item) => wasRecordedToday(item))
+    .sort((left, right) => {
+      const leftTime = new Date(recordedTimestamp(left) || 0).getTime();
+      const rightTime = new Date(recordedTimestamp(right) || 0).getTime();
+      return leftTime - rightTime;
+    });
+  const medicationConcern = [...todayItems].reverse().find((item) =>
+    isUnconfirmedMedicationChange(displayHistoryText(item))
+  ) || null;
+  const todayPeriods = [
+    { key: "morning", label: "Morning" },
+    { key: "afternoon", label: "Afternoon" },
+    { key: "evening", label: "Evening" },
+    { key: "other", label: "Other time" },
+  ] as const;
 
   return (
     <div className="mobile-screen daily-care-screen">
@@ -434,6 +481,40 @@ export default function DailyCarePage() {
               <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
             )}
             {historyMayBeTruncated && <p className="daily-care-muted">The summary is based on the latest 200 history records. Open full history to check older entries.</p>}
+          </section>
+
+          <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
+            <h2 id="daily-care-today-title">Mum’s care today</h2>
+            <p className="daily-care-muted">Updates saved today, in time order. No daily entry is required.</p>
+            {medicationConcern && (
+              <div role="status" className="daily-care-medication-confirmation">
+                <strong>Needs confirmation</strong>
+                <p>{displayHistoryText(medicationConcern)}</p>
+                <p>A medication change was reported, but the new dose has not been confirmed. Check the doctor’s instructions or contact the prescribing professional before relying on a different dose.</p>
+              </div>
+            )}
+            {todayItems.length ? (
+              todayPeriods.map((period) => {
+                const items = todayItems.filter((item) => dailyTimePeriod(item) === period.key);
+                if (!items.length) return null;
+                return (
+                  <div key={period.key} className="daily-care-day-period">
+                    <h3>{period.label}</h3>
+                    <ul className="daily-care-record-list">
+                      {items.map((item, index) => (
+                        <li key={historyRecordId(item) || `today-${period.key}-${index}`}>
+                          <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
+                          {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
+                          <span>{displayHistoryTime(item)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })
+            ) : (
+              <p>No updates have been saved today. That does not mean nothing happened, and you do not need to add an entry.</p>
+            )}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
