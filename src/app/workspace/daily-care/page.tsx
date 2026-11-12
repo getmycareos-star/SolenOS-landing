@@ -63,6 +63,20 @@ function isOpenMatter(item: CareItem): boolean {
   ]).has(item.kind || "");
 }
 
+function displayHistorySource(item: CareItem): string {
+  if (item.source_label) return item.source_label;
+  if (item.source_type === "caregiver_report" || item.source_type === "care_event" || item.created_by_caregiver_id) {
+    return "Recorded by caregiver";
+  }
+  if (item.source_type === "system" || item.source_type === "system_generated") {
+    return "System-generated update";
+  }
+  if (item.source_type === "professional" || item.source_type === "verified_professional") {
+    return "Professional contribution";
+  }
+  return "Source not recorded";
+}
+
 function displayHistoryTime(item: CareItem): string {
   const eventTime = item.occurred_at;
   const recordedTime = item.recorded_at || item.uploaded_at;
@@ -322,7 +336,7 @@ export default function DailyCarePage() {
                     <strong>{item.title || item.event_type || "Care update"}</strong>
                     {(item.description || item.text) && <p>{item.description || item.text}</p>}
                     <span>{displayHistoryTime(item)}</span>
-                    {item.source_label && <span> · {item.source_label}</span>}
+                    <span> · {displayHistorySource(item)}</span>
                     {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
                     {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
                   </li>
