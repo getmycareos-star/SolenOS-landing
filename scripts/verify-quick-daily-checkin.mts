@@ -67,6 +67,12 @@ assert.match(detailedCapture, /type DailyCaptureMode = "all" \| "something" \| "
   "structured capture exposes one selected interaction mode");
 assert.match(detailedCapture, /mode === "measurement"/,
   "measurement capture can be shown without the other structured sections");
+assert.match(detailedCapture, /What happened\?/,
+  "the observation interaction opens with the caregiver's actual question");
+assert.match(detailedCapture, /Share what you noticed in your own words/,
+  "observation capture preserves a natural-language entry rather than a category form");
+assert.match(detailedCapture, /Your original words are saved/,
+  "the observation interface explains that the original words are retained");
 assert.match(detailedCapture, /vital_type: 'blood_pressure'/,
   "blood pressure is captured as one paired measurement interaction");
 assert.match(detailedCapture, /vital_type: 'bp_systolic'/,
