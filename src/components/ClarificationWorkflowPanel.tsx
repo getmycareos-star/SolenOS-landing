@@ -59,10 +59,10 @@ const panel: CSSProperties = { border: "1px solid var(--border)", borderRadius: 
 const field: CSSProperties = { boxSizing: "border-box", width: "100%", padding: "9px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
 const button: CSSProperties = { border: "1px solid var(--border)", borderRadius: 7, padding: "8px 11px", background: "var(--surface)", color: "var(--text)", cursor: "pointer" };
 
-function questionStatusLabel(status: string): string {
+function questionStatusLabel(status: string, hasLinkedClaim = true): string {
   switch (status) {
     case "open": return "Waiting for an answer";
-    case "answered": return "Answered — review needed";
+    case "answered": return hasLinkedClaim ? "Answered — review needed" : "Answer saved";
     case "declined": return "No answer provided";
     case "closed": return "Closed";
     case "unresolved": return "Still unclear";
@@ -427,7 +427,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
               }}
               style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
             >
-              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status)} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}</span>
+              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id))} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}</span>
               <strong style={{ fontSize: 14, fontWeight: 600 }}>{item.question}</strong>
               <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
@@ -438,7 +438,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {questions.filter((item) => item.status !== "open" && item.status !== "unresolved").map((item) => (
                   <button key={item.id} type="button" onClick={() => setSelectedQuestionId(item.id)} style={{ ...button, textAlign: "left" }}>
-                    <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status)}</span>
+                    <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id))}</span>
                     <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
                   </button>
                 ))}
@@ -447,7 +447,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           )}
         </div>
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
-          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status)} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
+          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status, Boolean(selectedQuestion.claim_id))} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
           <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
           <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
