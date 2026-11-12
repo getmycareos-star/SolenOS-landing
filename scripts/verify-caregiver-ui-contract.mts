@@ -39,10 +39,14 @@ assert.match(companion, /pendingCareUpdates/);
 assert.match(deltaPanel, /if \(!showPanel\) return null/);
 assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);
 
-// A successful empty response is a first-visit state, not a load error.
-assert.match(orientation, /Your Living Care Record does not have any care information available yet\./);
-assert.match(orientation, /data\.ok === false/);
-assert.doesNotMatch(orientation, /!Array\.isArray\(data\.events\)/);
+// The saved-care orientation must use the same authenticated, read-only
+// current-care projection as the main Care Continuity view.
+assert.match(orientation, /Your Living Care Record does not have any care information available yet/);
+assert.match(orientation, /getJSON\("\/care-continuity\/current-care/);
+assert.match(orientation, /projection_type !== "bounded_evidence_derived_current_care"/);
+assert.match(orientation, /data\.read_only !== true/);
+assert.match(orientation, /Missing information does not mean that nothing happened/);
+assert.doesNotMatch(orientation, /situation-understanding\/reassess|postJSON|fetch\(\x60\/api\/situation/);
 assert.match(orientation, /Your care information isn't available right now\. Check your connection and try again\./);
 assert.doesNotMatch(orientation, /<p><\/p>/);
 
