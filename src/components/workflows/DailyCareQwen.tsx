@@ -37,6 +37,8 @@ type AskResult = {
     newest_record_at?: string | null;
   };
   review_required: boolean;
+  review_available: boolean;
+  proposals_requested?: boolean;
   written_to_lcr: boolean;
   notice?: string;
 };
@@ -56,29 +58,31 @@ export default function DailyCareQwen() {
   const [result, setResult] = useState<AskResult | null>(null);
   const [corrections, setCorrections] = useState<Record<number, string>>({});
   const [feedback, setFeedback] = useState("");
+  const [lastQuery, setLastQuery] = useState<{ question: string; historyQuery: string | null } | null>(null);
 
-  async function ask() {
-    const prompt = question.trim();
+  async function ask(prepareLcrProposals = false, queryOverride?: { question: string; historyQuery: string | null }) {
+    const prompt = (queryOverride?.question ?? question).trim();
     if (!prompt || busy) return;
     setBusy(true);
     setError("");
     setFeedback("");
-    setResult(null);
+    if (!prepareLcrProposals) setResult(null);
     try {
       const personId = getPersonId();
       if (!personId) throw new Error("Your care session could not be verified. Reopen Daily Care and try again.");
       const response = (await postJSON("/daily-care/intelligence/ask", {
         person_id: personId,
         question: prompt,
-        history_query: historyQuery.trim() || null,
-        prepare_lcr_proposals: true,
+        history_query: queryOverride ? queryOverride.historyQuery : historyQuery.trim() || null,
+        prepare_lcr_proposals: prepareLcrProposals,
       })) as AskResult;
       setResult(response);
+      setLastQuery({ question: prompt, historyQuery: queryOverride ? queryOverride.historyQuery : historyQuery.trim() || null });
       if (response.status !== "completed") {
         setFeedback(response.answer || "Daily Care records remain available.");
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Daily Care Qwen is unavailable. Your saved care records have not been changed.");
+      setError(cause instanceof Error ? cause.message : "SolenOS could not answer this question right now. Your saved care records have not been changed.");
     } finally {
       setBusy(false);
     }
@@ -123,7 +127,7 @@ export default function DailyCareQwen() {
         <div>
           <p className="daily-care-qwen__eyebrow">DAILY CARE INTELLIGENCE</p>
           <h2 id="daily-care-qwen-title">Ask about the care history</h2>
-          <p>Qwen searches the available records for this care session and shows the source entries it used. Its answers are assistance, not established care facts.</p>
+          <p>SolenOS searches the available care records for this session and shows the entries it used. Answers are assistance, not established care facts. Possible care-record suggestions are optional.</p>
         </div>
       </div>
 
@@ -153,7 +157,7 @@ export default function DailyCareQwen() {
           placeholder="e.g. sleep, meals, appointments"
         />
         <button type="submit" disabled={busy || !question.trim()}>
-          {busy ? "Searching care history…" : "Ask Daily Care Qwen"}
+          {busy ? "Searching care history…" : "Ask about care history"}
         </button>
       </form>
 
@@ -162,13 +166,13 @@ export default function DailyCareQwen() {
 
       {result ? (
         <div className="daily-care-qwen__result" aria-live="polite">
-          <h3>Qwen’s response</h3>
+          <h3>SolenOS response</h3>
           <p className="daily-care-qwen__answer">{result.answer}</p>
           {result.history_scope ? (
             <p className="daily-care-qwen__scope">
               Retrieved {result.history_scope.matched_records ?? 0} matching records
               {typeof result.history_scope.records_sent_to_model === "number"
-                ? `; sent ${result.history_scope.records_sent_to_model} relevant records to Qwen`
+                ? `; used ${result.history_scope.records_sent_to_model} relevant records to prepare this answer`
                 : ""}.
               {result.history_scope.oldest_record_at
                 ? ` Available history begins ${readableDate(result.history_scope.oldest_record_at)}`
@@ -176,7 +180,7 @@ export default function DailyCareQwen() {
               {result.history_scope.newest_record_at
                 ? ` and extends to ${readableDate(result.history_scope.newest_record_at)}.`
                 : "."}
-              Qwen’s response uses a bounded relevant evidence set; this count is not a claim that every record was sent to the model.
+              This answer uses selected relevant records; the count does not mean every saved record was reviewed.
             </p>
           ) : null}
 
@@ -193,6 +197,19 @@ export default function DailyCareQwen() {
                 ))}
               </ul>
             </div>
+          ) : null}
+
+          {result.status === "completed" && !result.proposals_requested && lastQuery ? (
+            <div className="daily-care-qwen__optional">
+              <p>Want possible updates to your care record? You can ask for suggestions separately. Nothing will be added unless you approve it.</p>
+              <button type="button" disabled={busy} onClick={() => { if (lastQuery) void ask(true, lastQuery); }}>
+                {busy ? "Preparing suggestions…" : "Prepare optional care-record suggestions"}
+              </button>
+            </div>
+          ) : null}
+
+          {result.status === "completed" && result.proposals_requested && !result.proposals?.length ? (
+            <p className="daily-care-qwen__scope">No care-record suggestions were prepared. Your saved care record was not changed.</p>
           ) : null}
 
           {result.proposals?.length ? (
@@ -251,6 +268,8 @@ export default function DailyCareQwen() {
         .daily-care-qwen button:disabled { opacity: .55; cursor: not-allowed; }
         .daily-care-qwen__error { color: var(--theme-error-fg); }
         .daily-care-qwen__feedback { padding: .7rem; border-radius: 8px; background: var(--theme-subtle-bg); }
+        .daily-care-qwen__optional { margin: .9rem 0; padding: .8rem; border: 1px solid var(--theme-panel-border); border-radius: 10px; }
+        .daily-care-qwen__optional p { margin: 0 0 .6rem; color: var(--theme-panel-muted); line-height: 1.5; }
         .daily-care-qwen__result { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--theme-panel-border); overflow-wrap: anywhere; }
         .daily-care-qwen__result h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
         .daily-care-qwen__answer { white-space: pre-wrap; line-height: 1.65; }

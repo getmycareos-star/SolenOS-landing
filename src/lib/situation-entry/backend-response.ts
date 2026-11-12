@@ -15,6 +15,7 @@ export type WorkspaceSituationResponse = SituationResponse & {
     open_questions?: string[];
   } | null;
   qwen_review_required?: boolean;
+  qwen_review_available?: boolean;
   qwen_written_to_lcr?: boolean;
   care_continuity_execution?: {
     contract_version?: string;
