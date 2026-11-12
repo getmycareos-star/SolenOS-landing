@@ -115,8 +115,8 @@ assert.ok(themeOverrides.includes(".appointment-brief-grid"));
 assert.ok(themeOverrides.includes(".history-search-wrap"));
 assert.ok(themeOverrides.includes(".continuity-prompt-form"));
 assert.ok(themeOverrides.includes("[data-solenos-error-surface]"));
-const notifications = await readFile(new URL("../src/app/workspace/notifications/page.tsx", import.meta.url), "utf8");
-const settingsPage = await readFile(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
+const notifications = fs.readFileSync(path.join(root, "src/app/workspace/notifications/page.tsx"), "utf8");
+const settingsPage = fs.readFileSync(path.join(root, "src/app/workspace/settings/page.tsx"), "utf8");
 assert.match(notifications, /redirect\("\/workspace\/settings#settings-notifications"\)/,
   "notification access must remain consolidated inside Settings");
 assert.match(settingsPage, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
