@@ -301,7 +301,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
-      {questions.length === 0 && <p>Nothing needs checking right now. SolenOS will bring a care question here if new information needs your input.</p>
+      {questions.length === 0 && <p>Nothing needs checking right now. SolenOS will bring a care question here if new information needs your input.</p>}
       {questions.length > 0 && <>
         <div style={{ display: "grid", gap: 10 }}>
           {questions.filter((item) => item.status === "open" || item.status === "unresolved").map((item) => (
