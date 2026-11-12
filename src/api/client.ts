@@ -122,11 +122,14 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       );
     }
 
+    // Reuse a still-valid bearer session. Refresh only shortly before expiry;
+    // requiring 30 days of remaining lifetime forced a network round-trip on
+    // almost every visit and delayed access to Daily Care capture.
     if (
       personId &&
       caregiverId &&
       expiresAt &&
-      Date.parse(expiresAt) > Date.now() + 30 * 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.now() + 5 * 60 * 1000
     ) {
       setPersonId(personId);
       return {
