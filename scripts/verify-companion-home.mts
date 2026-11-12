@@ -40,7 +40,7 @@ assert.match(companion, /initialPrompt = null/, "Companion accepts a contextual 
 assert.match(documents, /Upload files/);
 assert.match(documents, /Snap a photo/);
 assert.match(documents, /Scan pages/);
-assert.match(documents, /navigator\.mediaDevices\?\.getUserMedia/, "multi-page scan uses the device camera in Documents");
+assert.match(documents, /ScanDocumentCapture/, "multi-page document scanning must reuse the existing scan capture component");
 assert.match(documents, /capture="environment"/, "Snap opens the device rear camera from Documents");
 assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /Save your files/);
