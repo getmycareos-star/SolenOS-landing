@@ -116,6 +116,12 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const documentKey = documents.map((document) => document.id).join("|");
 
   useEffect(() => { void load(); }, [load, refreshToken, documentKey]);
+  useEffect(() => {
+    if (!processingJobs.some((job) => job.status === "queued" || job.status === "processing")) return;
+    const timer = window.setTimeout(() => { void load(); }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [processingJobs, load]);
+
 
   const loadExtractedText = useCallback(async (analysisId: string) => {
     const existing = items.find((item) => item.analysis_id === analysisId);
