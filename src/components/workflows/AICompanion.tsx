@@ -1038,15 +1038,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-shell.is-home .companion-composer textarea { min-height:58px; font-size:16px; line-height:1.65; }
         .companion-shell.is-home .companion-send { background:#c7dfc4; border-color:#a9c7a6; color:#203927; }
         .companion-shell.is-home .companion-input-hint { font-size:11px; color:#7c897d; }
-        .companion-add-wrap { position:relative; }
-        .companion-add-button { display:grid; place-items:center; width:38px; height:38px; border:1px solid #dce5da; border-radius:50%; background:#f7faf6; color:#314d36; cursor:pointer; }
-        .companion-add-button:hover { background:#edf5eb; }
-        .companion-add-menu { position:absolute; z-index:40; left:0; bottom:calc(100% + 10px); width:min(320px,calc(100vw - 48px)); padding:7px; border:1px solid #e0e7df; border-radius:16px; background:#fff; box-shadow:0 14px 40px rgba(25,45,30,.14); }
-        .companion-add-menu button { display:flex; align-items:center; gap:11px; width:100%; padding:11px 10px; border:0; border-radius:10px; background:transparent; text-align:left; color:#25372b; cursor:pointer; }
-        .companion-add-menu button:hover { background:#f4f8f3; }
-        .companion-add-icon { display:grid; place-items:center; flex:0 0 34px; width:34px; height:34px; border-radius:10px; background:#edf5ec; color:#547657; }
-        .companion-add-menu strong { display:block; font-size:13px; font-weight:700; }
-        .companion-add-menu small { display:block; margin-top:3px; color:#748077; font-size:11px; line-height:1.4; }
         @media(max-width:600px) {
           .companion-shell.is-home .companion-topbar { padding:6px 2px 12px; }
           .companion-shell.is-home .companion-empty { padding:26px 10px 18px; }
