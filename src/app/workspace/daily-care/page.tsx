@@ -484,7 +484,7 @@ export default function DailyCarePage() {
           </section>
 
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
-            <h2 id="daily-care-today-title">Mum’s care today</h2>
+            <h2 id="daily-care-today-title">Care today</h2>
             <p className="daily-care-muted">Updates saved today, in time order. No daily entry is required.</p>
             {medicationConcern && (
               <div role="status" className="daily-care-medication-confirmation">
