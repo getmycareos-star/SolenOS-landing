@@ -20,42 +20,39 @@ const detailedCapture = fs.readFileSync(
 );
 
 assert.match(dailyCarePage, /<QuickDailyCheckIn\s*\/>/,
-  "Daily Care mounts the quick check-in before the detailed capture form");
+  "Daily Care mounts the optional quick check-in");
 assert.match(checkIn, /postJSON\("\/daily\/log"/,
-  "quick updates use the existing authenticated daily-log endpoint");
+  "quick check-ins use the existing authenticated daily-log endpoint");
 assert.match(checkIn, /getPersonId\(\)/);
 assert.match(checkIn, /getCaregiverId\(\)/);
-assert.match(checkIn, /value:\s*"uncertain", label:\s*"I’m not sure"/,
-  "caregiver uncertainty remains explicit rather than being converted into a normal status");
-assert.match(checkIn, /value:\s*"same_as_usual", label:\s*"Same as usual"/,
-  "same-as-usual is an explicit caregiver-selected update type");
-assert.match(checkIn, /if \(next === "same_as_usual"\) void saveUpdate\(next, \[\], "", crypto\.randomUUID\(\)\)/,
-  "Same as usual is saved in one tap as an overall impression with a fresh retry key");
-assert.match(checkIn, /selected_areas/);
-assert.match(checkIn, /scope:\s*areas\.length\s*>\s*0\s*\?\s*"selected_areas_only"\s*:\s*"overall_impression_only"/,
-  "domain-specific updates are scoped to selected areas and overall impressions remain explicitly unscoped");
-assert.match(checkIn, /overall_impression_only/,
-  "Same as usual can be saved without falsely marking every care domain as checked");
-assert.match(checkIn, /does not establish or change the person’s baseline/,
-  "a quick check-in cannot establish or rewrite the baseline");
-assert.match(checkIn, /Other areas were not assessed by this check-in/,
-  "unselected areas are never represented as unchanged");
+assert.match(checkIn, /value:\s*"same_as_usual"/,
+  "the first option records the caregiver's overall impression");
+assert.match(checkIn, /value:\s*"change"/,
+  "the second option records that some things were different");
+assert.match(checkIn, /value:\s*"uncertain"/,
+  "the third option preserves uncertainty");
+assert.match(checkIn, /selected_areas:\s*\[\]/,
+  "an overall check-in does not force care-area selection");
+assert.match(checkIn, /scope:\s*"overall_impression_only"/,
+  "the payload explicitly limits the meaning to an overall impression");
+assert.match(checkIn, /Optional/,
+  "the note is optional");
+assert.match(checkIn, /maxLength=\{2000\}/,
+  "the optional note respects the backend limit");
 assert.match(checkIn, /epistemic_status:\s*"caregiver_reported"/,
-  "the source is attributed as caregiver-reported");
-assert.match(checkIn, /idempotency_key:\s*requestId/,
-  "retries reuse a stable idempotency key rather than creating duplicate check-ins");
-assert.match(lcr, /quickValue/,
-  "the LCR renders structured quick check-in details instead of raw JSON");
-assert.match(lcr, /Caregiver reported:/,
-  "the LCR distinguishes caregiver report time from server-recorded time");
+  "the entry remains a caregiver report, not a verified clinical fact");
+assert.match(checkIn, /idempotency_key:\s*requestKey/,
+  "an unchanged retry reuses its idempotency key");
 assert.match(checkIn, /response\?\.success !== true/,
   "the interface requires a backend success receipt");
-assert.match(checkIn, /Your update may already be recorded\. Retry this same update/,
-  "uncertain network outcomes warn about possible persistence and preserve safe retry behavior");
-assert.match(checkIn, /updateKind !== "same_as_usual" && areas\.length === 0/,
-  "only domain-specific updates require a selected area; overall-impression check-ins remain one tap");
-assert.doesNotMatch(checkIn, /registered_action|createReminder|approveAction/i,
-  "a quick check-in never creates a registered action");
+assert.match(checkIn, /does not confirm medicines were given or measurements were taken/,
+  "an overall impression cannot imply medication or measurement completion");
+assert.match(checkIn, /window\.dispatchEvent\(new Event\("careRecordUpdated"\)\)/,
+  "a confirmed save refreshes the existing care-record view");
+assert.match(lcr, /quickValue/,
+  "the LCR renders structured quick check-in details");
+assert.match(lcr, /Caregiver reported:/,
+  "the LCR distinguishes caregiver report time from server-recorded time");
 
 assert.match(detailedCapture, /capture_idempotency_key: captureIdempotencyKey/,
   "structured Daily Care submits a server-checked idempotency key");
@@ -65,10 +62,8 @@ assert.match(detailedCapture, /key: crypto\.randomUUID\(\)/,
   "a new structured capture receives a unique request key");
 assert.match(detailedCapture, /captureSubmissionRef\.current = null/,
   "the request key is cleared only after a successful save");
-assert.match(lcr, /situation-understanding\/reassess/,
-  "the LCR rebuilds situation understanding from the persisted source record");
 
-console.log("✓ quick check-in is mounted in Daily Care");
-console.log("✓ caregiver-selected areas are persisted through the scoped daily-log API");
-console.log("✓ same-as-usual is explicitly scoped; unselected areas remain unassessed");
-console.log("✓ save receipt, attribution and duplicate-submission safeguards are present");
+console.log("✓ quick check-in has exactly three overall-impression choices");
+console.log("✓ no care-area questionnaire or daily completion requirement");
+console.log("✓ optional note, caregiver attribution, idempotency and confirmed save receipt");
+console.log("✓ existing structured capture retry safeguards remain present");
