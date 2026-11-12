@@ -14,6 +14,7 @@ import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import { UPLOAD_PRIVACY_NOTICE } from "@/lib/early-access-trust";
 import Link from "next/link";
 import { extractAttachedDocument, retryAttachedDocument } from "./capture/extract-attached";
+import type { ScanPageFile } from "./capture/ScanDocumentCapture";
 import { SnapCameraCapture } from "./capture/SnapCameraCapture";
 import { ScanDocumentCapture } from "./capture/ScanDocumentCapture";
 
@@ -70,7 +71,10 @@ export function AddSituationPanel({
       try {
         const added: AttachedDocument[] = [];
         for (const file of files) {
-          added.push(await extractAttachedDocument(file, method));
+          added.push(await extractAttachedDocument(file, method, undefined, undefined, method === "scan" ? {
+            rotationDegrees: (file as ScanPageFile).scanRotationDegrees ?? 0,
+            cropInsetsPercent: (file as ScanPageFile).scanCropInsetsPercent ?? { top: 0, right: 0, bottom: 0, left: 0 },
+          } : undefined));
         }
         onDocumentsChange([...documents, ...added]);
         const extractionNote = added.find((document) => document.errorNote)?.errorNote;
@@ -328,7 +332,7 @@ export function AddSituationPanel({
       <ScanDocumentCapture
         open={scanOpen}
         onClose={() => setScanOpen(false)}
-        onCapturePages={(files) => {
+        onCapturePages={(files: ScanPageFile[]) => {
           void ingestFiles(files, "scan");
         }}
       />
