@@ -258,7 +258,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       })}</div>}
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a document or scan. SolenOS will prepare the readable parts for you to review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · Care document · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
+          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Care document · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} details to review</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
                 ? `Some pages were read · ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
@@ -267,7 +267,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             </p>
             {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on this extraction.</p>}
             {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
-              OCR engine confidence (0–100 heuristic, not a probability): {analysis.ocr_quality_by_page.map((page) => `Page ${page.page_number}: ${page.mean_token_confidence === null ? "unavailable" : page.mean_token_confidence + "/100"}; ${page.low_confidence_token_count} low-confidence word(s) of ${page.token_count}`).join(" · ")}. Handwriting may still be misread, even when engine confidence is high.
+              Some text may have been read incorrectly, especially handwriting. Check names, dates, and numbers against the original document.
             </p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
@@ -282,7 +282,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry source text</button></div>
               : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to read the text saved from your document.</p>
                 : analysis.extractedText ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre>
-                  : <p style={{ fontSize: 12 }}>No readable server-extracted text is stored for this document.</p>}
+                  : <p style={{ fontSize: 12 }}>No readable text read from your document is stored for this document.</p>}
           </details>
           {analysis.intelligence_status !== "available" && (analysis.intelligence_status !== "partial" || !!analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>This document is not ready for review yet. Your original file is still saved. Nothing has been added to your care record.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>{analysis.intelligence_status === "partial" ? "Continue reading" : "Try again"}</button></div>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
@@ -319,22 +319,22 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>EXACT SOURCE QUOTATION</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</p></div>
               {pending && <>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected subject<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected interpretation<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
+                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected detail<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept into LCR</button>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Save correction for approval</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Add to your care record</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Save correction for review</button>
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
                 </div>
               </>}
-              {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A source-linked, attributed assertion was saved to the LCR; it is not independently verified clinical fact.</p>}
-              {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>}
+              {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A caregiver-reviewed detail was saved to your care record. It has not been independently confirmed by a healthcare professional.</p>}
+              {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. Nothing was added to your care record.</p>}
             </div>;
           })}
           <details onToggle={(event) => { if (event.currentTarget.open) void loadReviewHistory(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Past review changes{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " update(s)" : ""}</summary>
             {historyLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving saved review events…</p>
               : historyErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{historyErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadReviewHistory(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry history</button></div>
-                : analysis.reviewEvents === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the append-only caregiver decision history.</p>
+                : analysis.reviewEvents === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the past caregiver review decisions.</p>
                   : analysis.reviewEvents.length === 0 ? <p style={{ fontSize: 12 }}>No caregiver review decisions are recorded for this analysis.</p>
                     : <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
                       {analysis.reviewEvents.map((event) => {
@@ -346,7 +346,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                           {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
                           {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
                           {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {event.rationale}</p> : null}
-                          {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision created a source-linked LCR report.</p> : null}
+                          {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision added a caregiver-reviewed detail to your care record.</p> : null}
                         </li>;
                       })}
                     </ol>}
