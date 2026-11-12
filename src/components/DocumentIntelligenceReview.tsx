@@ -216,7 +216,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       }) as { written_to_lcr?: boolean; source_record_ref?: { record_id?: string } | null };
       if (decision === "accept") {
         if (reviewResult.written_to_lcr !== true || !reviewResult.source_record_ref?.record_id) {
-          throw new Error("The backend did not confirm a persistent Living Care Record assertion.");
+          throw new Error("SolenOS could not confirm that the detail was saved. Please check your care record before trying again.");
         }
         window.dispatchEvent(new Event("careRecordUpdated"));
       }
@@ -262,7 +262,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
                 ? `Some pages were read · ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
-                : analysis.intelligence_status === "available" ? "Page extraction completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is still reviewing this document" : "This document is not ready for review yet"}
+                : analysis.intelligence_status === "available" ? "All pages are ready to review" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is still reviewing this document" : "This document is not ready for review yet"}
               {analysis.unprocessed_page_numbers?.length ? ` · not processed: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on this extraction.</p>}
@@ -285,14 +285,14 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                   : <p style={{ fontSize: 12 }}>No readable text read from your document is stored for this document.</p>}
           </details>
           {analysis.intelligence_status !== "available" && (analysis.intelligence_status !== "partial" || !!analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>This document is not ready for review yet. Your original file is still saved. Nothing has been added to your care record.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>{analysis.intelligence_status === "partial" ? "Continue reading" : "Try again"}</button></div>}
-          {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
+          {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No care details were found in the readable text. Nothing was added to your care record.</p>}
           {analysis.observations.map((candidate, index) => {
             const key = analysis.analysis_id + ":" + index;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
             const statusPresentation = pending
               ? { label: candidate.review_status === "corrected_pending_approval" ? "CORRECTION AWAITING APPROVAL" : "PENDING CAREGIVER REVIEW", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
               : candidate.review_status === "accepted_by_caregiver"
-                ? { label: "ACCEPTED INTO LCR", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
+                ? { label: "ADDED TO CARE RECORD", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
                 : candidate.review_status === "rejected_by_caregiver"
                   ? { label: "REJECTED — NOT ADDED", border: "#999999", background: "#eeeeee", color: "#444444" }
                   : { label: "Status unavailable", border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
