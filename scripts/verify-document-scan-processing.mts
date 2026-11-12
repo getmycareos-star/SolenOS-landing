@@ -40,6 +40,7 @@ assert.match(intelligenceReviewSource, /Resume remaining pages/, "caregivers mus
 assert.match(intelligenceReviewSource, /processing_jobs\?/, "the review panel must read durable background job state");
 assert.match(intelligenceReviewSource, /Processing in the background\. You can leave this page\./, "caregivers must know the original is processing without staying in the app");
 assert.match(intelligenceReviewSource, /!active && <button/, "manual extraction must not race an active background job");
+assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.evidence_id === analysis\.source_evidence_id/, "partial-page resume must not race an active background job");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
