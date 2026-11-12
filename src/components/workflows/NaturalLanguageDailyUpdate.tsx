@@ -85,7 +85,7 @@ export default function NaturalLanguageDailyUpdate() {
       <label htmlFor="natural-daily-update-report" style={{ fontWeight: 650 }}>Your update</label>
       <textarea id="natural-daily-update-report" value={report} onChange={(event) => updateReport(event.target.value)}
         maxLength={12000} rows={4}
-        placeholder="For example: Mum slept poorly last night and seemed more unsettled this morning."
+        placeholder="For example: Slept poorly last night and seemed more unsettled this morning."
         disabled={saving}
         style={{ width: "100%", minHeight: 104, padding: 12, border: "1px solid var(--theme-panel-border)", borderRadius: 10, background: "var(--theme-field-bg)", color: "var(--theme-field-fg)", font: "inherit", resize: "vertical" }} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -111,7 +111,7 @@ export default function NaturalLanguageDailyUpdate() {
           )}
           {receipt.medicationNeedsConfirmation && (
             <p style={{ margin: "6px 0 0" }}>
-              Your report suggests Mum’s medication may have changed, but it does not confirm a new dose. Please check the doctor’s instructions or contact the prescribing professional before relying on a different dose.
+              Your report suggests a medication may have changed, but it does not confirm a new dose. Please check the doctor’s instructions or contact the prescribing professional before relying on a different dose.
             </p>
           )}
         </div>
