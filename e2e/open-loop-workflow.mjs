@@ -184,9 +184,9 @@ try {
   await page.getByLabel("Context and what is known").fill(
     "Synthetic test only. The care team has not yet confirmed the appointment date."
   );
-  await page.getByRole("button", { name: "Save open loop" }).click();
+  await page.getByRole("button", { name: "Save follow-up" }).click();
   await page.getByRole("alert").filter({ hasText: "The loop was not saved" }).waitFor({ timeout: 10_000 });
-  await page.getByRole("button", { name: "Save open loop" }).click();
+  await page.getByRole("button", { name: "Save follow-up" }).click();
   const handoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
   });
@@ -222,7 +222,7 @@ try {
   await page.getByLabel("Context and what is known").fill(
     "Synthetic test only. Two reports disagree; the discrepancy must remain visible until explicitly reconciled."
   );
-  await page.getByRole("button", { name: "Save open loop" }).click();
+  await page.getByRole("button", { name: "Save follow-up" }).click();
   const conflict = page.locator("article").filter({
     has: page.getByRole("heading", { name: conflictTitle }),
   });
