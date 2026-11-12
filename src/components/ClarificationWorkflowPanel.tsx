@@ -417,6 +417,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
                 setSelectedQuestionId(item.id);
                 setAnswer("");
                 setAnswerProvenance("");
+                setReviewRationale("");
                 setError("");
               }}
               style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
@@ -431,7 +432,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
               <summary style={{ cursor: "pointer", fontSize: 13 }}>Other incomplete information — no answer needed</summary>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {otherOpenQuestions.map((item) => (
-                  <button key={item.id} type="button" onClick={() => setSelectedQuestionId(item.id)} style={{ ...button, textAlign: "left" }}>
+                  <button key={item.id} type="button" onClick={() => { setSelectedQuestionId(item.id); setReviewRationale(""); }} style={{ ...button, textAlign: "left" }}>
                     <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)" }}>Kept as uncertain · no answer requested</span>
                     <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
                   </button>
