@@ -78,7 +78,7 @@ export function IdentityDeviceRecoveryPanel() {
       );
       await loadDevices();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn't register this device.");
+      setError("We couldn't register this device. Please try again.");
     } finally {
       setSavingDevice(false);
     }
@@ -92,7 +92,7 @@ export function IdentityDeviceRecoveryPanel() {
       setDevices((current) => current.filter((item) => item.id !== device.id));
       show("Device registration revoked.", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn't revoke this device.");
+      setError("We couldn't remove this device's access. Please try again.");
     } finally {
       setRevokingId(null);
     }
@@ -125,7 +125,7 @@ export function IdentityDeviceRecoveryPanel() {
       setNewPassword("");
       show("Account access restored.", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn't recover this account.");
+      setError("We couldn't recover this account. Check your details and try again.");
     } finally {
       setRecoveryBusy(false);
     }
