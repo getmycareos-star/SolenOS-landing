@@ -501,7 +501,7 @@ await record("frontend loading and empty states", async () => {
     await route.continue();
   });
   await page.goto(new URL("/workspace/documents", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("status").filter({ hasText: "Loading saved documents" }).waitFor({ timeout: 10_000 });
+  await page.locator(".living-archive-loading").waitFor({ state: "visible", timeout: 10_000 });
   await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
   await verifyMobile(page);
   await context.close();
