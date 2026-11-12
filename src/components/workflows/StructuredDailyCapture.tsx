@@ -148,8 +148,39 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     note: null,
   });
   
-  // Reuse medicines already present in this person's persisted care history.
-  // These are historical caregiver reports, not a verified active prescription list.
+  // Current medication choices come only from reviewed, in-window LCR assertions.
+  // They are caregiver-reviewed reports, not independent clinical verification.
+  const [currentMedicationRecords, setCurrentMedicationRecords] = useState<Array<{
+    medication_id: string;
+    name: string;
+    dose: string | null;
+    record_status: string;
+  }>>([]);
+  useEffect(() => {
+    let active = true;
+    void getJSON("/care-continuity/medications")
+      .then((response: unknown) => {
+        const records = (response as { medications?: unknown })?.medications;
+        if (!Array.isArray(records)) return;
+        const valid = records.filter((item): item is {
+          medication_id: string; name: string; dose: string | null; record_status: string;
+        } => {
+          if (!item || typeof item !== "object") return false;
+          const row = item as Record<string, unknown>;
+          return typeof row.medication_id === "string"
+            && typeof row.name === "string"
+            && row.status === "active"
+            && row.record_status === "caregiver_reviewed_current_report";
+        });
+        if (active) setCurrentMedicationRecords(valid);
+      })
+      .catch(() => {
+        // No current medication list is shown when the authoritative LCR read is unavailable.
+      });
+    return () => { active = false; };
+  }, []);
+
+  // Historical reports remain available as a separate, explicitly non-current choice.
   const [previouslyRecordedMedications, setPreviouslyRecordedMedications] = useState<Array<{ name: string; dose: string | null }>>([]);
   useEffect(() => {
     let active = true;
@@ -1208,10 +1239,44 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {medicationError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-warning-bg)', border: '1px solid var(--theme-warning-border)', color: 'var(--theme-warning-fg)' }}>{medicationError}</p>}
             {medicationFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-success-bg)', border: '1px solid var(--theme-success-border)', color: 'var(--theme-panel-fg)' }}>{medicationFeedback}</p>}
+            {currentMedicationRecords.length > 0 && (
+              <div>
+                <label htmlFor="capture-current-medication" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>
+                  Choose a current medication from the care record
+                </label>
+                <select
+                  id="capture-current-medication"
+                  value=""
+                  onChange={(event) => {
+                    const selected = currentMedicationRecords.find((item) => item.medication_id === event.target.value);
+                    if (selected) {
+                      setMedicationError(null);
+                      setMedicationFeedback(null);
+                      setMedicationForm((current) => ({
+                        ...current,
+                        medication_name: selected.name,
+                        dose: selected.dose ?? current.dose,
+                      }));
+                    }
+                  }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '14px' }}
+                >
+                  <option value="">Choose current medication</option>
+                  {currentMedicationRecords.map((item) => (
+                    <option key={item.medication_id} value={item.medication_id}>
+                      {item.name}{item.dose ? ` · ${item.dose}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                  These are caregiver-reviewed care-record entries within their review window, not independent clinical verification.
+                </p>
+              </div>
+            )}
             {previouslyRecordedMedications.length > 0 && (
               <div>
                 <label htmlFor="capture-previous-medication" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>
-                  Use a previously recorded medicine
+                  Previously reported medicines (not confirmed current)
                 </label>
                 <select
                   id="capture-previous-medication"
@@ -1238,7 +1303,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   ))}
                 </select>
                 <p style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
-                  These medicines appeared in earlier caregiver entries. Check that the medicine is still current.
+                  These appeared in past caregiver reports. Their current status is unknown; selecting one does not make it active.
                 </p>
               </div>
             )}
