@@ -128,7 +128,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         ? { ...item, reviewEvents: Array.isArray(history.items) ? history.items : [], reviewHistoryUnavailable: false }
         : item));
     } catch {
-      setHistoryErrors((current) => ({ ...current, [analysisId]: "The immutable decision history could not be retrieved. Do not interpret a missing history as no earlier decision." }));
+      setHistoryErrors((current) => ({ ...current, [analysisId]: "Earlier review decisions could not be loaded. A missing history does not mean no earlier decision was made." }));
     } finally {
       setHistoryLoading((current) => ({ ...current, [analysisId]: false }));
     }
@@ -155,7 +155,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         ? { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "", extractionMethod: typeof detail.extraction_method === "string" ? detail.extraction_method : undefined }
         : item));
     } catch {
-      setTextErrors((current) => ({ ...current, [analysisId]: "The persisted source text could not be retrieved. Retry without re-uploading the original." }));
+      setTextErrors((current) => ({ ...current, [analysisId]: "The text saved from your document could not be loaded. Try again without uploading the original again." }));
     } finally {
       setTextLoading((current) => ({ ...current, [analysisId]: false }));
     }
@@ -230,11 +230,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   };
 
   if (loading && items.length === 0) {
-    return <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}><p role="status">Loading saved document understanding…</p></section>;
+    return <section aria-label="Document review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}><p role="status">Reading your saved document…</p></section>;
   }
 
   return (
-    <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
+    <section aria-label="Document review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>The original document and extracted text are available here for review. Accept a statement before it becomes a caregiver-reviewed Living Care Record entry.</p></div>
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
@@ -325,7 +325,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Do not add</button>
                 </div>
               </>}
-              {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A caregiver-reviewed detail was saved to your care record. It has not been independently confirmed by a healthcare professional.</p>}
+              {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Added as a caregiver report. A healthcare professional has not independently confirmed it.</p>}
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. Nothing was added to your care record.</p>}
             </div>;
           })}
@@ -341,7 +341,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                         const subject = typeof after.subject === "string" ? after.subject : "Suggested detail";
                         const observation = typeof after.observation === "string" ? after.observation : "";
                         return <li key={event.id} style={{ fontSize: 12, lineHeight: 1.5 }}>
-                          <strong>Suggested detail {event.candidate_index + 1} · {event.decision === "accept" ? "Added" : event.decision === "correct" ? "Correction saved" : event.decision === "reject" ? "Not added" : "Review saved"}</strong>
+                          <strong>Care detail {event.candidate_index + 1} · {event.decision === "accept" ? "Added" : event.decision === "correct" ? "Correction saved" : event.decision === "reject" ? "Not added" : "Review saved"}</strong>
                           {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
                           {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
                           {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {caregiverSafeAssistantText(event.rationale) || "No further note was recorded."}</p> : null}
