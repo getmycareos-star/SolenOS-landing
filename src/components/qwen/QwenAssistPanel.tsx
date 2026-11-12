@@ -54,6 +54,7 @@ type QwenClaimProvenance = {
     support_status: string;
     validation_basis?: string;
     aggregate?: { topic?: string; window_label?: string; count?: number; candidate_count?: number } | null;
+    aggregate_review?: { status?: string; count?: number | null; interpretation_limit?: string } | null;
     source_references: QwenClaimSource[];
   }>;
 };
@@ -320,6 +321,16 @@ export default function QwenAssistPanel({
                     <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0 }}>
                       Counted from {claim.aggregate?.count ?? claim.source_references.length} distinct saved care updates
                       {claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.
+                    </p>
+                  )}
+                  {claim.support_status === "aggregate_count_mismatch" && (
+                    <p style={{ fontSize: "11px", color: "var(--theme-warning-fg)", margin: 0 }}>
+                      The saved care updates do not support this number. The count check found {claim.aggregate_review?.count ?? "an unconfirmed number"} distinct updates in the requested time window.
+                    </p>
+                  )}
+                  {claim.support_status === "aggregate_not_validated" && (
+                    <p style={{ fontSize: "11px", color: "var(--theme-warning-fg)", margin: 0 }}>
+                      {claim.aggregate_review?.interpretation_limit || "This total could not be confirmed from the saved care updates. Check the reports before relying on a number."}
                     </p>
                   )}
                   {claim.support_status === "matched_saved_wording" && (
