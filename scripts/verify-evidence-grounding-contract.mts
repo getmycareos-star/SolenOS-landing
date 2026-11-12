@@ -151,6 +151,9 @@ const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/compone
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
 assert(!clarificationPanel.includes('postJSON("/uncertainty/questions"') && !clarificationPanel.includes("Ask another question"), "caregivers must not create their own clarification tasks from the LCR panel");
 assert(clarificationPanel.includes("No saved source linked yet"), "caregivers must be told when a system-generated question has no linked source");
+assert(clarificationPanel.includes('item.necessity === "necessary"'), "only necessity-assessed questions may enter the caregiver attention queue");
+assert(clarificationPanel.includes("Other incomplete information — no action needed"), "optional and unassessed information must remain non-interrupting");
+assert(clarificationPanel.includes('selectedQuestion.necessity === "necessary"'), "caregivers must not be asked to answer optional or unassessed questions");
 assert(!clarificationPanel.includes("evidenceSummary(item)") && !clarificationPanel.includes("Related saved information"), "the removed manual question form must not ask caregivers to select evidence");
 assert(clarificationPanel.includes("questionHasLinkedSource(item)") && clarificationPanel.includes("source_record_refs"), "clarification source labels must recognize linked claims and persisted source records, not only attachments");
 assert(clarificationPanel.includes('window.addEventListener("careRecordUpdated"'), "clarification questions must refresh after a saved care update");
