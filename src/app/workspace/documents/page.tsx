@@ -20,6 +20,7 @@ import {
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
+import { ScanDocumentCapture, type ScanPageFile } from "@/components/mvp-workspace/capture/ScanDocumentCapture";
 import { LivingArchiveMark } from "@/components/brand";
 
 type EvidenceRecord = {
@@ -271,12 +272,7 @@ export default function DocumentsPage() {
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const snapInputRef = useRef<HTMLInputElement>(null);
-  const cameraVideoRef = useRef<HTMLVideoElement>(null);
-  const cameraStreamRef = useRef<MediaStream | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [cameraStarting, setCameraStarting] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [capturedPages, setCapturedPages] = useState<File[]>([]);
+  const [scanOpen, setScanOpen] = useState(false);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
   const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
@@ -365,92 +361,25 @@ export default function DocumentsPage() {
     }
   };
 
-  useEffect(() => {
-    if (!cameraOpen) return;
-    let cancelled = false;
-    setCameraStarting(true);
-    setCameraError(null);
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError("Camera access is not available in this browser. Use Snap a photo instead.");
-      setCameraStarting(false);
-      return;
-    }
-    void navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
-      .then((stream) => {
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        cameraStreamRef.current = stream;
-        if (cameraVideoRef.current) {
-          cameraVideoRef.current.srcObject = stream;
-          void cameraVideoRef.current.play().catch(() => setCameraError("The camera could not start. Check camera permission and try again."));
-        }
-        setCameraStarting(false);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCameraStarting(false);
-          setCameraError("SolenOS could not access the camera. Allow camera permission in your browser settings, then try again.");
-        }
-      });
-    return () => {
-      cancelled = true;
-      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-      cameraStreamRef.current = null;
-    };
-  }, [cameraOpen]);
-
-  useEffect(() => () => {
-    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-  }, []);
-
-  const closeCameraScanner = () => {
-    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-    cameraStreamRef.current = null;
-    setCameraOpen(false);
-    setCapturedPages([]);
-    setCameraError(null);
-  };
-
-  const captureCameraPage = () => {
-    const video = cameraVideoRef.current;
-    if (!video || !video.videoWidth || !video.videoHeight) {
-      setCameraError("The camera is not ready yet. Wait a moment and try again.");
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext("2d");
-    if (!context) {
-      setCameraError("This device could not capture the camera image. Try Snap a photo instead.");
-      return;
-    }
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        setCameraError("The photo could not be created. Please try again.");
-        return;
-      }
-      const page = new File([blob], `solenos-scan-${Date.now()}-${capturedPages.length + 1}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
-      setCapturedPages((current) => [...current, page]);
-      setCameraError(null);
-    }, "image/jpeg", 0.92);
-  };
-
-  const finishCameraScan = () => {
-    if (!capturedPages.length) {
-      setCameraError("Capture at least one page before continuing.");
-      return;
-    }
-    const pages = [...capturedPages];
-    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-    cameraStreamRef.current = null;
-    setCameraOpen(false);
-    setCapturedPages([]);
+  const handleScanCapture = (files: ScanPageFile[]) => {
+    if (!files.length) return;
+    const timestamp = new Date().toISOString();
+    const pages: ReviewPage[] = files.map((file) => ({
+      ingestionKey: crypto.randomUUID(),
+      captureTimestamp: timestamp,
+      file,
+      text: "",
+      note: "Captured scan page. Apply the saved crop and rotation, then review extracted text before saving.",
+      reviewed: false,
+      uncertain: false,
+      rotation: file.scanRotationDegrees,
+      crop: file.scanCropInsetsPercent,
+      prepared: false,
+      previewUrl: URL.createObjectURL(file),
+    }));
     setIntakeMode("scan");
-    void handleFiles(pages);
+    setReviewPages((current) => [...current, ...pages]);
+    setUploadMessage({ kind: "success", text: `${pages.length} scan page(s) ready. Review the original pages and extracted text before saving.` });
   };
 
 
@@ -622,7 +551,7 @@ export default function DocumentsPage() {
         <input ref={snapInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(event) => { const files = Array.from(event.currentTarget.files ?? []); event.currentTarget.value = ""; setIntakeMode("capture"); void handleFiles(files); }} />
         <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Upload size={17} />Upload files</button>
         <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Camera size={17} />Snap a photo</button>
-        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
+        <button type="button" onClick={() => setScanOpen(true)} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
       </section>
 
       <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
@@ -742,23 +671,7 @@ export default function DocumentsPage() {
         )}
       </section>
 
-      {cameraOpen && <div role="dialog" aria-modal="true" aria-label="Scan care document pages" style={{ position: "fixed", inset: 0, zIndex: 120, background: "rgba(0,0,0,.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
-        <section style={{ width: "min(720px, 100%)", maxHeight: "92dvh", display: "grid", gap: 12, padding: 14, background: "var(--surface)", color: "var(--text)", borderRadius: 14, overflow: "auto" }}>
-          <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div><h2 style={{ margin: 0, fontSize: 18 }}>Scan pages</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Capture each page. You can review, rotate and crop them before saving.</p></div>
-            <button type="button" onClick={closeCameraScanner} aria-label="Close scanner" style={{ width: 40, height: 40, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><X size={18} /></button>
-          </header>
-          <video ref={cameraVideoRef} autoPlay playsInline muted aria-label="Live document camera preview" style={{ width: "100%", maxHeight: "55dvh", background: "#111", borderRadius: 10, objectFit: "contain" }} />
-          {cameraStarting && <p role="status" style={{ margin: 0 }}>Starting camera…</p>}
-          {cameraError && <p role="alert" style={{ margin: 0, color: "var(--danger, #a22)" }}>{cameraError}</p>}
-          <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>{capturedPages.length} page(s) captured</p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={captureCameraPage} disabled={cameraStarting} style={{ minHeight: 44, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "9px 13px" }}>Take photo</button>
-            <button type="button" onClick={finishCameraScan} disabled={!capturedPages.length || cameraStarting} style={{ minHeight: 44, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "9px 13px" }}>Review {capturedPages.length || ""} page(s)</button>
-            <button type="button" onClick={closeCameraScanner} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "9px 13px" }}>Cancel</button>
-          </div>
-        </section>
-      </div>}
+      <ScanDocumentCapture open={scanOpen} onClose={() => setScanOpen(false)} onCapturePages={handleScanCapture} />
       {selected && <div role="dialog" aria-modal="true" aria-label={selected.title} onClick={(event) => { if (event.target === event.currentTarget) closePreview(); }} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
         <section style={{ width: "min(900px, 100%)", maxHeight: "92dvh", display: "flex", flexDirection: "column", background: "var(--surface)", color: "var(--text)", borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }}>
           <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 14, borderBottom: "1px solid var(--border)" }}>
