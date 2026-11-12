@@ -202,6 +202,13 @@ assert(freshnessPanel.includes("A review does not prove that information is true
 assert(freshnessPanel.includes("source_time_kind"), "freshness UI must show which timestamp dimension drove the assessment");
 console.log("PASS: saved freshness policy assessment and history are connected to the LCR with explicit limits.");
 
+const deltaPanel = fs.readFileSync(path.join(process.cwd(), "src/components/CareDeltaPanel.tsx"), "utf8");
+assert(deltaPanel.includes("claim_provenance"), "Delta UI must consume claim-level source checks");
+assert(deltaPanel.includes("source_record_refs"), "each Delta finding must display its own supporting records");
+assert(deltaPanel.includes("Summary source check"), "Delta summary statements must be checked separately against their sources");
+assert(deltaPanel.includes("When it happened") && deltaPanel.includes("When it was recorded"), "Delta sources must show event and recording times");
+console.log("PASS: Delta findings and summaries display statement-specific source references.");
+
 
 const companionPanel = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
 assert(companionPanel.includes("source_freshness_assessment_ids"), "Companion must expose freshness assessment provenance");
