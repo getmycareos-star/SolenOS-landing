@@ -455,7 +455,7 @@ function displayDescription(value?: string | null): string {
           ? quick.selected_areas.filter((item): item is string => typeof item === "string")
                .map(caregiverLabel)
           : [];
-        const summary = typeof parsedRecord.notes === "string" ? parsedRecord.notes : "";
+        const summary = typeof parsedRecord.notes === "string" ? caregiverSafeAssistantText(parsedRecord.notes) || "" : "";
         return [
           summary,
           `Update type: ${kindLabels[String(quick.kind)] || "Caregiver check-in"}`,
