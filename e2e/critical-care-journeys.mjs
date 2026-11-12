@@ -525,19 +525,22 @@ await record("frontend network failure is surfaced rather than rendered as empty
 
 await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
   const daily = await createBrowserPage(session, "/workspace/daily-care");
-  await daily.page.getByRole("button", { name: "Something changed", exact: true }).click();
-  await daily.page.getByRole("button", { name: "Sleep", exact: true }).click();
-  await daily.page.locator('textarea[placeholder="Add a detail if it would help…"]').fill("Browser UI confirms restless sleep and several overnight awakenings.");
-  await daily.page.getByRole("button", { name: "Save update", exact: true }).click();
-  await daily.page.getByText("Saved to the care record.", { exact: false }).waitFor({ timeout: 20_000 });
-  const structuredNote = "Structured Add Record entry: breakfast intake was lower than usual.";
-  await daily.page.locator('textarea[placeholder="Add any additional notes about the day"]').fill(structuredNote);
-  await daily.page.getByRole("button", { name: "Save daily care update", exact: true }).click();
-  await daily.page.getByText("Saved.", { exact: false }).last().waitFor({ timeout: 20_000 });
+  const saveFreeTextUpdate = async (text) => {
+    await daily.page.getByRole("button", { name: "Share something", exact: true }).click();
+    await daily.page.getByRole("button", { name: "Something happened", exact: true }).click();
+    await daily.page.locator("#daily-capture-original-words").fill(text);
+    await daily.page.getByRole("button", { name: "Save to care record", exact: true }).click();
+    await daily.page.getByText(/^Saved\./).last().waitFor({ timeout: 20_000 });
+    await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
+  };
+  const firstCareUpdate = "Browser UI confirms restless sleep and several overnight awakenings.";
+  const secondCareUpdate = "Browser UI records that breakfast intake was lower than usual.";
+  await saveFreeTextUpdate(firstCareUpdate);
+  await saveFreeTextUpdate(secondCareUpdate);
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
   assert.equal(dailyHistory.status, 200);
-  assert.ok(JSON.stringify(dailyHistory.payload).includes("Browser UI confirms restless sleep"));
-  assert.ok(JSON.stringify(dailyHistory.payload).includes(structuredNote));
+  assert.ok(JSON.stringify(dailyHistory.payload).includes(firstCareUpdate));
+  assert.ok(JSON.stringify(dailyHistory.payload).includes(secondCareUpdate));
   await verifyMobile(daily.page);
   await daily.context.close();
 
