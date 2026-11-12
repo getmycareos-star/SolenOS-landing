@@ -45,7 +45,7 @@ type DocumentItem = {
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
 type CropInsets = { top: number; right: number; bottom: number; left: number };
-type ReviewPage = { ingestionKey: string; file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
+type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
@@ -346,7 +346,7 @@ export default function DocumentsPage() {
         const extracted = isScannedImage
           ? { text: "", note: "Set page rotation/crop if needed, then apply the image adjustments before extracting text." }
           : await extractText(file);
-        pages.push({ ingestionKey: crypto.randomUUID(), file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
+        pages.push({ ingestionKey: crypto.randomUUID(), captureTimestamp: new Date().toISOString(), file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
       }
       setReviewPages((current) => [...current, ...pages]);
       setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
@@ -414,6 +414,7 @@ export default function DocumentsPage() {
       }
       setReviewPages((current) => [...current, {
         ingestionKey: crypto.randomUUID(),
+        captureTimestamp: new Date().toISOString(),
         file: pdfFile,
         text: combinedText,
         note: "Combined multi-page PDF generated from the reviewed scan pages below. Original uploaded page files remain separate and unchanged.",
@@ -455,7 +456,7 @@ export default function DocumentsPage() {
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
         form.append("capture_method", intakeMode === "scan" ? "scan" : "upload");
-        form.append("capture_timestamp", new Date(page.file.lastModified || Date.now()).toISOString());
+        form.append("capture_timestamp", page.captureTimestamp);
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(pageIndex + 1));
         form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\n" + page.text.trim() : page.text.trim());
         form.append("scan_review_status", page.reviewed ? "caregiver_reviewed" : "not_reviewed");
