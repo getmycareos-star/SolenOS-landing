@@ -38,6 +38,10 @@ assert.match(source, /target_type: event\.source_type === "care_assertion" \? "c
   "corrections target the original care event or LCR assertion without changing the source type");
 assert.match(source, /event\.source_type === "care_assertion"/,
   "care-history corrections are available for persisted LCR assertions as well as source events");
+assert.match(source, /assertion_status === "string"/,
+  "the timeline preserves assertion lifecycle state");
+assert.match(source, /!\["superseded", "retracted"\]\.includes\(event\.status\.toLowerCase\(\)\)/,
+  "superseded and retracted assertions cannot be corrected as if they were current");
 assert.match(source, /target_id\?: string \| null/,
   "history records preserve the correction's target identifier");
 assert.match(source, /Original care event/,
