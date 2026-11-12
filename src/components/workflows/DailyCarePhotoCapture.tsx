@@ -62,7 +62,7 @@ export default function DailyCarePhotoCapture() {
       <input
         id="daily-care-photo-file"
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         onChange={(event) => {
           setFile(event.target.files?.[0] ?? null);
           setError("");
