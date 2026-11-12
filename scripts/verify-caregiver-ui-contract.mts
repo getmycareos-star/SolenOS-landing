@@ -154,4 +154,7 @@ assert.ok(dailyCarePage.includes("Care today"), "Daily Care must present one chr
 assert.ok(dailyCarePage.includes("dailyTimePeriod(item)"), "daily updates must be grouped by their recorded time of day");
 assert.ok(dailyCarePage.includes("Needs confirmation"), "unconfirmed medication changes must remain visible when the caregiver returns");
 assert.ok(dailyCarePage.includes("No daily entry is required"), "an empty day must not be framed as an overdue entry");
+assert.ok(dailyCarePage.includes('getJSON("/open-loops?limit=100&offset=0")'), "Daily Care must retrieve existing follow-ups from the existing Open Loops service");
+assert.ok(dailyCarePage.includes("Daily Care does not create a second copy"), "Daily Care must reuse existing follow-ups instead of duplicating them");
+assert.ok(dailyCarePage.includes("followUpsError"), "follow-up retrieval failures must remain visible rather than appearing as an empty list");
 console.log("Caregiver UI contract checks passed.");
