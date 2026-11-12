@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 
 type SaveReceipt = {
   id: string;
@@ -56,12 +57,7 @@ export default function NaturalLanguageDailyUpdate() {
       setRequestKey(null);
       window.dispatchEvent(new Event("careRecordUpdated"));
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "";
-      setError(
-        message && message.length < 180 && !/sql|traceback|stack/i.test(message)
-          ? message
-          : "We couldn’t confirm that your update was saved. Your wording is still here. Check the care record before trying again.",
-      );
+      setError(caregiverSafeErrorMessage());
     } finally {
       setSaving(false);
     }
