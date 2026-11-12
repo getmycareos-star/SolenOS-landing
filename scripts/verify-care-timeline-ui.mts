@@ -36,6 +36,10 @@ assert.match(source, /postJSON\("\/corrections"/,
   "care-history corrections use the existing persisted correction endpoint");
 assert.match(source, /target_type: "care_event"/,
   "corrections target the original care event");
+assert.match(source, /target_id\?: string \| null/,
+  "history records preserve the correction's target identifier");
+assert.match(source, /Original care event/,
+  "the correction entry links back to the untouched source event");
 assert.match(source, /original_text: parseDescription\(event\.description\)/,
   "the correction receipt preserves a readable rendering linked to the untouched original event");
 assert.match(source, /original entry remains unchanged/,
