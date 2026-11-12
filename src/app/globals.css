@@ -5952,3 +5952,23 @@ input[type="file"] { width: 100%; white-space: normal; }
     stroke-dashoffset: 0;
   }
 }
+
+/* Dark-mode contrast overrides for the shared sage action palette. */
+html[data-solenos-theme="dark"] .solenos-btn--primary,
+html[data-solenos-theme="dark"] .solenos-shell .solenos-btn--primary,
+html[data-solenos-theme="dark"] .solenos-shell .workspace-primary,
+html[data-solenos-theme="dark"] .solenos-shell .el-button,
+html[data-solenos-theme="dark"] .solenos-shell button[style*="var(--accent)"],
+html[data-solenos-theme="dark"] .solenos-shell button[style*="var(--trust)"],
+html[data-solenos-theme="dark"] .solenos-shell [role="button"][style*="var(--accent)"],
+html[data-solenos-theme="dark"] .solenos-shell [role="button"][style*="var(--trust)"] {
+  background-color: #b9d5b5 !important;
+  border-color: #8eae8a !important;
+  color: #17251c !important;
+}
+
+html[data-solenos-theme="dark"] .care-reminders-inline-link,
+html[data-solenos-theme="dark"] .care-reminders-back,
+html[data-solenos-theme="dark"] .care-reminders-settings-link {
+  color: #b9d5b5 !important;
+}
