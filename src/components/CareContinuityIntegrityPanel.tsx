@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getJSON, patchJSON, getCaregiverId } from '../api/client'
-import { careInformationLabel } from '@/lib/care-epistemics/information-status'
+import { caregiverInformationLabel } from '@/lib/caregiver-language'
 
 type Assertion = {
   id: string
@@ -183,7 +183,7 @@ export default function CareContinuityIntegrityPanel({
               <span style={{ fontSize: 12 }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Shared by: {item.source_label} · {simpleRecordLabel(item.assertion_kind)} · {careInformationLabel(item.epistemic_state || 'reported')} · Review: {simpleRecordLabel(item.assertion_status)}
+              Shared by: {item.source_label} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Review: {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
