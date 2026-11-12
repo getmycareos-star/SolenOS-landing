@@ -54,7 +54,7 @@ export function CaregiverAccessPanel() {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [primaryTransfers, setPrimaryTransfers] = useState<PrimaryTransfer[]>([]);
   const [selectedPrimaryRecipient, setSelectedPrimaryRecipient] = useState("");
-  const [primaryReason, setPrimaryReason] = useState(\"\");
+  const [primaryReason, setPrimaryReason] = useState("");
   const [email, setEmail] = useState("");
   const [selectedResponsibility, setSelectedResponsibility] = useState("");
   const [selectedRecipient, setSelectedRecipient] = useState("");
