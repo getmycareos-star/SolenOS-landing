@@ -16,7 +16,7 @@ assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop sta
 assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
 assert.match(source, /function createMultiPagePdf\(/, "multi-page PDF generation must be implemented");
 assert.match(source, /Combine scan pages into one PDF/, "caregivers must be able to create a multi-page PDF without first reviewing browser OCR");
-assert.match(source, /Original uploaded page files remain separate and unchanged\./, "PDF creation must preserve individual original scans");
+assert.match(source, /individual original scans will also be preserved/, "PDF creation must preserve individual original scans");
 
 const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 const attachmentTypes = readFileSync("src/lib/mvp-workspace/types.ts", "utf8");
@@ -68,6 +68,7 @@ assert.match(addRecordSource, /rotationDegrees: \(file as ScanPageFile\)\.scanRo
 const saveFunction = source.slice(source.indexOf("const saveReviewedPages"), source.indexOf("const openOriginal"));
 assert.match(saveFunction, /document_processing_job_id/, "the save response must confirm durable background processing was queued");
 assert.doesNotMatch(saveFunction, /extracted_text/, "client-supplied OCR must never be submitted as source evidence");
+assert.doesNotMatch(source, /Extracted text — review and correct before saving/, "caregivers must not be forced to review client-side OCR before upload");
 assert.match(saveFunction, /scan_text_prepared", "false"/, "upload must leave OCR preparation to the server");
 assert.match(saveFunction, /scan_crop_json/, "crop metadata must accompany the original bytes");
 assert.match(saveFunction, /scan_rotation_degrees/, "rotation metadata must accompany the original bytes");
