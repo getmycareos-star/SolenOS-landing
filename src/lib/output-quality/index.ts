@@ -31,6 +31,40 @@ export const INTERNAL_LANGUAGE_BANS = [
   "detected keywords",
   "symptom classifier",
   "care story already underway",
+  // Engineering / data-processing language must stay out of caregiver-facing copy.
+  "provenance",
+  "reconciliation",
+  "assertion",
+  "extraction pipeline",
+  "extraction status",
+  "source span",
+  "confidence score",
+  "model inference",
+  "epistemic status",
+  "care continuity execution",
+  "stage status",
+  "source evidence",
+  "database",
+  "schema",
+  "worker",
+  "transaction",
+  "idempotent",
+  "OCR",
+  "API",
+  "JSON",
+  "behaviour",
+  "behaviours",
+  "organise",
+  "organised",
+  "organisation",
+  "prioritise",
+  "prioritised",
+  "colour",
+  "centre",
+  "favourite",
+  "recognise",
+  "recognised",
+  "programme",
   "what is held",
   "held from what you shared",
   "held with",
@@ -39,16 +73,23 @@ export const INTERNAL_LANGUAGE_BANS = [
   "held in the living care record",
 ] as const;
 
+function languageBanRegex(ban: string): RegExp {
+  const escaped = ban.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Whole-word matching avoids false positives such as "rapid" containing "api".
+  const pattern = /^[a-z0-9]+$/i.test(ban) ? "\\b" + escaped + "\\b" : escaped;
+  return new RegExp(pattern, "i");
+}
+
 export function containsInternalLanguage(text: string): boolean {
-  const lower = text.toLowerCase();
-  return INTERNAL_LANGUAGE_BANS.some((p) => lower.includes(p));
+  return INTERNAL_LANGUAGE_BANS.some((ban) => languageBanRegex(ban).test(text));
 }
 
 export function scrubInternalLanguage(text: string): string {
   let t = text;
   for (const ban of INTERNAL_LANGUAGE_BANS) {
-    const re = new RegExp(ban.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-    t = t.replace(re, "").replace(/\s{2,}/g, " ").trim();
+    const escaped = ban.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = /^[a-z0-9]+$/i.test(ban) ? "\\b" + escaped + "\\b" : escaped;
+    t = t.replace(new RegExp(pattern, "gi"), "").replace(/\s{2,}/g, " ").trim();
   }
   return t;
 }
