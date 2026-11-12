@@ -110,7 +110,7 @@ export function CaregiverAccessPanel() {
           <strong>Invitation for {invitation.email}</strong>
           <p>This invitation has not been sent. Share this one-time code with the intended person through a private channel. It expires {new Date(invitation.expires_at).toLocaleString()}.</p>
           <code style={{ display: "block", overflowWrap: "anywhere", userSelect: "all" }}>{invitation.invitation_token}</code>
-          <Button type="button" variant="secondary" onClick={() => { void navigator.clipboard?.writeText(invitation.invitation_token); }}>Copy invitation code</Button>
+          <Button type="button" variant="secondary" onClick={() => { const link = window.location.origin + "/invite/caregiver#token=" + encodeURIComponent(invitation.invitation_token); void navigator.clipboard?.writeText(link); }}>Copy secure invitation link</Button>
         </div>
       )}
 
