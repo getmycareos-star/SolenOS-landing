@@ -161,6 +161,8 @@ assert(clarificationPanel.includes('updateQuestion("unresolved")'), "skipping an
 assert(clarificationPanel.includes("An answer will not be treated as confirmed until it has been reviewed"), "answer capture must not automatically confirm the care record");
 assert(clarificationPanel.includes("intended_answerer_role"), "clarification must record who is best placed to answer when known");
 assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
+assert(clarificationPanel.includes("What SolenOS checked"), "caregivers must see the linked evidence already checked before answering");
+assert(clarificationPanel.includes("selectedEvidence.map"), "the question detail must render the actual linked evidence, not a generic claim");
 assert(clarificationPanel.includes('item.necessity === "necessary"'), "only questions explicitly assessed as necessary may interrupt caregivers");
 assert(clarificationPanel.includes("Other incomplete information — no answer needed"), "non-material and unassessed uncertainty must remain visible without becoming a task");
 assert(clarificationPanel.includes("You do not need to answer it right now."), "non-necessary questions must not expose an answer form");
