@@ -69,7 +69,7 @@ function isOpenMatter(item: CareItem): boolean {
 }
 
 function displayHistorySource(item: CareItem): string {
-  if (item.source_label) return item.source_label;
+  if (item.source_label && item.source_label !== "Source label not recorded") return item.source_label;
   if (item.source_type === "caregiver_report" || item.source_type === "care_event" || item.created_by_caregiver_id) {
     return "Recorded by caregiver";
   }
