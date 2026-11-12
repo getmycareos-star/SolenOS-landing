@@ -28,6 +28,8 @@ assert.match(source, /original_text/,
   "correction history preserves the earlier source text");
 assert.match(source, /scheduled: "scheduled; not confirmed as given"/,
   "timeline history does not collapse scheduled medication into administration");
+assert.match(source, /not proof it was given/,
+  "scheduled medicine time is presented separately from administration evidence");
 assert.match(source, /Load older care records/,
   "the full history can be paginated beyond the first 200 records");
 assert.match(source, /postJSON\("\/corrections"/,
