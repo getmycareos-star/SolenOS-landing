@@ -458,6 +458,9 @@ await record("12 account recovery preserves care record", async () => {
   assert.equal(login.status, 200, JSON.stringify(login.payload));
   assert.equal(login.payload.person_id, identity.personId);
   assert.equal(login.payload.caregiver_id, identity.caregiverId);
+  // Recovery rotates the active session token. Browser checks must use the
+  // recovered credential, not the pre-recovery bearer token.
+  session = { ...session, access_token: login.payload.access_token, expires_at: login.payload.expires_at };
   const persisted = await request(`/api/v1/evidence/${identity.personId}`, { token: login.payload.access_token });
   assert.equal(persisted.status, 200);
   assert.ok(persisted.payload.some((row) => row.id === evidenceId));
