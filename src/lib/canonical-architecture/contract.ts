@@ -2,19 +2,19 @@
  * SolenOS Canonical Contracts — Cognitive Load Reduction Engine (final).
  */
 
-/** Section 1 — immutable system identity. */
+/** Product identity: the Living Care Record is the system of record. */
 export const CANONICAL_SYSTEM_IDENTITY =
-  "a deterministic cognitive decomposition engine that converts unstructured caregiver input into structured clarity under uncertainty";
+  "a Living Care Record that preserves and updates a person’s care journey over time from evidence-grounded reports, observations, claims, events, uncertainty, contradictions, decisions, and outcomes";
 
 export const CANONICAL_SYSTEM_PURPOSE =
-  "Reduce cognitive burden during uncertainty through structured decomposition.";
+  "Preserve care continuity over time across daily observations, family caregivers, appointments, documents, and care decisions.";
 
 export const CANONICAL_PRODUCT_MOAT =
-  "Deterministic cognitive decompression under stress.";
+  "A trustworthy, evidence-linked longitudinal care record that preserves context, uncertainty, changes, decisions, and outcomes.";
 
-/** Final implementation truth — stateless engine + relief validation layer only. */
+/** Persistence is a core product capability: the LCR must survive sessions and accumulate attributed care history. */
 export const CANONICAL_ONE_LINE_TRUTH =
-  "Persistence exists to validate whether structured cognitive decomposition consistently reduces uncertainty. Persistence does NOT exist to understand, profile, predict, or optimize users.";
+  "SolenOS preserves an evidence-linked Living Care Record over time. AI may extract and organize information, but only governed, attributable care-domain operations may change accepted record state.";
 
 /** Modular monolith truth — aligned with system-architecture module. */
 export const CANONICAL_MODULAR_MONOLITH_TRUTH =
@@ -22,13 +22,13 @@ export const CANONICAL_MODULAR_MONOLITH_TRUTH =
 
 /** PostgreSQL evidence ledger truth — aligned with postgres-contract module. */
 export const CANONICAL_POSTGRES_TRUTH =
-  "PostgreSQL stores interaction evidence, document extraction, grounding retrieval, and policy facts — never caregiver memory, longitudinal profiles, or behavioral analytics.";
+  "Production PostgreSQL is the durable source of truth for identity-scoped care records, original evidence, observations, assertions, events, uncertainty, contradictions, decisions, outcomes, and audit history. Telemetry is separate from care-record authority.";
 
 export const CANONICAL_SEMANTIC_ROLE_TRUTH =
   "In SolenOS, clarity is created by separating meaning into strict, non-overlapping cognitive roles — not by adding intelligence or interpretation";
 
 export const CANONICAL_SUCCESS_METRIC =
-  "User cognitive load decreases immediately after output — instant understanding with no re-reading, no interpretation, and no mental effort to organize meaning.";
+  "A caregiver can return later and reliably understand what is known, what changed, what remains uncertain, what needs attention, and what happened next — with traceable sources.";
 
 export const CANONICAL_PRIMARY_FAILURE_MODEL =
   "SolenOS fails when any inferred information appears, sections overlap in meaning, interpretation expands beyond input, prioritization includes reasoning, explanation leaks outside what_is_happening, or the system behaves conversationally.";
@@ -126,7 +126,7 @@ export const CANONICAL_FORBIDDEN_IDENTITIES = [
   "predictive system",
   "knowledge generator",
   "narrative explainer",
-  "retention system",
+  "engagement system",
   "engagement system",
   "parser",
   "summarizer",
