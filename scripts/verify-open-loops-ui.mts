@@ -9,7 +9,7 @@ const required: Array<[string, RegExp]> = [
   ["create retries reuse an idempotency key for the same payload", /pendingCreateKey\.current = \{ signature, key: idempotencyKey \}/],
   ["successful create clears the pending idempotency key", /await refresh\(\)[\s\S]*?pendingCreateKey\.current = null/],
   ["history is loaded from the backend", /getJSON\(\`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/history/],
-  ["history is visibly rendered", /Recorded history[\s\S]*?historyById\[loop\.id\]/],
+  ["history is visibly rendered", /Previous updates[\s\S]*?historyById\[loop\.id\]/],
   ["backend reassessment is requested", /postJSON\("\/open-loops\/reassess"/],
   ["source evidence is fetched from the active person's care record", /getJSON\(\`\/evidence\/\$\{encodeURIComponent\(activeSession\.person\.id\)\}\`\)/],
   ["professional response requires an existing selected source", /action === "response" && loop\.loop_type === "professional_input"[\s\S]*?const selected = sources\.find/],
