@@ -1,0 +1,61 @@
+name: Living Care Record architecture validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/lib/canonical-architecture/**"
+      - "src/lib/postgres-contract/**"
+      - "src/lib/telemetry-persistence/**"
+      - "src/lib/cognitive-load-reduction/**"
+      - "src/lib/semantic-role-isolation/**"
+      - "src/lib/implementation-enforcement/**"
+      - "src/lib/solenos-langchain-adapter/system-prompt.ts"
+      - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
+      - "scripts/verify-canonical-architecture.mts"
+      - "scripts/verify-lcr-product-architecture.mts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/lcr-architecture-validation.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/canonical-architecture/**"
+      - "src/lib/postgres-contract/**"
+      - "src/lib/telemetry-persistence/**"
+      - "src/lib/cognitive-load-reduction/**"
+      - "src/lib/semantic-role-isolation/**"
+      - "src/lib/implementation-enforcement/**"
+      - "src/lib/solenos-langchain-adapter/system-prompt.ts"
+      - "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"
+      - "scripts/verify-canonical-architecture.mts"
+      - "scripts/verify-lcr-product-architecture.mts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/lcr-architecture-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lcr-architecture-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript validation
+        run: npm run typecheck
+      - name: Verify Living Care Record product contract
+        run: npm run verify:lcr-product-architecture
+      - name: Verify canonical architecture and analyze boundary
+        run: npm run verify:canonical-architecture
