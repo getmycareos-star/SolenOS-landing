@@ -1,5 +1,5 @@
 export const COGNITIVE_LOAD_REDUCTION_IDENTITY =
-  "a deterministic cognitive decomposition engine that converts unstructured caregiver input into fixed semantic roles under uncertainty";
+  "an internal capability that helps caregivers understand evidence-grounded changes and uncertainty in the Living Care Record";
 
 export const COGNITIVE_LOAD_REDUCTION_ONE_LINE_TRUTH =
   "In SolenOS, clarity is created by separating meaning into strict, non-overlapping cognitive roles — not by adding intelligence or interpretation";
