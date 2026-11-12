@@ -552,5 +552,72 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await companion.context.close();
 });
 
+
+await record("clarification questions are linked, answerable, skippable and durable", async () => {
+  const sourceRows = await request("/api/v1/evidence/" + identity.personId, { token: identity.token });
+  assert.equal(sourceRows.status, 200, JSON.stringify(sourceRows.payload));
+  const source = sourceRows.payload.find((row) => row.person_id === identity.personId && row.id);
+  assert.ok(source, "the clarification journey needs a real saved source in this care record");
+  const tag = unique("clarification-source");
+  const answerQuestionText = "Who can confirm the care detail " + tag + "?";
+  const skipQuestionText = "When was the care detail " + tag + " first noticed?";
+  const createQuestion = async (question) => {
+    const created = await request("/api/v1/uncertainty/questions", {
+      token: identity.token,
+      method: "POST",
+      body: {
+        person_id: identity.personId,
+        question,
+        subject_type: "person",
+        subject_id: identity.personId,
+        priority: "medium",
+        necessity: "not_assessed",
+        evidence_ids: [source.id],
+        context: [{ source_kind: "critical_care_journey", source_id: source.id }],
+      },
+    });
+    assert.equal(created.status, 200, JSON.stringify(created.payload));
+    return created.payload;
+  };
+  const answerQuestion = await createQuestion(answerQuestionText);
+  const skipQuestion = await createQuestion(skipQuestionText);
+
+  const { context, page } = await createBrowserPage(session, "/workspace");
+  await page.getByRole("heading", { name: "Care details that need checking" }).waitFor({ timeout: 20_000 });
+  await page.getByText(answerQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
+  await page.getByText(answerQuestionText, { exact: true }).first().click();
+  const exactAnswer = "I observed this on " + tag + ".";
+  const exactProvenance = "I was present and recorded it in the care note.";
+  await page.getByLabel("Your answer").fill(exactAnswer);
+  await page.getByLabel("Who provided this answer, and how do they know?").fill(exactProvenance);
+  await page.getByRole("button", { name: "Save answer", exact: true }).click();
+  await page.getByText("Your answer has been saved.", { exact: false }).waitFor({ timeout: 20_000 });
+
+  const answerHistory = await request(
+    "/api/v1/uncertainty/questions/" + answerQuestion.id + "/answer-history",
+    { token: identity.token },
+  );
+  assert.equal(answerHistory.status, 200, JSON.stringify(answerHistory.payload));
+  assert.equal(answerHistory.payload[0].answer, exactAnswer);
+  assert.equal(answerHistory.payload[0].answer_provenance, exactProvenance);
+  assert.equal(answerHistory.payload[0].evidence_ids.length, 1);
+
+  await page.evaluate(() => window.dispatchEvent(new Event("careRecordUpdated")));
+  await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
+  await page.getByText(skipQuestionText, { exact: true }).first().click();
+  await page.getByRole("button", { name: "I don't know the answer yet", exact: true }).click();
+  await page.getByText("This question remains open for later.", { exact: false }).waitFor({ timeout: 20_000 });
+
+  const questions = await request("/api/v1/uncertainty/questions/" + identity.personId, { token: identity.token });
+  assert.equal(questions.status, 200, JSON.stringify(questions.payload));
+  assert.equal(questions.payload.find((row) => row.id === skipQuestion.id)?.status, "unresolved");
+  assert.equal(questions.payload.find((row) => row.id === answerQuestion.id)?.status, "answered");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Care details that need checking" }).waitFor({ timeout: 20_000 });
+  await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
+  await verifyMobile(page);
+  await context.close();
+});
+
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
