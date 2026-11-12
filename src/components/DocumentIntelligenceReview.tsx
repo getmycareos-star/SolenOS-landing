@@ -266,9 +266,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {analysis.unprocessed_page_numbers?.length ? ` · not processed: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on this extraction.</p>}
-            {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
-              Some text may have been read incorrectly, especially handwriting. Check names, dates, and numbers against the original document.
-            </p>}
+            {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>Some text may have been read incorrectly, especially handwriting. Check names, dates, and numbers against the original document.</p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
             </div>}
