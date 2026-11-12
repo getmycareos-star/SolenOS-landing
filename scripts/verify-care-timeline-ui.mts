@@ -16,7 +16,7 @@ assert.match(source, /aria-expanded/);
 assert.match(source, /Search the care history/);
 assert.match(source, /mapHistoryRecord/,
   "the timeline maps persisted history records from all supported source types");
-assert.match(source, /source_type === "correction"/,
+assert.match(source, /sourceType === "correction"/,
   "corrections are included as separate history entries");
 assert.match(source, /original_text/,
   "correction history preserves the earlier source text");
