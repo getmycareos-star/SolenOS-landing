@@ -96,12 +96,15 @@ try {
     "scripts",
     "create_and_deliver_web_push_test_notification.py",
   );
+  const privateKey = Buffer.from(process.env.VAPID_PRIVATE_KEY_B64 ?? "", "base64").toString("utf8");
+  assert.ok(privateKey.includes("-----BEGIN PRIVATE KEY-----"), "Masked CI VAPID private key is missing");
+  const helperEnv = { ...process.env, VAPID_PRIVATE_KEY: privateKey };
   const delivered = spawnSync(
     "python",
     [helper, session.person.id, session.caregiver.id],
     {
       cwd: backendService,
-      env: process.env,
+      env: helperEnv,
       encoding: "utf8",
       timeout: 90_000,
     },
