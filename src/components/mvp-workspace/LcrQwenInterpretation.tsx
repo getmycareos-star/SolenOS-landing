@@ -11,6 +11,7 @@ type AssistResult = {
       text: string;
       support_status: string;
       aggregate?: { count?: number; window_label?: string } | null;
+      aggregate_review?: { count?: number | null; interpretation_limit?: string } | null;
       source_references: Array<{
         label?: string;
         occurred_at?: string | null;
@@ -123,6 +124,8 @@ export function LcrQwenInterpretation({
                   {claim.support_status === "matched_validated_aggregate" && (
                     <p>Counted from {claim.aggregate?.count ?? claim.source_references.length} distinct saved care updates{claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.</p>
                   )}
+                  {claim.support_status === "aggregate_count_mismatch" && <p>The saved care updates do not support this number. The count check found {claim.aggregate_review?.count ?? "an unconfirmed number"} distinct updates in the requested time window.</p>}
+                  {claim.support_status === "aggregate_not_validated" && <p>{claim.aggregate_review?.interpretation_limit || "This total could not be confirmed from the saved care updates. Check the reports before relying on a number."}</p>}
                   {claim.support_status === "matched_saved_wording" && <p>This wording appears in a saved record.</p>}
                   {claim.support_status === "matched_historical_only" && <p>This wording appears only in an earlier or corrected record. It is not treated as current information.</p>}
                   {claim.support_status === "not_matched_to_saved_wording" && <p>We could not match this statement to the wording in a saved record. Check it before relying on it.</p>}
