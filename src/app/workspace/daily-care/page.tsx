@@ -551,7 +551,7 @@ export default function DailyCarePage() {
                       {typeof item.page_count === "number" && <span>{typeof item.processed_page_count === "number" ? item.processed_page_count : processed.length} of {item.page_count} readable pages processed</span>}
                       {unreadable.length > 0 && <p>Page{unreadable.length === 1 ? "" : "s"} {unreadable.join(", ")} could not be read. SolenOS has not treated missing text as proof that those pages contain nothing important.</p>}
                       {unprocessed.length > 0 && <p>Page{unprocessed.length === 1 ? "" : "s"} {unprocessed.join(", ")} still need processing.</p>}
-                      {item.medication_conflict && <p role="status">The document contains conflicting medication instructions. Confirm the current instruction with the prescribing professional or pharmacist before acting on it.</p>}
+                      {item.medication_conflict && <p role="status">The document appears to differ from the current medication record. The instruction is unconfirmed. Confirm the current instruction with the prescribing professional or pharmacist before acting on it.</p>}
                       {item.written_to_lcr && <span> · Reviewed information saved to the Living Care Record</span>}
                       {(item.accepted_follow_up_ids || []).length > 0 && <span> · Follow-up added to your existing follow-ups</span>}
                       {item.review_required && <p><Link href="/workspace/documents">Review the document</Link></p>}
