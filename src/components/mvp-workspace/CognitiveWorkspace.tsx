@@ -101,13 +101,13 @@ function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string 
   const trimmed = text.trim();
   if (trimmed) parts.push(trimmed);
   for (const d of docs) {
-    if (d.status !== "ready" && !(d.status === "saved" && d.entryMethod === "snap" && d.evidenceId)) continue;
+    if (d.status !== "ready" && !(d.status === "saved" && d.evidenceId)) continue;
     if (d.extractedText.trim()) {
       parts.push(`[Document: ${d.name}]\n${d.extractedText.trim()}`);
     } else if (d.evidenceId && d.entryMethod === "snap") {
-      // Preserve the photo as evidence without claiming that it was visually
-      // interpreted. The backend receives its evidence ID in the documents list.
       parts.push(`[Care photo attached: ${d.name}. Photo saved as evidence; image interpretation has not been completed.]`);
+    } else if (d.evidenceId && d.status === "saved") {
+      parts.push(`[Document attached: ${d.name}. Original saved; server extraction and document understanding are processing in the background.]`);
     }
   }
   return parts.join("\n\n");
@@ -365,7 +365,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
   }
 
   async function handleAddSituation(provenance: InputProvenance) {
-    const readyDocs = documents.filter((d) => (d.status === "ready" && (d.extractedText.trim() || d.evidenceId)) || (d.status === "saved" && d.entryMethod === "snap" && d.evidenceId));
+    const readyDocs = documents.filter((d) => (d.status === "ready" && (d.extractedText.trim() || d.evidenceId)) || (d.status === "saved" && d.evidenceId));
     const text = rawInput.trim();
     const sharedDisplay = buildSharedDisplayText(text, readyDocs);
 
