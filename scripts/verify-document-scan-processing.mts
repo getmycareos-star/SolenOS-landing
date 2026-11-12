@@ -48,6 +48,15 @@ assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.e
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
+const scanCaptureSource = readFileSync("src/components/mvp-workspace/capture/ScanDocumentCapture.tsx", "utf8");
+const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
+assert.match(scanCaptureSource, /Rotate 90°/, "each captured scan page must support rotation correction");
+assert.match(scanCaptureSource, /cropInsetsPercent/, "each captured scan page must support crop adjustment");
+assert.match(scanCaptureSource, /scanRotationDegrees: page\.rotationDegrees/, "scan adjustments must travel with each original page");
+assert.match(attachmentSource, /scan_rotation_degrees/, "scan rotation must be persisted as OCR metadata");
+assert.match(attachmentSource, /scan_crop_json/, "scan crop must be persisted as OCR metadata");
+assert.match(attachmentSource, /scan_review_status", "not_reviewed"/, "crop adjustments must not falsely attest caregiver review");
+
 const saveFunction = source.slice(source.indexOf("const saveReviewedPages"), source.indexOf("const openOriginal"));
 assert.match(saveFunction, /document_processing_job_id/, "the save response must confirm durable background processing was queued");
 assert(!saveFunction.includes("/extract"), "the caregiver page must not own document extraction after upload");
