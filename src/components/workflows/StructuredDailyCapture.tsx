@@ -5,22 +5,28 @@ import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import CareDeltaPanel from '@/components/CareDeltaPanel';
 
-const VITAL_TYPES = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'oxygen_sat', 'temperature', 'weight'];
+const VITAL_TYPES = ['blood_pressure', 'heart_rate', 'oxygen_sat', 'temperature', 'weight', 'blood_glucose', 'other'];
 const VITAL_LABELS: Record<string, string> = {
+  blood_pressure: 'Blood pressure',
   bp_systolic: 'Blood pressure — systolic',
   bp_diastolic: 'Blood pressure — diastolic',
-  heart_rate: 'Heart rate',
-  oxygen_sat: 'Oxygen level',
+  heart_rate: 'Pulse',
+  oxygen_sat: 'Oxygen level (SpO₂)',
   temperature: 'Temperature',
   weight: 'Weight',
+  blood_glucose: 'Blood glucose',
+  other: 'Other measurement',
 };
 const VITAL_UNITS: Record<string, string> = {
+  blood_pressure: 'mmHg',
   bp_systolic: 'mmHg',
   bp_diastolic: 'mmHg',
   heart_rate: 'bpm',
   oxygen_sat: '%',
   temperature: '°C',
   weight: 'kg',
+  blood_glucose: 'mg/dL',
+  other: '',
 };
 function toLocalDateTimeInput(date = new Date()): string {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -117,13 +123,17 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     unit: string | null;
     note: string | null;
   }>({
-    vital_type: 'bp_systolic',
+    vital_type: 'blood_pressure',
     value: Number.NaN,
     measured_at: toLocalDateTimeInput(),
-    unit: VITAL_UNITS.bp_systolic,
+    unit: VITAL_UNITS.blood_pressure,
     note: null,
+    measurement_name: null,
   });
   
+  const [diastolicValue, setDiastolicValue] = useState<number>(Number.NaN);
+  const [optionalPulseValue, setOptionalPulseValue] = useState<number>(Number.NaN);
+
   // Scale form state
   const [scaleForm, setScaleForm] = useState<{
     axis: string;
@@ -410,32 +420,63 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     setVitalFeedback(null);
 
     const measuredAt = new Date(vitalForm.measured_at);
-    if (!Number.isFinite(vitalForm.value) || vitalForm.value <= 0) {
-      setVitalError('Enter a value greater than zero.');
-      return;
-    }
     if (Number.isNaN(measuredAt.getTime())) {
       setVitalError('Choose when this measurement was taken.');
       return;
     }
 
-    const vitalData = {
-      ...vitalForm,
-      unit: vitalForm.unit?.trim() || VITAL_UNITS[vitalForm.vital_type] || null,
+    const common = {
       measured_at: measuredAt.toISOString(),
+      note: vitalForm.note,
     };
+    const unit = vitalForm.unit?.trim() || VITAL_UNITS[vitalForm.vital_type] || null;
+    let additions: Array<{ vital_type: string; value: number; measured_at: string; unit: string | null; note: string | null; measurement_name?: string | null }> = [];
 
-    setForm(prev => ({ ...prev, vitals: [...prev.vitals, vitalData] }));
+    if (vitalForm.vital_type === 'blood_pressure') {
+      if (!Number.isFinite(vitalForm.value) || vitalForm.value <= 0 ||
+          !Number.isFinite(diastolicValue) || diastolicValue <= 0) {
+        setVitalError('Enter both the top and bottom blood pressure numbers.');
+        return;
+      }
+      additions = [
+        { vital_type: 'bp_systolic', value: vitalForm.value, unit: 'mmHg', ...common },
+        { vital_type: 'bp_diastolic', value: diastolicValue, unit: 'mmHg', ...common },
+      ];
+      if (Number.isFinite(optionalPulseValue) && optionalPulseValue > 0) {
+        additions.push({ vital_type: 'heart_rate', value: optionalPulseValue, unit: 'bpm', ...common });
+      }
+    } else {
+      if (!Number.isFinite(vitalForm.value) || vitalForm.value <= 0) {
+        setVitalError('Enter a value greater than zero.');
+        return;
+      }
+      if (vitalForm.vital_type === 'other' && !vitalForm.measurement_name?.trim()) {
+        setVitalError('Name the measurement you recorded.');
+        return;
+      }
+      additions = [{
+        vital_type: vitalForm.vital_type,
+        value: vitalForm.value,
+        unit,
+        ...common,
+        ...(vitalForm.vital_type === 'other' ? { measurement_name: vitalForm.measurement_name?.trim() || null } : {}),
+      }];
+    }
+
+    setForm(prev => ({ ...prev, vitals: [...prev.vitals, ...additions] }));
     setVitalForm({
-      vital_type: 'bp_systolic',
+      vital_type: 'blood_pressure',
       value: Number.NaN,
       measured_at: toLocalDateTimeInput(),
-      unit: VITAL_UNITS.bp_systolic,
+      unit: VITAL_UNITS.blood_pressure,
       note: null,
+      measurement_name: null,
     });
-    setVitalFeedback('Added to this daily-care draft. Save daily capture below to keep it.');
+    setDiastolicValue(Number.NaN);
+    setOptionalPulseValue(Number.NaN);
+    setVitalFeedback('Added to this draft. Save the measurement to keep it in the care record.');
   };
-  
+
   // Add a daily rating to the draft; it is saved with the complete daily-care update.
   const handleScaleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -859,17 +900,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
           <h4 style={{ margin: 0, fontSize: '16px' }}>
-            {vital.vital_type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+            {vital.measurement_name || VITAL_LABELS[vital.vital_type] || vital.vital_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
           </h4>
-          <span style={{ 
-            fontSize: '12px', 
-            padding: '2px 6px', 
-            borderRadius: '4px', 
-            backgroundColor: vital.is_out_of_range ? 'var(--error-soft)' : 'var(--success-soft)', 
-            color: vital.is_out_of_range ? 'var(--error)' : 'var(--success)' 
-          }}>
-            {vital.is_out_of_range ? 'Out of range' : 'Normal'}
-          </span>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Recorded reading</span>
         </div>
         
         <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
@@ -1485,9 +1518,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   setVitalForm(prev => ({
                     ...prev,
                     vital_type: nextType,
-                    unit: !prev.unit || Object.values(VITAL_UNITS).includes(prev.unit)
-                      ? VITAL_UNITS[nextType]
-                      : prev.unit,
+                    unit: VITAL_UNITS[nextType] ?? "",
+                    measurement_name: nextType === 'other' ? prev.measurement_name : null,
                   }));
                 }}
                 style={{ 
@@ -1507,9 +1539,25 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               </select>
             </div>
             
+            {vitalForm.vital_type === 'other' && (
+              <div>
+                <label htmlFor="capture-vital-other-name" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>What did you measure?</label>
+                <input
+                  id="capture-vital-other-name"
+                  type="text"
+                  value={vitalForm.measurement_name || ''}
+                  onChange={(e) => setVitalForm(prev => ({ ...prev, measurement_name: e.target.value }))}
+                  maxLength={100}
+                  placeholder="Measurement name"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14 }}
+                />
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label htmlFor="capture-vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Value</label>
+                <label htmlFor="capture-vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>
+                  {vitalForm.vital_type === 'blood_pressure' ? 'Top number (systolic)' : 'Value'}
+                </label>
                 <input
                   id="capture-vital-value"
                   type="number"
@@ -1534,12 +1582,43 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                 />
               </div>
               
+              {vitalForm.vital_type === 'blood_pressure' && (
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="capture-vital-diastolic" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Bottom number (diastolic)</label>
+                  <input
+                    id="capture-vital-diastolic"
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    value={Number.isFinite(diastolicValue) ? diastolicValue : ''}
+                    onChange={(e) => setDiastolicValue(e.target.value === '' ? Number.NaN : Number(e.target.value))}
+                    placeholder="Enter bottom number"
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14 }}
+                  />
+                </div>
+              )}
+              {vitalForm.vital_type === 'blood_pressure' && (
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="capture-vital-pulse" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Pulse (optional)</label>
+                  <input
+                    id="capture-vital-pulse"
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    value={Number.isFinite(optionalPulseValue) ? optionalPulseValue : ''}
+                    onChange={(e) => setOptionalPulseValue(e.target.value === '' ? Number.NaN : Number(e.target.value))}
+                    placeholder="Pulse in bpm"
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14 }}
+                  />
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 <label htmlFor="vital-unit" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
                 <input
                   type="text"
                   id="vital-unit"
-                  value={vitalForm.unit || VITAL_UNITS[vitalForm.vital_type] || ''}
+                  value={vitalForm.vital_type === 'blood_pressure' ? 'mmHg' : (vitalForm.unit ?? '')}
+                  disabled={vitalForm.vital_type === 'blood_pressure'}
                   onChange={(e) => {
                     setVitalError(null);
                     setVitalFeedback(null);
