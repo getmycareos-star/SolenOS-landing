@@ -56,8 +56,8 @@ assert.match(sharingComponent, /postJSON\("\/handoffs"/,
   "sharing must use the existing handoffs API");
 assert.match(sharingComponent, /draft_id: draft\.draft_id/,
   "the existing sharing workflow must attach the approved persisted draft identity");
-assert.match(sharingComponent, /Sharing scope/,
-  "caregivers must explicitly select the categories included in the handoff");
+assert.match(sharingComponent, /Information to share/,
+  "caregivers must explicitly select the information categories included in the handoff");
 assert.match(sharingComponent, /scope: \[\.\.\.selectedScope\]\.sort\(\)/,
   "the approved scope must be passed unchanged to the existing share API");
 assert.match(sharingComponent, /sourceFreshness\?\.status !== "current"/,
