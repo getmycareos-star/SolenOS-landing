@@ -93,7 +93,7 @@ function displayHistorySource(item: CareItem): string {
 }
 
 function displayHistoryTime(item: CareItem): string {
-  const eventTime = item.occurred_at;
+  const eventTime = item.occurred_at || item.observed_at;
   const recordedTime = item.recorded_at || item.uploaded_at;
   if (eventTime && recordedTime) {
     const eventDate = new Date(eventTime);
