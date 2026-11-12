@@ -42,6 +42,7 @@ assert.match(intelligenceReviewSource, /analysis\.intelligence_status !== "parti
 assert.match(intelligenceReviewSource, /Resume remaining pages/, "caregivers must be able to resume unfinished document understanding");
 assert.match(intelligenceReviewSource, /processing_jobs\?/, "the review panel must read durable background job state");
 assert.match(intelligenceReviewSource, /Processing in the background\. You can leave this page\./, "caregivers must know the original is processing without staying in the app");
+assert.match(intelligenceReviewSource, /Document understanding is processing in the background/, "active Qwen processing must be visible without offering a duplicate retry");
 assert.match(intelligenceReviewSource, /!active && <button/, "manual extraction must not race an active background job");
 assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.evidence_id === analysis\.source_evidence_id/, "partial-page resume must not race an active background job");
 
