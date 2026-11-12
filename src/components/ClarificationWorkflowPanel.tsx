@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
-import { careInformationLabel } from "@/lib/care-epistemics/information-status";
 
 type Claim = {
   id: string;
