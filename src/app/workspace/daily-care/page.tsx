@@ -154,10 +154,12 @@ export default function DailyCarePage() {
               variant="primary"
               aria-expanded={captureOpen}
               onClick={() => {
-                setCaptureOpen((open) => {
-                  if (open) setCaptureMode(null);
-                  return !open;
-                });
+                if (captureOpen) {
+                  setCaptureOpen(false);
+                  setCaptureMode(null);
+                } else {
+                  setCaptureOpen(true);
+                }
               }}
             >
               {captureOpen ? "Close capture" : "Share something"}
