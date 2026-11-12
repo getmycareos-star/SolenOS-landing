@@ -178,6 +178,16 @@ assert.match(detailedCapture, /addEventListener\("careRecordUpdated"/,
   "current medication choices refresh after the LCR changes");
 assert.match(detailedCapture, /removeEventListener\("careRecordUpdated"/,
   "current medication refresh listener is cleaned up on unmount");
+assert.match(detailedCapture, /postJSON\("\/care-continuity\/medications"/ ,
+  "caregivers can create a medication report in the existing LCR");
+assert.match(detailedCapture, /awaiting_caregiver_review/,
+  "new medication reports remain pending instead of appearing as current immediately");
+assert.match(detailedCapture, /Review and confirm current/,
+  "caregivers have an explicit review action before a medicine becomes a current choice");
+assert.match(detailedCapture, /\/review/,
+  "the review action uses the dedicated medication review endpoint");
+assert.match(detailedCapture, /pendingMedicationRecords/,
+  "pending medication reports are shown separately from reviewed current medications");
 assert.match(detailedCapture, /not independent clinical verification/,
   "the UI does not overstate caregiver review as clinical verification");
 
