@@ -508,12 +508,10 @@ export async function acceptCaregiverInvitation(input: {
   password: string;
   name: string;
 }): Promise<CaregiverInvitationAcceptResponse> {
-  const res = await fetchWithTimeout("/api/v1/caregiver-access/invitations/accept", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const result = await handleResponse(res) as CaregiverInvitationAcceptResponse;
+  const result = await postJSON(
+    "/caregiver-access/invitations/accept",
+    input,
+  ) as CaregiverInvitationAcceptResponse;
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
   window.localStorage.setItem(ANONYMOUS_PERSON_KEY, result.person_id);
   window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, result.caregiver_id);
