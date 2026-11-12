@@ -32,10 +32,10 @@ assert.doesNotMatch(companion, /Confidence: \{Math\.round/);
 assert.doesNotMatch(companion, /Evidence: \{msg\.evidence_ids/);
 assert.doesNotMatch(companion, /Replies may be unavailable sometimes/);
 assert.doesNotMatch(companion, /The safety engine flagged this exchange/);
-assert.match(companion, /A few words are enough/);
-assert.match(companion, /You don’t have to figure it all out right now/);
-assert.match(companion, /refreshPendingCareUpdates/);
-assert.match(companion, /pendingCareUpdates/);
+assert.match(companion, /Ask about the care history, a recent change, or something you’re unsure about/);
+assert.match(companion, /Conversation only\. To add a care update, use Daily Care; to save a document, use Documents\./);
+assert.match(companion, /const home = true/);
+assert.doesNotMatch(companion, /care_update_candidates|pendingCareUpdates|reviewCareUpdate|setPendingDocumentIntake|cameraMode|companion-add-menu|companion-add-wrap/);
 assert.match(deltaPanel, /if \(!showPanel\) return null/);
 assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);
 
