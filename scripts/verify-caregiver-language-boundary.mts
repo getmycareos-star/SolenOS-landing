@@ -53,6 +53,8 @@ const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
 const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
 const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
 const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
+const careDelta = read("../src/components/CareDeltaPanel.tsx");
+const humanValidation = read("../src/components/HumanValidationLoop.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -94,3 +96,9 @@ assert.equal(lcr.includes("caregiverSafeAssistantText(source.description)"), tru
 assert.match(lcr, /caregiverSafeAssistantText\(source\.source_passage\)/);
 
 console.log("Caregiver language boundary checks passed.");
+
+assert.match(careDelta, /caregiverStatusLabel/);
+assert.match(careDelta, /caregiverSafeAssistantText/);
+assert.doesNotMatch(careDelta, /Provider:|Model:|source-attributed assertions|replace\(\/_\/g/);
+assert.match(humanValidation, /caregiverSafeErrorMessage/);
+assert.doesNotMatch(humanValidation, /data\.detail \?\? data\.error/);
