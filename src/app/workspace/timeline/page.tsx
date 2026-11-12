@@ -491,7 +491,7 @@ export default function TimelinePage() {
           </div>
           {appliedQuery && (
             <p style={{ margin: "6px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>
-              Showing results for “{appliedQuery}”. Search includes older records, not just the items currently shown.
+              Showing server-matched records for “{appliedQuery}”. Search includes older records, not just the items currently shown.
               <button type="button" onClick={() => { setQuery(""); setAppliedQuery(""); void loadEvents(true, ""); }} style={{ marginLeft: 8, border: 0, background: "transparent", color: "inherit", textDecoration: "underline", cursor: "pointer" }}>Clear search</button>
             </p>
           )}
