@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
+import { careInformationLabel } from '@/lib/care-epistemics/information-status'
 import { CalendarDays, ShieldCheck } from 'lucide-react'
 import DetailedAppointmentWorkspace from './DetailedAppointmentWorkspace'
 
