@@ -737,7 +737,6 @@ function ProductCard() {
   const { show, render } = useToast();
   const items: { label: string; value: string }[] = [
     { label: "App version", value: "0.1.0" },
-    { label: "Release channel", value: "Early access" },
   ];
 
   const contentLinks: { label: string; href: string }[] = [
