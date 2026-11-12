@@ -166,6 +166,9 @@ assert.match(lcrCurrent, /const medicationConflicts = watchUncertainties\.filter
 assert.match(lcrCurrent, /Medication instruction needs confirmation/);
 assert.match(lcrCurrent, /prescribing clinician or pharmacist promptly to confirm it/);
 assert.match(lcrCurrent, /SolenOS has not changed the medication record/);
+assert.match(lcrCurrent, /saved\.source_freshness\?\.reassessment_recommended/);
+assert.match(lcrCurrent, /postJSON\([\s\S]*?care-continuity\/situation-understanding\/reassess/);
+assert.match(lcrCurrent, /The latest care summary could not be refreshed\. The last saved view is shown and may be out of date\./);
 assert.ok(dailyCarePage.includes('getJSON("/notifications?limit=100&offset=0")'), "Daily Care must check the existing notification feed for delivery failures");
 assert.ok(dailyCarePage.includes("Notification delivery needs attention"), "failed notification delivery must remain visible in Daily Care");
 assert.ok(dailyCarePage.includes('["failed", "expired"]'), "failed or expired push delivery must never be presented as successful delivery");
