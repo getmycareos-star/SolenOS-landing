@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "verify:caregiver-language-boundary": "tsx scripts/verify-caregiver-language-boundary.mts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
