@@ -28,6 +28,10 @@ for (const diagnostic of [
 ]) {
   assert.equal(caregiverSafeAssistantText(diagnostic), null, diagnostic);
 }
+assert.equal(caregiverSafeAssistantText("[{\"status\":\"unknown\"}]"), null);
+assert.equal(caregiverSafeAssistantText('"Caregiver note"'), "Caregiver note");
+assert.equal(caregiverSafeAssistantText("123"), null);
+assert.equal(caregiverSafeAssistantText("true"), null);
 assert.equal(isTechnicalDiagnosticText("Database schema unavailable"), true);
 assert.equal(
   caregiverSafeAssistantText("Your message has been saved. We do not know what caused the change yet."),
