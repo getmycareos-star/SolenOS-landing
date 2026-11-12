@@ -6,8 +6,6 @@ import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 
-const CASUAL_GREETING = /^(?:hi|hello|hey|hiya|howdy|how are you(?: doing| today)?|how'?s it going|what'?s up|good morning|good afternoon|good evening|good night|thanks|thank you(?: so much)?|bye|goodbye|see you)[.!?,;:]*$/i
-
 interface ClaimSourceReference {
   record_type: string
   record_id: string
