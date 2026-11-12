@@ -243,7 +243,7 @@ export default function DailyCarePage() {
 
           const personId = getPersonId();
           const caregiverId = getCaregiverId();
-          if (personId && caregiverId) {
+          if (personId && caregiverId && careResult.status === "fulfilled") {
             const visitKey = `solenos:daily-care:last-opened:${personId}:${caregiverId}`;
             if (!visitBaselineRef.current.initialized) {
               let previousVisit: string | null = null;
