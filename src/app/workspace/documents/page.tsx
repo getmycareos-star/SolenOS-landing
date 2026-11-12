@@ -363,6 +363,11 @@ export default function DocumentsPage() {
 
   const handleScanCapture = (files: ScanPageFile[]) => {
     if (!files.length) return;
+    const invalid = files.find((file) => file.size <= 0 || file.size > MAX_FILE_BYTES);
+    if (invalid) {
+      setUploadMessage({ kind: "error", text: invalid.size <= 0 ? "A captured page is empty. Capture it again." : "A captured page is larger than 10 MiB. Capture it again at a lower camera resolution." });
+      return;
+    }
     const timestamp = new Date().toISOString();
     const pages: ReviewPage[] = files.map((file) => ({
       ingestionKey: crypto.randomUUID(),
