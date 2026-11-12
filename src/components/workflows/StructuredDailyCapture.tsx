@@ -82,7 +82,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       measured_at: string;
       unit: string | null;
       note: string | null;
-      is_out_of_range?: boolean;
+      measurement_name?: string | null;
     }>,
     scales: [] as Array<{
       axis: string;
@@ -1494,7 +1494,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       {/* Vitals section */}
       {(mode === "all" || mode === "measurement") && (
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Vitals</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Measurements</h2>
         
         {/* Vitals form */}
         <div style={{ 
@@ -1504,7 +1504,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           padding: '16px', 
           marginBottom: '24px' 
         }}>
-          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add Vital</h3>
+          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a measurement</h3>
           
           <form onSubmit={handleVitalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
@@ -1693,7 +1693,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   disabled={submitting}
                   style={{ fontSize: '14px', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
                 >
-                  {submitting ? 'Adding…' : 'Add vital'}
+                  {submitting ? 'Adding…' : 'Add measurement'}
                 </button>
               </div>
             </form>
