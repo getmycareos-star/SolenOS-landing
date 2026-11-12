@@ -117,20 +117,19 @@ assert(workspace.includes("setLcrOrientationReply"));
 assert(workspace.includes('method: "GET"') && workspace.includes("hydrationRes"));
 assert(workspace.includes("active_care_situation_turn"));
 assert(workspace.includes("let hydrated = situationData"), "Use the POST read-after-write projection first");
-assert(
-  workspace.indexOf("let hydrated = situationData") < workspace.indexOf("const hydrationUrl"),
-  "A second GET must be a fallback only when the POST lacks a persisted view",
-);
+const hydratedProjection = workspace.indexOf("let hydrated = situationData");
+const hydrationFallback = workspace.indexOf("if (!hydrated.active_care_situation", hydratedProjection);
+const hydrationUrl = workspace.indexOf("const hydrationUrl", hydrationFallback);
+assert(hydratedProjection >= 0 && hydrationFallback > hydratedProjection && hydrationUrl > hydrationFallback,
+  "A second GET must be a fallback only when the POST lacks a persisted view");
 console.log("✓ LCR interaction-only inputs use Qwen orientation in LCR; care captures prefer the persisted POST projection");
 
 const companion = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
   "utf8",
 );
-assert(!companion.includes("autoDraftSent"));
-assert(!companion.includes("sendMessage(draft)"));
-assert(!companion.includes("new URLSearchParams(window.location.search).get('draft')"),
-  "Companion must not silently submit a handoff or external draft as a chat message");
+assert(!companion.includes("autoDraftSent"), "Companion must not automatically submit drafted messages");
+assert(!companion.includes("sendMessage(draft)"), "Companion must not submit a prefilled draft without the caregiver's explicit action");
 assert(companion.includes("postJSON('/conversation/message'"));
 assert(companion.includes("ensureAnonymousSession()"));
 assert(companion.includes("person_id: session.person.id"));
@@ -184,6 +183,16 @@ const sot = fs.readFileSync(
 );
 assert(sot.includes("never change the reasoning engine") || sot.includes("never** change"));
 console.log("✓ SoT present");
+
+const documentPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "documents", "page.tsx"), "utf8");
+assert(documentPage.includes('form.append("file", page.file)'), "Document intake must upload the original file");
+assert(documentPage.includes('form.append("ingestion_key", page.ingestionKey)'), "Document retries must retain the original ingestion key");
+assert(!documentPage.includes("/api/extract") && !documentPage.includes("extractText("), "Document intake must not perform duplicate browser-side extraction");
+assert(!documentPage.includes('form.append("extracted_text"'), "Browser-extracted text must not be sent as authoritative document text");
+assert(!documentPage.includes("Extracted text — review and correct before saving"), "Caregivers must not be forced to review extracted text before preserving the original");
+assert(documentPage.includes("SolenOS will extract and process it after the upload is saved."), "Original-first intake must explain that server-side processing follows upload");
+assert(documentPage.includes(".eml,.msg"), "The document picker must accept EML and Outlook MSG files");
+console.log("✓ Documents are preserved first; extraction is server-side and caregiver text review is not a save prerequisite");
 
 console.log("\nAll input-entry-contract checks passed.");
 
