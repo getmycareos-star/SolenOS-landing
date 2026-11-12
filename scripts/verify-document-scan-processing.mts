@@ -7,7 +7,7 @@ assert(!source.includes("review and correct its extracted text first"), "caregiv
 assert(!source.includes("page.reviewed") && !source.includes("page.text"), "the upload draft must not carry discarded client-side text or review flags");
 assert(!source.includes('apiUrl("/api/extract")'), "the Documents screen must not send the same original through a preflight extractor before saving");
 assert(!source.includes('Extracted text — review and correct before saving'), "caregivers must not correct client-side text that the upload API does not persist");
-assert.match(source, /SolenOS will read this saved original in the background/, "the caregiver must be told that server extraction starts after the original is saved");
+assert.match(source, /SolenOS will extract and process it after the upload is saved/, "the caregiver must be told that server extraction starts after the original is saved");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
 assert.equal((source.match(/Array\.from\(event\.currentTarget\.files \|\| \[\]\)/g) || []).length, 2, "both upload and camera inputs must copy FileList entries before clearing the input");
 assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
