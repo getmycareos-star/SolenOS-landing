@@ -489,6 +489,33 @@ export async function createAccount(email: string, password: string): Promise<Ac
 }
 
 /** Sign in through the backend and replace the local anonymous capability with the account's scoped session. */
+export type CaregiverInvitationAcceptResponse = AccountLoginResponse & {
+  accepted: true;
+  caregiver_profile_id: string;
+  access_scope: string;
+};
+
+/** Accept a pre-authorised caregiver invitation and bind the returned session to this browser. */
+export async function acceptCaregiverInvitation(input: {
+  token: string;
+  email: string;
+  password: string;
+  name: string;
+}): Promise<CaregiverInvitationAcceptResponse> {
+  const res = await fetchWithTimeout("/api/v1/caregiver-access/invitations/accept", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const result = await handleResponse(res) as CaregiverInvitationAcceptResponse;
+  window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
+  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, result.person_id);
+  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, result.caregiver_id);
+  window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
+  setPersonId(result.person_id);
+  return result;
+}
+
 export async function signInToAccount(email: string, password: string): Promise<AccountLoginResponse> {
   const res = await fetchWithTimeout("/api/v1/accounts/login", {
     method: "POST",
