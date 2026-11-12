@@ -59,7 +59,7 @@ assert.ok(!detailedAppointment.includes("source_time_kind"));
 assert.ok(!detailedAppointment.includes("Evidence IDs:"));
 assert.ok(!detailedAppointment.includes("Assessment {item.assessment_id"));
 assert.ok(!detailedAppointment.includes("error instanceof Error ? error.message"));
-assert.doesNotMatch(evidenceReview, /value\\.replaceAll\\('_', ' '\\)/);
+assert.ok(!evidenceReview.includes("value.replaceAll('_', ' ')"));
 assert.ok(!evidenceReview.includes("SHA-256"));
 assert.ok(!evidenceReview.includes("selected.origin_device_ref ||"));
 assert.doesNotMatch(appointmentPage, /Appointment workspace/);
