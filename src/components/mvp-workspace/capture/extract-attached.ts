@@ -7,7 +7,7 @@ function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string): Promise<string> {
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string): Promise<string> {
   const session = await ensureAnonymousSession();
   const form = new FormData();
   form.append("file", file);
@@ -16,7 +16,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
   form.append("caregiver_id", session.caregiver.id);
   // Snap captures a care photo, not a scanned document. The backend document\n  // extraction endpoint intentionally accepts only evidence_type=document.\n  form.append("evidence_type", entryMethod === "snap" ? "care_photo" : "document");
   form.append("capture_method", entryMethod);
-  form.append("capture_timestamp", new Date(file.lastModified || Date.now()).toISOString());
+  form.append("capture_timestamp", captureTimestamp);
   const scanPageNumber = entryMethod === "scan" ? /scan_page_(\d+)/i.exec(file.name)?.[1] : undefined;
   if (scanPageNumber) form.append("capture_page_number", scanPageNumber);
   // The server must extract from the immutable uploaded bytes. Client OCR/text is
@@ -41,9 +41,11 @@ export async function extractAttachedDocument(
   file: File,
   entryMethod: InputEntryMethod,
   uploadRetryKey = crypto.randomUUID(),
+  captureTimestamp = new Date().toISOString(),
 ): Promise<AttachedDocument> {
   const base: AttachedDocument = {
     uploadRetryKey,
+    captureTimestamp,
     id: createDocId(),
     name: file.name,
     mimeType: file.type || "application/octet-stream",
@@ -55,7 +57,7 @@ export async function extractAttachedDocument(
 
   let evidenceId: string;
   try {
-    evidenceId = await persistOriginalDocument(file, entryMethod, uploadRetryKey);
+    evidenceId = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp);
   } catch (error) {
     return {
       ...base,
@@ -142,7 +144,7 @@ export async function retryAttachedDocument(
 ): Promise<AttachedDocument> {
   if (!document.evidenceId) {
     return document.sourceFile
-      ? extractAttachedDocument(document.sourceFile, document.entryMethod ?? "upload", document.uploadRetryKey ?? crypto.randomUUID())
+      ? extractAttachedDocument(document.sourceFile, document.entryMethod ?? "upload", document.uploadRetryKey ?? crypto.randomUUID(), document.captureTimestamp ?? new Date().toISOString())
       : {
           ...document,
           status: "failed",
