@@ -47,6 +47,7 @@ const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.ts
 const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
 const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
 const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
+const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
