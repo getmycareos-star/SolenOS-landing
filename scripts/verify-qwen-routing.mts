@@ -217,6 +217,7 @@ assert(documentReview.includes("candidate.candidate_index"), "Document review mu
 assert(documentReview.includes("has_more_candidates"), "Document review must expose remaining statements instead of silently dropping overflow.");
 assert(documentReview.includes("Show next group of"), "Document review must allow the next bounded group after the current group is decided.");
 assert(documentReview.includes("retryable_page_numbers"), "Only transient page failures may offer automatic retry.");
+assert(documentReview.includes("extraction_unprocessed_page_numbers"), "OCR extraction state must remain separate from Qwen page-window progress.");
 assert(documentReview.includes("blocked_page_numbers"), "Pages blocked by resource limits must not be offered for automatic retry.");
 console.log("PASS: document candidate batches and retryable page states are preserved.");
 
