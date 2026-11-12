@@ -148,4 +148,6 @@ assert.ok(naturalDailyUpdate.includes('postJSON("/daily-care/entries"'), "natura
 assert.ok(naturalDailyUpdate.includes("notes: report"), "the exact caregiver wording must be submitted as the source report");
 assert.ok(naturalDailyUpdate.includes("response?.success !== true"), "the UI must require a backend save receipt before showing success");
 assert.ok(naturalDailyUpdate.includes("no extracted details have been treated as confirmed"), "failed extraction must be exposed without implying interpretation succeeded");
+assert.ok(naturalDailyUpdate.includes("Your report suggests Mum’s medication may have changed"), "possible medication changes must be surfaced as unconfirmed");
+assert.ok(naturalDailyUpdate.includes("execution_status?.assessment"), "the caregiver must be told when extraction assessment fails after the source is saved");
 console.log("Caregiver UI contract checks passed.");
