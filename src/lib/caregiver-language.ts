@@ -32,6 +32,11 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   expired: "Expired",
   rejected: "Not accepted",
   suspended: "Temporarily unavailable",
+  available: "Available",
+  unavailable: "Not available",
+  unavailable_schema: "Not available",
+  not_authorized: "Not available",
+  no_assessments_returned: "Not checked",
   within_review_window: "Recently reviewed",
   needs_confirmation: "Needs a fresh check",
   historical: "Older information",
@@ -74,6 +79,9 @@ export function caregiverInformationLabel(value?: string | null): string | null 
 
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
   /database schema/i,
+  /\\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr)\\b/i,
+  /\\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\\b/i,
+  /\\b(?:epistemic|serialization|normalization|embedding|vector index)\\b/i,
   /schema (?:is )?unavailable/i,
   /sql(?:ite|alchemy)?\b/i,
   /\b(?:postgres(?:ql)?|mysql)\b/i,
