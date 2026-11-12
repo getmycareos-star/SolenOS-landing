@@ -22,6 +22,14 @@ assert.match(source, /original_text/,
   "correction history preserves the earlier source text");
 assert.match(source, /Load older care records/,
   "the full history can be paginated beyond the first 200 records");
+assert.match(source, /postJSON\("\/corrections"/,
+  "care-history corrections use the existing persisted correction endpoint");
+assert.match(source, /target_type: "care_event"/,
+  "corrections target the original care event");
+assert.match(source, /original_text: event\.description/,
+  "the original source content is preserved in the correction receipt");
+assert.match(source, /original entry remains unchanged/,
+  "the caregiver is told corrections do not overwrite the original record");
 assert.match(source, /daily-care\\/intelligence\\/history\\?limit=200&offset=/,
   "timeline pagination reads the authenticated persisted history endpoint");
 assert.match(source, /Timeline could not be loaded/);
