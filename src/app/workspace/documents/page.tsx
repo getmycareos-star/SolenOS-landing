@@ -445,12 +445,16 @@ export default function DocumentsPage() {
     let understandingUnavailable = 0;
     try {
       const session = await ensureAnonymousSession();
-      for (const page of reviewPages) {
+      for (let pageIndex = 0; pageIndex < reviewPages.length; pageIndex += 1) {
+        const page = reviewPages[pageIndex];
         const form = new FormData();
         form.append("file", page.file);
         form.append("person_id", session.person.id);
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
+        form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "share" ? "share" : "upload");
+        form.append("capture_timestamp", new Date(page.file.lastModified || Date.now()).toISOString());
+        if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(pageIndex + 1));
         form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\n" + page.text.trim() : page.text.trim());
         form.append("scan_review_status", page.reviewed ? "caregiver_reviewed" : "not_reviewed");
         form.append("scan_rotation_degrees", String(page.rotation));
