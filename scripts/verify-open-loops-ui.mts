@@ -21,7 +21,7 @@ const required: Array<[string, RegExp]> = [
   ["missing source evidence blocks the action", /No saved information is available for this review yet/],
   ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
   ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
-  ["action errors are shown rather than reported as success", /The requested change was not confirmed/],
+  ["action errors are shown rather than reported as success", /We could not confirm that change\. Please try again/],
   ["no sample Open Loop records are fabricated", /No sample records are shown/],
 ];
 
