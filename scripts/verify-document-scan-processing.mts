@@ -45,6 +45,7 @@ assert.match(intelligenceReviewSource, /Processing in the background\. You can l
 assert.match(intelligenceReviewSource, /Document understanding is processing in the background/, "active Qwen processing must be visible without offering a duplicate retry");
 assert.match(intelligenceReviewSource, /!active && <button/, "manual extraction must not race an active background job");
 assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.evidence_id === analysis\.source_evidence_id/, "partial-page resume must not race an active background job");
+assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load\(\); \}, 3000\)/, "document review status must refresh while background processing is active");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
