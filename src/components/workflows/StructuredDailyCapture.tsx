@@ -161,19 +161,20 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     const loadCurrentMedicationRecords = () => {
       void getJSON("/care-continuity/medications")
         .then((response: unknown) => {
-          const records = (response as { medications?: unknown })?.medications;
-          if (!Array.isArray(records)) return;
-          const valid = records.filter((item): item is {
-            medication_id: string; name: string; dose: string | null; record_status: string;
-          } => {
+          const payload = response as { medications?: unknown; pending_review?: unknown };
+          const records = Array.isArray(payload?.medications) ? payload.medications : [];
+          const pending = Array.isArray(payload?.pending_review) ? payload.pending_review : [];
+          const valid = records.filter((item): item is { medication_id: string; name: string; dose: string | null; record_status: string } => {
             if (!item || typeof item !== "object") return false;
             const row = item as Record<string, unknown>;
-            return typeof row.medication_id === "string"
-              && typeof row.name === "string"
-              && row.status === "active"
-              && row.record_status === "caregiver_reviewed_current_report";
+            return typeof row.medication_id === "string" && typeof row.name === "string" && row.status === "active" && row.record_status === "caregiver_reviewed_current_report";
           });
-          if (active) setCurrentMedicationRecords(valid);
+          const pendingValid = pending.filter((item): item is { medication_id: string; name: string; dose: string | null; record_status: string } => {
+            if (!item || typeof item !== "object") return false;
+            const row = item as Record<string, unknown>;
+            return typeof row.medication_id === "string" && typeof row.name === "string" && row.record_status === "awaiting_caregiver_review";
+          });
+          if (active) { setCurrentMedicationRecords(valid); setPendingMedicationRecords(pendingValid); }
         })
         .catch(() => {
           // No current medication list is shown when the authoritative LCR read is unavailable.
@@ -187,6 +188,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     };
   }, []);
 
+  const [pendingMedicationRecords, setPendingMedicationRecords] = useState<Array<{ medication_id: string; name: string; dose: string | null; record_status: string }>>([]);
+  const [medicationRecordName, setMedicationRecordName] = useState("");
+  const [medicationRecordDose, setMedicationRecordDose] = useState("");
+  const [medicationRecordNote, setMedicationRecordNote] = useState("");
+  const [medicationRecordSaving, setMedicationRecordSaving] = useState(false);
+  const [medicationRecordReviewing, setMedicationRecordReviewing] = useState<string | null>(null);
+  const [medicationRecordMessage, setMedicationRecordMessage] = useState<string | null>(null);
+  const [medicationRecordError, setMedicationRecordError] = useState<string | null>(null);
   // Historical reports remain available as a separate, explicitly non-current choice.
   const [previouslyRecordedMedications, setPreviouslyRecordedMedications] = useState<Array<{ name: string; dose: string | null }>>([]);
   useEffect(() => {
