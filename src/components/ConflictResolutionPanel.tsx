@@ -100,7 +100,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       setConflicts([]);
       setEvidence([]);
       setSelectedId("");
-      setError("Conflicts and linked evidence could not be loaded from the authenticated care record. No empty result is assumed.");
+      setError("Reports that differ and their supporting information could not be loaded. No empty result is assumed.");
     } finally {
       setLoading(false);
     }
@@ -136,7 +136,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       return;
     }
     if (status === "partially_resolved" && (!scope.trim() || !unresolvedRemainder.trim() || evidenceIds.length === 0)) {
-      setError("Partial resolution requires the exact resolved scope, the unresolved remainder, and linked evidence for the resolved detail.");
+      setError("A partial review needs the exact part being reviewed, what remains unclear, and supporting information for the detail.");
       return;
     }
     if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopedPersonId))) {
@@ -168,7 +168,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
   return <section style={panel} aria-label="Evidence-grounded conflict resolution">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>When information differs</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      A newer timestamp or majority of reports does not automatically resolve a conflict. Every resolved or partially resolved state needs linked evidence and a rationale; partial resolution must name the exact detail resolved.
+      A newer timestamp or majority of reports does not automatically resolve a conflict. Every completed or partial review needs supporting information and a reason; a partial review must name the exact detail reviewed.
     </p>
     {loading && <p role="status">Loading persisted conflicts…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
