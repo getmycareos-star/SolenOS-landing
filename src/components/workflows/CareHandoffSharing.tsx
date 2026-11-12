@@ -704,7 +704,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
               <strong style={{ fontSize: 12 }}>{item.section}</strong>
               <p style={{ fontSize: 13, lineHeight: 1.5, margin: "5px 0" }}>{item.text}</p>
-              <small style={{ color: "#667267" }}>Information: {caregiverEvidenceLabel(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)}</small>
+              <small style={{ color: "#667267" }}>Information: {caregiverEvidenceLabel(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)} · Source: {item.source_ref}</small>
             </article>
           )) : draft.sections.map((group, groupIndex) => (
             <article key={group.title + groupIndex} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
