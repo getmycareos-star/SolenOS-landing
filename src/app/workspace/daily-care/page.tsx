@@ -48,6 +48,10 @@ type DailyCareDocumentStatus = {
   processed_page_numbers?: number[];
   unprocessed_page_numbers?: number[];
   unreadable_page_numbers?: number[];
+  retryable_page_numbers?: number[];
+  retry_exhausted_page_numbers?: number[];
+  retry_scheduled?: boolean;
+  retry_required?: boolean;
   review_required?: boolean;
   written_to_lcr?: boolean;
   medication_report_saved?: boolean;
@@ -537,7 +541,7 @@ export default function DailyCarePage() {
                     processing: "SolenOS is processing this document. You do not need to stay on this screen.",
                     processed: "Readable pages have been processed. Review status is shown below.",
                     partially_processed: "Some pages or processing steps remain incomplete.",
-                    retry_required: "A processing step failed. The original document is still stored.",
+                    retry_required: "Document understanding could not be completed after automatic retries. The original document is still stored.",
                     review_required: "Processing finished, but some information needs review before it can be added to the care record.",
                     failed: "Processing could not be completed. The original document is still stored.",
                     cancelled: "Document processing was stopped.",
@@ -550,7 +554,9 @@ export default function DailyCarePage() {
                       <strong>{caregiverSafeAssistantText(item.document_name) || "Uploaded document"}</strong>
                       <p>{statusText[item.processing_status] || "Processing status is available in the document library."}</p>
                       {typeof item.page_count === "number" && <span>{typeof item.processed_page_count === "number" ? item.processed_page_count : processed.length} of {item.page_count} readable pages processed</span>}
-                      {unreadable.length > 0 && <p>Page{unreadable.length === 1 ? "" : "s"} {unreadable.join(", ")} could not be read. SolenOS has not treated missing text as proof that those pages contain nothing important.</p>}
+                      {item.retry_scheduled && <p>SolenOS is retrying pages that did not finish. You do not need to stay on this screen.</p>}
+                      {(item.retry_exhausted_page_numbers || []).length > 0 && <p>SolenOS retried page{item.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {item.retry_exhausted_page_numbers!.join(", ")} but could not process them. The original is preserved and the document is still marked incomplete.</p>}
+                      {unreadable.length > 0 && <p>Page{unreadable.length === 1 ? "" : "s"} {unreadable.join(", ")} could not be read reliably. SolenOS has not treated missing text as proof that those pages contain nothing important.</p>}
                       {unprocessed.length > 0 && <p>Page{unprocessed.length === 1 ? "" : "s"} {unprocessed.join(", ")} still need processing.</p>}
                       {item.medication_conflict && <p role="status">The document appears to differ from the current medication record. The instruction is unconfirmed. Confirm the current instruction with the prescribing professional or pharmacist before acting on it.</p>}
                       {item.medication_report_saved && <p>Medication information was saved as an unconfirmed report. The existing medication record was not changed.</p>}
