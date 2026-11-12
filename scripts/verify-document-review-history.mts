@@ -44,6 +44,7 @@ assert(captureSource.includes("durably queues document extraction and understand
 assert(!capture.includes('apiUrl("/api/extract"'), "capture must not depend on the legacy extract-before-upload endpoint");
 assert(!documentsPage.includes('apiUrl("/api/extract"'), "the Documents screen must not send the same original to a preflight extractor and then upload it again");
 assert(!documentsPage.includes("Extracted text — review and correct before saving"), "the Documents screen must not ask caregivers to edit text that the upload endpoint discards");
+assert(!documentsPage.includes("review and correct its extracted text first"), "the Documents screen must not ask caregivers to review discarded client-side OCR before saving");
 assert(!documentsPage.includes('form.append("extracted_text"'), "only server extraction from the persisted original may become reviewable source text");
 assert(source.includes('/documents/analyses/') && source.includes("loadExtractedText"), "the Documents review panel must retrieve persisted server extraction, not client-only OCR text");
 const retryStart = capture.indexOf("export async function retryAttachedDocument");
