@@ -305,7 +305,7 @@ export default function DetailedAppointmentWorkspace() {
       </div>
 
       {open && <>
-        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from Living Care Record facts. Caregiver reports, caregiver-recorded clinician statements, and AI suggestions remain distinct; saving does not confirm clinical statements or silently change your care record.</span></div>
+        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from Living Care Record facts. Caregiver reports, notes about what a healthcare professional said, and SolenOS suggestions remain separate; saving does not confirm clinical statements or silently change your care record.</span></div>
         <nav className="appointment-stages" aria-label="Appointment stages">
           {([
             ['prepare', '1. Before the visit'],
@@ -323,16 +323,16 @@ export default function DetailedAppointmentWorkspace() {
                 <h5 id="appointment-lcr-brief-title">Relevant information from the Living Care Record</h5>
                 <p>{lcrBrief ? 'Saved care information · ' + new Date(lcrBrief.snapshot_at).toLocaleString() : 'This section is not available right now.'}</p>
               </div>
-              <span className="appointment-source-pill">{lcrBrief ? 'Source-linked' : 'Not loaded'}</span>
+              <span className="appointment-source-pill">{lcrBrief ? 'Saved care information' : 'Not available'}</span>
             </div>
             {briefError && <p className="appointment-brief-warning" role="status">Saved care information could not be loaded. Please try again. This is not evidence that no care history exists.</p>}
             {lcrBrief && <>
               <div className="appointment-brief-grid">
                 <div><strong>Recorded facts ({lcrBrief.facts.length})</strong>
-                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>Care information · {caregiverInformationLabel(item.epistemic_status) || 'Information status unavailable'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved source'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
+                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>Care information · {caregiverInformationLabel(item.epistemic_status) || 'Information status unavailable'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved source'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No saved care details were found in this source. This does not mean the information does not exist elsewhere.</p>}
                 </div>
                 <div><strong>Recent care events ({lcrBrief.events.length})</strong>
-                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Saved source · {caregiverInformationLabel(source.epistemic_status) || 'Not yet confirmed'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
+                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Saved source · {caregiverInformationLabel(source.epistemic_status) || 'Not yet confirmed'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
                 </div>
                 <div><strong>Appointment history ({lcrBrief.appointments.length})</strong>
                   {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved source'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No appointment records were returned.</p>}
@@ -407,7 +407,7 @@ export default function DetailedAppointmentWorkspace() {
         </div>}
 
         {stage === 'after' && <div className="appointment-stage-panel">
-          <h4>Outcome and continuity</h4>
+          <h4>After the appointment</h4>
           <p className="appointment-stage-intro">A visit can be finished while clinical follow-up remains open. Mark work done only when completion is supported.</p>
           <div className="appointment-fields appointment-fields-two">
             <label>Medication changes or differences<textarea value={medicationReconciliation} onChange={event => setMedicationReconciliation(event.target.value)} rows={4} placeholder="Record the exact clinician instruction, source, effective date, verification status, and unresolved discrepancy. Never infer start/stop/change." /></label>
