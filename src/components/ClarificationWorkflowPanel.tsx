@@ -150,7 +150,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [history, setHistory] = useState<AnswerEvent[]>([]);
   const [reviewEvents, setReviewEvents] = useState<ReviewEvent[]>([]);
   const [reviewRationale, setReviewRationale] = useState("I reviewed this caregiver answer and accept it as a source-attributed report, not as independent verification.");
-  const [reviewAfterDays, setReviewAfterDays] = useState("30");
   const [reviewSaving, setReviewSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -357,20 +356,10 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
 
   async function reviewAnswer(decision: "accepted" | "rejected" | "needs_clarification") {
     if (!selectedQuestion || !scopePersonId || !history.length) return;
-    if (reviewRationale.trim().length < 3) {
-      setError("Please explain why this answer is being reviewed.");
-      return;
-    }
     const latestAnswer = history[history.length - 1];
     if (!latestAnswer) return;
     if (decision === "accepted" && !latestAnswer.evidence_ids?.length) {
       setError("This answer has no saved supporting evidence and cannot be added to the care record.");
-      return;
-    }
-    const interval = Number(reviewAfterDays);
-    if (decision === "accepted" && selectedClaim?.assertion_kind === "current_state" &&
-        (!Number.isInteger(interval) || interval < 1 || interval > 3650)) {
-      setError("Choose a review interval between 1 and 3,650 days for this current care detail.");
       return;
     }
     setReviewSaving(true);
@@ -381,10 +370,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         `/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}/reviews`,
         {
           decision,
-          rationale: reviewRationale.trim(),
-          ...(decision === "accepted" && selectedClaim?.assertion_kind === "current_state"
-            ? { review_after_days: interval }
-            : {}),
+          ...(reviewRationale.trim() ? { rationale: reviewRationale.trim() } : {}),
         },
       ) as ReviewEvent;
       if (!result?.id || result.question_id !== selectedQuestion.id || result.person_id !== scopePersonId) {
@@ -502,14 +488,9 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
                 <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                   Accepting adds the answer as a caregiver report. It does not make the information independently verified.
                 </p>
-                <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review reason
-                  <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} />
+                <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Additional note (optional)
+                  <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} placeholder="Add context only if it would help." />
                 </label>
-                {selectedClaim?.assertion_kind === "current_state" && (
-                  <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review again after (days)
-                    <input type="number" min={1} max={3650} value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} style={{ ...field, marginTop: 4 }} />
-                  </label>
-                )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   <button type="button" style={button} onClick={() => void reviewAnswer("accepted")} disabled={reviewSaving}>
                     {reviewSaving ? "Saving…" : "Accept as caregiver report"}
