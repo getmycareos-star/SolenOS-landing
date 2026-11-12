@@ -104,7 +104,7 @@ export default function CareRemindersPage() {
       await refresh(personId);
       setTitle("");
       setNote("");
-      setNotice("Reminder saved to this care record. It will appear in this in-app list; no notification was sent.");
+      setNotice("Reminder saved. It will appear in this list, and an in-app notification will be added when it is due. No push or email alert is sent.");
     } catch (reason) {
       setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
     } finally {
@@ -119,7 +119,7 @@ export default function CareRemindersPage() {
     try {
       await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/complete`, {});
       await refresh(personId);
-      setNotice("Reminder marked complete. No notification was sent.");
+      setNotice("Reminder marked complete.");
     } catch (reason) {
       setError("We couldn’t update this reminder. Please try again.");
     } finally {
@@ -150,9 +150,9 @@ export default function CareRemindersPage() {
         </Link>
         <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> CARE CONTINUITY</p>
         <h1>Care reminders</h1>
-        <p>Keep a dated follow-up in the care record. These reminders are stored and shown in SolenOS when you open this list.</p>
+        <p>Save a follow-up once. SolenOS adds an in-app notification when it is due.</p>
         <p className="care-reminders-delivery">
-          In-app list only · no push/email notification is sent, and delivery is not reported as confirmed.
+          In-app notification feed only · no push or email alert is sent.
         </p>
       </div>
 
