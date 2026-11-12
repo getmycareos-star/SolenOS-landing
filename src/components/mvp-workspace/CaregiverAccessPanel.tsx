@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Shield, UserPlus, Users, X, Check, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getAnonymousAccessToken, getPersonId, getJSON, postJSON, deleteJSON } from "@/api/client";
+import { getAnonymousAccessToken, getPersonId, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
 
 type Member = {
   caregiver_id: string;
@@ -216,16 +216,8 @@ export function CaregiverAccessPanel() {
     setError("");
     setNotice("");
     try {
-      await fetch("/api/v1/caregiver-access/members/" + encodeURIComponent(member.caregiver_id) + "/access-scope", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(getAnonymousAccessToken() ? { Authorization: "Bearer " + getAnonymousAccessToken() } : {}),
-        },
-        body: JSON.stringify({ access_scope: accessScope }),
-      }).then(async (response) => {
-        if (!response.ok) throw new Error("Access scope update failed");
-        return response.json();
+      await patchJSON("/caregiver-access/members/" + encodeURIComponent(member.caregiver_id) + "/access-scope", {
+        access_scope: accessScope,
       });
       setNotice(accessScope === "documents_only"
         ? member.name + " can now access documents and appointment paperwork only."
