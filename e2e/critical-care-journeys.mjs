@@ -527,12 +527,13 @@ await record("frontend network failure is surfaced rather than rendered as empty
 
 await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
   const daily = await createBrowserPage(session, "/workspace/daily-care");
-  const saveFreeTextUpdate = async (text) => {
+  const saveFreeTextUpdate = async (text, afterSaved) => {
     await daily.page.getByRole("button", { name: "Share something", exact: true }).click();
     await daily.page.getByRole("button", { name: /Something happened/ }).click();
     await daily.page.locator("#daily-capture-original-words").fill(text);
     await daily.page.getByRole("button", { name: "Save to care record", exact: true }).click();
     await daily.page.getByText(/^Saved\./).last().waitFor({ timeout: 20_000 });
+    if (afterSaved) await afterSaved();
     await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
   };
   const scenarioReports = [
@@ -541,10 +542,39 @@ await record("browser renders caregiver surfaces and submits Companion through t
     "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
     "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
   ];
+
+  const seededMedication = await request("/api/v1/care-continuity/medications", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      name: "Metformin",
+      dose: "500 mg",
+      note: "Existing reviewed medication record for Daily Care Scenario 01.",
+      review_after_days: 30,
+    },
+  });
+  assert.equal(seededMedication.status, 201, JSON.stringify(seededMedication.payload));
+  const reviewedMedication = await request(
+    `/api/v1/care-continuity/medications/${seededMedication.payload.medication_id}/review`,
+    { token: identity.token, method: "POST", body: {} },
+  );
+  assert.equal(reviewedMedication.status, 200, JSON.stringify(reviewedMedication.payload));
+  const medicationBefore = await request("/api/v1/care-continuity/medications", { token: identity.token });
+  assert.equal(medicationBefore.status, 200, JSON.stringify(medicationBefore.payload));
+  const existingMedication = medicationBefore.payload.medications.find((item) =>
+    item.medication_id === seededMedication.payload.medication_id
+  );
+  assert.ok(existingMedication, "Scenario 01 must start with an established reviewed medication record");
+  assert.equal(existingMedication.dose, "500 mg");
+
   const openLoopsBefore = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
   assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
-  for (const report of scenarioReports) await saveFreeTextUpdate(report);
+  for (const [index, report] of scenarioReports.entries()) {
+    await saveFreeTextUpdate(report, index === 2 ? async () => {
+      await daily.page.getByText(/The existing reviewed medication record lists: Metformin — 500 mg/i).waitFor({ timeout: 15_000 });
+    } : undefined);
+  }
 
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
   assert.equal(dailyHistory.status, 200);
@@ -565,6 +595,14 @@ await record("browser renders caregiver surfaces and submits Companion through t
 
   const dailyLcr = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
   assert.equal(dailyLcr.status, 200, JSON.stringify(dailyLcr.payload));
+  const medicationAfter = await request("/api/v1/care-continuity/medications", { token: identity.token });
+  assert.equal(medicationAfter.status, 200, JSON.stringify(medicationAfter.payload));
+  const unchangedMedication = medicationAfter.payload.medications.find((item) =>
+    item.medication_id === seededMedication.payload.medication_id
+  );
+  assert.ok(unchangedMedication, "uncertain medication update must not remove the existing reviewed medication");
+  assert.equal(unchangedMedication.name, existingMedication.name);
+  assert.equal(unchangedMedication.dose, existingMedication.dose, "uncertain dose must not overwrite the existing reviewed dose");
   for (const reportEvent of scenarioEvents) {
     const lcrRow = dailyLcr.payload.items.find((item) => item.id === reportEvent.id);
     assert.ok(lcrRow, "each saved report must be available through the existing LCR projection");
