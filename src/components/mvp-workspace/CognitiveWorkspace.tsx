@@ -84,6 +84,16 @@ function isLcrOrientationOnly(text: string): boolean {
   return greeting.test(normalized) || frustration.test(normalized);
 }
 
+function situationExtractionSource(value?: string): "text" | "tika" | "ocr" | "unknown" {
+  if (!value) return "unknown";
+  const normalized = value.toLowerCase();
+  if (normalized.includes("tesseract") || normalized.includes("ocr")) return "ocr";
+  if (normalized.startsWith("server_")) return "text";
+  if (normalized === "tika") return "tika";
+  if (normalized === "text") return "text";
+  return "unknown";
+}
+
 /** Build caregiver-facing + LCR display text from typed note and/or ready documents. */
 
 function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string {
@@ -426,7 +436,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
             extracted_text_preview: d.extractedTextPreview ?? undefined,
             extracted_char_count: d.extractedCharCount ?? undefined,
             ocr_confidence: d.ocrConfidence ?? null,
-            extraction_source: d.extractionSource ?? undefined,
+            extraction_source: situationExtractionSource(d.extractionSource),
             entry_method: d.entryMethod,
           })),
         }),
