@@ -72,7 +72,7 @@ assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(proposal\.title
 assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(result\.notice\)/);
 assert.match(dailyCareIntelligence, /caregiverSafeErrorMessage/);
 assert.match(claimReview, /caregiverStatusLabel/);
-assert.doesNotMatch(claimReview, /review version \\{assessmentImpact\\.assessment_version/);
+assert.equal(claimReview.includes("review version ${assessmentImpact.assessment_version}"), false);
 assert.match(handoff, /function readableStatus\(value: string\): string \{\s+return caregiverStatusLabel\(value\) \?\? "Not available";/);
 assert.match(appointment, /caregiverSafeAssistantText\(item\.title\)/);
 assert.match(detailedAppointment, /caregiverSafeAssistantText\(source\.original_author\)/);
