@@ -567,9 +567,30 @@ await record("browser renders caregiver surfaces and submits Companion through t
   assert.ok(existingMedication, "Scenario 01 must start with an established reviewed medication record");
   assert.equal(existingMedication.dose, "500 mg");
 
+  const appointmentFollowUp = await request("/api/v1/open-loops", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      loop_type: "follow_up",
+      title: "Contact the clinic about the appointment",
+      description: "The clinic has not confirmed the appointment yet. Contact the clinic to confirm it.",
+      uncertainty: "unknown",
+      source_type: "caregiver_report",
+      owner_role: "Caregiver",
+      owner_label: "Daughter",
+      missing_information: ["Appointment confirmation"],
+    },
+  });
+  assert.equal(appointmentFollowUp.status, 201, JSON.stringify(appointmentFollowUp.payload));
+  const appointmentFollowUpId = appointmentFollowUp.payload.id;
+
   const openLoopsBefore = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
   assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
+  assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
+  await daily.page.reload({ waitUntil: "domcontentloaded" });
+  await daily.page.getByRole("heading", { name: "Existing follow-ups", exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
   for (const [index, report] of scenarioReports.entries()) {
     await saveFreeTextUpdate(report, index === 2 ? async () => {
       await daily.page.getByText(/The existing reviewed medication record lists: Metformin — 500 mg/i).waitFor({ timeout: 15_000 });
@@ -615,13 +636,17 @@ await record("browser renders caregiver surfaces and submits Companion through t
   assert.deepEqual(
     (openLoopsAfter.payload.items || []).map((item) => item.id).sort(),
     openLoopIdsBefore,
-    "natural-language observations and missing optional details must not manufacture follow-up tasks",
+    "natural-language observations and missing optional details must not manufacture follow-up tasks or duplicate existing ones",
   );
+  const retainedAppointmentFollowUp = openLoopsAfter.payload.items.find((item) => item.id === appointmentFollowUpId);
+  assert.ok(retainedAppointmentFollowUp, "the original clinic follow-up must remain retrievable");
+  assert.equal(retainedAppointmentFollowUp.status, "open");
 
   await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
   await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
   await daily.page.reload({ waitUntil: "domcontentloaded" });
   await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
   for (const report of scenarioReports) {
     await daily.page.getByText(report, { exact: false }).first().waitFor({ timeout: 15_000 });
   }
