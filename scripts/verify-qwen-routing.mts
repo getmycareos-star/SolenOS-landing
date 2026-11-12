@@ -25,6 +25,13 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "source_handoff_ids: string[]",
   "source_notification_ids: string[]",
   "source_freshness_assessment_ids: string[]",
+  "claim_provenance?: QwenClaimProvenance | null",
+  "What each statement is based on",
+  "matched_validated_aggregate",
+  "aggregate_count_mismatch",
+  "aggregate_not_validated",
+  "When it happened:",
+  "When it was recorded:",
   'postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/proposal", {})',
   'postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "accept" })',
   'postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "reject" })',
@@ -86,6 +93,9 @@ requireText("src/components/workflows/Community.tsx", [
 assert(!read("src/components/workflows/Community.tsx").includes("QwenAssistPanel"), "Community must not expose internal assistant workflow controls.");
 assert(!read("src/components/workflows/Community.tsx").includes("Qwen support for Community"), "Community must not show internal model branding.");
 requireText("src/components/workflows/AICompanion.tsx", [
+  "matched_validated_aggregate",
+  "aggregate_count_mismatch",
+  "aggregate_not_validated",
   "postJSON('/conversation/message'",
   "Your message could not be sent.",
   "{loading ? 'Sending' : 'Send'}",
@@ -124,6 +134,10 @@ requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "<LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />",
 ]);
 requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
+  "claim_provenance",
+  "matched_validated_aggregate",
+  "aggregate_count_mismatch",
+  "aggregate_not_validated",
   'postJSON("/assistant/assist"',
   'workflow: "living_care_record"',
   "result.ai_generated !== true",
