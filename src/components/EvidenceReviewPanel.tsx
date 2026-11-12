@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
+import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 type EvidenceItem = {
   id: string
@@ -166,7 +167,7 @@ const reviewStatusLabel = (value: string) => ({
   not_recorded: 'Not recorded',
   not_available: 'Not available',
   not_returned: 'Not available',
-}[value] ?? value.replaceAll('_', ' '))
+}[value] ?? 'Not available')
 type HistoricalSnapshotItem = {
   key: string;
   title: string;
@@ -722,7 +723,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: 12 }}>
         <strong>{reviewStatusLabel(item.freshness_status)}</strong>
         <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (reviewStatusLabel(item.source_time_kind || 'not_recorded')) + ')' : 'unknown'} · time since it was recorded {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
-        <p>{item.rationale}</p>
+        <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
       </article>)}
     </details>
     {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No saved source information was found for this care record.</p> : evidenceItems.length > 0 ? <>
@@ -734,7 +735,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {selected && <>
         <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Type of source</dt><dd style={{ margin: 0 }}>{selected.type || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Type of source</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.type || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.evidence_kind || 'not_assessed')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How sure we are about this information</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Added by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
@@ -745,13 +746,13 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{selected.transfer_source || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref ? 'A device was recorded' : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date added</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was added</dt><dd style={{ margin: 0 }}>{selected.origin_channel || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference || 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || 'not_recorded')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference ? 'An original reference is saved' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Related original source</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
@@ -761,7 +762,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
           {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No links to other saved sources are recorded for this item yet.</p>}
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
-            <strong>{item.relationship_type.replaceAll('_', ' ')}</strong>
+            <strong>{reviewStatusLabel(item.relationship_type)}</strong>
             <div>This source is linked to another saved source.</div>
             <div>Were these reports separate? {reviewStatusLabel(item.source_independence_status)}</div>
             {item.source_independence_status === 'shared_origin' && (
@@ -779,8 +780,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
           {!observationsLoading && !observationsError && observations.length === 0 && <p>No extracted details are available for this source yet.</p>}
           {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
-            <strong>{item.attribute.replaceAll('_', ' ')} · {reviewStatusLabel(item.epistemic_status)}</strong>
-            <div>{item.observation_kind.replaceAll('_', ' ')} · {item.subject_label}</div>
+            <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
+            <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
             <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
             {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
