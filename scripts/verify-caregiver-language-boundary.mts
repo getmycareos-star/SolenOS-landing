@@ -39,6 +39,8 @@ const claimAssessment = readFileSync(new URL("../src/components/ClaimAssessmentP
 const conflictReview = readFileSync(new URL("../src/components/ConflictResolutionPanel.tsx", import.meta.url), "utf8");
 const clarification = readFileSync(new URL("../src/components/ClarificationWorkflowPanel.tsx", import.meta.url), "utf8");
 const careHistory = readFileSync(new URL("../src/components/CareContinuityIntegrityPanel.tsx", import.meta.url), "utf8");
+const handoff = readFileSync(new URL("../src/components/workflows/CareHandoffSharing.tsx", import.meta.url), "utf8");
+const sharedSummary = readFileSync(new URL("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx", import.meta.url), "utf8");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -85,5 +87,12 @@ assert.ok(!clarification.includes('key.replaceAll("_", " ")'));
 assert.ok(!clarification.includes('latestReview.decision.replaceAll'));
 assert.ok(!careHistory.includes('value.replace(/_/g'));
 assert.ok(!companion.includes("LCR assertion"));
+assert.ok(!handoff.includes("Source freshness"));
+assert.ok(!handoff.includes("revision {saved.revision_number"));
+assert.ok(!handoff.includes("value.replaceAll(\"_\", \" \""));
+assert.ok(!handoff.includes("source snapshot"));
+assert.ok(!handoff.includes("error instanceof Error ? error.message"));
+assert.ok(!sharedSummary.includes("FRESHNESS NOTE"));
+assert.ok(!sharedSummary.includes("Freshness note"));
 
 console.log("Caregiver language boundary checks passed.");
