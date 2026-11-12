@@ -224,7 +224,9 @@ function parseDescription(description?: string | null): string {
           };
           const time = typeof medicine.administered_at === "string"
             ? ` at ${formatDateTime(medicine.administered_at)}`
-            : "";
+            : typeof medicine.scheduled_for === "string"
+              ? ` (scheduled for ${formatDateTime(medicine.scheduled_for)}; not proof it was given)`
+              : "";
           readable.push(`${name}: ${labels[status] || status.replace(/_/g, " ")}${time}`);
         }
       }
