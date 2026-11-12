@@ -125,7 +125,7 @@ assert(!documentPage.includes('type="file"'), "The saved-document library must n
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Reviewed original uploads must persist through the backend.");
-assert(documentPage.includes("Review before saving"), "Extracted content must remain subject to caregiver review.");
+assert(documentPage.includes("You can review extracted statements later."), "Caregivers must be able to save originals before reviewing extracted content.");
 assert(documentPage.includes("Scanned statements remain source evidence, not verified LCR facts."), "Scanned statements must not silently become verified LCR facts.");
 assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
