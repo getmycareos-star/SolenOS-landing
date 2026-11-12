@@ -717,6 +717,17 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               ))}
             </article>
           ))}
+          {draft.generation?.sections?.length ? draft.sections.filter(group => group.title === "Caregiver-reviewed medication reports").map((group, groupIndex) => (
+            <section key={group.title + groupIndex} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
+              <strong style={{ fontSize: 12 }}>{group.title}</strong>
+              {group.items.map((item, itemIndex) => (
+                <p key={item.source_id + itemIndex} style={{ fontSize: 12, lineHeight: 1.5 }}>
+                  {item.text}<br />
+                  <small style={{ color: "#667267" }}>Information: {caregiverEvidenceLabel(item.epistemic_status || "reported")} · Recorded: {formatDate(item.recorded_at)} · Source: {item.source_table}/{item.source_id}</small>
+                </p>
+              ))}
+            </section>
+          )) : null}
           <div style={{ margin: "10px 0" }}>
             <strong style={{ fontSize: 12 }}>Information availability</strong>
             {Object.entries(draft.source_statuses ?? {}).map(([key, value]) => (
