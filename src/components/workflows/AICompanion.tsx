@@ -237,7 +237,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Tell me one small thing about today. A few words are enough. We can take it one step at a time.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Companion conversations are not added to the care record.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
@@ -347,7 +347,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
+          }} placeholder="Ask about the saved care history, a recent change or something that is unclear…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
