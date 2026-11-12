@@ -7,13 +7,13 @@ function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-async function persistOriginalDocument(file: File): Promise<string> {
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod): Promise<string> {
   const session = await ensureAnonymousSession();
   const form = new FormData();
   form.append("file", file);
   form.append("person_id", session.person.id);
   form.append("caregiver_id", session.caregiver.id);
-  form.append("evidence_type", "document");
+  // Snap captures a care photo, not a scanned document. The backend document\n  // extraction endpoint intentionally accepts only evidence_type=document.\n  form.append("evidence_type", entryMethod === "snap" ? "care_photo" : "document");
   // The server must extract from the immutable uploaded bytes. Client OCR/text is
   // deliberately not treated as authoritative source material.
   form.append("extracted_text", "");
@@ -48,7 +48,7 @@ export async function extractAttachedDocument(
 
   let evidenceId: string;
   try {
-    evidenceId = await persistOriginalDocument(file);
+    evidenceId = await persistOriginalDocument(file, entryMethod);
   } catch (error) {
     return {
       ...base,
@@ -61,9 +61,15 @@ export async function extractAttachedDocument(
     };
   }
 
-  // The original is now durable. Do not route through the legacy /api/extract
-  // endpoint: it made extraction a prerequisite for upload and bypassed the
-  // evidence-bound document lifecycle used by Documents and LCR review.
+  // Snap photos are preserved as care-photo evidence. They are not forced
+  // through document OCR; downstream care interpretation receives the evidence ID.
+  if (entryMethod === "snap") {
+    window.dispatchEvent(new Event("careRecordUpdated"));
+    return { ...base, evidenceId, status: "ready" };
+  }
+
+  // The original is now durable. Extract only document evidence from the
+  // immutable server-side upload; never trust client-provided OCR text.
   try {
     const extraction = (await postJSON(
       "/documents/" + encodeURIComponent(evidenceId) + "/extract",
@@ -82,15 +88,20 @@ export async function extractAttachedDocument(
       extraction_method?: string;
     };
 
-    let reviewNote: string | undefined;
+    let intelligenceStatus = "unavailable";
     try {
-      await postJSON(
+      const intelligence = (await postJSON(
         "/documents/" + encodeURIComponent(evidenceId) + "/intelligence",
         {},
-      );
+      )) as { intelligence_status?: string };
+      intelligenceStatus = intelligence.intelligence_status || "unavailable";
+      if (!["available", "partial"].includes(intelligenceStatus)) {
+        throw new Error("Document understanding did not complete.");
+      }
     } catch {
-      reviewNote =
-        "The original and extracted text are saved. Automated document review is temporarily unavailable; retry it from Documents.";
+      throw new Error(
+        "The original and extracted text are saved, but document understanding did not complete. Retry from Documents.",
+      );
     }
 
     window.dispatchEvent(new Event("careRecordUpdated"));
@@ -103,7 +114,6 @@ export async function extractAttachedDocument(
       extractedCharCount: persisted.extracted_char_count,
       extractionSource: persisted.extraction_method || extraction.extraction_method,
       status: "ready",
-      errorNote: reviewNote,
     };
   } catch (error) {
     window.dispatchEvent(new Event("careRecordUpdated"));
@@ -148,15 +158,12 @@ export async function retryAttachedDocument(
       extracted_char_count?: number;
       extraction_method?: string;
     };
-    let errorNote: string | undefined;
-    try {
-      await postJSON(
-        "/documents/" + encodeURIComponent(document.evidenceId) + "/intelligence",
-        {},
-      );
-    } catch {
-      errorNote =
-        "Text extraction is saved, but automated review is unavailable. Retry from Documents when the review service is available.";
+    const intelligence = (await postJSON(
+      "/documents/" + encodeURIComponent(document.evidenceId) + "/intelligence",
+      {},
+    )) as { intelligence_status?: string };
+    if (!["available", "partial"].includes(intelligence.intelligence_status || "")) {
+      throw new Error("Document understanding did not complete. Retry from Documents.");
     }
     window.dispatchEvent(new Event("careRecordUpdated"));
     return {
@@ -165,7 +172,6 @@ export async function retryAttachedDocument(
       extractedCharCount: persisted.extracted_char_count,
       extractionSource: persisted.extraction_method || extraction.extraction_method,
       status: "ready",
-      errorNote,
     };
   } catch (error) {
     return {
