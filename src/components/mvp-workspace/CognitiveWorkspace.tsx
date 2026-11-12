@@ -101,7 +101,7 @@ function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string 
   const trimmed = text.trim();
   if (trimmed) parts.push(trimmed);
   for (const d of docs) {
-    if (d.status !== "ready") continue;
+    if (d.status !== "ready" && !(d.status === "saved" && d.entryMethod === "snap" && d.evidenceId)) continue;
     if (d.extractedText.trim()) {
       parts.push(`[Document: ${d.name}]\n${d.extractedText.trim()}`);
     } else if (d.evidenceId && d.entryMethod === "snap") {
@@ -365,7 +365,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
   }
 
   async function handleAddSituation(provenance: InputProvenance) {
-    const readyDocs = documents.filter((d) => d.status === "ready" && (d.extractedText.trim() || d.evidenceId));
+    const readyDocs = documents.filter((d) => (d.status === "ready" && (d.extractedText.trim() || d.evidenceId)) || (d.status === "saved" && d.entryMethod === "snap" && d.evidenceId));
     const text = rawInput.trim();
     const sharedDisplay = buildSharedDisplayText(text, readyDocs);
 
