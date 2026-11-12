@@ -378,10 +378,10 @@ export default function DailyCarePage() {
               <ul className="daily-care-record-list">
                 {careItems.filter(isOpenMatter).slice(0, 8).map((item, index) => (
                   <li key={item.id || `open-matter-${index}`}>
-                    <strong>{item.title || "Open care question"}</strong>
+                    <strong>{caregiverSafeAssistantText(item.title) || "Open care question"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
-                    {item.source_label && <span> · {item.source_label}</span>}
+                    {item.source_label && <span> · {caregiverSafeAssistantText(item.source_label) || "Saved care record"}</span>}
                     {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
                     {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
                   </li>
