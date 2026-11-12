@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 
-import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
