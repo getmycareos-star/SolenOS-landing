@@ -1,6 +1,6 @@
 /**
- * Evidence ledger persistence — aligned with PostgreSQL Implementation Contract.
- * Measurement + grounding retrieval ONLY — not caregiver memory or longitudinal tracking.
+ * Interaction telemetry persistence contract. This is not the application-wide persistence architecture;
+ * the backend PostgreSQL care-domain schema owns the Living Care Record.
  */
 
 import {
@@ -9,15 +9,15 @@ import {
 } from "../postgres-contract";
 
 export const TELEMETRY_IDENTITY =
-  "a stateless deterministic cognitive decompression engine with a minimal evidence ledger used ONLY to validate relief, ground reasoning, and store document extraction";
+  "an interaction telemetry subsystem that measures product behavior without becoming the authority for care facts or longitudinal care history";
 
 export const TELEMETRY_ONE_LINE_TRUTH = POSTGRES_CONTRACT_ONE_LINE_TRUTH;
 
 export const TELEMETRY_ARCHITECTURE_PRINCIPLE =
-  "Persistence does NOT expand capability. It exists ONLY as an evidence ledger for cognitive relief validation and pre-reasoning grounding — NOT a system feature surface.";
+  "Telemetry persistence measures interactions and feedback only. It must never replace, overwrite, or define the authoritative Living Care Record.";
 
 export const TELEMETRY_POSTGRES_ROLE =
-  "an evidence ledger + grounding retrieval store for cognitive decompression and safety validation";
+  "an isolated interaction and feedback store, separate from authoritative care-domain persistence";
 
 export const TELEMETRY_FORBIDDEN_POSTGRES_USES = [
   ...POSTGRES_FORBIDDEN_USES,
@@ -115,7 +115,7 @@ export const TELEMETRY_EVENT_MODEL =
   "INPUT → Pre-Reasoning Grounding → Cognitive Decomposition → Structured Output → Relief Validation";
 
 export const TELEMETRY_DRIFT_PREVENTION_RULE =
-  "If Postgres is used for anything beyond evidence logging, grounding retrieval, or relief validation, SolenOS identity is lost.";
+  "Do not use interaction telemetry as care memory; care-domain PostgreSQL tables remain authoritative for the Living Care Record.";
 
 export const TELEMETRY_PERSISTENCE_PURPOSE = [
   "did this system reduce confusion effectively?",
