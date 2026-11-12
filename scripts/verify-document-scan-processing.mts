@@ -2,9 +2,7 @@ import { readFileSync } from "node:fs";
 import { strict as assert } from "node:assert";
 
 const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
-assert.match(source, /async function createProcessedImage\(/, "image processing must be implemented");
-assert.match(source, /rotatedContext\.rotate\(radians\)[\s\S]*?cropContext\.drawImage\(rotated, left, top, width, height, 0, 0, width, height\)/, "rotation must happen before crop so crop coordinates match the rotated preview");
-assert.match(source, /rotatedContext\.drawImage\(image, -image\.width \/ 2, -image\.height \/ 2\)/, "rotation must apply to source image pixels");
+assert.doesNotMatch(source, /createProcessedImage|createMultiPagePdf|combineImagePagesIntoPdf/, "the upload flow must not create a second derivative evidence file from the same scan pages");
 assert.doesNotMatch(source, /extractText\(/, "the browser must not duplicate server-side OCR");
 assert.doesNotMatch(source, /api\/extract/, "document files must enter the shared evidence upload lifecycle before extraction");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
@@ -14,9 +12,9 @@ assert.match(source, /scan_review_status", "not_reviewed"/, "upload must not cla
 assert.match(source, /Save files<\/button>/, "caregivers must be able to save originals before reviewing extracted text");
 assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop stage");
 assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
-assert.match(source, /function createMultiPagePdf\(/, "multi-page PDF generation must be implemented");
-assert.match(source, /Combine scan pages into one PDF/, "caregivers must be able to create a multi-page PDF without first reviewing browser OCR");
-assert.match(source, /individual original scans will also be preserved/, "PDF creation must preserve individual original scans");
+assert.match(source, /for \(const file of files\)/, "each selected file must enter the upload lifecycle independently");
+assert.match(source, /ingestionKey: crypto\.randomUUID\(\)/, "each file must receive its own stable retry key");
+assert.match(source, /form\.append\("capture_page_number", String\(scanPageNumber\)\)/, "scanned pages must retain their page order and provenance");
 
 const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 const attachmentTypes = readFileSync("src/lib/mvp-workspace/types.ts", "utf8");
@@ -79,7 +77,7 @@ assert.match(saveFunction, /You can leave this page/, "the caregiver can leave a
 assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\)/, "scan retry must preserve capture time");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
-console.log("✓ original uploads enter the shared server-side extraction lifecycle without browser OCR");
+console.log("✓ original uploads enter the shared server-side extraction lifecycle without browser OCR or duplicate derivative uploads");
 console.log("✓ caregiver can move crop area and adjust margins");
-console.log("✓ multi-page PDF assembly preserves individual originals");
+console.log("✓ multi-page scans remain separate, independently identified original evidence files");
 console.log("✓ original scan bytes and scan metadata are preserved without false client OCR review");
