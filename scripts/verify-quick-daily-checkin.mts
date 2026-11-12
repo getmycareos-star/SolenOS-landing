@@ -69,6 +69,12 @@ assert.match(detailedCapture, /mode === "measurement"/,
   "measurement capture can be shown without the other structured sections");
 assert.match(detailedCapture, /What happened\?/,
   "the observation interaction opens with the caregiver's actual question");
+assert.match(detailedCapture, /value="scheduled">Scheduled \(not confirmed as given\)/,
+  "a scheduled dose is explicitly distinct from a reported administration");
+assert.match(detailedCapture, /This records an expected dose only/,
+  "the medicine interaction warns that scheduled does not mean given");
+assert.match(dailyCarePage, /scheduled: "scheduled; not confirmed as given"/,
+  "Daily Care history preserves the scheduled-versus-administered distinction");
 assert.match(detailedCapture, /Share what you noticed in your own words/,
   "observation capture preserves a natural-language entry rather than a category form");
 assert.match(detailedCapture, /Your original words are saved/,
