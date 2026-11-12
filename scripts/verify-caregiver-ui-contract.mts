@@ -164,4 +164,6 @@ assert.ok(naturalDailyUpdate.includes("This extraction is not confirmation of a 
 assert.ok(dailyCarePage.includes('getJSON("/notifications?limit=100&offset=0")'), "Daily Care must check the existing notification feed for delivery failures");
 assert.ok(dailyCarePage.includes("Notification delivery needs attention"), "failed notification delivery must remain visible in Daily Care");
 assert.ok(dailyCarePage.includes('["failed", "expired"]'), "failed or expired push delivery must never be presented as successful delivery");
+assert.ok(dailyCarePage.includes("historyError ?"), "failed history retrieval must not be presented as an empty day");
+assert.ok(dailyCarePage.includes("daily summary is unavailable"), "history processing failures must be visible to the caregiver");
 console.log("Caregiver UI contract checks passed.");
