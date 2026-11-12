@@ -34,7 +34,7 @@ type DraftPayload = {
   generation_status?: string;
   validation_status?: string;
   review_status?: string;
-  saved version_number?: number;
+  revision_number?: number;
   generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
   caregiver_notes?: Array<{ text: string; attribution: string }>;
   audience?: "family" | "professional";
@@ -64,7 +64,7 @@ type OutboxItem = {
   expires_at: string | null; has_summary: boolean; is_expired?: boolean;
   recipients?: Array<{ caregiver_id: string; name?: string; status?: string }>;
 };
-type DraftSaved version = {
+type DraftRevision = {
   revision_number: number;
   change_type: string;
   created_at: string | null;
@@ -72,7 +72,7 @@ type DraftSaved version = {
     generation?: { sections?: Array<{ section: string; text: string; source_ref: string }> };
     caregiver_notes?: Array<{ text: string; attribution: string }>;
   };
-  source_saved handoff?: { source_records?: unknown[] };
+  source_snapshot?: { source_records?: unknown[] };
 };
 type Snapshot = {
   purpose?: string;
@@ -223,7 +223,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
-  if (truncated) lines.push("\nThis preview is shortened. The saved handoff keeps all the information selected for sharing.");
+  if (truncated) lines.push("\nThis preview is shortened. The saved handoff keeps the full information selected for sharing.");
   return { text: lines.join("\n").slice(0, 18000) };
 }
 
@@ -680,7 +680,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </select>
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
           <div style={{ margin: "12px 0" }}>
-            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Review sourced statements</strong>
+            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Review the information to share</strong>
             <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Each statement stays connected to the saved care information. Remove anything that should not be shared. If something is old or needs correcting, explain that in the caregiver note below. It will be labelled as your report, not independently confirmed. Update the original care record separately when needed.</p>
             {editedSections.map((item, index) => (
               <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
@@ -739,7 +739,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </section>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
-            <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
+            <span>I reviewed the entire summary against the available care information and approve sharing this handoff with the selected caregiver(s).</span>
           </label>
           <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed handoff…" : "Share reviewed handoff"}
