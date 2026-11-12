@@ -63,6 +63,43 @@ assert.match(detailedCapture, /key: crypto\.randomUUID\(\)/,
 assert.match(detailedCapture, /captureSubmissionRef\.current = null/,
   "the request key is cleared only after a successful save");
 
+assert.match(detailedCapture, /type DailyCaptureMode = "all" \| "something" \| "medicine" \| "measurement" \| "note"/,
+  "structured capture exposes one selected interaction mode");
+assert.match(detailedCapture, /mode === "measurement"/,
+  "measurement capture can be shown without the other structured sections");
+assert.match(detailedCapture, /mode === "medicine"/,
+  "medicine capture can be shown without the other structured sections");
+assert.match(detailedCapture, /mode === "something" \|\| mode === "note"/,
+  "observation and note capture remain text-only interactions");
+assert.match(detailedCapture, /previouslyRecordedMedications/,
+  "medicine capture can reuse names and doses from persisted caregiver reports");
+assert.match(detailedCapture, /value="not_given"/,
+  "medicine capture distinguishes not given");
+assert.match(detailedCapture, /value="uncertain"/,
+  "medicine capture preserves uncertainty");
+
+const photoCapture = fs.readFileSync(
+  `${root}/src/components/workflows/DailyCarePhotoCapture.tsx`,
+  "utf8",
+);
+assert.match(photoCapture, /postFormData\("\/upload"/,
+  "photographs use the existing evidence upload endpoint");
+assert.match(photoCapture, /result\?\.evidence_id/,
+  "photo capture requires a persisted evidence receipt");
+assert.match(photoCapture, /careRecordUpdated/,
+  "a saved photograph refreshes the care record");
+
+assert.match(dailyCarePage, /\/care-continuity\/current-care/,
+  "Daily Care loads the current care projection");
+assert.match(dailyCarePage, /\/daily-care\/intelligence\/history/,
+  "Daily Care loads persisted recent history");
+for (const action of ["something", "medicine", "measurement", "photo", "checkin", "note"]) {
+  assert.match(dailyCarePage, new RegExp(`value: "\\${action}"`),
+    `Daily Care exposes the ${action} interaction`);
+}
+assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
+  "capture opens within the Daily Care screen");
+
 console.log("✓ quick check-in has exactly three overall-impression choices");
 console.log("✓ no care-area questionnaire or daily completion requirement");
 console.log("✓ optional note, caregiver attribution, idempotency and confirmed save receipt");
