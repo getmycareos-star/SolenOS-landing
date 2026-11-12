@@ -9,6 +9,7 @@ import { ensureAnonymousSession, getCaregiverId, getJSON, getPersonId } from "@/
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
+import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDailyUpdate";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
@@ -492,6 +493,8 @@ export default function DailyCarePage() {
                       <QuickDailyCheckIn />
                     ) : captureMode === "photo" ? (
                       <DailyCarePhotoCapture />
+                    ) : captureMode === "something" ? (
+                      <NaturalLanguageDailyUpdate />
                     ) : (
                       <StructuredDailyCapture mode={captureMode} />
                     )}
