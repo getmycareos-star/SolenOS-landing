@@ -220,7 +220,12 @@ export default function AppointmentWorkspace() {
       const result = await postJSON(
         '/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals/' + encodeURIComponent(proposal.id) + '/review',
         body,
-      ) as { proposal: OutcomeProposal; corrected_proposal?: OutcomeProposal | null; written_to_lcr?: boolean }
+      ) as {
+        proposal: OutcomeProposal;
+        corrected_proposal?: OutcomeProposal | null;
+        written_to_lcr?: boolean;
+        reconciliation?: { stages?: Record<string, string> } | null;
+      }
       if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
       setOutcomeProposals(current => {
         const updated = current.map(item => item.id === proposal.id ? result.proposal : item)
@@ -229,7 +234,11 @@ export default function AppointmentWorkspace() {
           : updated
       })
       setMessage(decision === 'accept'
-        ? (result.written_to_lcr ? 'Accepted as a caregiver-reviewed LCR assertion. It is not clinically verified.' : 'No LCR assertion was created.')
+        ? (result.written_to_lcr
+            ? result.reconciliation?.stages?.reconciliation === 'committed'
+              ? 'Accepted as a caregiver-reviewed LCR assertion, and the care record was reassessed. It is not clinically verified.'
+              : 'Accepted as a caregiver-reviewed LCR assertion. The original report remains attributed to the caregiver; reassessment status was not returned.'
+            : 'No LCR assertion was created.')
         : decision === 'correct'
           ? 'Correction saved as a separate pending candidate. Review and accept it separately before it becomes an LCR assertion.'
           : 'Candidate rejected. No LCR assertion was created; the rejection remains in review history.')
