@@ -149,7 +149,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [answerProvenance, setAnswerProvenance] = useState("");
   const [history, setHistory] = useState<AnswerEvent[]>([]);
   const [reviewEvents, setReviewEvents] = useState<ReviewEvent[]>([]);
-  const [reviewRationale, setReviewRationale] = useState("I reviewed this caregiver answer and accept it as a source-attributed report, not as independent verification.");
+  const [reviewRationale, setReviewRationale] = useState("");
   const [reviewSaving, setReviewSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
