@@ -120,7 +120,7 @@ export default function NaturalLanguageDailyUpdate() {
                 .filter((candidate) => candidate.review_status !== "rejected")
                 .filter((candidate) =>
                   Boolean(candidate.canonical_candidate?.medication_details)
-                  || /\\b(medication|medicine|dose|dosage|prescription|tablet|capsule)\\b/i.test(candidate.source_quote || "")
+                  || /\b(medication|medicine|dose|dosage|prescription|tablet|capsule)\b/i.test(candidate.source_quote || "")
                   || /medication/i.test(candidate.field_type || "")
                 )
                 .map((candidate) => ({ document, candidate })))
@@ -141,7 +141,7 @@ export default function NaturalLanguageDailyUpdate() {
             } else if (Array.isArray(documents?.processing_jobs) && documents.processing_jobs.length) {
               contextParts.push("Some saved documents are still being processed and cannot confirm a new dose yet.");
             } else {
-              contextParts.push("No medication-specific details were found in processed saved documents.");
+              contextParts.push("No medication-specific details were returned from saved-document extraction. This does not rule out information in a document that has not been processed.");
             }
           } else {
             contextParts.push("Saved document information could not be checked just now.");
