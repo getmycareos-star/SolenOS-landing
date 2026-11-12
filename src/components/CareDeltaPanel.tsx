@@ -16,6 +16,17 @@ type DeltaResult = {
   clinician_summary?: string
   computed_changes?: Array<Record<string, any>>
   provenance?: Record<string, any>
+  claim_provenance?: {
+    coverage?: string
+    claims?: Array<{
+      claim_id: string
+      claim_type: string
+      text: string
+      support_status: string
+      source_references: Array<Record<string, any>>
+    }>
+    interpretation_limit?: string
+  }
 }
 
 type DeltaInput = { personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string }
@@ -129,7 +140,23 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
             {row.result_present === false ? 'Result not present in supplied record. ' : ''}
             {row.next_question || row.why_conflicting || row.why_it_matters || ''}
           </p>
-          {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Source: “{row.evidence_excerpt}”</p>}
+          {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Source wording: “{row.evidence_excerpt}”</p>}
+          {row.source_reference_status === 'not_matched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>We could not link this finding to a saved source. It should not be treated as supported.</p>}
+          {Array.isArray(row.source_record_refs) && row.source_record_refs.length > 0 && (
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: 7, paddingTop: 7 }}>
+              <strong style={{ fontSize: 11 }}>Saved information behind this finding</strong>
+              {row.source_record_refs.map((reference: Record<string, any>, referenceIndex: number) => (
+                <div key={(reference.record_type || 'source') + '-' + referenceIndex} style={{ marginTop: 6 }}>
+                  <p style={{ fontSize: 11, margin: 0, fontWeight: 600 }}>{reference.label || (reference.record_type === 'care_event' ? 'Care update' : reference.record_type === 'evidence' ? 'Original note or document' : 'Care record detail')}</p>
+                  {reference.occurred_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it happened: {new Date(reference.occurred_at).toLocaleString()}</p>}
+                  {reference.recorded_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it was recorded: {new Date(reference.recorded_at).toLocaleString()}</p>}
+                  {reference.reported_by && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>Reported by: {reference.reported_by}</p>}
+                  {reference.entered_by && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>Recorded by: {reference.entered_by}</p>}
+                  {reference.source_excerpt && <blockquote style={{ fontSize: 11, lineHeight: 1.5, margin: '5px 0 0', paddingLeft: 8, borderLeft: '2px solid var(--border)' }}>{reference.source_excerpt}</blockquote>}
+                </div>
+              ))}
+            </div>
+          )}
           {row.claim_supported === false && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>The value could not be matched to the supplied event or current-state evidence. It was kept uncertain and was not saved as a supported current-state assertion.</p>}
           {row.historical_only && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>Historical report only — not promoted to current state.</p>}
           {row.promotion_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{row.promotion_warning}</p>}
@@ -193,6 +220,8 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
     {result && <div aria-live="polite" style={{ marginTop: 14 }}>
       <h3 style={{ fontSize: 15, margin: 0 }}>Delta result</h3>
       <p style={{ fontSize: 12, lineHeight: 1.5 }}>{result.caregiver_summary || result.event_summary}</p>
+      {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Some findings could not be linked to their own saved source. Review those items before relying on them.</p>}
+      {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each listed finding is linked to the source wording used for its review. This does not establish clinical truth or independent corroboration.</p>}
       {result.computed_changes?.length ? <section style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
         <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Compared state</h4>
         {result.computed_changes.map((item, index) => <p key={index} style={{ fontSize: 12, margin: '5px 0' }}>
