@@ -388,11 +388,21 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
       };
       await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
-      await postJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/approve", {
+      const approval = await postJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/approve", {
         recipient_caregiver_ids: selectedRecipients,
         scope: [...selectedScope].sort(),
         expires_at: expiresAt,
-      });
+      }) as {
+        care_continuity_execution?: { stages?: Record<string, string> } | null;
+      };
+      const sourceStages = approval?.care_continuity_execution?.stages;
+      if (sourceStages && (
+        sourceStages.handoff_draft !== "verified" ||
+        sourceStages.handoff_draft_revision !== "verified" ||
+        sourceStages.reconciliation !== "not_applicable_read_only_output"
+      )) {
+        throw new Error("The approved handoff source snapshot could not be verified. Sharing was stopped.");
+      }
       const created = await postJSON("/handoffs", {
         person_id: session.person.id,
         draft_id: draft.draft_id,
@@ -401,7 +411,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         expires_at: expiresAt,
       }, { "X-Request-ID": requestId }) as { id: string };
       if (!created?.id) throw new Error("The backend did not confirm a handoff ID. No successful share is assumed.");
-      setNotice("The approved, persisted handoff was shared with the selected linked caregiver(s). Access expires " + formatDate(expiresAt) + ". Sharing did not change the Living Care Record.");
+      setNotice("The approved, persisted handoff was shared with the selected linked caregiver(s). Its saved source snapshot was checked; sharing did not change the Living Care Record. Access expires " + formatDate(expiresAt) + ".");
       setReviewConfirmed(false);
       setSelectedRecipients([]);
       setCaregiverNote("");
