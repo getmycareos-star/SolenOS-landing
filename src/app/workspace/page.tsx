@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/brand";
+import Link from "next/link";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
-import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -27,11 +27,13 @@ function WorkspaceHomeInner() {
   return (
     <main className="mobile-screen feature-page solenos-lcr-home">
       <LCRCurrentUnderstanding />
-      <QwenAssistPanel
-        defaultWorkflow="living_care_record"
-        title="Ask about your care record"
-        description="Ask about saved care history, changes, conflicting reports, appointments, handoffs, follow-ups or medication observations. Suggestions use information you are authorized to see and always need your review."
-      />
+      <section aria-label="Ask SolenOS" style={{ display: "grid", gap: 10, padding: "18px 0" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18 }}>Ask SolenOS</h2>
+          <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>Talk through the saved care history, recent changes, appointments or information that is still unclear.</p>
+        </div>
+        <Link href="/workspace/companion" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 46, width: "fit-content", border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 16px", textDecoration: "none" }}>Ask SolenOS</Link>
+      </section>
     </main>
   );
 }
