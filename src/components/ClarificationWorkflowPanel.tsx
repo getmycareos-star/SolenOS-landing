@@ -3,6 +3,17 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 
+type Claim = {
+  id: string;
+  person_id: string;
+  subject_type: string;
+  subject_id: string;
+  field: string;
+  asserted_value: string;
+  epistemic_state?: string;
+  assertion_status?: string;
+  assertion_kind?: string;
+};
 type Question = {
   id: string;
   person_id: string;
@@ -100,6 +111,7 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
 
 export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
   const [scopePersonId, setScopePersonId] = useState("");
+  const [claims, setClaims] = useState<Claim[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
   const [answer, setAnswer] = useState("");
@@ -116,6 +128,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
   const [notice, setNotice] = useState("");
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
+  const selectedClaim = claims.find((item) => item.id === selectedQuestion?.claim_id);
   const latestAnswer = history[history.length - 1];
   const latestReview = latestAnswer
     ? reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version)
@@ -130,8 +143,13 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const questionRows = await getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`);
+      const [claimRows, questionRows] = await Promise.all([
+        getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
+        getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
+      ]);
+      assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
+      setClaims(claimRows as Claim[]);
       const loadedQuestions = questionRows as Question[];
       setScopePersonId(sessionPersonId);
       setQuestions(loadedQuestions);
@@ -145,6 +163,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       });
     } catch {
       setScopePersonId("");
+      setClaims([]);
       setQuestions([]);
       setSelectedQuestionId("");
       setError("Care questions could not be loaded. Your saved information has not been changed. Please try again.");
