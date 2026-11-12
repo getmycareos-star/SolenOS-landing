@@ -105,11 +105,11 @@ jobs:
           public_key = base64.urlsafe_b64encode(public).rstrip(b"=").decode("ascii")
           delimiter = "VAPID_" + uuid.uuid4().hex
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-              env.write("VAPID_PUBLIC_KEY=" + public_key + "\\n")
-              env.write("VAPID_SUBJECT=mailto:ci@solenosai.net\\n")
-              env.write("VAPID_PRIVATE_KEY<<" + delimiter + "\\n")
-              env.write(pem + "\\n")
-              env.write(delimiter + "\\n")
+              env.write("VAPID_PUBLIC_KEY=" + public_key + "\n")
+              env.write("VAPID_SUBJECT=mailto:ci@solenosai.net\n")
+              env.write("VAPID_PRIVATE_KEY<<" + delimiter + "\n")
+              env.write(pem + "\n")
+              env.write(delimiter + "\n")
           PY
 
       - name: Apply all PostgreSQL migrations
