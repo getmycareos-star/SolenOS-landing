@@ -210,7 +210,7 @@ const STARTER_PROMPTS = [
   { icon: FileText, title: 'Help me get ready', description: 'Prepare a few questions for a visit or handover.', prompt: 'Help me prepare for an upcoming care appointment or handover.' },
 ]
 
-export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
+export default function Companion({ home = true, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
