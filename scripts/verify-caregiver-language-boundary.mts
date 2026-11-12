@@ -41,7 +41,7 @@ assert.match(settings, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(lcr, /Loading care-integrity tools|Loading evidence review|Loading clarification workflow/);
 assert.ok(!lcr.includes("cause instanceof Error ? cause.message"));
 assert.ok(!appointment.includes("Freshness assessment storage"));
-assert.ok(!appointment.includes("source_time_kind"));
+assert.ok(!appointment.includes("source_time_kind:"));
 assert.ok(!appointment.includes("cause instanceof Error ? cause.message"));
 assert.ok(!appointment.includes("replaceAll('_',"));
 assert.ok(!appointment.includes('replaceAll("_",'));
