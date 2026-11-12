@@ -116,17 +116,20 @@ assert.ok(themeOverrides.includes(".history-search-wrap"));
 assert.ok(themeOverrides.includes(".continuity-prompt-form"));
 assert.ok(themeOverrides.includes("[data-solenos-error-surface]"));
 const notifications = await readFile(new URL("../src/app/workspace/notifications/page.tsx", import.meta.url), "utf8");
-assert.match(notifications, /getJSON\("\/notifications\?limit=50&offset=0"\)/,
+const settingsPage = await readFile(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
+assert.match(notifications, /redirect\("\/workspace\/settings#settings-notifications"\)/,
+  "notification access must remain consolidated inside Settings");
+assert.match(settingsPage, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
   "care updates must load from the authenticated notification feed");
-assert.match(notifications, /patchJSON\("\/notifications\//,
+assert.match(settingsPage, /patchJSON\("\/notifications\//,
   "caregiver acknowledgment must be persisted through the backend");
-assert.match(notifications, /No care updates right now/,
-  "the feed must explain a genuine empty state");
-assert.match(notifications, /Replaced by newer information/,
+assert.match(settingsPage, /No care updates right now/,
+  "the inbox must explain a genuine empty state");
+assert.match(settingsPage, /Replaced by newer information/,
   "superseded notifications must be distinguished from active attention");
-assert.match(notifications, /No longer needs attention/,
+assert.match(settingsPage, /No longer needs attention/,
   "resolved notifications must not continue to appear as active requests");
-assert.match(notifications, /status === "active"/,
-  "the unread attention count must exclude resolved notifications");
+assert.match(settingsPage, /item.status === "active"/,
+  "the caregiver inbox must distinguish active notifications from resolved ones");
 
 console.log("Caregiver UI contract checks passed.");
