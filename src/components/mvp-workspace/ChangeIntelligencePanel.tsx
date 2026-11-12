@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { careInformationLabel } from "@/lib/care-epistemics/information-status";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
 import {
   getPersistedChangeDetail,
   getPersistedPatternDetail,
@@ -15,8 +15,8 @@ import {
   transitionChangeConfirmation,
 } from "@/api/change-intelligence";
 
-function readable(value: string): string {
-  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+function readable(value?: string | null): string {
+  return caregiverStatusLabel(value) ?? "Care information";
 }
 
 function caregiverChangeLabel(change: PersistedChange): string {
@@ -25,7 +25,7 @@ function caregiverChangeLabel(change: PersistedChange): string {
   if (change.change_type === "emergence" && change.baseline_coverage_status !== "covered") {
     return "First observed";
   }
-  return readable(change.change_type);
+  return caregiverStatusLabel(change.change_type) ?? "Care change";
 }
 
 function formatLocalTimeDistribution(value: unknown): string | null {
@@ -96,7 +96,7 @@ export function ChangeIntelligencePanel() {
       setDetails((current) => ({ ...current, [changeId]: refreshedDetail }));
       setConfirmationReasons((current) => ({ ...current, [changeId]: "" }));
     } catch (reason: unknown) {
-      setDetailErrors((current) => ({ ...current, [changeId]: reason instanceof Error ? reason.message : "The confirmation decision could not be saved." }));
+      setDetailErrors((current) => ({ ...current, [changeId]: caregiverSafeErrorMessage() }));
     } finally {
       setTransitioningIds((current) => current.filter((id) => id !== changeId));
     }
@@ -115,7 +115,7 @@ export function ChangeIntelligencePanel() {
     } catch (reason: unknown) {
       setPatternDetailErrors((current) => ({
         ...current,
-        [patternId]: reason instanceof Error ? reason.message : "Pattern source records could not be loaded.",
+        [patternId]: caregiverSafeErrorMessage(),
       }));
     }
   }
@@ -133,7 +133,7 @@ export function ChangeIntelligencePanel() {
     } catch (reason: unknown) {
       setDetailErrors((current) => ({
         ...current,
-        [changeId]: reason instanceof Error ? reason.message : "Source evidence could not be loaded.",
+        [changeId]: caregiverSafeErrorMessage(),
       }));
     }
   }
@@ -153,7 +153,7 @@ export function ChangeIntelligencePanel() {
         setPatterns(patternRows.filter((row) => row.is_active));
       } catch (reason: unknown) {
         if (!active) return;
-        setError(reason instanceof Error ? reason.message : "Persisted change assessments could not be loaded.");
+        setError(caregiverSafeErrorMessage());
       } finally {
         if (active) setLoading(false);
       }
@@ -170,7 +170,7 @@ export function ChangeIntelligencePanel() {
           <h2 id="change-intelligence-heading">Changes and patterns</h2>
         </div>
       </div>
-      {loading ? <p role="status" className="panel-muted">Loading persisted change assessments…</p> : null}
+      {loading ? <p role="status" className="panel-muted">Reviewing saved care changes…</p> : null}
       {warning ? <p role="status" className="panel-muted">{warning}</p> : null}
       {error ? (
         <p role="alert" className="panel-muted">
@@ -189,21 +189,15 @@ export function ChangeIntelligencePanel() {
               <span className="lcr-timeline-marker" aria-hidden="true">↔</span>
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
-                  <h3>{caregiverChangeLabel(change)} · {readable(change.subject_type)}</h3>
-                  <span>{readable(change.confirmation_status)}</span>
+                  <h3>{caregiverChangeLabel(change)}</h3>
+                  <span>{caregiverStatusLabel(change.confirmation_status) ?? "Needs review"}</span>
                 </div>
-                {change.explanation ? <p>{change.explanation}</p> : <p>{change.current_state ?? "Change assessment recorded; explanation unavailable."}</p>}
+                {change.explanation ? <p>{caregiverSafeAssistantText(change.explanation) ?? "A possible change was found in the saved care information."}</p> : <p>{caregiverSafeAssistantText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
                 <p className="panel-muted">{formatWindow(change.comparison_window_start, change.comparison_window_end)}</p>
                 <p className="panel-muted">
-                  Evidence references: {change.evidence_ids.length}. Confidence: {change.confidence == null ? "not calibrated" : `${Math.round(change.confidence * 100)}%`}.
+                  Supporting saved information: {change.evidence_ids.length}.
                 </p>
-                <p className="panel-muted">
-                  Observation coverage: baseline {change.baseline_coverage_status ?? "not recorded"}
-                  {change.baseline_coverage_fraction == null ? "" : ` (${Math.round(change.baseline_coverage_fraction * 100)}% explicitly covered)`}
-                  {" → "}current {change.current_coverage_status ?? "not recorded"}
-                  {change.current_coverage_fraction == null ? "" : ` (${Math.round(change.current_coverage_fraction * 100)}% explicitly covered)`}.
-                  Missing coverage is unknown, not evidence that an event did not happen.
-                </p>
+                <p className="panel-muted">The comparison may be incomplete if earlier care information was not available.</p>            </p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
                   {expandedChangeId === change.id ? "Hide source evidence" : "Review source evidence"} <span aria-hidden="true">→</span>
                 </button>
@@ -235,32 +229,32 @@ export function ChangeIntelligencePanel() {
                     ) : null}
                     {details[change.id].evidence.map((source) => (
                       <article key={source.id}>
-                        <strong>{source.title}</strong>
-                        <p>{source.description ?? "No source description recorded."}</p>
-                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {source.event_type} · {source.status}</p>
+                        <strong>{caregiverSafeAssistantText(source.title) ?? "Saved care update"}</strong>
+                        <p>{caregiverSafeAssistantText(source.description) ?? "No further details are available."}</p>
+                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
                       </article>
                     ))}
                     {details[change.id].assertions.map((source) => (
                       <article key={source.id}>
-                        <strong>{source.field}: {source.asserted_value}</strong>
-                        <p>{source.source_text ?? source.source_label}</p>
-                        <p className="panel-muted">{source.assertion_kind} · Information: {careInformationLabel(source.epistemic_state || "reported")} · Review: {readable(source.assertion_status)} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                        <strong>{caregiverSafeAssistantText(source.field) ?? "Care detail"}: {caregiverSafeAssistantText(source.asserted_value) ?? "Saved care detail"}</strong>
+                        <p>{caregiverSafeAssistantText(source.source_text ?? source.source_label) ?? "The original report is saved."}</p>
+                        <p className="panel-muted">Information: {caregiverInformationLabel(source.epistemic_state) ?? "Caregiver report"} · Review: {caregiverStatusLabel(source.assertion_status) ?? "Not checked"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
                       </article>
                     ))}
                     {details[change.id].observations.map((source) => (
                       <article key={source.id}>
-                        <strong>{source.subject_label} · {source.attribute}: {source.normalized_value ?? source.value_text ?? "Numeric value unavailable"}{source.units ? ` ${source.units}` : ""}</strong>
-                        <p>{source.source_passage}</p>
-                        <p className="panel-muted">{source.observation_kind} · {source.epistemic_status} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                        <strong>{caregiverSafeAssistantText(source.subject_label) ?? "Care detail"} · {caregiverSafeAssistantText(source.attribute) ?? "Recorded detail"}: {caregiverSafeAssistantText(source.normalized_value ?? source.value_text) ?? "Value not recorded"}{source.units ? ` ${source.units}` : ""}</strong>
+                        <p>{caregiverSafeAssistantText(source.source_passage) ?? "The original wording is saved."}</p>
+                        <p className="panel-muted">{caregiverInformationLabel(source.epistemic_status) ?? "Caregiver report"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
                         {source.negated || source.hedge_marker || source.ambiguity_note ? (
-                          <p className="panel-muted">Interpretation limits: {[source.negated ? "negated" : "", source.hedge_marker ? `hedged: ${source.hedge_marker}` : "", source.ambiguity_note ?? ""].filter(Boolean).join("; ")}</p>
+                          <p className="panel-muted">{source.negated ? "The original report says this did not happen. " : ""}{source.hedge_marker ? "The original report expressed uncertainty. " : ""}{caregiverSafeAssistantText(source.ambiguity_note) ?? ""}</p>
                         ) : null}
                       </article>
                     ))}
                     {details[change.id].confirmation_history.length > 0 ? (
                       <div>
                         <strong>Confirmation history</strong>
-                        <ul>{details[change.id].confirmation_history.map((entry) => <li key={entry.id}>{entry.previous_status} → {entry.new_status}: {entry.reason ?? "No reason recorded"} ({new Date(entry.created_at).toLocaleString()})</li>)}</ul>
+                        <ul>{details[change.id].confirmation_history.map((entry) => <li key={entry.id}>{caregiverStatusLabel(entry.previous_status) ?? "Previous review"} → {caregiverStatusLabel(entry.new_status) ?? "Updated review"}: {caregiverSafeAssistantText(entry.reason) ?? "No explanation recorded"} ({new Date(entry.created_at).toLocaleString()})</li>)}</ul>
                       </div>
                     ) : null}
                   </div>
@@ -277,69 +271,18 @@ export function ChangeIntelligencePanel() {
               <span className="lcr-timeline-marker" aria-hidden="true">↻</span>
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
-                  <h3>{readable(pattern.pattern_type)} · {readable(pattern.subject_type)}</h3>
-                  <span>{readable(pattern.pattern_strength)}</span>
+                  <h3>{caregiverStatusLabel(pattern.pattern_type) ?? "Repeated care change"}</h3>
+                  <span>{caregiverStatusLabel(pattern.pattern_strength) ?? "Pattern not rated"}</span>
                 </div>
                 <p>Observed interval: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
                 <p className="panel-muted">
-                  Source events: {pattern.event_ids.length}. Confidence: {pattern.confidence == null ? "not calibrated" : `${Math.round(pattern.confidence * 100)}%`}.
+                  Saved care updates considered: {pattern.event_ids.length}.
                 </p>
-                {pattern.pattern_metrics && typeof pattern.pattern_metrics === "object" ? (
-                  <div className="panel-muted" aria-label="Measured recurrence intervals">
-                    {typeof pattern.pattern_metrics.observation_coverage_status === "string" ? (
-                      <p>Observation coverage: {readable(pattern.pattern_metrics.observation_coverage_status)}.</p>
-                    ) : null}
-                    {typeof pattern.pattern_metrics.analysis_window_start === "string" &&
-                    typeof pattern.pattern_metrics.analysis_window_end === "string" ? (
-                      <p>
-                        Analysis denominator window: {formatWindow(
-                          pattern.pattern_metrics.analysis_window_start,
-                          pattern.pattern_metrics.analysis_window_end,
-                        )}.
-                        {typeof pattern.pattern_metrics.analysis_window_days === "number"
-                          ? ` (${pattern.pattern_metrics.analysis_window_days} days)`
-                          : ""}
-                      </p>
-                    ) : null}
-                    {typeof pattern.pattern_metrics.distinct_observation_times === "number" ? (
-                      <p>Distinct event timestamps: {pattern.pattern_metrics.distinct_observation_times}.</p>
-                    ) : null}
-                    {pattern.pattern_metrics.source_history_truncated === true ? (
-                      <p role="note">
-                        Source history exceeded the analysis limit. Older records may be omitted; normalized rates and conclusions requiring the complete event count must not be treated as complete.
-                      </p>
-                    ) : null}
-                    {pattern.pattern_metrics.domain_counts && typeof pattern.pattern_metrics.domain_counts === "object" ? (
-                      <p>
-                        Recorded domains in this co-occurrence window: {Object.entries(pattern.pattern_metrics.domain_counts as Record<string, unknown>)
-                          .map(([domain, count]) => `${readable(domain)} (${String(count)} recorded)`)
-                          .join(", ")}.
-                        {" "}These records occurred within the same time window; this does not establish a shared cause.
-                      </p>
-                    ) : null}
-                    {Array.isArray(pattern.pattern_metrics.inter_event_intervals_days) ? (
-                      <p>
-                        Inter-event intervals (days): {(pattern.pattern_metrics.inter_event_intervals_days as number[]).join(", ")}.
-                        {pattern.pattern_metrics.normalized_rate_available === true
-                          ? " A normalized rate was calculated with complete coverage."
-                          : " A normalized rate is withheld because complete observation coverage is not established."}
-                      </p>
-                    ) : null}
-                    {typeof pattern.pattern_metrics.regularity_interpretation === "string" ? (
-                      <p>{pattern.pattern_metrics.regularity_interpretation}</p>
-                    ) : null}
-                    {pattern.pattern_metrics.local_time_distribution_status === "descriptive_only_no_causal_association" ? (
-                      <p>
-                        {formatLocalTimeDistribution(pattern.pattern_metrics.local_time_distribution) ?? "Local-time distribution is not available."}
-                        {" "}This describes recorded timing only; it does not establish a cause or a routine-related effect.
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
+                {pattern.pattern_metrics?.source_history_truncated === true ? <p className="panel-muted">Earlier care updates may not all be included in this review.</p> : null}
                 {pattern.alternative_interpretations?.length ? (
                   <ul>
                     {pattern.alternative_interpretations.slice(0, 3).map((item, index) => (
-                      <li key={`${pattern.id}-limit-${index}`}>{typeof item === "string" ? item : JSON.stringify(item)}</li>
+                      <li key={`${pattern.id}-limit-${index}`}>{typeof item === "string" ? caregiverSafeAssistantText(item) ?? "Another explanation may be possible." : "Another explanation may be possible."}</li>
                     ))}
                   </ul>
                 ) : null}
@@ -353,9 +296,9 @@ export function ChangeIntelligencePanel() {
                     {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No same-record source events could be resolved for this pattern.</p> : null}
                     {patternDetails[pattern.id].events.map((source) => (
                       <article key={source.id}>
-                        <strong>{source.title}</strong>
-                        <p>{source.description ?? "No source description recorded."}</p>
-                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {source.event_type} · {source.status} · {source.evidence_ids.length} evidence link(s)</p>
+                        <strong>{caregiverSafeAssistantText(source.title) ?? "Saved care update"}</strong>
+                        <p>{caregiverSafeAssistantText(source.description) ?? "No further details are available."}</p>
+                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
                       </article>
                     ))}
                     {patternDetails[pattern.id].changes.length > 0 ? (
@@ -363,9 +306,9 @@ export function ChangeIntelligencePanel() {
                         <strong>Linked change assessments</strong>
                         {patternDetails[pattern.id].changes.map((change) => (
                           <article key={change.id}>
-                            <strong>{readable(change.change_type)} · {readable(change.change_direction)}</strong>
-                            <p>{change.explanation ?? `${change.previous_state ?? "Previous state unknown"} → ${change.current_state ?? "Current state unknown"}`}</p>
-                            <p className="panel-muted">{readable(change.confirmation_status)} · {change.evidence_ids.length} evidence link(s)</p>
+                            <strong>{caregiverStatusLabel(change.change_type) ?? "Care change"} · {caregiverStatusLabel(change.change_direction) ?? "Direction not recorded"}</strong>
+                            <p>{caregiverSafeAssistantText(change.explanation) ?? "A change was recorded in the care history."}</p>
+                            <p className="panel-muted">{caregiverStatusLabel(change.confirmation_status) ?? "Needs review"} · {change.evidence_ids.length} saved item(s)</p>
                           </article>
                         ))}
                       </>
