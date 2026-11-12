@@ -136,6 +136,9 @@ assert.match(record, /redirect\("\/workspace"\)/);
 assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/);
 assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.match(lcrHome, /LCRCurrentUnderstanding/);
+assert.match(lcrHome, /Ask SolenOS/);
+assert.match(lcrHome, /href="\/workspace\/companion"/);
+assert.doesNotMatch(lcrHome, /QwenAssistPanel/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
 console.log("Companion home contract passed: caregiver-first home, document/photo/scan intake, typed LCR/document/conversation provenance, plain-language record details, caregiver update route, device-session actions, export flow, and browseable history.");
