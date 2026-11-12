@@ -52,6 +52,9 @@ export default function QuickDailyCheckIn() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<{ id: string; summary: string; recordedAt: string | null } | null>(null);
+  const [executionReceipt, setExecutionReceipt] = useState<{
+    stages?: Record<string, string>;
+  } | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
 
   const choices = kind === "care_completed" ? COMPLETED_CARE : CARE_AREAS;
@@ -134,7 +137,12 @@ export default function QuickDailyCheckIn() {
           idempotency_key: requestId,
           note: noteText || null,
         },
-      })) as { success?: boolean; id?: string | number; recorded_at?: string | null };
+      })) as {
+        success?: boolean;
+        id?: string | number;
+        recorded_at?: string | null;
+        care_continuity_execution?: { stages?: Record<string, string> } | null;
+      };
 
       if (response?.success !== true || response.id === undefined || response.id === null) {
         throw new Error("The server did not confirm that this update was saved.");
@@ -147,6 +155,7 @@ export default function QuickDailyCheckIn() {
         summary,
         recordedAt: response.recorded_at || null,
       });
+      setExecutionReceipt(response.care_continuity_execution ?? null);
       setIdempotencyKey(null);
       setKind(null);
       setSelectedAreas([]);
@@ -300,6 +309,13 @@ export default function QuickDailyCheckIn() {
         </p>
       )}
 
+      {receipt && executionReceipt?.stages && (
+        <p role="status" style={{ marginTop: 8, color: "var(--theme-panel-muted)", fontSize: 13, lineHeight: 1.5 }}>
+          Source saved: {executionReceipt.stages.source_preservation === "verified" ? "confirmed" : "not confirmed"}.
+          {" "}Evidence: {executionReceipt.stages.evidence === "verified" ? "linked and confirmed" : executionReceipt.stages.evidence === "not_applicable" ? "not required" : "not confirmed"}.
+          {" "}Care-record update: {executionReceipt.stages.reconciliation === "committed" ? "saved" : "not confirmed"}.
+        </p>
+      )}
       {receipt && (
         <div role="status" style={{ marginTop: 12, padding: "12px", borderRadius: 9, background: "var(--theme-success-bg)", border: "1px solid var(--theme-success-border)", color: "var(--theme-panel-fg)" }}>
           <strong>Saved to the care record.</strong>
