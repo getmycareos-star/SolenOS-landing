@@ -612,6 +612,12 @@ await record("clarification questions are linked, answerable, skippable and dura
   assert.equal(answerHistory.payload[0].answer, exactAnswer);
   assert.equal(answerHistory.payload[0].answer_provenance, exactProvenance);
   assert.equal(answerHistory.payload[0].evidence_ids.length, 1);
+  await page.getByText("This question is not linked to a specific care detail.", { exact: false }).waitFor({ timeout: 10_000 });
+  assert.equal(
+    await page.getByRole("button", { name: "Accept as caregiver report", exact: true }).count(),
+    0,
+    "an unlinked clarification must not offer a review action that cannot be completed",
+  );
 
   await page.evaluate(() => window.dispatchEvent(new Event("careRecordUpdated")));
   await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
