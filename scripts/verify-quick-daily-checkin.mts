@@ -164,6 +164,19 @@ assert.match(dailyCarePage, /displayHistoryText/,
 assert.match(dailyCarePage, /epistemic_status/,
   "the caregiver view retains reported or uncertain status labels");
 
+assert.match(detailedCapture, /getJSON\("\/care-continuity\/medications"\)/,
+  "medication selection reads the person-scoped current LCR medication projection");
+assert.match(detailedCapture, /currentMedicationRecords/,
+  "current medication choices are held separately from historical caregiver reports");
+assert.match(detailedCapture, /caregiver_reviewed_current_report/,
+  "the UI accepts only the backend's explicitly reviewed current-report status");
+assert.match(detailedCapture, /Choose a current medication from the care record/,
+  "current LCR medication records have a distinct selection label");
+assert.match(detailedCapture, /Previously reported medicines \(not confirmed current\)/,
+  "historical medication entries remain visibly distinct from current medication records");
+assert.match(detailedCapture, /not independent clinical verification/,
+  "the UI does not overstate caregiver review as clinical verification");
+
 console.log("✓ quick check-in has exactly three overall-impression choices");
 console.log("✓ no care-area questionnaire or daily completion requirement");
 console.log("✓ optional note, caregiver attribution, idempotency and confirmed save receipt");
