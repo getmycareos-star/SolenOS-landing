@@ -938,7 +938,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                 </div>
                               ))}
                             </div>
-                          ) : <p role="note">Not matched to the wording in a saved record. Check this statement before relying on it.</p>}
+                          ) : claim.support_status === 'not_matched_to_saved_wording' ? <p role="note">Not matched to the wording in a saved record. Check this statement before relying on it.</p> : null}
                         </article>
                       ))}
                       <p>Conversation only. Nothing in this answer was added to the Living Care Record.</p>
