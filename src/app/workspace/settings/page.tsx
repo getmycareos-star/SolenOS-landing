@@ -51,6 +51,8 @@ function NotificationsCard() {
   const [inboxLoading, setInboxLoading] = useState(true);
   const [inboxError, setInboxError] = useState("");
   const [busyNotificationId, setBusyNotificationId] = useState<string | null>(null);
+  const [pushStatus, setPushStatus] = useState("");
+  const [pushBusy, setPushBusy] = useState(false);
 
   const loadInbox = useCallback(async () => {
     setInboxLoading(true);
@@ -69,6 +71,45 @@ function NotificationsCard() {
       setInboxLoading(false);
     }
   }, []);
+
+  const enablePushNotifications = async () => {
+    setPushBusy(true);
+    setPushStatus("");
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        throw new Error("This browser does not support Web Push notifications.");
+      }
+      await ensureAnonymousSession();
+      const permission = Notification.permission === "granted"
+        ? "granted"
+        : await Notification.requestPermission();
+      if (permission !== "granted") {
+        throw new Error("Notification permission was not granted. You can enable it in your browser settings.");
+      }
+      const keyResult = await getJSON("/notifications/push/public-key") as { public_key: string };
+      const padding = "=".repeat((4 - keyResult.public_key.length % 4) % 4);
+      const base64 = (keyResult.public_key + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const raw = window.atob(base64);
+      const applicationServerKey = new Uint8Array(raw.length);
+      for (let index = 0; index < raw.length; index += 1) applicationServerKey[index] = raw.charCodeAt(index);
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription()
+        || await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        });
+      await postJSON("/notifications/push/subscriptions", subscription.toJSON());
+      setPushStatus("Push is enabled on this browser. Delivery is reported when the push provider accepts it; device display still depends on browser and operating-system settings.");
+      show("Push notifications enabled on this browser.", "success");
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : "We couldn't enable push notifications.";
+      setPushStatus(message);
+      show("Push notifications weren't enabled.", "error");
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const markNotificationRead = async (item: CareNotification) => {
     if (item.is_read) return;
@@ -167,8 +208,10 @@ function NotificationsCard() {
       </label>
       <div className="mobile-settings-actions">
         <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
+        <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>
         <Button variant="secondary" onClick={() => void loadInbox()} disabled={inboxLoading}>Refresh notifications</Button>
       </div>
+      {pushStatus && <p className="mobile-settings-hint" role="status">{pushStatus}</p>}
       <div id="settings-notifications" className="settings-notification-inbox" aria-label="Notification inbox">
         <h3 className="mobile-settings-label">Recent notifications · {unreadCount} unread</h3>
         {inboxLoading && <p className="mobile-settings-hint" role="status">Loading notifications…</p>}
