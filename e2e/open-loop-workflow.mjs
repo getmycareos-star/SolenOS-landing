@@ -314,13 +314,13 @@ try {
   // Exercise real Daily Care capture through the browser UI, then read the saved
   // record back from the authenticated current-care endpoint.
   await page.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "How has today been?" }).waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: "Your care journey, remembered." }).waitFor({ timeout: 15_000 });
   const dailyCareNote = "CI-only Daily Care capture: caregiver observed a later-than-usual bedtime and interrupted sleep.";
-  await page.getByRole("group", { name: "Choose a quick care update" }).getByRole("button", { name: "Something changed", exact: true }).click();
-  await page.getByRole("group", { name: "Select care areas" }).getByRole("button", { name: "Sleep", exact: true }).click();
-  await page.getByLabel("Add a note (optional)").fill(dailyCareNote);
-  await page.getByRole("button", { name: "Save update", exact: true }).click();
-  await page.getByRole("status").filter({ hasText: "Saved to the care record." }).waitFor({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Share something", exact: true }).click();
+  await page.getByRole("group", { name: "Choose what you want to share" }).getByRole("button", { name: "Something happened", exact: true }).click();
+  await page.getByLabel("Tell us what happened").fill(dailyCareNote);
+  await page.getByRole("button", { name: "Save to care record", exact: true }).click();
+  await page.getByText("Saved. " + dailyCareNote, { exact: true }).waitFor({ timeout: 20_000 });
   const eventListResponse = await fetch(new URL(`/api/v1/events/${encodeURIComponent(session.personId)}`, backend), {
     headers: { authorization: `Bearer ${session.token}` },
   });
