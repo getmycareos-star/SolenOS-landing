@@ -34,6 +34,10 @@ const deviceAccess = readFileSync(new URL("../src/components/mvp-workspace/Ident
 const detailedAppointment = readFileSync(new URL("../src/components/workflows/DetailedAppointmentWorkspace.tsx", import.meta.url), "utf8");
 const evidenceReview = readFileSync(new URL("../src/components/EvidenceReviewPanel.tsx", import.meta.url), "utf8");
 const appointmentPage = readFileSync(new URL("../src/app/workspace/appointments/page.tsx", import.meta.url), "utf8");
+const claimAssessment = readFileSync(new URL("../src/components/ClaimAssessmentPanel.tsx", import.meta.url), "utf8");
+const conflictReview = readFileSync(new URL("../src/components/ConflictResolutionPanel.tsx", import.meta.url), "utf8");
+const clarification = readFileSync(new URL("../src/components/ClarificationWorkflowPanel.tsx", import.meta.url), "utf8");
+const careHistory = readFileSync(new URL("../src/components/CareContinuityIntegrityPanel.tsx", import.meta.url), "utf8");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -73,5 +77,12 @@ assert.ok(!detailedAppointment.includes("LCR facts"));
 assert.ok(!appointment.includes("caregiver-reviewed assertion"));
 assert.ok(!settings.includes("Identity &amp; device security"));
 assert.ok(!settings.includes("Release channel"));
+assert.ok(!claimAssessment.includes('value.replaceAll("_", " ")'));
+assert.ok(!conflictReview.includes('value.replaceAll("_", " ")'));
+assert.ok(!conflictReview.includes('evidence_ids.join(", ")'));
+assert.ok(!clarification.includes('key.replaceAll("_", " ")'));
+assert.ok(!clarification.includes('latestReview.decision.replaceAll'));
+assert.ok(!careHistory.includes('value.replace(/_/g'));
+assert.ok(!companion.includes("LCR assertion"));
 
 console.log("Caregiver language boundary checks passed.");
