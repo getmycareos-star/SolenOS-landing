@@ -424,13 +424,13 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   return <section style={panel} aria-label="Care details that need checking">
     <h3 style={{ fontSize: 16, marginTop: 0 }}>Care details that need checking</h3>
     <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-      These questions help keep the care record accurate. You can answer now or leave a question open. An answer will not be treated as confirmed until it has been reviewed.
+SolenOS brings a question to you only when a care detail needs your input. Your answer remains a caregiver report until it has been reviewed.
     </p>
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
       {caregiverOpenQuestions.length === 0 && <p>Nothing needs your input right now. SolenOS will ask when a care detail genuinely needs confirmation. You can talk through other questions with SolenOS Companion.</p>}
-      {questions.length > 0 && <>
+      {(caregiverOpenQuestions.length > 0 || questions.some((item) => item.status !== "open" && item.status !== "unresolved")) && <>
         <div style={{ display: "grid", gap: 10 }}>
           {caregiverOpenQuestions.map((item) => (
             <button
