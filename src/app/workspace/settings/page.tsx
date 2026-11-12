@@ -266,7 +266,7 @@ function NotificationsCard() {
       </label>
       <div className="mobile-settings-actions">
         <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
-        {pushAvailable ? (pushEnabled ? <Button variant="secondary" onClick={disablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Updating…" : "Disable push alerts"}</Button> : <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>) : <span className="mobile-settings-hint">Browser push will be available after the backend update is deployed.</span>}
+        {pushAvailable ? (pushEnabled ? <Button variant="secondary" onClick={disablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Updating…" : "Disable push alerts"}</Button> : <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>) : <span className="mobile-settings-hint">Browser push is not configured on this server yet. In-app notifications remain available.</span>}
         <Button variant="secondary" onClick={() => void loadInbox()} disabled={inboxLoading}>Refresh notifications</Button>
       </div>
       {pushStatus && <p className="mobile-settings-hint" role="status">{pushStatus}</p>}
