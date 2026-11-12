@@ -56,7 +56,7 @@ export function AddSituationPanel({
   const [scanOpen, setScanOpen] = useState(false);
   const [lastEntryMethod, setLastEntryMethod] = useState<InputEntryMethod | null>(null);
 
-  const hasReadyDocs = documents.some((d) => d.status === "ready" && d.extractedText.trim());
+  const hasReadyDocs = documents.some((d) => d.status === "ready" && (d.extractedText.trim() || d.evidenceId));
   const canSubmit = (value.trim().length > 0 || hasReadyDocs) && !loading && !extracting;
   const displayError = error ? sanitizeCaregiverErrorMessage(error) : null;
   const busy = loading || extracting;
