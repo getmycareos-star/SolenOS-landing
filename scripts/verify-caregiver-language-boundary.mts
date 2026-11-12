@@ -17,6 +17,7 @@ assert.equal(isTechnicalDiagnosticText("Database schema unavailable"), true);
 assert.equal(isTechnicalDiagnosticText("Freshness assessment storage is unavailable in this schema."), true);
 assert.equal(isTechnicalDiagnosticText("The provenance reconciliation API returned an assertion payload."), true);
 assert.equal(caregiverSafeAssistantText("The OCR extraction pipeline is unavailable."), null);
+assert.equal(caregiverSafeAssistantText("{\"schema\":\"internal\",\"status\":\"unknown\"}"), null);
 assert.equal(caregiverSafeAssistantText("Database schema unavailable"), null);
 assert.equal(caregiverSafeAssistantText("Your message has been saved. We do not know what caused the change yet."), "Your message has been saved. We do not know what caused the change yet.");
 assert.match(caregiverSafeErrorMessage(), /check your connection/i);
