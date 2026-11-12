@@ -80,6 +80,7 @@ type Analysis = {
   unprocessed_page_numbers?: number[];
   extraction_unprocessed_page_numbers?: number[];
   retryable_page_numbers?: number[];
+  retry_exhausted_page_numbers?: number[];
   blocked_page_numbers?: number[];
   unreadable_page_numbers?: number[];
   open_questions?: string[];
@@ -195,19 +196,6 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     }
   };
 
-  const analyze = async (analysis: Analysis) => {
-    const key = analysis.analysis_id + ":analyze";
-    setBusy(key);
-    setError(null);
-    try {
-      await queueProcessing(analysis.source_evidence_id);
-    } catch {
-      setError("Background document understanding could not be resumed. The original and saved extraction are unchanged.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const decide = async (analysis: Analysis, candidate: Candidate, candidateIndex: number, decision: "accept" | "reject" | "correct") => {
     const key = analysis.analysis_id + ":" + candidateIndex;
     setBusy(key);
@@ -308,7 +296,12 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 : analysis.extractedText ? <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{caregiverSafeAssistantText(analysis.extractedText) || "The saved text cannot be displayed in a readable form here. You can still open the original document."}</p>
                   : <p style={{ fontSize: 12 }}>No readable server-extracted text is stored for this document.</p>}
           </details>
-          {analysis.intelligence_status !== "available" && (analysis.intelligence_status !== "partial" || !!analysis.retryable_page_numbers?.length || !!analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and extracted text remain saved.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>{analysis.intelligence_status === "partial" ? "Continue reading" : "Retry background processing"}</button></div>}
+          {processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is processing this document in the background. You do not need to stay on this screen.</p>}
+          {(analysis.retryable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is retrying the pages that did not finish. The original document is preserved.</p>}
+          {(analysis.retry_exhausted_page_numbers?.length ?? 0) > 0 && <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS retried page{analysis.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {analysis.retry_exhausted_page_numbers!.join(", ")} several times but could not process them. The document remains incomplete; no clinical interpretation was created from the missing pages.</p>}
+          {(analysis.unreadable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.unreadable_page_numbers!.length === 1 ? "" : "s"} {analysis.unreadable_page_numbers!.join(", ")} could not be read reliably. No clinical interpretation was created from those pages.</p>}
+          {(analysis.blocked_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.blocked_page_numbers!.length === 1 ? "" : "s"} {analysis.blocked_page_numbers!.join(", ")} could not be processed because of file or processing limits. The original is preserved.</p>}
+          {analysis.intelligence_status !== "available" && analysis.extraction_status === "available" && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and saved extraction remain available.</p>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
           {analysis.extraction_status === "available" ? analysis.observations.map((candidate, index) => {
             const candidateIndex = typeof candidate.candidate_index === "number" ? candidate.candidate_index : index;
