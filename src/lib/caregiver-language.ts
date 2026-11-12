@@ -80,5 +80,5 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
 }
 
 export function caregiverSafeErrorMessage(): string {
-  return "This part of SolenOS is temporarily unavailable. Your care information has not been changed. Please try again.";
+  return "SolenOS couldn’t complete that step. Check your connection and try again. If you were saving information, check whether it appears before trying again.";
 }
