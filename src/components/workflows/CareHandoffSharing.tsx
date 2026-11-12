@@ -254,6 +254,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [professionalReviewConfirmed, setProfessionalReviewConfirmed] = useState(false);
+  const [approvedPdf, setApprovedPdf] = useState<Blob | null>(null);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<Snapshot | null>(null);
   const [incomingReviewConfirmed, setIncomingReviewConfirmed] = useState(false);
@@ -509,29 +510,38 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       }
       await postJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/approve-export", { approved: true });
       const pdf = await getBlob("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/export.pdf");
-      const filename = "solenos-care-summary.pdf";
-      const file = new File([pdf], filename, { type: "application/pdf" });
-      if (typeof navigator !== "undefined" && typeof navigator.share === "function" &&
-          typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "SolenOS care summary", text: "Caregiver-reviewed care summary." });
-        setNotice("The approved PDF was prepared and shared using your device's share options. SolenOS did not send it to a recipient.");
-      } else {
-        const url = URL.createObjectURL(pdf);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(url);
-        setNotice("The approved PDF was downloaded. You can attach it to a message or share it using your device.");
-      }
+      setApprovedPdf(pdf);
+      const url = URL.createObjectURL(pdf);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "solenos-care-summary.pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice("The approved PDF was downloaded. You can also use Share PDF below to send it through an app on your device.");
       setProfessionalReviewConfirmed(false);
       await load();
     } catch (exportError) {
       setError(exportError instanceof Error ? exportError.message : "The approved care summary could not be exported.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function shareApprovedProfessionalPdf() {
+    if (!approvedPdf) return;
+    try {
+      const file = new File([approvedPdf], "solenos-care-summary.pdf", { type: "application/pdf" });
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function" &&
+          typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "SolenOS care summary", text: "Caregiver-reviewed care summary." });
+        setNotice("Your device completed the share action. SolenOS did not send the PDF itself.");
+      } else {
+        setNotice("File sharing is not supported here. Use the downloaded PDF as an attachment.");
+      }
+    } catch (shareError) {
+      setError(shareError instanceof Error ? shareError.message : "The device share action was cancelled or unavailable.");
     }
   }
 
@@ -725,6 +735,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Preparing approved PDF…" : "Approve and export PDF"}
           </button>
           <p style={{ fontSize: 11, color: "#667267", lineHeight: 1.5 }}>SolenOS downloads the PDF or opens your device's share options when supported. It does not email the summary, create a professional account, or give anyone access to your SolenOS care record.</p>
+          {approvedPdf && <button type="button" style={quietButton} disabled={busy} onClick={() => void shareApprovedProfessionalPdf()}>
+            <Share2 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} />Share downloaded PDF
+          </button>}
         </section>
       )}
 
