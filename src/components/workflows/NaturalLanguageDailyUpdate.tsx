@@ -56,9 +56,9 @@ export default function NaturalLanguageDailyUpdate() {
         throw new Error("The server did not confirm that your update was saved.");
       }
 
-      const medicationMentioned = /\\b(medication|medicine|dose|dosage|prescription)\\b/i.test(report);
-      const possibleChange = /\\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\\b/i.test(report);
-      const uncertainty = /\\b(i think|maybe|might|may have|not sure|cannot remember|can't remember|don't remember|forgot)\\b/i.test(report);
+      const medicationMentioned = /\b(medication|medicine|dose|dosage|prescription)\b/i.test(report);
+      const possibleChange = /\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\b/i.test(report);
+      const uncertainty = /\b(i think|maybe|might|may have|not sure|cannot remember|can't remember|don't remember|forgot)\b/i.test(report);
       setReceipt({
         id: response.id,
         extractionStatus: response.qwen_extraction_status || "not_reported",
