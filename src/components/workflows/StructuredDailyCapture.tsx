@@ -57,6 +57,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   const [medicationError, setMedicationError] = useState<string | null>(null);
   const [medicationFeedback, setMedicationFeedback] = useState<string | null>(null);
   
+  const [eventOccurredAt, setEventOccurredAt] = useState("");
+
   // Form state
   const [form, setForm] = useState({
     medications: [] as Array<{
@@ -562,15 +564,17 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         note: string | null;
       }>;
       notes: string;
+      occurredAt: string | null;
       captureIdempotencyKey: string;
     }
   >({
-    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes, captureIdempotencyKey }) => 
+    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes, occurredAt, captureIdempotencyKey }) =>
       postJSON('/daily/log', {
         person_id: personId,
         caregiver_id: caregiverId,
         capture_idempotency_key: captureIdempotencyKey,
         capture_kind: mode,
+        ...(occurredAt ? { occurred_at: new Date(occurredAt).toISOString() } : {}),
         medications: medications.map(med => ({
           ...med,
           scheduled_for: med.scheduled_for ? new Date(med.scheduled_for).toISOString() : null,
@@ -623,6 +627,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         scales: [],
         notes: '',
       });
+      setEventOccurredAt("");
       
       // Reset medication form
       setMedicationForm({
@@ -736,6 +741,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       scales: form.scales,
       notes: form.notes,
       capture_kind: mode,
+      occurredAt: eventOccurredAt || (
+        mode === "medicine" && form.medications.length === 1
+          ? form.medications[0].administered_at
+          : mode === "measurement" && form.vitals.length === 1
+            ? form.vitals[0].measured_at
+            : null
+      ),
     };
     const fingerprint = JSON.stringify(submission);
     if (!captureSubmissionRef.current || captureSubmissionRef.current.fingerprint !== fingerprint) {
@@ -1758,7 +1770,23 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             borderRadius: '8px', 
             padding: '16px' 
           }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Additional Notes</label>
+            {(mode === "something" || mode === "note") && (
+              <div style={{ marginBottom: 14 }}>
+                <label htmlFor="daily-capture-event-time" style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
+                  When did this happen? <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>Optional</span>
+                </label>
+                <input
+                  id="daily-capture-event-time"
+                  type="datetime-local"
+                  value={eventOccurredAt}
+                  onChange={(event) => setEventOccurredAt(event.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", fontSize: 14 }}
+                />
+              </div>
+            )}
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>
+              {mode === "something" ? "Tell us what happened" : mode === "note" ? "Your note" : "Additional Notes"}
+            </label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
