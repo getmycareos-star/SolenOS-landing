@@ -7,11 +7,11 @@ import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/clie
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
 import { careInformationLabel } from "@/lib/care-epistemics/information-status";
 // Advanced review panels are code-split so they do not block the first caregiver view.
-const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care-integrity tools…</p> });
-const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <p role="status">Loading evidence review…</p> });
+const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
+const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <p role="status">Loading saved care information…</p> });
 const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <p role="status">Loading saved care information…</p> });
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
-const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading clarification workflow…</p> });
+const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading information that may need checking…</p> });
 
 let workspaceLoadSequence = 0;
 
@@ -687,7 +687,7 @@ export function LCRCurrentUnderstanding() {
             setRegisteredActionsError(null);
           } catch (cause) {
             setRegisteredActions([]);
-            setRegisteredActionsError(cause instanceof Error ? cause.message : "Agreed actions could not be loaded.");
+            setRegisteredActionsError("Agreed actions could not be loaded. Please try again.");
           }
         })(),
         (async () => {
@@ -702,7 +702,7 @@ export function LCRCurrentUnderstanding() {
             setChangesError(null);
           } catch (cause) {
             setChanges([]);
-            setChangesError(cause instanceof Error ? cause.message : "Saved change history is unavailable.");
+            setChangesError("Saved care changes could not be loaded. Please try again.");
           }
         })(),
         (async () => {
@@ -715,7 +715,7 @@ export function LCRCurrentUnderstanding() {
             setPatternsError(null);
           } catch (cause) {
             setPatterns([]);
-            setPatternsError(cause instanceof Error ? cause.message : "Saved history of repeated changes is unavailable.");
+            setPatternsError("Repeated changes could not be loaded. Please try again.");
           }
         })(),
         (async () => {
@@ -733,7 +733,7 @@ export function LCRCurrentUnderstanding() {
           } catch (cause) {
             setAssessment(null);
             setSourceFreshness(null);
-            setAssessmentError(cause instanceof Error ? cause.message : "The saved care summary could not be loaded.");
+            setAssessmentError("The saved care summary could not be loaded. Please try again.");
           }
         })(),
       ];
@@ -744,7 +744,7 @@ export function LCRCurrentUnderstanding() {
       setProjection(null);
       setRegisteredActions([]);
       setRegisteredActionsError("Agreed actions are unavailable because your care record session could not be confirmed.");
-      setError(cause instanceof Error ? cause.message : "The care history could not be loaded.");
+      setError("The care history could not be loaded. Please try again.");
     } finally {
       setLoading(false);
       if (!backgroundStarted) setRefreshing(false);
