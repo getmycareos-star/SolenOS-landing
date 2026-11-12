@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
+import { getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
 import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 
 type SaveReceipt = {
@@ -9,6 +9,7 @@ type SaveReceipt = {
   extractionStatus: string;
   assessmentStatus: string;
   medicationNeedsConfirmation: boolean;
+  medicationContext: string | null;
 };
 
 export default function NaturalLanguageDailyUpdate() {
@@ -59,12 +60,44 @@ export default function NaturalLanguageDailyUpdate() {
       const medicationMentioned = /\b(medication|medicine|dose|dosage|prescription)\b/i.test(report);
       const possibleChange = /\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\b/i.test(report);
       const uncertainty = /\b(i think|maybe|might|may have|not sure|cannot remember|can't remember|don't remember|forgot)\b/i.test(report);
+      const medicationNeedsConfirmation = medicationMentioned && possibleChange && uncertainty;
       setReceipt({
         id: response.id,
         extractionStatus: response.qwen_extraction_status || "not_reported",
         assessmentStatus: response.execution_status?.assessment || "not_reported",
-        medicationNeedsConfirmation: medicationMentioned && possibleChange && uncertainty,
+        medicationNeedsConfirmation,
+        medicationContext: medicationNeedsConfirmation ? "Checking the existing medication record…" : null,
       });
+      if (medicationNeedsConfirmation) {
+        void getJSON("/care-continuity/medications")
+          .then((value) => {
+            const projection = value as {
+              medications?: Array<{ name?: string; dose?: string }>;
+              pending_review?: Array<{ name?: string; dose?: string }>;
+            };
+            const current = Array.isArray(projection?.medications) ? projection.medications : [];
+            const pending = Array.isArray(projection?.pending_review) ? projection.pending_review : [];
+            const currentText = current.slice(0, 3).map((item) =>
+              [item.name, item.dose].filter(Boolean).map(String).join(" — ")
+            ).filter(Boolean);
+            const pendingText = pending.slice(0, 3).map((item) =>
+              [item.name, item.dose].filter(Boolean).map(String).join(" — ")
+            ).filter(Boolean);
+            const message = currentText.length
+              ? `The existing reviewed medication record lists: ${currentText.join("; ")}. It does not confirm a change reported today.`
+              : pendingText.length
+                ? `Medication information is already awaiting confirmation: ${pendingText.join("; ")}. It is not a confirmed current dose.`
+                : "No reviewed medication record is available to confirm the reported change.";
+            setReceipt((currentReceipt) => currentReceipt
+              ? { ...currentReceipt, medicationContext: message }
+              : currentReceipt);
+          })
+          .catch(() => {
+            setReceipt((currentReceipt) => currentReceipt
+              ? { ...currentReceipt, medicationContext: "Existing medication records could not be checked just now." }
+              : currentReceipt);
+          });
+      }
       setReport("");
       setRequestKey(null);
       window.dispatchEvent(new Event("careRecordUpdated"));
@@ -110,9 +143,12 @@ export default function NaturalLanguageDailyUpdate() {
             </p>
           )}
           {receipt.medicationNeedsConfirmation && (
-            <p style={{ margin: "6px 0 0" }}>
-              Your report suggests a medication may have changed, but it does not confirm a new dose. Please check the doctor’s instructions or contact the prescribing professional before relying on a different dose.
-            </p>
+            <>
+              {receipt.medicationContext && <p style={{ margin: "6px 0 0" }}>{receipt.medicationContext}</p>}
+              <p style={{ margin: "6px 0 0" }}>
+                Your report suggests a medication may have changed, but it does not confirm a new dose. Please check the doctor’s instructions or contact the prescribing professional before relying on a different dose.
+              </p>
+            </>
           )}
         </div>
       )}
