@@ -316,6 +316,7 @@ type ChangeAssertionEvidence = {
   source_event_id?: string | null;
   source_label: string;
   source_text?: string | null;
+  epistemic_state: string;
   assertion_status: string;
   observed_at?: string | null;
   recorded_at: string;
@@ -1515,7 +1516,7 @@ export function LCRCurrentUnderstanding() {
                           {changeEvidence[change.id].assertions.map((assertion) => (
                             <li key={assertion.id}>
                               <p>{caregiverLabel(assertion.field)}: {assertion.asserted_value}</p>
-                              <small>{caregiverLabel(assertion.subject_type)} · {caregiverLabel(assertion.assertion_status)} · {assertion.source_label}</small>
+                              <small>{caregiverLabel(assertion.subject_type)} · Information: {caregiverLabel(assertion.epistemic_state || "reported")} · Review: {caregiverLabel(assertion.assertion_status)} · {assertion.source_label}</small>
                               <small>Observed: {formatWhen(assertion.observed_at)} · Recorded: {formatWhen(assertion.recorded_at)}</small>
                               {assertion.source_text && <p>{assertion.source_text}</p>}
                             </li>
