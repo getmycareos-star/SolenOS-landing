@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
-import { careInformationLabel } from "@/lib/care-epistemics/information-status";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Claim = {
   id: string;
@@ -94,18 +94,14 @@ function evidenceSummary(item: Evidence): string {
   if (!raw) return "Saved care information";
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const content = parsed.original_capture ?? parsed.original_notes ?? parsed;
-    if (typeof content === "string") return content.slice(0, 100);
+    const content = parsed.original_capture ?? parsed.original_notes ?? parsed.notes ?? parsed.description ?? parsed.text;
+    if (typeof content === "string") return caregiverSafeAssistantText(content.slice(0, 100)) || "Saved care information";
     if (content && typeof content === "object" && !Array.isArray(content)) {
-      const parts = Object.entries(content as Record<string, unknown>)
-        .filter(([, value]) => ["string", "number", "boolean"].includes(typeof value))
-        .map(([key, value]) => `${key.replaceAll("_", " ")}: ${String(value)}`);
-      if (parts.length) return parts.join(" · ").slice(0, 100);
       return "Saved care information";
     }
     return "Saved care information";
   } catch {
-    return raw.slice(0, 100);
+    return caregiverSafeAssistantText(raw.slice(0, 100)) || "Saved care information";
   }
 }
 
@@ -494,8 +490,8 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
           <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
             <strong style={{ fontSize: 12 }}>Last answer</strong>
-            <p>{selectedQuestion.answer}</p>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {selectedQuestion.answer_provenance || "Not recorded"}</p>
+            <p>{caregiverSafeAssistantText(selectedQuestion.answer) || "The saved answer is available for review."}</p>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {caregiverSafeAssistantText(selectedQuestion.answer_provenance) || "Not recorded"}</p>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
           {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
@@ -513,7 +509,7 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
           {selectedQuestion.status === "answered" && latestAnswer && (
             latestReview ? (
               <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                Answer review recorded: {latestReview.decision.replaceAll("_", " ")}.
+                Answer review recorded: {caregiverStatusLabel(latestReview.decision) || "Review recorded"}.
                 {latestReview.resulting_claim_id ? " The answer remains classified as a caregiver report, not an independently verified fact." : ""}
               </p>
             ) : !selectedQuestion.claim_id ? (
@@ -551,8 +547,8 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
             {!historyError && history.length === 0 && <p style={{ fontSize: 12 }}>No earlier answers have been saved.</p>}
             <ol style={{ fontSize: 12, paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
-                <p>{item.answer}</p>
-                <p>Source: {item.answer_provenance}</p>
+                <p>{caregiverSafeAssistantText(item.answer) || "The saved answer is available for review."}</p>
+                <p>Source: {caregiverSafeAssistantText(item.answer_provenance) || "Not recorded"}</p>
                 <p>Saved {displayDate(item.created_at)}</p>
               </li>)}
             </ol>
