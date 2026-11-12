@@ -7,13 +7,23 @@ const source = fs.readFileSync(pagePath, "utf8");
 
 assert.match(source, /ensureAnonymousSession/);
 assert.match(source, /getJSON/);
-assert.match(source, /\/events\//);
+assert.match(source, /daily-care\\/intelligence\\/history/);
 assert.match(source, /occurred_at/);
 assert.match(source, /recorded_at/);
 assert.match(source, /time_provenance/);
 assert.match(source, /evidence_ids/);
 assert.match(source, /aria-expanded/);
 assert.match(source, /Search the care history/);
+assert.match(source, /mapHistoryRecord/,
+  "the timeline maps persisted history records from all supported source types");
+assert.match(source, /source_type === "correction"/,
+  "corrections are included as separate history entries");
+assert.match(source, /original_text/,
+  "correction history preserves the earlier source text");
+assert.match(source, /Load older care records/,
+  "the full history can be paginated beyond the first 200 records");
+assert.match(source, /daily-care\\/intelligence\\/history\\?limit=200&offset=/,
+  "timeline pagination reads the authenticated persisted history endpoint");
 assert.match(source, /Timeline could not be loaded/);
 assert.match(source, /No saved care events were returned/);
 assert.match(source, /never inserts example care history/);
