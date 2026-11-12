@@ -134,7 +134,14 @@ export default function QwenAssistPanel({
             !Array.isArray(status.source_appointment_ids) ||
             !Array.isArray(status.source_handoff_ids) ||
             !Array.isArray(status.source_notification_ids) ||
-            !Array.isArray(status.source_freshness_assessment_ids)
+            !Array.isArray(status.source_freshness_assessment_ids) ||
+            !status.claim_provenance ||
+            !Array.isArray(status.claim_provenance.claims) ||
+            status.claim_provenance.claims.some((claim) =>
+              typeof claim?.text !== "string" ||
+              typeof claim?.support_status !== "string" ||
+              !Array.isArray(claim?.source_references)
+            )
           ) {
             throw new Error("The completed response failed safety checks.");
           }
@@ -246,7 +253,6 @@ export default function QwenAssistPanel({
             </div>
           )}
           {/* Source details are shown beside the statements they support above; avoid a generic list of unrelated source IDs. */}
-          )}
         </div>
       )}
     </section>
