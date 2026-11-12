@@ -271,6 +271,7 @@ export default function DailyCarePage() {
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
   const [historyItems, setHistoryItems] = useState<CareItem[]>([]);
+  const [historyError, setHistoryError] = useState("");
   const [followUps, setFollowUps] = useState<DailyCareFollowUp[]>([]);
   const [followUpsError, setFollowUpsError] = useState("");
   const [deliveryIssues, setDeliveryIssues] = useState<DailyCareDeliveryIssue[]>([]);
@@ -355,9 +356,15 @@ export default function DailyCarePage() {
             records?: unknown;
             page?: { has_more?: boolean };
           };
-          const records = Array.isArray(payload?.records) ? payload.records as CareItem[] : [];
-          setHistoryItems(records);
-          setHistoryMayBeTruncated(Boolean(payload.page?.has_more));
+          if (!Array.isArray(payload?.records)) {
+            setHistoryError("Recent care history could not be read. The daily summary is unavailable.");
+            setHistoryItems([]);
+            setHistoryMayBeTruncated(false);
+          } else {
+            const records = payload.records as CareItem[];
+            setHistoryError("");
+            setHistoryItems(records);
+            setHistoryMayBeTruncated(Boolean(payload.page?.has_more));
 
           const personId = getPersonId();
           const caregiverId = getCaregiverId();
@@ -395,7 +402,9 @@ export default function DailyCarePage() {
             setSinceLastOpenItems(null);
             setLastOpenedAt(null);
           }
+          }
         } else {
+          setHistoryError("Recent care history could not be loaded. The daily summary is unavailable.");
           setContextError((current) => current || "Recent care history could not be loaded. Try refreshing the record.");
         }
         setReady(true);
@@ -588,7 +597,9 @@ export default function DailyCarePage() {
                 <p>A medication change was reported, but the new dose has not been confirmed. Check the doctor’s instructions or contact the prescribing professional before relying on a different dose.</p>
               </div>
             )}
-            {todayItems.length ? (
+            {historyError ? (
+              <p role="alert">{historyError}</p>
+            ) : todayItems.length ? (
               todayPeriods.map((period) => {
                 const items = todayItems.filter((item) => dailyTimePeriod(item) === period.key);
                 if (!items.length) return null;
