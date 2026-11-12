@@ -30,6 +30,7 @@ type CareItem = {
   description?: string | null;
   text?: string | null;
   occurred_at?: string | null;
+  observed_at?: string | null;
   recorded_at?: string | null;
   status?: string | null;
   kind?: string | null;
@@ -214,12 +215,14 @@ function displayHistoryText(item: CareItem): string {
   }
 }
 
-function recordedTimestamp(item: CareItem): string | null {
-  return item.recorded_at || item.uploaded_at || item.created_at || item.occurred_at || null;
+function careEventTimestamp(item: CareItem): string | null {
+  // Group and order care by when it happened, not when someone later entered it.
+  // Fall back to the recording time only when the source has no event/observation time.
+  return item.occurred_at || item.observed_at || item.recorded_at || item.uploaded_at || item.created_at || null;
 }
 
 function wasRecordedToday(item: CareItem, now = new Date()): boolean {
-  const value = recordedTimestamp(item);
+  const value = careEventTimestamp(item);
   if (!value) return false;
   const recorded = new Date(value);
   return !Number.isNaN(recorded.getTime())
@@ -229,7 +232,7 @@ function wasRecordedToday(item: CareItem, now = new Date()): boolean {
 }
 
 function dailyTimePeriod(item: CareItem): "morning" | "afternoon" | "evening" | "other" {
-  const value = recordedTimestamp(item);
+  const value = careEventTimestamp(item);
   if (!value) return "other";
   const recorded = new Date(value);
   if (Number.isNaN(recorded.getTime())) return "other";
@@ -356,8 +359,8 @@ export default function DailyCarePage() {
   const todayItems = historyItems
     .filter((item) => wasRecordedToday(item))
     .sort((left, right) => {
-      const leftTime = new Date(recordedTimestamp(left) || 0).getTime();
-      const rightTime = new Date(recordedTimestamp(right) || 0).getTime();
+      const leftTime = new Date(careEventTimestamp(left) || 0).getTime();
+      const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
       return leftTime - rightTime;
     });
   const medicationConcern = [...todayItems].reverse().find((item) =>
