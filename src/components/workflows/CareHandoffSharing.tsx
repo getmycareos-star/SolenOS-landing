@@ -5,6 +5,8 @@ import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
 
+type HandoffDraftPurpose = "family_transition" | "return_to_care" | "professional_appointment" | "hospital_discharge" | "period_summary";
+
 type DraftItem = {
   source_type: string;
   source_table: string;
@@ -214,6 +216,13 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
 
 export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: Props) {
   const [showHistory, setShowHistory] = useState(false);
+  const [preparePurpose, setPreparePurpose] = useState<HandoffDraftPurpose>("family_transition");
+  const [prepareAudience, setPrepareAudience] = useState<"family" | "professional">("family");
+  const [prepareWindowDays, setPrepareWindowDays] = useState("30");
+  const [preparing, setPreparing] = useState(false);
+  const [prepareError, setPrepareError] = useState("");
+  const [prepareNotice, setPrepareNotice] = useState("");
+  const prepareRequestId = useRef<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [directory, setDirectory] = useState<Recipient[]>([]);
@@ -328,6 +337,47 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     });
     return () => { active = false; };
   }, [draft?.draft_id]);
+
+  async function prepareHandoffDraft() {
+    if (preparing) return;
+    setPreparing(true);
+    setPrepareError("");
+    setPrepareNotice("");
+    const requestId = prepareRequestId.current ?? (
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : "handoff-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2)
+    );
+    prepareRequestId.current = requestId;
+    try {
+      await ensureAnonymousSession();
+      const prepared = await postJSON("/handoff-drafts/prepare", {
+        purpose: preparePurpose,
+        audience: prepareAudience,
+        window_days: Number(prepareWindowDays),
+      }, { "X-Request-ID": requestId }) as DraftPayload;
+      if (!prepared?.draft_id || !Array.isArray(prepared.sections)) {
+        throw new Error("The server did not return a persisted handoff draft.");
+      }
+      setSavedDrafts(current => [
+        prepared,
+        ...current.filter(item => item.draft_id !== prepared.draft_id),
+      ].slice(0, 10));
+      prepareRequestId.current = null;
+      setPrepareNotice(
+        prepared.generation_status === "generated" && prepared.validation_status === "validated"
+          ? "Draft saved for your review. Nothing has been shared or added to the Living Care Record."
+          : "Draft saved with source availability and limitations. Review the available records; no information has been shared or added to the Living Care Record."
+      );
+      onResumeDraft?.(prepared);
+    } catch {
+      // Retain the same request ID. If the server saved the draft but the
+      // response was interrupted, retrying retrieves that same persisted draft.
+      setPrepareError("The handoff draft could not be prepared. Check your connection and retry. No care-record changes are made by this step.");
+    } finally {
+      setPreparing(false);
+    }
+  }
 
   async function saveDraftRevision() {
     if (!draft?.draft_id) return;
@@ -484,6 +534,62 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
   return (
     <div className="companion-handoff-sharing" style={{ marginTop: 14, display: "grid", gap: 12, minWidth: 0, width: "100%" }}>
+      <section style={{ ...panel, marginTop: 0 }} aria-labelledby="prepare-handoff-heading">
+        <h4 id="prepare-handoff-heading" style={{ marginTop: 0 }}>Prepare a care handoff</h4>
+        <p style={{ fontSize: 12, lineHeight: 1.55, color: "#667267" }}>
+          SolenOS gathers the saved care information for the selected handoff. Review the draft before sharing. Missing or uncertain information stays clearly identified.
+        </p>
+        <form onSubmit={event => { event.preventDefault(); void prepareHandoffDraft(); }} style={{ display: "grid", gap: 10 }}>
+          <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+            Who is this handoff for?
+            <select value={prepareAudience} onChange={event => {
+              const next = event.target.value as "family" | "professional";
+              setPrepareAudience(next);
+              if (next === "professional" && preparePurpose === "family_transition") setPreparePurpose("professional_appointment");
+              if (next === "family" && preparePurpose === "professional_appointment") setPreparePurpose("family_transition");
+            }} style={field} disabled={preparing}>
+              <option value="family">Family caregiver</option>
+              <option value="professional">Healthcare professional — private review only</option>
+            </select>
+          </label>
+          <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+            What is the handoff for?
+            <select value={preparePurpose} onChange={event => setPreparePurpose(event.target.value as HandoffDraftPurpose)} style={field} disabled={preparing}>
+              {prepareAudience === "family" ? (
+                <>
+                  <option value="family_transition">Taking over today</option>
+                  <option value="return_to_care">Returning to care</option>
+                  <option value="hospital_discharge">Hospital discharge</option>
+                  <option value="period_summary">Full care overview</option>
+                </>
+              ) : (
+                <>
+                  <option value="professional_appointment">Doctor’s appointment</option>
+                  <option value="hospital_discharge">Hospital discharge</option>
+                  <option value="period_summary">Full care overview</option>
+                </>
+              )}
+            </select>
+          </label>
+          <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+            How much care history should be included?
+            <select value={prepareWindowDays} onChange={event => setPrepareWindowDays(event.target.value)} style={field} disabled={preparing}>
+              <option value="7">Past 7 days</option>
+              <option value="14">Past 14 days</option>
+              <option value="30">Past 30 days</option>
+              <option value="60">Past 60 days</option>
+              <option value="90">Past 90 days</option>
+            </select>
+          </label>
+          {prepareAudience === "professional" && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5 }}>Professional identity and role cannot yet be verified. This draft can be reviewed privately but cannot be shared with a professional from SolenOS.</p>}
+          {prepareError && <p role="alert" style={{ margin: 0, color: "#8d2d2d", fontSize: 12 }}>{prepareError}</p>}
+          {prepareNotice && <p role="status" style={{ margin: 0, color: "#356441", fontSize: 12 }}>{prepareNotice}</p>}
+          <button type="submit" style={button} disabled={preparing || loading}>
+            {preparing ? "Preparing your handoff…" : "Prepare handoff for review"}
+          </button>
+        </form>
+      </section>
+
       {savedDrafts.length > 0 && (
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved handoff drafts">
           <h4 style={{ marginTop: 0 }}>Saved handoff drafts</h4>
@@ -514,7 +620,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved handoff drafts">
           <h4 style={{ marginTop: 0 }}>Saved handoff drafts</h4>
           <p style={{ fontSize: 13, color: "#667267", marginBottom: 0 }}>
-            No handoff drafts have been saved for this care record yet. Use AI Companion to prepare a draft from authorised saved records.
+            No handoff drafts have been saved for this care record yet. Use the form above to prepare one from authorised saved records.
           </p>
         </section>
       )}
