@@ -18,8 +18,8 @@ assert.match(source, /setAppliedQuery\(nextQuery\)/,
   "the caregiver can submit a query against the complete server-side history");
 assert.ok(source.includes("query=${encodeURIComponent(searchTerm.trim())}"),
   "search terms are sent to the persisted history retrieval endpoint");
-assert.match(source, /Showing server-matched records/,
-  "the interface distinguishes server-wide search from the currently loaded page");
+assert.match(source, /Showing results for.*Search includes older records, not just the items currently shown\./,
+  "the interface tells caregivers that search includes older saved records, not only the loaded page");
 assert.match(source, /mapHistoryRecord/,
   "the timeline maps persisted history records from all supported source types");
 assert.match(source, /sourceType === "correction"/,
