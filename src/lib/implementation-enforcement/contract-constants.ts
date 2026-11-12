@@ -1,28 +1,27 @@
 /** SolenOS — Implementation Enforcement Contract (canonical). */
 
 export const IMPLEMENTATION_SYSTEM_IDENTITY =
-  "A deterministic cognitive decomposition engine that converts unstructured caregiver input into structured clarity under uncertainty.";
+  "A Living Care Record that preserves a person’s care journey over time through evidence-grounded, attributable and reviewable information.";
 
 export const IMPLEMENTATION_SYSTEM_PURPOSE =
-  "Reduce cognitive burden during uncertainty through structured decomposition.";
+  "Maintain care continuity across observations, caregivers, appointments, documents, decisions and outcomes.";
 
 export const IMPLEMENTATION_PRODUCT_MOAT =
-  "Deterministic cognitive decompression under stress.";
+  "Evidence-linked longitudinal care continuity with explicit uncertainty and provenance.";
 
 export const IMPLEMENTATION_MOAT_FORBIDDEN = [
   "AI intelligence",
-  "workflows",
-  "memory",
-  "personalization",
-  "engagement systems",
-  "care coordination",
+  "unsupported automation",
+  "unattributed memory changes",
+  "behavioral profiling",
+  "engagement manipulation",
 ] as const;
 
 export const IMPLEMENTATION_FORBIDDEN_IDENTITIES = [
   "chatbot",
   "AI assistant",
   "workflow platform",
-  "care management system",
+  "AI doctor",
   "personalization engine",
   "memory system",
   "CRM",
