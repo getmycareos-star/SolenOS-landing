@@ -94,7 +94,7 @@ assert.match(dailyCarePage, /\/care-continuity\/current-care/,
 assert.match(dailyCarePage, /\/daily-care\/intelligence\/history/,
   "Daily Care loads persisted recent history");
 for (const action of ["something", "medicine", "measurement", "photo", "checkin", "note"]) {
-  assert.match(dailyCarePage, new RegExp(`value: "\\${action}"`),
+  assert.ok(dailyCarePage.includes(`value: "${action}"`),
     `Daily Care exposes the ${action} interaction`);
 }
 assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
