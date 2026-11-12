@@ -87,6 +87,7 @@ const dailyCarePage = fs.readFileSync(path.join(root, "src/app/workspace/daily-c
 const appLayout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
 assert.ok(appLayout.includes('import "./accessibility-overrides.css";'));
 const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
+const naturalDailyUpdate = fs.readFileSync(path.join(root, "src/components/workflows/NaturalLanguageDailyUpdate.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert.ok(appointmentWorkflow.includes("var(--theme-panel-bg)") && appointmentWorkflow.includes("var(--theme-field-bg)"));
@@ -142,4 +143,9 @@ assert.match(settingsPage, /item\.resolved_at/,
 assert.match(settingsPage, /\(item.status \?\? "active"\) === "active"/,
   "the caregiver inbox must distinguish active notifications from resolved ones");
 
+assert.ok(dailyCarePage.includes("<NaturalLanguageDailyUpdate />"), "free-text updates must use the existing Daily Care capture path");
+assert.ok(naturalDailyUpdate.includes('postJSON("/daily-care/entries"'), "natural-language updates must use the existing persisted Daily Care endpoint");
+assert.ok(naturalDailyUpdate.includes("notes: report"), "the exact caregiver wording must be submitted as the source report");
+assert.ok(naturalDailyUpdate.includes("response?.success !== true"), "the UI must require a backend save receipt before showing success");
+assert.ok(naturalDailyUpdate.includes("no extracted details have been treated as confirmed"), "failed extraction must be exposed without implying interpretation succeeded");
 console.log("Caregiver UI contract checks passed.");
