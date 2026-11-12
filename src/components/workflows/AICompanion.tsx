@@ -267,7 +267,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       <strong>Selected saved sources</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
                         <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
-                          <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || reference.record_type.replaceAll('_', ' ')}</strong>
+                          <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
                           {reference.record_type === 'document_extractions' && <p>Extracted document text is context only, not yet an LCR assertion. Review and accept a candidate in Documents before it becomes a caregiver-reviewed LCR assertion.</p>}
                           {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Prior Companion message — conversation context only. It is not care evidence.</p>}
                         </div>
@@ -331,8 +331,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       ))}
                       <p>Conversation only. Nothing in this answer was added to the Living Care Record.</p>
                     </section>}
-                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">Freshness assessment storage is unavailable in this schema. A review of how current these records are is not available. Their currentness is unknown.</p>}
-                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No freshness assessments were returned. No review of how current these records are was returned. This does not mean they are current.</p>}
+                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">We couldn’t check how recent these care details are. Their current status is unknown.</p>}
+                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">We couldn’t find a review of how recent these care details are. This does not mean they are current.</p>}
                   </div>
                 </article>
               })}
