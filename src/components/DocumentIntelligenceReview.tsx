@@ -208,7 +208,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   return (
     <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-        <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>The source document and extracted text are available to the LCR with their review status. Accept an extracted statement before treating it as a caregiver-reviewed assertion.</p></div>
+        <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>The original document and extracted text are available here for review. Accept a statement before it becomes a caregiver-reviewed Living Care Record entry.</p></div>
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
       </div>
       {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
