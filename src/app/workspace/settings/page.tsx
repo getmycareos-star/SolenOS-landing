@@ -33,6 +33,8 @@ type CareNotification = {
   priority: string;
   created_at: string | null;
   is_read: boolean;
+  lifecycle_status?: "active" | "resolved" | "superseded" | "source_unavailable";
+  is_current?: boolean;
 };
 
 /** Notification controls persist to the authenticated care-record backend. */
@@ -272,6 +274,9 @@ function NotificationsCard() {
               <span className="mobile-settings-label">{item.title}</span>
               <span className="mobile-settings-hint">{item.body}</span>
               <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {item.category}</span>
+              {item.lifecycle_status === "superseded" && <span className="mobile-settings-hint">Replaced by newer information in the care record</span>}
+              {item.lifecycle_status === "resolved" && <span className="mobile-settings-hint">This no longer needs attention</span>}
+              {item.lifecycle_status === "source_unavailable" && <span className="mobile-settings-hint">The original care record for this message is no longer available</span>}
               {item.is_read && <span className="mobile-settings-hint">Read</span>}
             </span>
             {!item.is_read && <Button variant="secondary" disabled={busyNotificationId === item.id} loading={busyNotificationId === item.id} onClick={() => void markNotificationRead(item)}><Check size={14} aria-hidden /> Mark read</Button>}
@@ -822,7 +827,7 @@ export default function WorkspaceSettingsPage() {
       </nav>
       <div className="mobile-settings settings-page-grid">
         <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>01</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
-        <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
+        <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Important reminders and care handoffs can interrupt you. Routine observations and questions stay in your care record unless they need your attention.</p></div></div><NotificationsCard /></div>
         <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>An account is optional. Anonymous care access remains available.</p></div></div><AccountCard /></div>
         <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>04</span><div><h2>Identity &amp; device security</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
         <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>05</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
