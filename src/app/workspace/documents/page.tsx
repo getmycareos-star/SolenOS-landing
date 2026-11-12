@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
-import { apiUrl, safeJson } from "@/lib/api-url";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
 
@@ -109,51 +108,6 @@ function isImage(mimeType: string): boolean {
 function isPdf(mimeType: string): boolean {
   return mimeType === "application/pdf";
 }
-
-async function extractText(file: File): Promise<{ text: string; note: string | null }> {
-  if (file.type.startsWith("text/") || /\.(txt|md|csv|json|xml|ya?ml)$/i.test(file.name)) {
-    try {
-      return { text: (await file.text()).slice(0, 100_000), note: null };
-    } catch {
-      return { text: "", note: "The original file can still be saved, but its text could not be read in this browser." };
-    }
-  }
-
-  try {
-    const form = new FormData();
-    form.append("file", file);
-    const session = await ensureAnonymousSession();
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 120_000);
-    let response: Response;
-    try {
-      response = await fetch(apiUrl("/api/extract"), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: form,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timer);
-    }
-    const data = await safeJson(response) as {
-      ok?: boolean;
-      document?: { extracted_text?: string };
-      note?: string;
-      detail?: string;
-      error?: string;
-    };
-    const text = typeof data.document?.extracted_text === "string" ? data.document.extracted_text.slice(0, 100_000) : "";
-    if (response.ok && data.ok && text.trim()) return { text, note: null };
-    return {
-      text: "",
-      note: data.note || data.detail || data.error || "The original will be saved, but text extraction is not available for this file in the current deployment.",
-    };
-  } catch {
-    return { text: "", note: "The original will be saved, but text extraction could not be reached. You can retry document understanding later." };
-  }
-}
-
 
 async function createProcessedImage(file: File, rotationDegrees: number, crop: CropInsets): Promise<File> {
   const sourceUrl = URL.createObjectURL(file);
@@ -472,7 +426,7 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "error", text: "Add at least two image pages before creating a combined PDF." });
       return;
     }
-    if (imagePages.some((page) => !page.prepared || !page.reviewed)) {
+    if (imagePages.some((page) => !page.prepared)) {
       setUploadMessage({ kind: "error", text: "Save crop/straighten settings for each image page before combining them." });
       return;
     }
