@@ -22,10 +22,16 @@ function cameraRecoveryMessage(error: unknown, mode: "snap" | "scan"): string {
   return fallback;
 }
 
+export type ScanCropInsets = { top: number; right: number; bottom: number; left: number };
+export type ScanPageFile = File & {
+  scanRotationDegrees: number;
+  scanCropInsetsPercent: ScanCropInsets;
+};
+type ScanPage = { file: File; rotationDegrees: number; cropInsetsPercent: ScanCropInsets };
 type Props = {
   open: boolean;
   onClose: () => void;
-  onCapturePages: (files: File[]) => void;
+  onCapturePages: (files: ScanPageFile[]) => void;
 };
 
 /**
@@ -38,7 +44,8 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [pages, setPages] = useState<File[]>([]);
+  const [pages, setPages] = useState<ScanPage[]>([]);
+  const [selectedPage, setSelectedPage] = useState(0);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -50,12 +57,14 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
     if (!open) {
       stop();
       setPages([]);
+      setSelectedPage(0);
       return;
     }
 
     let cancelled = false;
     setError(null);
     setPages([]);
+    setSelectedPage(0);
 
     async function start() {
       try {
@@ -103,7 +112,11 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
         const file = new File([blob], `scan_page_${pages.length + 1}_${Date.now()}.jpg`, {
           type: "image/jpeg",
         });
-        setPages((prev) => [...prev, file]);
+        setPages((prev) => {
+          const next = [...prev, { file, rotationDegrees: 0, cropInsetsPercent: { top: 0, right: 0, bottom: 0, left: 0 } }];
+          setSelectedPage(next.length - 1);
+          return next;
+        });
       },
       "image/jpeg",
       0.92,
@@ -112,7 +125,10 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
 
   function finish() {
     if (pages.length === 0) return;
-    onCapturePages(pages);
+    onCapturePages(pages.map((page) => Object.assign(page.file, {
+      scanRotationDegrees: page.rotationDegrees,
+      scanCropInsetsPercent: page.cropInsetsPercent,
+    })) as ScanPageFile[]);
     stop();
     setPages([]);
     onClose();
@@ -139,6 +155,7 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
             onClick={() => {
               stop();
               setPages([]);
+              setSelectedPage(0);
               onClose();
             }}
           >
@@ -158,9 +175,24 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
         )}
 
         {pages.length > 0 && (
-          <p className="panel-muted">
-            {pages.length} page{pages.length === 1 ? "" : "s"} captured
-          </p>
+          <section aria-label="Captured scan pages" style={{ display: "grid", gap: 10 }}>
+            <p className="panel-muted">{pages.length} page{pages.length === 1 ? "" : "s"} captured. Originals are saved unchanged; adjustments below are used only to improve server-side text reading.</p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {pages.map((page, index) => <button key={page.file.name} type="button" aria-pressed={selectedPage === index} onClick={() => setSelectedPage(index)} className={selectedPage === index ? "workspace-primary" : "workspace-secondary"}>Page {index + 1}</button>)}
+            </div>
+            {pages[selectedPage] && <div style={{ display: "grid", gap: 8, border: "1px solid var(--border)", borderRadius: 9, padding: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <strong>Adjust page {selectedPage + 1}</strong>
+                <button type="button" className="workspace-secondary" onClick={() => setPages((prev) => prev.map((page, index) => index === selectedPage ? { ...page, rotationDegrees: (page.rotationDegrees + 90) % 360 } : page))}>Rotate 90°</button>
+              </div>
+              <p className="panel-muted">Trim dark edges or background clutter. Keep the full text inside the crop.</p>
+              {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gridTemplateColumns: "68px 1fr 32px", gap: 8, alignItems: "center", fontSize: 12 }}>
+                <span>{edge[0].toUpperCase() + edge.slice(1)}</span>
+                <input aria-label={edge + " crop"} type="range" min="0" max="30" step="1" value={pages[selectedPage].cropInsetsPercent[edge]} onChange={(event) => setPages((prev) => prev.map((page, index) => index === selectedPage ? { ...page, cropInsetsPercent: { ...page.cropInsetsPercent, [edge]: Number(event.target.value) } } : page))} />
+                <span>{pages[selectedPage].cropInsetsPercent[edge]}%</span>
+              </label>)}
+            </div>}
+          </section>
         )}
 
         <div className="entry-capture-actions">
