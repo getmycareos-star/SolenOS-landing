@@ -22,7 +22,7 @@ for (const contract of [
   ["panel requests backend reassessment", /reassessPersistedChangeIntelligence\(\)/],
   ["change source details are user-reviewable", /Review source evidence/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
-  ["unknown coverage is explicitly not absence", /Missing coverage is unknown, not evidence that an event did not happen/],
+  ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
   ["uncalibrated confidence is not presented as a percentage", /confidence == null \? "not calibrated"/],
   ["failed loads are exposed as an error state", /role="alert"/],
   ["empty state does not claim no changes occurred", /This does not mean that no changes occurred/],
