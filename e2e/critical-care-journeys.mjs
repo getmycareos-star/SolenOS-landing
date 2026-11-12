@@ -135,7 +135,7 @@ await record("01 first caregiver session", async () => {
 });
 
 // Shared persisted session for the remaining independently scoped journey checks.
-const session = await newSession("critical journey matrix");
+let session = await newSession("critical journey matrix");
 const identity = auth(session);
 const unique = (prefix) => `${prefix}-${randomUUID()}`;
 
@@ -412,6 +412,8 @@ await record("11 returning caregiver history", async () => {
   assert.equal(login.status, 200, JSON.stringify(login.payload));
   assert.equal(login.payload.person_id, identity.personId);
   assert.equal(login.payload.caregiver_id, identity.caregiverId);
+  // Recovery rotates the active session token; subsequent browser checks must use it.
+  session = { ...session, access_token: login.payload.access_token, expires_at: login.payload.expires_at };
   const returningHistory = await request(`/api/v1/events/${identity.personId}`, { token: login.payload.access_token });
   assert.equal(returningHistory.status, 200, JSON.stringify(returningHistory.payload));
   assert.ok(
