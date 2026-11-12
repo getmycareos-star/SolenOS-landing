@@ -172,6 +172,7 @@ function displayHistoryText(item: CareItem): string {
           given: "reported given",
           not_given: "reported not given",
           uncertain: "not sure whether it was given",
+          scheduled: "scheduled; not confirmed as given",
           other: "other medicine event",
           refused: "reported refused",
           missed: "reported missed",
