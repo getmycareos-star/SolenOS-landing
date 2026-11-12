@@ -219,6 +219,7 @@ function parseDescription(description?: string | null): string {
             given: "reported given",
             not_given: "reported not given",
             uncertain: "administration uncertain",
+            scheduled: "scheduled; not confirmed as given",
             other: "other medicine event",
           };
           const time = typeof medicine.administered_at === "string"
