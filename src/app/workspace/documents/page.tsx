@@ -463,7 +463,7 @@ export default function DocumentsPage() {
         ingestionKey: crypto.randomUUID(),
         captureTimestamp: new Date().toISOString(),
         file: pdfFile,
-        note: "Combined multi-page PDF generated from the adjusted scan pages. SolenOS will read it after saving; original page files remain separate and unchanged.",
+        note: "Combined multi-page PDF generated from the adjusted scan pages. SolenOS will read it after saving. Original uploaded page files remain separate and unchanged.",
         rotation: 0,
         crop: { top: 0, right: 0, bottom: 0, left: 0 },
         prepared: true,
