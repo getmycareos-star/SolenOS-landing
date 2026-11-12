@@ -126,7 +126,7 @@ assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persi
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Reviewed original uploads must persist through the backend.");
 assert(documentPage.includes("You can review extracted statements later."), "Caregivers must be able to save originals before reviewing extracted content.");
-assert(documentPage.includes("Scanned statements remain source evidence, not verified LCR facts."), "Scanned statements must not silently become verified LCR facts.");
+assert(documentPage.includes("Extracted statements remain review-only until you accept them into the Living Care Record."), "Extracted statements must remain review-only until caregiver acceptance.");
 assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",
