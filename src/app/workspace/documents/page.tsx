@@ -29,6 +29,7 @@ type EvidenceRecord = {
   source_text?: string | null;
   source_type?: string | null;
   evidence_status?: string | null;
+  parent_evidence_id?: string | null;
   uploaded_at?: string | null;
   created_at?: string | null;
   extra_metadata?: string | Record<string, unknown> | null;
@@ -47,6 +48,13 @@ type DocumentItem = {
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
+type VersionComparison = {
+  comparison_status: "available" | "pending";
+  added?: Array<{ field_type?: string; subject?: string; statement?: string; page_number?: number | null }>;
+  removed?: Array<{ field_type?: string; subject?: string; statement?: string; page_number?: number | null }>;
+  changed?: Array<{ field_type?: string; subject?: string; previous_statements?: Array<{ statement?: string; page_number?: number | null }>; replacement_statements?: Array<{ statement?: string; page_number?: number | null }> }>;
+  reason?: string;
+};
 type CropInsets = { top: number; right: number; bottom: number; left: number };
 type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; previewUrl: string | null };
 
@@ -134,6 +142,7 @@ export default function DocumentsPage() {
   const [deletingDocument, setDeletingDocument] = useState(false);
   const [versionPredecessorId, setVersionPredecessorId] = useState("");
   const [linkingVersion, setLinkingVersion] = useState(false);
+  const [versionComparison, setVersionComparison] = useState<VersionComparison | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [documentIntelligenceRefresh, setDocumentIntelligenceRefresh] = useState(0);
 
@@ -203,6 +212,20 @@ export default function DocumentsPage() {
     setReviewPages((current) => [...current, ...pages]);
     setUploadMessage({ kind: "success", text: `${files.length} original file(s) ready to save. Text extraction and document understanding will run after upload.` });
   };
+
+  useEffect(() => {
+    const predecessorId = selected?.evidence.parent_evidence_id;
+    if (!selected || !predecessorId) {
+      setVersionComparison(null);
+      return;
+    }
+    let active = true;
+    setVersionComparison(null);
+    void getJSON("/upload/" + encodeURIComponent(selected.id) + "/version-comparison")
+      .then((result) => { if (active) setVersionComparison(result as VersionComparison); })
+      .catch(() => { if (active) setVersionComparison(null); });
+    return () => { active = false; };
+  }, [selected?.id, selected?.evidence.parent_evidence_id]);
 
   useEffect(() => {
     if (!cameraOpen) return;
@@ -590,6 +613,14 @@ export default function DocumentsPage() {
                 </select>
                 <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>{linkingVersion ? "Linking…" : "Link versions"}</button>
               </div>
+            </section>}
+            {versionComparison && <section aria-label="Document version comparison" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+              <strong style={{ fontSize: 14 }}>What changed in this corrected copy</strong>
+              {versionComparison.comparison_status === "pending" ? <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>{versionComparison.reason || "SolenOS is waiting for both document versions to finish processing."}</p> : <>
+                <p style={{ margin: "6px 0 10px", color: "var(--text-secondary)", fontSize: 13 }}>Compared statements only. These differences have not been clinically verified and have not changed the care record.</p>
+                {!(versionComparison.added?.length || versionComparison.removed?.length || versionComparison.changed?.length) && <p style={{ margin: 0, fontSize: 13 }}>No differences were found among the extracted statements.</p>}
+                {[...(versionComparison.changed || []).map((item) => ({ kind: "Changed", subject: item.subject, details: (item.previous_statements || []).map((v) => v.statement).join("; ") + " → " + (item.replacement_statements || []).map((v) => v.statement).join("; ") })), ...(versionComparison.added || []).map((item) => ({ kind: "Added", subject: item.subject, details: item.statement || "" })), ...(versionComparison.removed || []).map((item) => ({ kind: "Removed", subject: item.subject, details: item.statement || "" }))].map((item, index) => <p key={item.kind + "-" + index} style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.5 }}><strong>{item.kind + (item.subject ? " · " + item.subject : "")}:</strong> {item.details}</p>)}
+              </>}
             </section>}
             {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Retrieving original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: 13, color: "var(--text-secondary)" }}>The original file was retrieved successfully. Download it to open it in a compatible app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: 15 }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 14, lineHeight: 1.6 }}>{caregiverSafeAssistantText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>Original file preview is not available yet.</p>}
           </div>
