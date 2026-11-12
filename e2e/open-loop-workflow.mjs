@@ -3,13 +3,13 @@ import { readFile } from "node:fs/promises";
 
 function createMinimalPdf(text) {
   const escaped = text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-  const stream = \`BT /F1 12 Tf 20 100 Td (\${escaped}) Tj ET\`;
+  const stream = "BT /F1 12 Tf 20 100 Td (" + escaped + ") Tj ET";
   const objects = [
     "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
     "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
     "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
     "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
-    \`5 0 obj\n<< /Length \${Buffer.byteLength(stream, "utf8")} >>\nstream\n\${stream}\nendstream\nendobj\n\`,
+    "5 0 obj\n<< /Length " + Buffer.byteLength(stream, "utf8") + " >>\nstream\n" + stream + "\nendstream\nendobj\n",
   ];
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
@@ -20,9 +20,9 @@ function createMinimalPdf(text) {
   const xrefOffset = Buffer.byteLength(pdf, "utf8");
   pdf += "xref\n0 6\n0000000000 65535 f \n";
   for (let index = 1; index <= 5; index += 1) {
-    pdf += \`\${String(offsets[index]).padStart(10, "0")} 00000 n \n\`;
+    pdf += String(offsets[index]).padStart(10, "0") + " 00000 n \n";
   }
-  pdf += \`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n\${xrefOffset}\n%%EOF\n\`;
+  pdf += "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" + xrefOffset + "\n%%EOF\n";
   return Buffer.from(pdf, "utf8");
 }
 
