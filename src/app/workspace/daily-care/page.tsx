@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { ensureAnonymousSession, getCaregiverId, getJSON, getPersonId } from "@/api/client";
@@ -192,6 +192,10 @@ export default function DailyCarePage() {
   const [sinceLastOpenItems, setSinceLastOpenItems] = useState<CareItem[] | null>(null);
   const [lastOpenedAt, setLastOpenedAt] = useState<string | null>(null);
   const [historyMayBeTruncated, setHistoryMayBeTruncated] = useState(false);
+  const visitBaselineRef = useRef<{ initialized: boolean; previousVisit: string | null }>({
+    initialized: false,
+    previousVisit: null,
+  });
   const [contextLoading, setContextLoading] = useState(true);
   const [contextError, setContextError] = useState("");
 
@@ -227,13 +231,22 @@ export default function DailyCarePage() {
           const caregiverId = getCaregiverId();
           if (personId && caregiverId) {
             const visitKey = `solenos:daily-care:last-opened:${personId}:${caregiverId}`;
-            let previousVisit: string | null = null;
-            try {
-              previousVisit = window.localStorage.getItem(visitKey);
-            } catch {
-              previousVisit = null;
+            if (!visitBaselineRef.current.initialized) {
+              let previousVisit: string | null = null;
+              try {
+                previousVisit = window.localStorage.getItem(visitKey);
+              } catch {
+                previousVisit = null;
+              }
+              visitBaselineRef.current = { initialized: true, previousVisit };
+              setLastOpenedAt(previousVisit);
+              try {
+                window.localStorage.setItem(visitKey, new Date().toISOString());
+              } catch {
+                // History remains available if this browser blocks local storage.
+              }
             }
-            setLastOpenedAt(previousVisit);
+            const previousVisit = visitBaselineRef.current.previousVisit;
             if (previousVisit) {
               const previousTime = new Date(previousVisit).getTime();
               const newlyRecorded = records.filter((item) => {
@@ -245,11 +258,6 @@ export default function DailyCarePage() {
               setSinceLastOpenItems(newlyRecorded);
             } else {
               setSinceLastOpenItems(null);
-            }
-            try {
-              window.localStorage.setItem(visitKey, new Date().toISOString());
-            } catch {
-              // History remains available if this browser blocks local storage.
             }
           } else {
             setSinceLastOpenItems(null);
