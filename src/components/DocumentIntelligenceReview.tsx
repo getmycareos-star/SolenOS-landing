@@ -63,11 +63,13 @@ type Analysis = {
   reviewEvents?: ReviewEvent[];
   reviewHistoryUnavailable?: boolean;
 };
-type ListResponse = { items?: Analysis[] };
+type ProcessingJob = { evidence_id: string; job_id: string; status: "queued" | "processing" | "failed"; attempt_count: number; error_code?: string | null };
+type ListResponse = { items?: Analysis[]; processing_jobs?: ProcessingJob[] };
 type LibraryDocument = { id: string; title: string };
 
 export default function DocumentIntelligenceReview({ refreshToken = 0, documents = [] }: { refreshToken?: number; documents?: LibraryDocument[] }) {
   const [items, setItems] = useState<Analysis[]>([]);
+  const [processingJobs, setProcessingJobs] = useState<ProcessingJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +87,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       const result = await getJSON("/documents/intelligence") as ListResponse;
       const summaries = Array.isArray(result.items) ? result.items : [];
       setItems(summaries);
+      setProcessingJobs(Array.isArray(result.processing_jobs) ? result.processing_jobs : []);
     } catch {
       setError("Saved document reviews could not be loaded. Retry without re-uploading the original.");
     } finally {
@@ -146,7 +149,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         interpretationFailed = true;
       }
       await load();
-      // The original evidence and extracted source text are now available to LCR retrieval.
+      // The original evidence and review candidates are now available in this document panel.
       window.dispatchEvent(new Event("careRecordUpdated"));
       if (interpretationFailed) {
         setError("The original and server extraction are saved, but document understanding did not finish. Retry it from the review list.");
@@ -216,7 +219,19 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         <strong style={{ fontSize: 12 }}>Document extraction notes</strong>
         {items.flatMap((item) => item.open_questions || []).map((question, index) => <p key={index} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
       </div>}
-      {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: 13 }}>Saved documents awaiting server extraction</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => <div key={document.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", padding: 9, border: "1px solid var(--border)", borderRadius: 8 }}><span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span><button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Extract and understand</button></div>)}</div>}
+      {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: 13 }}>Saved documents</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => {
+        const job = processingJobs.find((item) => item.evidence_id === document.id);
+        const active = job?.status === "queued" || job?.status === "processing";
+        return <div key={document.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", padding: 9, border: "1px solid var(--border)", borderRadius: 8 }}>
+          <div style={{ display: "grid", gap: 3, minWidth: 0 }}>
+            <span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span>
+            <span role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+              {active ? "Processing in the background. You can leave this page." : job?.status === "failed" ? "Background processing could not finish. The original is still saved." : "Saved original · waiting for server extraction"}
+            </span>
+          </div>
+          {!active && <button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>{job?.status === "failed" ? "Retry extraction" : "Extract and understand"}</button>}
+        </div>;
+      })}</div>}
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
