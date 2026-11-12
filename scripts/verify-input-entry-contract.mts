@@ -109,7 +109,14 @@ const apiUrl = fs.readFileSync(path.join(root, "src", "lib", "api-url.ts"), "utf
 assert(apiUrl.includes('normalized === "/api/extract"'), "Document extraction must stay on the Next.js route handler even when a direct backend origin is configured");
 console.log("✓ Document extraction route is not redirected to an unregistered FastAPI endpoint");
 
-console.log("✓ Original documents persist and link to care events");
+const documentPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "documents", "page.tsx"), "utf8");
+assert(documentPage.includes('form.append("file", page.file)'), "Document intake must upload the original file");
+assert(documentPage.includes('form.append("ingestion_key", page.ingestionKey)'), "Document retries must retain the original ingestion key");
+assert(!documentPage.includes("/api/extract") && !documentPage.includes("extractText("), "Document intake must not perform duplicate browser-side extraction");
+assert(!documentPage.includes('form.append("extracted_text"'), "Browser-extracted text must not be sent as authoritative document text");
+assert(!documentPage.includes("Extracted text — review and correct before saving"), "Caregivers must not be forced to review extracted text before preserving the original");
+assert(documentPage.includes("SolenOS will extract and process it after the upload is saved."), "Original-first intake must explain that server-side processing follows upload");
+console.log("✓ Documents are preserved first; extraction is server-side and caregiver text review is not a save prerequisite");
 
 assert(workspace.includes("isLcrOrientationOnly"));
 assert(workspace.includes("/api/lcr/orientation"));
