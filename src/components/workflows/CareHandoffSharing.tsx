@@ -118,6 +118,7 @@ function readableStatus(value: string): string {
 function caregiverEvidenceLabel(value: string): string {
   const status = value.trim().toLowerCase();
   if (["confirmed", "verified", "clinically_verified", "source_verified"].includes(status)) return "Confirmed source record";
+  if (status === "observed") return "Observed";
   if (["reported", "caregiver_reported", "reported_by_caregiver", "caregiver_authored"].includes(status)) return "Reported";
   if (["uncertain", "inferred", "unverified", "disputed", "conflicting", "rejected", "pending_review"].includes(status)) return "Uncertain or needs review";
   if (["missing", "not_recorded", "not_assessed", "unavailable", "unknown", "not_available"].includes(status)) return "Missing or not recorded";
