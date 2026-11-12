@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import { ensureAnonymousSession, getBlob, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
@@ -114,6 +114,18 @@ function handoffPurposeLabel(value: string): string {
 function readableStatus(value: string): string {
   return caregiverStatusLabel(value) ?? "Not available";
 }
+
+function caregiverEvidenceLabel(value: string): string {
+  const status = value.trim().toLowerCase();
+  if (["confirmed", "verified", "clinically_verified", "source_verified"].includes(status)) return "Confirmed source record";
+  if (["reported", "caregiver_reported", "reported_by_caregiver", "caregiver_authored"].includes(status)) return "Reported";
+  if (["uncertain", "inferred", "unverified", "disputed", "conflicting", "rejected", "pending_review"].includes(status)) return "Uncertain or needs review";
+  if (["missing", "not_recorded", "not_assessed", "unavailable", "unknown", "not_available"].includes(status)) return "Missing or not recorded";
+  if (["needs_clarification", "clarification_required"].includes(status)) return "Needs clarification";
+  return "Status not classified";
+}
+
+
 
 function readableScope(value: string): string {
   if (value === "lcr_summary") return "Care record and Daily Care";
@@ -256,6 +268,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [revisionHistory, setRevisionHistory] = useState<DraftRevision[]>([]);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [professionalReviewConfirmed, setProfessionalReviewConfirmed] = useState(false);
+  const [approvedPdf, setApprovedPdf] = useState<Blob | null>(null);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<Snapshot | null>(null);
   const [incomingReviewConfirmed, setIncomingReviewConfirmed] = useState(false);
@@ -413,6 +427,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setRevisionHistory(saved.revision_history ?? []);
       setSourceFreshness(saved.source_freshness ?? null);
       setReviewConfirmed(false);
+      setApprovedPdf(null);
       setNotice("Your handoff changes were saved. They have not been approved or shared.");
       await load();
     } catch (saveError) {
@@ -421,6 +436,65 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setBusy(false);
     }
   }
+
+  async function approveAndExportProfessionalSummary() {
+    if (!draft?.draft_id || audience !== "professional" || !professionalReviewConfirmed) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await ensureAnonymousSession();
+      const content = {
+        template_sections: draft.template_sections ?? [],
+        sections: draft.sections,
+        generation: draft.generation ? { ...draft.generation, sections: editedSections } : draft.generation,
+        caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
+      };
+      await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
+      const saved = await getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id)) as {
+        revision_number?: number;
+        source_freshness?: { status: string };
+      };
+      if (saved.source_freshness?.status !== "current") {
+        throw new Error("Care information has changed or could not be checked. Prepare a fresh summary before exporting.");
+      }
+      await postJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/approve-export", { approved: true });
+      const pdf = await getBlob("/handoff-drafts/" + encodeURIComponent(draft.draft_id) + "/export.pdf");
+      setApprovedPdf(pdf);
+      const url = URL.createObjectURL(pdf);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "solenos-care-summary.pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice("The approved PDF was downloaded. You can also use Share PDF below to send it through an app on your device.");
+      setProfessionalReviewConfirmed(false);
+      await load();
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : "The approved care summary could not be exported.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function shareApprovedProfessionalPdf() {
+    if (!approvedPdf) return;
+    try {
+      const file = new File([approvedPdf], "solenos-care-summary.pdf", { type: "application/pdf" });
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function" &&
+          typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "SolenOS care summary", text: "Caregiver-reviewed care summary." });
+        setNotice("Your device completed the share action. SolenOS did not send the PDF itself.");
+      } else {
+        setNotice("File sharing is not supported here. Use the downloaded PDF as an attachment.");
+      }
+    } catch (shareError) {
+      setError(shareError instanceof Error ? shareError.message : "The device share action was cancelled or unavailable.");
+    }
+  }
+
 
   async function shareReviewedFamilyHandoff() {
     if (!draft || audience !== "family") {
@@ -639,10 +713,60 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       )}
 
       {draft && audience === "professional" && (
-        <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
-          <strong>Professional handoff — private review only</strong>
-          <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>SolenOS cannot yet confirm that a recipient is a healthcare professional. This draft cannot be shared with professionals from this screen.</p>
-        </div>
+        <section style={{ ...panel, marginTop: 0 }} aria-labelledby="professional-export-heading">
+          <h4 id="professional-export-heading" style={{ margin: "0 0 8px", fontSize: 15 }}>Review and export care summary</h4>
+          <p style={{ fontSize: 12, lineHeight: 1.55 }}>This summary is prepared from saved care records. Review each statement and its source status before approving the PDF. It is not a clinical assessment or an independently verified medication list.</p>
+          {draft.generation?.sections?.length ? draft.generation.sections.map((item, index) => (
+            <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
+              <strong style={{ fontSize: 12 }}>{item.section}</strong>
+              <p style={{ fontSize: 13, lineHeight: 1.5, margin: "5px 0" }}>{item.text}</p>
+              <small style={{ color: "#667267" }}>Information: {caregiverEvidenceLabel(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)} · Source: {item.source_ref}</small>
+            </article>
+          )) : draft.sections.map((group, groupIndex) => (
+            <article key={group.title + groupIndex} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
+              <strong style={{ fontSize: 12 }}>{group.title}</strong>
+              {group.items.map((item, itemIndex) => (
+                <div key={item.source_table + item.source_id + itemIndex} style={{ marginTop: 7 }}>
+                  <p style={{ fontSize: 13, lineHeight: 1.5, margin: "4px 0" }}>{item.text}</p>
+                  <small style={{ color: "#667267" }}>Information: {readableStatus(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)} · Source: {item.source_table}/{item.source_id}</small>
+                </div>
+              ))}
+            </article>
+          ))}
+          {draft.generation?.sections?.length ? draft.sections.filter(group => group.title === "Caregiver-reviewed medication reports").map((group, groupIndex) => (
+            <section key={group.title + groupIndex} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
+              <strong style={{ fontSize: 12 }}>{group.title}</strong>
+              {group.items.map((item, itemIndex) => (
+                <p key={item.source_id + itemIndex} style={{ fontSize: 12, lineHeight: 1.5 }}>
+                  {item.text}<br />
+                  <small style={{ color: "#667267" }}>Information: {caregiverEvidenceLabel(item.epistemic_status || "reported")} · Recorded: {formatDate(item.recorded_at)} · Source: {item.source_table}/{item.source_id}</small>
+                </p>
+              ))}
+            </section>
+          )) : null}
+          <div style={{ margin: "10px 0" }}>
+            <strong style={{ fontSize: 12 }}>Information availability</strong>
+            {Object.entries(draft.source_statuses ?? {}).map(([key, value]) => (
+              <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || readableStatus(key)}: {readableStatus(value.status)} · {value.count} record(s){value.reason ? " · " + readableStatus(value.reason) : ""}</p>
+            ))}
+          </div>
+          {draft.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableStatus(item.source)}: {readableStatus(item.status)}{item.reason ? " (" + readableStatus(item.reason) + ")" : ""}</p>)}
+          <label htmlFor="professional-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Caregiver note (optional)</label>
+          <textarea id="professional-caregiver-note" value={caregiverNote} onChange={event => { setProfessionalReviewConfirmed(false); setApprovedPdf(null); setCaregiverNote(event.target.value); }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled as a caregiver report." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+          <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status !== "current"} onClick={() => void saveDraftRevision()}>Save changes to summary</button>
+          {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>The saved care information has changed or could not be checked. Prepare a fresh summary before approval.</p>}
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
+            <input type="checkbox" checked={professionalReviewConfirmed} disabled={busy || sourceFreshness?.status !== "current"} onChange={event => setProfessionalReviewConfirmed(event.target.checked)} />
+            <span>I reviewed this summary, its source labels and missing information. I approve this exact version for export and sharing outside SolenOS.</span>
+          </label>
+          <button type="button" style={button} disabled={busy || loading || sourceFreshness?.status !== "current" || !professionalReviewConfirmed} onClick={() => void approveAndExportProfessionalSummary()}>
+            <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Preparing approved PDF…" : "Approve and export PDF"}
+          </button>
+          <p style={{ fontSize: 11, color: "#667267", lineHeight: 1.5 }}>SolenOS downloads the PDF or opens your device's share options when supported. It does not email the summary, create a professional account, or give anyone access to your SolenOS care record.</p>
+          {approvedPdf && <button type="button" style={quietButton} disabled={busy} onClick={() => void shareApprovedProfessionalPdf()}>
+            <Share2 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} />Share downloaded PDF
+          </button>}
+        </section>
       )}
 
       {draft && audience === "family" && (
