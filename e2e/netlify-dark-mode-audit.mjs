@@ -77,6 +77,12 @@ try {
         page.setDefaultTimeout(5000);
         page.setDefaultNavigationTimeout(15000);
         const apiFailures = [];
+        const pageErrors = [];
+        const consoleErrors = [];
+        page.on("pageerror", (error) => pageErrors.push(String(error)));
+        page.on("console", (message) => {
+          if (message.type() === "error") consoleErrors.push(message.text());
+        });
         page.on("response", (response) => {
           const url = new URL(response.url());
           if (url.pathname.startsWith("/api/") && response.status() >= 400) {
@@ -97,14 +103,22 @@ try {
         });
 
         const url = new URL(routePath, target.url).toString();
+        let navigationStatus = null;
+        let themeApplied = false;
         try {
-          await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+          const navigationResponse = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+          navigationStatus = navigationResponse?.status() ?? null;
           await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
           await page.waitForFunction(
-            () => document.documentElement.dataset.solenosTheme === "dark",
+            () => document.body && document.body.innerText.trim().length > 0,
             null,
             { timeout: 8000 },
           );
+          themeApplied = await page.waitForFunction(
+            () => document.documentElement.dataset.solenosTheme === "dark",
+            null,
+            { timeout: 8000 },
+          ).then(() => true).catch(() => false);
 
           if (routePath === "/workspace/settings") {
             for (const label of ["Profile", "Notifications"]) {
@@ -242,10 +256,15 @@ try {
               }
             }
 
+            const bodyText = document.body?.innerText?.trim() ?? "";
             return {
               theme: document.documentElement.dataset.solenosTheme || null,
               pathname: window.location.pathname,
               title: document.title,
+              bodyTextLength: bodyText.length,
+              bodyTextPreview: bodyText.slice(0, 240),
+              isNotFound: /\\b404\\b|page not found|not found/i.test(bodyText),
+              hasWorkspaceMain: Boolean(document.querySelector("main,[role='main']")),
               handoffsHeading: document.querySelector("#care-handoffs-title")?.textContent?.trim() ?? null,
               issues,
             };
@@ -254,28 +273,48 @@ try {
           const navigationIssue = rendered.pathname !== routePath
             ? { kind: "navigation", expected: routePath, actual: rendered.pathname }
             : null;
+          const routeLoaded = Boolean(
+            navigationStatus !== null &&
+            navigationStatus < 400 &&
+            !navigationIssue &&
+            rendered.bodyTextLength > 0 &&
+            !rendered.isNotFound
+          );
           const routeIssues = [
+            ...(navigationStatus === null || navigationStatus >= 400
+              ? [{ kind: "route_http_status", status: navigationStatus }]
+              : []),
             ...(navigationIssue ? [navigationIssue] : []),
+            ...(rendered.bodyTextLength === 0 ? [{ kind: "empty_body" }] : []),
+            ...(rendered.isNotFound ? [{ kind: "not_found_content" }] : []),
             ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Care Handoffs"
               ? [{ kind: "missing_handoffs_heading", actual: rendered.handoffsHeading }]
               : []),
-            ...apiFailures.filter((item) => item.status === 403).map((item) => ({ kind: "api_403", ...item })),
+            ...apiFailures.map((item) => ({ kind: "api_error", ...item })),
+            ...pageErrors.map((error) => ({ kind: "page_error", error })),
           ];
           const result = {
             target: target.label,
             url,
             route: routePath,
             viewport: viewport.label,
+            routeLoaded,
+            themeApplied,
             theme: rendered.theme,
             finalPath: rendered.pathname,
             title: rendered.title,
+            bodyTextLength: rendered.bodyTextLength,
+            bodyTextPreview: rendered.bodyTextPreview,
+            hasWorkspaceMain: rendered.hasWorkspaceMain,
+            consoleErrors,
+            pageErrors,
             contrastIssues: rendered.issues,
             routeIssues,
           };
           results.push(result);
-          if (rendered.issues.length || routeIssues.length || rendered.theme !== "dark") failures.push(result);
+          if (!routeLoaded || rendered.issues.length || routeIssues.length || !themeApplied) failures.push(result);
 
-          if (viewport.label === "desktop" || rendered.issues.length || routeIssues.length) {
+          if (viewport.label === "desktop" || rendered.issues.length || routeIssues.length || !themeApplied) {
             const screenshotPath = `${artifactDir}/${slug(target.label)}-${slug(routePath)}-${viewport.label}.png`;
             await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
           }
@@ -288,8 +327,13 @@ try {
             url,
             route: routePath,
             viewport: viewport.label,
+            routeLoaded: false,
+            themeApplied: false,
+            navigationStatus,
             error: String(error),
             apiFailures,
+            pageErrors,
+            consoleErrors,
           };
           results.push(result);
           failures.push(result);

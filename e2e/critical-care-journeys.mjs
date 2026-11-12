@@ -140,6 +140,7 @@ const identity = auth(session);
 const unique = (prefix) => `${prefix}-${randomUUID()}`;
 
 // 2. Daily Capture: write, idempotent replay, invalid payload, expired bearer, then retrieve.
+let dailyCaptureEventId;
 await record("02 Daily Capture", async () => {
   const key = unique("daily-capture");
   const payload = {
@@ -152,6 +153,7 @@ await record("02 Daily Capture", async () => {
   const saved = await request("/api/v1/daily/log", { token: identity.token, method: "POST", body: payload });
   assert.ok([200, 201].includes(saved.status), JSON.stringify(saved.payload));
   assert.ok(saved.payload.id);
+  dailyCaptureEventId = saved.payload.id;
   const replay = await request("/api/v1/daily/log", { token: identity.token, method: "POST", body: payload });
   assert.ok([200, 201].includes(replay.status), JSON.stringify(replay.payload));
   assert.equal(replay.payload.id, saved.payload.id);
@@ -411,8 +413,17 @@ await record("11 returning caregiver history", async () => {
   assert.equal(login.payload.person_id, identity.personId);
   assert.equal(login.payload.caregiver_id, identity.caregiverId);
   const returningHistory = await request(`/api/v1/events/${identity.personId}`, { token: login.payload.access_token });
-  assert.equal(returningHistory.status, 200);
-  assert.ok(JSON.stringify(returningHistory.payload).includes(evidenceId));
+  assert.equal(returningHistory.status, 200, JSON.stringify(returningHistory.payload));
+  assert.ok(
+    JSON.stringify(returningHistory.payload).includes(dailyCaptureEventId),
+    "returning caregiver could not retrieve the persisted Daily Capture event",
+  );
+  const returningEvidence = await request(`/api/v1/evidence/${identity.personId}`, { token: login.payload.access_token });
+  assert.equal(returningEvidence.status, 200, JSON.stringify(returningEvidence.payload));
+  assert.ok(
+    returningEvidence.payload.some((row) => row.id === evidenceId),
+    "returning caregiver could not retrieve the Add Record evidence",
+  );
   const { context, page } = await createBrowserPage({
     ...session,
     access_token: login.payload.access_token,
