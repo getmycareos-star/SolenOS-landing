@@ -717,14 +717,37 @@ export function LCRCurrentUnderstanding() {
         (async () => {
           try {
             const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
-            if (saved.status === "available" && saved.assessment?.person_id === scopedPersonId) {
-              setAssessment(saved.assessment);
-              setSourceFreshness(saved.source_freshness ?? null);
+            let current = saved;
+            const savedBelongsToPerson =
+              saved.status === "available" && saved.assessment?.person_id === scopedPersonId;
+            if (!savedBelongsToPerson || saved.source_freshness?.reassessment_recommended) {
+              try {
+                const refreshed = await postJSON(
+                  "/care-continuity/situation-understanding/reassess",
+                  {},
+                ) as SituationAssessmentResponse;
+                if (!refreshed.assessment || refreshed.assessment.person_id !== scopedPersonId) {
+                  throw new Error("The refreshed care summary did not match the active care record.");
+                }
+                current = refreshed;
+              } catch (refreshError) {
+                if (savedBelongsToPerson) {
+                  setAssessment(saved.assessment);
+                  setSourceFreshness(saved.source_freshness ?? null);
+                  setAssessmentError("The latest care summary could not be refreshed. The last saved view is shown and may be out of date.");
+                  return;
+                }
+                throw refreshError;
+              }
+            }
+            if (current.status === "available" && current.assessment?.person_id === scopedPersonId) {
+              setAssessment(current.assessment);
+              setSourceFreshness(current.source_freshness ?? null);
               setAssessmentError(null);
             } else {
               setAssessment(null);
               setSourceFreshness(null);
-              setAssessmentError("No care summary is available yet. Refresh it to check for updates.");
+              setAssessmentError("The care summary is not available yet. Some care information may be missing.");
             }
           } catch (cause) {
             setAssessment(null);
