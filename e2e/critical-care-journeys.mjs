@@ -541,7 +541,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
     "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
     "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
   ];
-  const openLoopsBefore = await request("/api/v1/open-loops?limit=100&status=open", { token: identity.token });
+  const openLoopsBefore = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
   assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
   for (const report of scenarioReports) await saveFreeTextUpdate(report);
@@ -572,7 +572,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
     assert.equal(lcrRow.source_type, "caregiver_report");
   }
 
-  const openLoopsAfter = await request("/api/v1/open-loops?limit=100&status=open", { token: identity.token });
+  const openLoopsAfter = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
   assert.equal(openLoopsAfter.status, 200, JSON.stringify(openLoopsAfter.payload));
   assert.deepEqual(
     (openLoopsAfter.payload.items || []).map((item) => item.id).sort(),
