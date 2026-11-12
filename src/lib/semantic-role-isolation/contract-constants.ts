@@ -4,7 +4,7 @@
 
 export const SEMANTIC_ROLE_IDENTITY =
 
-  "a deterministic cognitive decomposition engine that converts unstructured caregiver input into structured clarity under uncertainty";
+  "an internal semantic-structuring capability that presents evidence-grounded Living Care Record information clearly without changing record authority";
 
 
 
