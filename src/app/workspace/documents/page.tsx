@@ -441,10 +441,8 @@ export default function DocumentsPage() {
     setUploading(true);
     setUploadMessage(null);
     let saved = 0;
-    let extracted = 0;
-    let understood = 0;
-    let extractionUnavailable = 0;
-    let understandingUnavailable = 0;
+    let backgroundProcessingQueued = 0;
+    let backgroundQueueUnavailable = 0;
     try {
       const session = await ensureAnonymousSession();
       let scanPageNumber = 0;
@@ -465,32 +463,18 @@ export default function DocumentsPage() {
         form.append("scan_rotation_degrees", String(page.rotation));
         form.append("scan_crop_json", JSON.stringify(page.crop));
         form.append("scan_text_prepared", String(page.file.type.startsWith("image/") && page.prepared));
-        const stored = await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
+        const stored = await postFormData("/upload", form) as {
+          evidence_id?: string;
+          persisted?: boolean;
+          document_processing_job_id?: string | null;
+          processing_status?: string;
+        };
         if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
         saved += 1;
-
-        // Extraction is performed by the backend from the persisted upload bytes.
-        // Browser text is never treated as proof of what the original file contains.
-        try {
-          const analysis = await postJSON(
-            "/documents/" + encodeURIComponent(stored.evidence_id) + "/extract",
-            {},
-          ) as { extraction_status?: string; analysis_id?: string };
-          if (analysis.analysis_id && analysis.extraction_status === "available") {
-            extracted += 1;
-            try {
-              await postJSON("/documents/" + encodeURIComponent(stored.evidence_id) + "/intelligence", {});
-              understood += 1;
-            } catch {
-              // The original and persisted extraction remain available. The Documents review panel
-              // will show no interpretation until the caregiver retries when Qwen is available.
-              understandingUnavailable += 1;
-            }
-          } else extractionUnavailable += 1;
-        } catch {
-          // Keep the successfully uploaded original even when this file type
-          // cannot currently be extracted (for example, a scanned image).
-          extractionUnavailable += 1;
+        if (stored.document_processing_job_id && ["queued", "processing", "completed"].includes(stored.processing_status || "")) {
+          backgroundProcessingQueued += 1;
+        } else {
+          backgroundQueueUnavailable += 1;
         }
       }
       reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
@@ -498,12 +482,12 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Server extraction is available for ${extracted}; document understanding is available for ${understood}; ${understandingUnavailable} extracted file(s) still need document understanding; ${extractionUnavailable} file(s) have no usable server extraction. Interpretation remains review-only until you accept a statement. Scanned statements remain source evidence, not verified LCR facts.`,
+        text: `Saved ${saved} original file(s). Background extraction and document understanding are queued or already running for ${backgroundProcessingQueued}; ${backgroundQueueUnavailable} file(s) need a manual retry from the review list. You can leave this page. Extracted statements remain review-only until you accept them into the Living Care Record.`,
       });
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
     } catch {
-      setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Refresh the library before retrying to avoid duplicates.` });
+      setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Retry the same batch; the server reuses each saved upload ID.` });
       await loadDocuments(true);
     } finally { setUploading(false); }
   };
