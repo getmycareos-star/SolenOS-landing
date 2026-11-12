@@ -154,23 +154,23 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         unresolved_remainder: status === "partially_resolved" ? unresolvedRemainder.trim() || null : null,
         evidence_ids: evidenceIds,
       });
-      setNotice("Update the review status saved with its rationale and evidence references. Only the stated scope is resolved; related details are not silently resolved.");
+      setNotice("Review status saved. Only the part described as reviewed is marked as resolved; related details remain unchanged.");
       setRationale("");
       await loadRecords();
       await loadHistory();
     } catch {
-      setError("Conflict resolution persistence was not confirmed. Check scope, evidence, permissions, and connection; no successful resolution is assumed.");
+      setError("We couldn’t confirm that this review was saved. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
   }
 
-  return <section style={panel} aria-label="Evidence-grounded conflict resolution">
+  return <section style={panel} aria-label="Review reports that differ">
     <h3 style={{ fontSize: 15, marginTop: 0 }}>When information differs</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
       A newer timestamp or majority of reports does not automatically resolve a conflict. Every completed or partial review needs supporting information and a reason; a partial review must name the exact detail reviewed.
     </p>
-    {loading && <p role="status">Loading persisted conflicts…</p>}
+    {loading && <p role="status">Loading reports that differ…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && conflicts.length === 0 && <p>No conflicting reports are currently recorded in this care record. This does not establish that no disagreement exists outside the information available to SolenOS.</p>}
     {!loading && !error && conflicts.length > 0 && <>
@@ -183,13 +183,13 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         <p><strong>Care detail:</strong> {caregiverSafeAssistantText(selected.description) || "Saved reports differ"}</p>
         <p>{caregiverSafeAssistantText(selected.description) || "Saved reports differ."}</p>
          
-        <p><strong>Effective interval:</strong> {selected.effective_from || "Start unknown"} — {selected.effective_to || "End unknown"}</p>
+        <p><strong>Dates this applies to:</strong> {selected.effective_from || "Start unknown"} — {selected.effective_to || "End unknown"}</p>
         <p><strong>What has been reviewed:</strong> {caregiverSafeAssistantText(selected.resolution_scope) || "Nothing has been marked as resolved."}</p>
         <p><strong>What still needs checking:</strong> {caregiverSafeAssistantText(selected.unresolved_remainder) || "Not recorded"}</p>
         <p><strong>Supporting information:</strong> {selected.evidence_ids?.length ? selected.evidence_ids.length + " saved item(s)" : "None recorded"}</p>
         {selected.matching_candidate_ids?.length ? <p><strong>Related reports:</strong> {selected.matching_candidate_ids.length}</p> : null}
       </div>}
-      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Resolution transition
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Review status
         <select style={field} value={status} onChange={(event) => setStatus(event.target.value as (typeof statuses)[number])}>
           {statuses.map((value) => <option key={value} value={value}>{caregiverStatusLabel(value) || "Not available"}</option>)}
         </select>
@@ -215,7 +215,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       <div style={{ marginTop: 14 }}>
         <strong style={{ fontSize: 13 }}>Previous review decisions</strong>
         {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError}</p>}
-        {history.length === 0 && !historyError && <p style={{ fontSize: 12 }}>No resolution transitions have been recorded yet.</p>}
+        {history.length === 0 && !historyError && <p style={{ fontSize: 12 }}>No earlier review decisions have been recorded yet.</p>}
         <ol style={{ fontSize: 12, paddingLeft: 18 }}>
           {history.map((item) => <li key={item.id}>
             <strong>{caregiverStatusLabel(item.previous_status) || "Not recorded"} → {caregiverStatusLabel(item.new_status) || "Status not available"}</strong>
