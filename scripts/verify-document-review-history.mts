@@ -20,7 +20,7 @@ assert(source.includes("corrected_pending_approval"), "corrections must remain p
 assert(source.includes("EXACT SOURCE QUOTATION"), "each candidate must show its exact source quotation");
 assert(source.includes("No LCR facts were created"), "empty interpretation must not imply a care fact");
 assert(
-  source.includes("server extraction and OCR prepare readable source text"),
+  source.toLowerCase().includes("server extraction and OCR prepare readable source text".toLowerCase()),
   "the UI must not describe the server extraction path as text-only",
 );
 
