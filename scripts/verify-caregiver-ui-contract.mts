@@ -167,6 +167,7 @@ assert.match(lcrCurrent, /Medication instruction needs confirmation/);
 assert.match(lcrCurrent, /prescribing clinician or pharmacist promptly to confirm it/);
 assert.match(lcrCurrent, /SolenOS has not changed the medication record/);
 assert.match(lcrCurrent, /saved\.source_freshness\?\.reassessment_recommended/);
+assert.match(lcrCurrent, /if \(current\.assessment\?\.person_id === scopedPersonId\)/);
 assert.match(lcrCurrent, /postJSON\([\s\S]*?care-continuity\/situation-understanding\/reassess/);
 assert.match(lcrCurrent, /The latest care summary could not be refreshed\. The last saved view is shown and may be out of date\./);
 assert.ok(dailyCarePage.includes('getJSON("/notifications?limit=100&offset=0")'), "Daily Care must check the existing notification feed for delivery failures");
