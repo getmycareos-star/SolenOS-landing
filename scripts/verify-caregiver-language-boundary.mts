@@ -22,6 +22,8 @@ for (const diagnostic of [
   "The provenance reconciliation API returned an assertion payload.",
   "The OCR extraction pipeline is unavailable.",
   "Original file SHA-256: abc123",
+  "source_id: 1f2a3b4c",
+  "Record reference: 123e4567-e89b-42d3-a456-426614174000",
   "{\"schema\":\"internal\",\"status\":\"unknown\"}",
 ]) {
   assert.equal(caregiverSafeAssistantText(diagnostic), null, diagnostic);
