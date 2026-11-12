@@ -284,7 +284,7 @@ try {
     const url = new URL(request.url());
     if (url.pathname.startsWith("/api/")) uploadRequests.push({ path: url.pathname, method: request.method() });
   });
-  await page.locator('input[type="file"]').first().setInputFiles({
+  await page.locator('input[type="file"][accept*="application/pdf"]').first().setInputFiles({
     name: documentName,
     mimeType: "text/plain",
     buffer: Buffer.from(documentText, "utf8"),
