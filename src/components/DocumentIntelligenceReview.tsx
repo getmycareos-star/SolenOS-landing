@@ -194,7 +194,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     try {
       await queueProcessing(analysis.source_evidence_id);
     } catch {
-      setError("Background document understanding could not be resumed. The original and saved extraction are unchanged.");
+      setError("SolenOS couldn't continue reviewing this document. Your original file is still saved.");
     } finally {
       setBusy(null);
     }
@@ -250,7 +250,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           <div style={{ display: "grid", gap: 3, minWidth: 0 }}>
             <span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span>
             <span role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-              {active ? "Processing in the background. You can leave this page." : job?.status === "failed" ? "Background processing could not finish. The original is still saved." : "Saved original · waiting for server extraction"}
+              {active ? "Processing in the background. You can leave this page." : job?.status === "failed" ? "Background processing could not finish. The original is still saved." : "Original file saved · waiting for text to be read"}
             </span>
           </div>
           {!active && <button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>{job?.status === "failed" ? "Try again" : "Read this document"}</button>}
