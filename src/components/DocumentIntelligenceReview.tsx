@@ -208,7 +208,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   return (
     <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-        <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>The source document and extracted text are available to the LCR with their review status. Accept an extracted statement before treating it as a caregiver-reviewed assertion.</p></div>
+        <div><h2 style={{ margin: 0, fontSize: 17 }}>Document understanding</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>The original document and extracted text stay saved. Suggestions are optional; review a statement only if you want to add it to the Living Care Record. Nothing here is treated as a caregiver-reviewed assertion automatically.</p></div>
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
       </div>
       {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
@@ -217,8 +217,10 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         {items.flatMap((item) => item.open_questions || []).map((question, index) => <p key={index} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
       </div>}
       {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: 13 }}>Saved documents awaiting server extraction</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => <div key={document.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", padding: 9, border: "1px solid var(--border)", borderRadius: 8 }}><span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span><button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Extract and understand</button></div>)}</div>}
-      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
-        <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text. You can leave AI suggestions untouched; the original document remains saved.</p> : items.map((analysis) => (
+        <details key={analysis.analysis_id} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 10 }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700 }}>{analysis.document_name || "Uploaded document"} · {analysis.observations.length} optional suggestion(s)</summary>
+          <article style={{ display: "grid", gap: 10, padding: 12 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
@@ -246,7 +248,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             const key = analysis.analysis_id + ":" + index;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
             const statusPresentation = pending
-              ? { label: candidate.review_status === "corrected_pending_approval" ? "CORRECTION AWAITING APPROVAL" : "PENDING CAREGIVER REVIEW", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
+              ? { label: candidate.review_status === "corrected_pending_approval" ? "CORRECTION AWAITING APPROVAL" : "OPTIONAL SUGGESTION — NOT ADDED", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
               : candidate.review_status === "accepted_by_caregiver"
                 ? { label: "ACCEPTED INTO LCR", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
                 : candidate.review_status === "rejected_by_caregiver"
@@ -308,7 +310,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                     </ol>}
           </details>
           {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: 12 }}>Questions that remain open</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: 13 }}>{analysis.open_questions?.map((question, i) => <li key={i}>{question}</li>)}</ul></div>}
-        </article>
+          </article>
+        </details>
       ))}
     </section>
   );
