@@ -212,4 +212,12 @@ console.log("PASS: documents and Community use product language rather than inte
 console.log("PASS: Community uses searchable stories, simple filters, and no separate model/workflow panel.");
 console.log("PASS: LCR context interpretation only runs after a persisted event receipt and rejects responses without the read-only contract.");
 
+const documentReview = read("src/components/DocumentIntelligenceReview.tsx");
+assert(documentReview.includes("candidate.candidate_index"), "Document review must preserve stable candidate indices across batches.");
+assert(documentReview.includes("has_more_candidates"), "Document review must expose remaining statements instead of silently dropping overflow.");
+assert(documentReview.includes("Show next group of"), "Document review must allow the next bounded group after the current group is decided.");
+assert(documentReview.includes("retryable_page_numbers"), "Only transient page failures may offer automatic retry.");
+assert(documentReview.includes("blocked_page_numbers"), "Pages blocked by resource limits must not be offered for automatic retry.");
+console.log("PASS: document candidate batches and retryable page states are preserved.");
+
 console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");
