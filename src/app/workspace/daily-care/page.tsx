@@ -29,7 +29,14 @@ type CareItem = {
   occurred_at?: string | null;
   recorded_at?: string | null;
   status?: string | null;
+  kind?: string | null;
+  epistemic_status?: string | null;
   source_label?: string | null;
+  original_text?: string | null;
+  corrected_text?: string | null;
+  reason?: string | null;
+  scheduled_at?: string | null;
+  uploaded_at?: string | null;
   source_type?: string | null;
   event_type?: string | null;
   created_by_caregiver_id?: string | null;
@@ -41,6 +48,114 @@ function displayCareTime(value?: string | null): string {
   return Number.isNaN(date.getTime())
     ? "Time not recorded"
     : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function isOpenMatter(item: CareItem): boolean {
+  return new Set([
+    "Conflict",
+    "Reconciliation review",
+    "Needs clarification",
+    "Information missing",
+    "Open question",
+    "Follow-up",
+    "Care event needing attention",
+  ]).has(item.kind || "");
+}
+
+function displayHistoryTime(item: CareItem): string {
+  const eventTime = item.occurred_at;
+  const recordedTime = item.recorded_at || item.uploaded_at;
+  if (eventTime && recordedTime) {
+    const eventDate = new Date(eventTime);
+    const recordedDate = new Date(recordedTime);
+    if (!Number.isNaN(eventDate.getTime()) && !Number.isNaN(recordedDate.getTime()) &&
+        Math.abs(eventDate.getTime() - recordedDate.getTime()) > 60_000) {
+      return `Happened: ${displayCareTime(eventTime)} · Recorded: ${displayCareTime(recordedTime)}`;
+    }
+  }
+  if (eventTime) return `Happened: ${displayCareTime(eventTime)}`;
+  if (item.scheduled_at) return `Scheduled for: ${displayCareTime(item.scheduled_at)}`;
+  if (recordedTime) return `Recorded: ${displayCareTime(recordedTime)}`;
+  return "Time not recorded";
+}
+
+function displayHistoryText(item: CareItem): string {
+  if (item.source_type === "correction" && (item.original_text || item.corrected_text)) {
+    return [
+      item.original_text ? `Earlier entry: ${item.original_text}` : "",
+      item.corrected_text ? `Correction: ${item.corrected_text}` : "",
+      item.reason ? `Reason: ${item.reason}` : "",
+    ].filter(Boolean).join(" · ");
+  }
+
+  const raw = item.text || item.description || "";
+  if (!raw) return item.reason || "";
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return raw;
+    const capture = (parsed.original_capture && typeof parsed.original_capture === "object"
+      ? parsed.original_capture
+      : parsed) as Record<string, unknown>;
+    const quick = (capture.quick_check_in && typeof capture.quick_check_in === "object"
+      ? capture.quick_check_in
+      : null) as Record<string, unknown> | null;
+    const parts: string[] = [];
+
+    if (quick && typeof quick.kind === "string") {
+      const labels: Record<string, string> = {
+        same_as_usual: "About the same as usual",
+        change: "Some things were different",
+        uncertain: "It was hard to tell",
+        concern: "Caregiver reported a concern",
+        care_completed: "Care support was reported",
+      };
+      parts.push(labels[quick.kind] || "Quick check-in recorded");
+    }
+
+    const note = typeof quick?.note === "string" && quick.note.trim()
+      ? quick.note.trim()
+      : typeof capture.notes === "string" && capture.notes.trim()
+        ? capture.notes.trim()
+        : typeof capture.original_notes === "string" && capture.original_notes.trim()
+          ? capture.original_notes.trim()
+          : "";
+    if (note) parts.push(note);
+
+    if (Array.isArray(capture.medications)) {
+      for (const value of capture.medications) {
+        if (!value || typeof value !== "object") continue;
+        const medicine = value as Record<string, unknown>;
+        const name = typeof medicine.medication_name === "string" ? medicine.medication_name : "Medicine";
+        const status = typeof medicine.status === "string" ? medicine.status : "status not recorded";
+        const statusLabels: Record<string, string> = {
+          given: "reported given",
+          not_given: "reported not given",
+          uncertain: "not sure whether it was given",
+          other: "other medicine event",
+          refused: "reported refused",
+          missed: "reported missed",
+        };
+        parts.push(`${name}: ${statusLabels[status] || status}`);
+      }
+    }
+
+    if (Array.isArray(capture.vitals)) {
+      for (const value of capture.vitals) {
+        if (!value || typeof value !== "object") continue;
+        const vital = value as Record<string, unknown>;
+        const type = typeof vital.vital_type === "string" ? vital.vital_type.replace(/_/g, " ") : "Measurement";
+        const reading = vital.value;
+        const unit = typeof vital.unit === "string" ? vital.unit : "";
+        if (typeof reading === "number" || typeof reading === "string") {
+          parts.push(`${type}: ${reading}${unit ? ` ${unit}` : ""}`);
+        }
+      }
+    }
+
+    return parts.length ? parts.join(" · ") : raw;
+  } catch {
+    return raw;
+  }
 }
 
 export default function DailyCarePage() {
@@ -129,22 +244,44 @@ export default function DailyCarePage() {
             <p className="daily-care-muted">The latest information currently available in the care record.</p>
             {contextLoading ? (
               <p>Loading care information…</p>
-            ) : careItems.length > 0 ? (
+            ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
               <ul className="daily-care-record-list">
-                {careItems.slice(0, 5).map((item, index) => (
+                {careItems.filter((item) => !isOpenMatter(item)).slice(0, 5).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
                     <strong>{item.title || item.event_type || "Care update"}</strong>
                     {(item.description || item.text) && <p>{item.description || item.text}</p>}
-                    <span>{displayCareTime(item.occurred_at || item.recorded_at)}</span>
+                    <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
+                    {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
                     {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p>No care information is available to show yet. This does not mean nothing happened.</p>
+              <p>No current care updates are available to show. This does not mean nothing happened.</p>
             )}
             {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
+          </section>
+
+          <section aria-labelledby="daily-care-open-matters-title" className="daily-care-context-panel">
+            <h2 id="daily-care-open-matters-title">Open matters</h2>
+            <p className="daily-care-muted">Questions, missing information and disagreements that have not been marked as resolved.</p>
+            {careItems.filter(isOpenMatter).length > 0 ? (
+              <ul className="daily-care-record-list">
+                {careItems.filter(isOpenMatter).slice(0, 8).map((item, index) => (
+                  <li key={item.id || `open-matter-${index}`}>
+                    <strong>{item.title || item.kind || "Open matter"}</strong>
+                    {item.description && <p>{item.description}</p>}
+                    <span>{displayHistoryTime(item)}</span>
+                    {item.source_label && <span> · {item.source_label}</span>}
+                    {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
+                    {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No open matters are currently recorded in this view. This does not confirm that none exist.</p>
+            )}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
@@ -226,9 +363,10 @@ export default function DailyCarePage() {
                 {historyItems.slice(0, 8).map((item, index) => (
                   <li key={item.id || `history-item-${index}`}>
                     <strong>{item.title || item.event_type || item.source_type || "Care record entry"}</strong>
-                    {(item.description || item.text) && <p>{item.description || item.text}</p>}
-                    <span>{displayCareTime(item.occurred_at || item.recorded_at)}</span>
+                    {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
+                    <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
+                    {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
                     {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
                   </li>
                 ))}
