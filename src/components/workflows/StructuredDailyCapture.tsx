@@ -39,6 +39,10 @@ export default function StructuredDailyCapture() {
   const [saveError, setSaveError] = useState<unknown | null>(null);
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId: string | null; recordedAt: string | null } | null>(null);
   const [changeIntelligenceStatus, setChangeIntelligenceStatus] = useState<string | null>(null);
+  const [careContinuityExecution, setCareContinuityExecution] = useState<{
+    stages?: Record<string, string>;
+    workflow?: string;
+  } | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
   const [reviewingCandidate, setReviewingCandidate] = useState<number | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
@@ -442,7 +446,11 @@ export default function StructuredDailyCapture() {
         source_event_id?: string | null;
         written_to_lcr?: boolean;
         assertion_id?: string | null;
+        care_continuity_execution?: { stages?: Record<string, string>; workflow?: string } | null;
       };
+      if (result.care_continuity_execution) {
+        setCareContinuityExecution(result.care_continuity_execution);
+      }
       if (!result?.candidate || result.written_to_lcr !== (decision === 'accept')) {
         throw new Error('The backend did not confirm the requested review outcome. Your saved observation remains unchanged.');
       }
@@ -547,6 +555,11 @@ export default function StructuredDailyCapture() {
         data?.change_intelligence_status === 'available' || data?.change_intelligence_status === 'unavailable'
           ? data.change_intelligence_status
           : 'not_reported',
+      );
+      setCareContinuityExecution(
+        data?.care_continuity_execution && typeof data.care_continuity_execution === 'object'
+          ? data.care_continuity_execution
+          : null,
       );
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
@@ -913,6 +926,13 @@ export default function StructuredDailyCapture() {
         </div>
       )}
       
+      {saved && careContinuityExecution?.stages && (
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+          Source saved: {careContinuityExecution.stages.source_preservation === 'verified' ? 'confirmed' : 'not confirmed'}.
+          {' '}Evidence: {careContinuityExecution.stages.evidence === 'verified' ? 'linked and confirmed' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not required' : 'not confirmed'}.
+          {' '}Care-record reconciliation: {careContinuityExecution.stages.reconciliation === 'committed' ? 'saved' : 'not confirmed'}.
+        </p>
+      )}
       {saved && changeIntelligenceStatus === 'available' && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
           Change and pattern assessments were recalculated from the saved care record.
